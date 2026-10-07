@@ -1,0 +1,117 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "DiggableRock.h"
+#include "Async/Future.h"
+#include "MiningHollowRegion.h"
+#include "GeneratedMiningRock.generated.h"
+
+class UDynamicMesh;
+class UMaterialInstanceDynamic;
+struct FMiningSimplificationResult;
+
+USTRUCT(BlueprintType)
+struct FMiningRockChunk
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, Instanced, BlueprintReadOnly, Category="Chunk")
+	TObjectPtr<UDynamicMesh> InitialMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Chunk")
+	TObjectPtr<UDynamicMeshComponent> Mesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Chunk")
+	FBox Bounds = FBox(ForceInit);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Chunk")
+	int32 Cuts = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Chunk")
+	int32 Triangles = 0;
+};
+
+UENUM(BlueprintType)
+enum class EMiningSegmentState : uint8
+{
+	Waiting, Active, Frozen, Recycled
+};
+
+UCLASS(NotBlueprintable)
+class BRAINMINING_API AGeneratedMiningRock : public ADiggableRock
+{
+	GENERATED_BODY()
+public:
+	AGeneratedMiningRock();
+	virtual void Tick(float DeltaSeconds) override;
+	virtual void ResetRock() override;
+	virtual bool MineSphere(FVector WorldCenter, float WorldRadius) override;
+	void SetGeneratedMesh(UE::Geometry::FDynamicMesh3&& Mesh);
+	bool SetChunkedMesh(const UE::Geometry::FDynamicMesh3& Mesh, double Length, bool bSpatial = false);
+	void CopyMiningMesh(UE::Geometry::FDynamicMesh3& Mesh) const;
+	void CopyEditorPreviewMesh(UE::Geometry::FDynamicMesh3& Mesh) const;
+	UMaterialInterface* GetMiningMaterial();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Hollow Region")
+	TArray<FMiningGuideVolume> GuideMaterialVolumes;
+
+	UFUNCTION(BlueprintCallable, Category="Mining|Chunks")
+	UDynamicMesh* GetCombinedMesh() const;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Chunks")
+	TArray<FMiningRockChunk> Chunks;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Chunks")
+	bool bChunked = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Chunks")
+	bool bSimplifyChunks = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Chunks", meta=(ClampMin="0.05", ClampMax="1", Units="cm"))
+	float SimplificationTolerance = 0.5f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	int32 LargestChunkTriangles = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	int32 LastTouchedChunks = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	int32 SimplifiedTriangles = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	float LastSimplificationMilliseconds = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	int32 CompletedSimplifications = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	int32 DiscardedSimplifications = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	bool bSimplificationPending = false;
+	void SetSegmentState(EMiningSegmentState State);
+	void RecycleGeometry();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Segment")
+	int32 SegmentIndex = INDEX_NONE;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Segment")
+	EMiningSegmentState SegmentState = EMiningSegmentState::Active;
+
+private:
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> GuideMaterial;
+	void ClearChunks();
+	void UpdateChunkStats();
+	bool MineChunks(FVector WorldCenter, float WorldRadius);
+	void ScheduleSimplification(int32 Index);
+	TFuture<TSharedPtr<FMiningSimplificationResult, ESPMode::ThreadSafe>> SimplificationTask;
+	uint64 MeshGeneration = 0;
+	UE::Geometry::FDynamicMesh3 ChunkCutter;
+	UPROPERTY(VisibleAnywhere, Instanced, Category="Generated")
+	TObjectPtr<UDynamicMesh> InitialMesh;
+
+	UPROPERTY()
+	bool bHasGeneratedMesh = false;
+};

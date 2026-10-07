@@ -1,0 +1,204 @@
+#include "DiggableRock.h"
+#include "FogChamberComponent.h"
+#include "BrainMining.h"
+#include "Components/DynamicMeshComponent.h"
+#include "DynamicMesh/DynamicMeshAttributeSet.h"
+#include "DynamicMesh/MeshNormals.h"
+#include "Generators/MinimalBoxMeshGenerator.h"
+#include "Generators/SphereGenerator.h"
+#include "Operations/MeshBoolean.h"
+#include "Operations/LocalPlanarSimplify.h"
+#include "Misc/ScopeExit.h"
+#include "PhysicsEngine/BodySetup.h"
+#include "UDynamicMesh.h"
+
+using namespace UE::Geometry;
+
+ADiggableRock::ADiggableRock()
+{
+	PrimaryActorTick.bCanEverTick = false;
+	RockMesh = CreateDefaultSubobject<UDynamicMeshComponent>(TEXT("RockMesh"));
+	SetRootComponent(RockMesh);
+	RockMesh->SetCollisionProfileName(TEXT("BlockAll"));
+	RockMesh->SetGenerateOverlapEvents(false);
+	RockMesh->SetComplexAsSimpleCollisionEnabled(true, false);
+	RockMesh->SetDeferredCollisionUpdatesEnabled(true, false);
+	RockMesh->bUseAsyncCooking = false;
+	RockMesh->SetCanEverAffectNavigation(false);
+	FogChamber = CreateDefaultSubobject<UFogChamberComponent>(TEXT("FogChamber"));
+}
+
+void ADiggableRock::BeginPlay()
+{
+	Super::BeginPlay();
+	ResetRock();
+}
+
+void ADiggableRock::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	ResetRock();
+}
+
+void ADiggableRock::CommitMesh(FDynamicMesh3&& Mesh)
+{
+	TriangleCount = Mesh.TriangleCount();
+	RockMesh->SetMesh(MoveTemp(Mesh));
+	RockMesh->GetBodySetup()->SetFlags(RF_Transient);
+	const double CollisionStart = FPlatformTime::Seconds();
+	RockMesh->UpdateCollision(false);
+	LastCollisionMilliseconds = (FPlatformTime::Seconds() - CollisionStart) * 1000.0;
+}
+
+void ADiggableRock::ResetRock()
+{
+	const FVector SafeSize(FMath::Max(50.0, RockSize.X), FMath::Max(50.0, RockSize.Y), FMath::Max(50.0, RockSize.Z));
+	FMinimalBoxMeshGenerator Generator;
+	Generator.Box = FOrientedBox3d(FVector3d::Zero(), FVector3d(SafeSize * 0.5));
+	Generator.Generate();
+	FDynamicMesh3 Mesh(&Generator);
+	const bool bRoomValid = FogChamber->InitializeRoom(Mesh, SafeSize);
+	CommitMesh(MoveTemp(Mesh));
+	if (RockMaterial)
+	{
+		RockMesh->SetMaterial(0, RockMaterial);
+	}
+	SuccessfulCuts = 0;
+	LastBooleanMilliseconds = 0.0f;
+	LastTotalMilliseconds = 0.0f;
+	LastStatus = bRoomValid ? TEXT("Ready") : TEXT("Invalid room bounds: room must fit inside rock with 10cm walls");
+}
+
+bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
+{
+	const double OperationStart = FPlatformTime::Seconds();
+	LastBooleanMilliseconds = 0.0f;
+	LastCollisionMilliseconds = 0.0f;
+	ON_SCOPE_EXIT { LastTotalMilliseconds = (FPlatformTime::Seconds() - OperationStart) * 1000.0; };
+	const FVector Scale = GetActorScale3D();
+	if (WorldCenter.ContainsNaN() || !FMath::IsFinite(WorldRadius) || WorldRadius <= 0.0f ||
+		Scale.X <= UE_SMALL_NUMBER || !FMath::IsNearlyEqual(Scale.X, Scale.Y) || !FMath::IsNearlyEqual(Scale.X, Scale.Z))
+	{
+		LastStatus = TEXT("Use positive uniform scale and a valid radius");
+		return false;
+	}
+	if (TriangleCount == 0)
+	{
+		LastStatus = TEXT("Rock depleted");
+		return false;
+	}
+	const FVector LocalCenter = GetActorTransform().InverseTransformPosition(WorldCenter);
+	const double LocalRadius = WorldRadius / Scale.X;
+	FDynamicMesh3 SourceMesh;
+	RockMesh->GetDynamicMesh()->ProcessMesh([&SourceMesh](const FDynamicMesh3& Mesh) { SourceMesh = Mesh; });
+	if (SourceMesh.GetBounds().DistanceSquared(FVector3d(LocalCenter)) > LocalRadius * LocalRadius)
+	{
+		LastStatus = TEXT("No intersection");
+		return false;
+	}
+	if (UnitCutter.TriangleCount() == 0)
+	{
+		FSphereGenerator Generator;
+		Generator.Radius = 1.0;
+		Generator.NumPhi = 8;
+		Generator.NumTheta = 16;
+		Generator.Generate();
+		UnitCutter = FDynamicMesh3(&Generator);
+	}
+	FDynamicMesh3 Cutter = UnitCutter;
+	if (bUseProceduralCutFallback)
+	{
+		SourceMesh.DiscardAttributes();
+		Cutter.DiscardAttributes();
+		if (!SourceMesh.HasTriangleGroups()) SourceMesh.EnableTriangleGroups(0);
+		if (!Cutter.HasTriangleGroups()) Cutter.EnableTriangleGroups(0);
+	}
+	for (int32 VertexID : Cutter.VertexIndicesItr())
+	{
+		Cutter.SetVertex(VertexID, Cutter.GetVertex(VertexID) * LocalRadius + FVector3d(LocalCenter));
+	}
+	FDynamicMesh3 Result;
+	FMeshBoolean Operation(&SourceMesh, &Cutter, &Result, FMeshBoolean::EBooleanOp::Difference);
+	Operation.bSimplifyAlongNewEdges = true;
+	Operation.bPreserveTriangleGroups = !bUseProceduralCutFallback;
+	const double BooleanStart = FPlatformTime::Seconds();
+	const auto IsValidResult = [&Result, &Operation]()
+	{
+		return Operation.CreatedBoundaryEdges.Num() == 0 &&
+			Result.CheckValidity(FDynamicMesh3::FValidityOptions(), EValidityCheckFailMode::ReturnOnly) &&
+			(Result.TriangleCount() == 0 || Result.IsClosed());
+	};
+	bool bSucceeded = Operation.Compute() && IsValidResult();
+	if (!bSucceeded)
+	{
+		Result.Clear();
+		Operation.bSimplifyAlongNewEdges = false;
+		Operation.CreatedBoundaryEdges.Reset();
+		bSucceeded = Operation.Compute() && IsValidResult();
+	}
+	if (!bSucceeded && bUseProceduralCutFallback)
+	{
+		SourceMesh.DiscardAttributes();
+		Cutter.DiscardAttributes();
+		if (!SourceMesh.HasTriangleGroups()) SourceMesh.EnableTriangleGroups(0);
+		if (!Cutter.HasTriangleGroups()) Cutter.EnableTriangleGroups(0);
+		for (double Tolerance : {0.00001, 0.0001, 0.001})
+		{
+			Result.Clear();
+			FMeshBoolean Retry(&SourceMesh, &Cutter, &Result, FMeshBoolean::EBooleanOp::Difference);
+			Retry.SnapTolerance = Tolerance;
+			Retry.bSimplifyAlongNewEdges = false;
+			bSucceeded = Retry.Compute() && Retry.CreatedBoundaryEdges.IsEmpty() &&
+				(Result.TriangleCount() == 0 || Result.IsClosed()) &&
+				Result.CheckValidity(FDynamicMesh3::FValidityOptions(), EValidityCheckFailMode::ReturnOnly);
+			if (bSucceeded) break;
+		}
+	}
+	LastBooleanMilliseconds = (FPlatformTime::Seconds() - BooleanStart) * 1000.0;
+	if (!bSucceeded)
+	{
+		LastStatus = TEXT("Cut rejected: original rock preserved");
+		UE_LOG(LogBrainMining, Warning, TEXT("Mining rejected invalid boolean result on %s"), *GetName());
+		return false;
+	}
+	const int32 TriangleBudget = FMath::Clamp(MaxTriangles, 1000, 100000);
+	if (bUseProceduralCutFallback && Result.TriangleCount() > 0 &&
+		((SuccessfulCuts + 1) % 8 == 0 || Result.TriangleCount() > TriangleBudget * 0.8))
+	{
+		FDynamicMesh3 Simplified = Result;
+		Simplified.DiscardAttributes();
+		TSet<int32> Edges;
+		for (int32 EdgeID : Simplified.EdgeIndicesItr()) Edges.Add(EdgeID);
+		FLocalPlanarSimplify::CollapseDegenerateEdges(Simplified, Edges, true);
+		FLocalPlanarSimplify Simplifier;
+		Simplifier.SimplificationAngleTolerance = 0.001;
+		Simplifier.bPreserveTriangleGroups = false;
+		Simplifier.SimplifyAlongEdges(Simplified, Edges);
+		if (Simplified.IsClosed() && Simplified.CheckValidity(FDynamicMesh3::FValidityOptions(), EValidityCheckFailMode::ReturnOnly))
+		{
+			Simplified.CompactInPlace();
+			Result = MoveTemp(Simplified);
+		}
+	}
+	if (Result.TriangleCount() > TriangleBudget)
+	{
+		LastStatus = TEXT("Triangle budget reached - press R to reset");
+		return false;
+	}
+	if (Result.TriangleCount() > 0)
+	{
+		Result.EnableAttributes();
+		FMeshNormals::InitializeOverlayToPerTriangleNormals(Result.Attributes()->PrimaryNormals());
+	}
+	CommitMesh(MoveTemp(Result));
+	RockMesh->GetDynamicMesh()->ProcessMesh([this, LocalCenter, LocalRadius](const FDynamicMesh3& Mesh)
+	{
+		FogChamber->ObserveCut(Mesh, LocalCenter, LocalRadius);
+	});
+	++SuccessfulCuts;
+	LastTotalMilliseconds = (FPlatformTime::Seconds() - OperationStart) * 1000.0;
+	LastStatus = TriangleCount > 0 ? TEXT("Cut committed") : TEXT("Rock depleted");
+	UE_LOG(LogBrainMining, Display, TEXT("Mining cut %d: triangles=%d boolean=%.2fms collision=%.2fms total=%.2fms"),
+		SuccessfulCuts, TriangleCount, LastBooleanMilliseconds, LastCollisionMilliseconds, LastTotalMilliseconds);
+	return true;
+}

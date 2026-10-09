@@ -26,7 +26,7 @@ bool Intersects(const FVector2D& First, const FVector2D& Last, const FVector2D& 
 		OnEdge(First, OtherFirst, OtherLast) || OnEdge(Last, OtherFirst, OtherLast) || OnEdge(OtherFirst, First, Last) || OnEdge(OtherLast, First, Last);
 }
 
-FDynamicMesh3 BoxMesh(const FBox& Bounds)
+FDynamicMesh3 MakeManualBoxMesh(const FBox& Bounds)
 {
 	FMinimalBoxMeshGenerator Generator;
 	Generator.Box = FOrientedBox3d(FVector3d(Bounds.GetCenter()), FVector3d(Bounds.GetExtent())); Generator.Generate();
@@ -271,7 +271,7 @@ bool MiningManual::Build(AMiningManualRegion& Region, const FVector& Origin, dou
 	Hollow.Length = FVector::Distance(Start, Finish); Hollow.Distances = {0, Hollow.Length};
 	Result.StartWall = static_cast<int32>(Main->StartPortal.Wall); if (Result.StartWall >= 2) Result.StartWall += 2;
 	Result.EndWall = static_cast<int32>(Main->EndPortal.Wall); if (Result.EndWall >= 2) Result.EndWall += 2;
-	FDynamicMesh3 Candidate = BoxMesh(Hollow.Bounds);
+	FDynamicMesh3 Candidate = MakeManualBoxMesh(Hollow.Bounds);
 	for (AMiningManualShape* Source : Region.GetShapes())
 	{
 		if (!Source->bEnabled) { Source->ShapeStatus = TEXT("已禁用，保留编辑数据"); continue; }
@@ -324,7 +324,7 @@ bool MiningManual::Build(AMiningManualRegion& Region, const FVector& Origin, dou
 				FVector Center, Outward;
 				if (!Source->ResolvePortal(*Portal, Center, Outward, Error)) return false;
 				const FVector Extent = FMath::Abs(Outward.X) > 0.5 ? FVector(Bedrock + 4, Source->Depth * 0.5, Portal->Aperture * 0.5) : FVector(Portal->Aperture * 0.5, Source->Depth * 0.5, Bedrock + 4);
-				FDynamicMesh3 PortalMesh = BoxMesh(FBox(Center - Origin - Extent, Center - Origin + Extent));
+				FDynamicMesh3 PortalMesh = MakeManualBoxMesh(FBox(Center - Origin - Extent, Center - Origin + Extent));
 				if (!MiningChunks::Subtract(Candidate, PortalMesh, Carved)) { Error = TEXT("入口岩石切除失败"); return false; }
 				Candidate = MoveTemp(Carved); Result.PortalCuts.Add(MoveTemp(PortalMesh));
 			}
@@ -345,7 +345,7 @@ bool MiningManual::Build(AMiningManualRegion& Region, const FVector& Origin, dou
 	for (AMiningLayoutRoom* Room : {Region.FromRoom.Get(), Region.ToRoom.Get()})
 	{
 		FDynamicMesh3 Carved;
-		if (!MiningChunks::Subtract(Candidate, BoxMesh(Room->GetRoomBounds().ShiftBy(-Origin)), Carved)) { Error = TEXT("主房间清空失败"); return false; }
+		if (!MiningChunks::Subtract(Candidate, MakeManualBoxMesh(Room->GetRoomBounds().ShiftBy(-Origin)), Carved)) { Error = TEXT("主房间清空失败"); return false; }
 		Candidate = MoveTemp(Carved);
 	}
 	Rock = MoveTemp(Candidate); return true;

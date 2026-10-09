@@ -33,7 +33,7 @@ namespace
 		return Result;
 	}
 
-	bool Combine(FDynamicMesh3& Target, const FDynamicMesh3& Tool, FMeshBoolean::EBooleanOp Mode)
+	bool CombineSpaceMeshes(FDynamicMesh3& Target, const FDynamicMesh3& Tool, FMeshBoolean::EBooleanOp Mode)
 	{
 		if (Tool.TriangleCount() == 0) return true;
 		if (Target.TriangleCount() == 0)
@@ -70,7 +70,7 @@ namespace
 	{
 		if (!First.TriangleCount() || !Second.TriangleCount() || !First.GetBounds().Intersects(Second.GetBounds())) return 0;
 		FDynamicMesh3 Intersection = First;
-		if (!Combine(Intersection, Second, FMeshBoolean::EBooleanOp::Intersect)) return -1;
+		if (!CombineSpaceMeshes(Intersection, Second, FMeshBoolean::EBooleanOp::Intersect)) return -1;
 		return Intersection.TriangleCount() > 0 ? 1 : 0;
 	}
 
@@ -201,10 +201,10 @@ bool MiningSpaces::Apply(const TArray<AMiningLayoutSpace*>& Spaces, const TArray
 				MapRegions->Add(MoveTemp(Region));
 			}
 			const double VerticalThickness = Space->bAlignBranchFloors ? Thickness * Length / Delta.Size2D() : Thickness;
-			if (!Combine(Item.Interior, Branch, FMeshBoolean::EBooleanOp::Union) ||
-				!Combine(Item.Exterior, BranchMesh(Item.Anchor, Destination, Space->BranchWidth + Thickness * 2, Space->BranchHeight + VerticalThickness * 2, 5 + Thickness, 5 + Thickness, Space->bAlignBranchFloors), FMeshBoolean::EBooleanOp::Union))
+			if (!CombineSpaceMeshes(Item.Interior, Branch, FMeshBoolean::EBooleanOp::Union) ||
+				!CombineSpaceMeshes(Item.Exterior, BranchMesh(Item.Anchor, Destination, Space->BranchWidth + Thickness * 2, Space->BranchHeight + VerticalThickness * 2, 5 + Thickness, 5 + Thickness, Space->bAlignBranchFloors), FMeshBoolean::EBooleanOp::Union))
 				return Fail(Space, TEXT("Could not merge branch and space; adjust position or dimensions"));
-			if (Space->Entrance == EMiningSpaceEntrance::Open && !Combine(Item.Empty, Branch, FMeshBoolean::EBooleanOp::Union))
+			if (Space->Entrance == EMiningSpaceEntrance::Open && !CombineSpaceMeshes(Item.Empty, Branch, FMeshBoolean::EBooleanOp::Union))
 				return Fail(Space, TEXT("Could not open branch"));
 			if (Space->Entrance == EMiningSpaceEntrance::HiddenWall)
 			{
@@ -220,7 +220,7 @@ bool MiningSpaces::Apply(const TArray<AMiningLayoutSpace*>& Spaces, const TArray
 				Item.Wall = BranchMesh(Item.Anchor + Direction * OpenLength, Item.Anchor + Direction * Entry, Space->BranchWidth, Space->BranchHeight, 0, 0, Space->bAlignBranchFloors);
 				Item.SeparateEmptyParts.Add(Cave);
 				Item.SeparateEmptyParts.Add(BranchMesh(Item.Anchor, Item.Anchor + Direction * OpenLength, Space->BranchWidth, Space->BranchHeight, 5, 0, Space->bAlignBranchFloors));
-				if (!Combine(Item.Empty, Item.SeparateEmptyParts.Last(), FMeshBoolean::EBooleanOp::Union))
+				if (!CombineSpaceMeshes(Item.Empty, Item.SeparateEmptyParts.Last(), FMeshBoolean::EBooleanOp::Union))
 					return Fail(Space, TEXT("Could not create hidden entrance"));
 			}
 		}
@@ -276,27 +276,27 @@ bool MiningSpaces::Apply(const TArray<AMiningLayoutSpace*>& Spaces, const TArray
 		}
 		const bool bCarveOnly = Item.Marker->Contents == EMiningSpaceContents::Empty &&
 			(Item.Marker->Connection == EMiningSpaceConnection::Overlap || Item.Marker->Entrance != EMiningSpaceEntrance::RockFilled);
-		if (!Combine(Shell, Item.Exterior, FMeshBoolean::EBooleanOp::Union) ||
-			(!bCarveOnly && !Combine(Segments[Item.Segment], Item.Interior, FMeshBoolean::EBooleanOp::Union)))
+		if (!CombineSpaceMeshes(Shell, Item.Exterior, FMeshBoolean::EBooleanOp::Union) ||
+			(!bCarveOnly && !CombineSpaceMeshes(Segments[Item.Segment], Item.Interior, FMeshBoolean::EBooleanOp::Union)))
 			return Fail(Item.Marker, TEXT("Space terrain union failed; avoid exactly touching surfaces"));
 		Cavities.Add(Item.Interior);
 	}
 	for (const FSpaceGeometry& Item : Geometry)
 	{
-		if (!Combine(Segments[Item.Segment], Item.Empty, FMeshBoolean::EBooleanOp::Difference))
+		if (!CombineSpaceMeshes(Segments[Item.Segment], Item.Empty, FMeshBoolean::EBooleanOp::Difference))
 		{
 			if (Item.SeparateEmptyParts.IsEmpty()) return Fail(Item.Marker, TEXT("Space carving failed; adjust dimensions slightly"));
 			FDynamicMesh3 Candidate = Segments[Item.Segment];
 			for (const FDynamicMesh3& Part : Item.SeparateEmptyParts)
 			{
-				if (!Combine(Candidate, Part, FMeshBoolean::EBooleanOp::Difference)) return Fail(Item.Marker, TEXT("Hidden entrance carving failed; adjust dimensions slightly"));
+				if (!CombineSpaceMeshes(Candidate, Part, FMeshBoolean::EBooleanOp::Difference)) return Fail(Item.Marker, TEXT("Hidden entrance carving failed; adjust dimensions slightly"));
 			}
 			Segments[Item.Segment] = MoveTemp(Candidate);
 		}
 	}
 	for (const FSpaceGeometry& Item : Geometry)
 	{
-		if (Item.Wall.TriangleCount() && !Combine(Segments[Item.Segment], Item.Wall, FMeshBoolean::EBooleanOp::Union))
+		if (Item.Wall.TriangleCount() && !CombineSpaceMeshes(Segments[Item.Segment], Item.Wall, FMeshBoolean::EBooleanOp::Union))
 			return Fail(Item.Marker, TEXT("Could not retain hidden entrance rock"));
 		Item.Marker->ResolvedBranchAnchor = Item.Anchor + Origin;
 		Item.Marker->ResolvedWallCenter = Item.WallCenter + Origin;

@@ -10,12 +10,22 @@ class UInputAction;
 class UInputMappingContext;
 class UEnhancedInputLocalPlayerSubsystem;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMiningAttemptEvent, float, MiningInterval);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMiningHitEvent, const FHitResult&, Hit);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMiningResetEvent);
+
 UCLASS(ClassGroup=(Mining), meta=(BlueprintSpawnableComponent))
 class BRAINMINING_API UMiningComponent : public UActorComponent
 {
 	GENERATED_BODY()
 public:
 	UMiningComponent();
+	UPROPERTY(BlueprintAssignable, Category="Mining|Effects")
+	FMiningAttemptEvent OnMiningAttempt;
+	UPROPERTY(BlueprintAssignable, Category="Mining|Effects")
+	FMiningHitEvent OnMiningHit;
+	UPROPERTY(BlueprintAssignable, Category="Mining|Effects")
+	FMiningResetEvent OnMiningReset;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;

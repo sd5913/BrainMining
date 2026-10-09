@@ -12,6 +12,7 @@ class USkeletalMeshComponent;
 class UCameraComponent;
 class UInputAction;
 class UMiningComponent;
+class UMiningToolEffectsComponent;
 class USpotLightComponent;
 class UPointLightComponent;
 struct FInputActionValue;
@@ -36,6 +37,9 @@ class ABrainMiningCharacter : public ACharacter
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<UMiningComponent> MiningComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<UMiningToolEffectsComponent> MiningToolEffects;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<USpotLightComponent> MiningLight;
@@ -115,4 +119,3 @@ public:
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
 };
-

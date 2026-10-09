@@ -10,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BrainMining.h"
 #include "MiningComponent.h"
+#include "MiningToolEffectsComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningTunnelGenerator.h"
 #include "EngineUtils.h"
@@ -41,6 +42,7 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 	FirstPersonCameraComponent->FirstPersonScale = 0.6f;
 
 	MiningComponent = CreateDefaultSubobject<UMiningComponent>(TEXT("MiningComponent"));
+	MiningToolEffects = CreateDefaultSubobject<UMiningToolEffectsComponent>(TEXT("MiningToolEffects"));
 	MiningLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("MiningLight"));
 	MiningLight->SetupAttachment(FirstPersonCameraComponent);
 	MiningLight->SetRelativeLocation(FVector(20.0, 0.0, -10.0));

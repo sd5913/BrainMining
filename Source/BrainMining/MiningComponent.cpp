@@ -115,6 +115,7 @@ bool UMiningComponent::TryMine()
 		return false;
 	}
 	NextMineTime = GetWorld()->GetTimeSeconds() + FMath::Max(0.1f, Interval);
+	OnMiningAttempt.Broadcast(FMath::Max(0.1f, Interval));
 	RefreshTarget();
 	if (!IsValid(TargetRock))
 	{
@@ -123,8 +124,10 @@ bool UMiningComponent::TryMine()
 	}
 	LastMinedRock = TargetRock;
 	const FVector Center = GetCutCenter();
+	const FHitResult MiningHit = TargetHit;
 	const bool bResult = TargetRock->MineSphere(Center, Radius);
 	Status = TargetRock->LastStatus;
+	if (bResult) OnMiningHit.Broadcast(MiningHit);
 	return bResult;
 }
 
@@ -181,4 +184,5 @@ void UMiningComponent::ResetField()
 	LastMinedRock = nullptr;
 	TargetRock = nullptr;
 	Status = TEXT("Field reset");
+	OnMiningReset.Broadcast();
 }

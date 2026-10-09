@@ -13,6 +13,8 @@
 
 数值使用原生单位控件；例如 450 cm/s 可能显示为 4.5 m/s，这是同一个值。尺寸默认以厘米计。
 
+空心矿区支持“串联矿区列表”和 **补齐相邻房间矿区**：摆放好主房间并编号后补齐连接，再分别编辑各矿区。已有路径不会被重置，列表引用不参与参数预设，详见 `README_HollowChain.md`。
+
 若菜单暂时不可见，可在编辑器底部 Cmd 输入：
 
 ```text
@@ -74,6 +76,8 @@ py "E:/UE5/UEProjects/BrainMining/Scripts/open_mining_designer.py"
 - 暂不提供从面板一键新建完整关卡、热更新游戏包、玩家存档编辑或实时显示挖掘后表面的小地图。
 
 ## 开发与验证
+
+手工设计通道两侧、独立空洞与支线房间，使用工具菜单或策划台中的 **矿道钢笔编辑器**。示例地图为 `Lvl_MiningManual_Demo`，操作方法见 [手绘矿道说明](README_ManualMine.md)。此工具保存独立源控制点，不会用旧自动布局覆盖手绘轮廓。
 
 - 编辑器模块：`Source/BrainMiningEditor/`，仅 Editor 目标加载；Shipping 不依赖 Slate 调参面板。
 - 分类、中文标签与提示：`Private/MiningDesignerCatalog.cpp`。

@@ -2,6 +2,7 @@
 #include "MiningHollowChamber.h"
 #include "MiningLayoutRoom.h"
 #include "MiningTunnelGenerator.h"
+#include "MiningSpatialEditBridge.h"
 #include "Components/SplineComponent.h"
 #include "Components/BoxComponent.h"
 #include "EngineUtils.h"
@@ -105,18 +106,18 @@ void AMiningHollowRegion::RebuildRegion()
 {
 	if (!GetWorld() || GetWorld()->IsGameWorld()) return;
 	for (TActorIterator<AMiningTunnelGenerator> Generator(GetWorld()); Generator; ++Generator)
-		if (Generator->GetLevel() == GetLevel() && Generator->HollowRegion == this) Generator->RebuildTunnels();
+		if (Generator->GetLevel() == GetLevel() && Generator->UsesHollowRegion(this)) Generator->RebuildTunnels();
 }
 
 void AMiningHollowRegion::NotifyGenerators()
 {
 	if (!GetWorld() || GetWorld()->IsGameWorld()) return;
 	for (TActorIterator<AMiningTunnelGenerator> Generator(GetWorld()); Generator; ++Generator)
-		if (Generator->GetLevel() == GetLevel() && Generator->HollowRegion == this) Generator->RequestRebuild();
+		if (Generator->GetLevel() == GetLevel() && Generator->UsesHollowRegion(this)) Generator->RequestRebuild();
 }
 
 #if WITH_EDITOR
-void AMiningHollowRegion::PostEditMove(bool bFinished) { Super::PostEditMove(bFinished); bInteractiveEdit = !bFinished; NotifyGenerators(); }
-void AMiningHollowRegion::PostEditChangeProperty(FPropertyChangedEvent& Event) { Super::PostEditChangeProperty(Event); NotifyGenerators(); }
-void AMiningHollowRegion::PostEditUndo() { Super::PostEditUndo(); bInteractiveEdit = false; NotifyGenerators(); }
+void AMiningHollowRegion::PostEditMove(bool bFinished) { Super::PostEditMove(bFinished); bInteractiveEdit = !bFinished; if (!MiningSpatialEditing::Handle(this)) NotifyGenerators(); }
+void AMiningHollowRegion::PostEditChangeProperty(FPropertyChangedEvent& Event) { Super::PostEditChangeProperty(Event); if (!MiningSpatialEditing::Handle(this)) NotifyGenerators(); }
+void AMiningHollowRegion::PostEditUndo() { Super::PostEditUndo(); bInteractiveEdit = false; if (!MiningSpatialEditing::Handle(this)) NotifyGenerators(); }
 #endif

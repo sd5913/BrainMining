@@ -18,6 +18,10 @@ UMiningDeveloperMapComponent::UMiningDeveloperMapComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 #if UE_BUILD_SHIPPING || UE_BUILD_TEST
 	bVisible = false;
+#else
+	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bStartWithTickEnabled = false;
+	PrimaryComponentTick.bTickEvenWhenPaused = true;
 #endif
 }
 
@@ -40,6 +44,12 @@ void UMiningDeveloperMapComponent::BindInput(UInputComponent* Input)
 	Bind(EKeys::Add, &UMiningDeveloperMapComponent::ZoomIn);
 	Bind(EKeys::Hyphen, &UMiningDeveloperMapComponent::ZoomOut);
 	Bind(EKeys::Subtract, &UMiningDeveloperMapComponent::ZoomOut);
+	Bind(EKeys::BackSpace, &UMiningDeveloperMapComponent::ResetView);
+	Bind(EKeys::LeftAlt, &UMiningDeveloperMapComponent::BeginMapControl);
+	Bind(EKeys::RightAlt, &UMiningDeveloperMapComponent::BeginMapControl);
+	Input->BindKey(EKeys::LeftAlt, IE_Released, this, &UMiningDeveloperMapComponent::EndMapControl).bExecuteWhenPaused = true;
+	Input->BindKey(EKeys::RightAlt, IE_Released, this, &UMiningDeveloperMapComponent::EndMapControl).bExecuteWhenPaused = true;
+	SetComponentTickEnabled(true);
 #endif
 }
 
@@ -47,12 +57,13 @@ void UMiningDeveloperMapComponent::ToggleMap()
 {
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
 	if (!IsValid(Layout) || Layout->DeveloperMapSettings.bEnabled) bVisible = !bVisible;
+	if (!bVisible) EndMapControl();
 #endif
 }
 
 void UMiningDeveloperMapComponent::ToggleExpanded() { if (bVisible) bExpanded = !bExpanded; }
-void UMiningDeveloperMapComponent::CycleView() { if (bVisible) { View = static_cast<EMiningMapView>((static_cast<uint8>(View) + 1) % 3); Zoom = 1; } }
-void UMiningDeveloperMapComponent::ToggleFollow() { if (bVisible) { bFollowPlayer = !bFollowPlayer; Zoom = 1; } }
+void UMiningDeveloperMapComponent::CycleView() { if (bVisible) { EndMapControl(); View = static_cast<EMiningMapView>((static_cast<uint8>(View) + 1) % 4); Zoom = 1; PanOffset = FVector2D::ZeroVector; } }
+void UMiningDeveloperMapComponent::ToggleFollow() { if (bVisible) { bFollowPlayer = !bFollowPlayer; Zoom = 1; PanOffset = FVector2D::ZeroVector; } }
 void UMiningDeveloperMapComponent::ToggleLabels() { if (bVisible) bLabels = !bLabels; }
 void UMiningDeveloperMapComponent::ZoomIn() { if (bVisible) Zoom = FMath::Clamp(Zoom * 1.5f, 0.25f, 16.f); }
 void UMiningDeveloperMapComponent::ZoomOut() { if (bVisible) Zoom = FMath::Clamp(Zoom / 1.5f, 0.25f, 16.f); }
@@ -85,6 +96,7 @@ void UMiningDeveloperMapComponent::RefreshLayout(const FVector& PlayerLocation)
 	if (Selected == Layout && Selected && SnapshotRevision == Selected->BuildRevision) return;
 	Layout = Selected;
 	Regions.Reset();
+	SurfaceRegions.Reset();
 	SnapshotRevision = Selected ? Selected->BuildRevision : INDEX_NONE;
 	bLegacySnapshot = Selected && Selected->GeneratedMapRegions.IsEmpty();
 	if (Selected)
@@ -109,13 +121,11 @@ void UMiningDeveloperMapComponent::RefreshLayout(const FVector& PlayerLocation)
 		{
 			bInitialized = true;
 			bVisible = Selected->DeveloperMapSettings.bShowOnStart;
-			FBox Bounds(ForceInit);
-			for (const FMiningMapRegion& Region : Regions) Bounds += Region.Bounds;
-			View = Bounds.IsValid && Bounds.GetSize().Y > Bounds.GetSize().X ? EMiningMapView::SideYZ : EMiningMapView::SideXZ;
-			if (Selected->bHollowRegionPrototype && Regions.ContainsByPredicate([](const FMiningMapRegion& Region) { return Region.Kind == EMiningMapRegionKind::Branch; })) View = EMiningMapView::TopXY;
+			View = EMiningMapView::Orbit3D;
 		}
 	}
 	RegionCount = Regions.Num();
+	for (const FMiningMapRegion& Region : Regions) SurfaceRegions.Add(MiningDeveloperMap::BuildSurface(Region));
 	RefreshProjection();
 }
 
@@ -124,6 +134,9 @@ void UMiningDeveloperMapComponent::RefreshProjection()
 	ProjectedRegions.Reset();
 	ProjectedBounds = FBox2D(ForceInit);
 	CachedView = View;
+	CachedRotation = OrbitRotation;
+	ProjectedFaces.Reset(); ProjectedEdges.Reset(); DisplayTriangleCount = 0;
+	if (View == EMiningMapView::Orbit3D) { Refresh3DProjection(); return; }
 	for (const FMiningMapRegion& Region : Regions)
 	{
 		TArray<FVector2D> Outline = MiningDeveloperMap::Outline(Region, View);
@@ -139,7 +152,7 @@ void UMiningDeveloperMapComponent::Draw(AHUD* HUD, UCanvas* Canvas)
 	if (Canvas->ClipX < 240 || Canvas->ClipY < 180) return;
 	const FVector PlayerLocation = HUD->PlayerOwner->GetPawn()->GetActorLocation();
 	RefreshLayout(PlayerLocation);
-	if (IsValid(Layout) && !Layout->DeveloperMapSettings.bEnabled) return;
+	if (IsValid(Layout) && !Layout->DeveloperMapSettings.bEnabled) { EndMapControl(); return; }
 	const FMiningDeveloperMapSettings Settings = IsValid(Layout) ? Layout->DeveloperMapSettings : FMiningDeveloperMapSettings();
 	const float UiScale = FMath::Clamp(FMath::Min(Canvas->ClipX / 960.f, Canvas->ClipY / 640.f), 0.5f, 1.4f);
 	const FLinearColor Accent(0.2f, 0.95f, 0.8f);
@@ -148,7 +161,7 @@ void UMiningDeveloperMapComponent::Draw(AHUD* HUD, UCanvas* Canvas)
 		HUD->DrawText(TEXT("M  Developer map"), Accent, FMath::Max(8.f, Canvas->ClipX - 160 * UiScale), Canvas->ClipY - 62 * UiScale, GEngine->GetSmallFont(), UiScale);
 		return;
 	}
-	if (CachedView != View) RefreshProjection();
+	if (CachedView != View || (View == EMiningMapView::Orbit3D && CachedRotation != OrbitRotation)) RefreshProjection();
 	const FVector2D Size(FMath::Max(100.f, FMath::Min(bExpanded ? Canvas->ClipX * 0.92f : Settings.PanelWidth * UiScale, Canvas->ClipX - 24 * UiScale)),
 		FMath::Max(140.f, FMath::Min(bExpanded ? Canvas->ClipY * 0.86f : Settings.PanelHeight * UiScale, Canvas->ClipY - 64 * UiScale)));
 	const FVector2D Minimum = bExpanded ? FVector2D((Canvas->ClipX - Size.X) * 0.5, (Canvas->ClipY - Size.Y) * 0.5 - 10 * UiScale)
@@ -185,28 +198,30 @@ void UMiningDeveloperMapComponent::Draw(AHUD* HUD, UCanvas* Canvas)
 			Canvas->DrawItem(Item);
 		}
 	};
-	const TCHAR* ViewName = View == EMiningMapView::SideXZ ? TEXT("SIDE X/Z") : View == EMiningMapView::TopXY ? TEXT("TOP X/Y") : TEXT("SIDE Y/Z");
+	const bool bThreeD = View == EMiningMapView::Orbit3D;
+	const TCHAR* ViewName = bThreeD ? TEXT("3D ORBIT") : View == EMiningMapView::SideXZ ? TEXT("SIDE X/Z") : View == EMiningMapView::TopXY ? TEXT("TOP X/Y") : TEXT("SIDE Y/Z");
 	const TCHAR* HiddenAxis = View == EMiningMapView::SideXZ ? TEXT("Y") : View == EMiningMapView::TopXY ? TEXT("Z") : TEXT("X");
 	const double TextWidth = Size.X - 24 * UiScale;
 	Text(FString::Printf(TEXT("DEV MAP / %s / %s x%.1f"), ViewName, bFollowPlayer ? TEXT("FOLLOW") : TEXT("FIT"), Zoom), Minimum + FVector2D(12, 8) * UiScale, Accent, TextWidth);
 	CurrentRegionIndex = MiningDeveloperMap::FindRegion(Regions, PlayerLocation);
 	LocationLabel = Regions.IsValidIndex(CurrentRegionIndex) ? Regions[CurrentRegionIndex].Name : TEXT("Outside mapped rooms / tunnels");
 	Text(TEXT("YOU: ") + LocationLabel, Minimum + FVector2D(12, 28) * UiScale, FLinearColor::White, TextWidth);
-	Text(FString::Printf(TEXT("X %.1f  Y %.1f  Z %.1fm | all %s layers"), PlayerLocation.X / 100, PlayerLocation.Y / 100, PlayerLocation.Z / 100, HiddenAxis), Minimum + FVector2D(12, 47) * UiScale, FLinearColor(0.66f, 0.74f, 0.8f), TextWidth);
+	Text(FString::Printf(TEXT("X %.1f  Y %.1f  Z %.1fm | %s"), PlayerLocation.X / 100, PlayerLocation.Y / 100, PlayerLocation.Z / 100, bThreeD ? bControllingMap ? TEXT("MAP CONTROL / release Alt to look") : TEXT("3D / hold Alt to orbit") : *FString::Printf(TEXT("all %s layers"), HiddenAxis)), Minimum + FVector2D(12, 47) * UiScale, FLinearColor(0.66f, 0.74f, 0.8f), TextWidth);
 	MapMinimum = Minimum + FVector2D(12, 70) * UiScale;
-	MapMaximum = Maximum - FVector2D(12, 86) * UiScale;
+	MapMaximum = Maximum - FVector2D(12, bThreeD ? 104 : 86) * UiScale;
 	if (MapMaximum.X - MapMinimum.X < 20 || MapMaximum.Y - MapMinimum.Y < 20) return;
 	const FBox2D Graph(MapMinimum, MapMaximum);
 	HUD->DrawRect(FLinearColor(0.035f, 0.055f, 0.075f, 0.9f), Graph.Min.X, Graph.Min.Y, Graph.GetSize().X, Graph.GetSize().Y);
-	const FVector2D ProjectedPlayer = MiningDeveloperMap::Project(PlayerLocation, View);
-	const FVector2D Center = bFollowPlayer || !ProjectedBounds.bIsValid ? ProjectedPlayer : ProjectedBounds.GetCenter();
+	const FVector2D ProjectedPlayer = ProjectPoint(PlayerLocation);
+	const FVector2D Center = (bFollowPlayer || !ProjectedBounds.bIsValid ? ProjectedPlayer : ProjectedBounds.GetCenter()) + (bThreeD ? PanOffset : FVector2D::ZeroVector);
 	const double Scale = (bFollowPlayer ? Graph.GetSize().X / FMath::Max(1000.f, Settings.FollowWidth)
 		: MiningDeveloperMap::FitScale(ProjectedBounds, Graph.GetSize() - FVector2D(30 * UiScale))) * Zoom;
+	LastScale = Scale;
 	const auto Screen = [Center, Scale, &Graph](const FVector2D& Point) { return Graph.GetCenter() + (Point - Center) * Scale; };
 	const double GridStep = FMath::Pow(10.0, FMath::CeilToDouble(FMath::LogX(10.0, 35 * UiScale / Scale)));
 	const FVector2D VisibleMinimum = Center - Graph.GetSize() / (2 * Scale);
 	const FVector2D VisibleMaximum = Center + Graph.GetSize() / (2 * Scale);
-	for (int32 Axis = 0; Axis < 2; ++Axis)
+	for (int32 Axis = 0; !bThreeD && Axis < 2; ++Axis)
 	{
 		int32 Count = 0;
 		for (double Position = FMath::CeilToDouble(VisibleMinimum[Axis] / GridStep) * GridStep; Position <= VisibleMaximum[Axis] && Count++ < 80; Position += GridStep)
@@ -217,36 +232,37 @@ void UMiningDeveloperMapComponent::Draw(AHUD* HUD, UCanvas* Canvas)
 			Line(Screen(Start), Screen(Finish), FLinearColor(0.1f, 0.15f, 0.19f, 0.7f), 1);
 		}
 	}
-	const auto ColorFor = [this](const FMiningMapRegion& Region)
-	{
-		FLinearColor Color = Region.Kind == EMiningMapRegionKind::Room ? FLinearColor(0.2f, 0.85f, 0.58f)
-			: Region.Kind == EMiningMapRegionKind::Branch && IsValid(Layout) && Layout->bHollowRegionPrototype ? FLinearColor(0.1f, 0.9f, 0.88f)
-			: Region.Kind == EMiningMapRegionKind::GuidePlug ? FLinearColor(0.76f, 0.3f, 1)
-			: Region.Kind == EMiningMapRegionKind::RockRegion ? FLinearColor(0.58f, 0.34f, 0.15f)
-			: Region.Kind == EMiningMapRegionKind::Tunnel && IsValid(Layout) && Layout->bHollowRegionPrototype ? FLinearColor(0.3f, 0.7f, 0.9f)
-			: Region.Kind == EMiningMapRegionKind::HiddenEntrance ? FLinearColor(1, 0.28f, 0.7f)
-			: Region.Kind == EMiningMapRegionKind::Tunnel || Region.bRockFilled ? FLinearColor(0.9f, 0.58f, 0.2f) : FLinearColor(0.22f, 0.63f, 1);
-		if (IsValid(Layout) && Region.Kind != EMiningMapRegionKind::Room && Layout->GeneratedSegments.IsValidIndex(Region.GroupIndex))
-		{
-			const AGeneratedMiningRock* Segment = Layout->GeneratedSegments[Region.GroupIndex];
-			if (IsValid(Segment) && Segment->SegmentState == EMiningSegmentState::Recycled) Color = FLinearColor(0.32f, 0.35f, 0.4f);
-			else if (IsValid(Segment) && Segment->SegmentState == EMiningSegmentState::Frozen) Color = FMath::Lerp(Color, FLinearColor(0.4f, 0.43f, 0.45f), 0.6f);
-		}
-		return Color;
-	};
+	if (bThreeD) Draw3D(Canvas, Graph, Center, Scale, UiScale);
 	const EMiningMapRegionKind DrawOrder[] = {EMiningMapRegionKind::RockRegion, EMiningMapRegionKind::Tunnel, EMiningMapRegionKind::Branch, EMiningMapRegionKind::Space, EMiningMapRegionKind::Room, EMiningMapRegionKind::HiddenEntrance, EMiningMapRegionKind::GuidePlug};
 	for (EMiningMapRegionKind Kind : DrawOrder)
 	{
+		if (bThreeD) break;
 		for (int32 Index = 0; Index < Regions.Num(); ++Index)
 		{
 			const FMiningMapRegion& Region = Regions[Index];
 			if (Region.Kind != Kind) continue;
 			TArray<FVector2D> Polygon;
 			for (const FVector2D& Point : ProjectedRegions[Index]) Polygon.Add(Screen(Point));
-			FLinearColor Color = ColorFor(Region);
+			FLinearColor Color = RegionColor(Region);
 			FLinearColor Interior = Color;
 			Interior.A = Index == CurrentRegionIndex ? 0.55f : 0.22f;
-			Fill(MiningDeveloperMap::ClipPolygon(Polygon, Graph), Interior);
+			if (!Region.SurfaceTriangles.IsEmpty())
+			{
+				TArray<FVector2D> Surface;
+				for (const FVector& Vertex : Region.Vertices) Surface.Add(Screen(MiningDeveloperMap::Project(Vertex, View)));
+				Interior.A = 1; Interior *= Index == CurrentRegionIndex ? 0.85f : 0.55f; Interior.A = 1;
+				for (const FIntVector& Triangle : Region.SurfaceTriangles)
+					if (Surface.IsValidIndex(Triangle.X) && Surface.IsValidIndex(Triangle.Y) && Surface.IsValidIndex(Triangle.Z))
+						Fill(MiningDeveloperMap::ClipPolygon({Surface[Triangle.X], Surface[Triangle.Y], Surface[Triangle.Z]}, Graph), Interior);
+				continue;
+			}
+			if (View == EMiningMapView::SideXZ && !Region.PolygonTriangles.IsEmpty())
+			{
+				for (const FIntVector& Triangle : Region.PolygonTriangles)
+					if (Polygon.IsValidIndex(Triangle.X) && Polygon.IsValidIndex(Triangle.Y) && Polygon.IsValidIndex(Triangle.Z))
+						Fill(MiningDeveloperMap::ClipPolygon({Polygon[Triangle.X], Polygon[Triangle.Y], Polygon[Triangle.Z]}, Graph), Interior);
+			}
+			else Fill(MiningDeveloperMap::ClipPolygon(Polygon, Graph), Interior);
 			for (int32 Corner = 0; Corner < Polygon.Num(); ++Corner)
 			{
 				FVector2D Start = Polygon[Corner];
@@ -268,14 +284,14 @@ void UMiningDeveloperMapComponent::Draw(AHUD* HUD, UCanvas* Canvas)
 			if (Regions[Index].Kind != EMiningMapRegionKind::Room && Regions[Index].Kind != EMiningMapRegionKind::Space) continue;
 			const FString Name = Regions[Index].Name.Left(22);
 			const FVector2D LabelSize = Canvas->K2_TextSize(GEngine->GetSmallFont(), Name, FVector2D(UiScale));
-			const FVector2D Position = Screen(MiningDeveloperMap::Project(Regions[Index].Bounds.GetCenter(), View)) - FVector2D(LabelSize.X * 0.5, 18 * UiScale);
+			const FVector2D Position = Screen(ProjectPoint(Regions[Index].Bounds.GetCenter())) - FVector2D(LabelSize.X * 0.5, 18 * UiScale);
 			const FBox2D LabelRect(Position, Position + LabelSize);
 			if (!Graph.IsInsideOrOn(LabelRect.Min) || !Graph.IsInsideOrOn(LabelRect.Max) || Labels.ContainsByPredicate([&LabelRect](const FBox2D& Other) { return Other.Intersect(LabelRect); })) continue;
 			Labels.Add(LabelRect);
 			Text(Name, Position, FLinearColor::White, LabelSize.X + 1);
 		}
 	}
-	FVector2D Direction = bPlayerOffscreen ? (UnclampedPlayer - PlayerMapPosition).GetSafeNormal() : MiningDeveloperMap::Project(HUD->PlayerOwner->GetControlRotation().Vector(), View);
+	FVector2D Direction = bPlayerOffscreen ? (UnclampedPlayer - PlayerMapPosition).GetSafeNormal() : ProjectPoint(HUD->PlayerOwner->GetControlRotation().Vector());
 	const bool bOutOfPlane = Direction.SizeSquared() < 0.025;
 	Direction.Normalize();
 	for (int32 Step = 0; Step < 20; ++Step)
@@ -305,12 +321,13 @@ void UMiningDeveloperMapComponent::Draw(AHUD* HUD, UCanvas* Canvas)
 		const TCHAR* HollowNames[] = {TEXT("Main"), TEXT("Branch"), TEXT("Cave"), TEXT("Seal"), TEXT("Plug"), TEXT("Old")};
 		const FLinearColor HollowColors[] = {FLinearColor(0.3f, 0.7f, 0.9f), FLinearColor(0.1f, 0.9f, 0.88f), LegendColors[2], LegendColors[3], FLinearColor(0.76f, 0.3f, 1), LegendColors[4]};
 		for (int32 Index = 0; Index < 6; ++Index)
-			Text(HollowNames[Index], Minimum + FVector2D(12 * UiScale + Index * TextWidth / 6, Size.Y - 79 * UiScale), HollowColors[Index], TextWidth / 6 - 2);
+			Text(HollowNames[Index], Minimum + FVector2D(12 * UiScale + Index * TextWidth / 6, Size.Y - (bThreeD ? 97 : 79) * UiScale), HollowColors[Index], TextWidth / 6 - 2);
 	}
 	else for (int32 Index = 0; Index < 5; ++Index)
-		Text(LegendNames[Index], Minimum + FVector2D(12 * UiScale + Index * TextWidth / 5, Size.Y - 79 * UiScale), LegendColors[Index], TextWidth / 5 - 2);
+		Text(LegendNames[Index], Minimum + FVector2D(12 * UiScale + Index * TextWidth / 5, Size.Y - (bThreeD ? 97 : 79) * UiScale), LegendColors[Index], TextWidth / 5 - 2);
+	if (bThreeD) Text(TEXT("Alt+mouse orbit / Shift pan / wheel zoom"), Minimum + FVector2D(12 * UiScale, Size.Y - 79 * UiScale), bControllingMap ? FLinearColor::White : Accent, TextWidth);
 	Text(TEXT("M show/hide  Tab expand  V change view"), Minimum + FVector2D(12 * UiScale, Size.Y - 60 * UiScale), Accent, TextWidth);
-	Text(TEXT("Home fit/follow  +/- zoom  L labels"), Minimum + FVector2D(12 * UiScale, Size.Y - 42 * UiScale), Accent, TextWidth);
+	Text(bThreeD ? TEXT("Home follow  +/- zoom  Backspace reset") : TEXT("Home fit/follow  +/- zoom  L labels"), Minimum + FVector2D(12 * UiScale, Size.Y - 42 * UiScale), Accent, TextWidth);
 	const FString Notice = Regions.IsEmpty() ? TEXT("No generated layout found") : bLegacySnapshot ? TEXT("Rebuild layout once to include spaces")
 		: bPlayerOffscreen ? TEXT("Player offscreen: Home to follow, or zoom out") : bOutOfPlane ? TEXT("Design only / + marker = facing out of plane") : TEXT("Design only / NOT the excavated surface");
 	Text(Notice, Minimum + FVector2D(12 * UiScale, Size.Y - 22 * UiScale), FLinearColor(0.7f, 0.75f, 0.8f), TextWidth);

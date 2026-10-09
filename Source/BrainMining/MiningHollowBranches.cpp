@@ -210,7 +210,7 @@ bool MiningHollowBranches::Carve(const TArray<FPlan>& Plans, FDynamicMesh3& Rock
 	return true;
 }
 
-void MiningHollowBranches::AddMapRegions(const TArray<FPlan>& Plans, const FVector& Origin, TArray<FMiningMapRegion>& Regions)
+void MiningHollowBranches::AddMapRegions(const TArray<FPlan>& Plans, const FVector& Origin, TArray<FMiningMapRegion>& Regions, int32 GroupIndex)
 {
 	for (const FPlan& Plan : Plans)
 	{
@@ -221,13 +221,13 @@ void MiningHollowBranches::AddMapRegions(const TArray<FPlan>& Plans, const FVect
 			{
 				TArray<FVector> Vertices = Sections[Index - 1]; Vertices.Append(Sections[Index]);
 				for (FVector& Vertex : Vertices) Vertex += Origin;
-				FMiningMapRegion Region = MiningDeveloperMap::Convex(Plan.Name + Label, Kind, 0, Vertices);
+				FMiningMapRegion Region = MiningDeveloperMap::Convex(Plan.Name + Label, Kind, GroupIndex, Vertices);
 				Region.bRockFilled = Kind == EMiningMapRegionKind::HiddenEntrance;
 				Regions.Add(MoveTemp(Region));
 			}
 		};
 		AddTube(Plan.OpenPoints, EMiningMapRegionKind::Branch, TEXT(" / branch"));
-		Regions.Add(MiningDeveloperMap::Box(Plan.Name + (Plan.bHidden ? TEXT(" / hidden cave") : TEXT(" / open cave")), EMiningMapRegionKind::Space, 0, Plan.Chamber.ShiftBy(Origin)));
+		Regions.Add(MiningDeveloperMap::Box(Plan.Name + (Plan.bHidden ? TEXT(" / hidden cave") : TEXT(" / open cave")), EMiningMapRegionKind::Space, GroupIndex, Plan.Chamber.ShiftBy(Origin)));
 		if (Plan.bHidden) AddTube({Plan.Points[0], Plan.SealPoints.Last()}, EMiningMapRegionKind::HiddenEntrance, TEXT(" / diggable entrance (design)"));
 	}
 }

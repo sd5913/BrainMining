@@ -110,6 +110,9 @@ git lfs unlock "Content/MiningPrototype/Maps/Lvl_MiningLab.umap"
 - [自动房间](README_AutoRooms.md)
 - [空腔区域](README_HollowRegion.md)
 - [空腔分支](README_HollowBranches.md)
+- [多房间、多矿区串联](README_HollowChain.md)
+- [钢笔矿道、可编辑空洞与支线房间](README_ManualMine.md)
+- [三维弯曲、扭转隧道与截面钢笔编辑](README_SpatialMine.md)
 - [挖掘设计工具](README_MiningDesigner.md)
 - [玩家飞行](README_PlayerFlight.md)
 

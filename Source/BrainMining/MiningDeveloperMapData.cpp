@@ -1,8 +1,33 @@
 #include "MiningDeveloperMapData.h"
+#include "MiningManualGeometry.h"
 
 bool FMiningMapRegion::Contains(const FVector& Position) const
 {
 	if (!Bounds.IsValid || Position.ContainsNaN() || !Bounds.IsInsideOrOn(Position)) return false;
+	if (!SurfaceTriangles.IsEmpty())
+	{
+		const FVector Direction = FVector(1, 0.3713907, 0.529117).GetSafeNormal();
+		TArray<double> Hits;
+		for (const FIntVector& Triangle : SurfaceTriangles)
+		{
+			if (!Vertices.IsValidIndex(Triangle.X) || !Vertices.IsValidIndex(Triangle.Y) || !Vertices.IsValidIndex(Triangle.Z)) continue;
+			const FVector EdgeFirst = Vertices[Triangle.Y] - Vertices[Triangle.X], EdgeLast = Vertices[Triangle.Z] - Vertices[Triangle.X];
+			const FVector Cross = FVector::CrossProduct(Direction, EdgeLast);
+			const double Determinant = FVector::DotProduct(EdgeFirst, Cross);
+			if (FMath::Abs(Determinant) < 1e-9) continue;
+			const FVector Offset = Position - Vertices[Triangle.X];
+			const double First = FVector::DotProduct(Offset, Cross) / Determinant;
+			if (First < -1e-9 || First > 1 + 1e-9) continue;
+			const FVector Other = FVector::CrossProduct(Offset, EdgeFirst);
+			const double Last = FVector::DotProduct(Direction, Other) / Determinant;
+			if (Last < -1e-9 || First + Last > 1 + 1e-9) continue;
+			const double Distance = FVector::DotProduct(EdgeLast, Other) / Determinant;
+			if (FMath::Abs(Distance) < 0.01) return true;
+			if (Distance > 0 && !Hits.ContainsByPredicate([Distance](double Existing) { return FMath::Abs(Existing - Distance) < 0.0001; })) Hits.Add(Distance);
+		}
+		return Hits.Num() % 2 == 1;
+	}
+	if (!PolygonXZ.IsEmpty()) return MiningManual::Contains(PolygonXZ, FVector2D(Position.X, Position.Z));
 	if (bEllipsoid)
 	{
 		const FVector Radius = Bounds.GetExtent().ComponentMax(FVector(1));
@@ -59,6 +84,7 @@ FVector2D MiningDeveloperMap::Project(const FVector& Point, EMiningMapView View)
 {
 	switch (View)
 	{
+	case EMiningMapView::Orbit3D: return FVector2D(Project3D(Point, FRotator(-30, -45, 0)));
 	case EMiningMapView::TopXY: return FVector2D(Point.X, -Point.Y);
 	case EMiningMapView::SideYZ: return FVector2D(Point.Y, -Point.Z);
 	default: return FVector2D(Point.X, -Point.Z);
@@ -94,6 +120,11 @@ TArray<FVector2D> MiningDeveloperMap::Hull(TArray<FVector2D> Points)
 TArray<FVector2D> MiningDeveloperMap::Outline(const FMiningMapRegion& Region, EMiningMapView View)
 {
 	TArray<FVector2D> Points;
+	if (View == EMiningMapView::SideXZ && !Region.PolygonXZ.IsEmpty())
+	{
+		for (const FVector2D& Point : Region.PolygonXZ) Points.Add(FVector2D(Point.X, -Point.Y));
+		return Points;
+	}
 	if (Region.bEllipsoid)
 	{
 		const FVector2D Center = Project(Region.Bounds.GetCenter(), View);

@@ -1,4 +1,18 @@
 #include "MiningDesignerLibrary.h"
+#include "SMiningManualEditor.h"
+#include "SMiningSpatialEditor.h"
+#include "MiningSpatialSafeEditing.h"
+void UMiningDesignerLibrary::OpenSpatialEditor() { SMiningSpatialEditor::Open(); }
+bool UMiningDesignerLibrary::CheckSpatialEdit(AActor* Actor) { return MiningSpatialSafeEditing::Apply(Actor, true); }
+bool UMiningDesignerLibrary::SmoothSpatialIssue() { return MiningSpatialSafeEditing::SmoothIssue(); }
+FString UMiningDesignerLibrary::SpatialEditingStatus() { return MiningSpatialSafeEditing::Status() + TEXT("\n") + MiningSpatialSafeEditing::Issue().Reason + TEXT("\n") + MiningSpatialSafeEditing::TerrainStatus() + TEXT("\n") + MiningSpatialSafeEditing::SaveStatus(); }
+FString UMiningDesignerLibrary::SpatialDragPerformance()
+{
+	const auto& Stats = MiningSpatialSafeEditing::DragStats();
+	return FString::Printf(TEXT("{\"requests\":%d,\"coalesced\":%d,\"committed\":%d,\"discarded\":%d,\"pending\":%s,\"last_input_ms\":%.3f,\"max_input_ms\":%.3f,\"last_compute_ms\":%.3f,\"last_commit_ms\":%.3f,\"max_commit_ms\":%.3f,\"last_latency_ms\":%.3f}"), Stats.Requests, Stats.Coalesced, Stats.Committed, Stats.Discarded, MiningSpatialSafeEditing::HasPendingInteractive() ? TEXT("true") : TEXT("false"), Stats.LastInputMilliseconds, Stats.MaxInputMilliseconds, Stats.LastComputeMilliseconds, Stats.LastCommitMilliseconds, Stats.MaxCommitMilliseconds, Stats.LastLatencyMilliseconds);
+}
+
+void UMiningDesignerLibrary::OpenManualEditor() { SMiningManualEditor::Open(); }
 #include "MiningDesignerCatalog.h"
 #include "Editor.h"
 #include "GameFramework/Actor.h"

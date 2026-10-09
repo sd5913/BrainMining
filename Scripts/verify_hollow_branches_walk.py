@@ -32,7 +32,7 @@ def finish(passed, reason):
     performance.set_editor_property("bThrottleCPUWhenNotForeground", old_throttle)
     report.update({"passed": passed, "reason": reason, "elapsed": time.monotonic() - state["started"], "target_index": state["target"], "position": str(pawn.get_actor_location()), "mining_status": mining.status, "successful_cuts": sum(segment.successful_cuts for segment in segments), "room": generator.current_room_index, "no_runtime_regeneration": generator.build_revision == state["revision"]})
     report["chunk_stats"] = [{"chunks": len(segment.chunks), "largest": segment.largest_chunk_triangles} for segment in segments]
-    output = Path(unreal.Paths.project_saved_dir()) / "Validation" / "hollow_branches_traversal.json"
+    output = Path(unreal.Paths.project_saved_dir()) / "Validation" / globals().get("output_name", "hollow_branches_traversal.json")
     output.write_text(json.dumps(report, indent=2), encoding="utf-8")
     unreal.log("HOLLOW_BRANCHES_WALK " + json.dumps(report))
 
@@ -42,7 +42,7 @@ def tick(delta):
         assert editor.get_game_world() is not None
         assert generator.build_revision == state["revision"]
         now = time.monotonic()
-        if now - state["started"] > 300 or now - state["progress"] > 30:
+        if now - state["started"] > globals().get("timeout_seconds", 300) or now - state["progress"] > 30:
             finish(False, "Character stopped progressing")
             return
         position = pawn.get_actor_location()
@@ -56,6 +56,9 @@ def tick(delta):
             state["best"] = remaining
             state["progress"] = now
         if distance < 70 and height_error < 85:
+            if room_order is not None and generator.current_room_index != room_order:
+                movement.stop_movement_immediately()
+                return
             if state["target"] in space_checkpoints:
                 assert generator.current_room_index == space_checkpoints[state["target"]]
                 report["space_checkpoints"].append(state["target"])
@@ -64,10 +67,10 @@ def tick(delta):
             state["best"] = 1e9
             state["progress"] = now
             if state["target"] == len(targets):
-                assert generator.current_room_index == 1
+                assert generator.current_room_index == globals().get("final_room", 1)
                 assert all(segment.segment_state == unreal.MiningSegmentState.FROZEN for segment in segments)
                 assert sum(segment.successful_cuts for segment in segments) >= 3
-                finish(True, "Walked both caves and reached B through normal movement and mining")
+                finish(True, "Reached final room and all cave checkpoints through normal movement and mining")
             return
         direction = horizontal / max(distance, 0.01)
         ahead = position + direction * min(distance, mining.reach * 0.6)

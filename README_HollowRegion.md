@@ -4,6 +4,8 @@
 
 可编辑开放/隐藏支路与洞室已在独立地图 `Lvl_MiningHollowBranches_Demo` 扩展，操作见 `README_HollowBranches.md`。本页仍描述原始两房主路演示。
 
+多房间串联现已支持，示例为 `Lvl_MiningHollowChain_Demo`，操作见 `README_HollowChain.md`；无需迁移本页的旧单矿区示例。
+
 ## 从哪里打开
 
 - 新地图：`/Game/MiningPrototype/Maps/Lvl_MiningHollow_Demo`。

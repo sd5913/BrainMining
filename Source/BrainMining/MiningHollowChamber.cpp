@@ -109,7 +109,7 @@ void AMiningHollowChamber::NotifyGenerators()
 		if (Generator->GetLevel() == GetLevel() && Generator->bHollowRegionPrototype)
 		{
 			Generator->RequestRebuild();
-			bHasOwner |= IsValid(Region) && Region->GetLevel() == GetLevel() && Generator->HollowRegion == Region;
+			bHasOwner |= IsValid(Region) && Region->GetLevel() == GetLevel() && Generator->UsesHollowRegion(Region);
 		}
 	ChamberStatus = !bHasOwner ? TEXT("NOT APPLIED: assign the hollow generator's Region in this level") : !bEnabled ? TEXT("Disabled; edits retained") : TEXT("Pending region rebuild; previous successful geometry remains visible");
 }

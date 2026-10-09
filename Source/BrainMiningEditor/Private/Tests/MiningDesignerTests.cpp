@@ -8,11 +8,21 @@
 #include "MiningTunnelRoute.h"
 #include "MiningTunnelShapeSection.h"
 #include "MiningComponent.h"
+#include "MiningSpatialTunnel.h"
+#include "UnrealEdGlobals.h"
+#include "Editor/UnrealEdEngine.h"
 #include "Misc/AutomationTest.h"
 #include "UObject/UnrealType.h"
 #include <limits>
 
 #if WITH_DEV_AUTOMATION_TESTS
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningSpatialRegistrationTest, "BrainMining.Spatial.EditorVisualizerRegistration", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMiningSpatialRegistrationTest::RunTest(const FString& Parameters)
+{
+	TestTrue(TEXT("Spatial path visualizer is registered after editor startup"), GUnrealEd && GUnrealEd->FindComponentVisualizer(UMiningSpatialPathComponent::StaticClass()).IsValid());
+	return true;
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningDesignerCatalogTest, "BrainMining.Designer.CatalogAndOwnership", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FMiningDesignerCatalogTest::RunTest(const FString& Parameters)
@@ -35,6 +45,9 @@ bool FMiningDesignerCatalogTest::RunTest(const FString& Parameters)
 	for (FName Name : {FName("Region"), FName("bManualBranchPath")}) TestFalse(TEXT("Ownership and path state cannot transfer through presets"), MiningDesigner::Transferable(AMiningHollowChamber::StaticClass()->FindPropertyByName(Name)));
 	for (FName Name : {FName("ConnectionOrder"), FName("LayoutId")}) TestFalse(TEXT("Room identity cannot be reset or pasted"), MiningDesigner::Transferable(AMiningLayoutRoom::StaticClass()->FindPropertyByName(Name)));
 	TestFalse(TEXT("Generated geometry is never preset data"), MiningDesigner::Transferable(AMiningTunnelGenerator::StaticClass()->FindPropertyByName("GeneratedFill")));
+	TestFalse(TEXT("Region ownership arrays cannot transfer through presets"), MiningDesigner::Transferable(AMiningTunnelGenerator::StaticClass()->FindPropertyByName("HollowRegions")));
+	for (FName Name : {FName("GeneratedSegments"), FName("GeneratedMapRegions"), FName("GeneratedBedrock"), FName("BuildRevision")})
+		TestTrue(TEXT("Derived geometry state must survive authoring undo"), AMiningTunnelGenerator::StaticClass()->FindPropertyByName(Name)->HasAnyPropertyFlags(CPF_NonTransactional));
 	TestFalse(TEXT("Class defaults cannot be edited through this level tool"), UMiningDesignerLibrary::CanEdit(AMiningTunnelGenerator::StaticClass()->GetDefaultObject()));
 	TestEqual(TEXT("Triangle cap remains fixed"), AMiningTunnelGenerator::StaticClass()->FindPropertyByName("SegmentTriangleBudget")->GetMetaData("ClampMax"), FString("30000"));
 	return true;

@@ -109,12 +109,13 @@ def tick(delta):
             check(signature(layout) == signature(generator), "PIE snapshot matches editor snapshot")
             state.update({"pawn": pawn, "map": minimap, "layout": layout,
                           "triangles": [segment.triangle_count for segment in layout.generated_segments],
-                          "revision": layout.build_revision})
+                          "revision": layout.build_revision, "default_view": minimap.view})
             pawn.character_movement.set_movement_mode(unreal.MovementMode.MOVE_NONE)
             layout.set_actor_tick_enabled(False)
             if not minimap.visible:
                 minimap.toggle_map()
             state["actions"] = [
+                ("Cycle from 3D to X/Z", minimap.cycle_view, lambda item: item.view == unreal.MiningMapView.SIDE_XZ),
                 ("Cycle to top", minimap.cycle_view, lambda item: item.view == unreal.MiningMapView.TOP_XY),
                 ("Expand", minimap.toggle_expanded, lambda item: item.expanded),
                 ("Follow player", minimap.toggle_follow, lambda item: item.follow_player),
@@ -123,7 +124,7 @@ def tick(delta):
                 ("Labels off", minimap.toggle_labels, lambda item: not item.labels),
                 ("Labels on", minimap.toggle_labels, lambda item: item.labels),
                 ("Cycle to Y/Z", minimap.cycle_view, lambda item: item.view == unreal.MiningMapView.SIDE_YZ),
-                ("Cycle to X/Z", minimap.cycle_view, lambda item: item.view == unreal.MiningMapView.SIDE_XZ),
+                ("Cycle back to 3D", minimap.cycle_view, lambda item: item.view == state["default_view"]),
             ]
             for region in layout.generated_map_regions:
                 if region.kind not in (unreal.MiningMapRegionKind.ROOM, unreal.MiningMapRegionKind.SPACE):

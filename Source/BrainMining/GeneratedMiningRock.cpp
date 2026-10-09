@@ -132,6 +132,7 @@ void AGeneratedMiningRock::RecycleGeometry()
 
 void AGeneratedMiningRock::ClearChunks()
 {
+	EditorGrid.Reset();
 	++MeshGeneration;
 	for (FMiningRockChunk& Chunk : Chunks)
 	{
@@ -165,6 +166,12 @@ void AGeneratedMiningRock::CopyEditorPreviewMesh(FDynamicMesh3& Mesh) const
 
 bool AGeneratedMiningRock::SetChunkedMesh(const FDynamicMesh3& Mesh, double Length, bool bSpatial)
 {
+	if (bSpatial && GetWorld() && !GetWorld()->IsGameWorld())
+	{
+		auto Grid = MakeShared<MiningChunks::FSpatialGrid, ESPMode::ThreadSafe>();
+		if (!MiningChunks::SplitSpatialIncremental(Mesh, Length, *Grid)) return false;
+		ApplySpatialGrid(Mesh, Grid); return true;
+	}
 	TArray<FDynamicMesh3> Pieces;
 	TArray<FBox> Bounds;
 	if (!(bSpatial ? MiningChunks::SplitSpatial(Mesh, Length, Pieces, Bounds) : MiningChunks::Split(Mesh, Length, Pieces, Bounds))) return false;
@@ -195,6 +202,62 @@ bool AGeneratedMiningRock::SetChunkedMesh(const FDynamicMesh3& Mesh, double Leng
 	}
 	ResetRock();
 	return true;
+}
+
+void AGeneratedMiningRock::ApplySpatialGrid(const FDynamicMesh3& Mesh, TSharedPtr<const MiningChunks::FSpatialGrid, ESPMode::ThreadSafe> Grid)
+{
+	check(IsInGameThread() && Grid && GetWorld() && !GetWorld()->IsGameWorld());
+	Modify(); ++MeshGeneration;
+	InitialMesh->Modify(); InitialMesh->SetMesh(FDynamicMesh3(Mesh));
+	bHasGeneratedMesh = true; bChunked = true;
+	RockMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (RockMesh->GetDynamicMesh()->GetTriangleCount()) CommitMesh(FDynamicMesh3());
+	GuideMaterial = nullptr;
+	UMaterialInterface* Material = GetMiningMaterial();
+	TArray<FMiningRockChunk> Updated;
+	TSet<UDynamicMeshComponent*> Retained;
+	LastRebuiltEditorChunks = LastReusedEditorChunks = 0;
+	FDynamicMesh3::FSameAsOptions Equality;
+	Equality.bCheckAttributes = true; Equality.EpsilonDouble = 0; Equality.EpsilonFloat = 0;
+	for (int32 CellIndex = 0; CellIndex < Grid->Cells.Num(); ++CellIndex)
+	{
+		const MiningChunks::FSpatialCell& Cell = Grid->Cells[CellIndex];
+		if (!Cell.Mesh || !Cell.Mesh->TriangleCount()) continue;
+		FMiningRockChunk* Existing = Chunks.FindByPredicate([&](const FMiningRockChunk& Chunk)
+		{
+			if (!Chunk.Mesh || !Chunk.InitialMesh || Chunk.Cuts || Retained.Contains(Chunk.Mesh)) return false;
+			if (EditorGrid && Chunk.SpatialCell == CellIndex && EditorGrid->Cells.IsValidIndex(CellIndex) && EditorGrid->Cells[CellIndex].Mesh == Cell.Mesh) return true;
+			if (Chunk.Bounds != Cell.Bounds) return false;
+			bool bEqual = false;
+			Chunk.InitialMesh->ProcessMesh([&](const FDynamicMesh3& Old) { bEqual = Old.IsSameAs(*Cell.Mesh, Equality); });
+			return bEqual;
+		});
+		FMiningRockChunk& Chunk = Updated.AddDefaulted_GetRef();
+		if (Existing) { Chunk = *Existing; Retained.Add(Chunk.Mesh); ++LastReusedEditorChunks; }
+		else
+		{
+			Chunk.InitialMesh = NewObject<UDynamicMesh>(this, NAME_None, RF_Transactional);
+			Chunk.InitialMesh->SetMesh(FDynamicMesh3(*Cell.Mesh));
+			Chunk.Mesh = NewObject<UDynamicMeshComponent>(this, NAME_None, RF_Transactional);
+			AddInstanceComponent(Chunk.Mesh); Chunk.Mesh->SetupAttachment(RootComponent);
+			Chunk.Mesh->SetVisibility(false);
+			Chunk.Mesh->SetCollisionProfileName(TEXT("BlockAll"));
+			Chunk.Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Chunk.Mesh->SetGenerateOverlapEvents(false); Chunk.Mesh->SetCanEverAffectNavigation(false);
+			Chunk.Mesh->SetComplexAsSimpleCollisionEnabled(true, false);
+			Chunk.Mesh->SetDeferredCollisionUpdatesEnabled(true, false); Chunk.Mesh->bUseAsyncCooking = false;
+			Chunk.Mesh->RegisterComponent(); Chunk.Mesh->SetMesh(FDynamicMesh3(*Cell.Mesh));
+			Chunk.Mesh->GetBodySetup()->SetFlags(RF_Transient); Chunk.Mesh->UpdateCollision(false);
+			++LastRebuiltEditorChunks;
+		}
+		Chunk.SpatialCell = CellIndex; Chunk.Bounds = Cell.Bounds; Chunk.Cuts = 0;
+		Chunk.Mesh->SetMaterial(0, Material);
+	}
+	for (FMiningRockChunk& Chunk : Updated) { Chunk.Mesh->SetVisibility(true); Chunk.Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); }
+	for (FMiningRockChunk& Chunk : Chunks) if (Chunk.Mesh && !Retained.Contains(Chunk.Mesh)) Chunk.Mesh->DestroyComponent();
+	Chunks = MoveTemp(Updated); EditorGrid = MoveTemp(Grid);
+	SuccessfulCuts = 0; SimplifiedTriangles = 0; LastTouchedChunks = 0;
+	UpdateChunkStats(); LastStatus = TEXT("Spatial terrain and collision applied");
 }
 
 void AGeneratedMiningRock::UpdateChunkStats()

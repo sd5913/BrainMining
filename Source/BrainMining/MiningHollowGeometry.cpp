@@ -76,6 +76,29 @@ bool MiningHollow::Plan(const FSettings& Settings, FPlan& Result, FString& Error
 	return true;
 }
 
+bool MiningHollow::ValidateChain(const TArray<FPlan>& Plans, const TArray<FBox>& Rooms, double BedrockThickness, FString& Error)
+{
+	if (Plans.IsEmpty() || Rooms.Num() != Plans.Num() + 1 || !FMath::IsFinite(BedrockThickness) || BedrockThickness <= 0)
+	{
+		Error = TEXT("Invalid hollow region chain or bedrock thickness"); return false;
+	}
+	for (int32 Index = 0; Index < Plans.Num(); ++Index)
+	{
+		const FBox Outer = Plans[Index].Bounds.ExpandBy(BedrockThickness);
+		for (int32 Other = 0; Other < Index; ++Other)
+			if (Outer.Intersect(Plans[Other].Bounds.ExpandBy(BedrockThickness)))
+			{
+				Error = FString::Printf(TEXT("Regions %d and %d have overlapping outer bedrock; enlarge their separating room or reduce bedrock thickness"), Other + 1, Index + 1); return false;
+			}
+		for (int32 RoomIndex = 0; RoomIndex < Rooms.Num(); ++RoomIndex)
+			if (RoomIndex != Index && RoomIndex != Index + 1 && Outer.Intersect(Rooms[RoomIndex].ExpandBy(BedrockThickness)))
+			{
+				Error = FString::Printf(TEXT("Region %d intersects unrelated room %d; move the room to prevent a progression bypass"), Index + 1, RoomIndex + 1); return false;
+			}
+	}
+	return true;
+}
+
 TArray<FVector> MiningHollow::Slice(const FPlan& Plan, double Start, double End)
 {
 	TArray<FVector> Points;

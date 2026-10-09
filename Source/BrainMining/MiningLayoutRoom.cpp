@@ -1,5 +1,6 @@
 #include "MiningLayoutRoom.h"
 #include "MiningTunnelGenerator.h"
+#include "MiningSpatialEditBridge.h"
 #include "Components/BoxComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/TextRenderComponent.h"
@@ -126,6 +127,7 @@ void AMiningLayoutRoom::NotifyGenerators(bool bImmediate)
 void AMiningLayoutRoom::PostEditMove(bool bFinished)
 {
 	Super::PostEditMove(bFinished);
+	if (MiningSpatialEditing::Handle(this)) { RefreshGuides(); return; }
 	RefreshGuides();
 	NotifyGenerators(bFinished);
 }
@@ -133,6 +135,7 @@ void AMiningLayoutRoom::PostEditMove(bool bFinished)
 void AMiningLayoutRoom::PostEditChangeProperty(FPropertyChangedEvent& Event)
 {
 	Super::PostEditChangeProperty(Event);
+	if (MiningSpatialEditing::Handle(this)) { RefreshGuides(); return; }
 	RefreshGuides();
 	NotifyGenerators((Event.ChangeType & EPropertyChangeType::Interactive) == 0);
 }
@@ -140,6 +143,7 @@ void AMiningLayoutRoom::PostEditChangeProperty(FPropertyChangedEvent& Event)
 void AMiningLayoutRoom::PostEditUndo()
 {
 	Super::PostEditUndo();
+	if (MiningSpatialEditing::Handle(this)) { RefreshGuides(); return; }
 	RefreshGuides();
 	NotifyGenerators(false);
 }

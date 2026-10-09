@@ -20,6 +20,9 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void BindInput(UEnhancedInputComponent* Input);
+    void PushEncounterBlock();
+    void PopEncounterBlock();
+    bool IsEncounterBlocked() const {return EncounterBlockCount>0;}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining", meta=(ClampMin="50.0", ClampMax="1000.0"))
 	float Reach = 400.0f;
@@ -54,10 +57,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Mining")
 	bool TryMine();
 
+	// Used by modal interfaces to prevent a held dig from resuming after closing.
+	UFUNCTION(BlueprintCallable, Category="Mining")
+	void CancelMining() { StopMining(); }
+
 	UFUNCTION(BlueprintCallable, Category="Mining")
 	void ResetField();
 
 private:
+    int32 EncounterBlockCount=0;
 	UPROPERTY(Transient)
 	TObjectPtr<UInputMappingContext> MiningContext;
 	UPROPERTY(Transient)

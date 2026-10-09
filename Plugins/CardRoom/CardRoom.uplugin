@@ -1,0 +1,10 @@
+{
+  "FileVersion": 3,
+  "Version": 3,
+  "VersionName": "0.3.0",
+  "FriendlyName": "Card Room",
+  "Description": "Independent four-round theatrical card encounter. No mining-system dependencies.",
+  "Category": "Gameplay",
+  "CanContainContent": false,
+  "Modules": [{ "Name": "CardRoom", "Type": "Runtime", "LoadingPhase": "Default" }]
+}

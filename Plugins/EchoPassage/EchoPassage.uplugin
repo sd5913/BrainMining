@@ -1,0 +1,16 @@
+{
+  "FileVersion": 3,
+  "Version": 3,
+  "VersionName": "0.3.0",
+  "FriendlyName": "Echo Passage",
+  "Description": "Independent dark passage: impact echoes reveal a winding route.",
+  "Category": "Gameplay",
+  "CanContainContent": false,
+  "Modules": [
+    {
+      "Name": "EchoPassage",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ]
+}

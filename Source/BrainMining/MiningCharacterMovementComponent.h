@@ -27,6 +27,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Player Flight")
 	void SetFlightInputHeld(bool bHeld);
+    void PushFlightBlock() {++FlightBlockCount;SetFlightInputHeld(false);}
+    void PopFlightBlock() {FlightBlockCount=FMath::Max(0,FlightBlockCount-1);}
+    bool IsFlightAvailable() const {return FlightSettings.bEnabled && FlightBlockCount==0;}
+private:
+    int32 FlightBlockCount=0;
+public:
 
 	virtual FVector NewFallVelocity(const FVector& InitialVelocity, const FVector& Gravity, float DeltaTime) const override;
 	virtual float GetMaxSpeed() const override;

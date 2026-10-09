@@ -1,0 +1,268 @@
+#include "MiningCollection.h"
+#include "SMiningCollectionView.h"
+#include "MiningComponent.h"
+#include "MiningCharacterMovementComponent.h"
+#include "DiggableRock.h"
+#include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Components/PostProcessComponent.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
+#include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
+#include "Engine/LocalPlayer.h"
+#include "Engine/StaticMeshActor.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Engine/World.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/HUD.h"
+#include "Materials/MaterialInstanceDynamic.h"
+
+AMiningCollectionGameMode::AMiningCollectionGameMode() { HUDClass=AHUD::StaticClass(); }
+AMiningCollectionField::AMiningCollectionField()
+{
+    PrimaryActorTick.bCanEverTick=true; PrimaryActorTick.bTickEvenWhenPaused=true;
+    RootComponent=CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+    Capture=CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("CatalogueCamera")); Capture->SetupAttachment(RootComponent);
+    Capture->bCaptureEveryFrame=false; Capture->bCaptureOnMovement=false;
+    Capture->PrimitiveRenderMode=ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
+    Capture->CaptureSource=ESceneCaptureSource::SCS_FinalColorLDR;
+    Capture->FOVAngle=40;
+    HighlightPostProcess=CreateDefaultSubobject<UPostProcessComponent>(TEXT("CollectionSilhouette"));
+    HighlightPostProcess->SetupAttachment(RootComponent); HighlightPostProcess->bUnbound=true; HighlightPostProcess->Priority=100;
+    Capture->ShowFlags.SetAtmosphere(false); Capture->ShowFlags.SetFog(false); Capture->ShowFlags.SetMotionBlur(false);
+    Capture->PostProcessSettings.bOverride_AutoExposureMinBrightness=true; Capture->PostProcessSettings.AutoExposureMinBrightness=1;
+    Capture->PostProcessSettings.bOverride_AutoExposureMaxBrightness=true; Capture->PostProcessSettings.AutoExposureMaxBrightness=1;
+    Capture->PostProcessSettings.bOverride_AutoExposureBias=true; Capture->PostProcessSettings.AutoExposureBias=0;
+}
+bool AMiningCollectionField::InitializePlayer()
+{
+    Player=GetWorld()->GetFirstPlayerController();
+    if(!Player||!Player->GetPawn()) return false;
+    auto* Input=Cast<UEnhancedInputComponent>(Player->GetPawn()->InputComponent);
+    Mining=Player->GetPawn()->FindComponentByClass<UMiningComponent>();
+    if(!Input||!Mining||!Player->GetLocalPlayer()) return false;
+    auto* Subsystem=Player->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+    if(!Subsystem) return false;
+    CollectionContext=NewObject<UInputMappingContext>(this);
+    auto Bind=[&](FKey Key,auto Callback)
+    {
+        auto* Action=NewObject<UInputAction>(this); Action->bConsumeInput=true; Actions.Add(Action);
+        CollectionContext->MapKey(Action,Key); Input->BindAction(Action,ETriggerEvent::Started,this,Callback);
+    };
+    Bind(EKeys::E,&AMiningCollectionField::CollectTarget);
+    Bind(EKeys::Tab,&AMiningCollectionField::ToggleCatalogue);
+    Bind(EKeys::R,&AMiningCollectionField::ResetCollection);
+    Subsystem->AddMappingContext(CollectionContext,50);
+    if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) Move->FlightSettings.bEnabled=true;
+    StartTransform=Player->GetPawn()->GetActorTransform();
+    Mining->Reach=400; Mining->Radius=115; Mining->DownwardOffset=25;
+    // The field owns fall recovery so inventory and excavation reset together.
+    Mining->FallResetDistance=0;
+    Inventory.Init(0,4);
+    if(auto* Edge=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionSilhouette"))) HighlightPostProcess->Settings.AddBlendable(Edge,1);
+    SpawnField();
+    PreviewTexture=NewObject<UTextureRenderTarget2D>(this); PreviewTexture->ClearColor=FLinearColor(.026f,.04f,.046f,1);
+    PreviewTexture->InitAutoFormat(1536,1024); Capture->TextureTarget=PreviewTexture;
+    Preview=GetWorld()->SpawnActor<AMiningCollectible>(FVector(0,0,-10000),FRotator::ZeroRotator);
+    Preview->BuildModel(0); Preview->SetActorHiddenInGame(true); Capture->ShowOnlyActors.Add(Preview);
+    for(int i=0;i<2;++i)
+    {
+        auto* Light=NewObject<UPointLightComponent>(this); AddInstanceComponent(Light); Light->RegisterComponent();
+        Light->SetWorldLocation(FVector(-160,i==0?-160:160,-9850)); Light->SetIntensity(i==0?1300:850);
+        Light->SetAttenuationRadius(700); Light->SetLightColor(i==0?FLinearColor(1,.84f,.65f):FLinearColor(.45f,.78f,1));
+    }
+    if(GEngine&&GEngine->GameViewport)
+    {
+        SAssignNew(View,SMiningCollectionView).Owner(this); View->SetVisibility(EVisibility::HitTestInvisible);
+        GEngine->GameViewport->AddViewportWidgetContent(View.ToSharedRef(),30);
+    }
+    Toast=TEXT("先试试左侧已露出的试管架：瞄准它，按 E 收集"); ToastRemaining=10;
+    return true;
+}
+
+void AMiningCollectionField::SpawnField()
+{
+    if(bDeepField) { SpawnDeepField(); return; }
+    ActiveSeed=RandomSeed>0?RandomSeed:FMath::RandRange(1,MAX_int32-1);
+    FRandomStream Random(ActiveSeed);
+    int Ids[4]={0,1,2,3};
+    for(int i=3;i>0;--i) Swap(Ids[i],Ids[Random.RandRange(0,i)]);
+    auto* Tint=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
+    auto Prop=[&](FVector P,FVector Size,FLinearColor Color,bool Sphere=false)
+    {
+        auto* A=GetWorld()->SpawnActor<AStaticMeshActor>(P,FRotator::ZeroRotator); Spawned.Add(A);
+        auto* C=A->GetStaticMeshComponent(); C->SetMobility(EComponentMobility::Movable);
+        C->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,Sphere?TEXT("/Engine/BasicShapes/Sphere"):TEXT("/Engine/BasicShapes/Cube")));
+        C->SetCollisionEnabled(ECollisionEnabled::NoCollision); A->SetActorScale3D(Size/100);
+        if(Tint) { auto* M=UMaterialInstanceDynamic::Create(Tint,this); M->SetVectorParameterValue(TEXT("Tint"),Color); C->SetMaterial(0,M); }
+        return A;
+    };
+    for(int Bay=0;Bay<4;++Bay)
+    {
+        const int Id=Ids[Bay]; const float Y=-780+Bay*520;
+        const float Z=Id==3?550:210;
+        FTransform RockTransform(FRotator::ZeroRotator,FVector(680,Y,Z));
+        auto* Rock=GetWorld()->SpawnActorDeferred<ADiggableRock>(ADiggableRock::StaticClass(),RockTransform);
+        Rock->RockSize=FVector(440,420,420);
+        Rock->RockMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionEarth"));
+        Rock->FinishSpawning(RockTransform); Spawned.Add(Rock);
+        const FVector Position(570+Random.FRandRange(-25,25),Y+Random.FRandRange(-65,65),Z-55+Random.FRandRange(-20,20));
+        auto* Item=GetWorld()->SpawnActor<AMiningCollectible>(Position,FRotator::ZeroRotator);
+        Item->BuildModel(Id); Item->HostRock=Rock; Item->BuriedTransform=Item->GetActorTransform(); Items.Add(Item); Spawned.Add(Item);
+        // Each clue is linked to the shuffled item and protrudes from the front face.
+        if(Id==0)
+        {
+            Prop(FVector(442,Position.Y,Z+45),FVector(80,17,17),FLinearColor(.35f,.49f,.49f));
+            Prop(FVector(408,Position.Y,Z+21),FVector(17,17,60),FLinearColor(.35f,.49f,.49f));
+            for(int i=0;i<4;++i) Prop(FVector(408,Position.Y,Z-22-i*20),FVector(7,7,12),FLinearColor(.08f,.65f,.85f),true);
+        }
+        else if(Id==1)
+        {
+            Prop(FVector(457,Position.Y,Z-35),FVector(7,56,42),FLinearColor(.022f,.017f,.013f),true);
+            for(int i=0;i<7;++i)
+            {
+                const float X=360+i*14,Ay=Position.Y+FMath::Sin(i*1.3f)*12;
+                for(int j=0;j<3;++j) Prop(FVector(X+j*4,Ay,8),FVector(5,4,4),FLinearColor(.06f,.025f,.012f),true);
+            }
+        }
+        else if(Id==2)
+        {
+            const FLinearColor Colors[]={FLinearColor(.62f,.09f,.7f),FLinearColor(.04f,.66f,.45f),FLinearColor(.9f,.58f,.04f)};
+            for(int i=0;i<12;++i) Prop(FVector(456,Position.Y+Random.FRandRange(-65,65),Z+Random.FRandRange(-95,65)),FVector(7,Random.FRandRange(10,30),Random.FRandRange(10,35)),Colors[i%3],true);
+        }
+        else
+        {
+            Prop(FVector(427,Position.Y,Z+35),FVector(75,105,18),FLinearColor(.25f,.12f,.045f));
+            for(int i=0;i<7;++i) { auto* Twig=Prop(FVector(423,Position.Y-45+i*15,Z+49),FVector(65,6,7),FLinearColor(.43f,.26f,.08f)); Twig->SetActorRotation(FRotator(0,(i%2?1:-1)*25,0)); }
+        }
+    }
+    auto* Tutorial=GetWorld()->SpawnActor<AMiningCollectible>(FVector(-300,-330,85),FRotator(0,-15,0));
+    Tutorial->BuildModel(2); Tutorial->bReleased=true; Tutorial->Exposure=1;
+    Tutorial->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    Items.Add(Tutorial); Spawned.Add(Tutorial);
+}
+
+void AMiningCollectionField::Tick(float Dt)
+{
+    Super::Tick(Dt);
+    if(!bInitialized) { bInitialized=InitializePlayer(); return; }
+    ToastRemaining=FMath::Max(0.f,ToastRemaining-Dt);
+    if(!Player||!Player->GetPawn()) return;
+    if(bCatalogueOpen)
+    {
+        if(PreviewRefreshFrames>0) { Capture->CaptureScene(); --PreviewRefreshFrames; }
+        return;
+    }
+    if(bDeepField) TickAmbient(Dt);
+    if(Player->GetPawn()->GetActorLocation().Z<StartTransform.GetLocation().Z-2000) { ResetCollection(); return; }
+    RefreshTarget();
+    PollTime+=Dt; if(PollTime<.12f) return; PollTime=0;
+    for(AMiningCollectible* Item:Items)
+    {
+        if(!IsValid(Item)||Item->bCollected||Item->bReleased||!Item->HostRock) continue;
+        if(Item->LastObservedCuts==Item->HostRock->SuccessfulCuts) continue;
+        Item->LastObservedCuts=Item->HostRock->SuccessfulCuts;
+        Item->Exposure=Item->MeasureExposure();
+        if(Item->CanRelease(ExposureThreshold))
+        {
+            Item->Release();
+            if(Item->bReleased) { Toast=AMiningCollectible::ItemName(Item->ItemId)+TEXT(" 已松动掉落，瞄准后按 E 收集"); ToastRemaining=5; }
+        }
+    }
+}
+void AMiningCollectionField::RefreshTarget()
+{
+    AMiningCollectible* NewTarget=nullptr;
+    FVector P; FRotator R; Player->GetPlayerViewPoint(P,R);
+    FHitResult Hit; FCollisionQueryParams Q(SCENE_QUERY_STAT(CollectionAim),true,Player->GetPawn());
+    if(GetWorld()->LineTraceSingleByChannel(Hit,P,P+R.Vector()*400,ECC_Visibility,Q))
+    {
+        auto* Item=Cast<AMiningCollectible>(Hit.GetActor());
+        if(Item&&Item->bReleased&&!Item->bCollected) NewTarget=Item;
+    }
+    if(Target!=NewTarget)
+    {
+        if(IsValid(Target)) Target->SetHighlighted(false);
+        Target=NewTarget;
+        if(IsValid(Target)) Target->SetHighlighted(true);
+    }
+}
+void AMiningCollectionField::CollectTarget()
+{
+    if(bCatalogueOpen||!Player) return;
+    RefreshTarget();
+    if(!IsValid(Target)||!Inventory.IsValidIndex(Target->ItemId)) return;
+    AMiningCollectible* Item=Target; Item->SetHighlighted(false); Item->bCollected=true;
+    Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);
+    ++Inventory[Item->ItemId]; SelectedId=Item->ItemId; Target=nullptr;
+    Toast=FString::Printf(TEXT("已收集 · %s     [ Tab ] 打开图鉴"),*AMiningCollectible::ItemName(Item->ItemId)); ToastRemaining=5;
+}
+int32 AMiningCollectionField::UniqueCount() const { int32 N=0; for(int32 Count:Inventory) N+=Count>0; return N; }
+void AMiningCollectionField::ToggleCatalogue() { if(bInitialized) SetCatalogueOpen(!bCatalogueOpen); }
+void AMiningCollectionField::SetCatalogueOpen(bool Open)
+{
+    if(Open==bCatalogueOpen||!Player||!Player->GetPawn()) return;
+    bCatalogueOpen=Open;
+    Mining->CancelMining(); Mining->SetComponentTickEnabled(!Open);
+    if(Open)
+    {
+        if(IsValid(Target)) Target->SetHighlighted(false); Target=nullptr;
+        Player->SetIgnoreLookInput(true); Player->SetIgnoreMoveInput(true);
+        if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->SetFlightInputHeld(false); Move->StopMovementImmediately(); }
+        Player->GetPawn()->DisableInput(Player);
+        Player->SetPause(true);
+        if(View) { View->SetVisibility(EVisibility::Visible); FInputModeUIOnly Mode; Mode.SetWidgetToFocus(View); Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); Player->SetInputMode(Mode); }
+        Player->bShowMouseCursor=true;
+        if(!Inventory.IsValidIndex(SelectedId)||Inventory[SelectedId]==0) { SelectedId=INDEX_NONE; for(int i=0;i<4;++i) if(Inventory[i]>0) { SelectedId=i; break; } }
+        SelectItem(SelectedId);
+    }
+    else
+    {
+        Player->SetPause(false); Player->ResetIgnoreLookInput(); Player->ResetIgnoreMoveInput();
+        Player->GetPawn()->EnableInput(Player); Player->bShowMouseCursor=false; Player->SetInputMode(FInputModeGameOnly());
+        if(View) View->SetVisibility(EVisibility::HitTestInvisible);
+        if(Preview) Preview->SetActorHiddenInGame(true);
+    }
+}
+void AMiningCollectionField::SelectItem(int32 Id)
+{
+    SelectedId=Id;
+    if(!Preview) return;
+    const bool Owned=Inventory.IsValidIndex(Id)&&Inventory[Id]>0;
+    Preview->SetActorHiddenInGame(!Owned);
+    if(Owned) Preview->BuildModel(Id);
+    ResetPreview();
+}
+void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=330; RotatePreview(0,0); }
+void AMiningCollectionField::RotatePreview(float Yaw,float Pitch)
+{
+    if(!Preview) return;
+    PreviewYaw=FRotator::NormalizeAxis(PreviewYaw+Yaw); PreviewPitch=FMath::Clamp(PreviewPitch+Pitch,-80.f,80.f);
+    Preview->SetActorRotation(FRotator(PreviewPitch,PreviewYaw,0));
+    Capture->SetWorldLocation(FVector(-PreviewDistance,0,-9990)); Capture->SetWorldRotation(FRotator(0,0,0));
+    Capture->CaptureScene();
+    PreviewRefreshFrames=3;
+}
+void AMiningCollectionField::ZoomPreview(float Steps) { PreviewDistance=FMath::Clamp(PreviewDistance-Steps*22,270.f,550.f); RotatePreview(0,0); }
+void AMiningCollectionField::ResetCollection()
+{
+    if(!bInitialized||bCatalogueOpen) return;
+    Mining->ResetField();
+    Target=nullptr;
+    for(AActor* A:Spawned) if(IsValid(A)) A->Destroy();
+    Spawned.Reset(); Items.Reset(); Inventory.Init(0,4); SelectedId=INDEX_NONE;
+    SpawnField();
+    Toast=TEXT("已开始新一轮，收集进度清空；寻找墙面的四种线索"); ToastRemaining=6;
+}
+void AMiningCollectionField::EndPlay(const EEndPlayReason::Type Reason)
+{
+    if(bCatalogueOpen) SetCatalogueOpen(false);
+    if(Player&&Player->GetLocalPlayer()) if(auto* S=Player->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>()) S->RemoveMappingContext(CollectionContext);
+    if(View&&GEngine&&GEngine->GameViewport) GEngine->GameViewport->RemoveViewportWidgetContent(View.ToSharedRef());
+    View.Reset(); Super::EndPlay(Reason);
+}

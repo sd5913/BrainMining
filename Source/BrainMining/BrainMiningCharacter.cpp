@@ -251,7 +251,8 @@ void ABrainMiningCharacter::DoMove(float Right, float Forward)
 
 void ABrainMiningCharacter::DoJumpStart()
 {
-	if (UMiningCharacterMovementComponent* Movement = Cast<UMiningCharacterMovementComponent>(GetCharacterMovement()); Movement && Movement->FlightSettings.bEnabled)
+    if(IsMoveInputIgnored())return;
+	if (UMiningCharacterMovementComponent* Movement = Cast<UMiningCharacterMovementComponent>(GetCharacterMovement()); Movement && Movement->IsFlightAvailable())
 	{
 		StopJumping();
 		Movement->SetFlightInputHeld(true);

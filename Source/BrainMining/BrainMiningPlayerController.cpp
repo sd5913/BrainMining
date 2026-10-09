@@ -74,3 +74,12 @@ bool ABrainMiningPlayerController::ShouldUseTouchControls() const
 	// are we on a mobile platform? Should we force touch?
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
 }
+
+void ABrainMiningPlayerController::UseInputDefaultsFrom(const ABrainMiningPlayerController* Defaults)
+{
+    if(!Defaults)return;
+    DefaultMappingContexts=Defaults->DefaultMappingContexts;
+    MobileExcludedMappingContexts=Defaults->MobileExcludedMappingContexts;
+    MobileControlsWidgetClass=Defaults->MobileControlsWidgetClass;
+    PlayerCameraManagerClass=Defaults->PlayerCameraManagerClass;
+}

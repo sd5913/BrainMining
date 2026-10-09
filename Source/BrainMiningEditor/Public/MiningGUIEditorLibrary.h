@@ -18,6 +18,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
 	static void SendPreviewKey(APlayerController* Controller, FName Key, bool bPressed);
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
+	static bool SendPreviewFocusedKey(APlayerController* Controller, FName Key, bool bPressed);
+	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
+	static void SendPreviewMouseAxis(APlayerController* Controller, float DeltaX, float DeltaY);
+	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
 	static bool SimulatePreviewButton(UButton* Button, bool bPressed);
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
 	static void StartFloatingPreview();

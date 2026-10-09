@@ -1,6 +1,8 @@
 # 挖掘 GUI（UMG 可编辑版）
 
-运行关卡后由本地 `BrainMiningPlayerController` 创建 `/Game/UI/MiningGUI/WBP_MiningHUD`，不依赖关卡蓝图。原来的准星、挖掘和镐子效果继续保留。为了直接点击 UI，鼠标默认显示；按住鼠标右键转动视角，左键仍用于挖掘。控制器的 `bEnableGUICursor` 可关闭此鼠标设置，方便以后接入其他输入方案。
+运行关卡后由本地 `BrainMiningPlayerController` 创建 `/Game/UI/MiningGUI/WBP_MiningHUD`，不依赖关卡蓝图。平时鼠标隐藏，直接移动鼠标转动视角，左键用于挖掘。按住 **Tab** 展开升级面板、显示鼠标并锁住视角；松开 Tab 后面板自动回弹收起、鼠标隐藏，立即恢复视角操作，不需要额外点击画面。
+
+升级期间取消原来持续按住的挖掘输入，点击 UI 或弹窗空白处不会同时挖掘，右键也不会抢走鼠标。松开 Tab 后需要新的一次左键按下才能继续挖掘。切出应用会关闭升级面板，避免视角锁住。已有挥镐动画、碎屑和移动设置继续保留。
 
 ## 在 UE 编辑
 
@@ -18,13 +20,13 @@
 ## 演示交互
 
 - G/V 将对应技能标为已使用，显示原图的红色斜杠；重复按键保持使用态。未解锁技能通过 `SetAbilityAvailable` 隐藏。
-- 点击金币栏加号展开/收起三张卡片。默认第三张显示独立锁定图层。
-- 每张卡片整个金币按钮可点，每点一次增加一段绿色，最多三段。锁定图层在演示阶段不阻止按钮，用于独立展示状态；后续程序决定是否允许升级及何时解锁。
+- 按住 Tab 显示三张卡片，松开自动收回。金币栏的加号图案保留为装饰，不再切换弹窗。默认第三张显示独立锁定图层。
+- 已解锁卡片的整个金币按钮可点，每点一次增加一段绿色，最多三段。上锁卡片的金币按钮禁用，不触发升级请求、不显示绿色环；程序调用 `SetItemUnlocked` 解锁后才能升级。面板关闭时全部升级按钮立即禁用，避免关闭动画期间或残留鼠标释放误触。
 - 这里只管理显示状态，不检查金币、不扣金币、不改角色能力、不存档。金币栏和三个价格区域均留空，游戏 GUI 不显示任何占位数字。
 
 ## 程序对接
 
-控制器的 `MiningGUI` 提供运行中的 HUD 引用。HUD 蓝图有可绑定事件：
+控制器的 `MiningGUI` 提供运行中的 HUD 引用，`bUpgradeMenuHeld` 表示当前 Tab 状态。通过控制器的 `SetUpgradeMenuHeld` 统一切换弹窗和输入状态；HUD 会接住取得焦点后的 Tab 松开事件，点击升级按钮不会吞掉松开操作。HUD 蓝图有可绑定事件：
 
 - `OnAbilityRequested(Ability)`：G/V 输入请求。
 - `OnUpgradeRequested(ItemIndex, RequestedLevel)`：0 镐子、1 旋风、2 爆破的升级请求。
@@ -36,7 +38,7 @@
 
 ## Q 弹动画
 
-使用带阻尼的弹簧运动：展开先冲过目标再回弹，关闭缩回加号方向，按下按钮压缩、释放反弹，升级和技能使用时图标轻弹。不是线性淡入淡出。蓝图 **Class Defaults（类默认值） → GUI / Motion** 可调整刚度 `SpringStiffness` 和阻尼 `SpringDamping`（HUD 为 `PanelSpring*`）。阻尼较小更弹，刚度较大更快。移动只作用于渲染变换，保留设计器的布局位置。
+使用带阻尼的弹簧运动：按住 Tab 展开先冲过目标再回弹，松开时缩回加号方向，按下升级按钮压缩、释放反弹，升级和技能使用时图标轻弹。不是线性淡入淡出。蓝图 **Class Defaults（类默认值） → GUI / Motion** 可调整刚度 `SpringStiffness` 和阻尼 `SpringDamping`（HUD 为 `PanelSpring*`）。阻尼较小更弹，刚度较大更快。移动只作用于渲染变换，保留设计器的布局位置。
 
 原开发调试信息可在 `MiningHUD.bShowDeveloperOverlay` 重新打开，默认隐藏以避免覆盖 GUI；原准星保留。
 
@@ -44,4 +46,4 @@
 
 先用带 Pillow 的 Python 运行 `Scripts/prepare_mining_gui_art.py <GUI.zip路径>`，再在 UE Python 执行 `Scripts/import_mining_gui.py`。导入脚本保留已有资产的人工编辑，不自动覆盖。
 
-运行验证脚本 `Scripts/verify_mining_gui.py` 会在 PIE 中检查 UI、输入、按钮、环段、程序接口、动画和原挖掘，并输出 `Saved/Validation/MiningGUI` 的 JSON 与实际游戏截图，不保存测试状态到资产。
+运行验证脚本 `Scripts/verify_mining_gui.py` 会在 PIE 中检查真实游戏鼠标轴输入、Tab 按住/松开和 Slate 焦点、镜头锁定及恢复、按下按钮时释放 Tab、锁定和解锁升级、环段、动画与原挖掘，并输出 `Saved/Validation/MiningGUI` 的 JSON 与实际游戏截图，不保存测试状态到资产。

@@ -133,6 +133,7 @@ bool UMiningComponent::TryMine()
 
 void UMiningComponent::StartMining()
 {
+	if (bInputSuspended) return;
 	bMiningHeld = true;
 	TryMine();
 }
@@ -145,6 +146,12 @@ FVector UMiningComponent::GetCutCenter() const
 void UMiningComponent::StopMining()
 {
 	bMiningHeld = false;
+}
+
+void UMiningComponent::SetInputSuspended(bool bSuspended)
+{
+	bInputSuspended = bSuspended;
+	if (bSuspended) StopMining();
 }
 
 void UMiningComponent::TogglePreview()

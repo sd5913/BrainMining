@@ -4,6 +4,7 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
+#include "BrainMiningPlayerController.h"
 
 namespace
 {
@@ -62,9 +63,10 @@ void UMiningGUIUpgradeWidget::RefreshVisuals()
 	Visible(ItemIcon, bUnlocked);
 	Visible(LockedRing, !bUnlocked);
 	Visible(LockIcon, !bUnlocked);
-	Visible(GreenSegment1, UpgradeLevel >= 1);
-	Visible(GreenSegment2, UpgradeLevel >= 2);
-	Visible(GreenSegment3, UpgradeLevel >= 3);
+	Visible(GreenSegment1, bUnlocked && UpgradeLevel >= 1);
+	Visible(GreenSegment2, bUnlocked && UpgradeLevel >= 2);
+	Visible(GreenSegment3, bUnlocked && UpgradeLevel >= 3);
+	if (CoinButton) CoinButton->SetIsEnabled(bUnlocked && bInteractionAllowed);
 }
 void UMiningGUIUpgradeWidget::SetUpgradeLevel(int32 NewLevel, bool bAnimate)
 {
@@ -74,19 +76,30 @@ void UMiningGUIUpgradeWidget::SetUpgradeLevel(int32 NewLevel, bool bAnimate)
 	if (bAnimate && Previous != UpgradeLevel) { RingSpring.Value = 0.91f; RingSpring.Velocity = 3.2f; }
 	if (Previous != UpgradeLevel) OnLevelChanged.Broadcast(ItemIndex, UpgradeLevel);
 }
-void UMiningGUIUpgradeWidget::SetUnlocked(bool bNewUnlocked) { bUnlocked = bNewUnlocked; RefreshVisuals(); }
+void UMiningGUIUpgradeWidget::SetUnlocked(bool bNewUnlocked)
+{
+	bUnlocked = bNewUnlocked;
+	if (!bUnlocked) ClickSpring = FMiningGUISpring();
+	RefreshVisuals();
+}
 void UMiningGUIUpgradeWidget::SetPriceDisplay(FText NewText) { if (PriceText) PriceText->SetText(NewText); }
 void UMiningGUIUpgradeWidget::RequestUpgrade()
 {
+	if (!bUnlocked || !bInteractionAllowed) return;
 	ClickSpring.Target = 1.f;
 	ClickSpring.Velocity = 2.8f;
 	const int32 RequestedLevel = FMath::Min(UpgradeLevel + 1, 3);
 	OnUpgradeRequested.Broadcast(ItemIndex, RequestedLevel);
-	// The lock is only a visual layer in this preview. Gameplay owns unlocking later.
 	if (bPreviewUpgrades) SetUpgradeLevel(RequestedLevel, true);
 }
-void UMiningGUIUpgradeWidget::PressCoin() { ClickSpring.Target = 0.86f; ClickSpring.Velocity = -2.f; }
-void UMiningGUIUpgradeWidget::ReleaseCoin() { ClickSpring.Target = 1.f; ClickSpring.Velocity = 2.8f; }
+void UMiningGUIUpgradeWidget::SetInteractionAllowed(bool bAllowed)
+{
+	bInteractionAllowed = bAllowed;
+	if (!bAllowed) ClickSpring = FMiningGUISpring();
+	RefreshVisuals();
+}
+void UMiningGUIUpgradeWidget::PressCoin() { if (bUnlocked && bInteractionAllowed) { ClickSpring.Target = 0.86f; ClickSpring.Velocity = -2.f; } }
+void UMiningGUIUpgradeWidget::ReleaseCoin() { if (bUnlocked && bInteractionAllowed) { ClickSpring.Target = 1.f; ClickSpring.Velocity = 2.8f; } }
 void UMiningGUIUpgradeWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 {
 	Super::NativeTick(Geometry, DeltaTime);
@@ -99,14 +112,15 @@ void UMiningGUIUpgradeWidget::NativeTick(const FGeometry& Geometry, float DeltaT
 void UMiningGUIHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	PlusButton->OnClicked.AddUniqueDynamic(this, &ThisClass::ToggleUpgradePanel);
-	PlusButton->OnPressed.AddUniqueDynamic(this, &ThisClass::PressPlus);
-	PlusButton->OnReleased.AddUniqueDynamic(this, &ThisClass::ReleasePlus);
+	SetIsFocusable(true);
+	// The supplied plus artwork remains; Tab owns the popup instead of mouse toggling.
+	PlusButton->SetVisibility(ESlateVisibility::HitTestInvisible);
 	for (int32 Index = 0; Index < 3; ++Index)
 	{
 		if (auto* Card = Item(Index))
 		{
 			Card->ItemIndex = Index;
+			Card->SetInteractionAllowed(false);
 			Card->OnUpgradeRequested.AddUniqueDynamic(this, &ThisClass::ForwardUpgrade);
 			Card->OnLevelChanged.AddUniqueDynamic(this, &ThisClass::ForwardLevel);
 		}
@@ -114,6 +128,26 @@ void UMiningGUIHUDWidget::NativeConstruct()
 	PanelSpring.Value = PanelSpring.Target = 0.f;
 	bUpgradePanelOpen = false;
 	UpgradePanel->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+FReply UMiningGUIHUDWidget::NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event)
+{
+	if (Event.GetKey() == EKeys::Tab)
+	{
+		if (auto* Controller = GetOwningPlayer<ABrainMiningPlayerController>()) Controller->SetUpgradeMenuHeld(true);
+		return FReply::Handled();
+	}
+	return Super::NativeOnPreviewKeyDown(Geometry, Event);
+}
+
+FReply UMiningGUIHUDWidget::NativeOnKeyUp(const FGeometry& Geometry, const FKeyEvent& Event)
+{
+	if (Event.GetKey() == EKeys::Tab)
+	{
+		if (auto* Controller = GetOwningPlayer<ABrainMiningPlayerController>()) Controller->SetUpgradeMenuHeld(false);
+		return FReply::Handled();
+	}
+	return Super::NativeOnKeyUp(Geometry, Event);
 }
 UMiningGUIUpgradeWidget* UMiningGUIHUDWidget::Item(int32 Index) const
 {
@@ -128,6 +162,8 @@ void UMiningGUIHUDWidget::SetUpgradePanelOpen(bool bOpen)
 {
 	if (bUpgradePanelOpen == bOpen) return;
 	bUpgradePanelOpen = bOpen;
+	for (int32 Index = 0; Index < 3; ++Index)
+		if (auto* Card = Item(Index)) Card->SetInteractionAllowed(bOpen);
 	PanelSpring.Target = bOpen ? 1.f : 0.f;
 	UpgradePanel->SetVisibility(bOpen ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::HitTestInvisible);
 	OnPanelChanged.Broadcast(bOpen);

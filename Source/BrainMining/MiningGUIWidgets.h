@@ -59,6 +59,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category="GUI|Item") void SetPriceDisplay(FText NewText);
 	/** Same handler as the coin button: no money checks, no deductions, no gameplay. */
 	UFUNCTION(BlueprintCallable, Category="GUI|Prototype") void RequestUpgrade();
+	void SetInteractionAllowed(bool bAllowed);
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UButton> CoinButton;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UTextBlock> PriceText;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UCanvasPanel> PriceContent;
@@ -79,6 +80,7 @@ protected:
 	void RefreshVisuals();
 	FMiningGUISpring ClickSpring;
 	FMiningGUISpring RingSpring;
+	bool bInteractionAllowed = true;
 };
 
 /** Mounted once by the local player controller. All visual state is public to Blueprint. */
@@ -115,6 +117,8 @@ public:
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIAbilityWidget> AbilityV;
 protected:
 	virtual void NativeConstruct() override;
+	virtual FReply NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event) override;
+	virtual FReply NativeOnKeyUp(const FGeometry& Geometry, const FKeyEvent& Event) override;
 	virtual void NativeTick(const FGeometry& Geometry, float DeltaTime) override;
 	UFUNCTION() void PressPlus();
 	UFUNCTION() void ReleasePlus();

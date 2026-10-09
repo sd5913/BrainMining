@@ -30,6 +30,8 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void BindInput(UEnhancedInputComponent* Input);
+	/** Suspend held mouse mining while the upgrade UI owns the pointer. */
+	void SetInputSuspended(bool bSuspended);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining", meta=(ClampMin="50.0", ClampMax="1000.0"))
 	float Reach = 400.0f;
@@ -81,6 +83,7 @@ private:
 	FHitResult TargetHit;
 	double NextMineTime = 0.0;
 	bool bMiningHeld = false;
+	bool bInputSuspended = false;
 	bool bHasInitialTransform = false;
 	void RefreshTarget();
 	FVector GetCutCenter() const;

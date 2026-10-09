@@ -218,9 +218,23 @@ void UMiningGUIEditorLibrary::SendPreviewKey(APlayerController* Controller, FNam
 		Controller->InputKey(FInputKeyEventArgs::CreateSimulated(FKey(Key), bPressed ? IE_Pressed : IE_Released, bPressed ? 1.f : 0.f));
 }
 
+bool UMiningGUIEditorLibrary::SendPreviewFocusedKey(APlayerController* Controller, FName Key, bool bPressed)
+{
+	if (!Controller || Controller->GetWorld()->WorldType != EWorldType::PIE || !FSlateApplication::IsInitialized()) return false;
+	const FKeyEvent Event(FKey(Key), FModifierKeysState(), 0, false, 0, 0);
+	return bPressed ? FSlateApplication::Get().ProcessKeyDownEvent(Event) : FSlateApplication::Get().ProcessKeyUpEvent(Event);
+}
+
+void UMiningGUIEditorLibrary::SendPreviewMouseAxis(APlayerController* Controller, float DeltaX, float DeltaY)
+{
+	if (!Controller || Controller->GetWorld()->WorldType != EWorldType::PIE) return;
+	Controller->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::MouseX, IE_Axis, DeltaX, 1));
+	Controller->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::MouseY, IE_Axis, DeltaY, 1));
+}
+
 bool UMiningGUIEditorLibrary::SimulatePreviewButton(UButton* Button, bool bPressed)
 {
-	if (!Button || !FSlateApplication::IsInitialized() || !Button->GetCachedWidget().IsValid()) return false;
+	if (!Button || !Button->GetIsEnabled() || !FSlateApplication::IsInitialized() || !Button->GetCachedWidget().IsValid()) return false;
 	if (!Button->GetWorld() || Button->GetWorld()->WorldType != EWorldType::PIE) return false;
 	auto& Slate = FSlateApplication::Get();
 	const auto& Geometry = Button->GetCachedGeometry();

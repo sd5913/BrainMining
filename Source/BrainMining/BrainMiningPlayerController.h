@@ -29,9 +29,12 @@ public:
 	TSoftClassPtr<UMiningGUIHUDWidget> MiningGUIClass;
 	UPROPERTY(BlueprintReadOnly, Category="Mining GUI")
 	TObjectPtr<UMiningGUIHUDWidget> MiningGUI;
-	/** A visible cursor allows direct interaction; hold RMB to look around. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining GUI")
-	bool bEnableGUICursor = true;
+	UPROPERTY(BlueprintReadOnly, Category="Mining GUI")
+	bool bUpgradeMenuHeld = false;
+	/** Tab and the focused HUD share this entry point, so mouse clicks cannot swallow release. */
+	UFUNCTION(BlueprintCallable, Category="Mining GUI")
+	void SetUpgradeMenuHeld(bool bHeld);
+	virtual bool InputKey(const FInputKeyEventArgs& Params) override;
 
 protected:
 
@@ -63,6 +66,9 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 	void UseAbilityG();
 	void UseAbilityV();
+	void OnApplicationActivationChanged(bool bActive);
+	bool bOwnsDesktopGUIInput = false;
+	FDelegateHandle ApplicationActivationHandle;
 	EMouseCaptureMode PreviousMouseCaptureMode = EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown;
 	EMouseLockMode PreviousMouseLockMode = EMouseLockMode::LockOnCapture;
 

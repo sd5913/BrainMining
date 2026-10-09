@@ -12,6 +12,9 @@
 #include "MiningGUIWidgets.h"
 #include "Engine/GameViewportClient.h"
 #include "Components/InputComponent.h"
+#include "MiningComponent.h"
+#include "Framework/Application/SlateApplication.h"
+#include "GameFramework/Pawn.h"
 
 ABrainMiningPlayerController::ABrainMiningPlayerController()
 {
@@ -31,19 +34,20 @@ void ABrainMiningPlayerController::BeginPlay()
 			if (MiningGUI)
 			{
 				MiningGUI->AddToPlayerScreen(10);
-				if (bEnableGUICursor && !ShouldUseTouchControls())
+				if (!ShouldUseTouchControls())
 				{
-					FInputModeGameAndUI Mode;
-					Mode.SetHideCursorDuringCapture(true).SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 					if (auto* Viewport = GetWorld()->GetGameViewport())
 					{
 						PreviousMouseCaptureMode = Viewport->GetMouseCaptureMode();
 						PreviousMouseLockMode = Viewport->GetMouseLockMode();
 					}
+					bOwnsDesktopGUIInput = true;
+					FInputModeGameOnly Mode;
+					Mode.SetConsumeCaptureMouseDown(false);
 					SetInputMode(Mode);
-					bShowMouseCursor = true;
-					if (auto* Viewport = GetWorld()->GetGameViewport())
-						Viewport->SetMouseCaptureMode(EMouseCaptureMode::CaptureDuringRightMouseDown);
+					bShowMouseCursor = false;
+					if (FSlateApplication::IsInitialized())
+						ApplicationActivationHandle = FSlateApplication::Get().OnApplicationActivationStateChanged().AddUObject(this, &ThisClass::OnApplicationActivationChanged);
 				}
 			}
 		}
@@ -111,10 +115,67 @@ bool ABrainMiningPlayerController::ShouldUseTouchControls() const
 
 void ABrainMiningPlayerController::UseAbilityG() { if (MiningGUI) MiningGUI->TriggerAbility(TEXT("G")); }
 void ABrainMiningPlayerController::UseAbilityV() { if (MiningGUI) MiningGUI->TriggerAbility(TEXT("V")); }
+
+bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
+{
+	if (bOwnsDesktopGUIInput)
+	{
+		if (Params.Key == EKeys::Tab)
+		{
+			if (Params.Event == IE_Pressed || Params.Event == IE_Repeat) SetUpgradeMenuHeld(true);
+			else if (Params.Event == IE_Released) SetUpgradeMenuHeld(false);
+			return true;
+		}
+		// UI handles its buttons first. Unhandled pointer events must not reach mining or recapture RMB.
+		if (bUpgradeMenuHeld && (Params.Key.IsMouseButton() || Params.Key == EKeys::MouseX || Params.Key == EKeys::MouseY))
+			return true;
+	}
+	return Super::InputKey(Params);
+}
+
+void ABrainMiningPlayerController::SetUpgradeMenuHeld(bool bHeld)
+{
+	if (!bOwnsDesktopGUIInput || !MiningGUI || bUpgradeMenuHeld == bHeld) return;
+	bUpgradeMenuHeld = bHeld;
+	SetIgnoreLookInput(bHeld);
+	RotationInput = FRotator::ZeroRotator;
+	if (APawn* ControlledPawn = GetPawn())
+		if (auto* Mining = ControlledPawn->FindComponentByClass<UMiningComponent>()) Mining->SetInputSuspended(bHeld);
+	MiningGUI->SetUpgradePanelOpen(bHeld);
+	bShowMouseCursor = bHeld;
+	if (bHeld)
+	{
+		// Clear any held mining click before handing the pointer to Slate.
+		Super::InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::LeftMouseButton, IE_Released, 0.f));
+		FInputModeGameAndUI Mode;
+		Mode.SetWidgetToFocus(MiningGUI->TakeWidget());
+		Mode.SetHideCursorDuringCapture(false).SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(Mode);
+		if (auto* Viewport = GetWorld()->GetGameViewport()) Viewport->SetMouseCaptureMode(EMouseCaptureMode::NoCapture);
+		int32 Width = 0, Height = 0;
+		GetViewportSize(Width, Height);
+		if (Width > 0 && Height > 0) SetMouseLocation(Width / 2, Height / 2);
+	}
+	else
+	{
+		FInputModeGameOnly Mode;
+		Mode.SetConsumeCaptureMouseDown(false);
+		SetInputMode(Mode);
+	}
+}
+
+void ABrainMiningPlayerController::OnApplicationActivationChanged(bool bActive)
+{
+	if (!bActive) SetUpgradeMenuHeld(false);
+}
+
 void ABrainMiningPlayerController::EndPlay(const EEndPlayReason::Type Reason)
 {
+	if (ApplicationActivationHandle.IsValid() && FSlateApplication::IsInitialized())
+		FSlateApplication::Get().OnApplicationActivationStateChanged().Remove(ApplicationActivationHandle);
+	SetUpgradeMenuHeld(false);
 	if (MiningGUI) MiningGUI->RemoveFromParent();
-	if (MiningGUI && bEnableGUICursor && IsLocalPlayerController())
+	if (bOwnsDesktopGUIInput && IsLocalPlayerController())
 	{
 		bShowMouseCursor = false;
 		SetInputMode(FInputModeGameOnly());

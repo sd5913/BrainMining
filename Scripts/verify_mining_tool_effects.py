@@ -10,7 +10,7 @@ editor = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
 levels = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 output = Path(unreal.Paths.project_saved_dir()) / 'Validation' / 'MiningToolEffects'
 output.mkdir(parents=True, exist_ok=True)
-report = {'passed': False, 'checks': [], 'scope': 'Existing mining with test109 pickaxe, Concrete Debris shapes and matching surface material; PIE only'}
+report = {'passed': False, 'checks': [], 'scope': 'Existing mining, stable pickaxe resource and swing curve, Concrete Debris shapes and matching surface material; PIE only'}
 state = {'phase': 'start', 'started': time.monotonic(), 'next': 0}
 performance = unreal.get_default_object(unreal.load_class(None, '/Script/UnrealEd.EditorPerformanceSettings'))
 old_throttle = performance.get_editor_property('bThrottleCPUWhenNotForeground')
@@ -59,7 +59,7 @@ def tick(delta):
             mining = pawn.get_component_by_class(unreal.MiningComponent)
             effects = pawn.get_component_by_class(unreal.MiningToolEffectsComponent)
             check(mining and effects and effects.pickaxe_mesh and effects.pickaxe_pivot, 'Existing player has mining and camera-mounted pickaxe')
-            check(effects.pickaxe_mesh.static_mesh.get_path_name() == '/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe', 'Original test109 pickaxe mesh is used')
+            check(effects.pickaxe_mesh.static_mesh.get_path_name() == '/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe', 'Stable pickaxe resource reference is preserved')
             check(effects.pickaxe_mesh.get_collision_profile_name() == 'NoCollision', 'Pickaxe cannot obstruct mining or movement')
             check(effects.pickaxe_pivot.get_attach_parent() == pawn.get_component_by_class(unreal.CameraComponent), 'Pickaxe follows the first-person camera')
             curve = unreal.load_asset('/Game/Pickaxe/CF_PickaxeSwing')

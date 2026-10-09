@@ -1,0 +1,11 @@
+{
+  "pitch_degrees": 55.623114203750724,
+  "translation_cm": [
+    174.87373731527643,
+    -404.72507617820645,
+    194.5715937572685
+  ],
+  "uniform_scale": 1.0,
+  "surface_fit_rms_cm": 0.17294204963013166,
+  "scope": "Bake FBX export alignment into mesh geometry; component transforms and swing animation remain unchanged"
+}

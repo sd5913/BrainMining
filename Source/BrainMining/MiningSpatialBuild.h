@@ -18,6 +18,8 @@ namespace MiningSpatial
 		EMiningManualKind Kind = EMiningManualKind::Passage;
 		bool bHidden = false;
 		bool bMain = false;
+		bool bOwned = true;
+		double Tolerance = 8;
 		FTransform Transform;
 		FVector Size = FVector::ZeroVector, Up = FVector::UpVector;
 		TArray<FMiningSpatialKnot> Knots;
@@ -28,6 +30,8 @@ namespace MiningSpatial
 		FVector Origin = FVector::ZeroVector;
 		FBox Bounds = FBox(ForceInit);
 		FBox Rooms[2];
+		TArray<FBox> SceneRooms;
+		int32 PartitionIndex = 0, PartitionCount = 1;
 		double Bedrock = 0, Tolerance = 8;
 		bool bAutomaticBedrock = false;
 		double ExcavationMargin = 400;

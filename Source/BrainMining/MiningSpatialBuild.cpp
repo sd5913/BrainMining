@@ -1,5 +1,6 @@
 #include "MiningSpatialBuild.h"
 #include "MiningLayoutRoom.h"
+#include "MiningSpatialEnvelope.h"
 #include "Serialization/MemoryWriter.h"
 
 namespace MiningSpatial
@@ -12,10 +13,11 @@ namespace MiningSpatial
 			FMemoryWriter Writer(Input.Key);
 			Writer << Input.Origin << Input.Bounds << Input.Rooms[0] << Input.Rooms[1] << Input.Bedrock << Input.Tolerance << Input.StartWall << Input.EndWall;
 			Writer << Input.bAutomaticBedrock << Input.ExcavationMargin;
+			Writer << Input.SceneRooms << Input.PartitionIndex << Input.PartitionCount;
 			int32 Count = Input.Sources.Num(); Writer << Count;
 			for (FSourceInput& Source : Input.Sources)
 			{
-				Writer << Source.Name << Source.Kind << Source.bHidden << Source.bMain << Source.Transform << Source.Size << Source.Up;
+				Writer << Source.Name << Source.Kind << Source.bHidden << Source.bMain << Source.bOwned << Source.Tolerance << Source.Transform << Source.Size << Source.Up;
 				Count = Source.Knots.Num(); Writer << Count;
 				for (FMiningSpatialKnot& Knot : Source.Knots)
 				{
@@ -38,17 +40,34 @@ namespace MiningSpatial
 		if (!Region.GetShapes().IsEmpty() || !Region.GetChambers().IsEmpty() || !Region.Plugs.IsEmpty()) { Error = TEXT("三维矿区请只使用三维空间；旧二维空间请保留在原矿区"); return false; }
 		Input.bAutomaticBedrock = Region.bAutomaticBedrock; Input.ExcavationMargin = Region.ExcavationMargin;
 		Input.Bounds = Region.bAutomaticBedrock ? FBox(ForceInit) : Region.GetRockBounds(); Input.Origin = Origin; Input.Bedrock = Region.bAutomaticBedrock ? Region.AutomaticBedrockThickness : Bedrock; Input.Tolerance = Region.CurveTolerance;
-		if (Input.bAutomaticBedrock && (!FMath::IsFinite(Input.ExcavationMargin) || Input.ExcavationMargin < 10 || !FMath::IsFinite(Input.Bedrock) || Input.Bedrock < 30 || Input.Bedrock > 500)) { Error = TEXT("可挖余量至少10cm，基岩厚度30–500cm；设计保留，参数需为有限数值。"); return false; }
+		if (Input.bAutomaticBedrock && (!FMath::IsFinite(Input.ExcavationMargin) || Input.ExcavationMargin < 10 || !FMath::IsFinite(Input.Bedrock) || Input.Bedrock < 30 || Input.Bedrock > 500)) { Error = TEXT("场景外扩余量至少10cm，基岩厚度30–500cm；设计保留，参数需为有限数值。"); return false; }
 		Input.Rooms[0] = Region.FromRoom->GetRoomBounds(); Input.Rooms[1] = Region.ToRoom->GetRoomBounds();
 		Input.StartWall = static_cast<int32>(Main->StartPortal.Wall); Input.EndWall = static_cast<int32>(Main->EndPortal.Wall);
-		TArray<AMiningSpatialTunnel*> Sources = Region.GetTunnels();
-		Sources.RemoveAll([](const AMiningSpatialTunnel* Source) { return !Source->bEnabled; });
-		if (Sources.Num() > 64) { Error = TEXT("每矿区最多64个三维空间，请拆分矿区"); return false; }
+		const TArray<AMiningSpatialRegion*> Regions = Input.bAutomaticBedrock ? SceneRegions(Region) : TArray<AMiningSpatialRegion*>{const_cast<AMiningSpatialRegion*>(&Region)};
+		if (Regions.IsEmpty()) { Error = TEXT("场景级基岩不能与旧二维矿区共用生成器；设计保留。"); return false; }
+		Input.PartitionIndex = Regions.IndexOfByKey(&Region); Input.PartitionCount = Regions.Num();
+		TArray<AMiningSpatialTunnel*> Sources;
+		for (const AMiningSpatialRegion* Item : Regions)
+		{
+			if (Input.bAutomaticBedrock && (!Item->bAutomaticBedrock || !FMath::IsFinite(Item->ExcavationMargin) || Item->ExcavationMargin < 10 || !FMath::IsFinite(Item->AutomaticBedrockThickness) || Item->AutomaticBedrockThickness < 30 || Item->AutomaticBedrockThickness > 500))
+			{ Error = TEXT("场景级基岩要求所有三维矿区启用自动外围，且余量与厚度有效；不能与旧局部边界混用。"); return false; }
+			if (Input.bAutomaticBedrock) { Input.ExcavationMargin = FMath::Max(Input.ExcavationMargin, double(Item->ExcavationMargin)); Input.Bedrock = FMath::Max(Input.Bedrock, double(Item->AutomaticBedrockThickness)); }
+			for (const AMiningLayoutRoom* Room : {Item->FromRoom.Get(), Item->ToRoom.Get()})
+			{
+				if (!IsValid(Room) || Room->RoomSize.ContainsNaN() || Room->RoomSize.GetMin() < 250 || Room->GetActorTransform().ContainsNaN()) { Error = TEXT("场景主房间尺寸或位置无效；设计保留。"); return false; }
+				Input.SceneRooms.AddUnique(Room->GetRoomBounds());
+			}
+			TArray<AMiningSpatialTunnel*> LocalSources = Item->GetTunnels();
+			LocalSources.RemoveAll([](const AMiningSpatialTunnel* Source) { return !Source->bEnabled; });
+			if (LocalSources.Num() > 64) { Error = TEXT("每矿区最多64个启用的三维空间，请拆分矿区"); return false; }
+			Sources.Append(LocalSources);
+		}
 		for (const AMiningSpatialTunnel* Actor : Sources)
 		{
 			if (!Actor->bEnabled) continue;
 			FSourceInput& Source = Input.Sources.AddDefaulted_GetRef();
 			Source.Name = Actor->GetActorNameOrLabel(); Source.Kind = Actor->Kind; Source.bHidden = Actor->bHiddenCavity; Source.bMain = Actor == Main;
+			Source.bOwned = Actor->Region == &Region; Source.Tolerance = Actor->Region ? Actor->Region->CurveTolerance : Input.Tolerance;
 			Source.Transform = Actor->GetActorTransform(); Source.Size = Actor->RoomSize; Source.Up = Source.Transform.TransformVectorNoScale(Actor->InitialUp);
 			if (Source.Kind == EMiningManualKind::SideRoom)
 			{
@@ -86,7 +105,7 @@ namespace MiningSpatial
 			if (Previous && Previous->bSuccess && Previous->Grid)
 			{
 				const FRegionInput& Old = Previous->Input; const FRegionInput& New = Result->Input;
-				bool bSameDomain = Old.Origin == New.Origin && Old.Bounds == New.Bounds && Old.Rooms[0] == New.Rooms[0] && Old.Rooms[1] == New.Rooms[1] && Old.Sources.Num() == New.Sources.Num();
+				bool bSameDomain = Old.Origin == New.Origin && Old.Bounds == New.Bounds && Old.Rooms[0] == New.Rooms[0] && Old.Rooms[1] == New.Rooms[1] && Old.SceneRooms == New.SceneRooms && Old.PartitionCount == New.PartitionCount && Old.PartitionIndex == New.PartitionIndex && Old.Sources.Num() == New.Sources.Num() && Previous->Cutters.Num() == Result->Cutters.Num();
 				if (bSameDomain) for (int32 Index = 0; Index < New.Sources.Num(); ++Index)
 					if (Old.Sources[Index].Name != New.Sources[Index].Name || Old.Sources[Index].Kind != New.Sources[Index].Kind) { bSameDomain = false; break; }
 				if (bSameDomain)

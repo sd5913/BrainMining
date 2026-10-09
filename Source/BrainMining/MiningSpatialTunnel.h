@@ -59,9 +59,9 @@ public:
 	TArray<AMiningSpatialTunnel*> GetTunnels() const;
 	virtual uint32 GetGeometryHash() const override;
 	virtual FBox GetRockBounds() const override;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="自动基岩", meta=(DisplayName="自动包裹可挖岩体", ToolTip="沿通道、房间和空洞自动生成外围，不再受手动岩石范围限制。关闭可使用旧版固定范围。"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="自动基岩", meta=(DisplayName="场景统一基岩外壳", ToolTip="整个场景共用外壳，内部全部填充可挖岩体；房间和通道没有独立基岩壳。"))
 	bool bAutomaticBedrock = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="自动基岩", meta=(DisplayName="可挖余量", Units="cm", ClampMin="10", EditCondition="bAutomaticBedrock"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="自动基岩", meta=(DisplayName="场景外扩余量", ToolTip="整个场景总范围向外扩展；同场景取各矿区设置的最大值，面板会统一修改全部矿区。", Units="cm", ClampMin="10", EditCondition="bAutomaticBedrock"))
 	float ExcavationMargin = 400;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="自动基岩", meta=(DisplayName="外围基岩厚度", Units="cm", ClampMin="30", ClampMax="500", EditCondition="bAutomaticBedrock"))
 	float AutomaticBedrockThickness = 100;

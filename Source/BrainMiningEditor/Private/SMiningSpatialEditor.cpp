@@ -3,6 +3,7 @@
 #include "MiningSpatialVisualizer.h"
 #include "MiningSpatialSafeEditing.h"
 #include "MiningSpatialDirectEditing.h"
+#include "MiningSpatialEnvelope.h"
 #include "MiningTunnelGenerator.h"
 #include "MiningLayoutRoom.h"
 #include "Editor.h"
@@ -178,26 +179,37 @@ TSharedRef<SWidget> SMiningSpatialEditor::EnvelopeTools()
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(Label))]
 			+ SHorizontalBox::Slot().FillWidth(1).Padding(6, 0)[SNew(SNumericEntryBox<float>)
 				.IsEnabled_Lambda([this] { return Region.IsValid() && Region->bAutomaticBedrock && GEditor && !GEditor->PlayWorld; })
-				.Value_Lambda([this, bThickness]() -> TOptional<float> { if (!Region.IsValid()) return {}; return bThickness ? Region->AutomaticBedrockThickness : Region->ExcavationMargin; })
+				.Value_Lambda([this, bThickness]() -> TOptional<float>
+				{
+					if (!Region.IsValid()) return {};
+					float Value = bThickness ? Region->AutomaticBedrockThickness : Region->ExcavationMargin;
+					for (const AMiningSpatialRegion* Item : MiningSpatial::SceneRegions(*Region)) Value = FMath::Max(Value, bThickness ? Item->AutomaticBedrockThickness : Item->ExcavationMargin);
+					return Value;
+				})
 				.OnValueCommitted_Lambda([this, bThickness](float Value, ETextCommit::Type)
 				{
 					if (!Region.IsValid() || !FMath::IsFinite(Value) || !GEditor || GEditor->PlayWorld) return;
-					MiningSpatialDirectEditing::End(); FScopedTransaction Transaction(FText::FromString(TEXT("调整自动岩体外围"))); Region->Modify();
-					if (bThickness) Region->AutomaticBedrockThickness = FMath::Clamp(Value, 30.f, 500.f); else Region->ExcavationMargin = FMath::Max(10.f, Value);
+					MiningSpatialDirectEditing::End(); FScopedTransaction Transaction(FText::FromString(TEXT("调整全场景外围")));
+					for (AMiningSpatialRegion* Item : MiningSpatial::SceneRegions(*Region))
+					{
+						Item->Modify();
+						if (bThickness) Item->AutomaticBedrockThickness = FMath::Clamp(Value, 30.f, 500.f); else Item->ExcavationMargin = FMath::Max(10.f, Value);
+					}
 					MiningSpatialSafeEditing::Apply(Region.Get(), true);
 				})];
 	};
 	return SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight().Padding(0, 4)[SNew(STextBlock).Text(FText::FromString(TEXT("自动岩体与基岩（厘米）")))]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0, 4)[SNew(STextBlock).Text(FText::FromString(TEXT("全场景岩体与统一基岩（厘米）")))]
 		+ SVerticalBox::Slot().AutoHeight()[SNew(SCheckBox)
 			.IsEnabled_Lambda([this] { return Region.IsValid() && GEditor && !GEditor->PlayWorld; })
 			.IsChecked_Lambda([this] { return Region.IsValid() && Region->bAutomaticBedrock ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
 			.OnCheckStateChanged_Lambda([this](ECheckBoxState State)
 			{
-				if (!Region.IsValid() || !GEditor || GEditor->PlayWorld) return; MiningSpatialDirectEditing::End(); FScopedTransaction Transaction(FText::FromString(TEXT("切换自动外围"))); Region->Modify();
-				Region->bAutomaticBedrock = State == ECheckBoxState::Checked; MiningSpatialSafeEditing::Apply(Region.Get(), true);
-			})[SNew(STextBlock).Text(FText::FromString(TEXT("自动包裹空间，不使用手动岩石盒子")))]]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0, 3)[Parameter(TEXT("可挖余量"), false)]
+				if (!Region.IsValid() || !GEditor || GEditor->PlayWorld) return; MiningSpatialDirectEditing::End(); FScopedTransaction Transaction(FText::FromString(TEXT("切换场景统一外壳")));
+				for (AMiningSpatialRegion* Item : MiningSpatial::SceneRegions(*Region)) { Item->Modify(); Item->bAutomaticBedrock = State == ECheckBoxState::Checked; }
+				MiningSpatialSafeEditing::Apply(Region.Get(), true);
+			})[SNew(STextBlock).Text(FText::FromString(TEXT("整个场景共用基岩外壳（房间之间可挖）")))]]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0, 3)[Parameter(TEXT("场景外扩余量"), false)]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0, 3)[Parameter(TEXT("基岩厚度"), true)]
 		+ SVerticalBox::Slot().AutoHeight()[SNew(SCheckBox)
 			.IsEnabled_Lambda([this] { return Region.IsValid() && GEditor && !GEditor->PlayWorld; })
@@ -207,7 +219,7 @@ TSharedRef<SWidget> SMiningSpatialEditor::EnvelopeTools()
 				if (!Region.IsValid() || !GEditor || GEditor->PlayWorld) return; MiningSpatialDirectEditing::End(); FScopedTransaction Transaction(FText::FromString(TEXT("切换自由草稿"))); Region->Modify();
 				Region->bFreeEditing = State == ECheckBoxState::Checked; MiningSpatialSafeEditing::Apply(Region.Get(), true);
 			})[SNew(STextBlock).Text(FText::FromString(TEXT("自由编辑：生成失败不回退我的造型")))]]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0, 4)[SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(TEXT("房间/通道 → 可挖岩层 → 外围基岩。关闭“空间灰模预览”可查看实际岩体；框线只是总包围框。余量过大时仍受原分块预算约束。")))];
+		+ SVerticalBox::Slot().AutoHeight().Padding(0, 4)[SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(TEXT("一整片可挖岩体，只有场景最外侧有基岩；房间和通道是内部空洞，不单独包壳。边界按全场景总范围自动生成，以上参数作用于整个场景。关闭灰模预览查看实体。原分块预算不变。")))];
 }
 
 TSharedRef<SWidget> SMiningSpatialEditor::Advanced()

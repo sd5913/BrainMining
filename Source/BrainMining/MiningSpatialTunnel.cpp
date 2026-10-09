@@ -1,5 +1,6 @@
 #include "MiningSpatialTunnel.h"
 #include "MiningSpatialGeometry.h"
+#include "MiningSpatialEnvelope.h"
 #include "MiningSpatialEditBridge.h"
 #include "MiningLayoutRoom.h"
 #include "EngineUtils.h"
@@ -42,12 +43,22 @@ uint32 AMiningSpatialRegion::GetGeometryHash() const
 FBox AMiningSpatialRegion::GetRockBounds() const
 {
 	if (!bAutomaticBedrock) return Super::GetRockBounds();
-	const uint32 Hash = GetGeometryHash();
+	TArray<AMiningSpatialRegion*> Regions = MiningSpatial::SceneRegions(*this);
+	if (Regions.IsEmpty()) Regions.Add(const_cast<AMiningSpatialRegion*>(this));
+	uint32 Hash = 0; float Margin = 10;
+	TArray<AMiningLayoutRoom*> Rooms;
+	TArray<AMiningSpatialTunnel*> Tunnels;
+	for (const AMiningSpatialRegion* Region : Regions)
+	{
+		Hash = HashCombineFast(Hash, Region->GetGeometryHash());
+		if (FMath::IsFinite(Region->ExcavationMargin)) Margin = FMath::Max(Margin, Region->ExcavationMargin);
+		Rooms.AddUnique(Region->FromRoom); Rooms.AddUnique(Region->ToRoom); Tunnels.Append(Region->GetTunnels());
+	}
 	if (PreviewBounds.IsValid && PreviewBoundsHash == Hash) return PreviewBounds;
 	FBox Result(ForceInit);
-	for (const AMiningLayoutRoom* Room : {FromRoom.Get(), ToRoom.Get()})
+	for (const AMiningLayoutRoom* Room : Rooms)
 		if (IsValid(Room) && !Room->RoomSize.ContainsNaN() && !Room->GetActorTransform().ContainsNaN()) Result += Room->GetRoomBounds();
-	for (const AMiningSpatialTunnel* Tunnel : GetTunnels())
+	for (const AMiningSpatialTunnel* Tunnel : Tunnels)
 	{
 		if (!Tunnel->bEnabled) continue;
 		if (Tunnel->Kind == EMiningManualKind::SideRoom)
@@ -56,7 +67,7 @@ FBox AMiningSpatialRegion::GetRockBounds() const
 			continue;
 		}
 		TArray<FMiningSpatialKnot> Knots; TArray<MiningSpatial::FRing> Rings; FString Error;
-		if (Tunnel->ResolveKnots(Knots, Error) && MiningSpatial::Sample(Knots, Tunnel->GetActorTransform().TransformVectorNoScale(Tunnel->InitialUp), CurveTolerance, Rings, Error, nullptr, true))
+		if (Tunnel->ResolveKnots(Knots, Error) && MiningSpatial::Sample(Knots, Tunnel->GetActorTransform().TransformVectorNoScale(Tunnel->InitialUp), Tunnel->Region ? Tunnel->Region->CurveTolerance : CurveTolerance, Rings, Error, nullptr, true))
 			for (const MiningSpatial::FRing& Ring : Rings)
 				for (const FVector2D& Point : Ring.Profile) Result += Ring.Center + Ring.Right * Point.X + Ring.Up * Point.Y;
 		else
@@ -64,7 +75,7 @@ FBox AMiningSpatialRegion::GetRockBounds() const
 				if (!Knot.Position.ContainsNaN()) Result += Knot.Position;
 	}
 	PreviewBoundsHash = Hash;
-	PreviewBounds = Result.IsValid ? Result.ExpandBy(FMath::IsFinite(ExcavationMargin) ? FMath::Max(10.f, ExcavationMargin) : 400.f) : Super::GetRockBounds();
+	PreviewBounds = Result.IsValid ? Result.ExpandBy(Margin) : Super::GetRockBounds();
 	return PreviewBounds;
 }
 

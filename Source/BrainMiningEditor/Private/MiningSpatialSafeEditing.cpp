@@ -363,7 +363,7 @@ namespace MiningSpatialSafeEditing
 		const FString Reason = UnappliedReason();
 		if (!Reason.IsEmpty()) return Reason.StartsWith(TEXT("等待同步")) ? Reason : TEXT("地形未生效 · 设计轮廓不是游戏中的实体。") + Reason;
 		for (TActorIterator<AMiningTunnelGenerator> Item(CurrentWorld.Get()); Item; ++Item)
-			if (SpatialGenerator(*Item)) return Item->GeneratedFreeAccess.Contains(true) ? TEXT("地形已应用 · 交汇矿区可直接挖掘，不按旧单入口规则回收；每块预算不变。保存后可开玩。") : TEXT("地形已应用 · 保存后可开玩，开玩前会再次检查并同步。");
+			if (SpatialGenerator(*Item)) return Item->GeneratedFreeAccess.Contains(true) ? TEXT("地形已应用 · 全场景共用外围基岩，内部连续可挖，不按旧单入口规则回收；每块预算不变。保存后可开玩。") : TEXT("地形已应用 · 保存后可开玩，开玩前会再次检查并同步。");
 		return TEXT("当前关卡没有三维矿区生成器。");
 	}
 	FString SaveStatus()

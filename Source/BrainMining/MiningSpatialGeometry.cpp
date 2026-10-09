@@ -287,9 +287,8 @@ bool MiningSpatial::BuildGeometry(const FRegionInput& Input, FRegionBuild& Outpu
 	if (!bAutomatic) Candidate = BoxMesh(Hollow.Bounds);
 	FDynamicMesh3 Air;
 	TArray<FDynamicMesh3> Blocks;
-	if (bAutomatic)
-		for (const FBox& Room : Input.Rooms)
-			if (!AddEnvelope(BoxMesh(Room), {}, Origin, Input.ExcavationMargin, Bedrock, Result.RockDomain, Result.OuterDomain, Error)) return false;
+	FBox SceneBounds(ForceInit);
+	if (bAutomatic) for (const FBox& Room : Input.SceneRooms) SceneBounds += Room.ShiftBy(-Origin);
 	for (int32 SourceIndex = 0; SourceIndex < Input.Sources.Num(); ++SourceIndex)
 	{
 		const FSourceInput& Source = Input.Sources[SourceIndex];
@@ -300,14 +299,14 @@ bool MiningSpatial::BuildGeometry(const FRegionInput& Input, FRegionBuild& Outpu
 			Cutter = BoxMesh(FBox(-Source.Size * 0.5, Source.Size * 0.5));
 			for (int32 Vertex : Cutter.VertexIndicesItr()) Cutter.SetVertex(Vertex, Source.Transform.TransformPosition(Cutter.GetVertex(Vertex)));
 		}
-		else if (!Sample(Source.Knots, Source.Up, Input.Tolerance, Rings, Error, &Output.Diagnostic, bAutomatic) || !Sweep(Rings, Cutter, Error, true, &Output.Diagnostic, bAutomatic)) { Error = Source.Name + TEXT(": ") + Error; return false; }
-		if (bAutomatic && !AddEnvelope(Cutter, Rings, Origin, Input.ExcavationMargin, Bedrock, Result.RockDomain, Result.OuterDomain, Error)) { Error = Source.Name + TEXT(": ") + Error; return false; }
+		else if (!Sample(Source.Knots, Source.Up, Source.Tolerance, Rings, Error, &Output.Diagnostic, bAutomatic) || !Sweep(Rings, Cutter, Error, true, &Output.Diagnostic, bAutomatic)) { Error = Source.Name + TEXT(": ") + Error; return false; }
+		if (bAutomatic) for (int32 Vertex : Cutter.VertexIndicesItr()) SceneBounds += Cutter.GetVertex(Vertex) - Origin;
 		if (!bAutomatic) for (int32 Vertex : Cutter.VertexIndicesItr())
 			if (!Input.Bounds.ExpandBy(0.1).IsInsideOrOn(Cutter.GetVertex(Vertex))) { Error = Source.Name + TEXT(": 超出矿区范围，请扩展岩石尺寸"); return false; }
 		FMiningMapRegion Map;
 		Map.Name = Source.Name; Map.Kind = Source.bHidden ? EMiningMapRegionKind::HiddenEntrance : Source.Kind == EMiningManualKind::Passage ? EMiningMapRegionKind::Tunnel : Source.Kind == EMiningManualKind::SideRoom ? EMiningMapRegionKind::Branch : EMiningMapRegionKind::Space;
 		if (Source.Kind == EMiningManualKind::RockBlock) { Map.Kind = EMiningMapRegionKind::GuidePlug; Map.bRockFilled = true; }
-		StoreSurface(Cutter, Map); Result.SpatialMaps.Add(MoveTemp(Map));
+		if (Source.bOwned) { StoreSurface(Cutter, Map); Result.SpatialMaps.Add(MoveTemp(Map)); }
 		if (Source.bMain)
 			for (const FRing& Ring : Rings)
 			{
@@ -364,14 +363,19 @@ bool MiningSpatial::BuildGeometry(const FRegionInput& Input, FRegionBuild& Outpu
 	}
 	if (bAutomatic)
 	{
+		Result.SceneBounds = SceneBounds.ExpandBy(Input.ExcavationMargin);
+		Hollow.Bounds = ScenePartition(Result.SceneBounds, Input.PartitionIndex, Input.PartitionCount);
+		if (!Hollow.Bounds.IsValid) { Error = TEXT("场景整体边界无效；未替换旧地形。"); return false; }
+		Result.RockDomain = BoxMesh(Hollow.Bounds);
+		Result.OuterDomain = BoxMesh(Result.SceneBounds.ExpandBy(Bedrock));
 		Candidate = Result.RockDomain; Result.Air = Air;
-		const FAxisAlignedBox3d Bounds = Candidate.GetBounds(); Hollow.Bounds = FBox(FVector(Bounds.Min), FVector(Bounds.Max));
 		Output.Cutters.Add(Candidate);
 	}
 	FDynamicMesh3 CarvedAir;
 	if (!MiningChunks::Subtract(Candidate, Air, CarvedAir, true)) { Error = TEXT("三维空间切除失败，旧地形保留"); return false; }
 	Candidate = MoveTemp(CarvedAir);
-	for (const FBox& Room : Input.Rooms)
+	const TArray<FBox> RoomsToClear = bAutomatic ? Input.SceneRooms : TArray<FBox>{Input.Rooms[0], Input.Rooms[1]};
+	for (const FBox& Room : RoomsToClear)
 	{
 		FDynamicMesh3 Carved;
 		if (!MiningChunks::Subtract(Candidate, BoxMesh(Room.ShiftBy(-Origin)), Carved, true)) { Error = TEXT("主房间清理失败"); return false; }

@@ -893,7 +893,7 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 	FDynamicMesh3 Fill;
 	TArray<FDynamicMesh3> SegmentMeshes;
 	TArray<FDynamicMesh3> Cavities;
-	for (const FBox& Box : Boxes)
+	if (!bAutomaticSpatial) for (const FBox& Box : Boxes)
 	{
 		if (!Combine(Shell, MakeBox(Box.GetCenter(), Box.GetSize() + FVector(Thickness * 2)), FMeshBoolean::EBooleanOp::Union))
 		{
@@ -935,13 +935,16 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 		{
 			FDynamicMesh3 RegionRock;
 			if (!MiningManual::Build(*ManualRegion, GetActorLocation(), Thickness, HollowPlan, ManualPlan, RegionRock, LastBuildStatus)) return false;
-			const FDynamicMesh3 Outer = ManualPlan.bAutomaticBedrock ? ManualPlan.OuterDomain : MakeBox(HollowPlan.Bounds.GetCenter(), HollowPlan.Bounds.GetSize() + FVector(Thickness * 2));
-			if (!Combine(Shell, Outer, FMeshBoolean::EBooleanOp::Union))
+			if (!bAutomaticSpatial)
 			{
-				LastBuildStatus = TEXT("手绘矿区外层基岩构建失败；保留旧结果"); return false;
+				const FDynamicMesh3 Outer = MakeBox(HollowPlan.Bounds.GetCenter(), HollowPlan.Bounds.GetSize() + FVector(Thickness * 2));
+				if (!Combine(Shell, Outer, FMeshBoolean::EBooleanOp::Union))
+				{
+					LastBuildStatus = TEXT("手绘矿区外层基岩构建失败；保留旧结果"); return false;
+				}
+				Cavities.Add(MakeBox(HollowPlan.Bounds.GetCenter(), HollowPlan.Bounds.GetSize()));
+				for (const FDynamicMesh3& Portal : ManualPlan.PortalCuts) Cavities.Add(Portal);
 			}
-			Cavities.Add(ManualPlan.bAutomaticBedrock ? ManualPlan.RockDomain : MakeBox(HollowPlan.Bounds.GetCenter(), HollowPlan.Bounds.GetSize()));
-			for (const FDynamicMesh3& Portal : ManualPlan.PortalCuts) Cavities.Add(Portal);
 			SegmentMeshes.Add(MoveTemp(RegionRock));
 			MiningRoutes::FPlan ProgressPlan;
 			ProgressPlan.StartWall = ManualPlan.StartWall; ProgressPlan.EndWall = ManualPlan.EndWall;
@@ -1007,41 +1010,26 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 	if (bHollowRegionPrototype && !bAutomaticSpatial && !MiningHollow::ValidateChain(HollowPlans, Boxes, Thickness, LastBuildStatus)) return false;
 	TArray<bool> FreeAccess; FreeAccess.Init(false, OrderedRegions.Num());
 	if (bAutomaticSpatial)
+	{
+		const FBox& SceneBounds = ManualPlans[0].SceneBounds;
+		Shell = ManualPlans[0].OuterDomain;
+		Cavities = {MakeBox(SceneBounds.GetCenter(), SceneBounds.GetSize())};
+		FreeAccess.Init(true, OrderedRegions.Num());
 		for (int32 Index = 0; Index < ManualPlans.Num(); ++Index)
 		{
 			FDynamicMesh3& Rock = SegmentMeshes[Index];
-			bool bChanged = false;
-			const auto Cut = [&](const FDynamicMesh3& Cutter)
-			{
-				FDynamicMesh3 Result;
-				if (!MiningChunks::Subtract(Rock, Cutter, Result, true)) { LastBuildStatus = TEXT("交汇矿区合并失败；设计保留，未替换旧地形。"); return false; }
-				Rock = MoveTemp(Result); bChanged = true; return true;
-			};
-			for (int32 Other = 0; Other < ManualPlans.Num(); ++Other)
-			{
-				if (Other == Index || !HollowPlans[Index].Bounds.Intersect(HollowPlans[Other].Bounds)) continue;
-				FreeAccess[Index] = FreeAccess[Other] = true;
-				if (!Cut(ManualPlans[Other].Air)) return false;
-				if (Other < Index && !Cut(ManualPlans[Other].RockDomain)) return false;
-			}
-			for (int32 RoomIndex = 0; RoomIndex < Boxes.Num(); ++RoomIndex)
-				if (RoomIndex != Index && RoomIndex != Index + 1 && HollowPlans[Index].Bounds.Intersect(Boxes[RoomIndex]))
-				{
-					FreeAccess[Index] = true;
-					if (FreeAccess.IsValidIndex(RoomIndex)) FreeAccess[RoomIndex] = true;
-					if (FreeAccess.IsValidIndex(RoomIndex - 1)) FreeAccess[RoomIndex - 1] = true;
-					if (!Cut(MakeBox(Boxes[RoomIndex].GetCenter(), Boxes[RoomIndex].GetSize()))) return false;
-				}
-			if (bChanged || !ManualPlans[Index].SpatialGrid)
+			if (ManualPlans[Index].SceneBounds != SceneBounds) { LastBuildStatus = TEXT("场景整体边界不同步；请重新检查并重建。"); return false; }
+			if (!ManualPlans[Index].SpatialGrid)
 			{
 				auto Grid = MakeShared<MiningChunks::FSpatialGrid, ESPMode::ThreadSafe>();
-				if (!MiningChunks::SplitSpatialIncremental(Rock, ChunkLength, *Grid)) { LastBuildStatus = TEXT("自动岩体分块失败或超过128格；请缩小可挖余量或拆分矿区，预算不提升。"); return false; }
+				if (!MiningChunks::SplitSpatialIncremental(Rock, ChunkLength, *Grid)) { LastBuildStatus = TEXT("场景岩体分块失败或单矿区超过128格；请调整场景余量或拆分矿区，预算不提升。"); return false; }
 				for (const MiningChunks::FSpatialCell& Cell : Grid->Cells)
 					if (Cell.Mesh && Cell.Mesh->TriangleCount() > FMath::Clamp(SegmentTriangleBudget, 1000, 30000)) { LastBuildStatus = TEXT("自动岩体超过每块三角形预算；草稿保留，预算不提升。"); return false; }
 				ManualPlans[Index].SpatialGrid = MoveTemp(Grid);
 			}
 		}
-	if (FreeAccess.Contains(true)) LayoutWarnings += TEXT("交汇矿区允许直接挖掘；为防误删仍可进入的岩体，这些矿区不按旧单入口规则封口回收。每块预算不变。 ");
+		LayoutWarnings += TEXT("场景只有统一外壳，内部连续可挖；内部矿区不封口、不按旧单入口规则回收。每块预算不变。 ");
+	}
 	for (int32 RoomIndex = 1; !bHollowRegionPrototype && RoomIndex < Boxes.Num(); ++RoomIndex)
 	{
 		const FBox& First = Boxes[RoomIndex - 1];
@@ -1242,10 +1230,7 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 		const MiningHollow::FPlan& HollowPlan = HollowPlans[RegionIndex];
 		if (ManualPlans[RegionIndex].bAutomaticBedrock)
 		{
-			FMiningMapRegion Map; Map.Name = FString::Printf(TEXT("Region %d / automatic rock"), RegionIndex + 1); Map.Kind = EMiningMapRegionKind::RockRegion; Map.GroupIndex = RegionIndex;
-			FDynamicMesh3 Domain = ManualPlans[RegionIndex].RockDomain;
-			for (int32 Vertex : Domain.VertexIndicesItr()) Domain.SetVertex(Vertex, Domain.GetVertex(Vertex) + GetActorLocation());
-			MiningSpatial::StoreSurface(Domain, Map); NewMapRegions.Add(MoveTemp(Map));
+			if (RegionIndex == 0) NewMapRegions.Add(MiningDeveloperMap::Box(TEXT("Scene / continuous diggable rock"), EMiningMapRegionKind::RockRegion, RegionIndex, ManualPlans[RegionIndex].SceneBounds.ShiftBy(GetActorLocation())));
 		}
 		else NewMapRegions.Add(MiningDeveloperMap::Box(FString::Printf(TEXT("Region %d / ordinary rock"), RegionIndex + 1), EMiningMapRegionKind::RockRegion, RegionIndex, HollowPlan.Bounds.ShiftBy(GetActorLocation())));
 		if (Cast<AMiningManualRegion>(OrderedRegions[RegionIndex]))

@@ -26,6 +26,7 @@ namespace MiningManual
 		TArray<FMiningMapRegion> SpatialMaps;
 		TArray<UE::Geometry::FDynamicMesh3> PortalCuts;
 		bool bAutomaticBedrock = false;
+		FBox SceneBounds = FBox(ForceInit);
 		UE::Geometry::FDynamicMesh3 RockDomain, OuterDomain, Air;
 		TSharedPtr<const MiningChunks::FSpatialGrid, ESPMode::ThreadSafe> SpatialGrid;
 		int32 StartWall = 0;

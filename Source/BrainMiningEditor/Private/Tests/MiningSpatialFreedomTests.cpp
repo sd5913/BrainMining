@@ -69,9 +69,10 @@ bool FSpatialAutomaticEnvelopeTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Main room interior is not filled"), Contains(Result->Rock, FVector(0, 0, 500)));
 	UE::Geometry::FDynamicMesh3 Shell;
 	TestTrue(TEXT("Automatic bedrock is closed"), MiningChunks::Subtract(Result->Plan.OuterDomain, Result->Plan.RockDomain, Shell) && Shell.IsClosed());
-	TestTrue(TEXT("Fixed bedrock outside buffer"), Contains(Shell, FVector(2100, 700, 500)));
+	TestTrue(TEXT("Fixed bedrock outside whole scene"), Contains(Shell, FVector(2100, 1050, 500)));
 	TestFalse(TEXT("Bedrock does not hug initial tunnel"), Contains(Shell, FVector(2100, 500, 500)));
-	TestFalse(TEXT("Envelope is not a single global bounding box"), Contains(Result->Plan.RockDomain, FVector(2100, 850, 500)));
+	TestTrue(TEXT("Scene fills gaps beyond local tunnel envelope"), Contains(Result->Rock, FVector(2100, 850, 500)));
+	TestFalse(TEXT("No local tunnel bedrock shell"), Contains(Shell, FVector(2100, 700, 500)));
 	Scene.Tunnel->Knots[1].Position.Y += 1000;
 	auto Moved = Scene.Compute(Error);
 	if (!TestTrue(TEXT("Rock and bedrock follow moved path"), Moved && Moved->bSuccess)) { AddError(Error); return false; }
@@ -141,14 +142,71 @@ bool FSpatialFreedomCrossRegionTest::RunTest(const FString& Parameters)
 	MiningSpatialSafeEditing::Observe(Scene.World);
 	if (!TestTrue(TEXT("Overlapping automatic regions build"), MiningSpatialSafeEditing::Apply(Scene.Generator, true) && Scene.Generator->bLayoutApplied)) { AddError(Scene.Generator->LastBuildStatus); return false; }
 	TestTrue(TEXT("Cross-connected regions are accessible"), Scene.Generator->GeneratedFreeAccess.Contains(true));
+	int32 BeforeOwners = 0, AfterOwners = 0;
 	for (int32 Index = 0; Index < Scene.Generator->GeneratedSegments.Num(); ++Index)
 	{
 		const AGeneratedMiningRock* Rock = Scene.Generator->GeneratedSegments[Index];
 		for (const FMiningRockChunk& Chunk : Rock->Chunks)
-			Chunk.Mesh->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh) { TestFalse(TEXT("Other region does not refill cavity"), Contains(Mesh, FVector(5400, 0, 500))); });
+			Chunk.Mesh->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh)
+			{
+				TestFalse(TEXT("Other region does not refill cavity"), Contains(Mesh, FVector(5417, 13, 517)));
+				BeforeOwners += Contains(Mesh, FVector(3990, 873, 517)) ? 1 : 0;
+				AfterOwners += Contains(Mesh, FVector(4010, 873, 517)) ? 1 : 0;
+			});
 		TestFalse(TEXT("Cross-connected region is not sealed or recycled"), Scene.Generator->GeneratedSealAllowed[Index]);
 		TestTrue(TEXT("No runtime budget increase"), Rock->LargestChunkTriangles <= 30000 && Rock->Chunks.Num() <= 128);
 	}
+	TestEqual(TEXT("Rock before partition belongs to exactly one chunk"), BeforeOwners, 1);
+	TestEqual(TEXT("Rock after partition belongs to exactly one chunk"), AfterOwners, 1);
+	for (AGeneratedMiningRock* Rock : Scene.Generator->GeneratedSegments)
+	{
+		Rock->SetSegmentState(EMiningSegmentState::Active);
+		TestTrue(TEXT("Both technical partitions remain mineable"), Rock->MineSphere(FVector(4000, 873, 517), 150));
+		for (const FMiningRockChunk& Chunk : Rock->Chunks)
+			Chunk.Mesh->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh)
+			{
+				TestFalse(TEXT("No rock barrier before mined partition"), Contains(Mesh, FVector(3990, 873, 517)));
+				TestFalse(TEXT("No rock barrier after mined partition"), Contains(Mesh, FVector(4010, 873, 517)));
+			});
+	}
+	Scene.Generator->GeneratedBedrock->GetDynamicMeshComponent()->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh)
+	{
+		TestFalse(TEXT("No bedrock before partition"), Contains(Mesh, FVector(3990, 873, 517)));
+		TestFalse(TEXT("No bedrock after partition"), Contains(Mesh, FVector(4010, 873, 517)));
+	});
+	return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSpatialSceneGapTest, "BrainMining.Spatial.Freedom.DisconnectedSceneGap", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FSpatialSceneGapTest::RunTest(const FString& Parameters)
+{
+	FFreedomWorld Scene;
+	AMiningSpatialTunnel* Cavity = Scene.Spawn<AMiningSpatialTunnel>(); Cavity->Region = Scene.Region; Cavity->Kind = EMiningManualKind::SideRoom;
+	Cavity->RoomSize = FVector(600); Cavity->SetActorLocation(FVector(2100, 4000, 500));
+	MiningSpatialSafeEditing::Observe(Scene.World);
+	if (!TestTrue(TEXT("Detached cavity and continuous scene build"), MiningSpatialSafeEditing::Apply(Scene.Generator, true) && Scene.Generator->bLayoutApplied)) { AddError(Scene.Generator->LastBuildStatus); return false; }
+	AGeneratedMiningRock* Rock = Scene.Generator->GeneratedSegments[0];
+	bool bGapFilled = false;
+	for (const FMiningRockChunk& Chunk : Rock->Chunks)
+		Chunk.Mesh->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh)
+		{
+			bGapFilled |= Contains(Mesh, FVector(2117, 2037, 513));
+			TestFalse(TEXT("Detached room interior remains empty"), Contains(Mesh, FVector(2117, 4037, 513)));
+		});
+	TestTrue(TEXT("Unauthored space between rooms is rock"), bGapFilled);
+	Rock->SetSegmentState(EMiningSegmentState::Active);
+	for (int32 Distance = 300; Distance <= 3600; Distance += 300)
+	{
+		const FVector Point(2117, Distance + 13, 517);
+		bool bRockAhead = false;
+		for (const FMiningRockChunk& Chunk : Rock->Chunks)
+			Chunk.Mesh->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh) { bRockAhead |= Contains(Mesh, Point); });
+		TestTrue(TEXT("Each excavation starts inside real rock"), bRockAhead);
+		TestTrue(TEXT("Can excavate an unauthored route"), Rock->MineSphere(Point, 260));
+		for (const FMiningRockChunk& Chunk : Rock->Chunks)
+			Chunk.Mesh->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh) { TestFalse(TEXT("Excavated route is empty"), Contains(Mesh, Point)); });
+		Scene.Generator->GeneratedBedrock->GetDynamicMeshComponent()->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh) { TestFalse(TEXT("No internal bedrock blocks route"), Contains(Mesh, Point)); });
+	}
+	TestTrue(TEXT("Scene still respects existing chunk budgets"), Rock->LargestChunkTriangles <= 30000 && Rock->Chunks.Num() <= 128);
 	return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSpatialFreedomMiningTest, "BrainMining.Spatial.Freedom.BufferMiningKeepsBedrock", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -161,17 +219,17 @@ bool FSpatialFreedomMiningTest::RunTest(const FString& Parameters)
 	UE::Geometry::FDynamicMesh3 OriginalBedrock;
 	Bedrock->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh) { OriginalBedrock = Mesh; });
 	Rock->SetSegmentState(EMiningSegmentState::Active);
-	if (!TestTrue(TEXT("Player can dig beyond the initial tunnel into buffer"), Rock->MineSphere(FVector(2100, 490, 500), 240))) { AddError(Rock->LastStatus); return false; }
+	if (!TestTrue(TEXT("Player can dig beyond the initial tunnel into scene rock"), Rock->MineSphere(FVector(2100, 850, 500), 300))) { AddError(Rock->LastStatus); return false; }
 	for (const FMiningRockChunk& Chunk : Rock->Chunks)
 		Chunk.Mesh->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh)
 		{
-			TestFalse(TEXT("Excavation actually removes buffer rock"), Contains(Mesh, FVector(2100, 500, 500)));
+			TestFalse(TEXT("Excavation actually removes scene rock"), Contains(Mesh, FVector(2100, 850, 500)));
 			TestTrue(TEXT("Remaining mining mesh stays closed"), Mesh.TriangleCount() == 0 || Mesh.IsClosed());
 		});
 	Bedrock->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh)
 	{
 		TestTrue(TEXT("Outer bedrock never moves or erodes with mining"), Mesh.IsSameAs(OriginalBedrock, UE::Geometry::FDynamicMesh3::FSameAsOptions()));
-		TestTrue(TEXT("Bedrock still blocks the dig radius outside the buffer"), Contains(Mesh, FVector(2100, 700, 500)));
+		TestTrue(TEXT("Bedrock still blocks the dig radius outside the scene"), Contains(Mesh, FVector(2100, 1050, 500)));
 	});
 	TestTrue(TEXT("Mining keeps original triangle budget"), Rock->LargestChunkTriangles <= 30000);
 	return true;

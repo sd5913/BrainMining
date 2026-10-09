@@ -105,6 +105,7 @@ git lfs unlock "Content/MiningPrototype/Maps/Lvl_MiningLab.umap"
 
 ## 功能说明
 
+- [挖掘收集：玩法、实现与程序/AI 协作指南](README_Collection.md)
 - [挖掘原型](README_MiningPrototype.md)
 - [编辑式下降关卡](README_EditableDescent.md)
 - [自动房间](README_AutoRooms.md)

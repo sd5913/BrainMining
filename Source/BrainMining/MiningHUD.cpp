@@ -21,7 +21,7 @@ void AMiningHUD::BeginPlay()
 {
 	Super::BeginPlay();
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
-	if (PlayerOwner && PlayerOwner->IsLocalController())
+	if (bShowDeveloperOverlay && PlayerOwner && PlayerOwner->IsLocalController())
 	{
 		EnableInput(PlayerOwner);
 		DeveloperMap->BindInput(InputComponent);
@@ -49,6 +49,7 @@ void AMiningHUD::DrawHUD()
 	DrawLine(CenterX + 3, CenterY, CenterX + 9, CenterY, Reticle, 1.5f);
 	DrawLine(CenterX, CenterY - 9, CenterX, CenterY - 3, Reticle, 1.5f);
 	DrawLine(CenterX, CenterY + 3, CenterX, CenterY + 9, Reticle, 1.5f);
+	if (!bShowDeveloperOverlay) return;
 	const AMiningTunnelGenerator* Layout = nullptr;
 	for (TActorIterator<AMiningTunnelGenerator> Generator(GetWorld()); Generator; ++Generator)
 	{

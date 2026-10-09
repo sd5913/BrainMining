@@ -8,6 +8,7 @@
 
 class UInputMappingContext;
 class UUserWidget;
+class UMiningGUIHUDWidget;
 
 /**
  *  Simple first person Player Controller
@@ -23,6 +24,14 @@ public:
 
 	/** Constructor */
 	ABrainMiningPlayerController();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining GUI")
+	TSoftClassPtr<UMiningGUIHUDWidget> MiningGUIClass;
+	UPROPERTY(BlueprintReadOnly, Category="Mining GUI")
+	TObjectPtr<UMiningGUIHUDWidget> MiningGUI;
+	/** A visible cursor allows direct interaction; hold RMB to look around. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining GUI")
+	bool bEnableGUICursor = true;
 
 protected:
 
@@ -51,6 +60,11 @@ protected:
 
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
+	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+	void UseAbilityG();
+	void UseAbilityV();
+	EMouseCaptureMode PreviousMouseCaptureMode = EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown;
+	EMouseLockMode PreviousMouseLockMode = EMouseLockMode::LockOnCapture;
 
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;

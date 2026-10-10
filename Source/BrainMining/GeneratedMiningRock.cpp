@@ -272,7 +272,7 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius)
 	TArray<int32> Affected;
 	TArray<FDynamicMesh3> Prepared;
 	int32 Removed = 0;
-	const int32 Budget = FMath::Clamp(MaxTriangles, 1000, 30000);
+	const int32 Budget = FMath::Clamp(MaxTriangles, 1000, MiningChunks::MaxChunkTriangles);
 	for (int32 Index = 0; Index < Chunks.Num(); ++Index)
 	{
 		FMiningRockChunk& Chunk = Chunks[Index];
@@ -375,7 +375,7 @@ void AGeneratedMiningRock::Tick(float DeltaSeconds)
 		return;
 	}
 	LastSimplificationMilliseconds = Result->Milliseconds;
-	if (Result->Removed <= 0 || Result->Mesh.TriangleCount() > FMath::Clamp(MaxTriangles, 1000, 30000)) return;
+	if (Result->Removed <= 0 || Result->Mesh.TriangleCount() > FMath::Clamp(MaxTriangles, 1000, MiningChunks::MaxChunkTriangles)) return;
 	FMiningRockChunk& Chunk = Chunks[Result->ChunkIndex];
 	Chunk.Mesh->SetMesh(MoveTemp(Result->Mesh));
 	Chunk.Mesh->GetBodySetup()->SetFlags(RF_Transient);

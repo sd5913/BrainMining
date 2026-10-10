@@ -6,6 +6,6 @@ public class BrainMiningEditor : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "BrainMining" });
-		PrivateDependencyModuleNames.AddRange(new[] { "UnrealEd", "Slate", "SlateCore", "PropertyEditor", "ToolMenus", "InputCore", "ApplicationCore", "Json", "AssetRegistry" });
+		PrivateDependencyModuleNames.AddRange(new[] { "UnrealEd", "Slate", "SlateCore", "PropertyEditor", "ToolMenus", "InputCore", "ApplicationCore", "Json", "AssetRegistry", "GeometryFramework", "GeometryCore", "ContentBrowser" });
 	}
 }

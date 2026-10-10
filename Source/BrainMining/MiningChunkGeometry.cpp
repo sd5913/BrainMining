@@ -21,15 +21,18 @@ namespace
 		Second.DiscardAttributes();
 		if (!First.HasTriangleGroups()) First.EnableTriangleGroups(0);
 		if (!Second.HasTriangleGroups()) Second.EnableTriangleGroups(0);
-		const double Tolerances[] = {0.000001, 0.00001, 0.0001, 0.001};
-		for (int32 Attempt = 0; Attempt < 8; ++Attempt)
+		// SnapTolerance is measured after FMeshBoolean normalizes both meshes.
+		// Fine first passes preserve short edges in large external mining regions.
+		const double Tolerances[] = {0.00000001, 0.0000001, 0.000001, 0.00001, 0.0001, 0.001};
+		for (int32 Attempt = 0; Attempt < 12; ++Attempt)
 		{
 			Result.Clear();
 			FMeshBoolean Operation(&First, &Second, &Result, Mode);
 			Operation.bSimplifyAlongNewEdges = Attempt % 2 == 0;
 			Operation.bPreserveTriangleGroups = false;
 			Operation.SnapTolerance = Tolerances[Attempt / 2];
-			if (Operation.Compute() && Operation.CreatedBoundaryEdges.IsEmpty() &&
+			const bool bComputed = Operation.Compute();
+			if (bComputed && Operation.CreatedBoundaryEdges.IsEmpty() &&
 				(Result.TriangleCount() == 0 || Result.IsClosed()) &&
 				Result.CheckValidity(FDynamicMesh3::FValidityOptions(), EValidityCheckFailMode::ReturnOnly)) return true;
 		}
@@ -95,6 +98,16 @@ bool MiningChunks::Split(const FDynamicMesh3& Source, double Length, TArray<FDyn
 	return !Meshes.IsEmpty();
 }
 
+bool MiningChunks::SpatialChunkCounts(const FVector& Size, double Length, FIntVector& Counts)
+{
+	if (!FMath::IsFinite(Length) || Length < 400 || Length > 3000 || Size.ContainsNaN() ||
+		Size.GetMin() <= 0 || Size.GetMax() > Length * MaxSpatialChunks) return false;
+	const FIntVector Candidate(FMath::CeilToInt(Size.X / Length), FMath::CeilToInt(Size.Y / Length), FMath::CeilToInt(Size.Z / Length));
+	if (static_cast<int64>(Candidate.X) * Candidate.Y * Candidate.Z > MaxSpatialChunks) return false;
+	Counts = Candidate;
+	return true;
+}
+
 bool MiningChunks::SplitSpatial(const FDynamicMesh3& Source, double Length, TArray<FDynamicMesh3>& Meshes, TArray<FBox>& Bounds)
 {
 	if (!FMath::IsFinite(Length) || Length < 400 || Length > 3000) return false;
@@ -104,9 +117,8 @@ bool MiningChunks::SplitSpatial(const FDynamicMesh3& Source, double Length, TArr
 	const FAxisAlignedBox3d SourceBounds = Source.GetBounds();
 	const FVector Minimum(SourceBounds.Min);
 	const FVector Size(SourceBounds.Max - SourceBounds.Min);
-	if (Minimum.ContainsNaN() || Size.ContainsNaN() || Size.GetMin() <= 0 || Size.GetMax() > Length * 128) return false;
-	const FIntVector Counts(FMath::CeilToInt(Size.X / Length), FMath::CeilToInt(Size.Y / Length), FMath::CeilToInt(Size.Z / Length));
-	if (static_cast<int64>(Counts.X) * Counts.Y * Counts.Z > 128) return false;
+	FIntVector Counts;
+	if (Minimum.ContainsNaN() || !SpatialChunkCounts(Size, Length, Counts)) return false;
 	Pieces.Reserve(Counts.X * Counts.Y * Counts.Z);
 	PieceBounds.Reserve(Counts.X * Counts.Y * Counts.Z);
 	for (int32 XIndex = 0; XIndex < Counts.X; ++XIndex)
@@ -125,7 +137,11 @@ bool MiningChunks::SplitSpatial(const FDynamicMesh3& Source, double Length, TArr
 		Generator.Generate();
 		FDynamicMesh3 Piece;
 		const FDynamicMesh3 Tool(&Generator);
-		if (!Boolean(Source, Tool, FMeshBoolean::EBooleanOp::Intersect, Piece)) return false;
+		if (!Boolean(Source, Tool, FMeshBoolean::EBooleanOp::Intersect, Piece))
+		{
+			UE_LOG(LogBrainMining, Warning, TEXT("Spatial boolean failed at %d,%d,%d / %d,%d,%d: source %d closed %d, result %d closed %d valid %d"), XIndex,YIndex,ZIndex,Counts.X,Counts.Y,Counts.Z,Source.TriangleCount(),Source.IsClosed(),Piece.TriangleCount(),Piece.IsClosed(),Piece.CheckValidity(FDynamicMesh3::FValidityOptions(),EValidityCheckFailMode::ReturnOnly));
+			return false;
+		}
 		if (Piece.TriangleCount() == 0) continue;
 		Piece.CompactInPlace();
 		const FAxisAlignedBox3d ActualBounds = Piece.GetBounds();

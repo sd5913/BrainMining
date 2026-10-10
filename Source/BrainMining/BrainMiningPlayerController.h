@@ -23,6 +23,7 @@ public:
 
 	/** Constructor */
 	ABrainMiningPlayerController();
+	void UseInputDefaultsFrom(const ABrainMiningPlayerController* Defaults);
 
 protected:
 

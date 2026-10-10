@@ -62,7 +62,7 @@ void UMiningComponent::BindInput(UEnhancedInputComponent* Input)
 		MiningContext->MapKey(ResetAction, EKeys::R);
 		MiningContext->MapKey(PreviewAction, EKeys::F1);
 	}
-	InputSubsystem->AddMappingContext(MiningContext, 1);
+	if(!IsEncounterBlocked())InputSubsystem->AddMappingContext(MiningContext, 1);
 	Input->BindAction(MineAction, ETriggerEvent::Started, this, &UMiningComponent::StartMining);
 	Input->BindAction(MineAction, ETriggerEvent::Completed, this, &UMiningComponent::StopMining);
 	Input->BindAction(MineAction, ETriggerEvent::Canceled, this, &UMiningComponent::StopMining);
@@ -92,6 +92,7 @@ void UMiningComponent::RefreshTarget()
 void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    if(IsEncounterBlocked())return;
 	RefreshTarget();
 	if (bShowPreview && IsValid(TargetRock))
 	{
@@ -110,6 +111,7 @@ void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 bool UMiningComponent::TryMine()
 {
+    if(IsEncounterBlocked())return false;
 	if (GetWorld()->GetTimeSeconds() < NextMineTime)
 	{
 		return false;
@@ -130,6 +132,7 @@ bool UMiningComponent::TryMine()
 
 void UMiningComponent::StartMining()
 {
+    if(IsEncounterBlocked())return;
 	bMiningHeld = true;
 	TryMine();
 }
@@ -146,13 +149,15 @@ void UMiningComponent::StopMining()
 
 void UMiningComponent::TogglePreview()
 {
+    if(IsEncounterBlocked())return;
 	bShowPreview = !bShowPreview;
 }
 
 void UMiningComponent::ResetField()
 {
+    if(IsEncounterBlocked())return;
 	StopMining();
-	if (bHasInitialTransform)
+	if (bHasInitialTransform && !bScopedReset)
 	{
 		GetOwner()->SetActorTransform(InitialTransform, false, nullptr, ETeleportType::TeleportPhysics);
 		if (ACharacter* Character = Cast<ACharacter>(GetOwner()))
@@ -171,14 +176,28 @@ void UMiningComponent::ResetField()
 	}
 	for (TActorIterator<ADiggableRock> Rock(GetWorld()); Rock; ++Rock)
 	{
+		if (bScopedReset && !ResetBounds.IsInsideOrOn(Rock->GetActorLocation())) continue;
 		Rock->ResetRock();
 	}
 	for (TActorIterator<AMiningTunnelGenerator> Generator(GetWorld()); Generator; ++Generator)
 	{
+		if (bScopedReset && !ResetBounds.IsInsideOrOn(Generator->GetActorLocation())) continue;
 		Generator->ResetProgression();
 	}
 	NextMineTime = 0.0;
 	LastMinedRock = nullptr;
 	TargetRock = nullptr;
 	Status = TEXT("Field reset");
+}
+
+void UMiningComponent::PushEncounterBlock()
+{
+    ++EncounterBlockCount;CancelMining();TargetRock=nullptr;
+    if(InputSubsystem.IsValid() && MiningContext)InputSubsystem->RemoveMappingContext(MiningContext);
+}
+void UMiningComponent::PopEncounterBlock()
+{
+    if(EncounterBlockCount==0)return;
+    --EncounterBlockCount;
+    if(!IsEncounterBlocked() && InputSubsystem.IsValid() && MiningContext)InputSubsystem->AddMappingContext(MiningContext,1);
 }

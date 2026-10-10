@@ -29,5 +29,5 @@ namespace MiningHollowBranches
 	bool Tube(const TArray<FVector>& Points, double Radius, UE::Geometry::FDynamicMesh3& Mesh);
 	bool Plan(const MiningHollow::FPlan& Region, const TArray<FSettings>& Settings, TArray<FPlan>& Result, FString& Error);
 	bool Carve(const TArray<FPlan>& Plans, UE::Geometry::FDynamicMesh3& Rock, FString& Error);
-	void AddMapRegions(const TArray<FPlan>& Plans, const FVector& Origin, TArray<FMiningMapRegion>& Regions);
+	void AddMapRegions(const TArray<FPlan>& Plans, const FVector& Origin, TArray<FMiningMapRegion>& Regions, int32 GroupIndex = 0);
 }

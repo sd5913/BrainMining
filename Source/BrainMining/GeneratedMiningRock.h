@@ -9,6 +9,7 @@
 class UDynamicMesh;
 class UMaterialInstanceDynamic;
 struct FMiningSimplificationResult;
+namespace MiningChunks { struct FSpatialGrid; }
 
 USTRUCT(BlueprintType)
 struct FMiningRockChunk
@@ -29,6 +30,8 @@ struct FMiningRockChunk
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Chunk")
 	int32 Triangles = 0;
+	UPROPERTY()
+	int32 SpatialCell = INDEX_NONE;
 };
 
 UENUM(BlueprintType)
@@ -48,6 +51,11 @@ public:
 	virtual bool MineSphere(FVector WorldCenter, float WorldRadius) override;
 	void SetGeneratedMesh(UE::Geometry::FDynamicMesh3&& Mesh);
 	bool SetChunkedMesh(const UE::Geometry::FDynamicMesh3& Mesh, double Length, bool bSpatial = false);
+	void ApplySpatialGrid(const UE::Geometry::FDynamicMesh3& Mesh, TSharedPtr<const MiningChunks::FSpatialGrid, ESPMode::ThreadSafe> Grid);
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	int32 LastRebuiltEditorChunks = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	int32 LastReusedEditorChunks = 0;
 	void CopyMiningMesh(UE::Geometry::FDynamicMesh3& Mesh) const;
 	void CopyEditorPreviewMesh(UE::Geometry::FDynamicMesh3& Mesh) const;
 	UMaterialInterface* GetMiningMaterial();
@@ -108,6 +116,7 @@ private:
 	void ScheduleSimplification(int32 Index);
 	TFuture<TSharedPtr<FMiningSimplificationResult, ESPMode::ThreadSafe>> SimplificationTask;
 	uint64 MeshGeneration = 0;
+	TSharedPtr<const MiningChunks::FSpatialGrid, ESPMode::ThreadSafe> EditorGrid;
 	UE::Geometry::FDynamicMesh3 ChunkCutter;
 	UPROPERTY(VisibleAnywhere, Instanced, Category="Generated")
 	TObjectPtr<UDynamicMesh> InitialMesh;

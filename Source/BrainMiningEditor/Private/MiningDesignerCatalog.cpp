@@ -31,7 +31,7 @@ TArray<FName> Fields(const UObject* Object, EMiningDesignerSection Section)
 		case EMiningDesignerSection::Mining: return {"DiggingSettings"};
 		case EMiningDesignerSection::Visual: return {"bImproveMiningVisibility", "HeadlampIntensity", "FillLightIntensity", "DeveloperMapSettings", "PreviewMode", "SectionAxis", "SectionPosition", "bSectionKeepPositive", "bShowBedrockInEditor"};
 		case EMiningDesignerSection::Advanced: return {"SegmentTriangleBudget", "bAutomaticChunks", "ChunkLength", "bSimplifyChunks", "SimplificationTolerance", "RoomEntryInset", "RoomEntryHoldTime", "CompletedSegmentPolicy", "FrozenSegmentsToKeep", "RecycleHiddenTime"};
-		case EMiningDesignerSection::Terrain: return {"bAutoRebuild", "bHollowRegionPrototype", "HollowRegion", "bDirectRoomFaces", "BedrockThickness", "TunnelWidth", "TunnelHeight", "MaxSlopeDegrees", "SearchDistance", "DoorMargin", "bRequireDescending", "BedrockMaterial", "TunnelMaterial"};
+		case EMiningDesignerSection::Terrain: return {"bAutoRebuild", "bHollowRegionPrototype", "HollowRegions", "HollowRegion", "bDirectRoomFaces", "BedrockThickness", "TunnelWidth", "TunnelHeight", "MaxSlopeDegrees", "SearchDistance", "DoorMargin", "bRequireDescending", "BedrockMaterial", "TunnelMaterial"};
 		}
 	}
 	if (Section != EMiningDesignerSection::Terrain) return {};
@@ -47,7 +47,7 @@ TArray<FName> Fields(const UObject* Object, EMiningDesignerSection Section)
 bool Transferable(const FProperty* Property)
 {
 	if (!Property || !Property->HasAnyPropertyFlags(CPF_Edit) || Property->HasAnyPropertyFlags(CPF_EditConst | CPF_Transient)) return false;
-	static const TSet<FName> Identity = {"ConnectionOrder", "LayoutId", "SpaceName", "bManualBranchPath", "bHollowRegionPrototype", "bDirectRoomFaces", "bAutoRebuild"};
+	static const TSet<FName> Identity = {"ConnectionOrder", "LayoutId", "SpaceName", "bManualBranchPath", "bHollowRegionPrototype", "bDirectRoomFaces", "bAutoRebuild", "HollowRegions"};
 	if (Identity.Contains(Property->GetFName())) return false;
 	if (CastField<FObjectPropertyBase>(Property) || CastField<FSoftObjectProperty>(Property)) return false;
 	return CastField<FNumericProperty>(Property) || CastField<FBoolProperty>(Property) || CastField<FEnumProperty>(Property) || CastField<FStructProperty>(Property) || CastField<FArrayProperty>(Property);
@@ -80,6 +80,7 @@ FString Effect(EMiningDesignerSection Section)
 FString Caption(FName Name)
 {
 	static const TMap<FName, FString> Labels = {
+		{"HollowRegions", TEXT("串联矿区列表（非空时优先）")},
 		{"PlayerScaleSettings", TEXT("人物比例")}, {"FlightSettings", TEXT("按住上升、松开下落")}, {"DiggingSettings", TEXT("关卡挖掘设置")}, {"DeveloperMapSettings", TEXT("开发者小地图")},
 		{"bEnabled", TEXT("启用")}, {"Scale", TEXT("人物缩放")}, {"MovementSpeedMultiplier", TEXT("水平速度倍率")}, {"JumpHeightMultiplier", TEXT("普通跳跃高度倍率")}, {"StepHeightMultiplier", TEXT("跨台阶高度倍率")}, {"MiningRadiusMultiplier", TEXT("挖掘半径倍率")}, {"MiningReachMultiplier", TEXT("挖掘距离倍率")}, {"MiningDownwardOffsetMultiplier", TEXT("挖掘下偏倍率")},
 		{"AscentSpeed", TEXT("上升速度上限")}, {"MaxFallSpeed", TEXT("下落速度上限")}, {"AirMoveSpeed", TEXT("空中水平速度")}, {"LiftAcceleration", TEXT("上升加速度")}, {"FallGravityMultiplier", TEXT("下落重力倍率")},

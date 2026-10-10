@@ -135,8 +135,16 @@ void SMiningDesignerPanel::Construct(const FArguments& Arguments)
 	TSharedRef<SWrapBox> Actions = SNew(SWrapBox).UseAllottedSize(true).InnerSlotPadding(FVector2D(4, 4));
 	Actions->AddSlot()[Button(TEXT("定位对象"), [this] { return FocusTarget(); }, [this] { return UMiningDesignerLibrary::CanEdit(Target.Get()); })];
 	Actions->AddSlot()[Button(TEXT("编辑路径点"), [this] { return EditPath(); })];
+	Actions->AddSlot()[Button(TEXT("矿道钢笔编辑器"), [] { UMiningDesignerLibrary::OpenManualEditor(); return FReply::Handled(); })];
 	Actions->AddSlot()[Button(TEXT("直线支路控制点"), [this] { return StraightBranch(); }, [this] { return Editable() && Target.IsValid() && Target->IsA<AMiningHollowChamber>(); })];
 	Actions->AddSlot()[Button(TEXT("检查并重新生成"), [this] { return Rebuild(); }, [this] { return Editable() && Generator(); })];
+	Actions->AddSlot()[Button(TEXT("补齐相邻房间矿区"), [this]
+	{
+		AMiningTunnelGenerator* Layout = Generator();
+		const bool bSuccess = Layout && Layout->AddMissingHollowRegions();
+		Details->ForceRefresh();
+		return FinishOperation(bSuccess, Layout ? Layout->LastBuildStatus : TEXT("请选择生成器"), TEXT("已补齐矿区；原有路径未改动。可继续编辑后重新生成。"));
+	}, [this] { return Editable() && Generator() && Generator()->bHollowRegionPrototype; })];
 	Actions->AddSlot()[Button(TEXT("撤销"), [this] { GEditor->UndoTransaction(); Details->ForceRefresh(); return FReply::Handled(); }, [] { return GEditor && !GEditor->IsPlaySessionInProgress(); })];
 	Actions->AddSlot()[Button(TEXT("重做"), [this] { GEditor->RedoTransaction(); Details->ForceRefresh(); return FReply::Handled(); }, [] { return GEditor && !GEditor->IsPlaySessionInProgress(); })];
 	Actions->AddSlot()[Button(TEXT("保存当前关卡"), [this] { return FinishOperation(FEditorFileUtils::SaveCurrentLevel(), TEXT("未保存，请检查文件权限或保存对话框。"), TEXT("当前关卡已保存。预设需用下方按钮单独保存。")); }, [] { return GEditor && !GEditor->IsPlaySessionInProgress(); })];
@@ -298,7 +306,7 @@ AMiningTunnelGenerator* SMiningDesignerPanel::Generator() const
 	int32 Count = 0;
 	for (TActorIterator<AMiningTunnelGenerator> Layout(World); Layout; ++Layout)
 	{
-		if (Owner && Layout->HollowRegion == Owner) return *Layout;
+		if (Owner && Layout->UsesHollowRegion(Owner)) return *Layout;
 		Only = *Layout;
 		++Count;
 	}

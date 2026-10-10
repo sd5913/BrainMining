@@ -4,7 +4,7 @@
 #include "MiningDeveloperMapData.generated.h"
 
 UENUM(BlueprintType)
-enum class EMiningMapView : uint8 { SideXZ, TopXY, SideYZ };
+enum class EMiningMapView : uint8 { SideXZ, TopXY, SideYZ, Orbit3D };
 
 UENUM(BlueprintType)
 enum class EMiningMapRegionKind : uint8 { Room, Tunnel, Space, Branch, HiddenEntrance, RockRegion, GuidePlug };
@@ -62,11 +62,37 @@ struct FMiningMapRegion
 	UPROPERTY()
 	TArray<FPlane> Planes;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Map", AdvancedDisplay)
+	TArray<FVector2D> PolygonXZ;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Map", AdvancedDisplay)
+	TArray<FIntVector> PolygonTriangles;
+
+	UPROPERTY()
+	TArray<FIntVector> SurfaceTriangles;
+
 	bool Contains(const FVector& Position) const;
 };
 
 namespace MiningDeveloperMap
 {
+	struct FSurfaceEdge
+	{
+		FIntPoint Vertices;
+		FVector FirstNormal = FVector::ZeroVector;
+		FVector SecondNormal = FVector::ZeroVector;
+		bool bShared = false;
+		bool Visible(const FVector& ViewDirection) const;
+	};
+	struct FSurface
+	{
+		TArray<FVector> Vertices;
+		TArray<FIntVector> Triangles;
+		TArray<FSurfaceEdge> Edges;
+		bool bBoundsFallback = false;
+	};
+	FVector Project3D(const FVector& Point, const FRotator& Rotation);
+	FSurface BuildSurface(const FMiningMapRegion& Region);
 	FMiningMapRegion Convex(const FString& Name, EMiningMapRegionKind Kind, int32 Group, const TArray<FVector>& Vertices);
 	FMiningMapRegion Box(const FString& Name, EMiningMapRegionKind Kind, int32 Group, const FBox& Bounds);
 	FVector2D Project(const FVector& Point, EMiningMapView View);

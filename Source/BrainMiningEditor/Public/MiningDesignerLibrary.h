@@ -4,6 +4,8 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "MiningDesignerLibrary.generated.h"
 
+class AActor;
+
 UENUM(BlueprintType)
 enum class EMiningDesignerSection : uint8
 {
@@ -15,8 +17,22 @@ class BRAINMININGEDITOR_API UMiningDesignerLibrary : public UBlueprintFunctionLi
 {
 	GENERATED_BODY()
 public:
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Showcase")
+    static TArray<AActor*> ImportShowcaseRoom(const FString& SourceMap, FVector Offset, const TArray<FString>& ExcludedLabels);
 	UFUNCTION(BlueprintCallable, Category="Mining Designer")
 	static void OpenDesigner();
+	UFUNCTION(BlueprintCallable, Category="Mining Designer")
+	static void OpenManualEditor();
+	UFUNCTION(BlueprintCallable, Category="Mining Designer")
+	static void OpenSpatialEditor();
+	UFUNCTION(BlueprintCallable, Category="Mining Designer|Spatial")
+	static bool CheckSpatialEdit(AActor* Actor);
+	UFUNCTION(BlueprintCallable, Category="Mining Designer|Spatial")
+	static bool SmoothSpatialIssue();
+	UFUNCTION(BlueprintPure, Category="Mining Designer|Spatial")
+	static FString SpatialEditingStatus();
+	UFUNCTION(BlueprintCallable, Category="Mining|Spatial")
+	static FString SpatialDragPerformance();
 	UFUNCTION(BlueprintCallable, Category="Mining Designer")
 	static FString CapturePreset(UObject* Target, EMiningDesignerSection Section);
 	UFUNCTION(BlueprintCallable, Category="Mining Designer")

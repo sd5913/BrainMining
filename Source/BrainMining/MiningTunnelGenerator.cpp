@@ -6,6 +6,11 @@
 #include "MiningHollowGeometry.h"
 #include "MiningHollowChamber.h"
 #include "MiningHollowBranches.h"
+#include "MiningManualRegion.h"
+#include "MiningSpatialTunnel.h"
+#include "MiningSpatialBuild.h"
+#include "MiningSpatialEditBridge.h"
+#include "MiningManualGeometry.h"
 #include "MiningTunnelRoute.h"
 #include "MiningTunnelShapeSection.h"
 #include "MiningRoutePlanner.h"
@@ -303,7 +308,7 @@ void AMiningTunnelGenerator::ResetProgression()
 	{
 		if (IsValid(GeneratedSegments[Index]))
 		{
-			GeneratedSegments[Index]->SetSegmentState(!bGeneratedSegmented || Index == ActiveSegmentIndex
+			GeneratedSegments[Index]->SetSegmentState(!bGeneratedSegmented || Index == ActiveSegmentIndex || (GeneratedFreeAccess.IsValidIndex(Index) && GeneratedFreeAccess[Index])
 				? EMiningSegmentState::Active : EMiningSegmentState::Waiting);
 		}
 	}
@@ -330,7 +335,7 @@ void AMiningTunnelGenerator::UpdateProgression(APawn* Player, float DeltaSeconds
 		RoomEntryElapsed = bInside ? RoomEntryElapsed + FMath::Max(0.f, DeltaSeconds) : 0;
 		if (bInside && RoomEntryElapsed >= FMath::Clamp(RoomEntryHoldTime, 0.f, 2.f))
 		{
-			if (AGeneratedMiningRock* Completed = GetActiveSegment()) Completed->SetSegmentState(EMiningSegmentState::Frozen);
+			if (AGeneratedMiningRock* Completed = GetActiveSegment(); Completed && (!GeneratedFreeAccess.IsValidIndex(ActiveSegmentIndex) || !GeneratedFreeAccess[ActiveSegmentIndex])) Completed->SetSegmentState(EMiningSegmentState::Frozen);
 			CurrentRoomIndex = NextRoom;
 			ActiveSegmentIndex = GeneratedSegments.IsValidIndex(CurrentRoomIndex) ? CurrentRoomIndex : INDEX_NONE;
 			if (AGeneratedMiningRock* Active = GetActiveSegment()) Active->SetSegmentState(EMiningSegmentState::Active);
@@ -358,6 +363,7 @@ void AMiningTunnelGenerator::UpdateProgression(APawn* Player, float DeltaSeconds
 
 bool AMiningTunnelGenerator::TryRecycleSegment(int32 Index, APawn* Player)
 {
+	if (GeneratedSealAllowed.IsValidIndex(Index) && !GeneratedSealAllowed[Index]) return false;
 	bool bSafeToRecycle = false;
 	ON_SCOPE_EXIT { if (!bSafeToRecycle) RecycleHiddenSince.Remove(Index); };
 	if (!GeneratedSegments.IsValidIndex(Index) || !IsValid(GeneratedSegments[Index]) ||
@@ -447,6 +453,103 @@ TArray<AMiningLayoutRoom*> AMiningTunnelGenerator::GetOrderedRooms() const
 	return Rooms;
 }
 
+TArray<AMiningHollowRegion*> AMiningTunnelGenerator::GetHollowRegions() const
+{
+	TArray<AMiningHollowRegion*> Result;
+	if (!HollowRegions.IsEmpty())
+		for (AMiningHollowRegion* Region : HollowRegions) Result.Add(Region);
+	else if (HollowRegion) Result.Add(HollowRegion);
+	return Result;
+}
+
+bool AMiningTunnelGenerator::UsesHollowRegion(const AMiningHollowRegion* Region) const
+{
+	return bHollowRegionPrototype && Region && GetHollowRegions().Contains(Region);
+}
+
+bool AMiningTunnelGenerator::ResolveHollowRegions(const TArray<AMiningLayoutRoom*>& Rooms, TArray<AMiningHollowRegion*>& Result, FString& Error, bool bAllowMissing) const
+{
+	if (Rooms.Num() < 2 || Rooms.Num() > 16)
+	{
+		Error = TEXT("Hollow layout needs 2-16 ordered rooms; previous terrain retained"); return false;
+	}
+	Result.Init(nullptr, Rooms.Num() - 1);
+	for (AMiningHollowRegion* Region : GetHollowRegions())
+	{
+		if (!IsValid(Region) || Region->GetLevel() != GetLevel())
+		{
+			Error = TEXT("Remove empty/deleted or cross-level entries from Hollow Regions; previous terrain retained"); return false;
+		}
+		const int32 Index = Rooms.IndexOfByKey(Region->FromRoom.Get());
+		if (Index == INDEX_NONE || !Result.IsValidIndex(Index) || Region->ToRoom != Rooms[Index + 1] || Result[Index])
+		{
+			Error = Region->GetActorNameOrLabel() + TEXT(": each consecutive room pair needs exactly one region; check From/To and duplicate entries"); return false;
+		}
+		Result[Index] = Region;
+	}
+	if (!bAllowMissing)
+		for (int32 Index = 0; Index < Result.Num(); ++Index)
+			if (!Result[Index])
+			{
+				Error = FString::Printf(TEXT("Missing hollow region: %s -> %s. Use Add Missing Hollow Regions; previous terrain retained"), *Rooms[Index]->GetActorNameOrLabel(), *Rooms[Index + 1]->GetActorNameOrLabel()); return false;
+			}
+	return true;
+}
+
+bool AMiningTunnelGenerator::AddMissingHollowRegions()
+{
+	if (!GetWorld() || GetWorld()->IsGameWorld() || !bHollowRegionPrototype) return false;
+#if WITH_EDITOR
+	if (GEditor && GEditor->IsPlaySessionInProgress()) return false;
+#endif
+	const TArray<AMiningLayoutRoom*> Rooms = GetOrderedRooms();
+	TArray<AMiningHollowRegion*> Resolved;
+	if (!ResolveHollowRegions(Rooms, Resolved, LastBuildStatus, true)) return false;
+	TSet<int32> Orders;
+	int32 Starts = 0;
+	for (const AMiningLayoutRoom* Room : Rooms)
+	{
+		Starts += Room->bStartRoom ? 1 : 0;
+		if (Orders.Contains(Room->ConnectionOrder)) { LastBuildStatus = TEXT("Room connection orders must be unique"); return false; }
+		Orders.Add(Room->ConnectionOrder);
+	}
+	if (Starts != 1) { LastBuildStatus = TEXT("Mark exactly one start room before adding regions"); return false; }
+#if WITH_EDITOR
+	const FScopedTransaction Transaction(NSLOCTEXT("Mining", "AddHollowRegions", "Add missing hollow regions"));
+#endif
+	Modify();
+	TArray<AMiningHollowRegion*> Created;
+	for (int32 Index = 0; Index < Resolved.Num(); ++Index)
+	{
+		if (Resolved[Index]) continue;
+		FActorSpawnParameters Spawn;
+		Spawn.OverrideLevel = GetLevel();
+		Spawn.ObjectFlags |= RF_Transactional;
+		AMiningHollowRegion* Region = GetWorld()->SpawnActor<AMiningHollowRegion>(GetActorLocation(), FRotator::ZeroRotator, Spawn);
+		if (!Region)
+		{
+			for (AMiningHollowRegion* Added : Created) Added->Destroy();
+			LastBuildStatus = TEXT("Could not create regions; previous references retained"); return false;
+		}
+		Created.Add(Region);
+		Region->Modify();
+		Region->FromRoom = Rooms[Index];
+		Region->ToRoom = Rooms[Index + 1];
+		Region->FitPathBetweenRooms();
+#if WITH_EDITOR
+		Region->SetActorLabel(FString::Printf(TEXT("REGION_%02d_TO_%02d_EDIT"), Rooms[Index]->ConnectionOrder, Rooms[Index + 1]->ConnectionOrder));
+		Region->SetFolderPath(FName(*(TEXT("AutoMine/") + LayoutId.ToString() + TEXT("/Regions_EDIT"))));
+#endif
+		Resolved[Index] = Region;
+	}
+	HollowRegions.Reset();
+	for (AMiningHollowRegion* Region : Resolved) HollowRegions.Add(Region);
+	LastBuildStatus = FString::Printf(TEXT("Added %d missing regions; existing paths preserved. Rebuild to validate geometry."), Created.Num());
+	MarkPackageDirty();
+	RequestRebuild();
+	return true;
+}
+
 uint32 AMiningTunnelGenerator::GetInputHash() const
 {
 	uint32 Hash = HashCombineFast(GetTypeHash(LayoutId), GetTypeHash(TunnelWidth));
@@ -455,8 +558,12 @@ uint32 AMiningTunnelGenerator::GetInputHash() const
 	Hash = HashCombineFast(Hash, GetTypeHash(BedrockThickness));
 	Hash = HashCombineFast(Hash, GetTypeHash(bDirectRoomFaces));
 	Hash = HashCombineFast(Hash, GetTypeHash(bHollowRegionPrototype));
-	Hash = HashCombineFast(Hash, GetTypeHash(HollowRegion.Get()));
-	if (bHollowRegionPrototype && IsValid(HollowRegion)) Hash = HashCombineFast(Hash, HollowRegion->GetGeometryHash());
+	if (bHollowRegionPrototype)
+		for (const AMiningHollowRegion* Region : GetHollowRegions())
+		{
+			Hash = HashCombineFast(Hash, GetTypeHash(Region));
+			if (IsValid(Region)) Hash = HashCombineFast(Hash, Region->GetGeometryHash());
+		}
 	Hash = HashCombineFast(Hash, GetTypeHash(SegmentTriangleBudget));
 	Hash = HashCombineFast(Hash, GetTypeHash(bAutomaticChunks));
 	Hash = HashCombineFast(Hash, GetTypeHash(ChunkLength));
@@ -563,7 +670,8 @@ void AMiningTunnelGenerator::RefreshEditorVisibility()
 		if (IsValid(Segment)) Segment->SetIsTemporarilyHiddenInEditor(PreviewMode != EMiningPreviewMode::Game);
 	}
 	if (IsValid(PreviewBedrock)) PreviewBedrock->SetIsTemporarilyHiddenInEditor(PreviewMode != EMiningPreviewMode::Section);
-	if (IsValid(PreviewFill)) PreviewFill->SetIsTemporarilyHiddenInEditor(PreviewMode == EMiningPreviewMode::Game);
+	const bool bSpatialLayout = PreviewMode == EMiningPreviewMode::Layout && GetHollowRegions().ContainsByPredicate([](const AMiningHollowRegion* Region) { return IsValid(Region) && Region->IsA<AMiningSpatialRegion>(); });
+	if (IsValid(PreviewFill)) PreviewFill->SetIsTemporarilyHiddenInEditor(PreviewMode == EMiningPreviewMode::Game || bSpatialLayout);
 	for (AMiningLayoutSpace* Space : GetLayoutSpaces()) Space->SetGuideVisibility(PreviewMode != EMiningPreviewMode::Game);
 	for (const AMiningLayoutRoom* Room : GetOrderedRooms())
 	{
@@ -637,6 +745,15 @@ void AMiningTunnelGenerator::Tick(float DeltaSeconds)
 		ObservedPreviewHash = PreviewHash;
 		UpdatePreview();
 	}
+	ProcessEditorRebuild();
+}
+
+void AMiningTunnelGenerator::ProcessEditorRebuild()
+{
+	if (!GetWorld() || GetWorld()->IsGameWorld() || bBuilding) return;
+#if WITH_EDITOR
+	if (MiningSpatialEditing::Handle(this)) return;
+#endif
 	const uint32 InputHash = GetInputHash();
 	if (InputHash != ObservedInputHash)
 	{
@@ -648,9 +765,10 @@ void AMiningTunnelGenerator::Tick(float DeltaSeconds)
 	{
 		return IsValid(Route) && Route->GetShapeSections().ContainsByPredicate([](const AMiningTunnelShapeSection* Section) { return Section->IsInteractiveEdit(); });
 	});
-	bool bEditingRegion = bHollowRegionPrototype && IsValid(HollowRegion) && HollowRegion->IsInteractiveEdit();
-	if (bHollowRegionPrototype && IsValid(HollowRegion))
-		bEditingRegion |= HollowRegion->GetChambers().ContainsByPredicate([](const AMiningHollowChamber* Chamber) { return Chamber->IsInteractiveEdit(); });
+	bool bEditingRegion = false;
+	if (bHollowRegionPrototype)
+		for (const AMiningHollowRegion* Region : GetHollowRegions())
+			if (IsValid(Region)) bEditingRegion |= Region->IsInteractiveEdit() || Region->GetChambers().ContainsByPredicate([](const AMiningHollowChamber* Chamber) { return Chamber->IsInteractiveEdit(); });
 #if WITH_EDITOR
 	bEditingRegion |= bHollowRegionPrototype && GEditor && GEditor->IsTransactionActive();
 #endif
@@ -660,8 +778,19 @@ void AMiningTunnelGenerator::Tick(float DeltaSeconds)
 	}
 }
 
+void AMiningTunnelGenerator::AcknowledgeSpatialEdit(bool bApplied, const FString& Status)
+{
+	bLayoutApplied = bApplied;
+	LastBuildStatus = Status;
+	ObservedInputHash = GetInputHash();
+	bPendingRebuild = false;
+}
+
 bool AMiningTunnelGenerator::RebuildTunnels()
 {
+#if WITH_EDITOR
+	if (MiningSpatialEditing::Handle(this)) return bLayoutApplied;
+#endif
 	if (bBuilding || !GetWorld() || GetWorld()->IsGameWorld())
 	{
 		return false;
@@ -674,16 +803,22 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 		ObservedInputHash = GetInputHash();
 		bPendingRebuild = false;
 		if (!bLayoutApplied && !LastBuildStatus.StartsWith(TEXT("NOT APPLIED"))) LastBuildStatus = TEXT("NOT APPLIED: ") + LastBuildStatus;
-		if (bHollowRegionPrototype && IsValid(HollowRegion)) HollowRegion->RegionStatus = LastBuildStatus;
-		if (bHollowRegionPrototype && IsValid(HollowRegion))
-			for (AMiningHollowChamber* Chamber : HollowRegion->GetChambers())
-				Chamber->ChamberStatus = !Chamber->bEnabled ? TEXT("Disabled; edits retained") : bLayoutApplied ? TEXT("Ready; same region / no progression trigger; move floor center or edit size") : LastBuildStatus;
+		if (bHollowRegionPrototype)
+			for (AMiningHollowRegion* Region : GetHollowRegions())
+				if (IsValid(Region))
+				{
+					Region->RegionStatus = LastBuildStatus;
+					for (AMiningHollowChamber* Chamber : Region->GetChambers())
+						Chamber->ChamberStatus = !Chamber->bEnabled ? TEXT("Disabled; edits retained") : bLayoutApplied ? TEXT("Ready; same region / no progression trigger; move floor center or edit size") : LastBuildStatus;
+				}
 	};
 	bPendingRebuild = false;
 	bLayoutApplied = false;
 	LayoutWarnings.Empty();
 	ObservedInputHash = GetInputHash();
 	const TArray<AMiningLayoutRoom*> Rooms = GetOrderedRooms();
+	const TArray<AMiningHollowRegion*> SpatialRegions = GetHollowRegions();
+	const bool bAutomaticSpatial = bHollowRegionPrototype && !SpatialRegions.IsEmpty() && !SpatialRegions.ContainsByPredicate([](const AMiningHollowRegion* Item) { const AMiningSpatialRegion* Spatial = Cast<AMiningSpatialRegion>(Item); return !Spatial || !Spatial->bAutomaticBedrock; });
 	for (const AMiningTunnelRoute* Route : Routes)
 	{
 		if (!IsValid(Route)) continue;
@@ -733,7 +868,7 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 	{
 		for (int32 Second = First + 1; Second < Boxes.Num(); ++Second)
 		{
-			if (Boxes[First].ExpandBy(10).Intersect(Boxes[Second])) { LastBuildStatus = TEXT("NOT APPLIED: rooms overlap; separate their interiors"); return false; }
+			if (!bAutomaticSpatial && Boxes[First].ExpandBy(10).Intersect(Boxes[Second])) { LastBuildStatus = TEXT("NOT APPLIED: rooms overlap; separate their interiors"); return false; }
 		}
 	}
 	if (!FMath::IsFinite(BedrockThickness) || (!bDirectRoomFaces && (!FMath::IsFinite(TunnelWidth) || !FMath::IsFinite(TunnelHeight))))
@@ -758,7 +893,7 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 	FDynamicMesh3 Fill;
 	TArray<FDynamicMesh3> SegmentMeshes;
 	TArray<FDynamicMesh3> Cavities;
-	for (const FBox& Box : Boxes)
+	if (!bAutomaticSpatial) for (const FBox& Box : Boxes)
 	{
 		if (!Combine(Shell, MakeBox(Box.GetCenter(), Box.GetSize() + FVector(Thickness * 2)), FMeshBoolean::EBooleanOp::Union))
 		{
@@ -771,36 +906,70 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 	TArray<FBox> Reserved;
 	TArray<TObjectPtr<AMiningTunnelRoute>> ActiveRoutes;
 	TArray<MiningRoutes::FPlan> Plans;
-	MiningHollow::FPlan HollowPlan;
-	TArray<MiningHollowBranches::FPlan> HollowBranches;
-	TArray<AMiningHollowChamber*> ActiveChambers;
+	TArray<AMiningHollowRegion*> OrderedRegions;
+	TArray<MiningHollow::FPlan> HollowPlans;
+	TArray<TArray<MiningHollowBranches::FPlan>> RegionBranches;
+	TArray<TArray<AMiningHollowChamber*>> RegionChambers;
+	TArray<MiningManual::FPlan> ManualPlans;
 	if (bHollowRegionPrototype)
 	{
-		if (!bDirectRoomFaces || !bAutomaticChunks || Rooms.Num() != 2 || !IsValid(HollowRegion) || HollowRegion->GetLevel() != GetLevel() ||
-			HollowRegion->FromRoom != Rooms[0] || HollowRegion->ToRoom != Rooms[1] ||
-			!HollowRegion->GetActorRotation().IsNearlyZero() || !HollowRegion->GetActorScale3D().Equals(FVector::OneVector))
+		if (!bDirectRoomFaces || !bAutomaticChunks)
 		{
-			LastBuildStatus = TEXT("Hollow prototype needs exactly two ordered rooms, matching region references, direct mode, automatic chunks, and region rotation 0 / scale 1");
+			LastBuildStatus = TEXT("Hollow layout needs direct mode and automatic chunks");
 			return false;
 		}
+		if (!ResolveHollowRegions(Rooms, OrderedRegions, LastBuildStatus)) return false;
+	}
+	for (int32 RegionIndex = 0; RegionIndex < OrderedRegions.Num(); ++RegionIndex)
+	{
+		AMiningHollowRegion* Region = OrderedRegions[RegionIndex];
+		MiningHollow::FPlan& HollowPlan = HollowPlans.AddDefaulted_GetRef();
+		TArray<MiningHollowBranches::FPlan>& HollowBranches = RegionBranches.AddDefaulted_GetRef();
+		TArray<AMiningHollowChamber*>& ActiveChambers = RegionChambers.AddDefaulted_GetRef();
+		MiningManual::FPlan& ManualPlan = ManualPlans.AddDefaulted_GetRef();
+		if (!bAutomaticSpatial && (!Region->GetActorRotation().IsNearlyZero() || !Region->GetActorScale3D().Equals(FVector::OneVector)))
+		{
+			LastBuildStatus = Region->GetActorNameOrLabel() + TEXT(": keep region rotation 0 / scale 1"); return false;
+		}
+		if (AMiningManualRegion* ManualRegion = Cast<AMiningManualRegion>(Region))
+		{
+			FDynamicMesh3 RegionRock;
+			if (!MiningManual::Build(*ManualRegion, GetActorLocation(), Thickness, HollowPlan, ManualPlan, RegionRock, LastBuildStatus)) return false;
+			if (!bAutomaticSpatial)
+			{
+				const FDynamicMesh3 Outer = MakeBox(HollowPlan.Bounds.GetCenter(), HollowPlan.Bounds.GetSize() + FVector(Thickness * 2));
+				if (!Combine(Shell, Outer, FMeshBoolean::EBooleanOp::Union))
+				{
+					LastBuildStatus = TEXT("手绘矿区外层基岩构建失败；保留旧结果"); return false;
+				}
+				Cavities.Add(MakeBox(HollowPlan.Bounds.GetCenter(), HollowPlan.Bounds.GetSize()));
+				for (const FDynamicMesh3& Portal : ManualPlan.PortalCuts) Cavities.Add(Portal);
+			}
+			SegmentMeshes.Add(MoveTemp(RegionRock));
+			MiningRoutes::FPlan ProgressPlan;
+			ProgressPlan.StartWall = ManualPlan.StartWall; ProgressPlan.EndWall = ManualPlan.EndWall;
+			ProgressPlan.Points = HollowPlan.Points; ProgressPlan.Length = HollowPlan.Length;
+			Plans.Add(MoveTemp(ProgressPlan)); ++NewTunnelCount;
+			continue;
+		}
 		MiningHollow::FSettings Settings;
-		Settings.FirstRoom = Boxes[0]; Settings.LastRoom = Boxes[1];
-		Settings.Points = HollowRegion->GetPathPoints();
+		Settings.FirstRoom = Boxes[RegionIndex]; Settings.LastRoom = Boxes[RegionIndex + 1];
+		Settings.Points = Region->GetPathPoints();
 		for (FVector& Point : Settings.Points) Point -= GetActorLocation();
-		Settings.Plugs = HollowRegion->Plugs;
-		Settings.Radius = HollowRegion->PassageRadius;
-		Settings.Width = HollowRegion->RegionWidth;
-		Settings.Above = HollowRegion->RockAbove;
-		Settings.Below = HollowRegion->RockBelow;
-		Settings.MaxSlope = HollowRegion->MaximumSlope;
+		Settings.Plugs = Region->Plugs;
+		Settings.Radius = Region->PassageRadius;
+		Settings.Width = Region->RegionWidth;
+		Settings.Above = Region->RockAbove;
+		Settings.Below = Region->RockBelow;
+		Settings.MaxSlope = Region->MaximumSlope;
 		FDynamicMesh3 RegionRock;
 		if (!MiningHollow::Plan(Settings, HollowPlan, LastBuildStatus))
 		{
-			HollowRegion->RegionStatus = TEXT("NOT APPLIED: ") + LastBuildStatus;
+			LastBuildStatus = Region->GetActorNameOrLabel() + TEXT(": ") + LastBuildStatus;
 			return false;
 		}
 		TArray<MiningHollowBranches::FSettings> BranchSettings;
-		for (AMiningHollowChamber* Chamber : HollowRegion->GetChambers())
+		for (AMiningHollowChamber* Chamber : Region->GetChambers())
 		{
 			if (!Chamber->bEnabled) continue;
 			if (!Chamber->GetActorRotation().IsNearlyZero() || Chamber->GetActorScale3D().GetMin() <= 0 || Chamber->ChamberSize.GetMin() <= 0)
@@ -836,7 +1005,30 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 		ProgressPlan.Points = HollowPlan.Points;
 		ProgressPlan.Length = HollowPlan.Length;
 		Plans.Add(MoveTemp(ProgressPlan));
-		NewTunnelCount = 1;
+		++NewTunnelCount;
+	}
+	if (bHollowRegionPrototype && !bAutomaticSpatial && !MiningHollow::ValidateChain(HollowPlans, Boxes, Thickness, LastBuildStatus)) return false;
+	TArray<bool> FreeAccess; FreeAccess.Init(false, OrderedRegions.Num());
+	if (bAutomaticSpatial)
+	{
+		const FBox& SceneBounds = ManualPlans[0].SceneBounds;
+		Shell = ManualPlans[0].OuterDomain;
+		Cavities = {MakeBox(SceneBounds.GetCenter(), SceneBounds.GetSize())};
+		FreeAccess.Init(true, OrderedRegions.Num());
+		for (int32 Index = 0; Index < ManualPlans.Num(); ++Index)
+		{
+			FDynamicMesh3& Rock = SegmentMeshes[Index];
+			if (ManualPlans[Index].SceneBounds != SceneBounds) { LastBuildStatus = TEXT("场景整体边界不同步；请重新检查并重建。"); return false; }
+			if (!ManualPlans[Index].SpatialGrid)
+			{
+				auto Grid = MakeShared<MiningChunks::FSpatialGrid, ESPMode::ThreadSafe>();
+				if (!MiningChunks::SplitSpatialIncremental(Rock, ChunkLength, *Grid)) { LastBuildStatus = TEXT("场景岩体分块失败或单矿区超过128格；请调整场景余量或拆分矿区，预算不提升。"); return false; }
+				for (const MiningChunks::FSpatialCell& Cell : Grid->Cells)
+					if (Cell.Mesh && Cell.Mesh->TriangleCount() > FMath::Clamp(SegmentTriangleBudget, 1000, 30000)) { LastBuildStatus = TEXT("自动岩体超过每块三角形预算；草稿保留，预算不提升。"); return false; }
+				ManualPlans[Index].SpatialGrid = MoveTemp(Grid);
+			}
+		}
+		LayoutWarnings += TEXT("场景只有统一外壳，内部连续可挖；内部矿区不封口、不按旧单入口规则回收。每块预算不变。 ");
 	}
 	for (int32 RoomIndex = 1; !bHollowRegionPrototype && RoomIndex < Boxes.Num(); ++RoomIndex)
 	{
@@ -1033,20 +1225,30 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 				NewMapRegions.Add(MiningDeveloperMap::Box(Name + TEXT(" (bounds)"), EMiningMapRegionKind::Tunnel, Index, Section.Bounds(TunnelWidth, TunnelHeight).ShiftBy(GetActorLocation())));
 		}
 	}
-	if (bHollowRegionPrototype)
+	for (int32 RegionIndex = 0; RegionIndex < HollowPlans.Num(); ++RegionIndex)
 	{
-		NewMapRegions.Add(MiningDeveloperMap::Box(TEXT("Ordinary diggable rock"), EMiningMapRegionKind::RockRegion, 0, HollowPlan.Bounds.ShiftBy(GetActorLocation())));
+		const MiningHollow::FPlan& HollowPlan = HollowPlans[RegionIndex];
+		if (ManualPlans[RegionIndex].bAutomaticBedrock)
+		{
+			if (RegionIndex == 0) NewMapRegions.Add(MiningDeveloperMap::Box(TEXT("Scene / continuous diggable rock"), EMiningMapRegionKind::RockRegion, RegionIndex, ManualPlans[RegionIndex].SceneBounds.ShiftBy(GetActorLocation())));
+		}
+		else NewMapRegions.Add(MiningDeveloperMap::Box(FString::Printf(TEXT("Region %d / ordinary rock"), RegionIndex + 1), EMiningMapRegionKind::RockRegion, RegionIndex, HollowPlan.Bounds.ShiftBy(GetActorLocation())));
+		if (Cast<AMiningManualRegion>(OrderedRegions[RegionIndex]))
+		{
+			MiningManual::AddMapRegions(ManualPlans[RegionIndex], RegionIndex, NewMapRegions);
+			continue;
+		}
 		const auto AddTubeRegion = [&](const FVector& Start, const FVector& End, const FString& Name, EMiningMapRegionKind Kind)
 		{
 			TArray<FVector> Vertices = MiningHollow::Ring(Start + GetActorLocation(), HollowPlan.Radius);
 			Vertices.Append(MiningHollow::Ring(End + GetActorLocation(), HollowPlan.Radius));
-			NewMapRegions.Add(MiningDeveloperMap::Convex(Name, Kind, 0, Vertices));
+			NewMapRegions.Add(MiningDeveloperMap::Convex(Name, Kind, RegionIndex, Vertices));
 		};
 		for (int32 Index = 1; Index < HollowPlan.Points.Num(); ++Index)
 			AddTubeRegion(HollowPlan.Points[Index - 1], HollowPlan.Points[Index], TEXT("Hollow main passage"), EMiningMapRegionKind::Tunnel);
 		for (const FMiningGuideVolume& Guide : HollowPlan.Guides)
 			AddTubeRegion(Guide.Start, Guide.End, TEXT("Diggable guide plug"), EMiningMapRegionKind::GuidePlug);
-		MiningHollowBranches::AddMapRegions(HollowBranches, GetActorLocation(), NewMapRegions);
+		MiningHollowBranches::AddMapRegions(RegionBranches[RegionIndex], GetActorLocation(), NewMapRegions, RegionIndex);
 	}
 	if (bDirectRoomFaces && !bHollowRegionPrototype && !MiningSpaces::Apply(Spaces, Rooms, Boxes, Plans, GetActorLocation(), Thickness, SegmentMeshes, Cavities, Shell, LastBuildStatus, &NewMapRegions)) return false;
 	for (const FDynamicMesh3& Cavity : Cavities)
@@ -1079,27 +1281,51 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 		GeneratedBedrock = GetWorld()->SpawnActor<ADynamicMeshActor>(GetActorLocation(), FRotator::ZeroRotator, Spawn);
 	}
 	TArray<TObjectPtr<AGeneratedMiningRock>> NewSegments;
+	bool bPreparedSpatial = bAutomaticChunks && bHollowRegionPrototype && !GetWorld()->IsGameWorld() && OrderedRegions.Num() == SegmentMeshes.Num();
+	for (int32 Index = 0; bPreparedSpatial && Index < OrderedRegions.Num(); ++Index)
+	{
+		const auto& Grid = ManualPlans[Index].SpatialGrid;
+		bPreparedSpatial = Grid && Grid->Length == ChunkLength;
+		if (bPreparedSpatial) for (const MiningChunks::FSpatialCell& Cell : Grid->Cells)
+			if (Cell.Mesh && Cell.Mesh->TriangleCount() > FMath::Clamp(SegmentTriangleBudget, 1000, 30000)) bPreparedSpatial = false;
+	}
+	if (bPreparedSpatial)
+	{
+		if (!IsValid(GeneratedPlayerStart)) GeneratedPlayerStart = GetWorld()->SpawnActor<APlayerStart>(GetActorLocation(), FRotator::ZeroRotator, Spawn);
+		if (!GeneratedBedrock || !GeneratedPlayerStart) { LastBuildStatus = TEXT("Could not create generated actors"); return false; }
+		for (int32 Index = 0; Index < SegmentMeshes.Num(); ++Index)
+		{
+			AGeneratedMiningRock* Segment = GeneratedSegments.IsValidIndex(Index) && IsValid(GeneratedSegments[Index]) ? GeneratedSegments[Index].Get() : GetWorld()->SpawnActor<AGeneratedMiningRock>(GetActorLocation(), FRotator::ZeroRotator, Spawn);
+			if (!Segment)
+			{
+				for (AGeneratedMiningRock* Created : NewSegments) if (!GeneratedSegments.Contains(Created)) Created->Destroy();
+				LastBuildStatus = TEXT("Could not create segments; previous geometry preserved"); return false;
+			}
+			NewSegments.Add(Segment);
+		}
+	}
 	for (int32 Index = 0; Index < SegmentMeshes.Num(); ++Index)
 	{
-		AGeneratedMiningRock* Segment = GetWorld()->SpawnActor<AGeneratedMiningRock>(GetActorLocation(), FRotator::ZeroRotator, Spawn);
+		AGeneratedMiningRock* Segment = bPreparedSpatial ? NewSegments[Index].Get() : GetWorld()->SpawnActor<AGeneratedMiningRock>(GetActorLocation(), FRotator::ZeroRotator, Spawn);
 		if (!Segment)
 		{
 			for (AGeneratedMiningRock* Created : NewSegments) Created->Destroy();
 			LastBuildStatus = TEXT("Could not create segments; previous geometry preserved");
 			return false;
 		}
-		NewSegments.Add(Segment);
+		if (!bPreparedSpatial) NewSegments.Add(Segment);
 		Segment->SegmentIndex = bDirectRoomFaces ? Index : INDEX_NONE;
 		Segment->MaxTriangles = FMath::Clamp(SegmentTriangleBudget, 1000, 30000);
 		Segment->RockMaterial = TunnelMaterial;
 		if (bHollowRegionPrototype)
 		{
-			Segment->GuideMaterialVolumes = HollowPlan.Guides;
+			Segment->GuideMaterialVolumes = HollowPlans[Index].Guides;
 			for (FMiningGuideVolume& Guide : Segment->GuideMaterialVolumes) { Guide.Start += GetActorLocation(); Guide.End += GetActorLocation(); }
 		}
 		Segment->bSimplifyChunks = bSimplifyChunks;
 		Segment->SimplificationTolerance = SimplificationTolerance;
-		if (bAutomaticChunks && !Segment->SetChunkedMesh(SegmentMeshes[Index], ChunkLength, bHollowRegionPrototype))
+		if (bPreparedSpatial) Segment->ApplySpatialGrid(SegmentMeshes[Index], ManualPlans[Index].SpatialGrid);
+		if (bAutomaticChunks && !bPreparedSpatial && !Segment->SetChunkedMesh(SegmentMeshes[Index], ChunkLength, bHollowRegionPrototype))
 		{
 			for (AGeneratedMiningRock* Created : NewSegments) Created->Destroy();
 			LastBuildStatus = TEXT("NOT APPLIED: chunk generation failed or exceeds 128 chunks per tunnel; previous geometry preserved");
@@ -1142,17 +1368,28 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 	BedrockMesh->SetDeferredCollisionUpdatesEnabled(true, false);
 	BedrockMesh->bUseAsyncCooking = false;
 	BedrockMesh->SetGenerateOverlapEvents(false);
-	BedrockMesh->GetDynamicMesh()->Modify();
-	BedrockMesh->SetMesh(MoveTemp(Shell));
-	BedrockMesh->GetBodySetup()->SetFlags(RF_Transient);
-	BedrockMesh->UpdateCollision(false);
+	FDynamicMesh3::FSameAsOptions BedrockEquality;
+	BedrockEquality.bCheckAttributes = true; BedrockEquality.EpsilonDouble = 0; BedrockEquality.EpsilonFloat = 0;
+	bool bSameBedrock = false;
+	if (bPreparedSpatial) BedrockMesh->GetDynamicMesh()->ProcessMesh([&](const FDynamicMesh3& Existing) { bSameBedrock = Existing.IsSameAs(Shell, BedrockEquality); });
+	if (!bSameBedrock)
+	{
+		BedrockMesh->GetDynamicMesh()->Modify();
+		BedrockMesh->SetMesh(MoveTemp(Shell));
+		BedrockMesh->GetBodySetup()->SetFlags(RF_Transient);
+		BedrockMesh->UpdateCollision(false);
+	}
 	BedrockMesh->SetMaterial(0, BedrockMaterial);
 	TArray<FBox> NewSegmentBounds;
 	for (int32 Index = 0; Index < NewSegments.Num(); ++Index)
 	{
 		AGeneratedMiningRock* Segment = NewSegments[Index];
-		const FAxisAlignedBox3d Bounds = SegmentMeshes[Index].TriangleCount() ? SegmentMeshes[Index].GetBounds() : Cavities[Rooms.Num() + Index].GetBounds();
-		NewSegmentBounds.Add(FBox(FVector(Bounds.Min), FVector(Bounds.Max)));
+		if (bHollowRegionPrototype) NewSegmentBounds.Add(HollowPlans[Index].Bounds);
+		else
+		{
+			const FAxisAlignedBox3d Bounds = SegmentMeshes[Index].TriangleCount() ? SegmentMeshes[Index].GetBounds() : Cavities[Rooms.Num() + Index].GetBounds();
+			NewSegmentBounds.Add(FBox(FVector(Bounds.Min), FVector(Bounds.Max)));
+		}
 #if WITH_EDITOR
 		Segment->SetActorLabel(FString::Printf(TEXT("GENERATED_Segment_%02d_EDIT_ROOMS_INSTEAD"), Index + 1));
 #endif
@@ -1160,7 +1397,7 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 	if (IsValid(GeneratedFill) && !GeneratedSegments.Contains(GeneratedFill)) GeneratedFill->Destroy();
 	for (AGeneratedMiningRock* Previous : GeneratedSegments)
 	{
-		if (IsValid(Previous)) Previous->Destroy();
+		if (IsValid(Previous) && !NewSegments.Contains(Previous)) Previous->Destroy();
 	}
 	GeneratedSegments = MoveTemp(NewSegments);
 	GeneratedFill = GeneratedSegments.IsEmpty() ? nullptr : GeneratedSegments[0];
@@ -1170,6 +1407,18 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 	GeneratedSegmentBounds = MoveTemp(NewSegmentBounds);
 	GeneratedArrivalWalls.Reset();
 	for (const MiningRoutes::FPlan& Plan : Plans) GeneratedArrivalWalls.Add(Plan.EndWall);
+	GeneratedSealAllowed.Init(true, Plans.Num());
+	GeneratedFreeAccess = MoveTemp(FreeAccess);
+	for (int32 Index = 0; Index < OrderedRegions.Num(); ++Index)
+		if (Cast<AMiningManualRegion>(OrderedRegions[Index]))
+		{
+			const FVector Outward = MiningRoutes::WallDirection(Plans[Index].EndWall);
+			const FVector WallCenter = Boxes[Index + 1].GetCenter() + Outward * Boxes[Index + 1].GetExtent();
+			const FBox& Bounds = HollowPlans[Index].Bounds;
+			const double Nearest = FVector::DotProduct(Bounds.GetCenter() - WallCenter, Outward) - FVector::DotProduct(Bounds.GetExtent(), Outward.GetAbs());
+			GeneratedSealAllowed[Index] = Nearest >= -0.1;
+			if (GeneratedFreeAccess.IsValidIndex(Index) && GeneratedFreeAccess[Index]) GeneratedSealAllowed[Index] = false;
+		}
 	bGeneratedSegmented = bDirectRoomFaces;
 	const FVector StartPosition = FVector(Boxes[0].GetCenter().X, Boxes[0].GetCenter().Y, Boxes[0].Min.Z + 105) + GetActorLocation();
 	GeneratedPlayerStart->SetActorLocation(StartPosition);
@@ -1227,16 +1476,39 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 	Routes = MoveTemp(ActiveRoutes);
 	if (bHollowRegionPrototype)
 	{
-		HollowRegion->Path->Modify();
-		HollowRegion->Path->SetLocationAtSplinePoint(0, HollowPlan.Points[0] + GetActorLocation(), ESplineCoordinateSpace::World, false);
-		HollowRegion->Path->SetLocationAtSplinePoint(HollowRegion->Path->GetNumberOfSplinePoints() - 1, HollowPlan.Points.Last() + GetActorLocation(), ESplineCoordinateSpace::World, true);
-		for (int32 Index = 0; Index < ActiveChambers.Num(); ++Index)
+		SpaceCount = 0;
+		for (int32 RegionIndex = 0; RegionIndex < OrderedRegions.Num(); ++RegionIndex)
 		{
-			TArray<FVector> Points = HollowBranches[Index].Points;
-			for (FVector& Point : Points) Point += GetActorLocation();
-			ActiveChambers[Index]->ApplyResolvedPath(Points);
+			AMiningHollowRegion* Region = OrderedRegions[RegionIndex];
+			const MiningHollow::FPlan& HollowPlan = HollowPlans[RegionIndex];
+			if (AMiningManualRegion* ManualRegion = Cast<AMiningManualRegion>(Region))
+			{
+				ManualRegion->RefreshBounds(HollowPlan.Bounds.ShiftBy(GetActorLocation()));
+				for (AMiningSpatialTunnel* Shape : ManualPlans[RegionIndex].SpatialSources)
+				{
+					Shape->ShapeStatus = TEXT("已应用三维扫掠；源节点和截面保持可编辑");
+					if (Shape != CastChecked<AMiningSpatialRegion>(ManualRegion)->MainTunnel) ++SpaceCount;
+				}
+				for (const MiningManual::FShapePlan& Shape : ManualPlans[RegionIndex].Shapes)
+				{
+					Shape.Source->ShapeStatus = TEXT("已应用；边界由你编辑，支线/空洞不触发主线推进");
+					if (Shape.Source != ManualRegion->MainPassage) ++SpaceCount;
+				}
+				continue;
+			}
+			Region->Modify();
+			Region->Path->Modify();
+			Region->Path->SetLocationAtSplinePoint(0, HollowPlan.Points[0] + GetActorLocation(), ESplineCoordinateSpace::World, false);
+			Region->Path->SetLocationAtSplinePoint(Region->Path->GetNumberOfSplinePoints() - 1, HollowPlan.Points.Last() + GetActorLocation(), ESplineCoordinateSpace::World, true);
+			Region->RefreshBounds(HollowPlan.Bounds.ShiftBy(GetActorLocation()));
+			for (int32 Index = 0; Index < RegionChambers[RegionIndex].Num(); ++Index)
+			{
+				TArray<FVector> Points = RegionBranches[RegionIndex][Index].Points;
+				for (FVector& Point : Points) Point += GetActorLocation();
+				RegionChambers[RegionIndex][Index]->ApplyResolvedPath(Points);
+			}
+			SpaceCount += RegionChambers[RegionIndex].Num();
 		}
-		SpaceCount = ActiveChambers.Num();
 	}
 	bLayoutApplied = true;
 	bPendingRebuild = false;
@@ -1244,9 +1516,16 @@ bool AMiningTunnelGenerator::RebuildTunnels()
 	LastBuildStatus = FString::Printf(TEXT("Ready: %d rooms, %d %s links. %s"), RoomCount, TunnelCount, bDirectRoomFaces ? TEXT("direct full-face") : TEXT("walkable"), *LayoutWarnings);
 	if (bHollowRegionPrototype)
 	{
-		LastBuildStatus = FString::Printf(TEXT("Ready: hollow region, %d plugs, %d chambers, %d spatial chunks; 30000 triangle maximum per chunk"), HollowPlan.PlugIntervals.Num(), HollowBranches.Num(), GeneratedFill->Chunks.Num());
-		HollowRegion->RegionStatus = LastBuildStatus;
-		HollowRegion->RefreshBounds(HollowPlan.Bounds.ShiftBy(GetActorLocation()));
+		int32 Plugs = 0;
+		int32 Chunks = 0;
+		for (const MiningHollow::FPlan& HollowPlan : HollowPlans) Plugs += HollowPlan.PlugIntervals.Num();
+		for (const MiningManual::FPlan& ManualPlan : ManualPlans)
+		{
+			for (const MiningManual::FShapePlan& Shape : ManualPlan.Shapes) if (Shape.Source->Kind == EMiningManualKind::RockBlock) ++Plugs;
+			for (const AMiningSpatialTunnel* Shape : ManualPlan.SpatialSources) if (Shape->Kind == EMiningManualKind::RockBlock) ++Plugs;
+		}
+		for (const AGeneratedMiningRock* Segment : GeneratedSegments) Chunks += Segment->Chunks.Num();
+		LastBuildStatus = FString::Printf(TEXT("Ready: %d rooms, %d hollow regions, %d plugs, %d chambers, %d spatial chunks; %d triangles/chunk, 128 chunks/region maximum"), RoomCount, HollowPlans.Num(), Plugs, SpaceCount, Chunks, FMath::Clamp(SegmentTriangleBudget, 1000, 30000));
 	}
 	UpdatePreview();
 	RefreshEditorVisibility();

@@ -1,5 +1,12 @@
 # BrainMining
 
+## 六区连续玩法地图
+
+整合分支 `integration/feature-showcase` 的默认入口是 `/Game/Showcase/Maps/Lvl_ContinuousShowcase`。
+挖掘、收集、回声、卡牌、弹窗、文思全部铺在同一张 Persistent Level 中，以步道和坡道连接，直接走进各区；没有选区目录或运行时地图流送。
+打开该地图 Play，或运行 `Scripts/Play_Showcase.ps1`。操作、路线及验证入口见 [README_ContinuousShowcase.md](README_ContinuousShowcase.md)。
+各成员原有独立地图不变；旧大厅展示关卡仅保留为回归参考。
+
 UE 第一人称挖掘原型。仓库保存源码、资源、配置和编辑器脚本，不包含引擎、编译缓存或打包成品。
 
 ## 团队开发环境
@@ -105,11 +112,17 @@ git lfs unlock "Content/MiningPrototype/Maps/Lvl_MiningLab.umap"
 
 ## 功能说明
 
+- [六区连续玩法地图（当前整合入口）](README_ContinuousShowcase.md)
+
+- [挖掘收集：玩法、实现与程序/AI 协作指南](README_Collection.md)
 - [挖掘原型](README_MiningPrototype.md)
 - [编辑式下降关卡](README_EditableDescent.md)
 - [自动房间](README_AutoRooms.md)
 - [空腔区域](README_HollowRegion.md)
 - [空腔分支](README_HollowBranches.md)
+- [多房间、多矿区串联](README_HollowChain.md)
+- [钢笔矿道、可编辑空洞与支线房间](README_ManualMine.md)
+- [三维弯曲、扭转隧道与截面钢笔编辑](README_SpatialMine.md)
 - [挖掘设计工具](README_MiningDesigner.md)
 - [玩家飞行](README_PlayerFlight.md)
 

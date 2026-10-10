@@ -10,7 +10,7 @@ UMiningCharacterMovementComponent::UMiningCharacterMovementComponent()
 void UMiningCharacterMovementComponent::SetFlightInputHeld(bool bHeld)
 {
 	const bool bWasHeld = bFlightInputHeld;
-	bFlightInputHeld = bHeld && FlightSettings.bEnabled;
+	bFlightInputHeld = bHeld && IsFlightAvailable();
 	if (bWasHeld && !bFlightInputHeld)
 	{
 		const FVector Up = -GetGravityDirection();
@@ -20,7 +20,7 @@ void UMiningCharacterMovementComponent::SetFlightInputHeld(bool bHeld)
 
 FVector UMiningCharacterMovementComponent::NewFallVelocity(const FVector& InitialVelocity, const FVector& Gravity, float DeltaTime) const
 {
-	if (!FlightSettings.bEnabled)
+	if (!IsFlightAvailable())
 	{
 		return Super::NewFallVelocity(InitialVelocity, Gravity, DeltaTime);
 	}
@@ -37,20 +37,20 @@ FVector UMiningCharacterMovementComponent::NewFallVelocity(const FVector& Initia
 
 float UMiningCharacterMovementComponent::GetMaxSpeed() const
 {
-	return FlightSettings.bEnabled && IsFalling()
+	return IsFlightAvailable() && IsFalling()
 		? FlightSettings.Sanitized().AirMoveSpeed * FlightMovementScale
 		: Super::GetMaxSpeed();
 }
 
 FVector UMiningCharacterMovementComponent::GetAirControl(float DeltaTime, float TickAirControl, const FVector& FallAcceleration)
 {
-	return FlightSettings.bEnabled ? FallAcceleration : Super::GetAirControl(DeltaTime, TickAirControl, FallAcceleration);
+	return IsFlightAvailable() ? FallAcceleration : Super::GetAirControl(DeltaTime, TickAirControl, FallAcceleration);
 }
 
 void UMiningCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
 {
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
-	if (!FlightSettings.bEnabled || !CharacterOwner || !CharacterOwner->GetController() || CharacterOwner->IsMoveInputIgnored()
+	if (!IsFlightAvailable() || !CharacterOwner || !CharacterOwner->GetController() || CharacterOwner->IsMoveInputIgnored()
 		|| (!IsMovingOnGround() && !IsFalling()))
 	{
 		SetFlightInputHeld(false);

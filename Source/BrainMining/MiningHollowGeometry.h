@@ -29,6 +29,7 @@ namespace MiningHollow
 		double Length = 0;
 	};
 	bool Plan(const FSettings& Settings, FPlan& Result, FString& Error);
+	bool ValidateChain(const TArray<FPlan>& Plans, const TArray<FBox>& Rooms, double BedrockThickness, FString& Error);
 	TArray<FVector> Slice(const FPlan& Plan, double Start, double End);
 	TArray<FVector> Ring(const FVector& Center, double Radius);
 	bool Tube(const TArray<FVector>& Points, double Radius, UE::Geometry::FDynamicMesh3& Mesh);

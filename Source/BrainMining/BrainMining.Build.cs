@@ -14,6 +14,8 @@ public class BrainMining : ModuleRules
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
+            "CardRoom",
+            "EchoPassage",
 			"AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
@@ -23,6 +25,9 @@ public class BrainMining : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[] { "GeometryCore", "GeometryFramework", "DynamicMesh" });
 		PrivateDependencyModuleNames.Add("RenderCore");
+		PrivateDependencyModuleNames.Add("GeometryAlgorithms");
+		PrivateDependencyModuleNames.Add("SlateCore");
+		PrivateDependencyModuleNames.Add("AssetRegistry");
 		if (Target.bBuildEditor) PrivateDependencyModuleNames.Add("UnrealEd");
 
 		PublicIncludePaths.AddRange(new string[] {

@@ -40,7 +40,7 @@ class BRAINMINING_API AMiningHollowRegion : public AActor
 public:
 	AMiningHollowRegion();
 	virtual void OnConstruction(const FTransform& Transform) override;
-	uint32 GetGeometryHash() const;
+	virtual uint32 GetGeometryHash() const;
 	void RefreshBounds(const FBox& WorldBounds);
 	TArray<FVector> GetPathPoints() const;
 	TArray<AMiningHollowChamber*> GetChambers() const;

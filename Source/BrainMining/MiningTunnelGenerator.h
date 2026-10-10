@@ -42,14 +42,27 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual bool ShouldTickIfViewportsOnly() const override { return true; }
 	void RequestRebuild();
+	void ProcessEditorRebuild();
+	void AcknowledgeSpatialEdit(bool bApplied, const FString& Status);
 	void ResetProgression();
 	void UpdateProgression(APawn* Player, float DeltaSeconds);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hollow Region", meta=(ToolTip="Opt-in two-room prototype: hollow circular passage with diggable plugs inside ordinary rock. Original room-face generation is unchanged when disabled."))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hollow Region", meta=(ToolTip="Hollow circular passages inside ordinary rock, one editable region per consecutive room pair. Original room-face generation is unchanged when disabled."))
 	bool bHollowRegionPrototype = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hollow Region", meta=(EditCondition="bHollowRegionPrototype"))
 	TObjectPtr<AMiningHollowRegion> HollowRegion;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hollow Region", meta=(EditCondition="bHollowRegionPrototype", ToolTip="One region per consecutive room pair; resolved by FromRoom/ToRoom, not array order. When nonempty this replaces the legacy single HollowRegion reference."))
+	TArray<TObjectPtr<AMiningHollowRegion>> HollowRegions;
+
+	UFUNCTION(BlueprintPure, Category="Hollow Region")
+	TArray<AMiningHollowRegion*> GetHollowRegions() const;
+
+	bool UsesHollowRegion(const AMiningHollowRegion* Region) const;
+
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="Hollow Region", meta=(DisplayName="补齐相邻房间矿区"))
+	bool AddMissingHollowRegions();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Scale", meta=(ShowOnlyInnerProperties))
 	FMiningPlayerScaleSettings PlayerScaleSettings;
@@ -63,7 +76,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Developer Map", meta=(ShowOnlyInnerProperties, ToolTip="Debug overlay only. Disabled in Shipping and Test builds; never captures or rebuilds terrain."))
 	FMiningDeveloperMapSettings DeveloperMapSettings;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Developer Map", AdvancedDisplay)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Developer Map", AdvancedDisplay)
 	TArray<FMiningMapRegion> GeneratedMapRegions;
 
 	UFUNCTION(BlueprintPure, Category="Progression")
@@ -117,7 +130,7 @@ public:
 	UPROPERTY(EditAnywhere, Category="Spaces", meta=(ToolTip="Optional start room for Add Mining Space. Defaults to the first room; existing spaces keep their own assignment."))
 	TObjectPtr<AMiningLayoutRoom> NewSpaceFromRoom;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Spaces")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Spaces")
 	int32 SpaceCount = 0;
 
 	UFUNCTION(BlueprintCallable, CallInEditor, Category="Preview")
@@ -162,19 +175,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Preview")
 	TObjectPtr<UMaterialInterface> PreviewFillMaterial;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Generation|Status")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Generation|Status")
 	bool bLayoutApplied = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Generation|Status")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Generation|Status")
 	FString LayoutWarnings;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Routing")
 	TArray<TObjectPtr<AMiningTunnelRoute>> Routes;
 
-	UPROPERTY()
+	UPROPERTY(NonTransactional)
 	TObjectPtr<ADynamicMeshActor> PreviewBedrock;
 
-	UPROPERTY()
+	UPROPERTY(NonTransactional)
 	TObjectPtr<ADynamicMeshActor> PreviewFill;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Generation")
@@ -210,46 +223,53 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Materials")
 	TObjectPtr<UMaterialInterface> TunnelMaterial;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Generation|Status")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Generation|Status")
 	FString LastBuildStatus = TEXT("Add MiningLayoutRoom actors, then Rebuild Tunnels");
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Generation|Status")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Generation|Status")
 	int32 BuildRevision = 0;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Generation|Status")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Generation|Status")
 	int32 RoomCount = 0;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Generation|Status")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Generation|Status")
 	int32 TunnelCount = 0;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Generation|Status")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Generation|Status")
 	float LastBuildMilliseconds = 0;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Generated", AdvancedDisplay)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Generated", AdvancedDisplay)
 	TObjectPtr<ADynamicMeshActor> GeneratedBedrock;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Generated", AdvancedDisplay)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Generated", AdvancedDisplay)
 	TObjectPtr<AGeneratedMiningRock> GeneratedFill;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Generated", AdvancedDisplay)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Generated", AdvancedDisplay)
 	TArray<TObjectPtr<AGeneratedMiningRock>> GeneratedSegments;
 
-	UPROPERTY()
+	UPROPERTY(NonTransactional)
 	TArray<FBox> GeneratedRoomBounds;
 
-	UPROPERTY()
+	UPROPERTY(NonTransactional)
 	TArray<FBox> GeneratedSegmentBounds;
 
-	UPROPERTY()
+	UPROPERTY(NonTransactional)
 	TArray<int32> GeneratedArrivalWalls;
 
-	UPROPERTY()
+	UPROPERTY(NonTransactional)
+	TArray<bool> GeneratedSealAllowed;
+
+	UPROPERTY(NonTransactional)
+	TArray<bool> GeneratedFreeAccess;
+
+	UPROPERTY(NonTransactional)
 	bool bGeneratedSegmented = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Generated", AdvancedDisplay)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, NonTransactional, Category="Generated", AdvancedDisplay)
 	TObjectPtr<APlayerStart> GeneratedPlayerStart;
 
 private:
+	bool ResolveHollowRegions(const TArray<AMiningLayoutRoom*>& Rooms, TArray<AMiningHollowRegion*>& Result, FString& Error, bool bAllowMissing = false) const;
 	TArray<AMiningLayoutRoom*> GetOrderedRooms() const;
 	TArray<AMiningLayoutSpace*> GetLayoutSpaces() const;
 	uint32 GetInputHash() const;
@@ -270,6 +290,6 @@ private:
 	double LastInputChangeTime = 0;
 	uint32 ObservedPreviewHash = 0;
 
-	UPROPERTY()
+	UPROPERTY(NonTransactional)
 	float RecommendedFallResetDistance = 2000;
 };

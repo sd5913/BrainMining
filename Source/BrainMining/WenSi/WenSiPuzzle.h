@@ -27,8 +27,10 @@ public:
  UPROPERTY(EditAnywhere, Category="WenSi") int32 ObjectKind = 0;
  UPROPERTY(EditAnywhere, Category="WenSi") EWenSiRule Rule = EWenSiRule::Heavy;
  UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Body;
+ UPROPERTY(EditAnywhere, Category="WenSi|Museum") TObjectPtr<UMaterialInterface> HighlightMaterial;
  void Configure(int32 Kind);
  void ApplyRule();
+ void SetInteractionHighlight(bool bAimed, bool bEnabled=true);
  FString Noun() const;
  FString Adjective() const;
  FVector Rest;
@@ -95,5 +97,6 @@ public:
 #if WITH_EDITOR
  static void CreateLevel();
  static void CreateExtendedLevel();
+ static void DressMuseum();
 #endif
 };

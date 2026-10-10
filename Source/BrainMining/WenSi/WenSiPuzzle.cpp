@@ -91,7 +91,15 @@ FString AWenSiObject::Adjective() const
 
 void AWenSiObject::ApplyRule()
 {
- const FLinearColor Color = ObjectKind==0 ? FLinearColor(.48f,.36f,.25f) : ObjectKind==1 ? FLinearColor(.25f,.48f,.58f) : ObjectKind==3 ? FLinearColor(.38f,.22f,.3f) : ObjectKind==4 ? FLinearColor(.55f,.32f,.15f) : FLinearColor(.8f,.72f,.5f);
+ const FLinearColor Color = HighlightMaterial
+  ? (ObjectKind==1 ? FLinearColor(.48f,.29f,.095f) : ObjectKind==3 ? FLinearColor(.19f,.032f,.045f) : ObjectKind==4 ? FLinearColor(.19f,.095f,.043f) : FLinearColor(.62f,.53f,.4f))
+  : (ObjectKind==0 ? FLinearColor(.48f,.36f,.25f) : ObjectKind==1 ? FLinearColor(.25f,.48f,.58f) : ObjectKind==3 ? FLinearColor(.38f,.22f,.3f) : ObjectKind==4 ? FLinearColor(.55f,.32f,.15f) : FLinearColor(.8f,.72f,.5f));
+ if(HighlightMaterial)
+ {
+  const TCHAR* MaterialName=ObjectKind==1 ? TEXT("MI_Brass") : ObjectKind==3 ? TEXT("MI_Burgundy") : ObjectKind==4 ? TEXT("MI_Walnut") : TEXT("MI_Limestone");
+  const FString Path=FString(TEXT("/Game/WenSi/Museum/Materials/"))+MaterialName+TEXT(".")+MaterialName;
+  if(auto MuseumMaterial=LoadObject<UMaterialInterface>(nullptr,*Path))SolidMaterial=MuseumMaterial;
+ }
  for (auto Part : Parts)
  {
   if (!Part->IsVisible()) continue;
@@ -104,11 +112,28 @@ void AWenSiObject::ApplyRule()
    Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);
   }
   UMaterialInstanceDynamic* M=UMaterialInstanceDynamic::Create(Rule==EWenSiRule::Intangible ? GhostMaterial.Get() : SolidMaterial.Get(),this);
-  M->SetVectorParameterValue(TEXT("Color"),Rule==EWenSiRule::Intangible ? FLinearColor(.25,.7,1,.25) : Color);
+  M->SetVectorParameterValue(TEXT("Color"),Rule==EWenSiRule::Intangible ? (HighlightMaterial ? FLinearColor(Color.R,Color.G,Color.B,.25f) : FLinearColor(.25,.7,1,.25)) : Color);
   M->SetVectorParameterValue(TEXT("BaseColor"),Color);
   M->SetScalarParameterValue(TEXT("Opacity"),.25f);
   Part->SetMaterial(0,M);
+  if (HighlightMaterial && !Cast<UMaterialInstanceDynamic>(Part->GetOverlayMaterial()))
+   Part->SetOverlayMaterial(UMaterialInstanceDynamic::Create(HighlightMaterial,this));
  }
+ SetInteractionHighlight(false);
+}
+
+void AWenSiObject::SetInteractionHighlight(bool bAimed,bool bEnabled)
+{
+ if(!HighlightMaterial) return;
+ const float Pulse=bAimed && GetWorld() ? .08f*FMath::Sin(GetWorld()->GetTimeSeconds()*4.f) : 0.f;
+ for(auto Part:Parts)
+  if(Part->IsVisible())
+   if(auto Glow=Cast<UMaterialInstanceDynamic>(Part->GetOverlayMaterial()))
+   {
+    Glow->SetScalarParameterValue(TEXT("Strength"),bEnabled ? (bAimed ? 1.8f+Pulse : 1.f) : 0.f);
+    Glow->SetScalarParameterValue(TEXT("OutlineWidth"),bAimed ? 1.2f : .8f);
+    Glow->SetVectorParameterValue(TEXT("Tint"),FLinearColor(1.f,.88f,.68f));
+   }
 }
 
 void AWenSiObject::BeginPlay()
@@ -224,6 +249,7 @@ void AWenSiPuzzle::Tick(float Dt)
   bComplete=true; if (bEditing) ToggleEdit(); Thoughts[0].Reset(); Thoughts[1].Reset();
  }
  if (UI) UI->Refresh();
+ for(int32 I=0;I<Objects.Num();++I) Objects[I]->SetInteractionHighlight(I==Aim,!bComplete);
 }
 void AWenSiPuzzle::Think()
 {

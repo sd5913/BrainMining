@@ -1,0 +1,124 @@
+{
+  "files": [
+    {
+      "path": "H:\\PolyU\\Spotlight\\BrainMining\\Art\\Mining\\TunnelWideV2\\SM_DescendingTunnel_Wide_Lowpoly.fbx",
+      "mesh_count": 1,
+      "passed": true,
+      "objects": [
+        {
+          "name": "SM_DescendingTunnel_Wide_Lowpoly",
+          "max_bounds_error_m": 1.52587890625e-05,
+          "faces": 45878
+        }
+      ]
+    },
+    {
+      "path": "H:\\PolyU\\Spotlight\\BrainMining\\Art\\Mining\\TunnelWideV2\\Tunnel_Wide_Blockers_20.fbx",
+      "mesh_count": 20,
+      "passed": true,
+      "objects": [
+        {
+          "name": "SM_WideTunnelBlocker_01",
+          "max_bounds_error_m": 9.5367431640625e-06,
+          "faces": 1938
+        },
+        {
+          "name": "SM_WideTunnelBlocker_02",
+          "max_bounds_error_m": 4.76837158203125e-06,
+          "faces": 524
+        },
+        {
+          "name": "SM_WideTunnelBlocker_03",
+          "max_bounds_error_m": 7.62939453125e-06,
+          "faces": 1274
+        },
+        {
+          "name": "SM_WideTunnelBlocker_04",
+          "max_bounds_error_m": 7.62939453125e-06,
+          "faces": 838
+        },
+        {
+          "name": "SM_WideTunnelBlocker_05",
+          "max_bounds_error_m": 4.76837158203125e-06,
+          "faces": 558
+        },
+        {
+          "name": "SM_WideTunnelBlocker_06",
+          "max_bounds_error_m": 1.9073486328125e-06,
+          "faces": 2160
+        },
+        {
+          "name": "SM_WideTunnelBlocker_07",
+          "max_bounds_error_m": 3.814697265625e-06,
+          "faces": 558
+        },
+        {
+          "name": "SM_WideTunnelBlocker_08",
+          "max_bounds_error_m": 5.7220458984375e-06,
+          "faces": 1028
+        },
+        {
+          "name": "SM_WideTunnelBlocker_09",
+          "max_bounds_error_m": 7.62939453125e-06,
+          "faces": 1672
+        },
+        {
+          "name": "SM_WideTunnelBlocker_10",
+          "max_bounds_error_m": 7.62939453125e-06,
+          "faces": 662
+        },
+        {
+          "name": "SM_WideTunnelBlocker_11",
+          "max_bounds_error_m": 4.76837158203125e-06,
+          "faces": 1134
+        },
+        {
+          "name": "SM_WideTunnelBlocker_12",
+          "max_bounds_error_m": 1.9073486328125e-06,
+          "faces": 890
+        },
+        {
+          "name": "SM_WideTunnelBlocker_13",
+          "max_bounds_error_m": 1.9073486328125e-06,
+          "faces": 584
+        },
+        {
+          "name": "SM_WideTunnelBlocker_14",
+          "max_bounds_error_m": 7.62939453125e-06,
+          "faces": 532
+        },
+        {
+          "name": "SM_WideTunnelBlocker_15",
+          "max_bounds_error_m": 7.62939453125e-06,
+          "faces": 1536
+        },
+        {
+          "name": "SM_WideTunnelBlocker_16",
+          "max_bounds_error_m": 5.7220458984375e-06,
+          "faces": 610
+        },
+        {
+          "name": "SM_WideTunnelBlocker_17",
+          "max_bounds_error_m": 3.814697265625e-06,
+          "faces": 1058
+        },
+        {
+          "name": "SM_WideTunnelBlocker_18",
+          "max_bounds_error_m": 7.62939453125e-06,
+          "faces": 604
+        },
+        {
+          "name": "SM_WideTunnelBlocker_19",
+          "max_bounds_error_m": 2.86102294921875e-06,
+          "faces": 1108
+        },
+        {
+          "name": "SM_WideTunnelBlocker_20",
+          "max_bounds_error_m": 7.62939453125e-06,
+          "faces": 572
+        }
+      ]
+    }
+  ],
+  "passed": true
+}

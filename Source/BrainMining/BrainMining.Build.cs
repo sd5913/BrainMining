@@ -24,8 +24,8 @@ public class BrainMining : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[] { "GeometryCore", "GeometryFramework", "DynamicMesh" });
 		PrivateDependencyModuleNames.Add("RenderCore");
-		PrivateDependencyModuleNames.Add("GeometryAlgorithms");
-		if (Target.bBuildEditor) PrivateDependencyModuleNames.Add("UnrealEd");
+		PrivateDependencyModuleNames.AddRange(new[] { "GeometryAlgorithms", "AssetRegistry" });
+		if (Target.bBuildEditor) PrivateDependencyModuleNames.AddRange(new[] { "UnrealEd", "MeshConversion", "MeshDescription" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"BrainMining",

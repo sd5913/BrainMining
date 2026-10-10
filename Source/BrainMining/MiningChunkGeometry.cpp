@@ -44,9 +44,11 @@ namespace
 		Second.DiscardAttributes();
 		if (!First.HasTriangleGroups()) First.EnableTriangleGroups(0);
 		if (!Second.HasTriangleGroups()) Second.EnableTriangleGroups(0);
-		const double Tolerances[] = {0.000001, 0.00001, 0.0001, 0.001};
+		// SnapTolerance is measured after FMeshBoolean normalizes both meshes.
+		// Fine first passes preserve short edges in large external mining regions.
+		const double Tolerances[] = {0.00000001, 0.0000001, 0.000001, 0.00001, 0.0001, 0.001};
 		const double SpatialTolerances[] = {0.000000001, 0.00000001, 0.0000001, 0.000001, 0.00001, 0.0001, 0.001};
-		for (int32 Attempt = 0; Attempt < (bPreserveCutEdges ? 14 : 8); ++Attempt)
+		for (int32 Attempt = 0; Attempt < (bPreserveCutEdges ? 14 : 12); ++Attempt)
 		{
 			Result.Clear();
 			FMeshBoolean Operation(&First, &Second, &Result, Mode);
@@ -54,7 +56,8 @@ namespace
 			Operation.bCollapseDegenerateEdgesOnCut = !bPreserveCutEdges || Attempt % 2 == 0;
 			Operation.bPreserveTriangleGroups = false;
 			Operation.SnapTolerance = bPreserveCutEdges ? SpatialTolerances[Attempt / 2] : Tolerances[Attempt / 2];
-			if (Operation.Compute() && Operation.CreatedBoundaryEdges.IsEmpty() &&
+			const bool bComputed = Operation.Compute();
+			if (bComputed && Operation.CreatedBoundaryEdges.IsEmpty() &&
 				(Result.TriangleCount() == 0 || Result.IsClosed()) &&
 				Result.CheckValidity(FDynamicMesh3::FValidityOptions(), EValidityCheckFailMode::ReturnOnly)) return true;
 		}
@@ -174,6 +177,16 @@ FBox MiningChunks::ChangedBounds(const FDynamicMesh3& Before, const FDynamicMesh
 	return Dirty.IsValid ? Dirty.ExpandBy(0.1) : Dirty;
 }
 
+bool MiningChunks::SpatialChunkCounts(const FVector& Size, double Length, FIntVector& Counts)
+{
+	if (!FMath::IsFinite(Length) || Length < 400 || Length > 3000 || Size.ContainsNaN() ||
+		Size.GetMin() <= 0 || Size.GetMax() > Length * MaxSpatialChunks) return false;
+	const FIntVector Candidate(FMath::CeilToInt(Size.X / Length), FMath::CeilToInt(Size.Y / Length), FMath::CeilToInt(Size.Z / Length));
+	if (static_cast<int64>(Candidate.X) * Candidate.Y * Candidate.Z > MaxSpatialChunks) return false;
+	Counts = Candidate;
+	return true;
+}
+
 bool MiningChunks::SplitSpatial(const FDynamicMesh3& Source, double Length, TArray<FDynamicMesh3>& Meshes, TArray<FBox>& Bounds)
 {
 	FSpatialGrid Grid;
@@ -181,6 +194,53 @@ bool MiningChunks::SplitSpatial(const FDynamicMesh3& Source, double Length, TArr
 	Meshes.Reset(); Bounds.Reset();
 	for (const FSpatialCell& Cell : Grid.Cells)
 		if (Cell.Mesh && Cell.Mesh->TriangleCount()) { Meshes.Add(*Cell.Mesh); Bounds.Add(Cell.Bounds); }
+	return true;
+}
+
+bool MiningChunks::SplitExternalSpatial(const FDynamicMesh3& Source, double Length, TArray<FDynamicMesh3>& Meshes, TArray<FBox>& Bounds)
+{
+	if (!FMath::IsFinite(Length) || Length < 400 || Length > 3000) return false;
+	TArray<FDynamicMesh3> Pieces;
+	TArray<FBox> PieceBounds;
+	if (Source.TriangleCount() == 0) { Meshes.Reset(); Bounds.Reset(); return true; }
+	const FAxisAlignedBox3d SourceBounds = Source.GetBounds();
+	const FVector Minimum(SourceBounds.Min);
+	const FVector Size(SourceBounds.Max - SourceBounds.Min);
+	FIntVector Counts;
+	if (Minimum.ContainsNaN() || !SpatialChunkCounts(Size, Length, Counts)) return false;
+	Pieces.Reserve(Counts.X * Counts.Y * Counts.Z);
+	PieceBounds.Reserve(Counts.X * Counts.Y * Counts.Z);
+	for (int32 XIndex = 0; XIndex < Counts.X; ++XIndex)
+	for (int32 YIndex = 0; YIndex < Counts.Y; ++YIndex)
+	for (int32 ZIndex = 0; ZIndex < Counts.Z; ++ZIndex)
+	{
+		const FIntVector Indices(XIndex, YIndex, ZIndex);
+		FBox Cell(ForceInit);
+		for (int32 Axis = 0; Axis < 3; ++Axis)
+		{
+			Cell.Min[Axis] = Minimum[Axis] + Size[Axis] * Indices[Axis] / Counts[Axis] - (Indices[Axis] == 0 ? 1 : 0);
+			Cell.Max[Axis] = Minimum[Axis] + Size[Axis] * (Indices[Axis] + 1) / Counts[Axis] + (Indices[Axis] == Counts[Axis] - 1 ? 1 : 0);
+		}
+		FMinimalBoxMeshGenerator Generator;
+		Generator.Box = FOrientedBox3d(FVector3d(Cell.GetCenter()), FVector3d((Cell.Max - Cell.Min) * 0.5));
+		Generator.Generate();
+		FDynamicMesh3 Piece;
+		const FDynamicMesh3 Tool(&Generator);
+		if (!Boolean(Source, Tool, FMeshBoolean::EBooleanOp::Intersect, Piece))
+		{
+			UE_LOG(LogBrainMining, Warning, TEXT("Spatial boolean failed at %d,%d,%d / %d,%d,%d: source %d closed %d, result %d closed %d valid %d"), XIndex,YIndex,ZIndex,Counts.X,Counts.Y,Counts.Z,Source.TriangleCount(),Source.IsClosed(),Piece.TriangleCount(),Piece.IsClosed(),Piece.CheckValidity(FDynamicMesh3::FValidityOptions(),EValidityCheckFailMode::ReturnOnly));
+			return false;
+		}
+		if (Piece.TriangleCount() == 0) continue;
+		Piece.CompactInPlace();
+		const FAxisAlignedBox3d ActualBounds = Piece.GetBounds();
+		PieceBounds.Add(FBox(FVector(ActualBounds.Min), FVector(ActualBounds.Max)));
+		Normals(Piece);
+		Pieces.Add(MoveTemp(Piece));
+	}
+	if (Pieces.IsEmpty()) return false;
+	Meshes = MoveTemp(Pieces);
+	Bounds = MoveTemp(PieceBounds);
 	return true;
 }
 

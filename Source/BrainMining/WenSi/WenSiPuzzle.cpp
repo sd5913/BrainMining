@@ -61,23 +61,37 @@ void AWenSiObject::Configure(int32 Kind)
   Shape(6,FVector(0,-100,-105),FVector(160,10,210));
   Shape(7,FVector(0,100,-105),FVector(160,10,210));
  }
- else
+ else if (Kind==2)
  {
   Shape(0,FVector::ZeroVector,FVector(58,58,75));
   Shape(1,FVector(0,0,58),FVector(40,40,40));
   Shape(2,FVector(0,0,-48),FVector(75,75,20));
  }
+ else if (Kind==3)
+ {
+  Shape(0,FVector::ZeroVector,FVector(16,218,196));
+  Shape(1,FVector(0,-112,0),FVector(26,12,210));
+  Shape(2,FVector(0,112,0),FVector(26,12,210));
+ }
+ else if (Kind==4)
+ {
+  Shape(0,FVector::ZeroVector,FVector(360,236,16));
+  for (int32 I=1;I<5;++I) Shape(I,FVector(0,(I-2.5f)*48,8.5f),FVector(350,2,1));
+ }
  ApplyRule();
 }
 
 FString AWenSiObject::Noun() const
-{ return ObjectKind==0 ? TEXT("石块") : ObjectKind==1 ? TEXT("罩子") : TEXT("雕像"); }
+{
+ static const TCHAR* Names[]={TEXT("石块"),TEXT("罩子"),TEXT("雕像"),TEXT("屏风"),TEXT("木板")};
+ return ObjectKind>=0 && ObjectKind<UE_ARRAY_COUNT(Names) ? Names[ObjectKind] : TEXT("物体");
+}
 FString AWenSiObject::Adjective() const
 { return Rule==EWenSiRule::Heavy ? TEXT("沉重") : Rule==EWenSiRule::Light ? TEXT("轻盈") : TEXT("虚无"); }
 
 void AWenSiObject::ApplyRule()
 {
- const FLinearColor Color = ObjectKind==0 ? FLinearColor(.48,.36,.25) : ObjectKind==1 ? FLinearColor(.25,.48,.58) : FLinearColor(.8,.72,.5);
+ const FLinearColor Color = ObjectKind==0 ? FLinearColor(.48f,.36f,.25f) : ObjectKind==1 ? FLinearColor(.25f,.48f,.58f) : ObjectKind==3 ? FLinearColor(.38f,.22f,.3f) : ObjectKind==4 ? FLinearColor(.55f,.32f,.15f) : FLinearColor(.8f,.72f,.5f);
  for (auto Part : Parts)
  {
   if (!Part->IsVisible()) continue;
@@ -105,7 +119,7 @@ void AWenSiObject::Tick(float Dt)
  Super::Tick(Dt);
  float Lift = Rule==EWenSiRule::Light ? (ObjectKind==0 ? 210.f : ObjectKind==1 ? 18.f : 95.f) : 0.f;
  float TargetZ=Rest.Z+Lift;
- if (ObjectKind==2 && Rule==EWenSiRule::Light)
+ if (ObjectKind>=2 && Rule==EWenSiRule::Light)
  {
   // Keep the sculpture's head just below the actual room ceiling.
   float TopOffset=0.f;
@@ -198,7 +212,14 @@ void AWenSiPuzzle::Tick(float Dt)
   if (PC->WasInputKeyJustPressed(EKeys::R)) CloseThought(1);
  }
  if (PC->WasInputKeyJustPressed(EKeys::G)) ToggleEdit();
- if (!bComplete && PC->GetPawn() && PC->GetPawn()->GetActorLocation().X>510.f)
+ if (bExtendedPuzzle && PC->GetPawn() && PC->GetPawn()->GetActorLocation().Z<-80.f)
+ {
+  // Recover at the near bank without resetting the player's solved rules or thoughts.
+  auto Character=Cast<ACharacter>(PC->GetPawn());
+  PC->GetPawn()->SetActorLocation(FVector(780,0,90));
+  if (Character) Character->GetCharacterMovement()->StopMovementImmediately();
+ }
+ if (!bComplete && PC->GetPawn() && PC->GetPawn()->GetActorLocation().X>(bExtendedPuzzle ? 1350.f : 510.f))
  {
   bComplete=true; if (bEditing) ToggleEdit(); Thoughts[0].Reset(); Thoughts[1].Reset();
  }

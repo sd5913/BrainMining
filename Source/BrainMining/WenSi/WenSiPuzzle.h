@@ -85,12 +85,15 @@ public:
  bool bEditing = false;
  bool bComplete = false;
  int32 Aim = INDEX_NONE;
+ UPROPERTY(EditAnywhere, Category="WenSi") bool bExtendedPuzzle = false;
  void ToggleEdit();
  void CloseThought(int32 Index);
  void SwapRules(int32 From, int32 To);
  void Think();
  UFUNCTION(BlueprintCallable, Category="WenSi|Validation") FString ValidatePuzzle();
+ UFUNCTION(BlueprintCallable, Category="WenSi|Validation") FString ValidateExtendedPuzzle();
 #if WITH_EDITOR
  static void CreateLevel();
+ static void CreateExtendedLevel();
 #endif
 };

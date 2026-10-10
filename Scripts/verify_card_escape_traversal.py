@@ -5,7 +5,7 @@ Run in a temporary editor with -ExecutePythonScript=<this file>; no map saves.
 import unreal, math, time, json, traceback
 from pathlib import Path
 unreal.EditorPythonScripting.set_keep_python_script_alive(True)
-out=Path(unreal.Paths.project_saved_dir())/'Automation/TVEscapeV16'
+out=Path(unreal.Paths.project_saved_dir())/'Automation/TVEscapeV17'
 out.mkdir(parents=True,exist_ok=True)
 ed=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
 levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)

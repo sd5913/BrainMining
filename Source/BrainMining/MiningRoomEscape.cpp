@@ -42,6 +42,7 @@ void AMiningRoomEscape::OnWallImpact(FName RoomId)
     if(!CardStage || RoomId!=CardStage->RoomId || bWallBroken || !BreachWall)return;
     bWallBroken=BreachWall->MineSphere(BreachWall->GetActorLocation(),1150);
     BreachBurstTime=0;
+    UpdateWater();
     if(Player.IsValid() && Player->PlayerCameraManager)Player->PlayerCameraManager->StartCameraFade(.18f,0,.35f,FLinearColor(1,.72f,.35f),false,false);
 }
 void AMiningRoomEscape::OnRewardClaimed(FName RoomId)
@@ -147,7 +148,8 @@ float AMiningRoomEscape::ExitDistance() const
 void AMiningRoomEscape::UpdateWater()
 {
     const bool Visible=Phase==EMiningEscapePhase::Flooding || Phase==EMiningEscapePhase::Failed || Phase==EMiningEscapePhase::Escaped;
-    if(Water){Water->SetActorHiddenInGame(!Visible && !bWallBroken);FVector P=Water->GetActorLocation();P.Z=WaterZ;Water->SetActorLocation(P);}
+    const bool WaterVisible=Visible || bWallBroken;
+    if(Water){Water->SetActorHiddenInGame(!WaterVisible);FVector P=Water->GetActorLocation();P.Z=WaterZ;Water->SetActorLocation(P);}
     const bool Signal=Visible && WaterZ>=TableWaterZ-100 && Phase!=EMiningEscapePhase::Escaped;
     if(ScreenLabel)ScreenLabel->SetVisibility(TelevisionScreen && TelevisionScreen->SuccessfulCuts==0 && Signal);
     if(ScreenMaterial)ScreenMaterial->SetVectorParameterValue(TEXT("Color"),Signal?FLinearColor(.08f,.3f,.24f)*(1.8f+.6f*FMath::Sin(Elapsed*5)):FLinearColor(.001f,.001f,.001f));
@@ -155,8 +157,8 @@ void AMiningRoomEscape::UpdateWater()
     for(const auto& Light:InteriorLights)if(Light)Light->SetVisibility(Signal || bEnteredComputer);
     for(int32 i=0;i<FloatingProps.Num();++i)
     {
-        auto* Prop=FloatingProps[i].Get();const bool Floating=Visible && WaterZ>=TableWaterZ-100;
-        Prop->SetVisibility(Floating);Prop->SetCollisionEnabled(Floating?ECollisionEnabled::QueryAndPhysics:ECollisionEnabled::NoCollision);
+        auto* Prop=FloatingProps[i].Get();
+        Prop->SetVisibility(WaterVisible);Prop->SetCollisionEnabled(WaterVisible?ECollisionEnabled::QueryAndPhysics:ECollisionEnabled::NoCollision);
         FVector P=Prop->GetComponentLocation();P.Z=WaterZ+FloatingOffsets[i];Prop->SetWorldLocation(P);
     }
     if(ComputerWater)

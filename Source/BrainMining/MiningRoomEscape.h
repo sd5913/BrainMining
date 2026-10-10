@@ -20,7 +20,8 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     UPROPERTY(EditAnywhere,Category="Escape") float WarningSeconds=5;
-    UPROPERTY(EditAnywhere,Category="Escape") float FloodSeconds=120;
+    // Keep the 4-second surge; halve the previous 116-second steady rise.
+    UPROPERTY(EditAnywhere,Category="Escape") float FloodSeconds=62;
     UPROPERTY(EditAnywhere,Category="Escape") float ComputerSeconds=80;
     UPROPERTY(EditAnywhere,Category="Escape") float TelevisionMineRadius=220;
     UPROPERTY(EditAnywhere,Category="Escape",meta=(ClampMin="0")) float TelevisionGuideRadius=900;

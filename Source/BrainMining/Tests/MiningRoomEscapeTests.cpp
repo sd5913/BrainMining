@@ -71,6 +71,11 @@ public:
         }
         Test->TestTrue(TEXT("Final cat impact creates wall hole"),E->bWallBroken && E->BreachWall->SuccessfulCuts>0);
         Test->TestTrue(TEXT("Impact waits for reward"),E->Phase==EMiningEscapePhase::Idle);
+        for(const auto& Prop:E->FloatingProps)
+        {
+            Test->TestTrue(TEXT("Floating props appear with the first outburst"),Prop->IsVisible());
+            Test->TestTrue(TEXT("Early floating props can be landed on"),Prop->GetCollisionEnabled()==ECollisionEnabled::QueryAndPhysics);
+        }
         Test->TestTrue(TEXT("Victory reward claim succeeds"),Stage->CollectReward());
         Test->TestTrue(TEXT("Reward starts warning and releases controls"),E->Phase==EMiningEscapePhase::Warning && !PC->IsMoveInputIgnored() && !PC->IsLookInputIgnored());
         Test->TestFalse(TEXT("Duplicate reward ignored"),Stage->CollectReward());
@@ -82,9 +87,18 @@ public:
         Test->TestTrue(TEXT("Automatic parkour retry"),E->Phase==EMiningEscapePhase::Flooding && FVector::Dist(Pawn->GetActorLocation(),E->Checkpoint)<1);
         Test->TestTrue(TEXT("Reward preserved on retry"),Stage->Run.Phase==ECardRoomPhase::Collected);
         Test->TestFalse(TEXT("Retry clears stale flight input"),Move->bFlightInputHeld);
-        E->Tick(E->RapidFillSeconds);
+        const float FloatOffset=E->FloatingProps[0]->GetComponentLocation().Z-E->WaterZ;
+        E->Tick(E->RapidFillSeconds*.5f);
+        Test->TestTrue(TEXT("Early surge remains below table"),E->WaterZ<E->TableWaterZ-100);
+        for(const auto& Prop:E->FloatingProps)Test->TestTrue(TEXT("Props remain visible below tabletop"),Prop->IsVisible());
+        Test->TestTrue(TEXT("Props rise with water during initial surge"),FMath::IsNearlyEqual(float(E->FloatingProps[0]->GetComponentLocation().Z),E->WaterZ+FloatOffset,1.f));
+        E->Tick(E->RapidFillSeconds*.5f);
         Test->TestTrue(TEXT("Initial surge reaches just below tabletop"),FMath::IsNearlyEqual(E->WaterZ,E->TableWaterZ,1.f));
-        for(const auto& Prop:E->FloatingProps)Test->TestTrue(TEXT("Objects float only after surge"),Prop->IsVisible());
+        Pawn->SetActorLocation(E->Checkpoint+FVector(0,0,2000));
+        E->Tick(2.f);
+        const float PreviousRisePerSecond=(E->WaterEndZ-E->TableWaterZ)/(120.f-E->RapidFillSeconds);
+        Test->TestTrue(TEXT("Steady water rises twice as fast as the previous 120-second route"),FMath::IsNearlyEqual(E->WaterZ,E->TableWaterZ+PreviousRisePerSecond*4.f,1.f));
+        Test->TestTrue(TEXT("HUD time matches the faster flood"),FMath::IsNearlyEqual(E->SecondsLeft(),56.f,.01f));
         const FVector Axis=(E->TunnelEnd-E->ComputerEntry).GetSafeNormal();
         TArray<UPostProcessComponent*> ExposureComponents;E->GetComponents(ExposureComponents);
         Test->TestEqual(TEXT("Television has local exposure"),ExposureComponents.Num(),1);

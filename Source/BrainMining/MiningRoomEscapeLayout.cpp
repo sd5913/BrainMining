@@ -111,7 +111,7 @@ void AMiningRoomEscape::BuildStudyLayout()
         A->GetStaticMeshComponent()->SetStaticMesh(Sphere);A->SetActorHiddenInGame(true);Foam.Add(A);
     }
 
-    // These objects are hidden and non-colliding until the initial surge floats them.
+    // Hidden before the breach; appear with its water and float throughout the surge.
     // All their parts move together at the saved water height, including on checkpoint retry.
     auto Floating=[&](FVector P,FVector Size,UMaterialInterface* M,FRotator R=FRotator::ZeroRotator)
     {

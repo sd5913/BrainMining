@@ -55,4 +55,5 @@ class BRAINMINING_API AMiningEncounterGameMode : public AGameModeBase
     GENERATED_BODY()
 public:
     AMiningEncounterGameMode();
+    virtual void StartPlay() override;
 };

@@ -1,5 +1,8 @@
 #include "MiningEncounterPlayer.h"
 #include "MiningComponent.h"
+#include "MiningRoomEscape.h"
+#include "MiningGiantRoomEntrance.h"
+#include "CardRoomStage.h"
 #include "Components/InputComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "EchoPassagePlayer.h"
@@ -78,6 +81,25 @@ AMiningEncounterGameMode::AMiningEncounterGameMode()
     if(Pawn.Succeeded())DefaultPawnClass=Pawn.Class;
     PlayerControllerClass=AMiningEncounterPlayerController::StaticClass();
     HUDClass=AHUD::StaticClass();
+}
+
+void AMiningEncounterGameMode::StartPlay()
+{
+    // Runtime assembly keeps the authored study and unrelated encounter maps intact.
+    if(GetWorld()->GetMapName().EndsWith(TEXT("Lvl_EchoMazeToCards_P1")) && !TActorIterator<AMiningRoomEscape>(GetWorld()))
+    {
+        ACardRoomStage* Cards=nullptr;
+        AMiningGiantRoomEntrance* Door=nullptr;
+        for(TActorIterator<ACardRoomStage> It(GetWorld());It;++It){Cards=*It;break;}
+        for(TActorIterator<AMiningGiantRoomEntrance> It(GetWorld());It;++It){Door=*It;break;}
+        if(Cards && Door)
+        {
+            auto* Escape=GetWorld()->SpawnActorDeferred<AMiningRoomEscape>(AMiningRoomEscape::StaticClass(),FTransform::Identity);
+            Escape->CardStage=Cards;Escape->Entrance=Door;
+            Escape->FinishSpawning(FTransform::Identity);
+        }
+    }
+    Super::StartPlay();
 }
 
 void UMiningEncounterPlayerPolicy::SetMiningAllowed(bool bAllowed)

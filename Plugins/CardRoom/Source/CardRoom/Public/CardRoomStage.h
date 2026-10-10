@@ -24,6 +24,8 @@ public:
     UPROPERTY(BlueprintAssignable, Category="Card Room") FCardRoomCompleted OnRoomCompleted;
     UPROPERTY(BlueprintAssignable, Category="Card Room") FCardRoomCompleted OnOpponentWallImpact;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") FVector OpponentExitLocal=FVector(620,200,472);
+    // Optional model-space visual anchor. Zero preserves standalone room presentation.
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") FVector OpponentExitCenterOffset=FVector::ZeroVector;
     UPROPERTY(BlueprintAssignable, Category="Card Room") FCardRoomCompleted OnCollectibleClaimed;
     UFUNCTION(BlueprintCallable, Category="Card Room") bool BeginEncounter();
     UFUNCTION(BlueprintCallable, Category="Card Room") bool CollectReward();

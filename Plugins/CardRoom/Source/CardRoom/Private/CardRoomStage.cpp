@@ -206,13 +206,16 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     if(Phase==ECardRoomPhase::Arrival) Offset.Z+=FMath::Square(1-FMath::Clamp(T/1.0f,0.f,1.f))*430;
     if(bResolve && T>=1 && T<1.7f) { Offset.Y+=FMath::Sin(T*60)*7; Spin.Pitch=FMath::Sin(T*45)*8; }
     if(Run.bPoisoned) { Spin.Pitch=15; Offset.Y+=FMath::Sin(GetWorld()->GetTimeSeconds()*3)*4; }
+    bool bReachedWall=false;
     if(bResolve && Run.Round==4 && T>1)
     {
         const float Fly=FMath::Clamp((T-1)/1.7f,0.f,1.f);
         Offset=FMath::Lerp(Offset,OpponentExitLocal,Fly);Offset.Z+=FMath::Sin(Fly*PI)*120;Spin.Roll=Fly*600;
-        if(Fly>=1) {ToyRoot->SetVisibility(false,true);if(!bImpactSent){bImpactSent=true;OnOpponentWallImpact.Broadcast(RoomId);}}
+        Offset-=Spin.RotateVector(OpponentExitCenterOffset*ToyRoot->GetRelativeScale3D())*Fly;
+        bReachedWall=Fly>=1;
     }
     ToyRoot->SetRelativeLocation(Offset); ToyRoot->SetRelativeRotation(Spin);
+    if(bReachedWall) {ToyRoot->SetVisibility(false,true);if(!bImpactSent){bImpactSent=true;OnOpponentWallImpact.Broadcast(RoomId);}}
     if(auto* PC=GetWorld()->GetFirstPlayerController())
     {
         FVector Eye;FRotator Aim;PC->GetPlayerViewPoint(Eye,Aim);

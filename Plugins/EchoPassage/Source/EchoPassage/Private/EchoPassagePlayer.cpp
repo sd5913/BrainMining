@@ -84,7 +84,7 @@ void UEchoPassageInteractionComponent::EndPlay(const EEndPlayReason::Type Reason
 }
 void UEchoPassageInteractionComponent::BindInput(UInputComponent* Input)
 {
-    Input->BindKey(EKeys::LeftMouseButton,IE_Pressed,this,&UEchoPassageInteractionComponent::Knock);
+    Input->BindKey(EKeys::LeftMouseButton,IE_Pressed,this,&UEchoPassageInteractionComponent::Knock).bConsumeInput=false;
     Input->BindKey(EKeys::R,IE_Pressed,this,&UEchoPassageInteractionComponent::Restart);
 }
 void UEchoPassageInteractionComponent::TickComponent(float DeltaSeconds,ELevelTick TickType,FActorComponentTickFunction* TickFunction)
@@ -95,15 +95,16 @@ void UEchoPassageInteractionComponent::TickComponent(float DeltaSeconds,ELevelTi
     SwingTime+=DeltaSeconds;
     if(Pickaxe)
     {
+        Pickaxe->SetVisibility(bExplorationActive,true);
         const float Swing=SwingTime<.48f?FMath::Sin(FMath::Clamp(SwingTime/.48f,0.f,1.f)*PI):0;
         const float Bob=P->GetVelocity().Size2D()>20 && !P->GetCharacterMovement()->IsFalling()?FMath::Sin(GetWorld()->GetTimeSeconds()*10)*.6f:0;
         Pickaxe->SetRelativeRotation(FRotator(-15-Swing*(bWallStrike?65:100),-12+Swing*12,12));
         Pickaxe->SetRelativeLocation(FVector(52+Swing*9,28-Swing*12,-35-Swing*12+Bob));
     }
     const FVector Local=Stage->GetActorTransform().InverseTransformPosition(P->GetActorLocation());
-    if(!Stage->bCollapsed && Local.X>-90 && Local.Z>700)
+    if(bExplorationActive && !Stage->bCollapsed && Local.X>-90 && Local.X<200 && FMath::Abs(Local.Y)<200 && Local.Z>700)
     {P->GetCharacterMovement()->StopMovementImmediately();LockMovement(true);Stage->Collapse();}
-    if(Stage->bLanded && !Stage->bCompleted && Stage->IsAtExit(P->GetActorLocation()))
+    if(!Stage->bRoomInSameLevel && Stage->bLanded && !Stage->bCompleted && Stage->IsAtExit(P->GetActorLocation()))
     {
         Stage->Complete();
         if(!Stage->DestinationLevel.IsNull())
@@ -125,7 +126,7 @@ void UEchoPassageInteractionComponent::TickComponent(float DeltaSeconds,ELevelTi
 void UEchoPassageInteractionComponent::Knock()
 {
     auto* P=Cast<ACharacter>(GetPawn());
-    if(!Stage || !P || !Stage->bLanded || Stage->bCompleted || bPendingStrike || SwingTime<Stage->KnockCooldown || GetWorld()->GetTimeSeconds()-Stage->LastEcho<Stage->KnockCooldown || P->GetCharacterMovement()->IsFalling())return;
+    if(!bExplorationActive || !Stage || !P || !Stage->bLanded || (Stage->bCompleted && !Stage->bRoomInSameLevel) || bPendingStrike || SwingTime<Stage->KnockCooldown || GetWorld()->GetTimeSeconds()-Stage->LastEcho<Stage->KnockCooldown || P->GetCharacterMovement()->IsFalling())return;
     FVector Eye;FRotator Aim;Player()->GetPlayerViewPoint(Eye,Aim);
     FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(EchoStrike),false,P);
     bool Found=GetWorld()->LineTraceSingleByChannel(Hit,Eye,Eye+Aim.Vector()*245,ECC_Visibility,Query);
@@ -142,12 +143,14 @@ void UEchoPassageInteractionComponent::Knock()
 }
 void UEchoPassageInteractionComponent::Restart()
 {
+    if(RestartOverride.IsBound() && RestartOverride.Execute())return;
     if(!Stage || !GetPawn() || bChangingLevel)return;
     bPendingStrike=false;FeedbackUntil=0;Stage->ResetPassage();LockMovement(false);SwingTime=10;
     auto* P=Cast<ACharacter>(GetPawn());
     if(P) {P->StopJumping();P->GetCharacterMovement()->StopMovementImmediately();P->GetCharacterMovement()->SetMovementMode(MOVE_Falling);}
     // Entry floor is at local Z=900. Account for the actual host capsule.
     FVector Entry=Stage->GetEntry();if(P)Entry.Z+=P->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()-88;
+    OnRestarted.Broadcast();
     GetPawn()->SetActorLocation(Entry,false,nullptr,ETeleportType::TeleportPhysics);
     Player()->SetControlRotation(FRotator(0,Stage->GetActorRotation().Yaw,0));
 }
@@ -155,4 +158,12 @@ void UEchoPassageInteractionComponent::TravelToDestination()
 {
     if(Stage && bChangingLevel && !Stage->DestinationLevel.IsNull())
         UGameplayStatics::OpenLevelBySoftObjectPtr(this,Stage->DestinationLevel,true,TEXT("FromEcho=1"));
+}
+
+void UEchoPassageInteractionComponent::SetExplorationActive(bool bActive)
+{
+    bExplorationActive=bActive;
+    if(!bActive)bPendingStrike=false;
+    if(View)View->SetVisibility(bActive?EVisibility::HitTestInvisible:EVisibility::Collapsed);
+    if(Pickaxe)Pickaxe->SetVisibility(bActive,true);
 }

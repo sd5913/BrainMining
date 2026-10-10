@@ -10,6 +10,8 @@ class USceneComponent;
 class AEchoPassageStage;
 class SEchoPassageView;
 
+DECLARE_DELEGATE_RetVal(bool, FEchoRestartOverride);
+
 // Attach to the host player controller; movement, camera and character remain host-owned.
 UCLASS(ClassGroup=(Encounters), meta=(BlueprintSpawnableComponent))
 class ECHOPASSAGE_API UEchoPassageInteractionComponent : public UActorComponent
@@ -21,6 +23,10 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     virtual void TickComponent(float DeltaSeconds,ELevelTick TickType,FActorComponentTickFunction* TickFunction) override;
     void BindInput(UInputComponent* Input);
+    void SetExplorationActive(bool bActive);
+    FSimpleMulticastDelegate OnRestarted;
+    FEchoRestartOverride RestartOverride;
+    bool bExplorationActive=true;
     UFUNCTION(BlueprintCallable) void Knock();
     UFUNCTION(BlueprintCallable) void Restart();
     UFUNCTION() void OnLanded(const FHitResult& Hit);

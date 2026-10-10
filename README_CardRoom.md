@@ -1,21 +1,21 @@
 # 卡牌房间：实现与协作指南
 
-核对日期：2026-10-09。UE 5.8.2，单人本地原型。面向程序、美术技术协作者和后续 AI 编程助手。
+核对日期：2026-10-10。UE 5.8.2，单人本地原型。面向程序、美术技术协作者和后续 AI 编程助手。
 
-建议按 **快速开始 → 当前规则 → 代码导航 → 运行流程 → 拼装接口 → 接手约定** 阅读。本文描述当前共享主角色接入版；历史反馈以现行实现为准。团队环境、Git LFS 和资产协作规则见 [项目 README](README.md)；收集系统见 [README_Collection.md](README_Collection.md)。
+建议按 **快速开始 → 当前规则 → 代码导航 → 运行流程 → 拼装接口 → 接手约定** 阅读。本文描述当前同关卡巨人房间版；历史反馈以现行实现为准。团队环境、Git LFS 和资产协作规则见 [项目 README](README.md)；收集系统见 [README_Collection.md](README_Collection.md)。
 
 ## 1. 快速开始
 
 - 独立地图：`/Game/Rooms/CardDuel/Maps/Lvl_CardRoom_P1`。
-- 通道联结入口：`/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P1`，走出通道后淡出切换到牌室。
-- 三张遭遇地图的 World Settings → GameMode Override 均使用 `MiningEncounterGameMode`。
-- WASD、鼠标视角与普通跳跃使用项目原有角色输入。飞行在本玩法内禁用。
+- 通道联结入口：`/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P1`，挖开透光墙后直接进入同一个 Level 中的巨人牌室。
+- 遭遇地图的 World Settings → GameMode Override 均使用 `MiningEncounterGameMode`。
+- WASD、鼠标视角与普通跳跃使用项目原有角色输入。按住空格使用已有飞行，松开后下落；巨人牌室可飞上桌面，也可沿左侧的纸箱、尺子与书本螺旋路线步行上桌。
 - 靠近牌桌按 **E** 入座，点击「开始匹配」。点击手牌选择/取消，选中牌抬起并出现亮边；按 **空格** 或按钮把选中的牌甩到桌心。
 - 每回合必须选齐指定手牌；第四回合支持全选 17 张。没有指定放牌区域。
 - **Q** 离席并重置这一局，恢复行走和鼠标环视；胜利后 **E** 或按钮领取本地占位奖励。
 - 奖励不接入挖掘、收集图鉴、背包或存档。攻击效果沿用已确认版本，桌面牌和手牌共用图案。
 
-建议演示顺序：独立启动 → 靠近牌桌 → E 入座 → 开始匹配 → 四轮选牌/空格 → 领取占位奖励 → Q 离席。此玩法没有专用 `Play_*.cmd` 启动器，直接从编辑器地图入口运行。默认 MiningLab 启动地图保持原有配置。
+建议演示顺序：联结关卡启动 → 敲地探索 → 挖开透光墙 → 沿书本路线走上桌面（或飞行）→ 桌面光圈 → E 入座 → 开始匹配 → 四轮选牌/空格 → 领取占位奖励 → Q 离席。此玩法没有专用 `Play_*.cmd` 启动器，直接从编辑器地图入口运行。默认 MiningLab 启动地图保持原有配置。
 
 ## 2. 当前玩法规则
 
@@ -36,7 +36,7 @@
 | --- | --- |
 | 房间实例身份 | 关卡中 `CardRoomStage` 的 `RoomId`，默认 `CardDuel_P1`；完成/领取事件传出这个值 |
 | 生成角色与输入 | 地图 World Settings 的 `MiningEncounterGameMode`；不要改全局默认 GameMode |
-| 入座范围与构图 | `CardRoomStage.cpp::IsPlayerNear()`、头文件的 `GetSeatLocation()` / `GetApproachLocation()`，以及交互组件的摄像机偏移适配 |
+| 入座范围与构图 | `CardRoomStage.cpp::IsPlayerNear()`、头文件的 `GetSeatEyeLocation()` / `GetApproachLocation()`，以及交互组件的摄像机偏移适配 |
 | 匹配与落座时间 | `CardRoomRun.cpp::Tick()`：匹配 2.2 秒，对手登场 1.4 秒 |
 | 出牌/反击结算点 | Resolving 阶段的 1.0 / 2.35 秒；普通回合 4.6 秒结束，终结回合 4.1 秒结束 |
 | 手牌和伤害 | `FCardRoomRun::Deal()` / `Tick()`；当前是 C++ 固定流程，没有 DataTable/策划配置资产 |
@@ -44,6 +44,48 @@
 | 玩偶、攻击和实体卡 | `CardRoomStage.cpp` / `CardRoomVFX.cpp` / `CardRoomSymbols.h` |
 
 回合时间与特效演出共享 `PhaseTime`，改结算时间时同步检查 Stage/VFX 的时间段，避免先扣血后命中。场景为程序化 lowpoly 组件；重新构造 Stage 会依据代码重建部分几何，不要把运行期组件当成独立美术资产。
+
+### 当前版本：台灯垂直舞台光束 V11（2026-10-10）
+
+所有环境尺寸先按普通书房建立，再统一乘 **40**。保持项目原角色尺寸，因此约 180 cm 的玩家相当于巨人参照下约 4.5 cm 的迷你角色。不能再为增加巨物感单独把杯子、铅笔或书架放大；优先调整机位、距离和物件摆放。
+
+| 物件 | 普通尺度参照（cm） | 游戏世界尺寸（cm） |
+| --- | --- | --- |
+| 房间 | 深 432.5 × 宽 500 × 高 300 | 17300 × 20000 × 12000 |
+| 书桌 | 深 90 × 宽 180 × 高 75；板厚 3 | 3600 × 7200 × 3000；板厚 120 |
+| 座椅 | 深 50 × 宽 50；椅面高 45、椅背高 95 | 2000 × 2000；椅面 1800、椅背 3800 |
+| 书柜 | 深 35 × 宽 110 × 高 210 | 1400 × 4400 × 8400 |
+| 桌上书本 | 22 × 30；单本厚 3.2–3.7 | 880 × 1200；单本厚 128–148 |
+| 杯子 | 直径 8、高 10 | 直径 320、高 400 |
+| 铅笔 | 总长约 19、杆径 0.75 | 总长约 770、杆径 30 |
+| 台灯 | 桌上高 45、灯罩直径 20 | 高 1800、灯罩直径 800 |
+
+- 地图仍是 `Lvl_EchoMazeToCards_P1`，通道、洞口和房间在同一个 Level。洞口位置 `(6400,3600,190)` 保持；房间范围 X=6400..23700、Y=-6400..13600、Z=0..12000，局部曝光边界同步更新。
+- 桌中心 `(12600,3600,3000)`。原 U 形矮平台及其过粗文具已替换为正常高脚矩形桌。左右书柜靠后墙，位于主视野范围；桌边的书堆、杯子、笔记本、尺子和长尾夹均采用同一比例。
+- 牌局 Stage 位置 `(12600,3600,2773)`、Scale=2，沿用原玩法局部坐标：上桌引导点约 `(12060,3600,3003)`，入座视点 `(12060,3600,3149)`，`SeatPitch=20`。这里只整体迁移交互台面，不缩放主角色、移动速度或玩法卡牌。
+- 对手保留原造型和 `OpponentScale=10`（总比例 20），椅子中心后移到 `(16000,3600)`。椅面仍高 1800，上面叠八本厚 200 的大开本书，书堆顶高 3400；玩偶根位置 `(16000,3600,3550)`，身体底部落在书堆上。`OpponentBaseLocal=(1700,0,388.5)`，入座俯仰改为 20°，可仰视看到完整躯干、双臂和头部；保留视线跟随、呼吸和表情。
+- **台灯舞台**：底座仍在舞台右侧 `(12900,4900,3028)`，灯口移到正上方 `(12450,3600,4400)`，灯罩摆正，光源 `(12450,3600,4372)` 垂直向下（Pitch=-90°）照向 `(12450,3600,3004)`。铰接灯臂连到罩顶。聚光内/外角为 29°/31°，桌面光池过渡收窄；`M_StudyLampShaftV11` 提供暖色、边缘更亮的可见锥形光束，上端裁切在灯口下方、下端落在桌面，半径约 340→800。光束无碰撞、不投影；相机位于光束内部时透明强度降至 18%，避免洗白卡牌。原悬空灯与假光柱已移除，猫咪补光、轮廓光及交互光圈保留。
+- **洞口与步行路线**：保留 V08 缩短后的房间与家具位置，将旧正面折返楼梯和翻盖纸箱移除。新路线在书桌左前侧，主体占地约 X=8380..10420、Y=-1120..920；洞口至舞台的中央视线带 Y=2300..4900 不再放高杂物。出洞向左，经地面纸签到 `(8600,700,12)`，绕中央牛皮纸箱堆作六段四分之一转弯上升，总计一圈半；坡宽 440、水平段长 1160、单段升高 498，坡度约 23.2°。书本、刻度尺和胶带纸板交替，角落硬皮书作平台；顶端 `(10200,-900,3000)` 用尺子桥接至桌面 `(11300,750,3000)`，再走向暖光入座点。入口提示同步改为沿左侧上桌，角色与飞行参数不变。
+- **地面置景**：入口铺暖色几何织纹地毯，主体范围 X=6860..10780、Y=2090..5110，碰撞顶面 Z=24；最高纹样 Z=34，不阻碍行走。右侧摆同款猫咪装饰玩偶（原点 `(9950,6550,117)`、比例 14、朝入口旋转 35°），直接复制对战猫咪当前 18 个模型部件与五官布局，但只生成静态网格，无牌局/奖励逻辑，用户明确要求与对战猫咪各为一只。另有约 45 cm 巨人参照尺寸的书包，含前袋、拉链、提手与肩带，以及贴地笔记本、铅笔。高物件均在中央视线带 Y=2300..4900 之外，左侧 V09 上桌路线保持。
+- **猫咪五官**：头部枢轴抬至玩偶局部 Z=105，嘴、鼻、浅色双颊和小笑纹均挂在头部枢轴，限制过度低头；缩小并下移领结，改为三角耳。BeginPlay/OnConstruction 重设关键面部位置，防止旧地图组件覆盖把嘴留在胸前。呼吸、表情、视线跟随仍在。
+- **固定镜头与高抛牌**：保持 `SeatPitch=20`，不随牌转动。用户已明确取消新加的摊开施法书和跟牌镜头，现关卡没有这两项。牌高抛回桌面：`CardLandingLocal=(80,0,116)`、`CardThrowHeight=190`、`CardVisualScale=2.2`，投掷约 0.62 秒（逐牌错开），牌面继续沿用原手牌图案；空中先正面朝向玩家，临近落点才放平，避免只看见卡纸薄边。桌面保留至约 2.2 秒。只保留原有受击短震动。
+- **攻击与奖励**：`SpellPresentationScale=2.8`，增粗激光、扩大火团/命中闪光和毒雾；毒雾改为跟随 `OpponentBaseLocal`，清除旧固定坐标。终结法球含约 0.5 秒蓄力、实体棱面核心、双色环绕粒子、碎片、彗尾与双层冲击扩散；不修改伤害、出牌条件或四回合结算时刻。奖励改为 `RewardLocal=(220,0,395)`，浮动旋转并带环绕光点，位于视线前方，E 领取逻辑不变。
+- **生成入口**：全量重建依次运行 `Scripts/rebuild_coherent_giant_study.py` → `Scripts/upgrade_study_access_v07.py` → `Scripts/upgrade_study_presentation_v08.py` → `Scripts/upgrade_study_side_route_v09.py` → `Scripts/upgrade_study_lamp_decor_v10.py` → `Scripts/upgrade_study_lamp_beam_v11.py`。当前台灯可单独重跑 V11；地面装饰重跑 V10 后须接着运行 V11；只调整路线可单独重跑 V09。V10 标签/文件夹为 `StudyLampDecorV10` / `GiantRoom/StudyLampDecorV10`，材质实例为 `MI_StudyV10_*`；路线标签/文件夹为 `StudySideRouteV09` / `GiantRoom/StudySideRouteV09`。V09 只替换旧楼梯和 V08 路线装饰，保留座椅垫书、舞台灯光与战斗参数；`StudyV09LayoutApplied` 阻止单独重跑 V08 覆盖当前路线。V06 全量重建会清理 V08/V09/V10/V11 标记与置景。重建会覆盖脚本拥有的摆放，先保存协作者修改。 V11 标签/文件夹为 `StudyLampBeamV11` / `GiantRoom/StudyLampBeamV11`；V10 重建时清理 V11 光束和标记，防止残留斜灯搭配旧光束。
+- 本轮备份 `Saved/StudyV11Backup/Lvl_EchoMazeToCards_P1.umap`；日志 `Saved/Logs/Build-StudyV11.log` 成功标记 `STUDY_LAMP_SHAFT_V11_READY`。垂直光轴、锥角与光束尺寸记录 `Saved/Automation/StudyV11/layout.json`。本轮仅修改台灯置景/材质，无 C++ 或移动碰撞变更，V10 地面装饰及 V09 步行路线保持。 已核对外侧完整光束及入座视野；`GiantRoomInput` 通过（0 错误、0 警告），结果 `Saved/Automation/StudyV11/seat-results.json`，截图 `Saved/CardRoomPreview/StudyV11-lamp.png`、`StudyV11-seat.png`。
+- 验证入口：`BrainMining.Encounters.PIE.GiantRoomInput` 检查挖掘、入座、出牌和离席；`BrainMining.Encounters.PIE.CardPresentationV08` 走完四回合并检查五官父子关系、高抛牌进入视野、落牌坐标、奖励可见及可领取，截图为 `Saved/CardRoomPreview/StudyV08-round*-*.png` 与 `StudyV08-reward.png`。V08 交付时这两项 PIE 检查通过；最后一次牌面朝向修正后，四回合表现检查再次通过（0 错误、0 警告），结果 `Saved/Automation/StudyV08/presentation-results.json`。新增自动演示仅测试使用，不加入正式玩法。 V10 已重跑 `GiantRoomInput` 并通过（0 错误、0 警告），结果 `Saved/Automation/StudyV10/seat-results.json`；本轮不重复四回合检查。
+- 步行检查 `Scripts/verify_study_v09_walk.py` 从洞内侧 `(6700,3600,130)` 起步，用原角色普通移动输入走完整条侧面路线；不跳跃、不飞行、不在途中传送。V09 已通过 25 个路径点的步行检查，飞行帧数 0，终点角色 Z≈3098；结果 `Saved/Automation/StudyV09/walk.json`。入口与路线截图为 `Saved/CardRoomPreview/StudyV09-entry.png`、`StudyV09-route.png`。辅助编辑器自动结束，使用独立 MCP 端口 8001；未实现飞行耗能。 V10 铺毯和装饰后复用同一路径再次通过，25 个路径点、飞行帧数 0，结果 `Saved/Automation/StudyV10/walk.json`。本轮截图为 `Saved/CardRoomPreview/StudyV10-entry.png`、`StudyV10-floor.png`、`StudyV10-lamp.png`、`StudyV10-seat.png`。
+
+历史：V03 单独放大背景、V04 扩房间、V05 强化近景，均已被 V06 的统一尺寸方案替代。旧生成脚本保留为历史记录，**不要运行 V01–V05 脚本覆盖 V06**。V05 的参考研究为 [Hazelight 作业区场景](https://stenow.artstation.com/projects/28Xwzg)；继续保留熟悉物件作为近景参照，但尺寸以 V06 表格为准。
+
+### 后续待完成：涨水与电脑逃生
+
+用户最新反馈优先要求调整巨物感、猫咪座位/视线与暖光，本次先交付上述可玩视觉版。涨水相关源码已开始实现，但 **尚未放入关卡、尚不可试玩，也未验证完整流程**。
+
+已写接口：`OnOpponentWallImpact`、`UCardRoomInteractionComponent::ReleaseForExploration()`、Echo 的 `RestartOverride`、`MiningRoomEscape` 状态骨架和 `SMiningEscapeView` 引导 UI。逃生 Actor 尚未生成，不会影响现有卡牌流程。
+
+下一步：以当前统一比例的书房重新安排撞墙破口、高处电脑和赛博可挖通道，接上水面/涌水表现及 Actor 引用，校准飞行与挖掘时间，检查领取奖励后触发、淹没/触电失败和局部复活。现有骨架里的电脑/终点坐标仍是旧空间草案，需要随场景重新配置并移除硬编码判定。
+
+约定：奖励后短暂预警，水不断上涨；电脑屏幕提示安全出口；进电脑后沿 UI 指引斜向上挖；水追进电脑会触电；失败自动回到涨水检查点，只重置逃生水位/计时/可挖区域，保留牌局胜利和已领取奖励，无需重新打牌。奖励仍不接主系统。
 
 ## 4. 代码导航与职责
 
@@ -81,7 +123,9 @@ Exploring → E 入座 → Seated → 开始匹配 → Matching → Arrival
 
 `AMiningEncounterPlayerController` 继承 `ABrainMiningPlayerController`，读取原 `BP_FirstPersonPlayerController` 的输入映射和 CameraManager 配置，调用基类 Enhanced Input 设置。插件不再轮询 WASD 或独立计算鼠标角度，也不再生成专用房间角色。
 
-`UMiningEncounterPlayerPolicy::Apply(Pawn)` 临时阻止飞行和挖掘输入，隐藏矿工头灯/补光灯，让牌室使用自己的暖光。`Release()` 恢复灯光可见性并解除该作用域的限制。飞行使用计数锁，不修改 `FlightSettings.bEnabled`；挖掘锁临时移除自己的 MappingContext，避免左键/R 冲突。普通挖掘和收集地图不使用这个 GameMode，行为保持原有设置。
+`UMiningEncounterPlayerPolicy::Apply(Pawn)` 保存原飞行设置并启用现有飞行，隐藏矿工头灯/补光灯。`Release()` 恢复原设置和灯光。原 MiningContext 暂停使用，由宿主在洞口/房间自由探索时转发左键到已有 MiningComponent，入座时禁止挖掘。普通挖掘和收集地图不使用这个 GameMode。
+
+洞口防误传送修复（2026-10-10）：存在 `AEchoPassageStage` 时，Policy 在运行期暂存 `MiningComponent.FallResetDistance` 并设为 0；离开作用域时恢复原值。通道的 R/跌落恢复由 Echo 统一处理（局部 Z<-600），避免桌面高处开局后，走到低处洞口恢复挖掘就触发 Mining 的出生点复位。没有 Echo Stage 的地图保留原防坠落设置，不修改角色蓝图默认值。回归入口 `BrainMining.Encounters.PIE.HighSpawnBreachNoTeleport`：新建真实高处出生的原角色，R 回通道，验证洞口启用挖掘/挖墙不传送、远处 E 不入座、走到桌边后仍可入座，以及退出 Policy 恢复参数。 修复前该回归稳定失败，修复后与 `GiantRoomInput` 一起通过（2/2，0 错误、0 警告）；前后结果位于 `Saved/Automation/BreachFallReset/before.json`、`after.json`，编译日志 `Saved/Logs/Build-BreachFallResetFix.log`。
 
 入座时组件保存位置、朝向、移动模式和碰撞状态，只增加自己的一层移动/视角锁，按实际主角色摄像机偏移对齐座位。离席、组件销毁时恢复。空格不会在座位上触发跳跃。自由探索时使用原角色转向手感，座位中保留固定镜头和受击晃动。
 
@@ -93,11 +137,11 @@ Exploring → E 入座 → Seated → 开始匹配 → Matching → Arrival
 
 依赖方向为 `BrainMining → CardRoom / EchoPassage → UE`。两个 Runtime 插件互不依赖，也不反向依赖项目模块。`CardRoomGameMode` 旧类仅用于旧地图加载兼容，当前地图请使用 `MiningEncounterGameMode`。
 
-1. 独立地图接入：保留 Stage 和本地图 GameMode；通过地图软引用进入。
+1. 当前推荐联结版：EchoStage、CardRoomStage 和 MiningGiantRoomEntrance 放在 passage 的同一 Level，保留同一玩家实例。原独立牌室仍是常规比例的参考地图。
 2. 以后合并到主世界：保留主 GameMode，在主 PlayerController 上挂 `UCardRoomInteractionComponent`，调用 `BindInput(InputComponent)`，在进入/离开玩法时成对调用角色策略 `Apply/Release`。当前组件在 BeginPlay 查找一个 Stage，适用于一张地图一个遭遇；流送或多个房间时应改成显式 Stage 注册/激活，不能直接把本 GameMode 设成整个主世界的 GameMode。
 3. UI 层通过 `Interact()`、`ConfirmCards()`、`LeaveSeat()` 进入组件，再驱动 Stage/Run。组件销毁会移除自己的 Viewport UI。
 4. 监听 `ACardRoomStage::OnRoomCompleted(RoomId)`：每局胜利一次。监听 `OnCollectibleClaimed(RoomId)`：本局领取一次。真正物品 ID、数量、持久化及跨局去重由主游戏决定。
-5. 通道通过 `DestinationLevel` 软引用切换本地图，传入 `FromEcho=1`，牌室淡入。当前不传递玩家实体或背包状态，不是无缝流送。
+5. 联结版 `bRoomInSameLevel=true`、`DestinationLevel` 为空，入口 Actor 协调敲地/挖掘/牌室 UI 与局部曝光。旧 `FromEcho=1` 淡入逻辑仅为兼容保留；联结版不调用 OpenLevel，也不需要流送。
 
 | 接口 | 层级 / 语义 |
 | --- | --- |
@@ -116,21 +160,19 @@ Exploring → E 入座 → Seated → 开始匹配 → Matching → Arrival
 
 ## 8. 验证记录与复现入口
 
-下面是后续修改时的验证入口。最近一次已经完成的记录（2026-10-09）：Development Editor 编译通过；`BrainMining.Encounters`、`BrainMining.Flight`、`CardRoom.Rules`、`EchoPassage` 共 **11 项成功，0 失败**。用户也已确认基础功能接入。
+早期联结版的 Development Editor 编译日志：`Saved/Logs/Build-GiantRoomV01.log`。定向 PIE 回归为 `BrainMining.Encounters.PIE.GiantRoomInput`，报告在 `Saved/Automation/GiantRoomV01/index.json`，运行日志在 `Saved/Logs/Validate-GiantRoomV01.log`。以报告中的实际结果为准；`Saved/` 是本机产物，不是持续 CI。
 
-本机报告：`Saved/Automation/SharedEncounterPlayer/index.json`；构建日志：`Saved/Logs/Build-SharedEncounterPlayer.log`；运行日志：`Saved/Logs/Validate-SharedEncounterPlayer.log`。`Saved/` 是本机产物，不代表其他成员已有报告或持续 CI。
-
-[MiningEncounterPIETests.cpp](Source/BrainMining/Tests/MiningEncounterPIETests.cpp) 的 PIE 回归经原有输入映射验证 W 移动、鼠标转向、左键单击/长按、R 重来、E 入座、空格确认、Q 离席。它会把角色移到出口验证切图、移到牌桌验证入座，并直接推进匹配/选牌状态；**不是全迷宫人工通关或完整鼠标 UI 操作验收**。飞行限制和恢复另由计数锁测试覆盖。
+[MiningEncounterPIETests.cpp](Source/BrainMining/Tests/MiningEncounterPIETests.cpp) 经原输入映射检查移动、环视、单击敲地、R 重来、洞口实际网格挖掘、同世界 Stage、飞行可用状态、E 入座、空格出牌和 Q 恢复移动。测试会传送到墙前和桌面布置检查环境，直接推进匹配/选牌状态；不等于人工走完全迷宫、实际飞完整段航程或完整鼠标 UI 验收。2026-10-09 的 11 项通过报告是共享角色旧版记录，不代表本次全部重跑。
 
 需要重跑时，先保存并关闭占用工程 DLL 的 UE 编辑器/独立试玩窗口，按项目 README 编译。之后可在工程根目录执行：
 
 ```powershell
 $engineRoot = 'C:\UE_5.8' # 按本机安装位置修改
 $projectPath = (Resolve-Path '.\BrainMining.uproject').Path
-$reportPath = Join-Path (Get-Location) 'Saved\Automation\SharedEncounterPlayer'
+$reportPath = Join-Path (Get-Location) 'Saved\Automation\GiantRoomV01'
 & "$engineRoot\Engine\Binaries\Win64\UnrealEditor.exe" $projectPath `
     '/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P1' -NoSplash -unattended `
-    '-ExecCmds=Automation RunTests BrainMining.Encounters+BrainMining.Flight+CardRoom.Rules+EchoPassage' `
+    '-ExecCmds=Automation RunTests BrainMining.Encounters.PIE.GiantRoomInput' `
     "-ReportExportPath=$reportPath"
 ```
 
@@ -143,7 +185,7 @@ $reportPath = Join-Path (Get-Location) 'Saved\Automation\SharedEncounterPlayer'
 | 问题 / 目标 | 优先检查 |
 | --- | --- |
 | 角色变了或移动手感不同 | 地图 GameMode、DefaultPawnClass、主控制器 Blueprint 输入配置；不要加回独立 WASD/鼠标轮询 |
-| 牌室仍能飞行或左键误挖 | 策略是否对当前 Pawn Apply；切换控制对象时是否释放旧 Pawn、限制新 Pawn |
+| 桌面飞不上去或座位误挖 | 原飞行设置/输入、座位移动锁、入口 Actor 的 SetMiningAllowed；入座必须禁止挖掘 |
 | E 无法入座 | 距离/高度门限、当前 Run.Phase、Stage 是否是本房间实例 |
 | 空格不出牌 | 是否 Choosing、是否全部选齐；Slate 焦点和控制器绑定 |
 | 座位太低或挡住牌桌 | 主角色摄像机实际偏移、座位目标视点、入座碰撞禁用和离席恢复；不要改主角色全局身高 |
@@ -156,10 +198,11 @@ $reportPath = Join-Path (Get-Location) 'Saved\Automation\SharedEncounterPlayer'
 
 先区分本次文件与已有挖掘/收集改动。`.umap/.uasset` 按项目 README 认领，避免同时编辑。修改共享角色、MiningComponent 或移动组件时说明受影响范围，不把其他系统的既有改动归入本任务。
 
-接手时保持：复用原角色/移动/视角；本玩法临时禁飞；点击选中、空格甩向桌心；手牌和实体牌都有图案；保留现行攻击表现、玩偶呼吸表情与暖光；奖励暂不接主系统。多房间与无缝流送是后续集成工作，当前组件只自动寻找一个 Stage。
+接手时保持：复用原角色/移动/视角；本玩法启用既有飞行，同关卡挖墙进入巨人牌室；点击选中、空格甩向桌心；手牌和实体牌都有图案；保留现行攻击表现、玩偶呼吸表情与暖光；奖励暂不接主系统。多房间与无缝流送是后续集成工作，当前组件只自动寻找一个 Stage。
 
 交接至少包含地图、工作区/提交版本、复现按键、变更文件、已完成验证及日期、待人工确认项。后续验证与扩展范围以用户当次要求为准。
 
 可复制给后续 AI：
 
-> 先阅读 README.md、README_CardRoom.md 和 README_EchoPassage.md，检查已有改动。牌室地图是 Lvl_CardRoom_P1，主角色入口在 MiningEncounterPlayer，规则在 CardRoomRun，交互在 UCardRoomInteractionComponent。保留现有选牌、空格出牌、图案和攻击表现；只完成本次指定需求。不要改全局 GameMode、重建既有关卡或擅自接入收集奖励。需要测试时先遵从用户当前对验证范围的要求。
+> 先阅读 README.md、README_CardRoom.md 和 README_EchoPassage.md，检查已有改动。推荐联结地图是 Lvl_EchoMazeToCards_P1，独立牌室参考是 Lvl_CardRoom_P1，主角色入口在 MiningEncounterPlayer，规则在 CardRoomRun，交互在 UCardRoomInteractionComponent。保留现有选牌、空格出牌、图案和攻击表现；只完成本次指定需求。不要改全局 GameMode、重建既有关卡或擅自接入收集奖励。需要测试时先遵从用户当前对验证范围的要求。
+

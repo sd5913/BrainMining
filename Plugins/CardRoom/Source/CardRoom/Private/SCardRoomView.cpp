@@ -69,12 +69,12 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     };
     Box(28,24,304,76,Dark); Box(28,24,4,76,Gold);
     Text(TEXT("余 烬 牌 室"),50,36,24,Cream); Text(TEXT("EMBER PARLOUR     /     ROOM 02"),50,73,11,Gold);
-    Box(1302,26,270,43,Dark); Text(TEXT("独立房间试玩  ·  V0.3"),1318,37,15,Cream);
+    Box(1302,26,270,43,Dark); Text(Owner->Stage->bTabletopEntry?TEXT("巨人牌室 · 同一世界"):TEXT("独立房间试玩  ·  V0.3"),1318,37,15,Cream);
     if(R.Phase==ECardRoomPhase::Exploring)
     {
         const bool Near=Owner->GetPawn()&&Owner->Stage->IsPlayerNear(Owner->GetPawn()->GetActorLocation());
-        Box(486,740,628,89,Dark); Text(Near?TEXT("[ E ]  入座，开始一场奇怪的牌局"):TEXT("走近前方牌桌，寻找你的座位"),530,756,22,Cream);
-        Text(TEXT("W A S D  移动     鼠标  环顾     Esc  结束试玩"),544,794,13,Gold);
+        Box(486,740,628,89,Dark); Text(Near?TEXT("[ E ]  入座，开始一场奇怪的牌局"):(Owner->ExplorationHint.IsEmpty()?TEXT("走近前方牌桌，寻找你的座位"):Owner->ExplorationHint),530,756,22,Cream);
+        Text(TEXT("WASD 移动   按住空格飞行   松开下落   R 重来"),544,794,13,Gold);
         Box(797,447,6,6,Cream); return L;
     }
     Button(FSlateRect(1440,80,1572,118),TEXT("Q  离席"));

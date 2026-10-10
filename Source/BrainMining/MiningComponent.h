@@ -20,6 +20,9 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void BindInput(UEnhancedInputComponent* Input);
+    void SetInputContextEnabled(bool bEnabled);
+    bool IsInputContextEnabled() const {return bInputContextEnabled;}
+    void BeginMiningInput() {StartMining();}
     void PushEncounterBlock();
     void PopEncounterBlock();
     bool IsEncounterBlocked() const {return EncounterBlockCount>0;}
@@ -66,6 +69,7 @@ public:
 
 private:
     int32 EncounterBlockCount=0;
+    bool bInputContextEnabled=true;
 	UPROPERTY(Transient)
 	TObjectPtr<UInputMappingContext> MiningContext;
 	UPROPERTY(Transient)

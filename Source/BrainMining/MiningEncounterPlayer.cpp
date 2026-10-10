@@ -1,7 +1,10 @@
 #include "MiningEncounterPlayer.h"
 #include "MiningComponent.h"
+#include "Components/InputComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "EchoPassagePlayer.h"
+#include "EchoPassageStage.h"
+#include "EngineUtils.h"
 #include "CardRoomPlayer.h"
 #include "Components/LightComponent.h"
 #include "GameFramework/Character.h"
@@ -14,8 +17,20 @@ void UMiningEncounterPlayerPolicy::Apply(APawn* Pawn)
     Release();AppliedPawn=Pawn;if(!Pawn)return;
     Mining=Pawn->FindComponentByClass<UMiningComponent>();
     Movement=Pawn->FindComponentByClass<UMiningCharacterMovementComponent>();
-    if(Mining.IsValid())Mining->PushEncounterBlock();
-    if(Movement.IsValid())Movement->PushFlightBlock();
+    if(Mining.IsValid())
+    {
+        bOldInputContextEnabled=Mining->IsInputContextEnabled();Mining->SetInputContextEnabled(false);
+        // Echo owns restart/fall recovery. A high PIE spawn (e.g. on the desk)
+        // must not become mining's fall-reset target when excavation is enabled
+        // again at the low passage exit. Keep ordinary mining maps unchanged.
+        if(GetWorld() && TActorIterator<AEchoPassageStage>(GetWorld()))
+        {
+            OldFallResetDistance=Mining->FallResetDistance;
+            Mining->FallResetDistance=0.f;bFallResetOverridden=true;
+        }
+        Mining->PushEncounterBlock();bMiningBlocked=true;
+    }
+    if(Movement.IsValid()) {bOldFlightEnabled=Movement->FlightSettings.bEnabled;Movement->FlightSettings.bEnabled=true;}
     if(auto* Character=Cast<ACharacter>(Pawn))Character->StopJumping();
     TArray<ULightComponent*> Found;Pawn->GetComponents(Found);
     for(auto* Light:Found)
@@ -27,8 +42,14 @@ void UMiningEncounterPlayerPolicy::Apply(APawn* Pawn)
 }
 void UMiningEncounterPlayerPolicy::Release()
 {
-    if(Mining.IsValid())Mining->PopEncounterBlock();
-    if(Movement.IsValid())Movement->PopFlightBlock();
+    if(Mining.IsValid())
+    {
+        Mining->CancelMining();if(bMiningBlocked)Mining->PopEncounterBlock();
+        if(bFallResetOverridden)Mining->FallResetDistance=OldFallResetDistance;
+        Mining->SetInputContextEnabled(bOldInputContextEnabled);
+    }
+    bMiningBlocked=false;bFallResetOverridden=false;
+    if(Movement.IsValid()) {Movement->SetFlightInputHeld(false);Movement->FlightSettings.bEnabled=bOldFlightEnabled;}
     for(auto& Light:Lights)if(Light.Key.IsValid())Light.Key->SetVisibility(Light.Value);
     Lights.Reset();Movement.Reset();Mining.Reset();AppliedPawn.Reset();
 }
@@ -48,6 +69,8 @@ void AMiningEncounterPlayerController::SetupInputComponent()
 {
     Super::SetupInputComponent();
     EchoInteraction->BindInput(InputComponent);CardInteraction->BindInput(InputComponent);
+    InputComponent->BindKey(EKeys::LeftMouseButton,IE_Pressed,this,&AMiningEncounterPlayerController::MinePressed).bConsumeInput=false;
+    InputComponent->BindKey(EKeys::LeftMouseButton,IE_Released,this,&AMiningEncounterPlayerController::MineReleased).bConsumeInput=false;
 }
 AMiningEncounterGameMode::AMiningEncounterGameMode()
 {
@@ -55,4 +78,21 @@ AMiningEncounterGameMode::AMiningEncounterGameMode()
     if(Pawn.Succeeded())DefaultPawnClass=Pawn.Class;
     PlayerControllerClass=AMiningEncounterPlayerController::StaticClass();
     HUDClass=AHUD::StaticClass();
+}
+
+void UMiningEncounterPlayerPolicy::SetMiningAllowed(bool bAllowed)
+{
+    if(!Mining.IsValid() || bAllowed==!bMiningBlocked)return;
+    Mining->CancelMining();
+    if(bAllowed)Mining->PopEncounterBlock();else Mining->PushEncounterBlock();
+    bMiningBlocked=!bAllowed;
+}
+void AMiningEncounterPlayerController::MinePressed()
+{
+    if(GetPawn() && EncounterPolicy->IsMiningAllowed() && !IsMoveInputIgnored())
+        if(auto* Mining=GetPawn()->FindComponentByClass<UMiningComponent>())Mining->BeginMiningInput();
+}
+void AMiningEncounterPlayerController::MineReleased()
+{
+    if(GetPawn())if(auto* Mining=GetPawn()->FindComponentByClass<UMiningComponent>())Mining->CancelMining();
 }

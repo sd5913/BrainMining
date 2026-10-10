@@ -20,7 +20,7 @@ int32 SEchoPassageView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const 
         Text(TEXT("穿过暖光，进入余烬牌室……"),545,690,24,Warm);
         return L;
     }
-    if(Stage->bCompleted)
+    if(Stage->bCompleted && !Stage->bRoomInSameLevel)
     {
         Box(425,300,750,216,FLinearColor(.015f,.013f,.01f,.92f));Box(425,300,3,216,Warm);
         Text(TEXT("前面，有光。"),468,328,33,Warm);

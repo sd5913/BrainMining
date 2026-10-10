@@ -97,7 +97,8 @@ void ACardRoomStage::TickEffects()
     const bool Resolve=Run.Phase==ECardRoomPhase::Resolving;
     const bool RewardVisible=Run.Phase==ECardRoomPhase::Victory;
     const float T=Run.PhaseTime,Time=GetWorld()->GetTimeSeconds();
-    const FLinearColor Fire(2.3f,.21f,.008f),Hot(3.8f,1.7f,.20f),Blue(.03f,.48f,2.5f),Ice(.7f,1.9f,3.f);
+    const float S=FMath::Clamp(SpellPresentationScale,1.f,4.f);
+    const FLinearColor Fire(2.8f,.27f,.012f),Hot(4.f,2.f,.30f),Blue(.025f,.55f,3.f),Ice(.65f,2.3f,3.8f),Gold(3.f,1.5f,.18f);
     auto* Camera=UGameplayStatics::GetPlayerCameraManager(this,0);
     const FVector CameraLocal=Camera?GetActorTransform().InverseTransformPosition(Camera->GetCameraLocation()):FVector(-270,0,188);
     auto* Glow=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_CardRoomFlameSprite.M_CardRoomFlameSprite"));
@@ -105,124 +106,152 @@ void ACardRoomStage::TickEffects()
     auto Sprite=[&](UStaticMeshComponent* Part,FVector P,FVector2D Size,FLinearColor Color,float Alpha,bool Cloud,float Angle=0.f)
     {
         Part->SetVisibility(Alpha>.005f);
-        Part->SetRelativeLocation(P); Part->SetRelativeScale3D(FVector(Size.X/100,Size.Y/100,1));
+        Part->SetRelativeLocation(P);Part->SetRelativeScale3D(FVector(Size.X*S/100,Size.Y*S/100,1));
         const FVector Normal=(CameraLocal-P).GetSafeNormal();
-        FQuat Facing=FRotationMatrix::MakeFromZY(Normal,FVector::UpVector).ToQuat();
+        const FQuat Facing=FRotationMatrix::MakeFromZY(Normal,FVector::UpVector).ToQuat();
         Part->SetRelativeRotation(Facing*FQuat(FVector::UpVector,FMath::DegreesToRadians(Angle)));
-        auto* Base=Cloud?Smoke:Glow;
+        auto* Base=Cloud?Smoke:Glow;if(!Base)return;
         auto* MID=Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0));
-        if(!MID || MID->Parent!=Base) { MID=UMaterialInstanceDynamic::Create(Base,this); Part->SetMaterial(0,MID); }
-        MID->SetVectorParameterValue(TEXT("Color"),Color);
-        MID->SetScalarParameterValue(TEXT("Opacity"),Alpha);
+        if(!MID || MID->Parent!=Base){MID=UMaterialInstanceDynamic::Create(Base,this);Part->SetMaterial(0,MID);}
+        MID->SetVectorParameterValue(TEXT("Color"),Color*(Cloud?1.f:1.6f));
+        MID->SetScalarParameterValue(TEXT("Opacity"),FMath::Clamp(Alpha,0.f,1.f));
     };
-    for(const auto& P:FxShards) P->SetVisibility(false);
-    for(const auto& P:Trails) P->SetVisibility(false);
-    for(const auto& P:Puffs) P->SetVisibility(false);
-    Beam->SetVisibility(false); Ball->SetVisibility(false); SpellLight->SetIntensity(0);
+    for(const auto& P:FxShards)P->SetVisibility(false);
+    for(const auto& P:Trails)P->SetVisibility(false);
+    for(const auto& P:Puffs)P->SetVisibility(false);
+    Beam->SetVisibility(false);Ball->SetVisibility(false);SpellLight->SetIntensity(0);
+    SpellLight->SetAttenuationRadius(600*S*GetActorScale3D().GetMax());
     int32 Next=0;
-    auto GlowPuff=[&](FVector P,FVector2D Size,FLinearColor Color,float Alpha=1.f,float Angle=0.f)
+    auto Puff=[&](FVector P,FVector2D Size,FLinearColor Color,float Alpha=1.f,float Angle=0.f)
+    {if(Next<FxShards.Num())Sprite(FxShards[Next++],P,Size,Color,Alpha,false,Angle);};
+    // Aim at the actual plush torso; all gas and impacts follow this anchor after room edits.
+    const FVector Target=OpponentBaseLocal+FVector(-44*OpponentScale,0,60*OpponentScale);
+    const FVector Muzzle=S>1.f?CardLandingLocal+FVector(-40,0,180):FVector(-100,0,140);
+    auto Illuminate=[&](FVector P,FLinearColor Color,float Intensity)
+    {SpellLight->SetRelativeLocation(P);SpellLight->SetLightColor(Color.GetClamped());SpellLight->SetIntensity(Intensity*S*S);};
+    auto Flash=[&](FVector P,float Age,float Life,FLinearColor Color,float Radius,bool Grand=false)
     {
-        if(Next<FxShards.Num()) Sprite(FxShards[Next++],P,Size,Color,Alpha,false,Angle);
-    };
-    const FVector Target(133,0,190),Muzzle(-100,0,140);
-    auto Flash=[&](FVector P,float Age,float Life,FLinearColor Color,float Radius)
-    {
-        if(Age<0 || Age>=Life) return;
-        float A=Age/Life;
-        // A hot central bloom, rolling lobes and outward sparks create a readable impact silhouette.
-        GlowPuff(P,FVector2D(Radius,Radius)*(1+A*.9f),Color,(1-A)*1.2f,Age*35);
-        GlowPuff(P+FVector(-4,0,0),FVector2D(Radius*.48f,Radius*.48f),FLinearColor(3,2.2f,1.1f),FMath::Max(0.f,1-A*3));
+        if(Age<0 || Age>=Life)return;
+        const float A=Age/Life;
+        Puff(P,FVector2D(Radius,Radius)*(1+A*.9f),Color,(1-A),Age*35);
+        Puff(P+FVector(-12*S,0,0),FVector2D(Radius*.48f,Radius*.48f),Ice,FMath::Max(0.f,1-A*3));
         for(int32 i=0;i<12;++i)
         {
-            float Angle=i*2*PI/12;
-            FVector Dir(-.18f,FMath::Cos(Angle),FMath::Sin(Angle));
-            float Size=Radius*.25f*(1-A);
-            GlowPuff(P+Dir*(Radius*.25f+A*Radius*.5f),FVector2D(Size,Size*1.3f),i%3?Color:Hot,(1-A)*.9f,Angle*57);
+            const float Angle=i*2*PI/12;
+            const FVector Dir(-.18f,FMath::Cos(Angle),FMath::Sin(Angle));
+            const float Size=Radius*.30f*(1-A);
+            Puff(P+Dir*(Radius*S*(.25f+A*.55f)),FVector2D(Size,Size*1.3f),i%3?Color:Hot,(1-A),Angle*57);
         }
-        for(int32 i=0;i<18;++i)
+        for(int32 i=0;i<24;++i)
         {
-            float Angle=i*2.39996f;
-            FVector Dir(-.12f,FMath::Cos(Angle),FMath::Sin(Angle));
-            GlowPuff(P+Dir*(15+A*(70+i%4*16)),FVector2D(4,15)*(1-A),i%3?Color:Hot,1-A,Angle*57);
+            const float Angle=i*2.39996f;
+            const FVector Dir(-.12f,FMath::Cos(Angle),FMath::Sin(Angle));
+            Puff(P+Dir*(S*(15+A*(Radius*.7f+i%4*18))),FVector2D(7,30)*(1-A),i%3?Color:Gold,1-A,Angle*57);
         }
-        SpellLight->SetRelativeLocation(P); SpellLight->SetLightColor(Color.GetClamped()); SpellLight->SetIntensity(2200*(1-A));
+        if(Grand)for(int32 Ring=0;Ring<2;++Ring)for(int32 i=0;i<24;++i)
+        {
+            const float Angle=i*2*PI/24+Ring*.1f;
+            const float R=Radius*S*(.4f+A*(1.4f+Ring*.4f));
+            Puff(P+FVector(-25*S,FMath::Cos(Angle)*R,FMath::Sin(Angle)*R*.7f),FVector2D(20,35)*(1-A),Ring?Gold:Ice,(1-A)*.8f,Angle*57);
+        }
+        Illuminate(P,Color,5000*(1-A));
     };
-    const bool Laser=Resolve&&(Run.Round==1||Run.Round==3)&&T>.48f&&T<1.04f;
+    const bool Laser=Resolve&&(Run.Round==1||Run.Round==3)&&T>.70f&&T<1.08f;
     if(Laser)
     {
-        const bool Fiery=Run.Round==3; const FVector D=Target-Muzzle;
-        Beam->SetVisibility(true); Beam->SetRelativeLocation((Muzzle+Target)*.5f);
+        const bool Fiery=Run.Round==3;const FVector D=Target-Muzzle;
+        Beam->SetVisibility(true);Beam->SetRelativeLocation((Muzzle+Target)*.5f);
         Beam->SetRelativeRotation(FRotationMatrix::MakeFromZ(D).Rotator());
-        Beam->SetRelativeScale3D(FVector(Fiery?.13f:.075f,Fiery?.13f:.075f,D.Size()/100));
-        Tint(Beam,(Fiery?Hot:Ice)*35,true);
-        for(int32 i=0;i<20;++i)
+        Beam->SetRelativeScale3D(FVector((Fiery?.22f:.13f)*S,(Fiery?.22f:.13f)*S,D.Size()/100));
+        Tint(Beam,(Fiery?Hot:Ice)*55,true);
+        for(int32 i=0;i<26;++i)
         {
-            float A=i/19.f;
-            FVector P=FMath::Lerp(Muzzle,Target,A)+FVector(0,FMath::Sin(i*1.7f+T*17)*(Fiery?8:3),FMath::Cos(i+T*15)*(Fiery?7:3));
-            float Size=(Fiery?50:28)*(1+.2f*FMath::Sin(i+T*14));
-            GlowPuff(P,FVector2D(Size,Size),Fiery?(i%3?Fire:Hot):(i%3?Blue:Ice),Fiery?.5f:.36f,i*19+Time*65);
+            const float A=i/25.f;
+            const FVector P=FMath::Lerp(Muzzle,Target,A)+FVector(0,FMath::Sin(i*1.7f+T*17)*7*S,FMath::Cos(i+T*15)*5*S);
+            const float Size=(Fiery?62:40)*(1+.18f*FMath::Sin(i+T*14));
+            Puff(P,FVector2D(Size,Size),Fiery?(i%3?Fire:Hot):(i%3?Blue:Ice),.8f,i*19+Time*65);
         }
-        GlowPuff(Muzzle,FVector2D(80,80),Fiery?Hot:Ice,.8f);
-        SpellLight->SetRelativeLocation(Target);SpellLight->SetLightColor(Fiery?FLinearColor(1,.3f,.03f):FLinearColor(.05f,.6f,1));SpellLight->SetIntensity(1700);
+        Puff(Muzzle,FVector2D(100,100),Fiery?Hot:Ice);
+        Illuminate(Target,Fiery?Fire:Blue,4200);
     }
-    // Thick, overlapping translucent clouds make poison a volume instead of green diamonds.
-    const bool Gas=Run.bPoisoned || (Resolve&&Run.Round==2&&T>.55f);
-    const bool Igniting=Resolve&&Run.Round==3&&T>=1&&T<1.75f;
+    const bool Igniting=Resolve&&Run.Round==3&&T>=1&&T<1.9f;
+    const bool Gas=Run.bPoisoned || (Resolve&&Run.Round==2&&T>.65f);
     if(Gas||Igniting)
     {
         for(int32 i=0;i<10;++i)
         {
-            float A=Time*.75f+i*2*PI/10;
-            FVector P(144+FMath::Sin(A*1.4f)*18,FMath::Cos(A)*46,161+FMath::Sin(A)*33);
-            float Size=66+FMath::Sin(A*1.3f)*14;
-            float Fade=Igniting?FMath::Max(0.f,1-(T-1)/.75f):.58f;
-            Sprite(Puffs[i],P,FVector2D(Size,Size*1.15f),Igniting?FLinearColor(.12f,.07f,.025f):i%2?FLinearColor(.11f,.28f,.025f):FLinearColor(.055f,.12f,.015f),Fade,true,Time*13+i*30);
+            const float A=Time*.75f+i*2*PI/10;
+            const FVector P=Target+FVector(-20+FMath::Sin(A*1.4f)*15,FMath::Cos(A)*65,FMath::Sin(A)*50)*S;
+            const float Size=100+FMath::Sin(A*1.3f)*18;
+            const float Fade=Igniting?FMath::Max(0.f,1-(T-1)/.9f):.8f;
+            Sprite(Puffs[i],P,FVector2D(Size,Size*1.15f),Igniting?FLinearColor(.24f,.10f,.025f):i%2?FLinearColor(.22f,.65f,.035f):FLinearColor(.07f,.25f,.02f),Fade,true,Time*13+i*30);
         }
-        if(!Igniting) for(int32 i=0;i<6;++i)
+        if(!Igniting)for(int32 i=0;i<10;++i)
         {
-            float A=FMath::Fmod(Time*.7f+i*.167f,1.f);
-            GlowPuff(FVector(125,(i-2.5f)*18,160+A*90),FVector2D(12,18)*(1-A),FLinearColor(.2f,.9f,.04f),.35f*(1-A));
+            const float A=FMath::Fmod(Time*.7f+i*.1f,1.f);
+            Puff(Target+FVector(-25,(i-4.5f)*15,-30+A*120)*S,FVector2D(17,23)*(1-A),FLinearColor(.35f,1.8f,.04f),.8f*(1-A));
         }
     }
     const bool Reply=Resolve&&(Run.Round==1||Run.Round==3)&&T>=1.75f&&T<2.35f;
-    const bool Finale=Resolve&&Run.Round==4&&T>.22f&&T<1.10f;
+    const bool Finale=Resolve&&Run.Round==4&&T>.15f&&T<1.f;
     if(Reply||Finale)
     {
-        float A=Reply?FMath::Clamp((T-1.75f)/.6f,0.f,1.f):FMath::Clamp((T-.22f)/.78f,0.f,1.f);
-        FVector Start=Reply?FVector(138,0,190):FVector(-100,0,150);
-        FVector End=Reply?FVector(-155,0,185):Target;
-        FVector P=FMath::Lerp(Start,End,A),Dir=(End-Start).GetSafeNormal();
-        float Radius=Finale?88:Run.Round==3?75:55;
-        // Core and several offset lobes read as a rolling fire/plasma mass, with an unbroken wake.
-        GlowPuff(P,FVector2D(Radius,Radius),Finale?Blue:Fire,1.f);
-        GlowPuff(P-Dir*4,FVector2D(Radius*.58f,Radius*.58f),Finale?Ice:Hot,1.1f);
-        for(int32 i=0;i<28;++i)
+        const bool Charging=Finale&&T<.65f;
+        const float A=Reply?FMath::Clamp((T-1.75f)/.6f,0.f,1.f):FMath::Clamp((T-.65f)/.35f,0.f,1.f);
+        const FVector Start=Reply?Target:(S>1.f?CardLandingLocal+FVector(0,0,240):FVector(-100,0,190));
+        const FVector End=Reply?CameraLocal+FVector(90,0,-20):Target;
+        const FVector Dir=(End-Start).GetSafeNormal();
+        const FVector P=FMath::Lerp(Start,End,A);
+        const float Charge=Charging?FMath::SmoothStep(.15f,.65f,T):1.f;
+        const float Radius=Finale?FMath::Lerp(42.f,175.f,Charge):Run.Round==3?105.f:78.f;
+        Puff(P,FVector2D(Radius,Radius),Finale?Blue:Fire);
+        Puff(P-Dir*8*S,FVector2D(Radius*.58f,Radius*.58f),Finale?Ice:Hot);
+        if(Finale)
         {
-            float U=i/27.f;
-            float Swirl=i*2.4f+T*9;
-            float Spread=(1-U)*(Finale?20:15);
-            FVector W=P-Dir*(U*(Finale?180:145))+FVector(0,FMath::Sin(Swirl)*Spread,FMath::Cos(Swirl)*Spread+U*20);
-            float Size=Radius*(1-U)*.75f+12;
-            GlowPuff(W,FVector2D(Size,Size*(1.1f+U*.7f)),Finale?(i%5?Blue:Ice):(i%5?Fire:Hot),(1-U)*.6f,Swirl*30);
+            // A faceted solid core, two orbiting ember streams and golden fragments retain lowpoly volume.
+            Ball->SetVisibility(true);Ball->SetRelativeLocation(P);Ball->SetRelativeScale3D(FVector(Radius*S*.006f));
+            Ball->SetRelativeRotation(FRotator(Time*65,Time*90,Time*35));Tint(Ball,Blue*24,true);
+            for(int32 Ring=0;Ring<2;++Ring)for(int32 i=0;i<20;++i)
+            {
+                const float Angle=i*2*PI/20+T*(Ring?7.f:-5.f);
+                const float R=Radius*S*(.62f+Ring*.17f);
+                const FVector Orbit(FMath::Sin(Angle)*R*.35f,FMath::Cos(Angle)*R,FMath::Sin(Angle)*R);
+                Puff(P+Orbit,FVector2D(16,28),Ring?Gold:Ice,.95f,Angle*57);
+            }
+            for(int32 i=0;i<Trails.Num();++i)
+            {
+                const float Angle=i*2.39996f+T*8;auto* Shard=Trails[i].Get();Shard->SetVisibility(true);
+                Shard->SetRelativeLocation(P+FVector(FMath::Sin(Angle)*.3f,FMath::Cos(Angle),FMath::Sin(Angle))*(Radius*S*.82f));
+                Shard->SetRelativeScale3D(FVector(.075,.075,.25)*S);Shard->SetRelativeRotation(FRotator(Angle*25,Time*140,i*36));Tint(Shard,Gold*22,true);
+            }
         }
-        for(int32 i=0;i<10;++i)
+        if(!Charging)for(int32 i=0;i<32;++i)
         {
-            float U=FMath::Fmod(T*1.8f+i*.1f,1.f);
-            GlowPuff(P-Dir*(30+U*160)+FVector(0,FMath::Sin(i*4.f)*30,FMath::Cos(i*3.f)*25),FVector2D(4,10)*(1-U),Finale?Ice:Hot,1-U,i*31.f);
+            const float U=i/31.f,Swirl=i*2.4f+T*9;
+            const float Spread=(1-U)*(Finale?35:22)*S;
+            const FVector W=P-Dir*(U*(Finale?260:170)*S)+FVector(0,FMath::Sin(Swirl)*Spread,FMath::Cos(Swirl)*Spread+U*20*S);
+            const float Size=Radius*(1-U)*.68f+12;
+            Puff(W,FVector2D(Size,Size*(1.1f+U*.7f)),Finale?(i%5?Blue:Gold):(i%5?Fire:Hot),(1-U)*.85f,Swirl*30);
         }
-        SpellLight->SetRelativeLocation(P); SpellLight->SetLightColor(Finale?FLinearColor(.05f,.45f,1):FLinearColor(1,.25f,.015f));SpellLight->SetIntensity(2600);
+        Illuminate(P,Finale?Blue:Fire,Finale?8500:5000);
         if(Reply&&!bReplySound){Sound(TEXT("S_Impact"));bReplySound=true;}
     }
-    if(Resolve && Run.Round==1) Flash(Target,T-1,.55f,Blue,78);
-    if(Resolve && Run.Round==3) Flash(Target,T-1,.72f,Fire,140);
-    if(Resolve && Run.Round==4) Flash(Target,T-1,1.05f,Blue,180);
-    if(Resolve&&(Run.Round==1||Run.Round==3)) Flash(FVector(-145,0,180),T-2.35f,.5f,Fire,Run.Round==3?115:75);
+    if(Resolve&&Run.Round==1)Flash(Target,T-1,.65f,Blue,110);
+    if(Resolve&&Run.Round==3)Flash(Target,T-1,.9f,Fire,170);
+    if(Resolve&&Run.Round==4)Flash(Target,T-1,1.35f,Blue,260,true);
+    if(Resolve&&(Run.Round==1||Run.Round==3))Flash(CameraLocal+FVector(100,0,-20),T-2.35f,.5f,Fire,Run.Round==3?115:75);
     Reward->SetVisibility(RewardVisible);
-    Reward->SetRelativeLocation(FVector(-30,0,143+FMath::Sin(Time*2)*5));
-    Reward->SetRelativeRotation(FRotator(0,Time*45,25));
+    Reward->SetRelativeLocation(RewardLocal+FVector(0,0,FMath::Sin(Time*2)*8));
+    Reward->SetRelativeRotation(FRotator(Time*15,Time*45,25));Reward->SetRelativeScale3D(FVector(.30f*S));Tint(Reward,Blue*18,true);
     if(RewardVisible)
     {
-        GlowPuff(Reward->GetRelativeLocation(),FVector2D(40,40),Blue,.7f);
-        for(int32 i=0;i<10;++i) GlowPuff(Reward->GetRelativeLocation()+FVector(i*7,FMath::Sin(Time*2+i*.4f)*6,i*2),FVector2D(20-i,20-i),i%2?Blue:Ice,.5f);
+        const FVector P=Reward->GetRelativeLocation();
+        Puff(P,FVector2D(66,66),Blue,.65f);
+        for(int32 i=0;i<16;++i)
+        {
+            const float A=Time*1.5f+i*2*PI/16;
+            Puff(P+FVector(FMath::Sin(A)*12,FMath::Cos(A)*34,FMath::Sin(A)*34)*S,FVector2D(7,13),i%3?Ice:Gold,.9f,A*57);
+        }
+        Illuminate(P,Blue,1800);
     }
 }

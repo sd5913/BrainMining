@@ -20,6 +20,7 @@ public:
     UPROPERTY(EditAnywhere,Category="Echo",meta=(ClampMin=".3",ClampMax="6")) float OutlineDuration=2.6f;
     UPROPERTY(EditAnywhere,Category="Echo",meta=(ClampMin=".2",ClampMax="3")) float KnockCooldown=.65f;
     UPROPERTY(EditAnywhere,Category="Layout") bool bUseMaze=false;
+    UPROPERTY(EditAnywhere,Category="Integration") bool bRoomInSameLevel=false;
     // A soft world reference preserves module independence and carries the map dependency for cooking.
     UPROPERTY(EditAnywhere,Category="Integration") TSoftObjectPtr<UWorld> DestinationLevel;
     bool IsAtExit(const FVector& WorldPosition) const;

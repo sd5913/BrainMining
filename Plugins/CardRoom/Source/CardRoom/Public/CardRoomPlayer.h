@@ -17,6 +17,10 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     virtual void TickComponent(float DeltaSeconds,ELevelTick TickType,FActorComponentTickFunction* TickFunction) override;
     void BindInput(UInputComponent* Input);
+    void SetRoomActive(bool bActive);
+    void ReleaseForExploration();
+    bool bRoomActive=true;
+    FString ExplorationHint;
     UFUNCTION(BlueprintCallable) void Interact();
     UFUNCTION(BlueprintCallable) void LeaveSeat();
     UFUNCTION(BlueprintCallable) void ConfirmCards();

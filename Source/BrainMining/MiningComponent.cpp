@@ -62,7 +62,7 @@ void UMiningComponent::BindInput(UEnhancedInputComponent* Input)
 		MiningContext->MapKey(ResetAction, EKeys::R);
 		MiningContext->MapKey(PreviewAction, EKeys::F1);
 	}
-	if(!IsEncounterBlocked())InputSubsystem->AddMappingContext(MiningContext, 1);
+	if(!IsEncounterBlocked() && bInputContextEnabled)InputSubsystem->AddMappingContext(MiningContext, 1);
 	Input->BindAction(MineAction, ETriggerEvent::Started, this, &UMiningComponent::StartMining);
 	Input->BindAction(MineAction, ETriggerEvent::Completed, this, &UMiningComponent::StopMining);
 	Input->BindAction(MineAction, ETriggerEvent::Canceled, this, &UMiningComponent::StopMining);
@@ -197,5 +197,13 @@ void UMiningComponent::PopEncounterBlock()
 {
     if(EncounterBlockCount==0)return;
     --EncounterBlockCount;
-    if(!IsEncounterBlocked() && InputSubsystem.IsValid() && MiningContext)InputSubsystem->AddMappingContext(MiningContext,1);
+    if(!IsEncounterBlocked() && bInputContextEnabled && InputSubsystem.IsValid() && MiningContext)InputSubsystem->AddMappingContext(MiningContext,1);
+}
+
+void UMiningComponent::SetInputContextEnabled(bool bEnabled)
+{
+    bInputContextEnabled=bEnabled;CancelMining();
+    if(!InputSubsystem.IsValid() || !MiningContext)return;
+    if(bEnabled && !IsEncounterBlocked())InputSubsystem->AddMappingContext(MiningContext,1);
+    else InputSubsystem->RemoveMappingContext(MiningContext);
 }

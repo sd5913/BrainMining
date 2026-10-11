@@ -10,6 +10,7 @@
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
 #include "Engine/Font.h"
+#include "Materials/MaterialInterface.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -23,6 +24,10 @@
 #include "Layout/WidgetPath.h"
 #include "Widgets/Input/SButton.h"
 #include "Editor.h"
+#include "Engine/GameViewportClient.h"
+#include "ImageUtils.h"
+#include "Misc/FileHelper.h"
+#include "Widgets/SWindow.h"
 #include "PlayInEditorDataTypes.h"
 #include "Settings/LevelEditorPlaySettings.h"
 
@@ -37,6 +42,8 @@ namespace MiningGUIEditor
 	{
 		T* Result = BP->WidgetTree->ConstructWidget<T>(T::StaticClass(), FName(Name));
 		Result->bIsVariable = true;
+		if (!BP->WidgetVariableNameToGuidMap.Contains(Result->GetFName()))
+			BP->WidgetVariableNameToGuidMap.Add(Result->GetFName(), FGuid::NewGuid());
 		Result->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		Result->SetRenderTransformPivot(FVector2D(0.5f));
 		return Result;
@@ -177,6 +184,63 @@ namespace MiningGUIEditor
 	}
 }
 
+bool UMiningGUIEditorLibrary::AddDrillCooldownOverlay()
+{
+	using namespace MiningGUIEditor;
+	auto* BP = LoadObject<UWidgetBlueprint>(nullptr, TEXT("/Game/UI/MiningGUI/WBP_AbilityV.WBP_AbilityV"));
+	if (!BP || !BP->WidgetTree) return false;
+	if (BP->WidgetTree->FindWidget(TEXT("CooldownText")))
+	{
+		if (!BP->WidgetVariableNameToGuidMap.Contains(TEXT("CooldownText")))
+			BP->WidgetVariableNameToGuidMap.Add(TEXT("CooldownText"), FGuid::NewGuid());
+		return Complete(BP, FVector2D(100, 138));
+	}
+	auto* Content = Cast<UCanvasPanel>(BP->WidgetTree->FindWidget(TEXT("AbilityContent")));
+	if (!Content) return false;
+	auto* Overlay = Text(BP, Content, TEXT("CooldownText"), TEXT(""), FVector2D(0, 23), FVector2D(100, 54), 32);
+	auto Font = Overlay->GetFont();
+	Font.OutlineSettings.OutlineSize = 2;
+	Font.OutlineSettings.OutlineColor = FLinearColor(.035f, .015f, .01f, 1);
+	Overlay->SetFont(Font);
+	CastChecked<UCanvasPanelSlot>(Overlay->Slot)->SetZOrder(10);
+	return Complete(BP, FVector2D(100, 138));
+}
+
+bool UMiningGUIEditorLibrary::AddJetpackHeatOverlay()
+{
+	using namespace MiningGUIEditor;
+	auto* HUD = LoadObject<UWidgetBlueprint>(nullptr, TEXT("/Game/UI/MiningGUI/WBP_MiningHUD.WBP_MiningHUD"));
+	auto* Material = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/UI/MiningGUI/MI_JetpackHeat.MI_JetpackHeat"));
+	if (!HUD || !HUD->WidgetTree || !Material) return false;
+	bool bNew = false;
+	auto* BP = NewBlueprint(TEXT("WBP_JetpackHeat"), UMiningGUIJetpackHeatWidget::StaticClass(), bNew);
+	if (!BP) return false;
+	if (bNew)
+	{
+		auto* Root = CastChecked<UCanvasPanel>(BP->WidgetTree->RootWidget);
+		auto* Bar = Widget<UImage>(BP, TEXT("HeatBar"));
+		Bar->SetBrushFromMaterial(Material);
+		Bar->SetVisibility(ESlateVisibility::HitTestInvisible);
+		Place(Root, Bar, FVector2D::ZeroVector, FVector2D(360.f, 26.f));
+		if (!Complete(BP, FVector2D(360.f, 26.f))) return false;
+	}
+	if (!HUD->WidgetTree->FindWidget(TEXT("JetpackHeatBar")))
+	{
+		auto* Root = Cast<UCanvasPanel>(HUD->WidgetTree->RootWidget);
+		auto* Abilities = HUD->WidgetTree->FindWidget(TEXT("AbilityPanel"));
+		auto* Slot = Abilities ? Cast<UCanvasPanelSlot>(Abilities->Slot) : nullptr;
+		if (!Root || !Slot) return false;
+		// Add underneath the existing icons; never move the artist's ability panel.
+		auto* Bar = Child<UMiningGUIJetpackHeatWidget>(HUD, Root, BP, TEXT("JetpackHeatBar"),
+			Slot->GetPosition() + FVector2D(0.f, 9.f), FVector2D(360.f, 26.f));
+		auto* BarSlot = CastChecked<UCanvasPanelSlot>(Bar->Slot);
+		BarSlot->SetAnchors(Slot->GetAnchors());
+		BarSlot->SetAlignment(FVector2D(0.f, 0.f));
+		BarSlot->SetZOrder(Slot->GetZOrder());
+	}
+	return Complete(HUD, FVector2D(1920.f, 1080.f));
+}
+
 bool UMiningGUIEditorLibrary::CreateMiningGUIAssets()
 {
 	using namespace MiningGUIEditor;
@@ -289,6 +353,20 @@ bool UMiningGUIEditorLibrary::RepairMissingGUIFonts()
 		}
 	}
 	return true;
+}
+
+bool UMiningGUIEditorLibrary::CapturePreview(APlayerController* Controller, const FString& Filename)
+{
+	if (!Controller || Controller->GetWorld()->WorldType != EWorldType::PIE) return false;
+	UGameViewportClient* Client = Controller->GetWorld()->GetGameViewport();
+	if (!Client || !Client->GetWindow().IsValid() || !FSlateApplication::IsInitialized()) return false;
+	FIntVector Size;
+	TArray<FColor> Pixels;
+	if (!FSlateApplication::Get().TakeScreenshot(Client->GetWindow().ToSharedRef(), Pixels, Size)) return false;
+	for (FColor& Pixel : Pixels) Pixel.A = 255;
+	TArray64<uint8> Compressed;
+	FImageUtils::PNGCompressImageArray(Size.X, Size.Y, Pixels, Compressed);
+	return FFileHelper::SaveArrayToFile(Compressed, *Filename);
 }
 
 bool UMiningGUIEditorLibrary::ClearGUIPlaceholderNumbers()

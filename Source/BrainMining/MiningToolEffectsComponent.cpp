@@ -1,6 +1,7 @@
 #include "MiningToolEffectsComponent.h"
 #include "MiningComponent.h"
 #include "MiningDebrisBurst.h"
+#include "MiningDrillDustBurst.h"
 #include "BrainMiningCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SceneComponent.h"
@@ -16,6 +17,11 @@ UMiningToolEffectsComponent::UMiningToolEffectsComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PickaxeMeshAsset = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe")));
 	SwingCurveAsset = TSoftObjectPtr<UCurveFloat>(FSoftObjectPath(TEXT("/Game/Pickaxe/CF_PickaxeSwing.CF_PickaxeSwing")));
+	DrillMeshAsset = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Drill/SM_Drill.SM_Drill")));
+	DrillSpinCurveAsset = TSoftObjectPtr<UCurveFloat>(FSoftObjectPath(TEXT("/Game/Drill/CF_DrillSpin.CF_DrillSpin")));
+	DrillDustMaterialAsset = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Drill/M_DrillDust.M_DrillDust")));
+	DrillSmokeMaterialAsset = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Drill/M_DrillSmoke.M_DrillSmoke")));
+	DrillSparkMaterialAsset = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Drill/M_DrillSparks.M_DrillSparks")));
 	DebrisClass = AMiningDebrisBurst::StaticClass();
 	for (const TCHAR* Size : { TEXT("Large"), TEXT("Small") })
 		for (int32 Index = 1; Index <= 4; ++Index)
@@ -33,9 +39,14 @@ void UMiningToolEffectsComponent::BeginPlay()
 	const ABrainMiningCharacter* Character = Cast<ABrainMiningCharacter>(GetOwner());
 	UCameraComponent* Camera = Character ? Character->GetFirstPersonCameraComponent() : GetOwner()->FindComponentByClass<UCameraComponent>();
 	if (!Mining || !Camera) return;
-	UStaticMesh* Mesh = PickaxeMeshAsset.LoadSynchronous();
+	UStaticMesh* Mesh = Character ? Character->GetPickaxeModel()->GetStaticMesh().Get() : PickaxeMeshAsset.LoadSynchronous();
 	SwingCurve = SwingCurveAsset.LoadSynchronous();
+	DrillSpinCurve = DrillSpinCurveAsset.LoadSynchronous();
 	LoadedDebrisClass = DebrisClass.LoadSynchronous();
+	LoadedDustMaterial = DrillDustMaterialAsset.LoadSynchronous();
+	LoadedSmokeMaterial = DrillSmokeMaterialAsset.LoadSynchronous();
+	LoadedSparkMaterial = DrillSparkMaterialAsset.LoadSynchronous();
+	DustPlane = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane"));
 	for (const TSoftObjectPtr<UStaticMesh>& Asset : DebrisMeshAssets)
 		if (UStaticMesh* DebrisMesh = Asset.LoadSynchronous()) LoadedDebrisMeshes.Add(DebrisMesh);
 	if (!Mesh || !SwingCurve || !LoadedDebrisClass)
@@ -43,26 +54,95 @@ void UMiningToolEffectsComponent::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("Mining tool effects assets are missing; mining remains available."));
 		return;
 	}
-	PickaxePivot = NewObject<USceneComponent>(GetOwner(), TEXT("MiningPickaxePivot"));
-	GetOwner()->AddInstanceComponent(PickaxePivot);
-	PickaxePivot->SetupAttachment(Camera);
-	PickaxePivot->SetRelativeLocation(FVector(40, 20, -35));
-	PickaxePivot->RegisterComponent();
-	PickaxeMesh = NewObject<UStaticMeshComponent>(GetOwner(), TEXT("MiningPickaxeMesh"));
-	GetOwner()->AddInstanceComponent(PickaxeMesh);
-	PickaxeMesh->SetupAttachment(PickaxePivot);
-	PickaxeMesh->SetStaticMesh(Mesh);
-	// Match test109's camera-mounted mesh pose and material, without replacing the player.
-	PickaxeMesh->SetRelativeLocation(FVector(-9.885566, -0.907176, 1.205274));
-	PickaxeMesh->SetRelativeRotation(FRotator(-6.922544, 5.243221, -4.019591));
-	PickaxeMesh->SetRelativeScale3D(FVector(0.65));
-	PickaxeMesh->SetOnlyOwnerSee(true);
-	PickaxeMesh->SetCastShadow(false);
-	PickaxeMesh->SetCollisionProfileName(TEXT("NoCollision"));
-	PickaxeMesh->RegisterComponent();
+	if (Character)
+	{
+		bUsesCharacterComponents = true;
+		PickaxePivot = Character->GetPickaxeMotion();
+		PickaxeMesh = Character->GetPickaxeModel();
+		DrillPivot = Character->GetDrillRightMotion();
+		DrillMesh = Character->GetDrillRightModel();
+		LeftDrillPivot = Character->GetDrillLeftMotion();
+		LeftDrillMesh = Character->GetDrillLeftModel();
+	}
+	else
+	{
+		PickaxePivot = NewObject<USceneComponent>(GetOwner(), TEXT("MiningPickaxePivot"));
+		GetOwner()->AddInstanceComponent(PickaxePivot);
+		PickaxePivot->SetupAttachment(Camera);
+		PickaxePivot->SetRelativeLocation(FVector(40, 20, -35));
+		PickaxePivot->RegisterComponent();
+		PickaxeMesh = NewObject<UStaticMeshComponent>(GetOwner(), TEXT("MiningPickaxeMesh"));
+		GetOwner()->AddInstanceComponent(PickaxeMesh);
+		PickaxeMesh->SetupAttachment(PickaxePivot);
+		PickaxeMesh->SetStaticMesh(Mesh);
+		// Match test109's camera-mounted mesh pose and material, without replacing the player.
+		PickaxeMesh->SetRelativeLocation(FVector(-9.885566, -0.907176, 1.205274));
+		PickaxeMesh->SetRelativeRotation(FRotator(-6.922544, 5.243221, -4.019591));
+		PickaxeMesh->SetRelativeScale3D(FVector(0.65));
+		PickaxeMesh->SetOnlyOwnerSee(true);
+		PickaxeMesh->SetCastShadow(false);
+		PickaxeMesh->SetCollisionProfileName(TEXT("NoCollision"));
+		PickaxeMesh->RegisterComponent();
+		if (UStaticMesh* Drill = DrillMeshAsset.LoadSynchronous())
+		{
+			DrillSpinCurve = DrillSpinCurveAsset.LoadSynchronous();
+			DrillPivot = NewObject<USceneComponent>(GetOwner(), TEXT("MiningDrillPivot"));
+			GetOwner()->AddInstanceComponent(DrillPivot);
+			DrillPivot->SetupAttachment(Camera);
+			DrillPivot->SetRelativeLocation(DrillLocation);
+			DrillPivot->SetRelativeRotation(DrillRotation);
+			DrillPivot->RegisterComponent();
+			DrillMesh = NewObject<UStaticMeshComponent>(GetOwner(), TEXT("MiningDrillMesh"));
+			GetOwner()->AddInstanceComponent(DrillMesh);
+			DrillMesh->SetupAttachment(DrillPivot);
+			DrillMesh->SetStaticMesh(Drill);
+			DrillMesh->SetRelativeScale3D(FVector(DrillScale));
+			DrillMesh->SetOnlyOwnerSee(true);
+			DrillMesh->SetCastShadow(false);
+			DrillMesh->SetCollisionProfileName(TEXT("NoCollision"));
+			DrillMesh->RegisterComponent();
+			LeftDrillPivot = NewObject<USceneComponent>(GetOwner(), TEXT("MiningLeftDrillPivot"));
+			GetOwner()->AddInstanceComponent(LeftDrillPivot);
+			LeftDrillPivot->SetupAttachment(Camera);
+			LeftDrillPivot->RegisterComponent();
+			LeftDrillMesh = NewObject<UStaticMeshComponent>(GetOwner(), TEXT("MiningLeftDrillMesh"));
+			GetOwner()->AddInstanceComponent(LeftDrillMesh);
+			LeftDrillMesh->SetupAttachment(LeftDrillPivot);
+			LeftDrillMesh->SetStaticMesh(Drill);
+			LeftDrillMesh->SetRelativeScale3D(FVector(DrillScale, -DrillScale, DrillScale));
+			LeftDrillMesh->SetOnlyOwnerSee(true);
+			LeftDrillMesh->SetCastShadow(false);
+			LeftDrillMesh->SetCollisionProfileName(TEXT("NoCollision"));
+			LeftDrillMesh->RegisterComponent();
+			LastDrillAssetPath = DrillMeshAsset.ToSoftObjectPath();
+		}
+	}
+	for (UStaticMeshComponent* Model : { PickaxeMesh.Get(), DrillMesh.Get(), LeftDrillMesh.Get() })
+		if (Model)
+		{
+			Model->SetOnlyOwnerSee(true);
+			Model->SetHiddenInGame(false);
+		}
 	Mining->OnMiningAttempt.AddDynamic(this, &UMiningToolEffectsComponent::PlaySwing);
 	Mining->OnMiningHit.AddDynamic(this, &UMiningToolEffectsComponent::QueueImpact);
 	Mining->OnMiningReset.AddDynamic(this, &UMiningToolEffectsComponent::ResetEffects);
+	Mining->OnToolModeChanged.AddDynamic(this, &UMiningToolEffectsComponent::UpdateToolMode);
+	UpdateToolMode(Mining->bDrillMode);
+	EquipElapsed = ToolEquipDuration;
+}
+
+void UMiningToolEffectsComponent::UpdateToolMode(bool bDrillMode)
+{
+	if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(ImpactTimer);
+	PendingHit = FHitResult();
+	PendingSurfaceMaterial = nullptr;
+	bSwinging = false;
+	bDrillRunning = false;
+	EquipElapsed = 0;
+	ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator, FVector::ZeroVector, FRotator::ZeroRotator);
+	if (PickaxeMesh) PickaxeMesh->SetVisibility(CanShowEffects() && !bDrillMode);
+	if (DrillMesh) DrillMesh->SetVisibility(CanShowEffects() && bDrillMode);
+	if (LeftDrillMesh) LeftDrillMesh->SetVisibility(CanShowEffects() && bDrillMode && bDualDrills);
 }
 
 bool UMiningToolEffectsComponent::CanShowEffects() const
@@ -77,20 +157,23 @@ void UMiningToolEffectsComponent::PlaySwing(float MiningInterval)
 	GetWorld()->GetTimerManager().ClearTimer(ImpactTimer);
 	PendingHit = FHitResult();
 	PendingSurfaceMaterial = nullptr;
+	if (Mining->bDrillMode) return;
 	// Fit the source curve into the existing dig cadence; the dig timing itself is unchanged.
 	SwingDuration = FMath::Min(SourceSwingDuration, FMath::Max(0.1f, FMath::IsFinite(MiningInterval) ? MiningInterval : 0.3f));
 	SwingStart = GetWorld()->GetTimeSeconds();
 	bSwinging = true;
 	++SwingCount;
-	PickaxePivot->SetRelativeRotation(FRotator::ZeroRotator);
+	ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator, FVector::ZeroVector, FRotator::ZeroRotator);
 }
 
 void UMiningToolEffectsComponent::QueueImpact(const FHitResult& Hit)
 {
-	if (!CanShowEffects() || !bSwinging || !Hit.bBlockingHit || Hit.ImpactPoint.ContainsNaN() || Hit.ImpactNormal.ContainsNaN()) return;
+	if (!CanShowEffects() || (!Mining->bDrillMode && !bSwinging) || !Hit.bBlockingHit || Hit.ImpactPoint.ContainsNaN() || Hit.ImpactNormal.ContainsNaN()) return;
 	PendingHit = Hit;
 	PendingSurfaceMaterial = Hit.GetComponent() ? Hit.GetComponent()->GetMaterial(0) : nullptr;
-	GetWorld()->GetTimerManager().SetTimer(ImpactTimer, this, &UMiningToolEffectsComponent::SpawnImpact, SwingDuration * SourceImpactTime / SourceSwingDuration, false);
+	bPendingDrillImpact = Mining->bDrillMode;
+	if (bPendingDrillImpact) SpawnImpact();
+	else GetWorld()->GetTimerManager().SetTimer(ImpactTimer, this, &UMiningToolEffectsComponent::SpawnImpact, SwingDuration * SourceImpactTime / SourceSwingDuration, false);
 }
 
 void UMiningToolEffectsComponent::SpawnImpact()
@@ -102,11 +185,44 @@ void UMiningToolEffectsComponent::SpawnImpact()
 	Params.Owner = GetOwner();
 	Params.Instigator = Cast<APawn>(GetOwner());
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (bPendingDrillImpact && DustPlane &&
+		((DrillDustStrength > 0 && DrillDustParticleCount > 0 && LoadedDustMaterial) ||
+		 (DrillSmokeStrength > 0 && DrillSmokeParticleCount > 0 && LoadedSmokeMaterial) ||
+		 (DrillSparkStrength > 0 && DrillSparkParticleCount > 0 && LoadedSparkMaterial)))
+	{
+		FActorSpawnParameters DustParams = Params;
+		DustParams.Owner = Cast<APawn>(GetOwner())->GetController();
+		if (AMiningDrillDustBurst* Dust = GetWorld()->SpawnActor<AMiningDrillDustBurst>(Transform.GetLocation(), FRotator::ZeroRotator, DustParams))
+		{
+			FMiningDrillContactSettings Settings;
+			Settings.DustCount = DrillDustParticleCount;
+			Settings.SmokeCount = DrillSmokeParticleCount;
+			Settings.SparkCount = DrillSparkParticleCount;
+			Settings.DustStrength = DrillDustStrength;
+			Settings.SmokeStrength = DrillSmokeStrength;
+			Settings.SparkStrength = DrillSparkStrength;
+			Settings.DustSize = DrillDustSize;
+			Settings.SmokeSize = DrillSmokeSize;
+			Settings.SparkSize = DrillSparkSize;
+			Settings.LifetimeScale = DrillContactLifetimeScale;
+			Settings.SparkSpeed = DrillSparkSpeed;
+			Settings.SparkBrightness = DrillSparkBrightness;
+			Dust->Initialize(DustPlane, LoadedDustMaterial, LoadedSmokeMaterial, LoadedSparkMaterial, PendingSurfaceMaterial, Normal, Mining->GetMiningRadius(), DrillDustColor, Settings);
+			DustActors.RemoveAll([](const TWeakObjectPtr<AActor>& Actor) { return !Actor.IsValid(); });
+			while (DustActors.Num() >= 12)
+			{
+				if (DustActors[0].IsValid()) DustActors[0]->Destroy();
+				DustActors.RemoveAt(0);
+			}
+			DustActors.Add(Dust);
+		}
+	}
 	AActor* Burst = GetWorld()->SpawnActor<AActor>(LoadedDebrisClass, Transform, Params);
 	if (AMiningDebrisBurst* SoilBurst = Cast<AMiningDebrisBurst>(Burst))
 	{
-		const int32 Count = FMath::RandRange(FMath::Clamp(DebrisChunkCount - 6, 12, 64), FMath::Clamp(DebrisChunkCount + 6, 12, 64));
-		SoilBurst->Initialize(LoadedDebrisMeshes, PendingSurfaceMaterial, Normal, Mining->Radius, Count, DebrisLifetime);
+		const int32 BaseCount = bPendingDrillImpact ? DrillDebrisChunkCount : DebrisChunkCount;
+		const int32 Count = FMath::RandRange(FMath::Clamp(BaseCount - 6, 12, 64), FMath::Clamp(BaseCount + 6, 12, 64));
+		SoilBurst->Initialize(LoadedDebrisMeshes, PendingSurfaceMaterial, Normal, Mining->GetMiningRadius(), Count, bPendingDrillImpact ? DrillDebrisLifetime : DebrisLifetime);
 	}
 	PendingHit = FHitResult();
 	PendingSurfaceMaterial = nullptr;
@@ -122,7 +238,8 @@ void UMiningToolEffectsComponent::SpawnImpact()
 	if (Burst->GetLifeSpan() <= 0) Burst->SetLifeSpan(DebrisLifetime);
 	DebrisActors.RemoveAll([](const TWeakObjectPtr<AActor>& Actor) { return !Actor.IsValid(); });
 	// Bound the physics cost even if a level uses a very short mining interval.
-	while (DebrisActors.Num() >= 8)
+	const int32 MaxBursts = bPendingDrillImpact ? 6 : 8;
+	while (DebrisActors.Num() >= MaxBursts)
 	{
 		if (DebrisActors[0].IsValid()) DebrisActors[0]->Destroy();
 		DebrisActors.RemoveAt(0);
@@ -131,25 +248,109 @@ void UMiningToolEffectsComponent::SpawnImpact()
 	++DebrisBurstCount;
 }
 
+FTransform UMiningToolEffectsComponent::BuildDrillSpinTransform(const FTransform& ModelPose,
+	const FVector& LocalAxis, const FVector& LocalPivot, float Degrees)
+{
+	const FVector Axis = ModelPose.TransformVectorNoScale(LocalAxis.ContainsNaN() ? FVector::ForwardVector
+		: LocalAxis.GetSafeNormal(UE_SMALL_NUMBER, FVector::ForwardVector)).GetSafeNormal();
+	const FVector Pivot = ModelPose.TransformPosition(LocalPivot.ContainsNaN() ? FVector::ZeroVector : LocalPivot);
+	const FQuat Spin(Axis, FMath::DegreesToRadians(FMath::IsFinite(Degrees) ? Degrees : 0.f));
+	// Conjugate rotation with the shaft's position: every point on the shaft stays fixed.
+	// Rotating Motion around its origin instead makes an offset Model orbit the mount.
+	return FTransform(Spin, Pivot - Spin.RotateVector(Pivot), FVector::OneVector);
+}
+
+void UMiningToolEffectsComponent::ApplyToolMotion(USceneComponent* Motion, const FVector& LegacyLocation,
+	const FRotator& LegacyRotation, const FVector& CameraOffset, const FRotator& Tilt, float SpinDegrees, UStaticMeshComponent* SpinModel)
+{
+	if (!Motion) return;
+	const FTransform Spin = SpinModel ? BuildDrillSpinTransform(SpinModel->GetRelativeTransform(), DrillSpinAxis, DrillSpinPivot, SpinDegrees)
+		: FTransform::Identity;
+	if (bUsesCharacterComponents)
+	{
+		const USceneComponent* Mount = Motion->GetAttachParent();
+		if (!Mount) return;
+		const FQuat MountRotation = Mount->GetRelativeRotation().Quaternion();
+		const FQuat EquipRotation = MountRotation.Inverse() * (Mount->GetRelativeRotation() + Tilt).Quaternion();
+		Motion->SetRelativeLocation(Mount->GetRelativeTransform().InverseTransformVector(CameraOffset)
+			+ EquipRotation.RotateVector(Spin.GetTranslation()));
+		Motion->SetRelativeRotation(EquipRotation * Spin.GetRotation());
+	}
+	else
+	{
+		const FQuat EquipRotation = (LegacyRotation + Tilt).Quaternion();
+		Motion->SetRelativeLocation(LegacyLocation + CameraOffset + EquipRotation.RotateVector(Spin.GetTranslation()));
+		Motion->SetRelativeRotation(EquipRotation * Spin.GetRotation());
+	}
+}
+
 void UMiningToolEffectsComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, TickFunction);
 	if (!CanShowEffects())
 	{
-		if (bSwinging || GetWorld()->GetTimerManager().IsTimerActive(ImpactTimer) || !DebrisActors.IsEmpty()) ResetEffects();
+		if (bSwinging || GetWorld()->GetTimerManager().IsTimerActive(ImpactTimer) || !DebrisActors.IsEmpty() || !DustActors.IsEmpty()) ResetEffects();
 		if (PickaxeMesh) PickaxeMesh->SetVisibility(false);
+		if (DrillMesh) DrillMesh->SetVisibility(false);
+		if (LeftDrillMesh) LeftDrillMesh->SetVisibility(false);
+		bDrillRunning = false;
 		return;
 	}
-	PickaxeMesh->SetVisibility(true);
-	if (!bSwinging) return;
+	PickaxeMesh->SetVisibility(!Mining->bDrillMode);
+	if (DrillMesh) DrillMesh->SetVisibility(Mining->bDrillMode);
+	if (LeftDrillMesh) LeftDrillMesh->SetVisibility(Mining->bDrillMode && bDualDrills);
+	// Legacy runtime-created tools still accept the old fields. Character tools use their
+	// blueprint component transforms/mesh assignments directly, including live PIE edits.
+	if (!bUsesCharacterComponents && DrillMeshAsset.ToSoftObjectPath() != LastDrillAssetPath)
+	{
+		UStaticMesh* UpdatedMesh = DrillMeshAsset.LoadSynchronous();
+		if (DrillMesh) DrillMesh->SetStaticMesh(UpdatedMesh);
+		if (LeftDrillMesh) LeftDrillMesh->SetStaticMesh(UpdatedMesh);
+		LastDrillAssetPath = DrillMeshAsset.ToSoftObjectPath();
+	}
+	if (!bUsesCharacterComponents)
+	{
+		const float SafeScale = FMath::IsFinite(DrillScale) ? FMath::Clamp(DrillScale, .1f, 3.f) : .8f;
+		if (DrillMesh) DrillMesh->SetRelativeScale3D(FVector(SafeScale));
+		if (LeftDrillMesh) LeftDrillMesh->SetRelativeScale3D(FVector(SafeScale, -SafeScale, SafeScale));
+	}
+	EquipElapsed += FMath::Max(0.f, DeltaTime);
+	const float EquipAlpha = FMath::Clamp(EquipElapsed / FMath::Max(0.05f, ToolEquipDuration), 0.f, 1.f);
+	const float EquipOffset = FMath::Pow(1.f - EquipAlpha, 3.f);
+	const FVector Lowered(0, 0, -14.f * EquipOffset);
+	const FRotator EquipTilt(-12.f * EquipOffset, 0, 0);
+	ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator, Lowered, EquipTilt);
+	bDrillRunning = Mining->bDrillMode && Mining->IsMiningActive() && IsValid(DrillMesh) && IsValid(DrillSpinCurve);
+	if (bDrillRunning)
+	{
+		float Start = 0, End = 0;
+		DrillSpinCurve->GetTimeRange(Start, End);
+		const double Duration = FMath::Max(0.001, double(End - Start));
+		DrillAnimationTime += FMath::Max(0.f, DeltaTime);
+		const double Cycles = FMath::FloorToDouble(DrillAnimationTime / Duration);
+		const double Phase = FMath::Fmod(DrillAnimationTime, Duration);
+		const double CycleAngle = DrillSpinCurve->GetFloatValue(End) - DrillSpinCurve->GetFloatValue(Start);
+		const double Angle = Cycles * CycleAngle + DrillSpinCurve->GetFloatValue(Start + Phase) - DrillSpinCurve->GetFloatValue(Start);
+		DrillSpinDegrees = FMath::Fmod(Angle, 360.0);
+	}
+	const FVector Vibration = bDrillRunning ? FVector(0, FMath::Sin(DrillAnimationTime * 65) * .12, FMath::Sin(DrillAnimationTime * 87) * .1) : FVector::ZeroVector;
+	const FVector LeftVibration = bDrillRunning ? FVector(0, -Vibration.Y, FMath::Sin(DrillAnimationTime * 87 + 1) * .1) : FVector::ZeroVector;
+	ApplyToolMotion(DrillPivot, DrillLocation, DrillRotation, Lowered + Vibration, EquipTilt, DrillSpinDegrees, DrillMesh);
+	ApplyToolMotion(LeftDrillPivot, LeftDrillLocation, LeftDrillRotation, Lowered + LeftVibration, EquipTilt, -DrillSpinDegrees, LeftDrillMesh);
+	if (Mining->bDrillMode) return;
+	if (!bSwinging)
+	{
+		return;
+	}
 	const float Elapsed = GetWorld()->GetTimeSeconds() - SwingStart;
 	if (Elapsed >= SwingDuration)
 	{
 		bSwinging = false;
-		PickaxePivot->SetRelativeRotation(FRotator::ZeroRotator);
+		ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator, Lowered, FRotator::ZeroRotator);
 		return;
 	}
-	PickaxePivot->SetRelativeRotation(FRotator(-SwingCurve->GetFloatValue(Elapsed * SourceSwingDuration / SwingDuration), 0, 0));
+	ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator, Lowered,
+		FRotator(EquipTilt.Pitch - SwingCurve->GetFloatValue(Elapsed * SourceSwingDuration / SwingDuration), 0, 0));
 }
 
 void UMiningToolEffectsComponent::ResetEffects()
@@ -158,9 +359,17 @@ void UMiningToolEffectsComponent::ResetEffects()
 	PendingHit = FHitResult();
 	PendingSurfaceMaterial = nullptr;
 	bSwinging = false;
-	if (PickaxePivot) PickaxePivot->SetRelativeRotation(FRotator::ZeroRotator);
+	bDrillRunning = false;
+	DrillAnimationTime = 0;
+	DrillSpinDegrees = 0;
+	EquipElapsed = ToolEquipDuration;
+	ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator, FVector::ZeroVector, FRotator::ZeroRotator);
+	ApplyToolMotion(DrillPivot, DrillLocation, DrillRotation, FVector::ZeroVector, FRotator::ZeroRotator);
+	ApplyToolMotion(LeftDrillPivot, LeftDrillLocation, LeftDrillRotation, FVector::ZeroVector, FRotator::ZeroRotator);
 	for (const TWeakObjectPtr<AActor>& Actor : DebrisActors) if (Actor.IsValid()) Actor->Destroy();
 	DebrisActors.Reset();
+	for (const TWeakObjectPtr<AActor>& Actor : DustActors) if (Actor.IsValid()) Actor->Destroy();
+	DustActors.Reset();
 }
 
 void UMiningToolEffectsComponent::EndPlay(const EEndPlayReason::Type Reason)
@@ -171,6 +380,7 @@ void UMiningToolEffectsComponent::EndPlay(const EEndPlayReason::Type Reason)
 		Mining->OnMiningAttempt.RemoveDynamic(this, &UMiningToolEffectsComponent::PlaySwing);
 		Mining->OnMiningHit.RemoveDynamic(this, &UMiningToolEffectsComponent::QueueImpact);
 		Mining->OnMiningReset.RemoveDynamic(this, &UMiningToolEffectsComponent::ResetEffects);
+		Mining->OnToolModeChanged.RemoveDynamic(this, &UMiningToolEffectsComponent::UpdateToolMode);
 	}
 	Super::EndPlay(Reason);
 }

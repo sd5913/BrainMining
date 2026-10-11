@@ -12,5 +12,8 @@ FMiningFlightSettings FMiningFlightSettings::Sanitized() const
 	Result.AirMoveSpeed = Safe(AirMoveSpeed, 50, 2000, 500);
 	Result.LiftAcceleration = Safe(LiftAcceleration, 100, 10000, 1800);
 	Result.FallGravityMultiplier = Safe(FallGravityMultiplier, 0.1f, 4, 1);
+	Result.HeatUpSeconds = Safe(HeatUpSeconds, 0.1f, 120, 5);
+	Result.PassiveCoolSeconds = Safe(PassiveCoolSeconds, 0.1f, 120, 2);
+	Result.OverheatLockSeconds = Safe(OverheatLockSeconds, 0.1f, 30, 3);
 	return Result;
 }

@@ -10,6 +10,24 @@ class UImage;
 class UButton;
 class UTextBlock;
 class UTexture2D;
+class UMaterialInstanceDynamic;
+
+/** Editable image/material with a left-to-right mask driven by actual flight state. */
+UCLASS()
+class BRAINMINING_API UMiningGUIJetpackHeatWidget : public UUserWidget
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Jetpack Heat", meta=(ClampMin="0", ClampMax="1")) float PreviewHeat = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Jetpack Heat") bool bPreviewOverheated = false;
+	UPROPERTY(BlueprintReadOnly, Category="GUI|Jetpack Heat") float DisplayedHeat = 0.f;
+	UPROPERTY(BlueprintReadOnly, Category="GUI|Jetpack Heat") bool bDisplayedOverheated = false;
+	UFUNCTION(BlueprintCallable, Category="GUI|Jetpack Heat") void SetHeatState(float Heat, bool bOverheated);
+	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UImage> HeatBar;
+protected:
+	virtual void NativePreConstruct() override;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> HeatMaterial;
+};
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMiningGUIUpgradeRequest, int32, ItemIndex, int32, RequestedLevel);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMiningGUILevelChanged, int32, ItemIndex, int32, Level);
@@ -31,6 +49,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Motion", meta=(ClampMin="1")) float SpringDamping = 19.f;
 	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void SetUsed(bool bNewUsed);
 	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void SetAvailable(bool bNewAvailable);
+	/** Gameplay owns the timer; this widget only displays it over the red icon. */
+	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void SetCooldownRemaining(float Seconds);
+	UPROPERTY(BlueprintReadOnly, Category="GUI|Ability") float CooldownRemaining = 0;
+	UPROPERTY(BlueprintReadOnly, meta=(BindWidgetOptional)) TObjectPtr<UTextBlock> CooldownText;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UImage> AbilityIcon;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UCanvasPanel> AbilityContent;
 protected:
@@ -89,7 +111,7 @@ class BRAINMINING_API UMiningGUIHUDWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
-	/** Demo mode marks G/V used. Gameplay can disable it and call SetAbilityUsed itself. */
+	/** Demo mode marks G used. Drill V is driven by the mining component's cooldown. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Prototype") bool bPreviewAbilities = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Motion", meta=(ClampMin="1")) float PanelSpringStiffness = 360.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Motion", meta=(ClampMin="1")) float PanelSpringDamping = 18.f;
@@ -115,6 +137,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIUpgradeWidget> BlastUpgrade;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIAbilityWidget> AbilityG;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIAbilityWidget> AbilityV;
+	UPROPERTY(BlueprintReadOnly, meta=(BindWidgetOptional)) TObjectPtr<UMiningGUIJetpackHeatWidget> JetpackHeatBar;
 protected:
 	virtual void NativeConstruct() override;
 	virtual FReply NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event) override;

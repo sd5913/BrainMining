@@ -114,7 +114,13 @@ bool ABrainMiningPlayerController::ShouldUseTouchControls() const
 }
 
 void ABrainMiningPlayerController::UseAbilityG() { if (MiningGUI) MiningGUI->TriggerAbility(TEXT("G")); }
-void ABrainMiningPlayerController::UseAbilityV() { if (MiningGUI) MiningGUI->TriggerAbility(TEXT("V")); }
+void ABrainMiningPlayerController::UseAbilityV()
+{
+	if (MiningGUI && MiningGUI->AbilityV && !MiningGUI->AbilityV->bAvailable) return;
+	UMiningComponent* Mining = GetPawn() ? GetPawn()->FindComponentByClass<UMiningComponent>() : nullptr;
+	if (Mining && Mining->ActivateDrill() && MiningGUI)
+		MiningGUI->OnAbilityRequested.Broadcast(TEXT("V"));
+}
 
 bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 {

@@ -1,10 +1,14 @@
 #include "MiningGUIWidgets.h"
+#include "MiningComponent.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
 #include "BrainMiningPlayerController.h"
+#include "GameFramework/Pawn.h"
+#include "MiningCharacterMovementComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 namespace
 {
@@ -18,20 +22,49 @@ namespace
 	}
 }
 
+void UMiningGUIJetpackHeatWidget::NativePreConstruct()
+{
+	Super::NativePreConstruct();
+	HeatMaterial = HeatBar ? HeatBar->GetDynamicMaterial() : nullptr;
+	SetHeatState(PreviewHeat, bPreviewOverheated);
+}
+
+void UMiningGUIJetpackHeatWidget::SetHeatState(float Heat, bool bOverheated)
+{
+	DisplayedHeat = FMath::Clamp(Heat, 0.f, 1.f);
+	bDisplayedOverheated = bOverheated;
+	if (HeatMaterial)
+	{
+		HeatMaterial->SetScalarParameterValue(TEXT("Heat"), DisplayedHeat);
+		HeatMaterial->SetScalarParameterValue(TEXT("Overheated"), bOverheated ? 1.f : 0.f);
+	}
+}
+
 void UMiningGUIAbilityWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 	if (AbilityIcon && (bUsed ? UsedTexture : NormalTexture))
 		AbilityIcon->SetBrushFromTexture(bUsed ? UsedTexture : NormalTexture, false);
 	SetVisibility(bAvailable ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	SetCooldownRemaining(CooldownRemaining);
 }
 void UMiningGUIAbilityWidget::SetUsed(bool bNewUsed)
 {
+	if (bUsed == bNewUsed) return;
 	bUsed = bNewUsed;
 	if (AbilityIcon && (bUsed ? UsedTexture : NormalTexture))
 		AbilityIcon->SetBrushFromTexture(bUsed ? UsedTexture : NormalTexture, false);
 	Pulse.Value = 0.84f;
 	Pulse.Velocity = 3.f;
+}
+void UMiningGUIAbilityWidget::SetCooldownRemaining(float Seconds)
+{
+	CooldownRemaining = FMath::IsFinite(Seconds) ? FMath::Max(0.f, Seconds) : 0.f;
+	if (CooldownText)
+	{
+		CooldownText->SetVisibility(CooldownRemaining > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+		CooldownText->SetText(CooldownRemaining > 0 ? FText::AsNumber(FMath::CeilToInt(CooldownRemaining)) : FText::GetEmpty());
+	}
 }
 void UMiningGUIAbilityWidget::SetAvailable(bool bNewAvailable)
 {
@@ -178,7 +211,7 @@ void UMiningGUIHUDWidget::TriggerAbility(FName Name)
 	if (auto* Widget = AbilityWidget(Name); Widget && Widget->bAvailable)
 	{
 		OnAbilityRequested.Broadcast(Name);
-		if (bPreviewAbilities) Widget->SetUsed(true);
+		if (bPreviewAbilities && Name != TEXT("V")) Widget->SetUsed(true);
 	}
 }
 void UMiningGUIHUDWidget::PressPlus() { PlusSpring.Target = 0.82f; PlusSpring.Velocity = -2.f; }
@@ -188,6 +221,20 @@ void UMiningGUIHUDWidget::ForwardLevel(int32 Index, int32 Level) { OnLevelChange
 void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 {
 	Super::NativeTick(Geometry, DeltaTime);
+	if (JetpackHeatBar)
+	{
+		const auto* Pawn = GetOwningPlayerPawn();
+		const auto* Flight = Pawn ? Pawn->FindComponentByClass<UMiningCharacterMovementComponent>() : nullptr;
+		JetpackHeatBar->SetHeatState(Flight ? Flight->JetpackHeat : 0.f, Flight && Flight->IsJetpackOverheated());
+	}
+	if (AbilityV)
+	{
+		const APawn* Pawn = GetOwningPlayerPawn();
+		const UMiningComponent* Mining = Pawn ? Pawn->FindComponentByClass<UMiningComponent>() : nullptr;
+		const float Cooldown = Mining ? Mining->GetDrillCooldownRemaining() : 0.f;
+		AbilityV->SetUsed(Cooldown > 0);
+		AbilityV->SetCooldownRemaining(Cooldown);
+	}
 	PlusSpring.Step(DeltaTime, 420.f, 19.f);
 	Scale(PlusContent, PlusSpring.Value);
 	PanelSpring.Step(DeltaTime, PanelSpringStiffness, PanelSpringDamping);

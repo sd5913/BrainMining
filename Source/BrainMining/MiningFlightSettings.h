@@ -26,5 +26,19 @@ struct BRAINMINING_API FMiningFlightSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight", meta=(ClampMin="0.1", ClampMax="4.0", EditCondition="bEnabled", ToolTip="Gravity multiplier after release, on top of the existing player-scaled gravity. Release cancels upward momentum immediately; this controls subsequent downward acceleration."))
 	float FallGravityMultiplier = 1;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Heat", meta=(EditCondition="bEnabled"))
+	bool bEnableHeat = true;
+
+	/** Continuous thrust time from empty to overheated. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Heat", meta=(ClampMin="0.1", ClampMax="120", Units="s", EditCondition="bEnabled && bEnableHeat"))
+	float HeatUpSeconds = 5.f;
+
+	/** Time to cool a full bar when the flight button is released. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Heat", meta=(ClampMin="0.1", ClampMax="120", Units="s", EditCondition="bEnabled && bEnableHeat"))
+	float PassiveCoolSeconds = 2.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Heat", meta=(ClampMin="0.1", ClampMax="30", Units="s", EditCondition="bEnabled && bEnableHeat"))
+	float OverheatLockSeconds = 3.f;
+
 	FMiningFlightSettings Sanitized() const;
 };

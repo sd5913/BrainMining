@@ -103,7 +103,11 @@ def tick(delta):
             state.update(phase='V', next=now+.2)
         elif phase == 'V':
             key('V', False)
-            check(state['gui'].ability_v.get_editor_property('bUsed'), 'V still changes its supplied used icon')
+            check(state['mining'].get_editor_property('bDrillMode') and not state['gui'].ability_v.get_editor_property('bUsed'), 'V activates the timed drill; red icon is reserved for cooldown')
+            state['mining'].reset_field()
+            origin, extent = state['rock'].get_actor_bounds(False)
+            state['pawn'].set_actor_location(unreal.Vector(origin.x-extent.x-130, origin.y, origin.z), False, True)
+            state['pc'].set_control_rotation(unreal.Rotator())
             state['mining'].interval = 1.0
             key('LeftMouseButton', True)
             state.update(phase='held_mining', next=now+.2)

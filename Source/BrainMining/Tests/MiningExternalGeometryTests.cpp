@@ -9,7 +9,7 @@ using namespace UE::Geometry;
 
 namespace
 {
-	double Winding(const FDynamicMesh3& Mesh, const FVector& Point)
+	double ExternalTestWinding(const FDynamicMesh3& Mesh, const FVector& Point)
 	{
 		double Angle = 0;
 		for (int32 Triangle : Mesh.TriangleIndicesItr())
@@ -29,12 +29,12 @@ bool FExternalShellTest::RunTest(const FString& Parameters)
 	FDynamicMesh3 Rock, Shell;
 	FString Error;
 	if (!TestTrue(TEXT("Build a solid rock with independent shell"), MiningExternal::Build(FVector(2400), 150, {}, Rock, Shell, Error))) { AddError(Error); return false; }
-	TestTrue(TEXT("Solid center is diggable rock"), Winding(Rock, FVector::ZeroVector) > 0.99);
-	TestTrue(TEXT("Shell does not fill interior"), Winding(Shell, FVector::ZeroVector) < 0.01);
+	TestTrue(TEXT("Solid center is diggable rock"), ExternalTestWinding(Rock, FVector::ZeroVector) > 0.99);
+	TestTrue(TEXT("Shell does not fill interior"), ExternalTestWinding(Shell, FVector::ZeroVector) < 0.01);
 	for (const FVector& Axis : {FVector(1,0,0), FVector(-1,0,0), FVector(0,1,0), FVector(0,-1,0), FVector(0,0,1), FVector(0,0,-1)})
 	{
-		TestTrue(TEXT("All six sides contain bedrock"), Winding(Shell, Axis * 1275) > 0.99);
-		TestTrue(TEXT("Exterior remains empty"), Winding(Shell, Axis * 1400) < 0.01);
+		TestTrue(TEXT("All six sides contain bedrock"), ExternalTestWinding(Shell, Axis * 1275) > 0.99);
+		TestTrue(TEXT("Exterior remains empty"), ExternalTestWinding(Shell, Axis * 1400) < 0.01);
 	}
 	TestTrue(TEXT("Both meshes closed"), Rock.IsClosed() && Shell.IsClosed());
 	return true;
@@ -52,22 +52,22 @@ bool FExternalPortsTest::RunTest(const FString& Parameters)
 		FVector Direction = FVector::ZeroVector; Direction[Axis] = 1;
 		for (double Sign : {-1., 1.})
 		{
-			TestTrue(TEXT("Port removes rock"), Winding(Rock, Direction * Sign * 1100) < 0.01);
-			TestTrue(TEXT("Port pierces full shell"), Winding(Shell, Direction * Sign * 1275) < 0.01);
+			TestTrue(TEXT("Port removes rock"), ExternalTestWinding(Rock, Direction * Sign * 1100) < 0.01);
+			TestTrue(TEXT("Port pierces full shell"), ExternalTestWinding(Shell, Direction * Sign * 1275) < 0.01);
 			FVector Nearby = Direction * Sign * 1275; Nearby[(Axis + 1) % 3] = 600;
-			TestTrue(TEXT("Bedrock beside port remains solid"), Winding(Shell, Nearby) > 0.99);
+			TestTrue(TEXT("Bedrock beside port remains solid"), ExternalTestWinding(Shell, Nearby) > 0.99);
 		}
-		TestTrue(TEXT("Rock cavity center empty"), Winding(Rock, FVector::ZeroVector) < 0.01);
+		TestTrue(TEXT("Rock cavity center empty"), ExternalTestWinding(Rock, FVector::ZeroVector) < 0.01);
 	}
 	FDynamicMesh3 Rock, Shell;
 	if (!TestTrue(TEXT("Interior chamber boolean"), MiningExternal::Build(FVector(2400), 150, {MiningExternal::Box(FVector(800))}, Rock, Shell, Error))) { AddError(Error); return false; }
-	TestTrue(TEXT("Interior chamber empty"), Winding(Rock, FVector::ZeroVector) < 0.01);
-	TestTrue(TEXT("Interior chamber does not open shell"), Winding(Shell, FVector(1275,0,0)) > 0.99);
+	TestTrue(TEXT("Interior chamber empty"), ExternalTestWinding(Rock, FVector::ZeroVector) < 0.01);
+	TestTrue(TEXT("Interior chamber does not open shell"), ExternalTestWinding(Shell, FVector(1275,0,0)) > 0.99);
 	// Two touching/overlapping independent solids are subtracted sequentially, not appended into an invalid soup.
 	FDynamicMesh3 Branch = MiningExternal::Box(FVector(600,1800,600));
 	for (int32 V : Branch.VertexIndicesItr()) Branch.SetVertex(V, Branch.GetVertex(V) + FVector3d(0,500,0));
 	TestTrue(TEXT("Multiple overlapping cutters supported"), MiningExternal::Build(FVector(2400), 150, {MiningExternal::Box(FVector(3200,600,600)), Branch}, Rock, Shell, Error));
-	TestTrue(TEXT("Branch carved"), Winding(Rock, FVector(0,800,0)) < 0.01);
+	TestTrue(TEXT("Branch carved"), ExternalTestWinding(Rock, FVector(0,800,0)) < 0.01);
 	return true;
 }
 

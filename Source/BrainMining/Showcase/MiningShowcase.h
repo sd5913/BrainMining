@@ -14,9 +14,10 @@ class UEchoPassageInteractionComponent;
 class UCardRoomInteractionComponent;
 class IInputProcessor;
 class AMiningShowcaseDirector;
+class AMiningTreasureField;
 
 UENUM(BlueprintType)
-enum class EMiningShowcaseKind : uint8 { Mining, Collection, Echo, Cards, Popup, WenSi };
+enum class EMiningShowcaseKind : uint8 { Mining, Collection, Echo, Cards, Popup, WenSi, Treasure };
 
 USTRUCT(BlueprintType)
 struct FMiningShowcaseExhibit
@@ -96,6 +97,7 @@ public:
     UPROPERTY(VisibleAnywhere) TObjectPtr<UCameraComponent> LobbyCamera;
     UPROPERTY(Transient) TObjectPtr<UEchoPassageInteractionComponent> EchoInteraction;
     UPROPERTY(Transient) TObjectPtr<UCardRoomInteractionComponent> CardInteraction;
+    UPROPERTY(Transient) TObjectPtr<AMiningTreasureField> TreasureField;
     UFUNCTION(BlueprintCallable, Category="Showcase") bool EnterExhibit(int32 Index);
     UFUNCTION(BlueprintCallable, Category="Showcase") void ReturnToLobby();
     UFUNCTION(BlueprintCallable, Category="Showcase") void RestartCurrent();

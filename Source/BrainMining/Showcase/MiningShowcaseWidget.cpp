@@ -1,4 +1,5 @@
 #include "Showcase/MiningShowcase.h"
+#include "Showcase/MiningTreasure.h"
 #include "Fonts/CompositeFont.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Input/SButton.h"
@@ -25,6 +26,21 @@ TSharedRef<SWidget> UMiningShowcaseWidget::RebuildWidget()
     if (Director.IsValid() && Director->bContinuousLayout)
     {
         return SNew(SOverlay)
+            + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(24)
+            [SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+                .BorderBackgroundColor(FLinearColor(.04f,.03f,.015f,.9f)).Padding(16)
+                .Visibility_Lambda([this]() { return Director.IsValid() && IsValid(Director->TreasureField) && !Director->IsModalActive() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
+                [SNew(STextBlock).Font(MiningShowcaseUI::Font(22)).ColorAndOpacity(FLinearColor(1,.78f,.25f))
+                    .Text_Lambda([this]() { return FText::FromString(FString::Printf(TEXT("金币  %lld"), Director.IsValid() && Director->TreasureField ? Director->TreasureField->Coins : 0LL)); })]]
+            + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,76)
+            [SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+                .BorderBackgroundColor(FLinearColor(.015f,.025f,.04f,.9f)).Padding(14)
+                .Visibility_Lambda([this]() { return Director.IsValid() && Director->TreasureField && Director->TreasureField->IsAreaActive() && !Director->IsModalActive() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
+                [SNew(STextBlock).Font(MiningShowcaseUI::Font(18)).Justification(ETextJustify::Center)
+                    .Text_Lambda([this]() { return Director.IsValid() && Director->TreasureField ? FText::FromString(Director->TreasureField->GetPrompt()) : FText::GetEmpty(); })]]
+            + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+            [SNew(STextBlock).Font(MiningShowcaseUI::Font(22)).Text(FText::FromString(TEXT("+")))
+                .Visibility_Lambda([this]() { return Director.IsValid() && Director->TreasureField && Director->TreasureField->IsAreaActive() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })]
             + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(24)
             [
                 SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -37,7 +53,7 @@ TSharedRef<SWidget> UMiningShowcaseWidget::RebuildWidget()
                         .Text_Lambda([this]() { return Director.IsValid() && Director->Exhibits.IsValidIndex(Director->ActiveIndex) ? Director->Exhibits[Director->ActiveIndex].Title : FText::FromString(TEXT("BRAIN MINING / 连续探索区")); })]
                     + SVerticalBox::Slot().AutoHeight().Padding(0,8)
                     [SNew(STextBlock).Font(MiningShowcaseUI::Font(14)).WrapTextAt(310)
-                        .Text_Lambda([this]() { return Director.IsValid() && Director->Exhibits.IsValidIndex(Director->ActiveIndex) ? Director->Exhibits[Director->ActiveIndex].Instructions : FText::FromString(TEXT("沿青色步道直接进入各区，无需传送\n南侧：挖掘 → 上坡进入回声迷宫\n北侧：收集 → 弹窗 → 文思 → 卡牌")); })]
+                        .Text_Lambda([this]() { return Director.IsValid() && Director->Exhibits.IsValidIndex(Director->ActiveIndex) ? Director->Exhibits[Director->ActiveIndex].Instructions : FText::FromString(TEXT("沿青色步道直接进入各区，无需传送\n南侧：挖掘 → 宝物支路／回声坡道\n北侧：收集 → 弹窗 → 文思 → 卡牌")); })]
                     + SVerticalBox::Slot().AutoHeight()
                     [SNew(STextBlock).Font(MiningShowcaseUI::Font(12)).ColorAndOpacity(FLinearColor(.6f,.75f,.8f)).WrapTextAt(310)
                         .Text_Lambda([this]() { return Director.IsValid() ? Director->Status : FText::GetEmpty(); })]

@@ -1,4 +1,5 @@
 #include "Showcase/MiningShowcase.h"
+#include "Showcase/MiningTreasure.h"
 #include "MiningEncounterPlayer.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningCollection.h"
@@ -97,6 +98,7 @@ void AMiningShowcaseController::InteractExhibit()
     if (auto* Director = GetDirector(); Director && !Director->bMenuOpen && !Director->bBusy)
     {
         if (Director->CardInteraction) Director->CardInteraction->Interact();
+        else if (Director->bContinuousLayout && Director->GetActiveKind() == EMiningShowcaseKind::Treasure && Director->TreasureField) Director->TreasureField->CollectTarget(this);
         else Director->InteractPortal();
     }
 }
@@ -143,6 +145,8 @@ void AMiningShowcaseDirector::BeginPlay()
 {
     Super::BeginPlay();
     Status = FText::FromString(TEXT("选择一个展区，或关闭目录后走近展台按 E。"));
+    if (bContinuousLayout)
+        for (TActorIterator<AMiningTreasureField> Field(GetWorld()); Field; ++Field) { TreasureField = *Field; break; }
     if (Player())
     {
         Widget = CreateWidget<UMiningShowcaseWidget>(Player());

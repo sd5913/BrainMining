@@ -1,4 +1,5 @@
 #include "Showcase/MiningShowcase.h"
+#include "Showcase/MiningTreasure.h"
 #include "MiningCollection.h"
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
@@ -95,12 +96,13 @@ void AMiningShowcaseDirector::SwitchContinuousRegion(int32 Index)
     bModalWasActive = false;
     const bool bHasRegion = Exhibits.IsValidIndex(Index);
     const EMiningShowcaseKind Kind = GetActiveKind();
+    if (TreasureField) TreasureField->SetAreaActive(bHasRegion && Kind == EMiningShowcaseKind::Treasure);
     for (TActorIterator<AMiningCollectionField> Field(GetWorld()); Field; ++Field) Field->SetAreaActive(bHasRegion && Kind == EMiningShowcaseKind::Collection);
     for (TActorIterator<AWenSiPuzzle> Puzzle(GetWorld()); Puzzle; ++Puzzle) Puzzle->SetAreaActive(bHasRegion && Kind == EMiningShowcaseKind::WenSi);
     for (TActorIterator<APopupCloseStage> Stage(GetWorld()); Stage; ++Stage) Stage->SetAreaActive(bHasRegion && Kind == EMiningShowcaseKind::Popup);
     auto* Controller = Player();
     if (!Controller || !Controller->GetPawn()) return;
-    if (!bHasRegion || (Kind != EMiningShowcaseKind::Mining && Kind != EMiningShowcaseKind::Collection)) Policy->Apply(Controller->GetPawn());
+    if (!bHasRegion || (Kind != EMiningShowcaseKind::Mining && Kind != EMiningShowcaseKind::Collection && Kind != EMiningShowcaseKind::Treasure)) Policy->Apply(Controller->GetPawn());
     if (auto* Movement = Controller->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())
     {
         Movement->SetFlightInputHeld(false);
@@ -140,6 +142,7 @@ void AMiningShowcaseDirector::RestartContinuousRegion()
     CloseContinuousInteraction();
     if (GetActiveKind() == EMiningShowcaseKind::Mining)
         if (auto* Mining = Player()->GetPawn()->FindComponentByClass<UMiningComponent>()) Mining->ResetField();
+    if (GetActiveKind() == EMiningShowcaseKind::Treasure && TreasureField) TreasureField->ResetExhibit();
     if (GetActiveKind() == EMiningShowcaseKind::Collection)
         for (TActorIterator<AMiningCollectionField> Field(GetWorld()); Field; ++Field) Field->ResetCollection();
     if (EchoInteraction) EchoInteraction->Restart();

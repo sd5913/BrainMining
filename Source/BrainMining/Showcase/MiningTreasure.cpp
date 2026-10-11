@@ -1,0 +1,392 @@
+#include "Showcase/MiningTreasure.h"
+#include "DiggableRock.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/DynamicMeshComponent.h"
+#include "Components/PointLightComponent.h"
+#include "StaticMeshResources.h"
+#include "Engine/StaticMesh.h"
+#include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Spatial/FastWinding.h"
+#include "DynamicMesh/DynamicMeshAABBTree3.h"
+#include "UDynamicMesh.h"
+#include "UObject/ConstructorHelpers.h"
+
+bool FMiningTreasureDefinition::IsEligible(FName Region, bool bGuide) const
+{
+    return !Id.IsNone() && Model && FMath::IsFinite(Weight) && Weight > 0 && MinValue >= 0 && MaxValue >= MinValue &&
+        !Scale.ContainsNaN() && Scale.GetMin() > 0 && Regions.Contains(Region) && (bGuide ? bGuideLayer : bNormalLayer);
+}
+
+AMiningTreasure::AMiningTreasure()
+{
+    Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TreasureModel"));
+    SetRootComponent(Model);
+    Model->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    Model->SetCollisionResponseToAllChannels(ECR_Ignore);
+    Model->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+    Model->SetGenerateOverlapEvents(false);
+    Model->SetCanEverAffectNavigation(false);
+    GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ExposedGemLight"));
+    GlowLight->SetupAttachment(Model);
+    GlowLight->SetIntensityUnits(ELightUnits::Lumens);
+    GlowLight->SetIntensity(28);
+    GlowLight->SetAttenuationRadius(140);
+    GlowLight->SetCastShadows(false);
+    GlowLight->SetVisibility(false);
+    GlowLight->IndirectLightingIntensity = 0;
+}
+
+bool AMiningTreasure::Configure(const FMiningTreasureDefinition& Definition, int32 InValue, UMaterialInterface* Material)
+{
+    TreasureId = Definition.Id;
+    TreasureName = Definition.Name;
+    Value = InValue;
+    BaseColor = Definition.Color;
+    Model->SetStaticMesh(Definition.Model);
+    Model->SetRelativeScale3D(Definition.Scale);
+    if (Material)
+    {
+        auto* Tint = UMaterialInstanceDynamic::Create(Material, this);
+        Tint->SetVectorParameterValue(TEXT("Tint"), Definition.Color);
+        Tint->SetScalarParameterValue(TEXT("Emission"), Definition.EmissiveStrength);
+        Tint->SetScalarParameterValue(TEXT("Roughness"), Definition.Roughness);
+        Tint->SetScalarParameterValue(TEXT("Metallic"), Definition.Metallic);
+        Tint->SetScalarParameterValue(TEXT("Style"), Definition.SurfaceStyle);
+        Model->SetMaterial(0, Tint);
+    }
+    SurfaceSamples.Reset();
+    GlowLight->SetLightColor(Definition.HintColor);
+    const auto* RenderData = Definition.Model ? Definition.Model->GetRenderData() : nullptr;
+    if (Definition.Model && Definition.Model->bAllowCPUAccess && RenderData && !RenderData->LODResources.IsEmpty())
+    {
+        const auto& LOD = RenderData->LODResources[0];
+        const auto& Positions = LOD.VertexBuffers.PositionVertexBuffer;
+        TArray<double> Areas;
+        double TotalArea = 0;
+        for (int32 Offset = 0; Offset + 2 < LOD.IndexBuffer.GetNumIndices(); Offset += 3)
+        {
+            const FVector First = FVector(Positions.VertexPosition(LOD.IndexBuffer.GetIndex(Offset)));
+            const FVector Second = FVector(Positions.VertexPosition(LOD.IndexBuffer.GetIndex(Offset+1)));
+            const FVector Third = FVector(Positions.VertexPosition(LOD.IndexBuffer.GetIndex(Offset+2)));
+            TotalArea += FVector::CrossProduct((Second-First)*Definition.Scale, (Third-First)*Definition.Scale).Size()*.5;
+            Areas.Add(TotalArea);
+        }
+        FRandomStream Samples(4701);
+        for (int32 Attempt = 0; Attempt < 3072 && SurfaceSamples.Num() < 384 && TotalArea > 0; ++Attempt)
+        {
+            const double SelectedArea = Samples.FRand()*TotalArea;
+            int32 Triangle = 0;
+            while (Triangle+1 < Areas.Num() && Areas[Triangle] < SelectedArea) ++Triangle;
+            const uint32 Vertex = LOD.IndexBuffer.GetIndex(Triangle*3);
+            const FVector First(Positions.VertexPosition(Vertex));
+            const FVector Second(Positions.VertexPosition(LOD.IndexBuffer.GetIndex(Triangle*3+1)));
+            const FVector Third(Positions.VertexPosition(LOD.IndexBuffer.GetIndex(Triangle*3+2)));
+            const double Root = FMath::Sqrt(Samples.FRand());
+            const double Blend = Samples.FRand();
+            const FVector Sample = First*(1-Root) + Second*(Root*(1-Blend)) + Third*(Root*Blend);
+            const FVector WorldPoint = Model->GetComponentTransform().TransformPosition(Sample);
+            const FVector Normal = Model->GetComponentTransform().TransformVectorNoScale(FVector(LOD.VertexBuffers.StaticMeshVertexBuffer.VertexTangentZ(Vertex))).GetSafeNormal();
+            FHitResult Hit;
+            FCollisionQueryParams Query(SCENE_QUERY_STAT(TreasureExternalSurface), true);
+            if (Model->LineTraceComponent(Hit, WorldPoint+Normal*(Model->Bounds.SphereRadius*3), WorldPoint-Normal*.2, Query) && FVector::DistSquared(Hit.ImpactPoint, WorldPoint) < 1)
+                SurfaceSamples.Add(Sample);
+        }
+    }
+    if (!SurfaceSamples.IsEmpty()) return true;
+    const FVector Center = Model->Bounds.Origin;
+    const double Radius = Model->Bounds.SphereRadius * 2 + 1;
+    for (int32 Index = 0; Index < 128; ++Index)
+    {
+        const double Height = 1 - 2 * (Index + .5) / 128;
+        const double Angle = Index * 2.399963229728653;
+        const double Ring = FMath::Sqrt(1 - Height * Height);
+        const FVector Direction(Ring * FMath::Cos(Angle), Ring * FMath::Sin(Angle), Height);
+        FHitResult Hit;
+        FCollisionQueryParams Query(SCENE_QUERY_STAT(TreasureSurface), true);
+        if (Model->LineTraceComponent(Hit, Center + Direction * Radius, Center - Direction * Radius, Query))
+            SurfaceSamples.Add(Model->GetComponentTransform().InverseTransformPosition(Hit.ImpactPoint));
+    }
+    return !SurfaceSamples.IsEmpty();
+}
+
+float AMiningTreasure::MeasureExposure() const
+{
+    if (SurfaceSamples.IsEmpty()) return 0;
+    TArray<bool> Covered;
+    Covered.Init(false, SurfaceSamples.Num());
+    for (const auto& Rock : CoveringRocks)
+    {
+        if (!IsValid(Rock) || Rock->TriangleCount == 0) continue;
+        const auto& Mesh = Rock->RockMesh->GetDynamicMesh()->GetMeshRef();
+        UE::Geometry::FDynamicMeshAABBTree3 Tree(&Mesh, true);
+        UE::Geometry::TFastWindingTree<UE::Geometry::FDynamicMesh3> Winding(&Tree);
+        for (int32 Index = 0; Index < SurfaceSamples.Num(); ++Index)
+        {
+            if (Covered[Index]) continue;
+            const FVector WorldPoint = Model->GetComponentTransform().TransformPosition(SurfaceSamples[Index]);
+            Covered[Index] = FMath::Abs(Winding.FastWindingNumber(Rock->GetActorTransform().InverseTransformPosition(WorldPoint))) >= .5;
+        }
+    }
+    int32 FreeCount = 0;
+    for (bool bCovered : Covered) if (!bCovered) ++FreeCount;
+    return float(FreeCount) / SurfaceSamples.Num();
+}
+
+void AMiningTreasure::SetHighlighted(bool bEnabled)
+{
+    Model->SetRenderCustomDepth(bEnabled && !bCollected);
+    Model->SetCustomDepthStencilValue(1);
+    if (auto* Tint = Cast<UMaterialInstanceDynamic>(Model->GetMaterial(0)))
+        Tint->SetScalarParameterValue(TEXT("Highlight"), bEnabled && !bCollected ? 1.f : 0.f);
+}
+
+void AMiningTreasure::AttachBuriedHint(const FMiningTreasureDefinition& Definition)
+{
+    HintMaterials.Reset();
+    HintAmount = Definition.bBuriedHint ? 1.f : 0.f;
+    for (ADiggableRock* Rock : CoveringRocks)
+    {
+        if (!IsValid(Rock) || !Rock->RockMaterial) continue;
+        auto* Existing = Cast<UMaterialInstanceDynamic>(Rock->RockMaterial);
+        auto* Hint = UMaterialInstanceDynamic::Create(Existing ? Existing->Parent.Get() : Rock->RockMaterial.Get(), this);
+        if (Existing) Hint->CopyParameterOverrides(Existing);
+        Hint->SetVectorParameterValue(TEXT("HintCenter"), FLinearColor(GetActorLocation()));
+        Hint->SetVectorParameterValue(TEXT("HintColor"), Definition.HintColor);
+        Hint->SetScalarParameterValue(TEXT("HintRadius"), Definition.HintRadius);
+        Hint->SetScalarParameterValue(TEXT("HintStrength"), Definition.HintStrength);
+        Hint->SetScalarParameterValue(TEXT("HintAmount"), HintAmount);
+        Rock->RockMaterial = Hint;
+        Rock->RockMesh->SetMaterial(0, Hint);
+        HintMaterials.Add(Hint);
+    }
+}
+
+void AMiningTreasure::UpdateGlow(float DeltaSeconds, bool bAllowLight)
+{
+    if (bCollected) HintAmount = FMath::Max(0.f, HintAmount-DeltaSeconds*4);
+    for (UMaterialInstanceDynamic* Hint : HintMaterials) if (IsValid(Hint)) Hint->SetScalarParameterValue(TEXT("HintAmount"), HintAmount);
+    GlowLight->SetVisibility(bAllowLight && !bCollected && Exposure > .02f);
+    GlowLight->SetIntensity(28*FMath::Clamp(Exposure,0.f,1.f));
+}
+
+AMiningTreasureField::AMiningTreasureField()
+{
+    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.TickInterval = .1f;
+    SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> Sphere(TEXT("/Engine/BasicShapes/Sphere"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> Cone(TEXT("/Engine/BasicShapes/Cone"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> Tint(TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> Earth(TEXT("/Game/CollectionPrototype/Materials/M_CollectionEarth"));
+    TreasureMaterial = Tint.Object;
+    RockMaterial = Earth.Object;
+    GuideMaterial = Tint.Object;
+    const TCHAR* Names[] = {TEXT("煤炭"),TEXT("铜矿"),TEXT("锡矿"),TEXT("铁矿"),TEXT("硫磺"),TEXT("孔雀石"),TEXT("青金石"),TEXT("紫水晶"),TEXT("钻石")};
+    const TCHAR* Colors[] = {TEXT("1C1C1C"),TEXT("D4763A"),TEXT("E4E4E0"),TEXT("5E7388"),TEXT("F2D63A"),TEXT("2F9E6B"),TEXT("2A4FA3"),TEXT("8B4FC4"),TEXT("E7FBFF")};
+    const int32 Values[] = {1,5,20,100,500,2000,10000,50000,250000,1000000};
+    for (int32 Index = 0; Index < 9; ++Index)
+    {
+        auto& Definition = Definitions.AddDefaulted_GetRef();
+        Definition.Id = FName(*FString::FromInt(Index + 1));
+        Definition.Name = FText::FromString(Names[Index]);
+        Definition.Model = Index < 4 ? Sphere.Object : Index < 7 ? Cube.Object : Cone.Object;
+        const FString ModelPath = FString::Printf(TEXT("/Game/Showcase/Treasure/Meshes/SM_Treasure_%02d.SM_Treasure_%02d"), Index+1,Index+1);
+        if (auto* Art = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, *ModelPath, nullptr, LOAD_NoWarn|LOAD_Quiet))) Definition.Model = Art;
+        Definition.Color = FLinearColor::FromSRGBColor(FColor::FromHex(Colors[Index]));
+        Definition.HintColor = Index == 0 ? FLinearColor(.38f,.3f,.2f) : Definition.Color/FMath::Max3(Definition.Color.R,Definition.Color.G,Definition.Color.B);
+        Definition.SurfaceStyle = Index;
+        Definition.EmissiveStrength = Index < 4 ? .12f : Index == 8 ? .7f : .45f;
+        Definition.Roughness = Index == 0 ? .65f : Index < 4 ? .38f : .28f;
+        Definition.Metallic = Index > 0 && Index < 4 ? .65f : .08f;
+        Definition.MinValue = Values[Index];
+        Definition.MaxValue = Values[Index + 1];
+        Definition.Regions.Add(RegionId);
+    }
+    if (auto* Art = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/Showcase/Treasure/Materials/M_TreasureMineral.M_TreasureMineral"), nullptr, LOAD_NoWarn|LOAD_Quiet))) TreasureMaterial = Art;
+    if (auto* Art = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/Showcase/Treasure/Materials/M_TreasureRock.M_TreasureRock"), nullptr, LOAD_NoWarn|LOAD_Quiet))) { RockMaterial = Art; GuideMaterial = Art; }
+}
+
+int32 AMiningTreasureField::ChooseDefinition(const TArray<FMiningTreasureDefinition>& Catalogue, FName Region, bool bGuide, FRandomStream& Random)
+{
+    double Total = 0;
+    for (const auto& Definition : Catalogue) if (Definition.IsEligible(Region, bGuide)) Total += Definition.Weight;
+    if (Total <= 0) return INDEX_NONE;
+    double Choice = Random.FRand() * Total;
+    int32 LastEligible = INDEX_NONE;
+    for (int32 Index = 0; Index < Catalogue.Num(); ++Index)
+    {
+        if (!Catalogue[Index].IsEligible(Region, bGuide)) continue;
+        LastEligible = Index;
+        Choice -= Catalogue[Index].Weight;
+        if (Choice < 0) return Index;
+    }
+    return LastEligible;
+}
+
+void AMiningTreasureField::BeginPlay()
+{
+    Super::BeginPlay();
+    ResetExhibit();
+}
+
+void AMiningTreasureField::ClearGenerated()
+{
+    Target = nullptr;
+    for (AMiningTreasure* Item : Items) if (IsValid(Item)) Item->Destroy();
+    for (ADiggableRock* Rock : Rocks) if (IsValid(Rock)) Rock->Destroy();
+    Items.Reset();
+    Rocks.Reset();
+    ObservedCuts.Reset();
+}
+
+void AMiningTreasureField::ResetExhibit()
+{
+    ClearGenerated();
+    Coins = 0;
+    CollectedCount = 0;
+    ToastRemaining = 0;
+    FRandomStream Random(RandomSeed);
+    TSet<FName> Seen;
+    for (const auto& Definition : Definitions)
+    {
+        if (Definition.Id.IsNone() || Seen.Contains(Definition.Id))
+        {
+            GenerationStatus = TEXT("生成失败：宝物 ID 为空或重复，请检查 Definitions。");
+            return;
+        }
+        Seen.Add(Definition.Id);
+    }
+    const int32 Slots = FMath::Clamp(SlotsPerLayer, 1, 9);
+    for (int32 Layer = 0; Layer < 2; ++Layer)
+    {
+        for (int32 Slot = 0; Slot < Slots; ++Slot)
+        {
+            const int32 DefinitionIndex = ChooseDefinition(Definitions, RegionId, Layer == 1, Random);
+            if (DefinitionIndex == INDEX_NONE) continue;
+            const auto& Definition = Definitions[DefinitionIndex];
+            const FVector Local((Slot - (Slots - 1) * .5) * 360, Layer == 0 ? 400 : -450, 130);
+            const FTransform RockTransform(GetActorQuat(), GetActorTransform().TransformPosition(Local));
+            auto* Rock = GetWorld()->SpawnActorDeferred<ADiggableRock>(ADiggableRock::StaticClass(), RockTransform, this);
+            Rock->RockSize = FVector(240, 280, 240);
+            Rock->RockMaterial = Layer == 0 ? RockMaterial : GuideMaterial;
+            Rock->FinishSpawning(RockTransform);
+            if (Layer == 1 && GuideMaterial)
+            {
+                auto* GuideTint = UMaterialInstanceDynamic::Create(GuideMaterial, this);
+                GuideTint->SetVectorParameterValue(TEXT("Tint"), FLinearColor(.065f,.04f,.09f));
+                Rock->RockMaterial = GuideTint;
+                Rock->RockMesh->SetMaterial(0, GuideTint);
+            }
+            Rocks.Add(Rock);
+            const FVector Offset(Random.FRandRange(-12,12), 65, Random.FRandRange(-10,10));
+            auto* Item = GetWorld()->SpawnActor<AMiningTreasure>(RockTransform.TransformPosition(Offset), GetActorRotation());
+            Item->SetOwner(this);
+            Item->CoveringRocks.Add(Rock);
+            const int32 Value = Random.RandRange(Definition.MinValue, Definition.MaxValue);
+            const bool bHasSurface = Item->Configure(Definition, Value, TreasureMaterial);
+            const FBox LocalBounds = Item->Model->Bounds.GetBox().TransformBy(RockTransform.ToInverseMatrixWithScale());
+            const FBox SafeBounds(-Rock->RockSize * .5 + FVector(8), Rock->RockSize * .5 - FVector(8));
+            if (!bHasSurface || !SafeBounds.IsInsideOrOn(LocalBounds.Min) || !SafeBounds.IsInsideOrOn(LocalBounds.Max))
+            {
+                Item->Destroy();
+                continue;
+            }
+            Items.Add(Item);
+            Item->AttachBuriedHint(Definition);
+            ObservedCuts.Add(INDEX_NONE);
+        }
+    }
+    GenerationStatus = FString::Printf(TEXT("已生成 %d / %d 件 · 空缺请检查区域、权重、模型碰撞及尺寸"), Items.Num(), Slots * 2);
+}
+
+void AMiningTreasureField::SetAreaActive(bool bActive)
+{
+    bAreaActive = bActive;
+    if (!bActive && IsValid(Target)) Target->SetHighlighted(false);
+    if (!bActive) Target = nullptr;
+    if (!bActive) for (AMiningTreasure* Item : Items) if (IsValid(Item)) Item->GlowLight->SetVisibility(false);
+}
+
+void AMiningTreasureField::RefreshTarget(APlayerController* Controller)
+{
+    if (IsValid(Target)) Target->SetHighlighted(false);
+    Target = nullptr;
+    if (!bAreaActive || !Controller || !Controller->GetPawn() || Controller->IsPaused()) return;
+    FVector View;
+    FRotator Rotation;
+    Controller->GetPlayerViewPoint(View, Rotation);
+    FHitResult Hit;
+    FCollisionQueryParams Query(SCENE_QUERY_STAT(TreasureAim), true, Controller->GetPawn());
+    if (GetWorld()->LineTraceSingleByChannel(Hit, View, View + Rotation.Vector() * 400, ECC_Visibility, Query))
+    {
+        auto* Item = Cast<AMiningTreasure>(Hit.GetActor());
+        if (IsValid(Item) && Items.Contains(Item) && !Item->bCollected)
+        {
+            Target = Item;
+            Target->Exposure = Target->MeasureExposure();
+            Target->SetHighlighted(AMiningTreasure::IsExposureEligible(Target->Exposure));
+        }
+    }
+}
+
+void AMiningTreasureField::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    ToastRemaining = FMath::Max(0.f, ToastRemaining - DeltaSeconds);
+    auto* Controller = GetWorld()->GetFirstPlayerController();
+    const FVector Observer = Controller && Controller->GetPawn() ? Controller->GetPawn()->GetActorLocation() : FVector(1.e9);
+    TArray<AMiningTreasure*> Nearby;
+    for (AMiningTreasure* Item : Items) if (IsValid(Item) && !Item->bCollected && Item->Exposure > .02f && FVector::DistSquared(Observer, Item->GetActorLocation()) < FMath::Square(800.f)) Nearby.Add(Item);
+    Nearby.Sort([Observer](const AMiningTreasure& First, const AMiningTreasure& Second) { return FVector::DistSquared(Observer, First.GetActorLocation()) < FVector::DistSquared(Observer, Second.GetActorLocation()); });
+    if (Nearby.Num() > 4) Nearby.SetNum(4);
+    for (AMiningTreasure* Item : Items) if (IsValid(Item)) Item->UpdateGlow(DeltaSeconds, bAreaActive && Nearby.Contains(Item));
+    if (!bAreaActive) return;
+    for (int32 Index = 0; Index < Items.Num(); ++Index)
+    {
+        auto* Item = Items[Index].Get();
+        if (!IsValid(Item) || Item->bCollected) continue;
+        auto* Rock = Item->CoveringRocks.IsEmpty() ? nullptr : Item->CoveringRocks[0].Get();
+        const int32 Cuts = IsValid(Rock) ? Rock->SuccessfulCuts : INDEX_NONE;
+        if (ObservedCuts[Index] != Cuts)
+        {
+            Item->Exposure = Item->MeasureExposure();
+            ObservedCuts[Index] = Cuts;
+        }
+    }
+    RefreshTarget(GetWorld()->GetFirstPlayerController());
+}
+
+bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
+{
+    RefreshTarget(Controller);
+    if (!IsValid(Target) || !AMiningTreasure::IsExposureEligible(Target->Exposure)) return false;
+    auto* Item = Target.Get();
+    Item->bCollected = true;
+    Item->SetHighlighted(false);
+    Coins += Item->Value;
+    ++CollectedCount;
+    Toast = FString::Printf(TEXT("%s  +%d 金币"), *Item->TreasureName.ToString(), Item->Value);
+    ToastRemaining = 3;
+    Item->SetActorEnableCollision(false);
+    Item->SetActorHiddenInGame(true);
+    Target = nullptr;
+    return true;
+}
+
+FString AMiningTreasureField::GetPrompt() const
+{
+    if (ToastRemaining > 0) return Toast;
+    if (IsValid(Target)) return FString::Printf(TEXT("%s · %d 金币 · 暴露 %.0f%%\n%s"), *Target->TreasureName.ToString(), Target->Value, Target->Exposure * 100,
+        AMiningTreasure::IsExposureEligible(Target->Exposure) ? TEXT("[ E ] 领取宝物") : TEXT("继续挖掘，暴露超过 50% 后可领取"));
+    if (Items.IsEmpty()) return GenerationStatus;
+    return FString::Printf(TEXT("左键挖掘 · 瞄准宝物按 E 领取 · 已领取 %d / %d\nF5 重开本展区并清空展示金币；R 只恢复岩石，不补发宝物"), CollectedCount, Items.Num());
+}
+
+void AMiningTreasureField::EndPlay(const EEndPlayReason::Type Reason)
+{
+    ClearGenerated();
+    Super::EndPlay(Reason);
+}

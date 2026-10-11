@@ -82,7 +82,7 @@ namespace MiningContinuousTests
             {
                 Pawn = Controller->GetPawn();
                 Test->TestTrue(TEXT("Continuous map enabled"), Director->bContinuousLayout);
-                Test->TestEqual(TEXT("Six regions only"), Director->Exhibits.Num(),6);
+                Test->TestEqual(TEXT("Six original regions plus treasure annex"), Director->Exhibits.Num(),7);
                 Test->TestEqual(TEXT("All content in one persistent level"),World->GetLevels().Num(),1);
                 Test->TestEqual(TEXT("No streaming levels"),World->GetStreamingLevels().Num(),0);
                 Test->TestFalse(TEXT("No selection directory"),Director->bMenuOpen);

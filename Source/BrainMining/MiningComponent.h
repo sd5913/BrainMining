@@ -10,6 +10,8 @@ class UInputAction;
 class UInputMappingContext;
 class UEnhancedInputLocalPlayerSubsystem;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMiningFieldReset);
+
 UCLASS(ClassGroup=(Mining), meta=(BlueprintSpawnableComponent))
 class BRAINMINING_API UMiningComponent : public UActorComponent
 {
@@ -66,6 +68,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Mining")
 	void ResetField();
+
+	// Optional level presentation can reset alongside the existing R/fall recovery.
+	UPROPERTY(BlueprintAssignable, Category="Mining")
+	FMiningFieldReset OnFieldReset;
 
 private:
     int32 EncounterBlockCount=0;

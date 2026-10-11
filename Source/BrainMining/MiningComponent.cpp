@@ -186,6 +186,7 @@ void UMiningComponent::ResetField()
 	LastMinedRock = nullptr;
 	TargetRock = nullptr;
 	Status = TEXT("Field reset");
+	OnFieldReset.Broadcast();
 }
 
 void UMiningComponent::PushEncounterBlock()

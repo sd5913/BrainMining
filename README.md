@@ -113,5 +113,6 @@ git lfs unlock "Content/MiningPrototype/Maps/Lvl_MiningLab.umap"
 - [空腔分支](README_HollowBranches.md)
 - [挖掘设计工具](README_MiningDesigner.md)
 - [玩家飞行](README_PlayerFlight.md)
+- [细胞宇宙：第一人称结尾 Demo](README_CellUniverse.md)
 
 团队接入验收：独立目录克隆、`git lfs fsck` 成功、编辑器目标编译成功、默认关卡打开并可 Play。每位成员应在自己的机器上执行；建仓不替代玩法验证。

@@ -57,7 +57,7 @@ TSharedRef<SWidget> UPopupClosePromptWidget::RebuildWidget()
 			.Padding(FMargin(18.f, 10.f))
 			[
 				SNew(STextBlock)
-				.Text(FText::FromString(TEXT("按 E 使用电脑")))
+				.Text_Lambda([this] { return FText::FromString(Message); })
 				.Font(PopupFont(22.f))
 				.ColorAndOpacity(FLinearColor::White)
 			]
@@ -94,7 +94,7 @@ TSharedRef<SWidget> UPopupCloseDesktopWidget::RebuildWidget()
 		[
 			SNew(STextBlock)
 			.Visibility(EVisibility::HitTestInvisible)
-			.Text(FText::FromString(TEXT("待办    /    工作消息    /    项目排期")))
+			.Text(FText::FromString(TEXT("按 E 退出电脑")))
 			.Font(PopupFont(20.f))
 			.ColorAndOpacity(FLinearColor(0.8f, 0.88f, 1.f))
 		];
@@ -140,33 +140,7 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 						.Font(PopupFont(22.f))
 						.ColorAndOpacity(FLinearColor(0.08f, 0.08f, 0.1f))
 					]
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					[
-						SNew(SBox)
-						.WidthOverride(48.f)
-						.HeightOverride(40.f)
-						[
-							SNew(SButton)
-							.ButtonColorAndOpacity(FLinearColor(0.78f, 0.16f, 0.14f))
-							.OnClicked_Lambda([WeakThis, Id]()
-							{
-								if (UPopupCloseDesktopWidget* Self = WeakThis.Get())
-								{
-									Self->ClosePopup(Id);
-									++Self->ManuallyClosedCount;
-								}
-								return FReply::Handled();
-							})
-							[
-								SNew(STextBlock)
-								.Text(FText::FromString(TEXT("×")))
-								.Font(PopupFont(24.f))
-								.Justification(ETextJustify::Center)
-								.ColorAndOpacity(FLinearColor::White)
-							]
-						]
-					]
+
 				]
 			]
 			+ SVerticalBox::Slot()
@@ -178,6 +152,27 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 				.Font(PopupFont(20.f))
 				.AutoWrapText(true)
 				.ColorAndOpacity(FLinearColor(0.1f, 0.1f, 0.12f))
+			]
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(12.f,4.f,12.f,8.f)
+			[
+				SNew(SBox).WidthOverride(110.f).HeightOverride(40.f)
+				[
+					SNew(SButton).ButtonColorAndOpacity(FLinearColor(.15f,.42f,.72f))
+					.IsEnabled_Lambda([WeakThis] { return WeakThis.IsValid() && WeakThis->bRepliesEnabled; })
+					.OnClicked_Lambda([WeakThis,Id]()
+					{
+						if(auto Self=WeakThis.Get();Self && Self->bRepliesEnabled)
+						{
+							Self->ClosePopup(Id);++Self->ManuallyClosedCount;
+							if(Self->OnReply)Self->OnReply();
+						}
+						return FReply::Handled();
+					})
+					[
+						SNew(STextBlock).Text(FText::FromString(TEXT("回复"))).Font(PopupFont(22.f))
+						.ColorAndOpacity(FLinearColor::White).Justification(ETextJustify::Center)
+					]
+				]
 			]
 		];
 
@@ -221,7 +216,7 @@ FVector2D UPopupCloseDesktopWidget::GetLatestClosePoint() const
 {
  if(!Windows.Num())return FVector2D::ZeroVector;
  const auto& Window=Windows.Last();
- return Window.Position+FVector2D(Window.Size.X-28.f,24.f);
+ return Window.Position+FVector2D(Window.Size.X-67.f,Window.Size.Y-28.f);
 }
 
 bool UPopupCloseDesktopWidget::HasVariedWindowSizes() const
@@ -233,4 +228,16 @@ bool UPopupCloseDesktopWidget::HasVariedWindowSizes() const
 void UPopupCloseDesktopWidget::ReleaseSlateResources(bool bReleaseChildren)
 {
  Super::ReleaseSlateResources(bReleaseChildren);Windows.Reset();Canvas.Reset();
+}
+
+
+TSharedRef<SWidget> UPopupCloseWarningWidget::RebuildWidget()
+{
+ return SNew(SVerticalBox)
+ + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+ [SNew(STextBlock).Text(FText::FromString(TEXT("▲ !"))).Font(PopupFont(42.f))
+ .ColorAndOpacity(FLinearColor(1.f,.23f,.05f)).ShadowOffset(FVector2D(2,2)).ShadowColorAndOpacity(FLinearColor::Black)]
+ + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+ [SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.08f,.025f,.01f,.9f)).Padding(FMargin(8.f,2.f))
+ [SNew(STextBlock).Text_Lambda([this] { return FText::AsNumber(PendingCount); }).Font(PopupFont(26.f)).ColorAndOpacity(FLinearColor(1.f,.85f,.3f))]];
 }

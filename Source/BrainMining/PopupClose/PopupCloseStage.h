@@ -20,6 +20,7 @@ class UStaticMeshComponent;
 class UWidgetComponent;
 class UWidgetInteractionComponent;
 class APopupCloseFlyingWindow;
+class APopupOfficeDevice;
 
 UCLASS()
 class BRAINMINING_API APopupCloseStage : public AActor
@@ -35,6 +36,7 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	UFUNCTION(BlueprintCallable, Category="PopupClose|Validation") FString ValidateOffice();
 	UFUNCTION(BlueprintCallable, Category="PopupClose|Validation") FString GetSessionStatus() const;
+	UFUNCTION(BlueprintCallable, Category="PopupClose") void StartOfficeRound();
 
 	FTransform GetPlayerSpawnTransform() const;
 
@@ -44,31 +46,24 @@ public:
 #endif
 
 private:
-	enum class EPhase : uint8
-	{
-		Idle,
-		Entering,
-		InScreen,
-		Spraying,
-		Complete
-	};
 
-	void ApplyColors();
-	void ConfigureOffice();
-	void WarmWindowPool(float DeltaSeconds);
-	void FitScreenCamera();
-	void WriteSessionReport();
-	void Paint(UStaticMeshComponent* Mesh, const FLinearColor& Color) const;
-	bool IsComputerComponent(const UPrimitiveComponent* Component) const;
-	bool CanInteract(APlayerController* Controller) const;
-	void SetPromptVisible(APlayerController* Controller, bool bVisible);
-	void BeginScreenSession(APlayerController* Controller, APawn* Pawn);
-	void TickScreen(float DeltaSeconds);
-	void EjectFromScreen();
-	void TickSpray(float DeltaSeconds);
-	void SpawnFlyingWindow();
-	void RestorePlayerControl(bool bRestoreLook);
-	float CurrentSpawnInterval() const;
+ enum class EPhase : uint8 { Idle, Running, Spraying, Complete };
+ enum class EView : uint8 { Free, Entering, InScreen, Exiting };
+ void ApplyColors();
+ void ConfigureOffice();
+ void Paint(UStaticMeshComponent* Mesh,const FLinearColor& Color) const;
+ void GatherDevices();
+ APopupOfficeDevice* FocusedDevice(APlayerController* PC) const;
+ void HandleInteraction(APlayerController* PC,APopupOfficeDevice* Device);
+ void BeginScreenSession(APlayerController* PC,APopupOfficeDevice* Device);
+ void ExitScreen();
+ void RestorePlayerControl();
+ void TickView(float Dt);
+ void TickIssues(float Dt);
+ void BeginBurst();
+ void TickSpray(float Dt);
+ void ShowPrompt(APlayerController* PC,const FString& Message);
+ void WriteSessionReport();
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -136,25 +131,27 @@ private:
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UWidgetInteractionComponent> DesktopInteraction;
 	UPROPERTY() TArray<TObjectPtr<APopupCloseFlyingWindow>> WindowPool;
 
-	EPhase Phase = EPhase::Idle;
-	float EnterTime = 0.f;
-	float ScreenTime = 0.f;
-	float SpawnDebt = 0.f;
-	bool bPopupAccountingValid = true;
-	float SprayTime = 0.f;
-	float SprayDebt = 0.f;
-	float WarmDebt = 0.f;
-	int32 PoolCursor = 0;
-	int32 LaunchedWindows = 0;
-	int32 TotalPopups = 0;
-	float FirstSprayDelay = -1.f;
-	float SprayPeakFrame = 0.f;
-	float EjectionPeakFrame = 0.f;
-	double LastTickTime = 0;
-	float WallFrameSeconds = 0;
-	uint8 SavedMovementMode = 1;
-	bool bLookSuppressed = false;
-	bool bMoveSuppressed = false;
-	TWeakObjectPtr<APawn> LockedPawn;
-	TWeakObjectPtr<APlayerController> LockedController;
+ UPROPERTY() TArray<TObjectPtr<APopupOfficeDevice>> Devices;
+ UPROPERTY() TObjectPtr<APopupOfficeDevice> ActiveComputer;
+ EPhase Phase=EPhase::Idle;
+ EView View=EView::Free;
+ float RoundTime=0;
+ float ViewTime=0;
+ // Independent countdowns in interval units; randomized again after every issue.
+ float IssueCountdown[4]={0,0,0,0};
+ float SlowPhaseScheduledIssues=0;
+ float SprayTime=0;
+ float SprayDebt=0;
+ double LastTickTime=0;
+ float FirstBurstPeakFrame=0;
+ bool bPanic=false;
+ bool bAccountingValid=true;
+ bool bWarningsValid=true;
+ bool bIndependentTimersValid=true;
+ bool bForcedExit=false;
+ uint8 SavedMovementMode=1;
+ bool bMoveSuppressed=false;
+ bool bLookSuppressed=false;
+ TWeakObjectPtr<APawn> LockedPawn;
+ TWeakObjectPtr<APlayerController> LockedController;
 };

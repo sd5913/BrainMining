@@ -16,7 +16,7 @@ public:
 	APopupCloseFlyingWindow();
 
 	void Launch(const FLinearColor& Color, const FVector& Velocity);
-	void PrepareForPool(int32 Variant);
+	void PrepareForPool(int32 Variant, bool bPaper=false);
 
 private:
 	UPROPERTY(VisibleAnywhere)

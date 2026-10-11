@@ -119,9 +119,7 @@ void APopupCloseOffice::BuildOffice()
   Box(0,FVector(1072,290,25+Row*38),FVector(4,112,34));
   Box(7,FVector(1068,290,30+Row*38),FVector(4,25,4));
  }
- Box(2,FVector(1000,540,72),FVector(105,90,144));
- Box(0,FVector(1000,540,164),FVector(95,75,36));Box(3,FVector(965,540,180),FVector(12,65,8));
- Box(5,FVector(940,540,168),FVector(30,48,3));Box(4,FVector(947,509,176),FVector(12,16,2));
+ // The two functioning printers are separate PopupOfficeDevice actors.
  // Bookshelf, notice board, coffee station, bins, plants and desktop clutter.
  Box(2,FVector(1125,-420,136),FVector(110,270,272));
  for(int32 Shelf=0;Shelf<4;++Shelf)

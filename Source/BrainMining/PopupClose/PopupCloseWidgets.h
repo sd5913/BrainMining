@@ -11,8 +11,12 @@ class BRAINMINING_API UPopupClosePromptWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
+public:
+	void SetMessage(const FString& Value) { Message=Value; }
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+private:
+	FString Message=TEXT("按 E 使用电脑");
 };
 
 UCLASS()
@@ -28,6 +32,8 @@ public:
 	void ClearPopups();
 	FVector2D GetLatestClosePoint() const;
 	bool HasVariedWindowSizes() const;
+	void SetRepliesEnabled(bool bEnabled) { bRepliesEnabled=bEnabled; }
+	TFunction<void()> OnReply;
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
@@ -49,4 +55,15 @@ private:
 	TArray<FWindow> Windows;
 	int32 NextId = 1;
 	int32 ManuallyClosedCount = 0;
+	bool bRepliesEnabled = true;
+};
+
+UCLASS()
+class BRAINMINING_API UPopupCloseWarningWidget : public UUserWidget
+{
+	GENERATED_BODY()
+public:
+	int32 PendingCount=0;
+protected:
+	virtual TSharedRef<SWidget> RebuildWidget() override;
 };

@@ -30,7 +30,7 @@ void UMiningCharacterMovementComponent::UpdateJetpackHeat(float DeltaSeconds, bo
 {
 	if (!FlightSettings.bEnabled || !FlightSettings.bEnableHeat)
 	{
-		JetpackHeat = JetpackOverheatRemaining = 0.f;
+		JetpackHeat = JetpackOverheatRemaining = JetpackOverheatDuration = 0.f;
 		return;
 	}
 	if (!FMath::IsFinite(DeltaSeconds) || DeltaSeconds <= 0.f) return;
@@ -44,7 +44,8 @@ void UMiningCharacterMovementComponent::UpdateJetpackHeat(float DeltaSeconds, bo
 			const float Step = FMath::Min(RemainingTime, JetpackOverheatRemaining);
 			JetpackOverheatRemaining = FMath::Max(0.f, JetpackOverheatRemaining - Step);
 			RemainingTime -= Step;
-			JetpackHeat = IsJetpackOverheated() ? 1.f : 0.f;
+			const float CooldownDuration = JetpackOverheatDuration > 0.f ? JetpackOverheatDuration : Settings.OverheatLockSeconds;
+			JetpackHeat = FMath::Clamp(JetpackOverheatRemaining / CooldownDuration, 0.f, 1.f);
 		}
 		else if (bThrustRequested)
 		{
@@ -57,6 +58,7 @@ void UMiningCharacterMovementComponent::UpdateJetpackHeat(float DeltaSeconds, bo
 			RemainingTime = FMath::Max(0.f, RemainingTime - TimeToFull);
 			JetpackHeat = 1.f;
 			JetpackOverheatRemaining = Settings.OverheatLockSeconds;
+			JetpackOverheatDuration = Settings.OverheatLockSeconds;
 			const FVector Up = -GetGravityDirection();
 			Velocity -= Up * FMath::Max(0.0, FVector::DotProduct(Velocity, Up));
 		}

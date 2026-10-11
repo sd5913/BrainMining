@@ -32,6 +32,8 @@ public:
     bool IsFlightAvailable() const {return FlightSettings.bEnabled && FlightBlockCount==0;}
 private:
     int32 FlightBlockCount=0;
+	// Capture the duration at overheat start so runtime settings edits cannot jump the bar.
+	float JetpackOverheatDuration = 0.f;
 public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Player Flight|Jetpack Heat")

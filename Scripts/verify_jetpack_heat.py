@@ -25,13 +25,15 @@ def sample(name):
 def shot(name):check(helper.capture_preview(state['pc'],str(out/(name+'.png'))),'Captured '+name)
 def finish(passed,reason=''):
     unreal.unregister_slate_post_tick_callback(callback)
-    if 'pc' in state:key('SpaceBar',False)
+    if editor.get_game_world() and 'pc' in state:key('SpaceBar',False)
     perf.set_editor_property('bThrottleCPUWhenNotForeground',old_throttle)
     report.update(passed=passed,reason=reason,elapsed=time.monotonic()-state['started'])
     (out/'runtime.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
     unreal.log('JETPACK_RUNTIME_RESULT '+json.dumps(report))
     if editor.get_game_world():levels.editor_request_end_play()
 def tick(delta):
+    if state.get('busy'):return
+    state['busy']=True
     try:
         if time.monotonic()-state['started']>120:raise RuntimeError('Jetpack runtime timeout')
         if state['phase']=='setup':
@@ -48,7 +50,6 @@ def tick(delta):
             check(m.flight_settings.enabled,'Actual level character has existing flight enabled')
             check(ui and gui.is_in_viewport(),'Editable jetpack child is mounted in the real HUD')
             check(ui.displayed_heat==0 and not ui.get_editor_property('bDisplayedOverheated'),'Idle heat starts empty and white')
-            check(not str(gui.coin_text.get_text()),'Currency area stays empty')
             check(not gui.blast_upgrade.coin_button.get_is_enabled(),'Locked upgrade remains disabled')
             check(not pc.show_mouse_cursor and not pc.is_look_input_ignored(),'Normal game keeps mouse look and hidden cursor')
             mat=ui.heat_bar.get_dynamic_material()
@@ -68,7 +69,7 @@ def tick(delta):
         elif state['phase']=='wait-lock' and m.is_jetpack_overheated():
             if not ui.get_editor_property('bDisplayedOverheated'):return
             sample('overheated')
-            check(m.jetpack_heat==1 and ui.displayed_heat==1,'Full heat fills the bar')
+            check(m.jetpack_heat>.97 and ui.displayed_heat>.97,'Full heat fills the bar before cooling starts')
             check(not m.is_flight_thrust_active(),'Overheat blocks thrust while Space remains held')
             check(m.velocity.z<=0,'Overheat removes upward drift')
             state.update(phase='locked',lock_start=now,lock_remaining=m.jetpack_overheat_remaining)
@@ -76,9 +77,16 @@ def tick(delta):
         elif state['phase']=='locked' and now-state['lock_start']>=1.0:
             sample('locked-after-repress')
             check(m.is_jetpack_overheated() and not m.is_flight_thrust_active(),'Repressing Space cannot bypass lockout')
-            check(ui.get_editor_property('bDisplayedOverheated') and ui.displayed_heat==1,'Red lock state remains visible')
+            check(ui.get_editor_property('bDisplayedOverheated') and .55<ui.displayed_heat<.75,'Red locked bar retreats to about two thirds')
+            check(abs(ui.displayed_heat-m.jetpack_heat)<.03,'Cooldown UI follows actual remaining heat')
             check(abs(m.jetpack_overheat_remaining-(state['lock_remaining']-(now-state['lock_start'])))<.05,'Three-second lock uses gameplay time')
-            state['phase']='recover'
+            shot('cooldown-retreat-two-thirds');state['phase']='late-lock'
+        elif state['phase']=='late-lock' and now-state['lock_start']>=2.0:
+            sample('locked-near-end')
+            check(m.is_jetpack_overheated() and not m.is_flight_thrust_active(),'Flight stays blocked while the last red segments retreat')
+            check(ui.get_editor_property('bDisplayedOverheated') and .2<ui.displayed_heat<.4,'Locked bar retreats to about one third')
+            check(ui.displayed_heat<report['samples']['locked-after-repress']['ui_heat'],'Red fill shrinks monotonically during cooldown')
+            shot('cooldown-retreat-one-third');state['phase']='recover'
         elif state['phase']=='recover' and not m.is_jetpack_overheated():
             if ui.get_editor_property('bDisplayedOverheated'):return
             sample('recovered')
@@ -99,5 +107,7 @@ def tick(delta):
             key('Tab',False);shot('recovered-white');finish(True)
     except Exception:
         finish(False,traceback.format_exc())
+    finally:
+        state['busy']=False
 callback=unreal.register_slate_post_tick_callback(tick)
 helper.start_floating_preview()

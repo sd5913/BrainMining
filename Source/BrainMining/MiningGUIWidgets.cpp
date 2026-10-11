@@ -99,12 +99,13 @@ void UMiningGUIUpgradeWidget::RefreshVisuals()
 	Visible(GreenSegment1, bUnlocked && UpgradeLevel >= 1);
 	Visible(GreenSegment2, bUnlocked && UpgradeLevel >= 2);
 	Visible(GreenSegment3, bUnlocked && UpgradeLevel >= 3);
+	Visible(GreenSegment4, bUnlocked && UpgradeLevel >= 4);
 	if (CoinButton) CoinButton->SetIsEnabled(bUnlocked && bInteractionAllowed);
 }
 void UMiningGUIUpgradeWidget::SetUpgradeLevel(int32 NewLevel, bool bAnimate)
 {
 	const int32 Previous = UpgradeLevel;
-	UpgradeLevel = FMath::Clamp(NewLevel, 0, 3);
+	UpgradeLevel = FMath::Clamp(NewLevel, 0, 4);
 	RefreshVisuals();
 	if (bAnimate && Previous != UpgradeLevel) { RingSpring.Value = 0.91f; RingSpring.Velocity = 3.2f; }
 	if (Previous != UpgradeLevel) OnLevelChanged.Broadcast(ItemIndex, UpgradeLevel);
@@ -121,7 +122,7 @@ void UMiningGUIUpgradeWidget::RequestUpgrade()
 	if (!bUnlocked || !bInteractionAllowed) return;
 	ClickSpring.Target = 1.f;
 	ClickSpring.Velocity = 2.8f;
-	const int32 RequestedLevel = FMath::Min(UpgradeLevel + 1, 3);
+	const int32 RequestedLevel = FMath::Min(UpgradeLevel + 1, 4);
 	OnUpgradeRequested.Broadcast(ItemIndex, RequestedLevel);
 	if (bPreviewUpgrades) SetUpgradeLevel(RequestedLevel, true);
 }

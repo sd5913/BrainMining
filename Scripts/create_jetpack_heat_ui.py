@@ -75,7 +75,7 @@ return float4(artwork.rgb * tint, artwork.a);
             (red, 'HotRed', 'RGB'), (crop, 'ArtworkUVRect', 'RGBA')]:
         assert lib.connect_material_expressions(expr, output, shader, name)
     rgb = node(unreal.MaterialExpressionComponentMask, 150, -200, r=True, g=True, b=True)
-    alpha = node(unreal.MaterialExpressionComponentMask, 150, 0, a=True)
+    alpha = node(unreal.MaterialExpressionComponentMask, 150, 0, r=False, g=False, b=False, a=True)
     assert lib.connect_material_expressions(shader, '', rgb, '')
     assert lib.connect_material_expressions(shader, '', alpha, '')
     assert lib.connect_material_property(rgb, '', unreal.MaterialProperty.MP_EMISSIVE_COLOR)
@@ -89,6 +89,7 @@ if not instance:
     unreal.MaterialEditingLibrary.set_material_instance_parent(instance, material)
     assert assets.save_loaded_asset(instance, False)
 assert unreal.MiningGUIEditorLibrary.add_jetpack_heat_overlay()
+exec((root / 'Scripts/update_jetpack_cooling_ui.py').read_text(encoding='utf-8'))
 for name in ['WBP_JetpackHeat', 'WBP_MiningHUD']:
     bp = unreal.load_asset(folder + '/' + name)
     unreal.BlueprintEditorLibrary.compile_blueprint(bp)

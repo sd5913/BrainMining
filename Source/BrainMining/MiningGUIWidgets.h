@@ -61,14 +61,14 @@ protected:
 	FMiningGUISpring Pulse;
 };
 
-/** An upgrade card has three independent green overlays and a separate lock layer. */
+/** An upgrade card has four independent green overlays and a separate lock layer. */
 UCLASS()
 class BRAINMINING_API UMiningGUIUpgradeWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Item") int32 ItemIndex = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="GUI|Item", meta=(ClampMin="0", ClampMax="3")) int32 UpgradeLevel = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="GUI|Item", meta=(ClampMin="0", ClampMax="4")) int32 UpgradeLevel = 0;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="GUI|Item") bool bUnlocked = true;
 	/** Turn off when gameplay owns upgrade decisions; requests still broadcast. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Prototype") bool bPreviewUpgrades = true;
@@ -93,6 +93,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UImage> GreenSegment1;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UImage> GreenSegment2;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UImage> GreenSegment3;
+	UPROPERTY(BlueprintReadOnly, meta=(BindWidgetOptional)) TObjectPtr<UImage> GreenSegment4;
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativePreConstruct() override;

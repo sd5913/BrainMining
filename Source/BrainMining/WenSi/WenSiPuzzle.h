@@ -7,14 +7,18 @@
 #include "WenSiPuzzle.generated.h"
 
 class UStaticMeshComponent;
+class UStaticMesh;
+class UMaterialInstanceDynamic;
 class UMaterialInterface;
 class USceneComponent;
 class SHorizontalBox;
 class STextBlock;
 class AWenSiPuzzle;
+class AWenSiCircuitMechanism;
+class AWenSiResetButton;
 
 UENUM()
-enum class EWenSiRule : uint8 { Heavy, Light, Intangible };
+enum class EWenSiRule : uint8 { Heavy, Light, Intangible, Conductive };
 
 UCLASS()
 class BRAINMINING_API AWenSiObject : public AActor
@@ -47,6 +51,7 @@ class BRAINMINING_API AWenSiPawn : public ACharacter
 public:
  AWenSiPawn();
  virtual void Tick(float DeltaSeconds) override;
+ bool bFlightNeedsRelease = false;
 };
 
 UCLASS()
@@ -88,15 +93,75 @@ public:
  bool bComplete = false;
  int32 Aim = INDEX_NONE;
  UPROPERTY(EditAnywhere, Category="WenSi") bool bExtendedPuzzle = false;
+ UPROPERTY(EditAnywhere, Category="WenSi") bool bCircuitPuzzle = false;
+ UPROPERTY(VisibleAnywhere, Category="WenSi") bool bStageOneSolved = false;
+ UPROPERTY(VisibleAnywhere, Category="WenSi") bool bStageTwoUnlocked = false;
+ UPROPERTY() TObjectPtr<AWenSiCircuitMechanism> Circuit;
+ UPROPERTY() TObjectPtr<AWenSiResetButton> ResetButton;
+ bool bAimReset = false;
+ bool CanThinkAbout(const AWenSiObject* Object) const;
+ bool FirstBarrierClear() const;
+ void UpdateCircuitProgress();
+ UFUNCTION(BlueprintCallable, Category="WenSi") void ResetPuzzle();
  void ToggleEdit();
  void CloseThought(int32 Index);
  void SwapRules(int32 From, int32 To);
  void Think();
  UFUNCTION(BlueprintCallable, Category="WenSi|Validation") FString ValidatePuzzle();
  UFUNCTION(BlueprintCallable, Category="WenSi|Validation") FString ValidateExtendedPuzzle();
+ UFUNCTION(BlueprintCallable, Category="WenSi|Validation") FString ValidateCircuitPuzzle();
 #if WITH_EDITOR
  static void CreateLevel();
  static void CreateExtendedLevel();
  static void DressMuseum();
+ static void UpgradeMuseumCircuit();
 #endif
+private:
+ TArray<FTransform> InitialObjectTransforms;
+ TArray<EWenSiRule> InitialObjectRules;
+ FTransform PlayerResetTransform;
+};
+
+UCLASS()
+class BRAINMINING_API AWenSiCircuitMechanism : public AActor
+{
+ GENERATED_BODY()
+public:
+ AWenSiCircuitMechanism();
+ virtual void BeginPlay() override;
+ virtual void Tick(float DeltaSeconds) override;
+ void Configure();
+ void SetState(bool bPressure, bool bElectricity, bool bOpen);
+ void ResetMechanism();
+ bool HasPressure() const;
+ bool HasConductiveBridge() const;
+ UPROPERTY(VisibleAnywhere, Category="WenSi") bool bPressureActive = false;
+ UPROPERTY(VisibleAnywhere, Category="WenSi") bool bCircuitActive = false;
+ UPROPERTY(VisibleAnywhere, Category="WenSi") bool bRewardOpen = false;
+private:
+ UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
+ UPROPERTY() TArray<TObjectPtr<UMaterialInterface>> Palette;
+ UPROPERTY() TObjectPtr<UStaticMesh> CubeMesh;
+ UPROPERTY() TObjectPtr<UStaticMesh> SphereMesh;
+ UPROPERTY() TObjectPtr<UStaticMesh> CylinderMesh;
+ UPROPERTY() TObjectPtr<UMaterialInterface> GlowMaterial;
+ UPROPERTY() TObjectPtr<UMaterialInterface> GlassMaterial;
+ UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> Lamps[2];
+ float DoorSlide = 0.f;
+};
+
+UCLASS()
+class BRAINMINING_API AWenSiResetButton : public AActor
+{
+ GENERATED_BODY()
+public:
+ AWenSiResetButton();
+ virtual void BeginPlay() override;
+ void Configure();
+ void SetAimed(bool bAimed);
+ UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Button;
+private:
+ UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
+ UPROPERTY() TObjectPtr<UStaticMesh> CylinderMesh;
+ UPROPERTY() TObjectPtr<UMaterialInterface> GlowMaterial;
 };

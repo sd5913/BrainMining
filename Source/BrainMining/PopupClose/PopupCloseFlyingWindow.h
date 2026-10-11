@@ -5,6 +5,7 @@
 #include "PopupCloseFlyingWindow.generated.h"
 
 class UStaticMeshComponent;
+class UTextRenderComponent;
 
 UCLASS()
 class BRAINMINING_API APopupCloseFlyingWindow : public AActor
@@ -15,6 +16,7 @@ public:
 	APopupCloseFlyingWindow();
 
 	void Launch(const FLinearColor& Color, const FVector& Velocity);
+	void PrepareForPool(int32 Variant);
 
 private:
 	UPROPERTY(VisibleAnywhere)
@@ -25,4 +27,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> CloseButton;
+	UPROPERTY() TObjectPtr<UTextRenderComponent> TitleText;
+	UPROPERTY() TObjectPtr<UTextRenderComponent> BodyText;
 };

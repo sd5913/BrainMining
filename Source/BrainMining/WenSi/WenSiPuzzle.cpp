@@ -44,9 +44,10 @@ void AWenSiObject::Configure(int32 Kind)
 {
  ObjectKind=Kind;
  Body->SetRelativeScale3D(FVector::OneVector);
- for (auto Part : Parts) { Part->SetVisibility(false); Part->SetCollisionEnabled(ECollisionEnabled::NoCollision); }
+ for (auto Part : Parts) { Part->SetVisibility(false); Part->SetCollisionEnabled(ECollisionEnabled::NoCollision); Part->SetStaticMesh(nullptr); }
  auto Shape=[this](int32 I, FVector P, FVector Size)
  {
+  Parts[I]->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube")));
   Parts[I]->SetVisibility(true);
   Parts[I]->SetRelativeLocation(P);
   // Absolute scale prevents the root roof scale from distorting cage bars.
@@ -78,16 +79,40 @@ void AWenSiObject::Configure(int32 Kind)
   Shape(0,FVector::ZeroVector,FVector(360,236,16));
   for (int32 I=1;I<5;++I) Shape(I,FVector(0,(I-2.5f)*48,8.5f),FVector(350,2,1));
  }
+ else if (Kind==5) Shape(0,FVector::ZeroVector,FVector(90,90,100));
+ else if (Kind==6)
+ {
+  Shape(0,FVector::ZeroVector,FVector(64));
+  Body->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Sphere.Sphere")));
+ }
+ else if (Kind==7)
+ {
+  Shape(0,FVector(0,0,120),FVector(190,190,8));
+  Shape(1,FVector(-93,0,0),FVector(4,190,240));
+  Shape(2,FVector(93,0,0),FVector(4,190,240));
+  Shape(3,FVector(0,-93,0),FVector(190,4,240));
+  Shape(4,FVector(0,93,0),FVector(190,4,240));
+ }
+ else if (Kind==8) Shape(0,FVector::ZeroVector,FVector(35,35,65));
  ApplyRule();
 }
 
 FString AWenSiObject::Noun() const
 {
- static const TCHAR* Names[]={TEXT("石块"),TEXT("罩子"),TEXT("雕像"),TEXT("屏风"),TEXT("木板")};
+ static const TCHAR* Names[]={TEXT("石块"),TEXT("罩子"),TEXT("雕像"),TEXT("屏风"),TEXT("木板"),TEXT("压块"),TEXT("陶瓷球"),TEXT("罩子"),TEXT("金属块")};
  return ObjectKind>=0 && ObjectKind<UE_ARRAY_COUNT(Names) ? Names[ObjectKind] : TEXT("物体");
 }
 FString AWenSiObject::Adjective() const
-{ return Rule==EWenSiRule::Heavy ? TEXT("沉重") : Rule==EWenSiRule::Light ? TEXT("轻盈") : TEXT("虚无"); }
+{
+ switch(Rule)
+ {
+  case EWenSiRule::Heavy:return TEXT("沉重");
+  case EWenSiRule::Light:return TEXT("轻盈");
+  case EWenSiRule::Intangible:return TEXT("虚无");
+  case EWenSiRule::Conductive:return TEXT("导电");
+ }
+ return FString();
+}
 
 void AWenSiObject::ApplyRule()
 {
@@ -96,10 +121,11 @@ void AWenSiObject::ApplyRule()
   : (ObjectKind==0 ? FLinearColor(.48f,.36f,.25f) : ObjectKind==1 ? FLinearColor(.25f,.48f,.58f) : ObjectKind==3 ? FLinearColor(.38f,.22f,.3f) : ObjectKind==4 ? FLinearColor(.55f,.32f,.15f) : FLinearColor(.8f,.72f,.5f));
  if(HighlightMaterial)
  {
-  const TCHAR* MaterialName=ObjectKind==1 ? TEXT("MI_Brass") : ObjectKind==3 ? TEXT("MI_Burgundy") : ObjectKind==4 ? TEXT("MI_Walnut") : TEXT("MI_Limestone");
+  const TCHAR* MaterialName=(ObjectKind==1 || ObjectKind==8) ? TEXT("MI_Brass") : ObjectKind==3 ? TEXT("MI_Burgundy") : ObjectKind==4 ? TEXT("MI_Walnut") : TEXT("MI_Limestone");
   const FString Path=FString(TEXT("/Game/WenSi/Museum/Materials/"))+MaterialName+TEXT(".")+MaterialName;
   if(auto MuseumMaterial=LoadObject<UMaterialInterface>(nullptr,*Path))SolidMaterial=MuseumMaterial;
  }
+ UMaterialInterface* CoverGlass=ObjectKind==7 ? LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WenSi/Museum/Materials/M_DisplayGlass.M_DisplayGlass")) : nullptr;
  for (auto Part : Parts)
  {
   if (!Part->IsVisible()) continue;
@@ -111,10 +137,12 @@ void AWenSiObject::ApplyRule()
    Part->SetCollisionResponseToAllChannels(ECR_Ignore);
    Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);
   }
-  UMaterialInstanceDynamic* M=UMaterialInstanceDynamic::Create(Rule==EWenSiRule::Intangible ? GhostMaterial.Get() : SolidMaterial.Get(),this);
+  UMaterialInterface* Parent=Rule==EWenSiRule::Intangible ? GhostMaterial.Get() : (CoverGlass ? CoverGlass : SolidMaterial.Get());
+  UMaterialInstanceDynamic* M=UMaterialInstanceDynamic::Create(Parent,this);
   M->SetVectorParameterValue(TEXT("Color"),Rule==EWenSiRule::Intangible ? (HighlightMaterial ? FLinearColor(Color.R,Color.G,Color.B,.25f) : FLinearColor(.25,.7,1,.25)) : Color);
   M->SetVectorParameterValue(TEXT("BaseColor"),Color);
   M->SetScalarParameterValue(TEXT("Opacity"),.25f);
+  if(CoverGlass && Rule!=EWenSiRule::Intangible) M->SetScalarParameterValue(TEXT("Opacity"),.12f);
   Part->SetMaterial(0,M);
   if (HighlightMaterial && !Cast<UMaterialInstanceDynamic>(Part->GetOverlayMaterial()))
    Part->SetOverlayMaterial(UMaterialInstanceDynamic::Create(HighlightMaterial,this));
@@ -144,6 +172,8 @@ void AWenSiObject::Tick(float Dt)
  Super::Tick(Dt);
  float Lift = Rule==EWenSiRule::Light ? (ObjectKind==0 ? 210.f : ObjectKind==1 ? 18.f : 95.f) : 0.f;
  float TargetZ=Rest.Z+Lift;
+ // New exhibits stay within thinking distance; the original sculpture still uses its vitrine roof.
+ if(ObjectKind>=5 && Rule==EWenSiRule::Light) TargetZ=Rest.Z+100.f;
  if (ObjectKind>=2 && Rule==EWenSiRule::Light)
  {
   // Keep the sculpture's head just below the actual room ceiling.
@@ -156,7 +186,7 @@ void AWenSiObject::Tick(float Dt)
   const FVector Start=Rest+FVector(0,0,TopOffset);
   FHitResult Ceiling;
   if (GetWorld()->LineTraceSingleByChannel(Ceiling,Start,Start+FVector(0,0,1000),ECC_WorldStatic,Query))
-   TargetZ=Ceiling.ImpactPoint.Z-TopOffset-4.f;
+   TargetZ=ObjectKind>=5 ? FMath::Min(TargetZ,Ceiling.ImpactPoint.Z-TopOffset-4.f) : Ceiling.ImpactPoint.Z-TopOffset-4.f;
  }
  // The cage roof remains an obstacle even though it is a child-mesh assembly.
  if (ObjectKind==0 && Rule==EWenSiRule::Light)
@@ -203,6 +233,13 @@ void AWenSiPawn::Tick(float Dt)
  AddControllerYawInput(X); AddControllerPitchInput(-Y);
  AddMovementInput(GetActorForwardVector(),float(PC->IsInputKeyDown(EKeys::W))-float(PC->IsInputKeyDown(EKeys::S)));
  AddMovementInput(GetActorRightVector(),float(PC->IsInputKeyDown(EKeys::D))-float(PC->IsInputKeyDown(EKeys::A)));
+ if(!PC->IsInputKeyDown(EKeys::SpaceBar)) bFlightNeedsRelease=false;
+ if(PC->IsInputKeyDown(EKeys::SpaceBar) && !bFlightNeedsRelease)
+ {
+  auto Movement=GetCharacterMovement();
+  if(Movement->IsMovingOnGround()) Movement->SetMovementMode(MOVE_Falling);
+  Movement->Velocity.Z=FMath::Min(450.f,Movement->Velocity.Z+(1800.f+FMath::Abs(GetWorld()->GetGravityZ()))*Dt);
+ }
 }
 AWenSiGameMode::AWenSiGameMode() { DefaultPawnClass=AWenSiPawn::StaticClass(); }
 
@@ -211,6 +248,14 @@ void AWenSiPuzzle::BeginPlay()
 {
  Super::BeginPlay();
  for (TActorIterator<AWenSiObject> It(GetWorld());It;++It) Objects.Add(*It);
+ for(auto Object:Objects)
+ {
+  InitialObjectTransforms.Add(Object->GetActorTransform());
+  InitialObjectRules.Add(Object->Rule);
+ }
+ for(TActorIterator<AWenSiCircuitMechanism> It(GetWorld());It;++It) {Circuit=*It;break;}
+ for(TActorIterator<AWenSiResetButton> It(GetWorld());It;++It) {ResetButton=*It;break;}
+ for(TActorIterator<APlayerStart> It(GetWorld());It;++It) {PlayerResetTransform=It->GetActorTransform();break;}
  auto PC=GetWorld()->GetFirstPlayerController();
  if (PC)
  {
@@ -223,37 +268,45 @@ void AWenSiPuzzle::Tick(float Dt)
  Super::Tick(Dt);
  auto PC=GetWorld()->GetFirstPlayerController(); if (!PC) return;
  Aim=INDEX_NONE;
- if (!bEditing && !bComplete)
+ bAimReset=false;
+ AWenSiResetButton* AimedResetButton=nullptr;
+ if(bCircuitPuzzle) UpdateCircuitProgress();
+ if (!bEditing)
  {
   FVector P; FRotator R; PC->GetPlayerViewPoint(P,R);
   FHitResult Hit; FCollisionQueryParams Q; Q.AddIgnoredActor(PC->GetPawn());
   if (GetWorld()->LineTraceSingleByChannel(Hit,P,P+R.Vector()*310.f,ECC_Visibility,Q))
   {
    auto Obj=Cast<AWenSiObject>(Hit.GetActor());
-   if (Obj && PC->GetPawn() && FVector::Dist(PC->GetPawn()->GetActorLocation(),Hit.ImpactPoint)<280.f) Aim=Objects.IndexOfByKey(Obj);
+   const bool bNearby=PC->GetPawn() && FVector::Dist(PC->GetPawn()->GetActorLocation(),Hit.ImpactPoint)<280.f;
+   if(bNearby) AimedResetButton=Cast<AWenSiResetButton>(Hit.GetActor());
+   bAimReset=AimedResetButton!=nullptr;
+   if (!bComplete && Obj && bNearby && CanThinkAbout(Obj)) Aim=Objects.IndexOfByKey(Obj);
   }
-  if (PC->WasInputKeyJustPressed(EKeys::E)) Think();
+  if (PC->WasInputKeyJustPressed(EKeys::E)) {if(bAimReset)ResetPuzzle();else if(!bComplete)Think();}
   if (PC->WasInputKeyJustPressed(EKeys::Q)) CloseThought(0);
   if (PC->WasInputKeyJustPressed(EKeys::R)) CloseThought(1);
  }
  if (PC->WasInputKeyJustPressed(EKeys::G)) ToggleEdit();
- if (bExtendedPuzzle && PC->GetPawn() && PC->GetPawn()->GetActorLocation().Z<-80.f)
+ if (bExtendedPuzzle && !bCircuitPuzzle && PC->GetPawn() && PC->GetPawn()->GetActorLocation().Z<-80.f)
  {
   // Recover at the near bank without resetting the player's solved rules or thoughts.
   auto Character=Cast<ACharacter>(PC->GetPawn());
   PC->GetPawn()->SetActorLocation(FVector(780,0,90));
   if (Character) Character->GetCharacterMovement()->StopMovementImmediately();
  }
- if (!bComplete && PC->GetPawn() && PC->GetPawn()->GetActorLocation().X>(bExtendedPuzzle ? 1350.f : 510.f))
+ if (!bCircuitPuzzle && !bComplete && PC->GetPawn() && PC->GetPawn()->GetActorLocation().X>(bExtendedPuzzle ? 1350.f : 510.f))
  {
   bComplete=true; if (bEditing) ToggleEdit(); Thoughts[0].Reset(); Thoughts[1].Reset();
  }
  if (UI) UI->Refresh();
  for(int32 I=0;I<Objects.Num();++I) Objects[I]->SetInteractionHighlight(I==Aim,!bComplete);
+ for(TActorIterator<AWenSiResetButton> It(GetWorld());It;++It)
+  It->SetAimed(bAimReset && *It==AimedResetButton);
 }
 void AWenSiPuzzle::Think()
 {
- if (!Objects.IsValidIndex(Aim)) return;
+ if (!Objects.IsValidIndex(Aim) || !CanThinkAbout(Objects[Aim])) return;
  auto Obj=Objects[Aim];
  if (Thoughts[0]==Obj || Thoughts[1]==Obj) return;
  if (!Thoughts[0].IsValid()) Thoughts[0]=Obj;
@@ -275,7 +328,8 @@ void AWenSiPuzzle::ToggleEdit()
 }
 void AWenSiPuzzle::SwapRules(int32 From,int32 To)
 {
- if (!bEditing || From==To || From<0 || From>1 || To<0 || To>1 || !Thoughts[From].IsValid() || !Thoughts[To].IsValid()) return;
+ if (bComplete || !bEditing || From==To || From<0 || From>1 || To<0 || To>1 || !Thoughts[From].IsValid() || !Thoughts[To].IsValid()) return;
+ if(!CanThinkAbout(Thoughts[From].Get()) || !CanThinkAbout(Thoughts[To].Get())) return;
  // Do not make a ghost solid while the player is inside it.
  auto Pawn=GetWorld()->GetFirstPlayerController()->GetPawn();
  const ACharacter* Character=Cast<ACharacter>(Pawn);

@@ -1,4 +1,5 @@
 #include "PopupClose/PopupCloseWidgets.h"
+#include "PopupClose/PopupCloseContent.h"
 
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Fonts/CompositeFont.h"
@@ -40,27 +41,6 @@ namespace
 		return FCoreStyle::GetDefaultFontStyle("Regular", Size);
 	}
 
-	struct FPopupCopy
-	{
-		const TCHAR* Title;
-		const TCHAR* Body;
-		FLinearColor Color;
-	};
-
-	const FPopupCopy& RandomCopy()
-	{
-		static const FPopupCopy Copies[] = {
-			{ TEXT("系统更新"), TEXT("发现重要更新。是否立即重启并安装？"), FLinearColor(0.93f, 0.94f, 0.96f) },
-			{ TEXT("内存不足"), TEXT("可用内存即将耗尽。请关闭一些窗口。"), FLinearColor(1.f, 0.95f, 0.82f) },
-			{ TEXT("磁盘错误"), TEXT("驱动器 C: 报告了无法读取的扇区。"), FLinearColor(1.f, 0.86f, 0.84f) },
-			{ TEXT("是否保存"), TEXT("未保存的更改将会丢失。要保存吗？"), FLinearColor(0.86f, 0.93f, 1.f) },
-			{ TEXT("广告"), TEXT("恭喜获得免费加速！点击领取，不要关闭。"), FLinearColor(0.95f, 0.9f, 1.f) },
-			{ TEXT("驱动安装"), TEXT("新的显示驱动已就绪，需要立刻安装。"), FLinearColor(0.9f, 0.96f, 0.9f) },
-			{ TEXT("网络中断"), TEXT("与服务器的连接已断开，正在重试。"), FLinearColor(0.95f, 0.95f, 0.95f) },
-			{ TEXT("确认删除"), TEXT("这些文件将永久删除。此操作无法撤销。"), FLinearColor(1.f, 0.9f, 0.78f) }
-		};
-		return Copies[FMath::RandRange(0, UE_ARRAY_COUNT(Copies) - 1)];
-	}
 }
 
 TSharedRef<SWidget> UPopupClosePromptWidget::RebuildWidget()
@@ -101,14 +81,21 @@ TSharedRef<SWidget> UPopupCloseDesktopWidget::RebuildWidget()
 			Canvas.ToSharedRef()
 		]
 		+ SOverlay::Slot()
+		.HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(32.f)
+		[
+			SNew(STextBlock).Visibility(EVisibility::HitTestInvisible)
+			.Text(FText::FromString(TEXT("工作台")))
+			.Font(PopupFont(32.f)).ColorAndOpacity(FLinearColor(.6f,.76f,.88f))
+		]
+		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Bottom)
 		.Padding(FMargin(0.f, 0.f, 0.f, 28.f))
 		[
 			SNew(STextBlock)
 			.Visibility(EVisibility::HitTestInvisible)
-			.Text(FText::FromString(TEXT("点击窗口右上角关闭")))
-			.Font(PopupFont(16.f))
+			.Text(FText::FromString(TEXT("待办    /    工作消息    /    项目排期")))
+			.Font(PopupFont(20.f))
 			.ColorAndOpacity(FLinearColor(0.8f, 0.88f, 1.f))
 		];
 }
@@ -120,18 +107,10 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 		return;
 	}
 
-	FVector2D ViewportSize(1280.f, 720.f);
-	if (GEngine && GEngine->GameViewport)
-	{
-		FVector2D PixelSize;
-		GEngine->GameViewport->GetViewportSize(PixelSize);
-		const float Scale = FMath::Max(UWidgetLayoutLibrary::GetViewportScale(this), 0.01f);
-		ViewportSize = PixelSize / Scale;
-	}
-
-	const FPopupCopy& Copy = RandomCopy();
-	const float Width = 340.f;
-	const float Height = 176.f;
+	const FVector2D ViewportSize(PopupCloseContent::DesktopWidth,PopupCloseContent::DesktopHeight);
+	const auto& Copy = PopupCloseContent::Get(NextId-1);
+	const float Width = Copy.Size.X;
+	const float Height = Copy.Size.Y;
 	const float X = FMath::FRandRange(24.f, FMath::Max(24.f, ViewportSize.X - Width - 24.f));
 	const float Y = FMath::FRandRange(24.f, FMath::Max(24.f, ViewportSize.Y - Height - 80.f));
 	const int32 Id = NextId++;
@@ -158,15 +137,15 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 					[
 						SNew(STextBlock)
 						.Text(FText::FromString(Copy.Title))
-						.Font(PopupFont(16.f))
+						.Font(PopupFont(22.f))
 						.ColorAndOpacity(FLinearColor(0.08f, 0.08f, 0.1f))
 					]
 					+ SHorizontalBox::Slot()
 					.AutoWidth()
 					[
 						SNew(SBox)
-						.WidthOverride(32.f)
-						.HeightOverride(28.f)
+						.WidthOverride(48.f)
+						.HeightOverride(40.f)
 						[
 							SNew(SButton)
 							.ButtonColorAndOpacity(FLinearColor(0.78f, 0.16f, 0.14f))
@@ -175,13 +154,14 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 								if (UPopupCloseDesktopWidget* Self = WeakThis.Get())
 								{
 									Self->ClosePopup(Id);
+									++Self->ManuallyClosedCount;
 								}
 								return FReply::Handled();
 							})
 							[
 								SNew(STextBlock)
 								.Text(FText::FromString(TEXT("×")))
-								.Font(PopupFont(16.f))
+								.Font(PopupFont(24.f))
 								.Justification(ETextJustify::Center)
 								.ColorAndOpacity(FLinearColor::White)
 							]
@@ -195,7 +175,7 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Copy.Body))
-				.Font(PopupFont(14.f))
+				.Font(PopupFont(20.f))
 				.AutoWrapText(true)
 				.ColorAndOpacity(FLinearColor(0.1f, 0.1f, 0.12f))
 			]
@@ -211,7 +191,7 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 			Window
 		];
 
-	Windows.Add({ Id, Window });
+	Windows.Add({ Id, Window, FVector2D(X,Y), Copy.Size });
 }
 
 void UPopupCloseDesktopWidget::ClosePopup(int32 Id)
@@ -224,4 +204,33 @@ void UPopupCloseDesktopWidget::ClosePopup(int32 Id)
 
 	Canvas->RemoveSlot(Windows[Index].Root.ToSharedRef());
 	Windows.RemoveAt(Index);
+}
+
+void UPopupCloseDesktopWidget::ClearOldestPopup()
+{
+ if(Windows.Num())ClosePopup(Windows[0].Id);
+}
+
+void UPopupCloseDesktopWidget::ClearPopups()
+{
+ while(Windows.Num())ClearOldestPopup();
+ ManuallyClosedCount=0;
+}
+
+FVector2D UPopupCloseDesktopWidget::GetLatestClosePoint() const
+{
+ if(!Windows.Num())return FVector2D::ZeroVector;
+ const auto& Window=Windows.Last();
+ return Window.Position+FVector2D(Window.Size.X-28.f,24.f);
+}
+
+bool UPopupCloseDesktopWidget::HasVariedWindowSizes() const
+{
+ for(const auto& Window:Windows)if(!Window.Size.Equals(Windows[0].Size))return true;
+ return false;
+}
+
+void UPopupCloseDesktopWidget::ReleaseSlateResources(bool bReleaseChildren)
+{
+ Super::ReleaseSlateResources(bReleaseChildren);Windows.Reset();Canvas.Reset();
 }

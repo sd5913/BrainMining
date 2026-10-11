@@ -71,3 +71,7 @@
 `Scripts/verify_external_guides.py` 在独立进程检查所有阻塞块中心位于已导入通路内，并逐一验证挖掘与重置；结果见 `Saved/Validation/external_guides.json`。`Scripts/verify_external_guides_reload.py` 在另一个进程读取已保存关卡，不重新生成，验证 20 个引导层均保存了碰撞和初始几何、可挖掘并恢复；结果见 `Saved/Validation/external_guides_reload.json`。编译前关卡备份位于 `Saved/Backups/ExternalGuideLayers_20261010`。
 
 Python 命令行进程启动时仍会打印项目既有的 `GEngine not initialized` 物理诊断（旧日志中同样存在），因此命令行整体退出码可能为非零。上述功能验证以各自 JSON 报告及原生测试报告为准；本次未修改该既有初始化逻辑。
+
+2026-10-11 加厚版本：当前演示关卡的旧 20 个阻塞块已由 `TunnelFill50V3` 的 20 个独立可挖模型替换，主岩层和基岩保持原有 Actor。新块共 142 个分块，合计体积为原通路空腔的 **49.64%**；各块沿路线长度约 13.3–34.9 米，平均 23.4 米。主路最后约 17.9 米、每条支路最后约 13.7–15.3 米保持空腔，全部终点均不被阻塞块覆盖。
+
+资产在 `/Game/ExternalMining/GuideLayers/Fill50V3`，独立 FBX、Blender 源文件和预览在 `Art/Mining/TunnelFill50V3`。旧资产保留用于恢复。模型通过封闭性、自交、侧面贴合、20 处封堵和 8 个终点留空检查；UE 逐一挖掘及重置验证见 `Saved/Validation/fill50_verified.json`，场景替换与保存见 `fill50_live.json`，不重新生成的关卡重载验证见 `fill50_reload.json`。替换前关卡备份在 `Saved/Backups/GuideFill50_20261011`。

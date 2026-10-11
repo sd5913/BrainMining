@@ -17,6 +17,9 @@ class USkyAtmosphereComponent;
 class USkyLightComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
+class UWidgetComponent;
+class UWidgetInteractionComponent;
+class APopupCloseFlyingWindow;
 
 UCLASS()
 class BRAINMINING_API APopupCloseStage : public AActor
@@ -28,11 +31,16 @@ public:
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	UFUNCTION(BlueprintCallable, Category="PopupClose|Validation") FString ValidateOffice();
+	UFUNCTION(BlueprintCallable, Category="PopupClose|Validation") FString GetSessionStatus() const;
 
 	FTransform GetPlayerSpawnTransform() const;
 
 #if WITH_EDITOR
 	static void CreateLevel();
+	static void UpgradeOffice();
 #endif
 
 private:
@@ -41,10 +49,15 @@ private:
 		Idle,
 		Entering,
 		InScreen,
-		Spraying
+		Spraying,
+		Complete
 	};
 
 	void ApplyColors();
+	void ConfigureOffice();
+	void WarmWindowPool(float DeltaSeconds);
+	void FitScreenCamera();
+	void WriteSessionReport();
 	void Paint(UStaticMeshComponent* Mesh, const FLinearColor& Color) const;
 	bool IsComputerComponent(const UPrimitiveComponent* Component) const;
 	bool CanInteract(APlayerController* Controller) const;
@@ -119,14 +132,27 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UPopupClosePromptWidget> Prompt;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UWidgetComponent> DesktopSurface;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UWidgetInteractionComponent> DesktopInteraction;
+	UPROPERTY() TArray<TObjectPtr<APopupCloseFlyingWindow>> WindowPool;
 
 	EPhase Phase = EPhase::Idle;
 	float EnterTime = 0.f;
 	float ScreenTime = 0.f;
 	float SpawnDebt = 0.f;
-	float ClimaxTime = 0.f;
+	bool bPopupAccountingValid = true;
 	float SprayTime = 0.f;
 	float SprayDebt = 0.f;
+	float WarmDebt = 0.f;
+	int32 PoolCursor = 0;
+	int32 LaunchedWindows = 0;
+	int32 TotalPopups = 0;
+	float FirstSprayDelay = -1.f;
+	float SprayPeakFrame = 0.f;
+	float EjectionPeakFrame = 0.f;
+	double LastTickTime = 0;
+	float WallFrameSeconds = 0;
+	uint8 SavedMovementMode = 1;
 	bool bLookSuppressed = false;
 	bool bMoveSuppressed = false;
 	TWeakObjectPtr<APawn> LockedPawn;

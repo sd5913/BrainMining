@@ -1,0 +1,10 @@
+{
+  "phase": "complete",
+  "passed": true,
+  "estimated_capacity_fraction": 0.5986839999138344,
+  "completed": 20,
+  "factor": 0.8338984593749047,
+  "attempt": 0,
+  "fill_fraction": 0.4963576976484001,
+  "triangles": 43118
+}

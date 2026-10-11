@@ -184,6 +184,53 @@ namespace MiningGUIEditor
 	}
 }
 
+bool UMiningGUIEditorLibrary::UpgradeGUIToFourLevels()
+{
+	using namespace MiningGUIEditor;
+	const FString MaterialFolder = Folder + TEXT("FourLevel/");
+	auto Material = [&](const FString& Name)
+	{
+		return LoadObject<UMaterialInterface>(nullptr, *(MaterialFolder + Name + TEXT(".") + Name));
+	};
+	auto* White = Material(TEXT("MI_UpgradeRingWhite"));
+	auto* Locked = Material(TEXT("MI_UpgradeRingLocked"));
+	if (!White || !Locked) return false;
+	for (const TCHAR* Name : {TEXT("WBP_UpgradePickaxe"), TEXT("WBP_UpgradeVortex"), TEXT("WBP_UpgradeBlast")})
+	{
+		auto* BP = LoadObject<UWidgetBlueprint>(nullptr, *(Folder + Name + TEXT(".") + Name));
+		if (!BP || !BP->WidgetTree) return false;
+		auto* Ring = Cast<UCanvasPanel>(BP->WidgetTree->FindWidget(TEXT("RingContent")));
+		auto* GreyImage = Cast<UImage>(BP->WidgetTree->FindWidget(TEXT("RingGrey")));
+		auto* LockedImage = Cast<UImage>(BP->WidgetTree->FindWidget(TEXT("LockedRing")));
+		auto* First = Cast<UImage>(BP->WidgetTree->FindWidget(TEXT("GreenSegment1")));
+		auto* TemplateSlot = First ? Cast<UCanvasPanelSlot>(First->Slot) : nullptr;
+		if (!Ring || !GreyImage || !LockedImage || !TemplateSlot) return false;
+		GreyImage->SetBrushFromMaterial(White);
+		LockedImage->SetBrushFromMaterial(Locked);
+		for (int32 Index = 1; Index <= 4; ++Index)
+		{
+			const FString SegmentName = FString::Printf(TEXT("GreenSegment%d"), Index);
+			auto* SegmentMaterial = Material(FString::Printf(TEXT("MI_UpgradeRingGreen%d"), Index));
+			if (!SegmentMaterial) return false;
+			auto* Segment = Cast<UImage>(BP->WidgetTree->FindWidget(FName(*SegmentName)));
+			if (!Segment)
+			{
+				Segment = Widget<UImage>(BP, *SegmentName);
+				Place(Ring, Segment, TemplateSlot->GetPosition(), TemplateSlot->GetSize());
+				auto* Slot = CastChecked<UCanvasPanelSlot>(Segment->Slot);
+				Slot->SetAnchors(TemplateSlot->GetAnchors());
+				Slot->SetAlignment(TemplateSlot->GetAlignment());
+				Slot->SetZOrder(TemplateSlot->GetZOrder());
+				Segment->SetVisibility(ESlateVisibility::Hidden);
+			}
+			Segment->SetBrushFromMaterial(SegmentMaterial);
+		}
+		const FVector2D Size = CastChecked<UUserWidget>(BP->GeneratedClass->GetDefaultObject())->DesignTimeSize;
+		if (!Complete(BP, Size)) return false;
+	}
+	return true;
+}
+
 bool UMiningGUIEditorLibrary::AddDrillCooldownOverlay()
 {
 	using namespace MiningGUIEditor;

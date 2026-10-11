@@ -38,7 +38,7 @@ def click(button):
     check(helper.simulate_preview_button(button, False), button.get_name() + ' actual Slate click delegate runs')
 
 def green_count(card):
-    return sum(x.get_visibility() != unreal.SlateVisibility.HIDDEN for x in [card.green_segment1, card.green_segment2, card.green_segment3])
+    return sum(x.get_visibility() != unreal.SlateVisibility.HIDDEN for x in [card.green_segment1, card.green_segment2, card.green_segment3, card.green_segment4])
 
 def rotation_change(a, b):
     return abs(a.yaw-b.yaw) + abs(a.pitch-b.pitch)
@@ -147,15 +147,15 @@ def tick(delta):
             state.update(phase='advance_levels', next=now+.2)
         elif phase == 'advance_levels':
             for card in state['cards'][:2]:
-                for level in [2,3,3]:
+                for level in [2,3,4,4]:
                     click(card.coin_button)
-                    check(card.upgrade_level == level and green_count(card) == level, 'Unlocked upgrades independently advance and stop at three')
+                    check(card.upgrade_level == level and green_count(card) == level, 'Unlocked upgrades independently advance and stop at four')
             state['gui'].set_item_unlocked(2, True)
             check(state['cards'][2].coin_button.get_is_enabled(), 'Program unlock immediately enables the third coin button')
             state.update(phase='unlocked', next=now+.2)
         elif phase == 'unlocked':
             card = state['cards'][2]
-            for level in [1,2,3]:
+            for level in [1,2,3,4]:
                 click(card.coin_button)
                 check(card.upgrade_level == level and green_count(card) == level, 'Previously locked item upgrades only after program unlock')
             state['gui'].set_item_unlocked(2, False)

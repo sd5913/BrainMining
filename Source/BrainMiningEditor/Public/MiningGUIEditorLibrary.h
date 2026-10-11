@@ -39,4 +39,7 @@ public:
 	/** Adds only the jetpack child to the existing HUD; retains all existing ability/upgrade widgets. */
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Editor")
 	static bool AddJetpackHeatOverlay();
+	/** Replace only upgrade ring brushes and add the fourth editable overlay. */
+	UFUNCTION(BlueprintCallable, Category="Mining GUI|Editor")
+	static bool UpgradeGUIToFourLevels();
 };

@@ -17,6 +17,10 @@ class USkyAtmosphereComponent;
 class USkyLightComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
+class UWidgetComponent;
+class UWidgetInteractionComponent;
+class APopupCloseFlyingWindow;
+class APopupOfficeDevice;
 
 UCLASS()
 class BRAINMINING_API APopupCloseStage : public AActor
@@ -25,45 +29,48 @@ class BRAINMINING_API APopupCloseStage : public AActor
 
 public:
 	APopupCloseStage();
-    UPROPERTY(EditAnywhere, Category="Integration") bool bAreaManaged = false;
-    bool bAreaActive = true;
-    void SetAreaActive(bool bActive);
+ UPROPERTY(EditAnywhere, Category="Integration") bool bAreaManaged = false;
+ bool bAreaActive = true;
+ void SetAreaActive(bool bActive);
+ void CancelSession();
+ void ResetCompletedSessions();
+ int32 GetCompletedSessions() const { return Phase == EPhase::Complete ? 1 : 0; }
+ bool IsSessionActive() const { return View != EView::Free; }
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void Tick(float DeltaSeconds) override;
-	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
-	void CancelSession();
-	int32 GetCompletedSessions() const { return CompletedSessions; }
-    void ResetCompletedSessions() { CompletedSessions = 0; }
-	bool IsSessionActive() const { return Phase != EPhase::Idle; }
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	UFUNCTION(BlueprintCallable, Category="PopupClose|Validation") FString ValidateOffice();
+	UFUNCTION(BlueprintCallable, Category="PopupClose|Validation") FString GetSessionStatus() const;
+	UFUNCTION(BlueprintCallable, Category="PopupClose") void StartOfficeRound();
 
-	FTransform GetPlayerSpawnTransform() const;
+	UFUNCTION(BlueprintPure, Category="PopupClose") FTransform GetPlayerSpawnTransform() const;
 
 #if WITH_EDITOR
 	static void CreateLevel();
+	static void UpgradeOffice();
 #endif
 
 private:
-	enum class EPhase : uint8
-	{
-		Idle,
-		Entering,
-		InScreen,
-		Spraying
-	};
 
-	void ApplyColors();
-	void Paint(UStaticMeshComponent* Mesh, const FLinearColor& Color) const;
-	bool IsComputerComponent(const UPrimitiveComponent* Component) const;
-	bool CanInteract(APlayerController* Controller) const;
-	void SetPromptVisible(APlayerController* Controller, bool bVisible);
-	void BeginScreenSession(APlayerController* Controller, APawn* Pawn);
-	void TickScreen(float DeltaSeconds);
-	void EjectFromScreen();
-	void TickSpray(float DeltaSeconds);
-	void SpawnFlyingWindow();
-	void RestorePlayerControl(bool bRestoreLook);
-	float CurrentSpawnInterval() const;
+ enum class EPhase : uint8 { Idle, Running, Spraying, Complete };
+ enum class EView : uint8 { Free, Entering, InScreen, Exiting };
+ void ApplyColors();
+ void ConfigureOffice();
+ void Paint(UStaticMeshComponent* Mesh,const FLinearColor& Color) const;
+ void GatherDevices();
+ APopupOfficeDevice* FocusedDevice(APlayerController* PC) const;
+ void HandleInteraction(APlayerController* PC,APopupOfficeDevice* Device);
+ void BeginScreenSession(APlayerController* PC,APopupOfficeDevice* Device);
+ void ExitScreen();
+ void RestorePlayerControl();
+ void TickView(float Dt);
+ void TickIssues(float Dt);
+ void BeginBurst();
+ void TickSpray(float Dt);
+ void ShowPrompt(APlayerController* PC,const FString& Message);
+ void WriteSessionReport();
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -127,17 +134,31 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UPopupClosePromptWidget> Prompt;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UWidgetComponent> DesktopSurface;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UWidgetInteractionComponent> DesktopInteraction;
+	UPROPERTY() TArray<TObjectPtr<APopupCloseFlyingWindow>> WindowPool;
 
-	EPhase Phase = EPhase::Idle;
-	int32 CompletedSessions = 0;
-	float EnterTime = 0.f;
-	float ScreenTime = 0.f;
-	float SpawnDebt = 0.f;
-	float ClimaxTime = 0.f;
-	float SprayTime = 0.f;
-	float SprayDebt = 0.f;
-	bool bLookSuppressed = false;
-	bool bMoveSuppressed = false;
-	TWeakObjectPtr<APawn> LockedPawn;
-	TWeakObjectPtr<APlayerController> LockedController;
+ UPROPERTY() TArray<TObjectPtr<APopupOfficeDevice>> Devices;
+ UPROPERTY() TObjectPtr<APopupOfficeDevice> ActiveComputer;
+ EPhase Phase=EPhase::Idle;
+ EView View=EView::Free;
+ float RoundTime=0;
+ float ViewTime=0;
+ // Independent countdowns in interval units; randomized again after every issue.
+ float IssueCountdown[4]={0,0,0,0};
+ float SlowPhaseScheduledIssues=0;
+ float SprayTime=0;
+ float SprayDebt=0;
+ double LastTickTime=0;
+ float FirstBurstPeakFrame=0;
+ bool bPanic=false;
+ bool bAccountingValid=true;
+ bool bWarningsValid=true;
+ bool bIndependentTimersValid=true;
+ bool bForcedExit=false;
+ uint8 SavedMovementMode=1;
+ bool bMoveSuppressed=false;
+ bool bLookSuppressed=false;
+ TWeakObjectPtr<APawn> LockedPawn;
+ TWeakObjectPtr<APlayerController> LockedController;
 };

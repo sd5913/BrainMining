@@ -4,6 +4,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "GameFramework/PlayerController.h"
 #include "UObject/ConstructorHelpers.h"
 
 UStaticMeshComponent* ACardRoomStage::Shape(FName Name,USceneComponent* Parent,const TCHAR* Path,FVector Position,FVector Scale)
@@ -33,6 +34,17 @@ ACardRoomStage::ACardRoomStage()
     ToyParts.Add(Shape(TEXT("Mouth"),ToyRoot,Sphere,FVector(-43,0,78),FVector(.06,.22,.065)));
     ToyParts.Add(Shape(TEXT("LeftBrow"),ToyRoot,Cube,FVector(-38,-17,113),FVector(.05,.20,.04)));
     ToyParts.Add(Shape(TEXT("RightBrow"),ToyRoot,Cube,FVector(-38,17,113),FVector(.05,.20,.04)));
+    HeadPivot=CreateDefaultSubobject<USceneComponent>(TEXT("OpponentHeadAim"));HeadPivot->SetupAttachment(ToyRoot);HeadPivot->SetRelativeLocation(FVector(0,0,94));
+    for(int32 Index:{1,2,3,4,5,6,10,11,12})
+    {
+        const FVector Old=ToyParts[Index]->GetRelativeLocation();ToyParts[Index]->SetupAttachment(HeadPivot);ToyParts[Index]->SetRelativeLocation(Old-FVector(0,0,94));
+    }
+    // Keep the muzzle, smile and nose on the same aiming pivot as the head.
+    ToyParts.Add(Shape(TEXT("LeftMuzzle"),HeadPivot,Sphere,FVector(-42,-9,-5),FVector(.14,.24,.18)));
+    ToyParts.Add(Shape(TEXT("RightMuzzle"),HeadPivot,Sphere,FVector(-42,9,-5),FVector(.14,.24,.18)));
+    ToyParts.Add(Shape(TEXT("SmileLeft"),HeadPivot,Cube,FVector(-49,-4,-11),FVector(.035,.095,.025)));
+    ToyParts.Add(Shape(TEXT("SmileRight"),HeadPivot,Cube,FVector(-49,4,-11),FVector(.035,.095,.025)));
+    ToyParts.Add(Shape(TEXT("NoseStem"),HeadPivot,Cube,FVector(-49,0,-5),FVector(.035,.022,.07)));
     for(int32 i=0;i<17;++i)
     {
         auto* Card=Shape(*FString::Printf(TEXT("PlayedCard%d"),i),RootComponent,Cube,FVector::ZeroVector,FVector(.38,.26,.006));
@@ -51,7 +63,7 @@ ACardRoomStage::ACardRoomStage()
     }
     SpellLight=CreateDefaultSubobject<UPointLightComponent>(TEXT("SpellLight"));
     SpellLight->SetupAttachment(RootComponent); SpellLight->SetIntensity(0); SpellLight->SetAttenuationRadius(430); SpellLight->SetCastShadows(false);
-    for(int32 i=0;i<96;++i)
+    for(int32 i=0;i<160;++i)
         FxShards.Add(Shape(*FString::Printf(TEXT("FxShard%d"),i),RootComponent,Cube,FVector::ZeroVector,FVector(.1)));
     Beam=Shape(TEXT("Laser"),RootComponent,TEXT("/Engine/BasicShapes/Cylinder.Cylinder"),FVector::ZeroVector,FVector(.1));
     Ball=Shape(TEXT("SpellOrb"),RootComponent,Sphere,FVector::ZeroVector,FVector(.3));
@@ -69,6 +81,27 @@ void ACardRoomStage::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
     for(int32 i=0;i<ToyParts.Num();++i) Tint(ToyParts[i],((i>=4&&i<=6)||i>=10)?FLinearColor(.025f,.016f,.013f):i==9?FLinearColor(.65f,.19f,.09f):FLinearColor(.73f,.43f,.24f));
+    // Reset authored transforms too: older map component overrides must not detach the face.
+    HeadPivot->SetRelativeLocation(FVector(0,0,105));
+    ToyParts[1]->SetRelativeLocation(FVector(-6,0,0));
+    for(int32 Side=0;Side<2;++Side)
+    {
+        const float Sign=Side==0?-1.f:1.f;
+        ToyParts[2+Side]->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cone.Cone")));
+        ToyParts[2+Side]->SetRelativeLocation(FVector(-1,Sign*27,36));
+        ToyParts[2+Side]->SetRelativeScale3D(FVector(.32,.38,.46));
+        ToyParts[4+Side]->SetRelativeLocation(FVector(-39,Sign*17,12));
+        ToyParts[13+Side]->SetRelativeLocation(FVector(-42,Sign*9,-5));
+        Tint(ToyParts[13+Side],FLinearColor(.92f,.75f,.51f));
+        ToyParts[15+Side]->SetRelativeRotation(FRotator(0,0,Sign*18));
+    }
+    ToyParts[6]->SetRelativeLocation(FVector(-49,0,2));
+    ToyParts[6]->SetRelativeScale3D(FVector(.08,.115,.08));
+    Tint(ToyParts[6],FLinearColor(.42f,.09f,.09f));
+    ToyParts[10]->SetRelativeLocation(FVector(-49,0,-13));
+    ToyParts[9]->SetRelativeLocation(FVector(-36,0,58));
+    ToyParts[9]->SetRelativeScale3D(FVector(.08,.28,.08));
+    Tint(ToyParts[9],FLinearColor(.22f,.035f,.025f));
     for(const auto& Dot:GhostDots) Tint(Dot,FLinearColor(.4f,.8f,.7f),true);
     for(const auto& Puff:Puffs) Tint(Puff,FLinearColor(.22f,.8f,.08f),true);
     for(const auto& Tail:Trails) Tint(Tail,FLinearColor(.18f,.7f,1.f),true);
@@ -86,7 +119,7 @@ void ACardRoomStage::BeginPlay()
     Super::BeginPlay();
     // Native component lists are transient: old map arrays must not override new native parts.
     // Initialize new component materials even when loading an already-saved level.
-    if(!ensure(ToyParts.Num()==13 && PlayedCards.Num()==17 && CardMarks.Num()==17))
+    if(!ensure(ToyParts.Num()==18 && PlayedCards.Num()==17 && CardMarks.Num()==17))
     {
         SetActorTickEnabled(false); return;
     }
@@ -104,7 +137,7 @@ bool ACardRoomStage::CollectReward()
     if(!Run.Collect()) return false;
     Sound(TEXT("S_Reward")); OnCollectibleClaimed.Broadcast(RoomId); return true;
 }
-void ACardRoomStage::RestartEncounter() { Run.Restart(); bWinSent=false; bReplySound=false; }
+void ACardRoomStage::RestartEncounter() { Run.Restart(); bWinSent=false; bReplySound=false; bImpactSent=false; }
 bool ACardRoomStage::IsPlayerNear(const FVector& Position) const
 {
     return FVector::Dist2D(Position,GetApproachLocation())<180 && FMath::Abs(Position.Z-GetApproachLocation().Z)<220;
@@ -129,8 +162,8 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     ToyRoot->SetVisibility(bBattle || Phase==ECardRoomPhase::Arrival,true);
     const float Time=GetWorld()->GetTimeSeconds();
     const float Breath=FMath::Sin(Time*2.25f);
-    FVector Offset(180,0,112+Breath*1.6f); FRotator Spin(0,0,FMath::Sin(Time*1.1f)*1.2f);
-    ToyRoot->SetRelativeScale3D(FVector(1.f,1.f+Breath*.012f,1.f+Breath*.015f));
+    FVector Offset=OpponentBaseLocal+FVector(0,0,Breath*1.6f); FRotator Spin(0,0,FMath::Sin(Time*1.1f)*1.2f);
+    ToyRoot->SetRelativeScale3D(FVector(1.f,1.f+Breath*.012f,1.f+Breath*.015f)*FMath::Max(.1f,OpponentScale));
     const bool Hurt=bResolve && T>=1.f && T<1.75f;
     const bool Angry=bResolve && Run.Round==3 && T>=1.75f;
     const bool Panic=(Run.Round==4 && (bResolve || Run.Staged.Num()>4));
@@ -139,29 +172,33 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     float EyeHeight=Blink?.018f:Hurt?.035f:Sick?.05f:Panic?.24f:Angry?.085f:.13f;
     ToyParts[4]->SetRelativeScale3D(FVector(.085f,Panic?.18f:.12f,EyeHeight));
     ToyParts[5]->SetRelativeScale3D(FVector(.085f,Panic?.18f:.12f,EyeHeight));
-    ToyParts[10]->SetRelativeScale3D(FVector(.075f,Hurt?.28f:Sick?.19f:Panic?.26f:.22f,Hurt?.25f:Sick?.18f:Panic?.30f:Angry?.16f:.055f));
+    ToyParts[10]->SetRelativeScale3D(FVector(.075f,Hurt?.17f:Sick?.13f:Panic?.18f:.11f,Hurt?.15f:Sick?.10f:Panic?.20f:Angry?.09f:.035f));
     for(int32 i=0;i<2;++i)
     {
         const float Side=i==0?-1.f:1.f;
         ToyParts[11+i]->SetRelativeRotation(FRotator(0,0,Side*(Angry?32.f:Sick?-25.f:Hurt?-36.f:Panic?-18.f:-7.f)));
-        ToyParts[11+i]->SetRelativeLocation(FVector(-38,Side*17,113+(Panic?8.f:Hurt?5.f:0.f)));
+        ToyParts[11+i]->SetRelativeLocation(FVector(-38,Side*17,23+(Panic?6.f:Hurt?4.f:0.f)));
         ToyParts[2+i]->SetRelativeRotation(FRotator(Sick?25.f:Breath*4.f,0,Side*(Hurt?38.f:Panic?23.f:Angry?-12.f:4.f)));
         ToyParts[7+i]->SetRelativeLocation(FVector(-23,Side*(Panic?60.f:49.f),40+(Panic?35.f:Angry?22.f:Breath*2.f)));
     }
     // Selected cards become physical cards and arc onto the table on confirm.
     for(int32 i=0;i<PlayedCards.Num();++i)
     {
-        const bool Visible=bResolve && Run.Hand.IsValidIndex(i) && T<1.7f;
+        const bool Visible=bResolve && Run.Hand.IsValidIndex(i) && T<2.2f;
         PlayedCards[i]->SetVisibility(Visible,true);
         if(!Visible) continue;
-        const float A=FMath::Clamp((T-i*.012f)/.55f,0.f,1.f);
+        const float A=FMath::Clamp((T-i*.008f)/.62f,0.f,1.f);
         const float Centered=i-(Run.Hand.Num()-1)*.5f;
-        const FVector From(-220,Centered*6.f,138);
-        const FVector To(Run.Round==4?-35+(i/6)*30.f:-10.f,Run.Round==4?(i%6-2.5f)*21.f:Centered*32.f,116+i*.08f);
-        FVector Pos=FMath::Lerp(From,To,A); Pos.Z+=FMath::Sin(A*PI)*48.f;
+        const FVector From(-220,Centered*6.f,138.f);
+        const FVector To=GetCardLanding(i,Run.Hand.Num());
+        FVector Pos=FMath::Lerp(From,To,A); Pos.Z+=FMath::Sin(A*PI)*CardThrowHeight;
         PlayedCards[i]->SetRelativeLocation(Pos);
-        PlayedCards[i]->SetRelativeRotation(FRotator((1-A)*65.f,Centered*3.f+(1-A)*-35.f,0));
-        PlayedCards[i]->SetRelativeScale3D(FVector(.38,.26,.006)*(T>1.35f?FMath::Max(.01f,(1.7f-T)/.35f):1.f));
+        // Present the illustrated face during the arc, then flatten only near touchdown.
+        const float AirPitch=75.f+FMath::Sin(A*PI)*8.f;
+        const float LandingBlend=FMath::SmoothStep(.70f,1.f,A);
+        PlayedCards[i]->SetRelativeRotation(FRotator(FMath::Lerp(AirPitch,CardLandingPitch,LandingBlend),(1-A)*(Centered*3.f-35.f),0));
+        const float Fade=T>1.9f?FMath::Max(.01f,(2.2f-T)/.3f):1.f;
+        PlayedCards[i]->SetRelativeScale3D(FVector(.38,.26,.006)*CardVisualScale*Fade);
         const auto Type=Run.Hand[i];
         // Symbol meshes carry their own layered palette, matching the hand icons.
         CardMarks[i]->SetStaticMesh(SymbolMeshes[static_cast<int32>(Type)]);
@@ -169,7 +206,31 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     if(Phase==ECardRoomPhase::Arrival) Offset.Z+=FMath::Square(1-FMath::Clamp(T/1.0f,0.f,1.f))*430;
     if(bResolve && T>=1 && T<1.7f) { Offset.Y+=FMath::Sin(T*60)*7; Spin.Pitch=FMath::Sin(T*45)*8; }
     if(Run.bPoisoned) { Spin.Pitch=15; Offset.Y+=FMath::Sin(GetWorld()->GetTimeSeconds()*3)*4; }
-    if(bResolve && Run.Round==4 && T>1) { float Fly=T-1; Offset+=FVector(Fly*220,Fly*100,Fly*180); Spin.Roll=Fly*360; if(T>3) ToyRoot->SetVisibility(false,true); }
+    bool bReachedWall=false;
+    if(bResolve && Run.Round==4 && T>1)
+    {
+        const float Fly=FMath::Clamp((T-1)/1.7f,0.f,1.f);
+        Offset=FMath::Lerp(Offset,OpponentExitLocal,Fly);Offset.Z+=FMath::Sin(Fly*PI)*120;Spin.Roll=Fly*600;
+        Offset-=Spin.RotateVector(OpponentExitCenterOffset*ToyRoot->GetRelativeScale3D())*Fly;
+        bReachedWall=Fly>=1;
+    }
     ToyRoot->SetRelativeLocation(Offset); ToyRoot->SetRelativeRotation(Spin);
+    if(bReachedWall) {ToyRoot->SetVisibility(false,true);if(!bImpactSent){bImpactSent=true;OnOpponentWallImpact.Broadcast(RoomId);}}
+    if(auto* PC=GetWorld()->GetFirstPlayerController())
+    {
+        FVector Eye;FRotator Aim;PC->GetPlayerViewPoint(Eye,Aim);
+        const FVector To=ToyRoot->GetComponentTransform().InverseTransformPosition(Eye)-FVector(0,0,105);
+        const float Pitch=FMath::RadiansToDegrees(FMath::Atan2(-To.Z,FMath::Max(1.,-To.X)));
+        const float Yaw=FMath::RadiansToDegrees(FMath::Atan2(-To.Y,FMath::Max(1.,-To.X)));
+        HeadPivot->SetRelativeRotation(FMath::RInterpTo(HeadPivot->GetRelativeRotation(),FRotator(FMath::Clamp(Pitch,-20.f,20.f),FMath::Clamp(Yaw,-30.f,30.f),0),DeltaSeconds,3.f));
+    }
     TickEffects();
+}
+
+FVector ACardRoomStage::GetCardLanding(int32 Index,int32 Count) const
+{
+    const float Unit=FMath::Max(1.f,CardVisualScale);
+    const float X=Count>6?(Index/6-1)*42.f*Unit:0.f;
+    const float Y=Count>6?(Index%6-2.5f)*31.f*Unit:(Index-(Count-1)*.5f)*32.f*Unit;
+    return CardLandingLocal+FRotator(CardLandingPitch,0,0).RotateVector(FVector(X,Y,1.2f+Index*.035f));
 }

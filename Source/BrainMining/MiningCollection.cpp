@@ -1,4 +1,5 @@
 #include "MiningCollection.h"
+#include "BrainMiningPlayerController.h"
 #include "SMiningCollectionView.h"
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
@@ -55,12 +56,16 @@ bool AMiningCollectionField::InitializePlayer()
         CollectionContext->MapKey(Action,Key); Input->BindAction(Action,ETriggerEvent::Started,this,Callback);
     };
     Bind(EKeys::E,&AMiningCollectionField::CollectTarget);
-    Bind(EKeys::Tab,&AMiningCollectionField::ToggleCatalogue);
+    Bind(CatalogueKey,&AMiningCollectionField::ToggleCatalogue);
     Bind(EKeys::R,&AMiningCollectionField::ResetCollection);
     Subsystem->AddMappingContext(CollectionContext,50);
-    if(!bAreaManaged) if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) Move->FlightSettings.bEnabled=true;
+    if(!bAreaManaged)
+    {
+        if (auto* Controller = Cast<ABrainMiningPlayerController>(Player)) Controller->SetMiningGUIEnabled(false);
+        if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->FlightSettings.bEnabled=true; Move->FlightSettings.bEnableHeat=false; }
+    }
     StartTransform=Player->GetPawn()->GetActorTransform();
-    Mining->Reach=400; Mining->Radius=115; Mining->DownwardOffset=25;
+    if (!bSharedAbilities) { Mining->Reach=400; Mining->Radius=115; Mining->DownwardOffset=25; }
     // The field owns fall recovery so inventory and excavation reset together.
     Mining->FallResetDistance=0;
     Inventory.Init(0,4);
@@ -103,7 +108,7 @@ void AMiningCollectionField::SetAreaActive(bool bActive)
 
 void AMiningCollectionField::SpawnField()
 {
-    if(bDeepField) { SpawnDeepField(); return; }
+    if(bDeepField) { SpawnDeepField(); RelocateGeneratedField(); return; }
     ActiveSeed=RandomSeed>0?RandomSeed:FMath::RandRange(1,MAX_int32-1);
     FRandomStream Random(ActiveSeed);
     int Ids[4]={0,1,2,3};
@@ -161,13 +166,25 @@ void AMiningCollectionField::SpawnField()
     Tutorial->BuildModel(2); Tutorial->bReleased=true; Tutorial->Exposure=1;
     Tutorial->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     Items.Add(Tutorial); Spawned.Add(Tutorial);
+    RelocateGeneratedField();
+}
+
+void AMiningCollectionField::RelocateGeneratedField()
+{
+    const FVector Offset=GetActorLocation();
+    if(Offset.IsNearlyZero()) return;
+    for(AActor* Actor:Spawned)
+        if(IsValid(Actor) && !Actor->GetAttachParentActor()) Actor->AddActorWorldOffset(Offset,false,nullptr,ETeleportType::TeleportPhysics);
+    for(AMiningCollectible* Item:Items) if(IsValid(Item)) Item->BuriedTransform.AddToTranslation(Offset);
+    for(auto& Ant:Ants) Ant.Start+=Offset;
+    for(auto& Clue:Clues) Clue.Support+=Offset;
 }
 
 void AMiningCollectionField::Tick(float Dt)
 {
     Super::Tick(Dt);
     if(!bInitialized) { bInitialized=InitializePlayer(); return; }
-    if(bAreaManaged && !bAreaActive) return;
+    if(bAreaManaged && !bAreaActive && !bCatalogueOpen) return;
     ToastRemaining=FMath::Max(0.f,ToastRemaining-Dt);
     if(!Player||!Player->GetPawn()) return;
     if(bCatalogueOpen)
@@ -217,7 +234,7 @@ void AMiningCollectionField::CollectTarget()
     AMiningCollectible* Item=Target; Item->SetHighlighted(false); Item->bCollected=true;
     Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);
     ++Inventory[Item->ItemId]; SelectedId=Item->ItemId; Target=nullptr;
-    Toast=FString::Printf(TEXT("已收集 · %s     [ Tab ] 打开图鉴"),*AMiningCollectible::ItemName(Item->ItemId)); ToastRemaining=5;
+    Toast=FString::Printf(TEXT("已收集 · %s     [ %s ] 打开图鉴"),*AMiningCollectible::ItemName(Item->ItemId),*CatalogueKey.GetDisplayName().ToString()); ToastRemaining=5;
 }
 int32 AMiningCollectionField::UniqueCount() const { int32 N=0; for(int32 Count:Inventory) N+=Count>0; return N; }
 void AMiningCollectionField::ToggleCatalogue() { if(bInitialized) SetCatalogueOpen(!bCatalogueOpen); }

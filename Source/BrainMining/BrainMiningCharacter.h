@@ -12,8 +12,11 @@ class USkeletalMeshComponent;
 class UCameraComponent;
 class UInputAction;
 class UMiningComponent;
+class UMiningToolEffectsComponent;
 class USpotLightComponent;
 class UPointLightComponent;
+class USceneComponent;
+class UStaticMeshComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -38,10 +41,33 @@ class ABrainMiningCharacter : public ACharacter
 	TObjectPtr<UMiningComponent> MiningComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<UMiningToolEffectsComponent> MiningToolEffects;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<USpotLightComponent> MiningLight;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<UPointLightComponent> MiningFillLight;
+
+	/** Artist-editable camera mounts. Animation is applied to separate child components. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<USceneComponent> PickaxeMount;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<USceneComponent> PickaxeMotion;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<UStaticMeshComponent> PickaxeModel;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<USceneComponent> DrillRightMount;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<USceneComponent> DrillRightMotion;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<UStaticMeshComponent> DrillRightModel;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<USceneComponent> DrillLeftMount;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<USceneComponent> DrillLeftMotion;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<UStaticMeshComponent> DrillLeftModel;
 
 protected:
 
@@ -113,6 +139,11 @@ public:
 
 	/** Returns first person camera component **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+	USceneComponent* GetPickaxeMotion() const { return PickaxeMotion; }
+	UStaticMeshComponent* GetPickaxeModel() const { return PickaxeModel; }
+	USceneComponent* GetDrillRightMotion() const { return DrillRightMotion; }
+	UStaticMeshComponent* GetDrillRightModel() const { return DrillRightModel; }
+	USceneComponent* GetDrillLeftMotion() const { return DrillLeftMotion; }
+	UStaticMeshComponent* GetDrillLeftModel() const { return DrillLeftModel; }
 
 };
-

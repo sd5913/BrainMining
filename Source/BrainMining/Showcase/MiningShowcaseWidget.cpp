@@ -29,7 +29,7 @@ TSharedRef<SWidget> UMiningShowcaseWidget::RebuildWidget()
             + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(24)
             [SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
                 .BorderBackgroundColor(FLinearColor(.04f,.03f,.015f,.9f)).Padding(16)
-                .Visibility_Lambda([this]() { return Director.IsValid() && IsValid(Director->TreasureField) && !Director->IsModalActive() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
+                .Visibility_Lambda([this]() { return Director.IsValid() && IsValid(Director->TreasureField) && Director->GetActiveKind() != EMiningShowcaseKind::Mining && Director->GetActiveKind() != EMiningShowcaseKind::Treasure && !Director->IsModalActive() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
                 [SNew(STextBlock).Font(MiningShowcaseUI::Font(22)).ColorAndOpacity(FLinearColor(1,.78f,.25f))
                     .Text_Lambda([this]() { return FText::FromString(FString::Printf(TEXT("金币  %lld"), Director.IsValid() && Director->TreasureField ? Director->TreasureField->Coins : 0LL)); })]]
             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,76)

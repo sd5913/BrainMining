@@ -1,5 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
+#include "InputCoreTypes.h"
 #include "GameFramework/Actor.h"
 #include "MiningPrototypeGameMode.h"
 #include "MiningCollection.generated.h"
@@ -74,6 +75,9 @@ class BRAINMINING_API AMiningCollectionField : public AActor
 public:
     AMiningCollectionField();
     UPROPERTY(EditAnywhere, Category="Collection") bool bAreaManaged = false;
+    UPROPERTY(EditAnywhere, Category="Collection") FKey CatalogueKey = EKeys::Tab;
+    UPROPERTY(EditAnywhere, Category="Collection") bool bSharedAbilities = false;
+    UPROPERTY(EditAnywhere, Category="Collection") bool bShowExplorationHUD = true;
     void SetAreaActive(bool bActive);
     bool IsAreaActive() const { return bAreaActive; }
     virtual void Tick(float DeltaSeconds) override;
@@ -110,6 +114,7 @@ private:
     bool InitializePlayer();
     void SpawnField();
     void SpawnDeepField();
+    void RelocateGeneratedField();
     void TickAmbient(float DeltaSeconds);
     void TickClues(float DeltaSeconds);
     void MakeFeather(ADiggableRock* Rock, FVector Support, float Angle);

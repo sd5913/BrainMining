@@ -53,7 +53,7 @@ void AMiningCollectionField::SpawnDeepField()
             if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionStainedEarth")))
             {
                 auto* M=UMaterialInstanceDynamic::Create(Base,Rock);
-                M->SetScalarParameterValue(TEXT("TrailY"),Y);
+                M->SetScalarParameterValue(TEXT("TrailY"),Y+GetActorLocation().Y);
                 Rock->RockMaterial=M; Rock->RockMesh->SetMaterial(0,M);
             }
         }

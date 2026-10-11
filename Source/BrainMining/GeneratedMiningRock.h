@@ -50,7 +50,8 @@ public:
 	virtual void ResetRock() override;
 	virtual bool MineSphere(FVector WorldCenter, float WorldRadius) override;
 	void SetGeneratedMesh(UE::Geometry::FDynamicMesh3&& Mesh);
-	bool SetChunkedMesh(const UE::Geometry::FDynamicMesh3& Mesh, double Length, bool bSpatial = false);
+	// Large external regions explicitly opt in; existing mining grids keep their original limit.
+	bool SetChunkedMesh(const UE::Geometry::FDynamicMesh3& Mesh, double Length, bool bSpatial = false, bool bAllowLargeSpatialGrid = false);
 	void ApplySpatialGrid(const UE::Geometry::FDynamicMesh3& Mesh, TSharedPtr<const MiningChunks::FSpatialGrid, ESPMode::ThreadSafe> Grid);
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
 	int32 LastRebuiltEditorChunks = 0;

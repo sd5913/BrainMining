@@ -14,6 +14,7 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
 {
     if(!Owner.IsValid()) return Layer;
     const auto* F=Owner.Get();
+    if (!F->bCatalogueOpen && !F->bShowExplorationHUD) return Layer;
     const FVector2D Size=G.GetLocalSize(); const float S=FMath::Min(Size.X/1600,Size.Y/900); const FVector2D O=(Size-FVector2D(1600,900)*S)*.5;
     const FLinearColor Ink(.018f,.034f,.038f,1),Panel(.035f,.057f,.061f,1),Cream(.89f,.91f,.81f,1),Muted(.47f,.58f,.54f,1),Gold(.93f,.62f,.23f,1),Mint(.24f,.72f,.57f,1);
     const auto* Brush=FCoreStyle::Get().GetBrush("WhiteBrush"); int L=Layer;
@@ -46,7 +47,7 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
     }
     Text(TEXT("奇物收藏"),60,37,24,Cream);
     Text(FString::Printf(TEXT("%02d / 04"),F->UniqueCount()),230,48,12,Muted);
-    Box(1408,35,132,44,Panel); Text(TEXT("返回  Tab"),1426,47,14,Cream);
+    Box(1408,35,132,44,Panel); Text(FString::Printf(TEXT("返回  %s"),*F->CatalogueKey.GetDisplayName().ToString()),1426,47,14,Cream);
     Box(1178,140,1,585,FLinearColor(.12f,.17f,.16f));
     if(Owned)
     {
@@ -109,7 +110,7 @@ FReply SMiningCollectionView::OnMouseWheel(const FGeometry& G,const FPointerEven
 FReply SMiningCollectionView::OnKeyDown(const FGeometry&,const FKeyEvent& E)
 {
     if(!Owner.IsValid()) return FReply::Unhandled();
-    if(E.GetKey()==EKeys::Tab||E.GetKey()==EKeys::Escape) { bDragging=false; Owner->ToggleCatalogue(); return FReply::Handled().ReleaseMouseCapture(); }
+    if(E.GetKey()==Owner->CatalogueKey||E.GetKey()==EKeys::Escape) { bDragging=false; Owner->ToggleCatalogue(); return FReply::Handled().ReleaseMouseCapture(); }
     if(E.GetKey()==EKeys::F) Owner->ResetPreview();
     return FReply::Handled();
 }

@@ -62,12 +62,65 @@ void UMiningComponent::BindInput(UEnhancedInputComponent* Input)
 		MiningContext->MapKey(ResetAction, EKeys::R);
 		MiningContext->MapKey(PreviewAction, EKeys::F1);
 	}
-	if(!IsEncounterBlocked())InputSubsystem->AddMappingContext(MiningContext, 1);
+	if(!IsEncounterBlocked() && bInputContextEnabled)InputSubsystem->AddMappingContext(MiningContext, 1);
 	Input->BindAction(MineAction, ETriggerEvent::Started, this, &UMiningComponent::StartMining);
 	Input->BindAction(MineAction, ETriggerEvent::Completed, this, &UMiningComponent::StopMining);
 	Input->BindAction(MineAction, ETriggerEvent::Canceled, this, &UMiningComponent::StopMining);
 	Input->BindAction(ResetAction, ETriggerEvent::Started, this, &UMiningComponent::ResetField);
 	Input->BindAction(PreviewAction, ETriggerEvent::Started, this, &UMiningComponent::TogglePreview);
+}
+
+float UMiningComponent::GetMiningInterval() const
+{
+	const float Base = FMath::IsFinite(Interval) ? FMath::Max(0.1f, Interval) : 0.3f;
+	const float Multiplier = FMath::IsFinite(DrillIntervalMultiplier) ? FMath::Clamp(DrillIntervalMultiplier, 0.1f, 1.f) : 0.4f;
+	return bDrillMode ? FMath::Max(0.04f, Base * Multiplier) : Base;
+}
+
+float UMiningComponent::GetMiningRadius() const
+{
+	const float Base = FMath::IsFinite(Radius) ? FMath::Max(1.f, Radius) : 160.f;
+	const float Multiplier = FMath::IsFinite(DrillRadiusMultiplier) ? FMath::Clamp(DrillRadiusMultiplier, 1.f, 2.f) : 1.2f;
+	return bDrillMode ? Base * Multiplier : Base;
+}
+
+void UMiningComponent::SetDrillMode(bool bNewDrillMode)
+{
+	if (bDrillMode == bNewDrillMode) return;
+	// Require a fresh left click after switching: selecting a tool never drills
+	// automatically or carries a held mining click across the handoff.
+	StopMining();
+	bDrillMode = bNewDrillMode;
+	OnToolModeChanged.Broadcast(bDrillMode);
+}
+
+bool UMiningComponent::ActivateDrill()
+{
+	if (!GetWorld() || bInputSuspended || IsEncounterBlocked()) return false;
+	UpdateDrillSession();
+	if (bDrillMode || GetDrillCooldownRemaining() > 0) return false;
+	const double Now = GetWorld()->GetTimeSeconds();
+	const float UseTime = FMath::IsFinite(DrillUseDuration) ? FMath::Max(.1f, DrillUseDuration) : 10.f;
+	const float CooldownTime = FMath::IsFinite(DrillCooldownDuration) ? FMath::Max(.1f, DrillCooldownDuration) : 10.f;
+	DrillUseEnds = Now + UseTime;
+	DrillCooldownEnds = DrillUseEnds + CooldownTime;
+	SetDrillMode(true);
+	return true;
+}
+
+float UMiningComponent::GetDrillUseRemaining() const
+{
+	return bDrillMode && GetWorld() ? FMath::Max(0.0, DrillUseEnds - GetWorld()->GetTimeSeconds()) : 0.f;
+}
+
+float UMiningComponent::GetDrillCooldownRemaining() const
+{
+	return !bDrillMode && GetWorld() ? FMath::Max(0.0, DrillCooldownEnds - GetWorld()->GetTimeSeconds()) : 0.f;
+}
+
+void UMiningComponent::UpdateDrillSession()
+{
+	if (bDrillMode && GetWorld()->GetTimeSeconds() >= DrillUseEnds) SetDrillMode(false);
 }
 
 void UMiningComponent::RefreshTarget()
@@ -92,12 +145,13 @@ void UMiningComponent::RefreshTarget()
 void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	UpdateDrillSession();
     if(IsEncounterBlocked())return;
 	RefreshTarget();
 	if (bShowPreview && IsValid(TargetRock))
 	{
 		const FVector Center = GetCutCenter();
-		DrawDebugSphere(GetWorld(), Center, Radius, 16, FColor(60, 220, 210), false, -1.0f, 0, 0.6f);
+		DrawDebugSphere(GetWorld(), Center, GetMiningRadius(), 16, FColor(60, 220, 210), false, -1.0f, 0, 0.6f);
 	}
 	if (bMiningHeld && GetWorld()->GetTimeSeconds() >= NextMineTime)
 	{
@@ -112,11 +166,13 @@ void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 bool UMiningComponent::TryMine()
 {
     if(IsEncounterBlocked())return false;
-	if (GetWorld()->GetTimeSeconds() < NextMineTime)
+	if (bInputSuspended || GetWorld()->GetTimeSeconds() < NextMineTime)
 	{
 		return false;
 	}
-	NextMineTime = GetWorld()->GetTimeSeconds() + FMath::Max(0.1f, Interval);
+	const float MiningInterval = GetMiningInterval();
+	NextMineTime = GetWorld()->GetTimeSeconds() + MiningInterval;
+	OnMiningAttempt.Broadcast(MiningInterval);
 	RefreshTarget();
 	if (!IsValid(TargetRock))
 	{
@@ -125,26 +181,35 @@ bool UMiningComponent::TryMine()
 	}
 	LastMinedRock = TargetRock;
 	const FVector Center = GetCutCenter();
-	const bool bResult = TargetRock->MineSphere(Center, Radius);
+	const FHitResult MiningHit = TargetHit;
+	const bool bResult = TargetRock->MineSphere(Center, GetMiningRadius());
 	Status = TargetRock->LastStatus;
+	if (bResult) OnMiningHit.Broadcast(MiningHit);
 	return bResult;
 }
 
 void UMiningComponent::StartMining()
 {
     if(IsEncounterBlocked())return;
+	if (bInputSuspended) return;
 	bMiningHeld = true;
 	TryMine();
 }
 
 FVector UMiningComponent::GetCutCenter() const
 {
-	return TargetHit.ImpactPoint - TargetHit.ImpactNormal * Radius * InsetFraction - FVector(0.0, 0.0, DownwardOffset);
+	return TargetHit.ImpactPoint - TargetHit.ImpactNormal * GetMiningRadius() * InsetFraction - FVector(0.0, 0.0, DownwardOffset);
 }
 
 void UMiningComponent::StopMining()
 {
 	bMiningHeld = false;
+}
+
+void UMiningComponent::SetInputSuspended(bool bSuspended)
+{
+	bInputSuspended = bSuspended;
+	if (bSuspended) StopMining();
 }
 
 void UMiningComponent::TogglePreview()
@@ -157,6 +222,8 @@ void UMiningComponent::ResetField()
 {
     if(IsEncounterBlocked())return;
 	StopMining();
+	DrillUseEnds = DrillCooldownEnds = 0;
+	SetDrillMode(false);
 	if (bHasInitialTransform && !bScopedReset)
 	{
 		GetOwner()->SetActorTransform(InitialTransform, false, nullptr, ETeleportType::TeleportPhysics);
@@ -188,6 +255,8 @@ void UMiningComponent::ResetField()
 	LastMinedRock = nullptr;
 	TargetRock = nullptr;
 	Status = TEXT("Field reset");
+	OnMiningReset.Broadcast();
+	OnFieldReset.Broadcast();
 }
 
 void UMiningComponent::PushEncounterBlock()
@@ -199,5 +268,14 @@ void UMiningComponent::PopEncounterBlock()
 {
     if(EncounterBlockCount==0)return;
     --EncounterBlockCount;
-    if(!IsEncounterBlocked() && InputSubsystem.IsValid() && MiningContext)InputSubsystem->AddMappingContext(MiningContext,1);
+    if(!IsEncounterBlocked() && bInputContextEnabled && InputSubsystem.IsValid() && MiningContext)InputSubsystem->AddMappingContext(MiningContext,1);
+}
+
+void UMiningComponent::SetInputContextEnabled(bool bEnabled)
+{
+    bInputContextEnabled = bEnabled;
+    CancelMining();
+    if (!InputSubsystem.IsValid() || !MiningContext) return;
+    if (bEnabled && !IsEncounterBlocked()) InputSubsystem->AddMappingContext(MiningContext, 1);
+    else InputSubsystem->RemoveMappingContext(MiningContext);
 }

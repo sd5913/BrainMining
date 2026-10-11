@@ -18,8 +18,14 @@ class BRAINMINING_API UMiningEncounterPlayerPolicy : public UActorComponent
 public:
     void Apply(APawn* Pawn);
     void Release();
+    void SetMiningAllowed(bool bAllowed);
+    bool IsMiningAllowed() const {return !bMiningBlocked;}
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 private:
+    bool bMiningBlocked=false,bOldFlightEnabled=false,bOldInputContextEnabled=true;
+    bool bFallResetOverridden=false;
+    bool bOldHeatEnabled = true;
+    float OldFallResetDistance=0.f;
     TWeakObjectPtr<APawn> AppliedPawn;
     TWeakObjectPtr<UMiningComponent> Mining;
     TWeakObjectPtr<UMiningCharacterMovementComponent> Movement;
@@ -33,6 +39,8 @@ class BRAINMINING_API AMiningEncounterPlayerController : public ABrainMiningPlay
 public:
     AMiningEncounterPlayerController();
     virtual void BeginPlay() override;
+    void MinePressed();
+    void MineReleased();
     virtual void SetupInputComponent() override;
     virtual void OnPossess(APawn* Pawn) override;
     virtual void OnUnPossess() override;
@@ -48,4 +56,5 @@ class BRAINMINING_API AMiningEncounterGameMode : public AGameModeBase
     GENERATED_BODY()
 public:
     AMiningEncounterGameMode();
+    virtual void StartPlay() override;
 };

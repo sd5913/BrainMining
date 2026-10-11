@@ -14,6 +14,9 @@ public:
 	AMiningHUD();
 	virtual void BeginPlay() override;
 	virtual void DrawHUD() override;
+	/** Keep the original diagnostics available without covering the designed GUI. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Developer Map")
+	bool bShowDeveloperOverlay = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Developer Map")
 	TObjectPtr<UMiningDeveloperMapComponent> DeveloperMap;

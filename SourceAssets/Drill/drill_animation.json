@@ -1,0 +1,200 @@
+{
+  "source": "drill.fbx",
+  "source_action": "drill_press_01_gear_b.001|drill_press_01_gear_b.001|drill_press_01_gear_b动作",
+  "fps": 30.0,
+  "source_frame_range": [
+    1.0,
+    16.0
+  ],
+  "duration": 0.5,
+  "rotation_degrees": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.03333333333333333,
+      51.428583836791546
+    ],
+    [
+      0.06666666666666667,
+      102.85716767358309
+    ],
+    [
+      0.1,
+      154.28577029339485
+    ],
+    [
+      0.13333333333333333,
+      205.7143148565987
+    ],
+    [
+      0.16666666666666666,
+      257.14289357074836
+    ],
+    [
+      0.2,
+      308.5714859452764
+    ],
+    [
+      0.23333333333333334,
+      360.00002367829103
+    ],
+    [
+      0.26666666666666666,
+      370.42813793701305
+    ],
+    [
+      0.3,
+      380.8561975542217
+    ],
+    [
+      0.3333333333333333,
+      391.2843118129437
+    ],
+    [
+      0.36666666666666664,
+      401.71242607166573
+    ],
+    [
+      0.4,
+      412.14048568887443
+    ],
+    [
+      0.43333333333333335,
+      422.56859994759645
+    ],
+    [
+      0.4666666666666667,
+      432.9966595648051
+    ],
+    [
+      0.5,
+      443.4247738235272
+    ]
+  ],
+  "cycle_delta_degrees": 443.4247738235272,
+  "source_scale_baked": [
+    [
+      0.6793042421340942,
+      0.6793042421340942,
+      0.6793042421340942
+    ],
+    [
+      0.6793042421340942,
+      0.6793042421340942,
+      0.6793042421340942
+    ]
+  ],
+  "size_normalization": 4.3207471222165035,
+  "textures": {
+    "T_Drill_0_Normal": {
+      "role": "Normal",
+      "file": "T_Drill_0_Normal.jpg"
+    },
+    "T_Drill_1_Normal": {
+      "role": "Normal",
+      "file": "T_Drill_1_Normal.jpg"
+    },
+    "T_Drill_1_Roughness": {
+      "role": "Roughness",
+      "file": "T_Drill_1_Roughness.jpg"
+    },
+    "T_Drill_1_Metallic": {
+      "role": "Metallic",
+      "file": "T_Drill_1_Metallic.jpg"
+    }
+  },
+  "materials": [
+    {
+      "name": "M_Drill",
+      "source_name": "Stylized Metal Base",
+      "textures": {
+        "Normal": "T_Drill_0_Normal"
+      },
+      "mapping": {
+        "Normal": {
+          "scale": [
+            2.0,
+            2.0,
+            1.0
+          ],
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "base_color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "metallic": 0.33534741401672363,
+      "roughness": 0.5
+    },
+    {
+      "name": "M_Drill_Body",
+      "source_name": "Stylized Metal Base.002",
+      "textures": {
+        "Normal": "T_Drill_1_Normal",
+        "Roughness": "T_Drill_1_Roughness",
+        "Metallic": "T_Drill_1_Metallic"
+      },
+      "mapping": {
+        "Normal": {
+          "scale": [
+            2.0,
+            2.0,
+            1.0
+          ],
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "Roughness": {
+          "scale": [
+            2.0,
+            2.0,
+            1.0
+          ],
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "Metallic": {
+          "scale": [
+            2.0,
+            2.0,
+            1.0
+          ],
+          "location": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "base_color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "metallic": 0.0,
+      "roughness": 0.5
+    }
+  ],
+  "slot_materials": [
+    "Stylized Metal Base.002",
+    "Stylized Metal Base"
+  ],
+  "animation_axis": "Unreal local +X",
+  "loop_method": "Add each completed cycle angle to retain continuous rotation"
+}

@@ -1,0 +1,6896 @@
+{
+  "version": "GiantHallV04",
+  "map": "/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P1",
+  "roomBounds": {
+    "relativeLocation": {
+      "x": 12776.4,
+      "y": 0,
+      "z": 9010
+    },
+    "boxExtent": {
+      "x": 12776.4,
+      "y": 17600,
+      "z": 9200
+    }
+  },
+  "changes": [
+    {
+      "name": "StaticMeshActor_0",
+      "label": "Giant / Floor foundation",
+      "before": {
+        "location": {
+          "x": 16228,
+          "y": 3600,
+          "z": -90
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 196.56,
+          "y": 248.16000000000005,
+          "z": 1.7999999999999998
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19176.4,
+          "y": 3600,
+          "z": -90
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 255.52800000000002,
+          "y": 347.42400000000004,
+          "z": 1.7999999999999998
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_1",
+      "label": "Giant / Oak floor plank 00",
+      "before": {
+        "location": {
+          "x": 6946,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 7109.8,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_2",
+      "label": "Giant / Oak floor plank 01",
+      "before": {
+        "location": {
+          "x": 8038,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 8529.4,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_3",
+      "label": "Giant / Oak floor plank 02",
+      "before": {
+        "location": {
+          "x": 9130,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 9949,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_4",
+      "label": "Giant / Oak floor plank 03",
+      "before": {
+        "location": {
+          "x": 10222,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 11368.6,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_5",
+      "label": "Giant / Oak floor plank 04",
+      "before": {
+        "location": {
+          "x": 11314,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 12788.2,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_6",
+      "label": "Giant / Oak floor plank 05",
+      "before": {
+        "location": {
+          "x": 12406,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 14207.8,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_7",
+      "label": "Giant / Oak floor plank 06",
+      "before": {
+        "location": {
+          "x": 13498,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 15627.4,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_8",
+      "label": "Giant / Oak floor plank 07",
+      "before": {
+        "location": {
+          "x": 14590,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17047,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_9",
+      "label": "Giant / Oak floor plank 08",
+      "before": {
+        "location": {
+          "x": 15682,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 18466.6,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_10",
+      "label": "Giant / Oak floor plank 09",
+      "before": {
+        "location": {
+          "x": 16774,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19886.2,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_11",
+      "label": "Giant / Oak floor plank 10",
+      "before": {
+        "location": {
+          "x": 17866,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 21305.800000000003,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_12",
+      "label": "Giant / Oak floor plank 11",
+      "before": {
+        "location": {
+          "x": 18958,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 22725.4,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_13",
+      "label": "Giant / Oak floor plank 12",
+      "before": {
+        "location": {
+          "x": 20050,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 24145,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_14",
+      "label": "Giant / Oak floor plank 13",
+      "before": {
+        "location": {
+          "x": 21142,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 25564.600000000002,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_15",
+      "label": "Giant / Oak floor plank 14",
+      "before": {
+        "location": {
+          "x": 22234,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 26984.2,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_16",
+      "label": "Giant / Oak floor plank 15",
+      "before": {
+        "location": {
+          "x": 23326,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 28403.8,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_17",
+      "label": "Giant / Oak floor plank 16",
+      "before": {
+        "location": {
+          "x": 24418,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 29823.4,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_18",
+      "label": "Giant / Oak floor plank 17",
+      "before": {
+        "location": {
+          "x": 25510,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 10.452000000000002,
+          "y": 248.16000000000005,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 31243,
+          "y": 3600,
+          "z": 6
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.587600000000002,
+          "y": 347.42400000000004,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_19",
+      "label": "Giant / Back plaster wall",
+      "before": {
+        "location": {
+          "x": 25822,
+          "y": 3600,
+          "z": 7050
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 3.9000000000000004,
+          "y": 248.16000000000005,
+          "z": 141
+        }
+      },
+      "after": {
+        "location": {
+          "x": 31648.600000000002,
+          "y": 3600,
+          "z": 9165
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 5.07,
+          "y": 347.42400000000004,
+          "z": 183.3
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_20",
+      "label": "Giant / Side plaster wall",
+      "before": {
+        "location": {
+          "x": 16228,
+          "y": -8808.000000000002,
+          "z": 7050
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 196.56,
+          "y": 6.6000000000000005,
+          "z": 141
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19176.4,
+          "y": -13771.2,
+          "z": 9165
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 255.52800000000002,
+          "y": 9.24,
+          "z": 183.3
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_21",
+      "label": "Giant / Wall dado",
+      "before": {
+        "location": {
+          "x": 16228,
+          "y": -8398.536000000002,
+          "z": 2700
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 193.44000000000003,
+          "y": 5.280000000000001,
+          "z": 54
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19176.4,
+          "y": -13197.950400000002,
+          "z": 3510
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 251.47200000000004,
+          "y": 7.392000000000001,
+          "z": 70.2
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_22",
+      "label": "Giant / Dado upper moulding",
+      "before": {
+        "location": {
+          "x": 16228,
+          "y": -8150.375999999999,
+          "z": 5490
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 193.44000000000003,
+          "y": 3.168,
+          "z": 3.0000000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19176.4,
+          "y": -12850.526399999999,
+          "z": 7137
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 251.47200000000004,
+          "y": 4.4352,
+          "z": 3.900000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_23",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 7648,
+          "y": -8113.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 8022.4,
+          "y": -12798.412799999998,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_24",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 9676,
+          "y": -8113.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 10658.8,
+          "y": -12798.412799999998,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_25",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 11704,
+          "y": -8113.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 13295.2,
+          "y": -12798.412799999998,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_26",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 13732,
+          "y": -8113.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 15931.6,
+          "y": -12798.412799999998,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_27",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 15760,
+          "y": -8113.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 18568,
+          "y": -12798.412799999998,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_28",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 17788,
+          "y": -8113.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 21204.4,
+          "y": -12798.412799999998,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_29",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 19816,
+          "y": -8113.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 23840.8,
+          "y": -12798.412799999998,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_30",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 21844,
+          "y": -8113.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 26477.2,
+          "y": -12798.412799999998,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_31",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 23872,
+          "y": -8113.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 29113.600000000002,
+          "y": -12798.412799999998,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_32",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 25900,
+          "y": -8113.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 31750,
+          "y": -12798.412799999998,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_33",
+      "label": "Giant / Side plaster wall",
+      "before": {
+        "location": {
+          "x": 16228,
+          "y": 16008.000000000002,
+          "z": 7050
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 196.56,
+          "y": 6.6000000000000005,
+          "z": 141
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19176.4,
+          "y": 20971.2,
+          "z": 9165
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 255.52800000000002,
+          "y": 9.24,
+          "z": 183.3
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_34",
+      "label": "Giant / Wall dado",
+      "before": {
+        "location": {
+          "x": 16228,
+          "y": 15598.536000000004,
+          "z": 2700
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 193.44000000000003,
+          "y": 5.280000000000001,
+          "z": 54
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19176.4,
+          "y": 20397.950400000005,
+          "z": 3510
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 251.47200000000004,
+          "y": 7.392000000000001,
+          "z": 70.2
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_35",
+      "label": "Giant / Dado upper moulding",
+      "before": {
+        "location": {
+          "x": 16228,
+          "y": 15350.376,
+          "z": 5490
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 193.44000000000003,
+          "y": 3.168,
+          "z": 3.0000000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19176.4,
+          "y": 20050.5264,
+          "z": 7137
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 251.47200000000004,
+          "y": 4.4352,
+          "z": 3.900000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_36",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 7648,
+          "y": 15313.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 8022.4,
+          "y": 19998.4128,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_37",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 9676,
+          "y": 15313.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 10658.8,
+          "y": 19998.4128,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_38",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 11704,
+          "y": 15313.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 13295.2,
+          "y": 19998.4128,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_39",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 13732,
+          "y": 15313.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 15931.6,
+          "y": 19998.4128,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_40",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 15760,
+          "y": 15313.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 18568,
+          "y": 19998.4128,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_41",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 17788,
+          "y": 15313.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 21204.4,
+          "y": 19998.4128,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_42",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 19816,
+          "y": 15313.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 23840.8,
+          "y": 19998.4128,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_43",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 21844,
+          "y": 15313.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 26477.2,
+          "y": 19998.4128,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_44",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 23872,
+          "y": 15313.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 29113.600000000002,
+          "y": 19998.4128,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_45",
+      "label": "Giant / Wall panel stile",
+      "before": {
+        "location": {
+          "x": 25900,
+          "y": 15313.152,
+          "z": 2670
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.092,
+          "y": 2.6400000000000006,
+          "z": 52.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 31750,
+          "y": 19998.4128,
+          "z": 3471
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.4196000000000002,
+          "y": 3.6960000000000006,
+          "z": 68.64000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_46",
+      "label": "Giant / Ceiling",
+      "before": {
+        "location": {
+          "x": 16228,
+          "y": 3600,
+          "z": 14460
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 199.68000000000004,
+          "y": 253.44,
+          "z": 6.6000000000000005
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19176.4,
+          "y": 3600,
+          "z": 18698
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 259.58400000000006,
+          "y": 354.816,
+          "z": 8.580000000000002
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_47",
+      "label": "Giant / Ceiling beam",
+      "before": {
+        "location": {
+          "x": 9052,
+          "y": 3600,
+          "z": 13560
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 4.368,
+          "y": 248.16000000000005,
+          "z": 9.6
+        }
+      },
+      "after": {
+        "location": {
+          "x": 9847.6,
+          "y": 3600,
+          "z": 17628
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 5.678400000000001,
+          "y": 347.42400000000004,
+          "z": 12.48
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_48",
+      "label": "Giant / Ceiling beam",
+      "before": {
+        "location": {
+          "x": 15604,
+          "y": 3600,
+          "z": 13560
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 4.368,
+          "y": 248.16000000000005,
+          "z": 9.6
+        }
+      },
+      "after": {
+        "location": {
+          "x": 18365.2,
+          "y": 3600,
+          "z": 17628
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 5.678400000000001,
+          "y": 347.42400000000004,
+          "z": 12.48
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_49",
+      "label": "Giant / Ceiling beam",
+      "before": {
+        "location": {
+          "x": 22156,
+          "y": 3600,
+          "z": 13560
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 4.368,
+          "y": 248.16000000000005,
+          "z": 9.6
+        }
+      },
+      "after": {
+        "location": {
+          "x": 26882.8,
+          "y": 3600,
+          "z": 17628
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 5.678400000000001,
+          "y": 347.42400000000004,
+          "z": 12.48
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_50",
+      "label": "Giant / Room carpet border",
+      "before": {
+        "location": {
+          "x": 16852,
+          "y": 3600,
+          "z": 30
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 120.12,
+          "y": 147.83999999999997,
+          "z": 0.24
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19987.6,
+          "y": 3600,
+          "z": 30
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 156.156,
+          "y": 206.97599999999994,
+          "z": 0.24
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_51",
+      "label": "Giant / Room carpet",
+      "before": {
+        "location": {
+          "x": 16852,
+          "y": 3600,
+          "z": 48
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 116.68800000000002,
+          "y": 142.032,
+          "z": 0.18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19987.6,
+          "y": 3600,
+          "z": 48
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 151.69440000000003,
+          "y": 198.8448,
+          "z": 0.18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_52",
+      "label": "Giant / Rug stitch",
+      "before": {
+        "location": {
+          "x": 16852,
+          "y": -2868.000000000001,
+          "z": 60
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 110.136,
+          "y": 0.792,
+          "z": 0.06
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19987.6,
+          "y": -5455.200000000001,
+          "z": 60
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 143.1768,
+          "y": 1.1088,
+          "z": 0.06
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_53",
+      "label": "Giant / Rug stitch",
+      "before": {
+        "location": {
+          "x": 16852,
+          "y": 10068,
+          "z": 60
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 110.136,
+          "y": 0.792,
+          "z": 0.06
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19987.6,
+          "y": 12655.199999999999,
+          "z": 60
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 143.1768,
+          "y": 1.1088,
+          "z": 0.06
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_64",
+      "label": "Giant / Velvet chair seat",
+      "before": {
+        "location": {
+          "x": 8200,
+          "y": -5000,
+          "z": 1620
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.6,
+          "y": 26.400000000000002,
+          "z": 4.5
+        }
+      },
+      "after": {
+        "location": {
+          "x": 9600,
+          "y": -10900,
+          "z": 1620
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.6,
+          "y": 26.400000000000002,
+          "z": 4.5
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_65",
+      "label": "Giant / Chair back",
+      "before": {
+        "location": {
+          "x": 7120,
+          "y": -5000,
+          "z": 3480
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 4.2,
+          "y": 26.7,
+          "z": 37.800000000000004
+        }
+      },
+      "after": {
+        "location": {
+          "x": 8520,
+          "y": -10900,
+          "z": 3480
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 4.2,
+          "y": 26.7,
+          "z": 37.800000000000004
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_66",
+      "label": "Giant / Chair back cushion",
+      "before": {
+        "location": {
+          "x": 7420,
+          "y": -5000,
+          "z": 3630
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.7,
+          "y": 21.9,
+          "z": 28.799999999999997
+        }
+      },
+      "after": {
+        "location": {
+          "x": 8820,
+          "y": -10900,
+          "z": 3630
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.7,
+          "y": 21.9,
+          "z": 28.799999999999997
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_67",
+      "label": "Giant / Chair foot",
+      "before": {
+        "location": {
+          "x": 7330,
+          "y": -5960,
+          "z": 750
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.7,
+          "y": 2.7,
+          "z": 15
+        }
+      },
+      "after": {
+        "location": {
+          "x": 8730,
+          "y": -11860,
+          "z": 750
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.7,
+          "y": 2.7,
+          "z": 15
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_68",
+      "label": "Giant / Chair foot",
+      "before": {
+        "location": {
+          "x": 7330,
+          "y": -4040,
+          "z": 750
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.7,
+          "y": 2.7,
+          "z": 15
+        }
+      },
+      "after": {
+        "location": {
+          "x": 8730,
+          "y": -9940,
+          "z": 750
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.7,
+          "y": 2.7,
+          "z": 15
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_69",
+      "label": "Giant / Chair foot",
+      "before": {
+        "location": {
+          "x": 9070,
+          "y": -5960,
+          "z": 750
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.7,
+          "y": 2.7,
+          "z": 15
+        }
+      },
+      "after": {
+        "location": {
+          "x": 10470,
+          "y": -11860,
+          "z": 750
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.7,
+          "y": 2.7,
+          "z": 15
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_70",
+      "label": "Giant / Chair foot",
+      "before": {
+        "location": {
+          "x": 9070,
+          "y": -4040,
+          "z": 750
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.7,
+          "y": 2.7,
+          "z": 15
+        }
+      },
+      "after": {
+        "location": {
+          "x": 10470,
+          "y": -9940,
+          "z": 750
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.7,
+          "y": 2.7,
+          "z": 15
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_78",
+      "label": "Giant / Bookcase back",
+      "before": {
+        "location": {
+          "x": 18790,
+          "y": -1350,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 6.6000000000000005,
+          "y": 67.5,
+          "z": 102.6
+        }
+      },
+      "after": {
+        "location": {
+          "x": 18790,
+          "y": -5150,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 6.6000000000000005,
+          "y": 67.5,
+          "z": 102.6
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_79",
+      "label": "Giant / Bookcase upright",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": -4800,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 3.9000000000000004,
+          "z": 106.49999999999999
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": -8600,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 3.9000000000000004,
+          "z": 106.49999999999999
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_80",
+      "label": "Giant / Bookcase upright",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": 2100,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 3.9000000000000004,
+          "z": 106.49999999999999
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": -1700,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 3.9000000000000004,
+          "z": 106.49999999999999
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_81",
+      "label": "Giant / Bookcase shelf",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": -1350,
+          "z": 870
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": -5150,
+          "z": 870
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_82",
+      "label": "Giant / Bookcase shelf",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": -1350,
+          "z": 3570
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": -5150,
+          "z": 3570
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_83",
+      "label": "Giant / Bookcase shelf",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": -1350,
+          "z": 6270
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": -5150,
+          "z": 6270
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_84",
+      "label": "Giant / Bookcase shelf",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": -1350,
+          "z": 8970
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": -5150,
+          "z": 8970
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_85",
+      "label": "Giant / Bookcase shelf",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": -1350,
+          "z": 10650
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": -5150,
+          "z": 10650
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_86",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -4290,
+          "z": 1755
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 12.9
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -8090,
+          "z": 1755
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 12.9
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_87",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -3660,
+          "z": 2010
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -7460,
+          "z": 2010
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_88",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -3030,
+          "z": 1830
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 14.399999999999999
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -6830,
+          "z": 1830
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 14.399999999999999
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_89",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -2400,
+          "z": 2085
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 19.5
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -6200,
+          "z": 2085
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 19.5
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_90",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -1770,
+          "z": 1905
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 15.9
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -5570,
+          "z": 1905
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 15.9
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_91",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -1140,
+          "z": 2160
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 20.999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -4940,
+          "z": 2160
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 20.999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_92",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -510,
+          "z": 1980
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 17.4
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -4310,
+          "z": 1980
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 17.4
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_93",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 120,
+          "z": 1800
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 13.8
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -3680,
+          "z": 1800
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 13.8
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_94",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 750,
+          "z": 2055
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 18.900000000000002
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -3050,
+          "z": 2055
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 18.900000000000002
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_95",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 1380,
+          "z": 1875
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 15.3
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -2420,
+          "z": 1875
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 15.3
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_96",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -4290,
+          "z": 4620
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 16.200000000000003
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -8090,
+          "z": 4620
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 16.200000000000003
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_97",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -3660,
+          "z": 4875
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 21.299999999999997
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -7460,
+          "z": 4875
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 21.299999999999997
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_98",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -3030,
+          "z": 4695
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 17.7
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -6830,
+          "z": 4695
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 17.7
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_99",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -2400,
+          "z": 4515
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 14.1
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -6200,
+          "z": 4515
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 14.1
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_100",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -1770,
+          "z": 4770
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 19.2
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -5570,
+          "z": 4770
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 19.2
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_101",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -1140,
+          "z": 4590
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 15.600000000000001
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -4940,
+          "z": 4590
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 15.600000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_102",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -510,
+          "z": 4845
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 20.7
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -4310,
+          "z": 4845
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 20.7
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_103",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 120,
+          "z": 4665
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 17.1
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -3680,
+          "z": 4665
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 17.1
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_104",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 750,
+          "z": 4485
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 13.5
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -3050,
+          "z": 4485
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 13.5
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_105",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 1380,
+          "z": 4740
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 18.599999999999998
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -2420,
+          "z": 4740
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 18.599999999999998
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_106",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -4290,
+          "z": 7485
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 19.5
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -8090,
+          "z": 7485
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 19.5
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_107",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -3660,
+          "z": 7305
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 15.9
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -7460,
+          "z": 7305
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 15.9
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_108",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -3030,
+          "z": 7560
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 20.999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -6830,
+          "z": 7560
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 20.999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_109",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -2400,
+          "z": 7380
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 17.4
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -6200,
+          "z": 7380
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 17.4
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_110",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -1770,
+          "z": 7200
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 13.8
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -5570,
+          "z": 7200
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 13.8
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_111",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -1140,
+          "z": 7455
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 18.900000000000002
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -4940,
+          "z": 7455
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 18.900000000000002
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_112",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": -510,
+          "z": 7275
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 15.3
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -4310,
+          "z": 7275
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 15.3
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_113",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 120,
+          "z": 7530
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 20.4
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -3680,
+          "z": 7530
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 20.4
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_114",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 750,
+          "z": 7350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 16.8
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -3050,
+          "z": 7350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 16.8
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_115",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 1380,
+          "z": 7170
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 13.200000000000001
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": -2420,
+          "z": 7170
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 13.200000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_116",
+      "label": "Giant / Bookcase back",
+      "before": {
+        "location": {
+          "x": 18790,
+          "y": 8550,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 6.6000000000000005,
+          "y": 67.5,
+          "z": 102.6
+        }
+      },
+      "after": {
+        "location": {
+          "x": 18790,
+          "y": 12350,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 6.6000000000000005,
+          "y": 67.5,
+          "z": 102.6
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_117",
+      "label": "Giant / Bookcase upright",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": 5100,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 3.9000000000000004,
+          "z": 106.49999999999999
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": 8900,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 3.9000000000000004,
+          "z": 106.49999999999999
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_118",
+      "label": "Giant / Bookcase upright",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": 12000,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 3.9000000000000004,
+          "z": 106.49999999999999
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": 15800,
+          "z": 5430
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 3.9000000000000004,
+          "z": 106.49999999999999
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_119",
+      "label": "Giant / Bookcase shelf",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": 8550,
+          "z": 870
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": 12350,
+          "z": 870
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_120",
+      "label": "Giant / Bookcase shelf",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": 8550,
+          "z": 3570
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": 12350,
+          "z": 3570
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_121",
+      "label": "Giant / Bookcase shelf",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": 8550,
+          "z": 6270
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": 12350,
+          "z": 6270
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_122",
+      "label": "Giant / Bookcase shelf",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": 8550,
+          "z": 8970
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": 12350,
+          "z": 8970
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_123",
+      "label": "Giant / Bookcase shelf",
+      "before": {
+        "location": {
+          "x": 17800,
+          "y": 8550,
+          "z": 10650
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17800,
+          "y": 12350,
+          "z": 10650
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 24.9,
+          "y": 72.30000000000001,
+          "z": 3.5999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_124",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 5610,
+          "z": 1755
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 12.9
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 9410,
+          "z": 1755
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 12.9
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_125",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 6240,
+          "z": 2010
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 18
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 10040,
+          "z": 2010
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 18
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_126",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 6870,
+          "z": 1830
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 14.399999999999999
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 10670,
+          "z": 1830
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 14.399999999999999
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_127",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 7500,
+          "z": 2085
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 19.5
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 11300,
+          "z": 2085
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 19.5
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_128",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 8130,
+          "z": 1905
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 15.9
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 11930,
+          "z": 1905
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 15.9
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_129",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 8760,
+          "z": 2160
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 20.999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 12560,
+          "z": 2160
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 20.999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_130",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 9390,
+          "z": 1980
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 17.4
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 13190,
+          "z": 1980
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 17.4
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_131",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 10020,
+          "z": 1800
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 13.8
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 13820,
+          "z": 1800
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 13.8
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_132",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 10650,
+          "z": 2055
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 18.900000000000002
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 14450,
+          "z": 2055
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 18.900000000000002
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_133",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 11280,
+          "z": 1875
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 15.3
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 15080,
+          "z": 1875
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 15.3
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_134",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 5610,
+          "z": 4620
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 16.200000000000003
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 9410,
+          "z": 4620
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 16.200000000000003
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_135",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 6240,
+          "z": 4875
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 21.299999999999997
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 10040,
+          "z": 4875
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 21.299999999999997
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_136",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 6870,
+          "z": 4695
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 17.7
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 10670,
+          "z": 4695
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 17.7
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_137",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 7500,
+          "z": 4515
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 14.1
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 11300,
+          "z": 4515
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 14.1
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_138",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 8130,
+          "z": 4770
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 19.2
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 11930,
+          "z": 4770
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 19.2
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_139",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 8760,
+          "z": 4590
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 15.600000000000001
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 12560,
+          "z": 4590
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 15.600000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_140",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 9390,
+          "z": 4845
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 20.7
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 13190,
+          "z": 4845
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 20.7
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_141",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 10020,
+          "z": 4665
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 17.1
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 13820,
+          "z": 4665
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 17.1
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_142",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 10650,
+          "z": 4485
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 13.5
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 14450,
+          "z": 4485
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 13.5
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_143",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 11280,
+          "z": 4740
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 18.599999999999998
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 15080,
+          "z": 4740
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 18.599999999999998
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_144",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 5610,
+          "z": 7485
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 19.5
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 9410,
+          "z": 7485
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 19.5
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_145",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 6240,
+          "z": 7305
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 15.9
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 10040,
+          "z": 7305
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 15.9
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_146",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 6870,
+          "z": 7560
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 20.999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 10670,
+          "z": 7560
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 20.999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_147",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 7500,
+          "z": 7380
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 17.4
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 11300,
+          "z": 7380
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 17.4
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_148",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 8130,
+          "z": 7200
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 13.8
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 11930,
+          "z": 7200
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 13.8
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_149",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 8760,
+          "z": 7455
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 18.900000000000002
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 12560,
+          "z": 7455
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 18.900000000000002
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_150",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 9390,
+          "z": 7275
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 15.3
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 13190,
+          "z": 7275
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 15.3
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_151",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 10020,
+          "z": 7530
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 20.4
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 13820,
+          "z": 7530
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 4.5,
+          "z": 20.4
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_152",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 10650,
+          "z": 7350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 16.8
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 14450,
+          "z": 7350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 5.1,
+          "z": 16.8
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_153",
+      "label": "Giant / Book",
+      "before": {
+        "location": {
+          "x": 17620,
+          "y": 11280,
+          "z": 7170
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 13.200000000000001
+        }
+      },
+      "after": {
+        "location": {
+          "x": 17620,
+          "y": 15080,
+          "z": 7170
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.200000000000001,
+          "y": 3.9000000000000004,
+          "z": 13.200000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_154",
+      "label": "Giant / Ember sign backing",
+      "before": {
+        "location": {
+          "x": 25000,
+          "y": 3600,
+          "z": 7296
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 3.6479999999999997,
+          "y": 68.39999999999999,
+          "z": 23.028000000000002
+        }
+      },
+      "after": {
+        "location": {
+          "x": 31250,
+          "y": 3600,
+          "z": 8796
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 3.6479999999999997,
+          "y": 68.39999999999999,
+          "z": 23.028000000000002
+        }
+      }
+    },
+    {
+      "name": "TextRenderActor_0",
+      "label": "Giant / Room title",
+      "before": {
+        "location": {
+          "x": 25000,
+          "y": 3600,
+          "z": 7638
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 180,
+          "roll": 0
+        },
+        "scale": {
+          "x": 3.8,
+          "y": 3.8,
+          "z": 3.8
+        }
+      },
+      "after": {
+        "location": {
+          "x": 31040,
+          "y": 3600,
+          "z": 9138
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 180,
+          "roll": 0
+        },
+        "scale": {
+          "x": 3.8,
+          "y": 3.8,
+          "z": 3.8
+        }
+      }
+    },
+    {
+      "name": "TextRenderActor_1",
+      "label": "Giant / Room subtitle",
+      "before": {
+        "location": {
+          "x": 25000,
+          "y": 3600,
+          "z": 6840
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 180,
+          "roll": 0
+        },
+        "scale": {
+          "x": 3.8,
+          "y": 3.8,
+          "z": 3.8
+        }
+      },
+      "after": {
+        "location": {
+          "x": 31040,
+          "y": 3600,
+          "z": 8340
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 180,
+          "roll": 0
+        },
+        "scale": {
+          "x": 3.8,
+          "y": 3.8,
+          "z": 3.8
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_155",
+      "label": "Giant / Window frame",
+      "before": {
+        "location": {
+          "x": 14512,
+          "y": -7804.800000000001,
+          "z": 8700
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 32.760000000000005,
+          "y": 3.168,
+          "z": 55.8
+        }
+      },
+      "after": {
+        "location": {
+          "x": 16945.6,
+          "y": -12366.720000000001,
+          "z": 11310
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 42.58800000000001,
+          "y": 4.4352,
+          "z": 72.53999999999999
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_156",
+      "label": "Giant / Night window",
+      "before": {
+        "location": {
+          "x": 14512,
+          "y": -7553.894399999998,
+          "z": 8700
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 29.328,
+          "y": 1.584,
+          "z": 49.2
+        }
+      },
+      "after": {
+        "location": {
+          "x": 16945.6,
+          "y": -12015.452159999995,
+          "z": 11310
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 38.126400000000004,
+          "y": 2.2176,
+          "z": 63.96000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_157",
+      "label": "Giant / Window mullion",
+      "before": {
+        "location": {
+          "x": 14512,
+          "y": -7394.227200000001,
+          "z": 8700
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 0.9359999999999999,
+          "y": 1.584,
+          "z": 49.2
+        }
+      },
+      "after": {
+        "location": {
+          "x": 16945.6,
+          "y": -11791.918080000001,
+          "z": 11310
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.2167999999999999,
+          "y": 2.2176,
+          "z": 63.96000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_158",
+      "label": "Giant / Window crossbar",
+      "before": {
+        "location": {
+          "x": 14512,
+          "y": -7394.227200000001,
+          "z": 8700
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 29.328,
+          "y": 1.584,
+          "z": 1.7999999999999998
+        }
+      },
+      "after": {
+        "location": {
+          "x": 16945.6,
+          "y": -11791.918080000001,
+          "z": 11310
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 38.126400000000004,
+          "y": 2.2176,
+          "z": 2.34
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_159",
+      "label": "Giant / Window frame",
+      "before": {
+        "location": {
+          "x": 14512,
+          "y": 15004.800000000001,
+          "z": 8700
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 32.760000000000005,
+          "y": 3.168,
+          "z": 55.8
+        }
+      },
+      "after": {
+        "location": {
+          "x": 16945.6,
+          "y": 19566.72,
+          "z": 11310
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 42.58800000000001,
+          "y": 4.4352,
+          "z": 72.53999999999999
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_160",
+      "label": "Giant / Night window",
+      "before": {
+        "location": {
+          "x": 14512,
+          "y": 14753.894399999997,
+          "z": 8700
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 29.328,
+          "y": 1.584,
+          "z": 49.2
+        }
+      },
+      "after": {
+        "location": {
+          "x": 16945.6,
+          "y": 19215.452159999993,
+          "z": 11310
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 38.126400000000004,
+          "y": 2.2176,
+          "z": 63.96000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_161",
+      "label": "Giant / Window mullion",
+      "before": {
+        "location": {
+          "x": 14512,
+          "y": 14594.227200000001,
+          "z": 8700
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 0.9359999999999999,
+          "y": 1.584,
+          "z": 49.2
+        }
+      },
+      "after": {
+        "location": {
+          "x": 16945.6,
+          "y": 18991.918080000003,
+          "z": 11310
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.2167999999999999,
+          "y": 2.2176,
+          "z": 63.96000000000001
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_162",
+      "label": "Giant / Window crossbar",
+      "before": {
+        "location": {
+          "x": 14512,
+          "y": 14594.227200000001,
+          "z": 8700
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 29.328,
+          "y": 1.584,
+          "z": 1.7999999999999998
+        }
+      },
+      "after": {
+        "location": {
+          "x": 16945.6,
+          "y": 18991.918080000003,
+          "z": 11310
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 38.126400000000004,
+          "y": 2.2176,
+          "z": 2.34
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_163",
+      "label": "Giant / Sideboard",
+      "before": {
+        "location": {
+          "x": 10540,
+          "y": -4500,
+          "z": 2160
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 76.5,
+          "y": 33.6,
+          "z": 41.99999999999999
+        }
+      },
+      "after": {
+        "location": {
+          "x": 11540,
+          "y": -7300,
+          "z": 2160
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 76.5,
+          "y": 33.6,
+          "z": 41.99999999999999
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_164",
+      "label": "Giant / Sideboard top",
+      "before": {
+        "location": {
+          "x": 10540,
+          "y": -4500,
+          "z": 4440
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 81.00000000000001,
+          "y": 38.4,
+          "z": 3.5999999999999996
+        }
+      },
+      "after": {
+        "location": {
+          "x": 11540,
+          "y": -7300,
+          "z": 4440
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 81.00000000000001,
+          "y": 38.4,
+          "z": 3.5999999999999996
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_165",
+      "label": "Giant / Sideboard drawer",
+      "before": {
+        "location": {
+          "x": 7690,
+          "y": -2700,
+          "z": 2820
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 22.199999999999996,
+          "y": 0.8999999999999999,
+          "z": 20.7
+        }
+      },
+      "after": {
+        "location": {
+          "x": 8690,
+          "y": -5500,
+          "z": 2820
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 22.199999999999996,
+          "y": 0.8999999999999999,
+          "z": 20.7
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_166",
+      "label": "Giant / Drawer knob",
+      "before": {
+        "location": {
+          "x": 7690,
+          "y": -2550,
+          "z": 2970
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 2.1
+        }
+      },
+      "after": {
+        "location": {
+          "x": 8690,
+          "y": -5350,
+          "z": 2970
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 2.1
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_167",
+      "label": "Giant / Sideboard drawer",
+      "before": {
+        "location": {
+          "x": 10540,
+          "y": -2700,
+          "z": 2820
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 22.199999999999996,
+          "y": 0.8999999999999999,
+          "z": 20.7
+        }
+      },
+      "after": {
+        "location": {
+          "x": 11540,
+          "y": -5500,
+          "z": 2820
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 22.199999999999996,
+          "y": 0.8999999999999999,
+          "z": 20.7
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_168",
+      "label": "Giant / Drawer knob",
+      "before": {
+        "location": {
+          "x": 10540,
+          "y": -2550,
+          "z": 2970
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 2.1
+        }
+      },
+      "after": {
+        "location": {
+          "x": 11540,
+          "y": -5350,
+          "z": 2970
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 2.1
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_169",
+      "label": "Giant / Sideboard drawer",
+      "before": {
+        "location": {
+          "x": 13390,
+          "y": -2700,
+          "z": 2820
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 22.199999999999996,
+          "y": 0.8999999999999999,
+          "z": 20.7
+        }
+      },
+      "after": {
+        "location": {
+          "x": 14390,
+          "y": -5500,
+          "z": 2820
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 22.199999999999996,
+          "y": 0.8999999999999999,
+          "z": 20.7
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_170",
+      "label": "Giant / Drawer knob",
+      "before": {
+        "location": {
+          "x": 13390,
+          "y": -2550,
+          "z": 2970
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 2.1
+        }
+      },
+      "after": {
+        "location": {
+          "x": 14390,
+          "y": -5350,
+          "z": 2970
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 2.1
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_171",
+      "label": "Giant / Candlestick",
+      "before": {
+        "location": {
+          "x": 8020,
+          "y": -4080,
+          "z": 5010
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.4,
+          "y": 2.4,
+          "z": 10.2
+        }
+      },
+      "after": {
+        "location": {
+          "x": 9020,
+          "y": -6880,
+          "z": 5010
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.4,
+          "y": 2.4,
+          "z": 10.2
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_172",
+      "label": "Giant / Candle",
+      "before": {
+        "location": {
+          "x": 8020,
+          "y": -4080,
+          "z": 5880
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 9.6
+        }
+      },
+      "after": {
+        "location": {
+          "x": 9020,
+          "y": -6880,
+          "z": 5880
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 9.6
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_173",
+      "label": "Giant / Candle flame",
+      "before": {
+        "location": {
+          "x": 8020,
+          "y": -4080,
+          "z": 6450
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.2,
+          "y": 1.2,
+          "z": 2.4
+        }
+      },
+      "after": {
+        "location": {
+          "x": 9020,
+          "y": -6880,
+          "z": 6450
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.2,
+          "y": 1.2,
+          "z": 2.4
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_174",
+      "label": "Giant / Candlestick",
+      "before": {
+        "location": {
+          "x": 8680,
+          "y": -4080,
+          "z": 5010
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.4,
+          "y": 2.4,
+          "z": 10.2
+        }
+      },
+      "after": {
+        "location": {
+          "x": 9680,
+          "y": -6880,
+          "z": 5010
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.4,
+          "y": 2.4,
+          "z": 10.2
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_175",
+      "label": "Giant / Candle",
+      "before": {
+        "location": {
+          "x": 8680,
+          "y": -4080,
+          "z": 5880
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 9.6
+        }
+      },
+      "after": {
+        "location": {
+          "x": 9680,
+          "y": -6880,
+          "z": 5880
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 9.6
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_176",
+      "label": "Giant / Candle flame",
+      "before": {
+        "location": {
+          "x": 8680,
+          "y": -4080,
+          "z": 6450
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.2,
+          "y": 1.2,
+          "z": 2.4
+        }
+      },
+      "after": {
+        "location": {
+          "x": 9680,
+          "y": -6880,
+          "z": 6450
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.2,
+          "y": 1.2,
+          "z": 2.4
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_177",
+      "label": "Giant / Candlestick",
+      "before": {
+        "location": {
+          "x": 9340,
+          "y": -4080,
+          "z": 5010
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.4,
+          "y": 2.4,
+          "z": 10.2
+        }
+      },
+      "after": {
+        "location": {
+          "x": 10340,
+          "y": -6880,
+          "z": 5010
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.4,
+          "y": 2.4,
+          "z": 10.2
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_178",
+      "label": "Giant / Candle",
+      "before": {
+        "location": {
+          "x": 9340,
+          "y": -4080,
+          "z": 5880
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 9.6
+        }
+      },
+      "after": {
+        "location": {
+          "x": 10340,
+          "y": -6880,
+          "z": 5880
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 2.1,
+          "y": 2.1,
+          "z": 9.6
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_179",
+      "label": "Giant / Candle flame",
+      "before": {
+        "location": {
+          "x": 9340,
+          "y": -4080,
+          "z": 6450
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.2,
+          "y": 1.2,
+          "z": 2.4
+        }
+      },
+      "after": {
+        "location": {
+          "x": 10340,
+          "y": -6880,
+          "z": 6450
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.2,
+          "y": 1.2,
+          "z": 2.4
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_180",
+      "label": "Giant / Decorative pot",
+      "before": {
+        "location": {
+          "x": 15500,
+          "y": 10000,
+          "z": 1950
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 21.6,
+          "y": 21.6,
+          "z": 33.6
+        }
+      },
+      "after": {
+        "location": {
+          "x": 14500,
+          "y": 15000,
+          "z": 1950
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 21.6,
+          "y": 21.6,
+          "z": 33.6
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_181",
+      "label": "Giant / Plant leaves",
+      "before": {
+        "location": {
+          "x": 14870,
+          "y": 9340,
+          "z": 4350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      },
+      "after": {
+        "location": {
+          "x": 13870,
+          "y": 14340,
+          "z": 4350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_182",
+      "label": "Giant / Plant leaves",
+      "before": {
+        "location": {
+          "x": 15500,
+          "y": 9340,
+          "z": 5040
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      },
+      "after": {
+        "location": {
+          "x": 14500,
+          "y": 14340,
+          "z": 5040
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_183",
+      "label": "Giant / Plant leaves",
+      "before": {
+        "location": {
+          "x": 16130,
+          "y": 9340,
+          "z": 4350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      },
+      "after": {
+        "location": {
+          "x": 15130,
+          "y": 14340,
+          "z": 4350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_184",
+      "label": "Giant / Plant leaves",
+      "before": {
+        "location": {
+          "x": 14870,
+          "y": 10000,
+          "z": 5040
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      },
+      "after": {
+        "location": {
+          "x": 13870,
+          "y": 15000,
+          "z": 5040
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_185",
+      "label": "Giant / Plant leaves",
+      "before": {
+        "location": {
+          "x": 15500,
+          "y": 10000,
+          "z": 4350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      },
+      "after": {
+        "location": {
+          "x": 14500,
+          "y": 15000,
+          "z": 4350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_186",
+      "label": "Giant / Plant leaves",
+      "before": {
+        "location": {
+          "x": 16130,
+          "y": 10000,
+          "z": 5040
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      },
+      "after": {
+        "location": {
+          "x": 15130,
+          "y": 15000,
+          "z": 5040
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_187",
+      "label": "Giant / Plant leaves",
+      "before": {
+        "location": {
+          "x": 14870,
+          "y": 10660,
+          "z": 4350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      },
+      "after": {
+        "location": {
+          "x": 13870,
+          "y": 15660,
+          "z": 4350
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 13.5,
+          "y": 13.5,
+          "z": 30
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_188",
+      "label": "Giant / Pendant cord",
+      "before": {
+        "location": {
+          "x": 14200,
+          "y": 3600,
+          "z": 12450
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 0.46799999999999997,
+          "y": 0.792,
+          "z": 19.5
+        }
+      },
+      "after": {
+        "location": {
+          "x": 14200,
+          "y": 3600,
+          "z": 14872
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 0.46799999999999997,
+          "y": 0.792,
+          "z": 67.94
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_191",
+      "label": "Giant / Pendant cord",
+      "before": {
+        "location": {
+          "x": 20986,
+          "y": 3600,
+          "z": 12450
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 0.46799999999999997,
+          "y": 0.792,
+          "z": 19.5
+        }
+      },
+      "after": {
+        "location": {
+          "x": 20986,
+          "y": 3600,
+          "z": 14872
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 0.46799999999999997,
+          "y": 0.792,
+          "z": 67.94
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_194",
+      "label": "Giant / Pendant cord",
+      "before": {
+        "location": {
+          "x": 19192,
+          "y": -5772,
+          "z": 12450
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 0.46799999999999997,
+          "y": 0.792,
+          "z": 19.5
+        }
+      },
+      "after": {
+        "location": {
+          "x": 19192,
+          "y": -5772,
+          "z": 14872
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 0.46799999999999997,
+          "y": 0.792,
+          "z": 67.94
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_197",
+      "label": "Giant / Pendant cord",
+      "before": {
+        "location": {
+          "x": 20128,
+          "y": 13236,
+          "z": 12450
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 0.46799999999999997,
+          "y": 0.792,
+          "z": 19.5
+        }
+      },
+      "after": {
+        "location": {
+          "x": 20128,
+          "y": 13236,
+          "z": 14872
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 0.46799999999999997,
+          "y": 0.792,
+          "z": 67.94
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_297",
+      "label": "Hall / Entry surround",
+      "before": {
+        "location": {
+          "x": 6400,
+          "y": -2750,
+          "z": 7000
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.5,
+          "y": 123,
+          "z": 140
+        }
+      },
+      "after": {
+        "location": {
+          "x": 6400,
+          "y": -5190,
+          "z": 9200
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.5,
+          "y": 171.8,
+          "z": 184
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_298",
+      "label": "Hall / Entry surround",
+      "before": {
+        "location": {
+          "x": 6400,
+          "y": 9950,
+          "z": 7000
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.5,
+          "y": 123,
+          "z": 140
+        }
+      },
+      "after": {
+        "location": {
+          "x": 6400,
+          "y": 12390,
+          "z": 9200
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.5,
+          "y": 171.8,
+          "z": 184
+        }
+      }
+    },
+    {
+      "name": "StaticMeshActor_299",
+      "label": "Hall / Entry upper wall",
+      "before": {
+        "location": {
+          "x": 6400,
+          "y": 3600,
+          "z": 7190
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.5,
+          "y": 4,
+          "z": 136.2
+        }
+      },
+      "after": {
+        "location": {
+          "x": 6400,
+          "y": 3600,
+          "z": 9390
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1.5,
+          "y": 4,
+          "z": 180.2
+        }
+      }
+    },
+    {
+      "name": "PointLight_8",
+      "label": "Hall / Amber architectural fill",
+      "before": {
+        "location": {
+          "x": 11000,
+          "y": -6200,
+          "z": 4400
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        }
+      },
+      "after": {
+        "location": {
+          "x": 12000,
+          "y": -9000,
+          "z": 4400
+        },
+        "rotation": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        }
+      }
+    }
+  ]
+}

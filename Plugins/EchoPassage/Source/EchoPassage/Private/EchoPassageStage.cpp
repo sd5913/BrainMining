@@ -130,6 +130,14 @@ void AEchoPassageStage::OnConstruction(const FTransform& Transform)
         Box(WarmGlow,FVector(-747,0,1040),FVector(3,130,85));
     }
     for(int Side:{-1,1}) Box(WarmGlow,FVector(-500,Side*200,927),FVector(470,3,3));
+    if(bRoomInSameLevel)
+    {
+        const FVector ExitShift=EchoPassageLayout::ExitOffset(bUseMaze);
+        Box(Rock,ExitShift+FVector(3850,1600,-12),FVector(500,400,24));
+        Box(Rock,ExitShift+FVector(3850,1600,377),FVector(500,400,24));
+        for(int Side:{-1,1})Box(Rock,ExitShift+FVector(3850,1600+Side*212,180),FVector(500,24,360));
+        return;
+    }
     // The warm threshold moves with the exit of either layout.
     const FVector ExitShift=EchoPassageLayout::ExitOffset(bUseMaze);
     Box(WarmWood,ExitShift+FVector(4200,1600,-12),FVector(800,680,24));
@@ -176,7 +184,7 @@ void AEchoPassageStage::Collapse()
 void AEchoPassageStage::EmitEcho(FVector Location,bool Landing)
 {
     const float Now=GetWorld()->GetTimeSeconds();
-    if(bCompleted || (!Landing && (Now-LastEcho<KnockCooldown || !bLanded))) return;
+    if((bCompleted && !bRoomInSameLevel) || (!Landing && (Now-LastEcho<KnockCooldown || !bLanded))) return;
     LastEcho=Now;
     if(Landing) {bLanded=true;LandingTime=Now;} else ++KnockCount;
     for(auto* M:{EchoMaterial.Get(),RockMaterial.Get()}) if(M)

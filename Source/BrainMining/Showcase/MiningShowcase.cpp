@@ -164,6 +164,7 @@ bool AMiningShowcaseDirector::IsModalActive() const
 {
     if (ActiveIndex == INDEX_NONE || bBusy) return false;
     if (UGameplayStatics::IsGamePaused(this)) return true;
+    if (auto* Controller = Cast<ABrainMiningPlayerController>(Player()); Controller && Controller->bUpgradeMenuHeld) return true;
     if (CardInteraction && CardInteraction->Stage && CardInteraction->Stage->Run.Phase != ECardRoomPhase::Exploring) return true;
     if (GetActiveKind() == EMiningShowcaseKind::WenSi)
         for (TActorIterator<AWenSiPuzzle> Puzzle(GetWorld()); Puzzle; ++Puzzle) if (Puzzle->bEditing) return true;
@@ -339,12 +340,18 @@ void AMiningShowcaseDirector::ActivateLoadedExhibit()
     }
     const EMiningShowcaseKind Kind = GetActiveKind();
     if (Kind == EMiningShowcaseKind::Mining) Player()->ClientSetHUD(AMiningHUD::StaticClass());
-    else if (Kind != EMiningShowcaseKind::Collection) Policy->Apply(Player()->GetPawn());
+    else if (Kind != EMiningShowcaseKind::Collection)
+    {
+        Policy->Apply(Player()->GetPawn());
+        if (auto* Movement = Player()->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) Movement->FlightSettings.bEnabled = false;
+    }
+    if (auto* Controller = Cast<ABrainMiningPlayerController>(Player())) Controller->SetMiningGUIEnabled(Kind == EMiningShowcaseKind::Mining);
     if (Kind == EMiningShowcaseKind::Echo)
     {
         for (AActor* Actor : Level->Actors) if (auto* Stage = Cast<AEchoPassageStage>(Actor))
         {
             Stage->DestinationLevel.Reset();
+            Stage->bRoomInSameLevel = false;
             Stage->OnPassageCompleted.AddDynamic(this, &AMiningShowcaseDirector::OnEchoCompleted);
         }
         EchoInteraction = NewObject<UEchoPassageInteractionComponent>(Player());
@@ -385,6 +392,7 @@ void AMiningShowcaseDirector::FinishLobby()
     bBusy = false;
     ResetController();
     SpawnPlayer(FTransform(FRotator::ZeroRotator, GetActorLocation() + FVector(-1300, 0, 110)));
+    if (auto* Controller = Cast<ABrainMiningPlayerController>(Player())) Controller->SetMiningGUIEnabled(false);
     Status = FText::FromString(TEXT("已返回大厅。展区会重新开始，参观记录保留到本次试玩结束。"));
     SetMenuOpen(true);
 }

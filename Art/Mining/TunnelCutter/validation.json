@@ -1,0 +1,41 @@
+{
+  "vertices": 82142,
+  "edges": 246420,
+  "faces": 164280,
+  "connected_components": 1,
+  "boundary_edges": 0,
+  "nonmanifold_edges": 0,
+  "inconsistent_winding_edges": 0,
+  "degenerate_faces": 0,
+  "duplicate_faces": 0,
+  "euler_characteristic": 2,
+  "signed_volume_m3": 10529.874895745448,
+  "nonadjacent_bbox_pairs": 0,
+  "self_intersection_pairs": 0,
+  "examples": [],
+  "all_centerlines_strictly_descending": true,
+  "branch_count": 7,
+  "main_length_m": 292.9343204105644,
+  "main_vertical_drop_m": 88.0,
+  "dimensions_m": [
+    147.11032104492188,
+    141.0301513671875,
+    98.70967102050781
+  ],
+  "passed": true,
+  "boolean_difference_test": {
+    "vertices": 74226,
+    "edges": 221618,
+    "faces": 147388,
+    "connected_components": 1,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_winding_edges": 0,
+    "degenerate_faces": 0,
+    "duplicate_faces": 0,
+    "euler_characteristic": -4,
+    "signed_volume_m3": 1878474.222161597,
+    "removed_volume_m3": 9646.155808414798,
+    "passed": true
+  }
+}

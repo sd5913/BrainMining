@@ -18,6 +18,8 @@ class BRAINMININGEDITOR_API UMiningDesignerLibrary : public UBlueprintFunctionLi
 	GENERATED_BODY()
 public:
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Showcase")
+    static TArray<AActor*> CopyExperienceActors(const FString& SourceMap, FVector Offset, FName AreaTag, TSubclassOf<AActor> ActorClass = nullptr);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Showcase")
     static bool BuildTreasureMeshes();
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Showcase")
     static TArray<AActor*> ImportShowcaseRoom(const FString& SourceMap, FVector Offset, const TArray<FString>& ExcludedLabels);

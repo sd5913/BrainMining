@@ -1,0 +1,42 @@
+{
+  "vertices": 4766,
+  "edges": 14292,
+  "faces": 9528,
+  "connected_components": 1,
+  "boundary_edges": 0,
+  "nonmanifold_edges": 0,
+  "inconsistent_winding_edges": 0,
+  "degenerate_faces": 0,
+  "duplicate_faces": 0,
+  "euler_characteristic": 2,
+  "signed_volume_m3": 10442.438252134492,
+  "nonadjacent_bbox_pairs": 0,
+  "self_intersection_pairs": 0,
+  "examples": [],
+  "all_centerlines_strictly_descending": true,
+  "branch_count": 7,
+  "main_length_m": 292.9343204105644,
+  "main_vertical_drop_m": 88.0,
+  "dimensions_m": [
+    146.87615966796875,
+    141.04769897460938,
+    98.48799133300781
+  ],
+  "passed": true,
+  "object_name": "SM_DescendingTunnel_Cutter_Lowpoly",
+  "boolean_difference_test": {
+    "vertices": 4458,
+    "edges": 13159,
+    "faces": 8697,
+    "connected_components": 1,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_winding_edges": 0,
+    "degenerate_faces": 0,
+    "duplicate_faces": 0,
+    "euler_characteristic": -4,
+    "signed_volume_m3": 1874926.7096818741,
+    "removed_volume_m3": 9562.339228840545,
+    "passed": true
+  }
+}

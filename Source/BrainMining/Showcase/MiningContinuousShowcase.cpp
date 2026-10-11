@@ -5,6 +5,7 @@
 #include "MiningCharacterMovementComponent.h"
 #include "MiningEncounterPlayer.h"
 #include "MiningHUD.h"
+#include "MiningGUIWidgets.h"
 #include "PopupClose/PopupCloseStage.h"
 #include "WenSi/WenSiPuzzle.h"
 #include "Subtitles/SubtitleSubsystem.h"
@@ -30,6 +31,8 @@ void AMiningShowcaseDirector::UpdateContinuousRegion()
 {
     auto* Controller = Player();
     if (!Controller || !Controller->GetPawn()) return;
+    if (auto* MiningController = Cast<ABrainMiningPlayerController>(Controller); MiningController && MiningController->MiningGUI && TreasureField)
+        MiningController->MiningGUI->SetCoinDisplay(FText::AsNumber(TreasureField->Coins));
     if (!bContinuousReady)
     {
         for (TActorIterator<AMiningCollectionField> Field(GetWorld()); Field; ++Field) if (Field->Items.IsEmpty()) return;
@@ -55,6 +58,8 @@ void AMiningShowcaseDirector::UpdateContinuousRegion()
             Stage->OnCollectibleClaimed.AddUniqueDynamic(this, &AMiningShowcaseDirector::OnCardReward);
         }
         bContinuousReady = true;
+        for (auto& Exhibit : Exhibits)
+            if (Exhibit.Kind == EMiningShowcaseKind::Popup) Exhibit.Extent = Exhibit.Extent.ComponentMax(FVector(1250,950,650));
         TArray<UPostProcessComponent*> LegacyExposure;
         GetComponents(LegacyExposure);
         for (auto* Exposure : LegacyExposure) Exposure->bEnabled = false;
@@ -79,6 +84,7 @@ void AMiningShowcaseDirector::UpdateContinuousRegion()
 
 void AMiningShowcaseDirector::CloseContinuousInteraction()
 {
+    if (auto* Controller = Cast<ABrainMiningPlayerController>(Player())) Controller->SetUpgradeMenuHeld(false);
     for (TActorIterator<AMiningCollectionField> Field(GetWorld()); Field; ++Field) if (Field->bCatalogueOpen) Field->ToggleCatalogue();
     for (TActorIterator<AWenSiPuzzle> Puzzle(GetWorld()); Puzzle; ++Puzzle) if (Puzzle->bEditing) Puzzle->ToggleEdit();
     for (TActorIterator<APopupCloseStage> Stage(GetWorld()); Stage; ++Stage) Stage->CancelSession();
@@ -103,10 +109,13 @@ void AMiningShowcaseDirector::SwitchContinuousRegion(int32 Index)
     auto* Controller = Player();
     if (!Controller || !Controller->GetPawn()) return;
     if (!bHasRegion || (Kind != EMiningShowcaseKind::Mining && Kind != EMiningShowcaseKind::Collection && Kind != EMiningShowcaseKind::Treasure)) Policy->Apply(Controller->GetPawn());
+    if (auto* MiningController = Cast<ABrainMiningPlayerController>(Controller))
+        MiningController->SetMiningGUIEnabled(bHasRegion && (Kind == EMiningShowcaseKind::Mining || Kind == EMiningShowcaseKind::Treasure));
     if (auto* Movement = Controller->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())
     {
         Movement->SetFlightInputHeld(false);
-        Movement->FlightSettings.bEnabled = bHasRegion && Kind == EMiningShowcaseKind::Collection;
+        Movement->FlightSettings.bEnabled = bHasRegion && (Kind == EMiningShowcaseKind::Collection || Kind == EMiningShowcaseKind::Mining || Kind == EMiningShowcaseKind::Treasure);
+        Movement->FlightSettings.bEnableHeat = Kind == EMiningShowcaseKind::Mining || Kind == EMiningShowcaseKind::Treasure;
         Movement->MaxWalkSpeed = bHasRegion && Kind == EMiningShowcaseKind::WenSi ? 260 : 600;
     }
     if (auto* Mining = Controller->GetPawn()->FindComponentByClass<UMiningComponent>())
@@ -133,7 +142,7 @@ void AMiningShowcaseDirector::SwitchContinuousRegion(int32 Index)
     }
     if (auto* Subtitles = USubtitleSubsystem::Get(this)) Subtitles->StopAll();
     if (bHasRegion) Visited.Add(Exhibits[Index].Id);
-    Status = FText::FromString(TEXT("步行进入各区 · 进度保留 · F2 路线提示 · F8 退出交互"));
+    Status = FText::FromString(TEXT("F4 全部玩法 · F2 路线提示 · F8 退出交互 · 本地图内进度保留"));
 }
 
 void AMiningShowcaseDirector::RestartContinuousRegion()

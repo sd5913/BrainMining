@@ -8,6 +8,7 @@
 
 class UInputMappingContext;
 class UUserWidget;
+class UMiningGUIHUDWidget;
 
 /**
  *  Simple first person Player Controller
@@ -24,6 +25,19 @@ public:
 	/** Constructor */
 	ABrainMiningPlayerController();
 	void UseInputDefaultsFrom(const ABrainMiningPlayerController* Defaults);
+ void SetMiningGUIEnabled(bool bEnabled);
+ bool IsMiningGUIEnabled() const { return bMiningGUIEnabled; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining GUI")
+	TSoftClassPtr<UMiningGUIHUDWidget> MiningGUIClass;
+	UPROPERTY(BlueprintReadOnly, Category="Mining GUI")
+	TObjectPtr<UMiningGUIHUDWidget> MiningGUI;
+	UPROPERTY(BlueprintReadOnly, Category="Mining GUI")
+	bool bUpgradeMenuHeld = false;
+	/** Tab and the focused HUD share this entry point, so mouse clicks cannot swallow release. */
+	UFUNCTION(BlueprintCallable, Category="Mining GUI")
+	void SetUpgradeMenuHeld(bool bHeld);
+	virtual bool InputKey(const FInputKeyEventArgs& Params) override;
 
 protected:
 
@@ -52,6 +66,15 @@ protected:
 
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
+	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+	void UseAbilityG();
+	void UseAbilityV();
+	void OnApplicationActivationChanged(bool bActive);
+	bool bOwnsDesktopGUIInput = false;
+ bool bMiningGUIEnabled = true;
+	FDelegateHandle ApplicationActivationHandle;
+	EMouseCaptureMode PreviousMouseCaptureMode = EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown;
+	EMouseLockMode PreviousMouseLockMode = EMouseLockMode::LockOnCapture;
 
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;

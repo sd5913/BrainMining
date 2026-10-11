@@ -72,6 +72,7 @@ class BRAINMINING_API AMiningTreasureField : public AActor
     GENERATED_BODY()
 public:
     AMiningTreasureField();
+    UPROPERTY(EditAnywhere, Category="Treasure") bool bUseSharedWallet = false;
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;

@@ -1,4 +1,6 @@
 #include "Showcase/MiningTreasure.h"
+#include "MiningWalletSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "DiggableRock.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/DynamicMeshComponent.h"
@@ -245,7 +247,7 @@ void AMiningTreasureField::ClearGenerated()
 void AMiningTreasureField::ResetExhibit()
 {
     ClearGenerated();
-    Coins = 0;
+    Coins = bUseSharedWallet && GetGameInstance() ? GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>()->Balance : 0;
     CollectedCount = 0;
     ToastRemaining = 0;
     FRandomStream Random(RandomSeed);
@@ -366,7 +368,13 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
     auto* Item = Target.Get();
     Item->bCollected = true;
     Item->SetHighlighted(false);
-    Coins += Item->Value;
+    if (bUseSharedWallet && GetGameInstance())
+    {
+        auto* Wallet = GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
+        Wallet->AddCoins(Item->Value);
+        Coins = Wallet->Balance;
+    }
+    else Coins += Item->Value;
     ++CollectedCount;
     Toast = FString::Printf(TEXT("%s  +%d 金币"), *Item->TreasureName.ToString(), Item->Value);
     ToastRemaining = 3;
@@ -382,6 +390,7 @@ FString AMiningTreasureField::GetPrompt() const
     if (IsValid(Target)) return FString::Printf(TEXT("%s · %d 金币 · 暴露 %.0f%%\n%s"), *Target->TreasureName.ToString(), Target->Value, Target->Exposure * 100,
         AMiningTreasure::IsExposureEligible(Target->Exposure) ? TEXT("[ E ] 领取宝物") : TEXT("继续挖掘，暴露超过 50% 后可领取"));
     if (Items.IsEmpty()) return GenerationStatus;
+    if (bUseSharedWallet) return FString::Printf(TEXT("左键挖掘 · 瞄准宝物按 E 领取 · 已领取 %d / %d\n金币供全部体验区共用；Tab 打开升级面板"), CollectedCount, Items.Num());
     return FString::Printf(TEXT("左键挖掘 · 瞄准宝物按 E 领取 · 已领取 %d / %d\nF5 重开本展区并清空展示金币；R 只恢复岩石，不补发宝物"), CollectedCount, Items.Num());
 }
 

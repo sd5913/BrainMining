@@ -1,6 +1,6 @@
 # 连续玩法地图（六区 + 宝物支路）
 
-分支：`integration/feature-showcase`。入口：`/Game/Showcase/Maps/Lvl_ContinuousShowcase`。
+原始分支：integration/feature-showcase，现已整合到 main。入口：/Game/Showcase/Maps/Lvl_ContinuousShowcase。main 的新增内容及验证见 [main 整合说明](README_MainIntegration.md)；本文记录原连续展示设计与原验证结果。
 
 ## 地图结构
 

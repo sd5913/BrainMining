@@ -1,11 +1,16 @@
 # BrainMining
 
-## 六区连续玩法地图
+## main 整合入口
 
-整合分支 `integration/feature-showcase` 的默认入口是 `/Game/Showcase/Maps/Lvl_ContinuousShowcase`。
-挖掘、收集、回声、卡牌、弹窗、文思全部铺在同一张 Persistent Level 中，以步道和坡道连接，直接走进各区；没有选区目录或运行时地图流送。
-打开该地图 Play，或运行 `Scripts/Play_Showcase.ps1`。操作、路线及验证入口见 [README_ContinuousShowcase.md](README_ContinuousShowcase.md)。
-各成员原有独立地图不变；旧大厅展示关卡仅保留为回归参考。
+当前 main 的默认地图为六区体验关卡。双击 Play_Main.cmd，靠近大厅入口按 E，或按 F4 选择区域。同一角色在同一个 Persistent Level 内移动，金币、藏品和升级跨区保留。Tab 升级，I 图鉴，F6 返回大厅。源码更新后先编译 BrainMiningEditor。
+
+完整入口、来源版本和整合边界见 [main 整合说明](README_MainIntegration.md)。六区独立展示，暂未串成一条完整故事路线。
+
+## 六区体验地图
+
+默认入口：/Game/Showcase/Maps/Lvl_MainExperiences。
+六区分别为 Shen-Yilang 矿区、藏品与矿物金币、回声到巨人卡牌及电视逃生、四设备办公室、新版文思博物馆、细胞宇宙。所有场景复制到主关卡，区域菜单只移动角色，没有 OpenLevel 或运行时子关卡切换。
+原连续七区地图与成员独立地图作为开发和回归入口保留。旧地图说明见 [README_ContinuousShowcase.md](README_ContinuousShowcase.md)，其按键和功能不代表当前默认六区地图。
 
 UE 第一人称挖掘原型。仓库保存源码、资源、配置和编辑器脚本，不包含引擎、编译缓存或打包成品。
 

@@ -9,26 +9,25 @@ public class BrainMining : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PublicDependencyModuleNames.AddRange(new string[] {
+			"CardRoom",
+			"EchoPassage",
 			"Core",
 			"CoreUObject",
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
-            "CardRoom",
-            "EchoPassage",
 			"AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"SlateCore"
 		});
 
 		PublicDependencyModuleNames.AddRange(new string[] { "GeometryCore", "GeometryFramework", "DynamicMesh" });
 		PrivateDependencyModuleNames.Add("RenderCore");
-		PrivateDependencyModuleNames.Add("GeometryAlgorithms");
-		PrivateDependencyModuleNames.Add("SlateCore");
-		PrivateDependencyModuleNames.Add("AssetRegistry");
-		if (Target.bBuildEditor) PrivateDependencyModuleNames.Add("UnrealEd");
+		PrivateDependencyModuleNames.AddRange(new[] { "GeometryAlgorithms", "AssetRegistry" });
+		if (Target.bBuildEditor) PrivateDependencyModuleNames.AddRange(new[] { "UnrealEd", "MeshConversion", "MeshDescription" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"BrainMining",

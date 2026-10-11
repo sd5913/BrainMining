@@ -10,11 +10,15 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BrainMining.h"
 #include "MiningComponent.h"
+#include "MiningToolEffectsComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningTunnelGenerator.h"
 #include "EngineUtils.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "UObject/ConstructorHelpers.h"
 
 ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UMiningCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -41,6 +45,51 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 	FirstPersonCameraComponent->FirstPersonScale = 0.6f;
 
 	MiningComponent = CreateDefaultSubobject<UMiningComponent>(TEXT("MiningComponent"));
+	MiningToolEffects = CreateDefaultSubobject<UMiningToolEffectsComponent>(TEXT("MiningToolEffects"));
+
+	// Keep mounts/models in the blueprint viewport. Only the inner Motion components animate.
+	PickaxeMount = CreateDefaultSubobject<USceneComponent>(TEXT("PickaxeMount"));
+	PickaxeMount->SetupAttachment(FirstPersonCameraComponent);
+	PickaxeMount->SetRelativeLocation(FVector(40, 20, -35));
+	PickaxeMotion = CreateDefaultSubobject<USceneComponent>(TEXT("PickaxeMotion"));
+	PickaxeMotion->SetupAttachment(PickaxeMount);
+	PickaxeModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PickaxeModel"));
+	PickaxeModel->SetupAttachment(PickaxeMotion);
+	PickaxeModel->SetRelativeLocationAndRotation(FVector(-9.885566, -.907176, 1.205274), FRotator(-6.922544, 5.243221, -4.019591));
+	PickaxeModel->SetRelativeScale3D(FVector(.65));
+
+	DrillRightMount = CreateDefaultSubobject<USceneComponent>(TEXT("DrillRightMount"));
+	DrillRightMount->SetupAttachment(FirstPersonCameraComponent);
+	DrillRightMount->SetRelativeLocationAndRotation(FVector(64, 25, -10), FRotator(14, -18, 0));
+	DrillRightMotion = CreateDefaultSubobject<USceneComponent>(TEXT("DrillRightMotion"));
+	DrillRightMotion->SetupAttachment(DrillRightMount);
+	DrillRightModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DrillRightModel"));
+	DrillRightModel->SetupAttachment(DrillRightMotion);
+	DrillRightModel->SetRelativeScale3D(FVector(.72));
+
+	DrillLeftMount = CreateDefaultSubobject<USceneComponent>(TEXT("DrillLeftMount"));
+	DrillLeftMount->SetupAttachment(FirstPersonCameraComponent);
+	DrillLeftMount->SetRelativeLocationAndRotation(FVector(64, -25, -10), FRotator(14, 18, 0));
+	DrillLeftMotion = CreateDefaultSubobject<USceneComponent>(TEXT("DrillLeftMotion"));
+	DrillLeftMotion->SetupAttachment(DrillLeftMount);
+	DrillLeftModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DrillLeftModel"));
+	DrillLeftModel->SetupAttachment(DrillLeftMotion);
+	DrillLeftModel->SetRelativeScale3D(FVector(.72, -.72, .72));
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> PickaxeAsset(TEXT("/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> DrillAsset(TEXT("/Game/Drill/SM_Drill.SM_Drill"));
+	PickaxeModel->SetStaticMesh(PickaxeAsset.Object);
+	DrillRightModel->SetStaticMesh(DrillAsset.Object);
+	DrillLeftModel->SetStaticMesh(DrillAsset.Object);
+	for (UStaticMeshComponent* Model : { PickaxeModel.Get(), DrillRightModel.Get(), DrillLeftModel.Get() })
+	{
+		Model->SetCollisionProfileName(TEXT("NoCollision"));
+		Model->SetCastShadow(false);
+		Model->SetVisibility(true);
+		Model->SetHiddenInGame(true);
+		// Owner-only visibility is enabled at BeginPlay so editor previews have a visible model.
+		Model->bEditableWhenInherited = true;
+	}
 	MiningLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("MiningLight"));
 	MiningLight->SetupAttachment(FirstPersonCameraComponent);
 	MiningLight->SetRelativeLocation(FVector(20.0, 0.0, -10.0));

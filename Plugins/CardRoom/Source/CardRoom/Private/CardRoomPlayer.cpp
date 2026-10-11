@@ -46,25 +46,25 @@ void UCardRoomInteractionComponent::TickComponent(float DeltaSeconds,ELevelTick 
 {
     Super::TickComponent(DeltaSeconds,TickType,TickFunction);
     if(bSeated && SeatedPawn.Get()!=GetPawn()) {LeaveSeat();return;}
-    if(!Stage || !GetPawn()) return;
+    if(!bRoomActive || !Stage || !GetPawn()) return;
     if(Stage->Run.Phase!=ECardRoomPhase::Exploring)
     {
         float Kick=0;
         if(Stage->Run.Phase==ECardRoomPhase::Resolving)
         {
             const float T=Stage->Run.PhaseTime;
-            if(T>=1 && T<1.25f) Kick=(1-(T-1)/.25f)*(Stage->Run.Round==4?1.2f:.35f);
+            if(T>=1 && T<1.25f) Kick=(1-(T-1)/.25f)*(Stage->Run.Round==4?2.f:.35f);
             if((Stage->Run.Round==1||Stage->Run.Round==3)&&T>=2.35f&&T<2.65f) Kick=(1-(T-2.35f)/.3f)*(Stage->Run.Round==3?1.5f:.6f);
-            Player()->SetControlRotation(FRotator(-9+FMath::Sin(T*70)*Kick,Stage->GetActorRotation().Yaw+FMath::Sin(T*49)*Kick*.6f,0));
+            Player()->SetControlRotation(FRotator(Stage->SeatPitch+FMath::Sin(T*70)*Kick,Stage->GetActorRotation().Yaw+FMath::Sin(T*49)*Kick*.6f,0));
         }
-        else Player()->SetControlRotation(FRotator(-9,Stage->GetActorRotation().Yaw,0));
+        else Player()->SetControlRotation(FRotator(Stage->SeatPitch,Stage->GetActorRotation().Yaw,0));
         return;
     }
 
 }
 void UCardRoomInteractionComponent::Interact()
 {
-    if(!Stage || !GetPawn()) return;
+    if(!bRoomActive || !Stage || !GetPawn()) return;
     if(Stage->Run.Phase==ECardRoomPhase::Victory) { Stage->CollectReward(); return; }
     if(!Stage->IsPlayerNear(GetPawn()->GetActorLocation()) || !Stage->BeginEncounter()) return;
     EntryLocation=GetPawn()->GetActorLocation(); EntryRotation=Player()->GetControlRotation();
@@ -76,23 +76,24 @@ void UCardRoomInteractionComponent::Interact()
         C->StopJumping();C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->DisableMovement();
     }
     GetPawn()->SetActorEnableCollision(false);
+    GetPawn()->SetActorRotation(FRotator(0,Stage->GetActorRotation().Yaw,0));
     FVector EyeOffset(0,0,64);
     if(auto* Camera=GetPawn()->FindComponentByClass<UCameraComponent>())EyeOffset=Camera->GetComponentLocation()-GetPawn()->GetActorLocation();
-    GetPawn()->SetActorLocation(Stage->GetSeatLocation()+FVector(0,0,88)-EyeOffset);
-    Player()->SetControlRotation(FRotator(-9,Stage->GetActorRotation().Yaw,0));
+    GetPawn()->SetActorLocation(Stage->GetSeatEyeLocation()-EyeOffset);
+    Player()->SetControlRotation(FRotator(Stage->SeatPitch,Stage->GetActorRotation().Yaw,0));
     Player()->bShowMouseCursor=true;
     FInputModeGameAndUI Mode; Mode.SetWidgetToFocus(View); Mode.SetHideCursorDuringCapture(false); Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); Player()->SetInputMode(Mode);
     Player()->SetMouseLocation(int32(GEngine->GameViewport->Viewport->GetSizeXY().X*.5f),int32(GEngine->GameViewport->Viewport->GetSizeXY().Y*.6f));
 }
 void UCardRoomInteractionComponent::LeaveSeat()
 {
-    if(!Stage || Stage->Run.Phase==ECardRoomPhase::Exploring) return;
+    if((!bRoomActive && !bSeated) || !Stage || Stage->Run.Phase==ECardRoomPhase::Exploring) return;
     Stage->Run=FCardRoomRun(); Stage->RestartEncounter(); Stage->Run=FCardRoomRun();
     RestoreSeat();
     Player()->bShowMouseCursor=false;Player()->SetInputMode(FInputModeGameOnly());
     if(FSlateApplication::IsInitialized())FSlateApplication::Get().SetAllUserFocusToGameViewport();
 }
-void UCardRoomInteractionComponent::ConfirmCards() { if(Stage) Stage->Run.Confirm(); }
+void UCardRoomInteractionComponent::ConfirmCards() { if(bRoomActive && Stage) Stage->Run.Confirm(); }
 void UCardRoomInteractionComponent::RestoreSeat()
 {
     if(!bSeated)return;
@@ -104,4 +105,17 @@ void UCardRoomInteractionComponent::RestoreSeat()
     }
     if(Player()) {Player()->SetControlRotation(EntryRotation);Player()->SetIgnoreMoveInput(false);Player()->SetIgnoreLookInput(false);}
     bSeated=false;SeatedPawn.Reset();
+}
+
+void UCardRoomInteractionComponent::SetRoomActive(bool bActive)
+{
+    bRoomActive=bActive;
+    if(View)View->SetVisibility(bActive?EVisibility::Visible:EVisibility::Collapsed);
+}
+
+void UCardRoomInteractionComponent::ReleaseForExploration()
+{
+    RestoreSeat();SetRoomActive(false);
+    if(Player()){Player()->bShowMouseCursor=false;Player()->SetInputMode(FInputModeGameOnly());}
+    if(FSlateApplication::IsInitialized())FSlateApplication::Get().SetAllUserFocusToGameViewport();
 }

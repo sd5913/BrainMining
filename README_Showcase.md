@@ -4,7 +4,7 @@
 
 ## 打开与操作
 
-分支：`integration/feature-showcase`。入口地图：`/Game/Showcase/Maps/Lvl_FeatureShowcase`。
+原始分支：integration/feature-showcase，现已整合到 main。入口地图：/Game/Showcase/Maps/Lvl_FeatureShowcase。本文保留旧展示大厅的设计与验证记录；当前版本与整合状态见 [main 整合说明](README_MainIntegration.md)。
 
 先按项目 README 编译 `BrainMiningEditor Win64 Development`，再打开入口地图并 Play。
 也可从工程根目录执行：

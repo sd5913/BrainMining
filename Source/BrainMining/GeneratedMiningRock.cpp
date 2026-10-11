@@ -164,17 +164,28 @@ void AGeneratedMiningRock::CopyEditorPreviewMesh(FDynamicMesh3& Mesh) const
 	else CopyMiningMesh(Mesh);
 }
 
-bool AGeneratedMiningRock::SetChunkedMesh(const FDynamicMesh3& Mesh, double Length, bool bSpatial)
+bool AGeneratedMiningRock::SetChunkedMesh(const FDynamicMesh3& Mesh, double Length, bool bSpatial, bool bAllowLargeSpatialGrid)
 {
 	if (bSpatial && GetWorld() && !GetWorld()->IsGameWorld())
 	{
-		auto Grid = MakeShared<MiningChunks::FSpatialGrid, ESPMode::ThreadSafe>();
-		if (!MiningChunks::SplitSpatialIncremental(Mesh, Length, *Grid)) return false;
-		ApplySpatialGrid(Mesh, Grid); return true;
+		const FAxisAlignedBox3d MeshBounds = Mesh.GetBounds();
+		FIntVector Counts;
+		const bool bIncrementalGrid = !bAllowLargeSpatialGrid || Mesh.TriangleCount() == 0 ||
+			(MiningChunks::SpatialChunkCounts(FVector(MeshBounds.Max - MeshBounds.Min), Length, Counts) &&
+			 static_cast<int64>(Counts.X) * Counts.Y * Counts.Z <= 128);
+		if (bIncrementalGrid)
+		{
+			auto Grid = MakeShared<MiningChunks::FSpatialGrid, ESPMode::ThreadSafe>();
+			if (!MiningChunks::SplitSpatialIncremental(Mesh, Length, *Grid)) return false;
+			ApplySpatialGrid(Mesh, Grid); return true;
+		}
 	}
 	TArray<FDynamicMesh3> Pieces;
 	TArray<FBox> Bounds;
-	if (!(bSpatial ? MiningChunks::SplitSpatial(Mesh, Length, Pieces, Bounds) : MiningChunks::Split(Mesh, Length, Pieces, Bounds))) return false;
+	const bool bSplit = bSpatial
+		? (bAllowLargeSpatialGrid ? MiningChunks::SplitExternalSpatial(Mesh, Length, Pieces, Bounds) : MiningChunks::SplitSpatial(Mesh, Length, Pieces, Bounds))
+		: MiningChunks::Split(Mesh, Length, Pieces, Bounds);
+	if (!bSplit) return false;
 	Modify();
 	ClearChunks();
 	InitialMesh->Modify();
@@ -335,7 +346,7 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius)
 	TArray<int32> Affected;
 	TArray<FDynamicMesh3> Prepared;
 	int32 Removed = 0;
-	const int32 Budget = FMath::Clamp(MaxTriangles, 1000, 30000);
+	const int32 Budget = FMath::Clamp(MaxTriangles, 1000, MiningChunks::MaxChunkTriangles);
 	for (int32 Index = 0; Index < Chunks.Num(); ++Index)
 	{
 		FMiningRockChunk& Chunk = Chunks[Index];
@@ -438,7 +449,7 @@ void AGeneratedMiningRock::Tick(float DeltaSeconds)
 		return;
 	}
 	LastSimplificationMilliseconds = Result->Milliseconds;
-	if (Result->Removed <= 0 || Result->Mesh.TriangleCount() > FMath::Clamp(MaxTriangles, 1000, 30000)) return;
+	if (Result->Removed <= 0 || Result->Mesh.TriangleCount() > FMath::Clamp(MaxTriangles, 1000, MiningChunks::MaxChunkTriangles)) return;
 	FMiningRockChunk& Chunk = Chunks[Result->ChunkIndex];
 	Chunk.Mesh->SetMesh(MoveTemp(Result->Mesh));
 	Chunk.Mesh->GetBodySetup()->SetFlags(RF_Transient);

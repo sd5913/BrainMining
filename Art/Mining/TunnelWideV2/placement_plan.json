@@ -1,0 +1,265 @@
+{
+  "seed": 20261011,
+  "objects": [
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "arc_position_m": 41.856912668937966,
+      "center_m": [
+        -96.34225463867188,
+        -15.646870613098145,
+        54.78042221069336
+      ],
+      "half_thickness_m": 2.879936689415454,
+      "relief_seed": 722914,
+      "name": "SM_WideTunnelBlocker_01"
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "arc_position_m": 102.69651998553998,
+      "center_m": [
+        -53.591392517089844,
+        19.24654197692871,
+        31.472278594970703
+      ],
+      "half_thickness_m": 2.850743161652964,
+      "relief_seed": 912561,
+      "name": "SM_WideTunnelBlocker_02"
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "arc_position_m": 149.80009935344194,
+      "center_m": [
+        -57.45817947387695,
+        54.2706413269043,
+        13.406679153442383
+      ],
+      "half_thickness_m": 2.8178772098774254,
+      "relief_seed": 367451,
+      "name": "SM_WideTunnelBlocker_03"
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "arc_position_m": 206.03462792599998,
+      "center_m": [
+        -22.266937255859375,
+        81.41365814208984,
+        -7.242971897125244
+      ],
+      "half_thickness_m": 3.212300463856531,
+      "relief_seed": 476750,
+      "name": "SM_WideTunnelBlocker_04"
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "arc_position_m": 256.9198761543104,
+      "center_m": [
+        17.520339965820312,
+        55.39859390258789,
+        -23.4280948638916
+      ],
+      "half_thickness_m": 2.7410881337905497,
+      "relief_seed": 302500,
+      "name": "SM_WideTunnelBlocker_05"
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "arc_position_m": 311.7454320719684,
+      "center_m": [
+        7.501736640930176,
+        10.215431213378906,
+        -42.655208587646484
+      ],
+      "half_thickness_m": 3.162294065258078,
+      "relief_seed": 376490,
+      "name": "SM_WideTunnelBlocker_06"
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "arc_position_m": 364.585785087958,
+      "center_m": [
+        42.7723274230957,
+        -18.974884033203125,
+        -59.04075241088867
+      ],
+      "half_thickness_m": 2.58082098367208,
+      "relief_seed": 478033,
+      "name": "SM_WideTunnelBlocker_07"
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "arc_position_m": 423.11411102435096,
+      "center_m": [
+        59.65681838989258,
+        13.870209693908691,
+        -77.22296905517578
+      ],
+      "half_thickness_m": 2.618818426487343,
+      "relief_seed": 123121,
+      "name": "SM_WideTunnelBlocker_08"
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "arc_position_m": 451.5428170950723,
+      "center_m": [
+        63.52592086791992,
+        35.99075698852539,
+        -86.87476348876953
+      ],
+      "half_thickness_m": 3.0712897073126197,
+      "relief_seed": 227723,
+      "name": "SM_WideTunnelBlocker_09"
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "arc_position_m": 492.9359048953611,
+      "center_m": [
+        99.26868438720703,
+        52.84385299682617,
+        -98.18565368652344
+      ],
+      "half_thickness_m": 3.004864675780096,
+      "relief_seed": 901117,
+      "name": "SM_WideTunnelBlocker_10"
+    },
+    {
+      "path_index": 1,
+      "path_name": "Branch_01",
+      "arc_position_m": 22.807894870512147,
+      "center_m": [
+        -51.93797302246094,
+        -6.279324531555176,
+        32.57316589355469
+      ],
+      "half_thickness_m": 2.6131643526429116,
+      "relief_seed": 551391,
+      "name": "SM_WideTunnelBlocker_11"
+    },
+    {
+      "path_index": 1,
+      "path_name": "Branch_01",
+      "arc_position_m": 55.89242792419806,
+      "center_m": [
+        -25.194822311401367,
+        -21.83775520324707,
+        20.86345863342285
+      ],
+      "half_thickness_m": 3.126154389382502,
+      "relief_seed": 621625,
+      "name": "SM_WideTunnelBlocker_12"
+    },
+    {
+      "path_index": 2,
+      "path_name": "Branch_02",
+      "arc_position_m": 26.79894096390407,
+      "center_m": [
+        -22.56536293029785,
+        27.768674850463867,
+        10.37728214263916
+      ],
+      "half_thickness_m": 3.056506252276697,
+      "relief_seed": 644628,
+      "name": "SM_WideTunnelBlocker_13"
+    },
+    {
+      "path_index": 3,
+      "path_name": "Branch_03",
+      "arc_position_m": 22.728235005886155,
+      "center_m": [
+        -60.955989837646484,
+        91.48379516601562,
+        -4.256114959716797
+      ],
+      "half_thickness_m": 2.6102916114819217,
+      "relief_seed": 850286,
+      "name": "SM_WideTunnelBlocker_14"
+    },
+    {
+      "path_index": 3,
+      "path_name": "Branch_03",
+      "arc_position_m": 48.24417059546324,
+      "center_m": [
+        -74.38043212890625,
+        110.53324127197266,
+        -14.477082252502441
+      ],
+      "half_thickness_m": 3.278678242119322,
+      "relief_seed": 669548,
+      "name": "SM_WideTunnelBlocker_15"
+    },
+    {
+      "path_index": 4,
+      "path_name": "Branch_04",
+      "arc_position_m": 22.255400143779482,
+      "center_m": [
+        -17.99187469482422,
+        58.112823486328125,
+        -21.060840606689453
+      ],
+      "half_thickness_m": 3.343601244730445,
+      "relief_seed": 690479,
+      "name": "SM_WideTunnelBlocker_16"
+    },
+    {
+      "path_index": 4,
+      "path_name": "Branch_04",
+      "arc_position_m": 56.5979654998726,
+      "center_m": [
+        -41.34501647949219,
+        36.05363845825195,
+        -32.96846389770508
+      ],
+      "half_thickness_m": 3.276630525055775,
+      "relief_seed": 31451,
+      "name": "SM_WideTunnelBlocker_17"
+    },
+    {
+      "path_index": 5,
+      "path_name": "Branch_05",
+      "arc_position_m": 56.82973450831114,
+      "center_m": [
+        74.10418701171875,
+        30.377410888671875,
+        -51.10305404663086
+      ],
+      "half_thickness_m": 2.7098329255527287,
+      "relief_seed": 863956,
+      "name": "SM_WideTunnelBlocker_18"
+    },
+    {
+      "path_index": 6,
+      "path_name": "Branch_06",
+      "arc_position_m": 27.468944263792643,
+      "center_m": [
+        3.9169723987579346,
+        -29.061553955078125,
+        -62.47086715698242
+      ],
+      "half_thickness_m": 2.457007413819657,
+      "relief_seed": 370798,
+      "name": "SM_WideTunnelBlocker_19"
+    },
+    {
+      "path_index": 7,
+      "path_name": "Branch_07",
+      "arc_position_m": 37.281569342064415,
+      "center_m": [
+        92.51138305664062,
+        -31.796554565429688,
+        -84.49781799316406
+      ],
+      "half_thickness_m": 2.9648668071381383,
+      "relief_seed": 441520,
+      "name": "SM_WideTunnelBlocker_20"
+    }
+  ]
+}

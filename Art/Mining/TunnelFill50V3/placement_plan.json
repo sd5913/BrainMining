@@ -1,0 +1,326 @@
+{
+  "seed": 20261011,
+  "factor": 0.8338984593749047,
+  "objects": [
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 8.0,
+      "allowed_end_m": 35.82204252178508,
+      "name": "SM_Fill50_Blocker_01",
+      "seed": 20261202,
+      "start_arc_m": 10.310642063102707,
+      "end_arc_m": 33.511400458682374,
+      "arc_length_m": 23.20075839557967,
+      "center_m": [
+        -114.70549774169922,
+        -21.65013313293457,
+        59.72353744506836
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 41.82204252178508,
+      "allowed_end_m": 69.64408504357016,
+      "name": "SM_Fill50_Blocker_02",
+      "seed": 20261393,
+      "start_arc_m": 44.132684584887784,
+      "end_arc_m": 67.33344298046745,
+      "arc_length_m": 23.20075839557967,
+      "center_m": [
+        -84.39573669433594,
+        -10.112836837768555,
+        50.48434066772461
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 87.64408504357016,
+      "allowed_end_m": 117.74046763219984,
+      "name": "SM_Fill50_Blocker_03",
+      "seed": 20261584,
+      "start_arc_m": 90.143612801177,
+      "end_arc_m": 115.24093987459301,
+      "arc_length_m": 25.09732707341601,
+      "center_m": [
+        -53.59446716308594,
+        19.243959426879883,
+        31.473648071289062
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 135.74046763219985,
+      "allowed_end_m": 165.18689910476695,
+      "name": "SM_Fill50_Blocker_04",
+      "seed": 20261775,
+      "start_arc_m": 138.1860164489522,
+      "end_arc_m": 162.74135028801462,
+      "arc_length_m": 24.555333839062428,
+      "center_m": [
+        -57.66026306152344,
+        54.83175277709961,
+        13.11648941040039
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 183.18689910476695,
+      "allowed_end_m": 219.13284173795972,
+      "name": "SM_Fill50_Blocker_05",
+      "seed": 20261966,
+      "start_arc_m": 186.17223733006426,
+      "end_arc_m": 216.1475035126624,
+      "arc_length_m": 29.975266182598148,
+      "center_m": [
+        -26.758256912231445,
+        82.47685241699219,
+        -5.679688930511475
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 237.13284173795972,
+      "allowed_end_m": 271.12893102296476,
+      "name": "SM_Fill50_Blocker_06",
+      "seed": 20262157,
+      "start_arc_m": 239.95624314069354,
+      "end_arc_m": 268.30552962023097,
+      "arc_length_m": 28.349286479537426,
+      "center_m": [
+        15.849413871765137,
+        57.43336868286133,
+        -22.50920867919922
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 289.12893102296476,
+      "allowed_end_m": 305.076829013655,
+      "name": "SM_Fill50_Blocker_07",
+      "seed": 20262348,
+      "start_arc_m": 290.4534162359575,
+      "end_arc_m": 303.75234380066223,
+      "arc_length_m": 13.29892756470474,
+      "center_m": [
+        11.38863468170166,
+        22.82901954650879,
+        -37.39311981201172
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 311.076829013655,
+      "allowed_end_m": 327.0247270043452,
+      "name": "SM_Fill50_Blocker_08",
+      "seed": 20262539,
+      "start_arc_m": 312.40131422664774,
+      "end_arc_m": 325.7002417913525,
+      "arc_length_m": 13.29892756470474,
+      "center_m": [
+        9.794431686401367,
+        3.7438197135925293,
+        -45.10770034790039
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 345.0247270043452,
+      "allowed_end_m": 386.82022968210106,
+      "name": "SM_Fill50_Blocker_09",
+      "seed": 20262730,
+      "start_arc_m": 348.49587569733296,
+      "end_arc_m": 383.3490809891133,
+      "arc_length_m": 34.85320529178034,
+      "center_m": [
+        44.04362487792969,
+        -18.772655487060547,
+        -59.40068054199219
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 404.82022968210106,
+      "allowed_end_m": 427.7051999383387,
+      "name": "SM_Fill50_Blocker_10",
+      "seed": 20262921,
+      "start_arc_m": 406.72084409046136,
+      "end_arc_m": 425.80458552997845,
+      "arc_length_m": 19.083741439517098,
+      "center_m": [
+        63.80282974243164,
+        8.770766258239746,
+        -75.28892517089844
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 433.7051999383387,
+      "allowed_end_m": 456.59017019457633,
+      "name": "SM_Fill50_Blocker_11",
+      "seed": 20263112,
+      "start_arc_m": 435.60581434669893,
+      "end_arc_m": 454.68955578621603,
+      "arc_length_m": 19.083741439517098,
+      "center_m": [
+        58.98855972290039,
+        31.922470092773438,
+        -84.95537567138672
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 462.59017019457633,
+      "allowed_end_m": 485.47514045081397,
+      "name": "SM_Fill50_Blocker_12",
+      "seed": 20263303,
+      "start_arc_m": 464.4907846029366,
+      "end_arc_m": 483.5745260424537,
+      "arc_length_m": 19.083741439517098,
+      "center_m": [
+        82.19744873046875,
+        46.96882629394531,
+        -92.76117706298828
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 491.47514045081397,
+      "allowed_end_m": 514.3601107070516,
+      "name": "SM_Fill50_Blocker_13",
+      "seed": 20263494,
+      "start_arc_m": 493.3757548591742,
+      "end_arc_m": 512.4594962986913,
+      "arc_length_m": 19.083741439517098,
+      "center_m": [
+        108.7425537109375,
+        53.94939041137695,
+        -101.11034393310547
+      ]
+    },
+    {
+      "path_index": 1,
+      "path_name": "Branch_01",
+      "allowed_start_m": 18.0,
+      "allowed_end_m": 56.38234087042456,
+      "name": "SM_Fill50_Blocker_14",
+      "seed": 20263685,
+      "start_arc_m": 21.18768297568754,
+      "end_arc_m": 53.19465789473702,
+      "arc_length_m": 32.00697491904948,
+      "center_m": [
+        -40.25382995605469,
+        -13.076837539672852,
+        27.65907859802246
+      ]
+    },
+    {
+      "path_index": 2,
+      "path_name": "Branch_02",
+      "allowed_start_m": 18.0,
+      "allowed_end_m": 39.77983694398147,
+      "name": "SM_Fill50_Blocker_15",
+      "seed": 20263876,
+      "start_arc_m": 19.808832235479343,
+      "end_arc_m": 37.97100470850213,
+      "arc_length_m": 18.162172473022785,
+      "center_m": [
+        -20.89223861694336,
+        26.955812454223633,
+        9.422329902648926
+      ]
+    },
+    {
+      "path_index": 3,
+      "path_name": "Branch_03",
+      "allowed_start_m": 18.0,
+      "allowed_end_m": 48.51352971540638,
+      "name": "SM_Fill50_Blocker_16",
+      "seed": 20264067,
+      "start_arc_m": 20.534172147819312,
+      "end_arc_m": 45.979357567587066,
+      "arc_length_m": 25.445185419767753,
+      "center_m": [
+        -67.08281707763672,
+        99.0335464477539,
+        -8.293442726135254
+      ]
+    },
+    {
+      "path_index": 4,
+      "path_name": "Branch_04",
+      "allowed_start_m": 18.0,
+      "allowed_end_m": 57.587259689884235,
+      "name": "SM_Fill50_Blocker_17",
+      "seed": 20264258,
+      "start_arc_m": 21.28775241180775,
+      "end_arc_m": 54.29950727807648,
+      "arc_length_m": 33.01175486626873,
+      "center_m": [
+        -29.214832305908203,
+        48.68399429321289,
+        -26.214502334594727
+      ]
+    },
+    {
+      "path_index": 5,
+      "path_name": "Branch_05",
+      "allowed_start_m": 18.0,
+      "allowed_end_m": 57.58725968988419,
+      "name": "SM_Fill50_Blocker_18",
+      "seed": 20264449,
+      "start_arc_m": 21.287752411807748,
+      "end_arc_m": 54.29950727807645,
+      "arc_length_m": 33.0117548662687,
+      "center_m": [
+        56.41337585449219,
+        31.46604347229004,
+        -44.261173248291016
+      ]
+    },
+    {
+      "path_index": 6,
+      "path_name": "Branch_06",
+      "allowed_start_m": 18.0,
+      "allowed_end_m": 38.156006975660276,
+      "name": "SM_Fill50_Blocker_19",
+      "seed": 20264640,
+      "start_arc_m": 19.673971905753667,
+      "end_arc_m": 36.48203506990661,
+      "arc_length_m": 16.80806316415294,
+      "center_m": [
+        3.590620994567871,
+        -29.485118865966797,
+        -62.76248550415039
+      ]
+    },
+    {
+      "path_index": 7,
+      "path_name": "Branch_07",
+      "allowed_start_m": 18.0,
+      "allowed_end_m": 39.77983694398143,
+      "name": "SM_Fill50_Blocker_20",
+      "seed": 20264831,
+      "start_arc_m": 19.808832235479343,
+      "end_arc_m": 37.971004708502086,
+      "arc_length_m": 18.162172473022743,
+      "center_m": [
+        87.3592529296875,
+        -26.520082473754883,
+        -80.50773620605469
+      ]
+    }
+  ]
+}

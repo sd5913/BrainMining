@@ -288,6 +288,47 @@ bool UMiningGUIEditorLibrary::AddJetpackHeatOverlay()
 	return Complete(HUD, FVector2D(1920.f, 1080.f));
 }
 
+bool UMiningGUIEditorLibrary::UpgradeJetpackToArcGauge()
+{
+	using namespace MiningGUIEditor;
+	auto* HUD = LoadObject<UWidgetBlueprint>(nullptr, TEXT("/Game/UI/MiningGUI/WBP_MiningHUD.WBP_MiningHUD"));
+	auto* BP = LoadObject<UWidgetBlueprint>(nullptr, TEXT("/Game/UI/MiningGUI/WBP_JetpackHeat.WBP_JetpackHeat"));
+	auto* Material = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/UI/MiningGUI/JetpackGauge/MI_JetpackArc.MI_JetpackArc"));
+	auto* WarningArt = Texture(TEXT("T_JetpackHeatWarning"));
+	if (!HUD || !HUD->WidgetTree || !BP || !BP->WidgetTree || !Material || !WarningArt) return false;
+	auto* Bar = Cast<UImage>(BP->WidgetTree->FindWidget(TEXT("HeatBar")));
+	auto* Root = Cast<UCanvasPanel>(HUD->WidgetTree->RootWidget);
+	auto* ChildWidget = HUD->WidgetTree->FindWidget(TEXT("JetpackHeatBar"));
+	auto* ChildSlot = ChildWidget ? Cast<UCanvasPanelSlot>(ChildWidget->Slot) : nullptr;
+	if (!Bar || !Root || !ChildSlot) return false;
+	Bar->SetBrushFromMaterial(Material);
+	CastChecked<UCanvasPanelSlot>(Bar->Slot)->SetPosition(FVector2D::ZeroVector);
+	CastChecked<UCanvasPanelSlot>(Bar->Slot)->SetSize(FVector2D(210.f));
+	Bar->SetVisibility(ESlateVisibility::HitTestInvisible);
+	if (!Complete(BP, FVector2D(210.f))) return false;
+	// Position beside the crosshair. Designer slot remains the source of runtime placement.
+	ChildSlot->SetAnchors(FAnchors(.35f, .5f));
+	ChildSlot->SetAlignment(FVector2D(.5f));
+	ChildSlot->SetPosition(FVector2D::ZeroVector);
+	ChildSlot->SetSize(FVector2D(210.f));
+	ChildSlot->SetZOrder(30);
+	auto* Overlay = Cast<UImage>(HUD->WidgetTree->FindWidget(TEXT("JetpackHeatWarning")));
+	if (!Overlay)
+	{
+		Overlay = Widget<UImage>(HUD, TEXT("JetpackHeatWarning"));
+		Root->AddChildToCanvas(Overlay);
+	}
+	Overlay->SetBrushFromTexture(WarningArt);
+	Overlay->SetRenderOpacity(0.f);
+	Overlay->SetVisibility(ESlateVisibility::HitTestInvisible);
+	auto* OverlaySlot = CastChecked<UCanvasPanelSlot>(Overlay->Slot);
+	OverlaySlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
+	OverlaySlot->SetOffsets(FMargin(0.f));
+	OverlaySlot->SetAlignment(FVector2D::ZeroVector);
+	OverlaySlot->SetZOrder(-100); // Below controls; never intercepts pointer or Tab.
+	return Complete(HUD, FVector2D(1920.f, 1080.f));
+}
+
 bool UMiningGUIEditorLibrary::CreateMiningGUIAssets()
 {
 	using namespace MiningGUIEditor;

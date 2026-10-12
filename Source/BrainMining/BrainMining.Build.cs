@@ -20,6 +20,8 @@ public class BrainMining : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
+			"Niagara",
+			"PhysicsCore",
 			"Slate",
 			"SlateCore"
 		});

@@ -13,6 +13,7 @@ class UCameraComponent;
 class UInputAction;
 class UMiningComponent;
 class UMiningToolEffectsComponent;
+class UMiningBombToolComponent;
 class USpotLightComponent;
 class UPointLightComponent;
 class USceneComponent;
@@ -42,6 +43,8 @@ class ABrainMiningCharacter : public ACharacter
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<UMiningToolEffectsComponent> MiningToolEffects;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<UMiningBombToolComponent> BombTool;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<USpotLightComponent> MiningLight;
@@ -68,6 +71,10 @@ class ABrainMiningCharacter : public ACharacter
 	TObjectPtr<USceneComponent> DrillLeftMotion;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<UStaticMeshComponent> DrillLeftModel;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<USceneComponent> BombMount;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<UStaticMeshComponent> BombModel;
 
 protected:
 
@@ -145,5 +152,6 @@ public:
 	UStaticMeshComponent* GetDrillRightModel() const { return DrillRightModel; }
 	USceneComponent* GetDrillLeftMotion() const { return DrillLeftMotion; }
 	UStaticMeshComponent* GetDrillLeftModel() const { return DrillLeftModel; }
+	UStaticMeshComponent* GetBombModel() const { return BombModel; }
 
 };

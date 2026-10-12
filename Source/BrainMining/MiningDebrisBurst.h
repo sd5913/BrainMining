@@ -16,9 +16,12 @@ class BRAINMINING_API AMiningDebrisBurst : public AActor
 public:
 	AMiningDebrisBurst();
 	void Initialize(const TArray<TObjectPtr<UStaticMesh>>& Meshes, UMaterialInterface* Material, const FVector& SurfaceNormal, float CutRadius, int32 Count, float Lifetime);
+	void InitializeBlast(const TArray<TObjectPtr<UStaticMesh>>& Meshes, UMaterialInterface* Material, const FVector& Direction, float CutRadius, int32 Count, float Lifetime);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Effects")
 	TObjectPtr<UMaterialInterface> SourceMaterial;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Effects")
 	int32 ChunkCount = 0;
+private:
+	void SpawnChunks(const TArray<TObjectPtr<UStaticMesh>>& Meshes, UMaterialInterface* Material, const FVector& SurfaceNormal, float CutRadius, int32 Count, float Lifetime, bool bBlast);
 };

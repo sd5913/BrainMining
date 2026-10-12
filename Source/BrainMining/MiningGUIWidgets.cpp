@@ -1,4 +1,5 @@
 #include "MiningGUIWidgets.h"
+#include "MiningBombToolComponent.h"
 #include "MiningComponent.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
@@ -27,17 +28,44 @@ void UMiningGUIJetpackHeatWidget::NativePreConstruct()
 	Super::NativePreConstruct();
 	HeatMaterial = HeatBar ? HeatBar->GetDynamicMaterial() : nullptr;
 	SetHeatState(PreviewHeat, bPreviewOverheated);
+	SetRenderOpacity(IsDesignTime() ? 1.f : 0.f);
 }
 
-void UMiningGUIJetpackHeatWidget::SetHeatState(float Heat, bool bOverheated)
+void UMiningGUIJetpackHeatWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	GaugeFade = IdleSeconds = GaugeOpacity = WarningOpacity = 0.f;
+	SetRenderOpacity(0.f);
+}
+
+void UMiningGUIJetpackHeatWidget::SetHeatState(float Heat, bool bOverheated, bool bThrustActive)
 {
 	DisplayedHeat = FMath::Clamp(Heat, 0.f, 1.f);
 	bDisplayedOverheated = bOverheated;
+	bDisplayedThrustActive = bThrustActive;
 	if (HeatMaterial)
 	{
 		HeatMaterial->SetScalarParameterValue(TEXT("Heat"), DisplayedHeat);
 		HeatMaterial->SetScalarParameterValue(TEXT("Overheated"), bOverheated ? 1.f : 0.f);
+		HeatMaterial->SetScalarParameterValue(TEXT("WarningThreshold"), FMath::Clamp(WarningThreshold, .1f, .95f));
 	}
+}
+
+void UMiningGUIJetpackHeatWidget::AdvancePresentation(float DeltaSeconds)
+{
+	if (!FMath::IsFinite(DeltaSeconds) || DeltaSeconds <= 0.f) return;
+	const bool bActive = bDisplayedThrustActive || bDisplayedOverheated || DisplayedHeat > KINDA_SMALL_NUMBER;
+	IdleSeconds = bActive ? 0.f : IdleSeconds + DeltaSeconds;
+	const bool bShow = bActive || (GaugeFade > 0.f && IdleSeconds < FMath::Max(0.f, HideDelaySeconds));
+	const float Duration = FMath::Max(.01f, bShow ? GaugeFadeInSeconds : GaugeFadeOutSeconds);
+	GaugeFade = FMath::FInterpConstantTo(GaugeFade, bShow ? 1.f : 0.f, DeltaSeconds, 1.f / Duration);
+	GaugeOpacity = FMath::SmoothStep(0.f, 1.f, GaugeFade);
+	SetRenderOpacity(GaugeOpacity);
+	const float Threshold = FMath::Clamp(WarningThreshold, .1f, .95f);
+	const float Danger = FMath::Clamp((DisplayedHeat - Threshold) / (1.f - Threshold), 0.f, 1.f);
+	const float Target = DisplayedHeat >= Threshold ? FMath::Clamp(WarningMaxOpacity, 0.f, 1.f) * (.45f + .55f * Danger) : 0.f;
+	const float WarningDuration = FMath::Max(.01f, Target > WarningOpacity ? WarningFadeInSeconds : WarningFadeOutSeconds);
+	WarningOpacity = FMath::FInterpConstantTo(WarningOpacity, Target, DeltaSeconds, FMath::Max(.01f, WarningMaxOpacity) / WarningDuration);
 }
 
 void UMiningGUIAbilityWidget::NativePreConstruct()
@@ -226,7 +254,17 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 	{
 		const auto* Pawn = GetOwningPlayerPawn();
 		const auto* Flight = Pawn ? Pawn->FindComponentByClass<UMiningCharacterMovementComponent>() : nullptr;
-		JetpackHeatBar->SetHeatState(Flight ? Flight->JetpackHeat : 0.f, Flight && Flight->IsJetpackOverheated());
+		const bool bHeatEnabled = Flight && Flight->FlightSettings.bEnabled && Flight->FlightSettings.bEnableHeat;
+		JetpackHeatBar->SetHeatState(bHeatEnabled ? Flight->JetpackHeat : 0.f, bHeatEnabled && Flight->IsJetpackOverheated(), bHeatEnabled && Flight->IsFlightThrustActive());
+		JetpackHeatBar->AdvancePresentation(DeltaTime);
+	}
+	if (JetpackHeatWarning) JetpackHeatWarning->SetRenderOpacity(JetpackHeatBar ? JetpackHeatBar->WarningOpacity : 0.f);
+	if (AbilityG)
+	{
+		const APawn* Pawn = GetOwningPlayerPawn();
+		const auto* Bomb = Pawn ? Pawn->FindComponentByClass<UMiningBombToolComponent>() : nullptr;
+		AbilityG->SetUsed(Bomb && Bomb->bEquipped);
+		AbilityG->SetCooldownRemaining(0.f);
 	}
 	if (AbilityV)
 	{

@@ -49,6 +49,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void ResetRock() override;
 	virtual bool MineSphere(FVector WorldCenter, float WorldRadius) override;
+	virtual bool MineBlast(FVector WorldCenter, float WorldRadius, float Roughness = .32f, int32 Seed = 1) override;
 	void SetGeneratedMesh(UE::Geometry::FDynamicMesh3&& Mesh);
 	// Large external regions explicitly opt in; existing mining grids keep their original limit.
 	bool SetChunkedMesh(const UE::Geometry::FDynamicMesh3& Mesh, double Length, bool bSpatial = false, bool bAllowLargeSpatialGrid = false);
@@ -113,7 +114,7 @@ private:
 	TObjectPtr<UMaterialInstanceDynamic> GuideMaterial;
 	void ClearChunks();
 	void UpdateChunkStats();
-	bool MineChunks(FVector WorldCenter, float WorldRadius);
+	bool MineChunks(FVector WorldCenter, float WorldRadius, const UE::Geometry::FDynamicMesh3* WorldCutter = nullptr);
 	void ScheduleSimplification(int32 Index);
 	TFuture<TSharedPtr<FMiningSimplificationResult, ESPMode::ThreadSafe>> SimplificationTask;
 	uint64 MeshGeneration = 0;

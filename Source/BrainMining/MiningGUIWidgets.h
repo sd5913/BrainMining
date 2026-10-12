@@ -12,7 +12,7 @@ class UTextBlock;
 class UTexture2D;
 class UMaterialInstanceDynamic;
 
-/** Editable image/material with a left-to-right mask driven by actual flight state. */
+/** Transient arc gauge driven by actual flight heat; presentation never controls flight. */
 UCLASS()
 class BRAINMINING_API UMiningGUIJetpackHeatWidget : public UUserWidget
 {
@@ -22,11 +22,26 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Jetpack Heat") bool bPreviewOverheated = false;
 	UPROPERTY(BlueprintReadOnly, Category="GUI|Jetpack Heat") float DisplayedHeat = 0.f;
 	UPROPERTY(BlueprintReadOnly, Category="GUI|Jetpack Heat") bool bDisplayedOverheated = false;
-	UFUNCTION(BlueprintCallable, Category="GUI|Jetpack Heat") void SetHeatState(float Heat, bool bOverheated);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Jetpack Heat", meta=(ClampMin="0.1", ClampMax="0.95")) float WarningThreshold = .75f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Jetpack Heat", meta=(ClampMin="0.01")) float GaugeFadeInSeconds = .16f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Jetpack Heat", meta=(ClampMin="0.01")) float GaugeFadeOutSeconds = .35f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Jetpack Heat", meta=(ClampMin="0")) float HideDelaySeconds = .25f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Jetpack Heat", meta=(ClampMin="0", ClampMax="1")) float WarningMaxOpacity = .55f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Jetpack Heat", meta=(ClampMin="0.01")) float WarningFadeInSeconds = .25f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="GUI|Jetpack Heat", meta=(ClampMin="0.01")) float WarningFadeOutSeconds = .45f;
+	UPROPERTY(BlueprintReadOnly, Category="GUI|Jetpack Heat") float GaugeOpacity = 0.f;
+	UPROPERTY(BlueprintReadOnly, Category="GUI|Jetpack Heat") float WarningOpacity = 0.f;
+	UFUNCTION(BlueprintCallable, Category="GUI|Jetpack Heat") void SetHeatState(float Heat, bool bOverheated, bool bThrustActive = false);
+	/** Called once by the owning HUD, including while fully transparent. */
+	UFUNCTION(BlueprintCallable, Category="GUI|Jetpack Heat") void AdvancePresentation(float DeltaSeconds);
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UImage> HeatBar;
 protected:
 	virtual void NativePreConstruct() override;
+	virtual void NativeConstruct() override;
 	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> HeatMaterial;
+	bool bDisplayedThrustActive = false;
+	float GaugeFade = 0.f;
+	float IdleSeconds = 0.f;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMiningGUIUpgradeRequest, int32, ItemIndex, int32, RequestedLevel);
@@ -139,6 +154,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIAbilityWidget> AbilityG;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIAbilityWidget> AbilityV;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidgetOptional)) TObjectPtr<UMiningGUIJetpackHeatWidget> JetpackHeatBar;
+	UPROPERTY(BlueprintReadOnly, meta=(BindWidgetOptional)) TObjectPtr<UImage> JetpackHeatWarning;
 protected:
 	virtual void NativeConstruct() override;
 	virtual FReply NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event) override;

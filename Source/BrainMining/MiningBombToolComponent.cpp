@@ -56,7 +56,7 @@ void UMiningBombToolComponent::Stow()
 
 bool UMiningBombToolComponent::ThrowBomb()
 {
-	if (!bEquipped || !CanUse()) return false;
+	if (!bEquipped || !CanUse() || (bUseInventory && BombCount <= 0)) return false;
 	auto* Character = Cast<ABrainMiningCharacter>(GetOwner());
 	UStaticMesh* Mesh = Character ? Character->GetBombModel()->GetStaticMesh() : nullptr;
 	if (!Mesh) return false;
@@ -84,6 +84,7 @@ bool UMiningBombToolComponent::ThrowBomb()
 		+ FVector::UpVector * FMath::Clamp(Settings.ThrowUpSpeed, 0.f, 1000.f)
 		+ Character->GetVelocity() * FMath::Clamp(Settings.InheritedVelocity, 0.f, 1.f);
 	Bomb->Launch(Mesh, LoadedExplosion, this, Settings, Velocity);
+	if (bUseInventory) --BombCount;
 	LastThrownBomb = Bomb;
 	ThrownBombs.RemoveAll([](const auto& Entry) { return !Entry.IsValid(); });
 	ThrownBombs.Add(Bomb);
@@ -94,7 +95,18 @@ bool UMiningBombToolComponent::ThrowBomb()
 void UMiningBombToolComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, TickFunction);
+	UpdateInventory(DeltaTime);
 	if (auto* Character = Cast<ABrainMiningCharacter>(GetOwner())) Character->GetBombModel()->SetVisibility(bEquipped && CanUse());
+}
+
+void UMiningBombToolComponent::UpdateInventory(float DeltaSeconds)
+{
+	if (!bUseInventory || !FMath::IsFinite(DeltaSeconds) || DeltaSeconds <= 0) return;
+	if (BombCount >= MaxBombs) { RechargeProgress = 0; return; }
+	RechargeProgress += DeltaSeconds / FMath::Max(.1f, RechargeSeconds);
+	const int32 Added = FMath::Min(MaxBombs - BombCount, FMath::FloorToInt(RechargeProgress));
+	BombCount += Added;
+	RechargeProgress = BombCount >= MaxBombs ? 0 : RechargeProgress - Added;
 }
 
 void UMiningBombToolComponent::RecordExplosion(const FVector& Location)

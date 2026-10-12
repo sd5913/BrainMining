@@ -62,7 +62,7 @@ bool UMiningDesignerLibrary::PrepareCampaignMinerals(AMiningTreasureField* Field
         if(!D || P.Hosts.IsEmpty()){++Failures;continue;}
         auto* Preview=Field->GetWorld()->SpawnActor<AMiningTreasure>(P.Transform.GetLocation(),P.Transform.Rotator());
         Preview->CoveringRocks=P.Hosts;
-        const bool Configured=Preview->Configure(*D,P.Value,Field->TreasureMaterial);
+        const bool Configured=Preview->Configure(*D,D->ValuesBySize.IndexOfByKey(P.Value),Field->TreasureMaterial);
         const FVector Normal=P.Surface.GetRotation().GetForwardVector();
         const float Depth=FMath::Max(85.f,float(Preview->Model->Bounds.SphereRadius)+55.f)+(P.RouteProgress>.82f?35.f:0.f);
         P.Transform.SetLocation(P.Surface.GetLocation()-Normal*Depth);

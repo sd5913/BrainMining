@@ -5,6 +5,8 @@
 #include "GeneratedMiningRock.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 #include "Components/DynamicMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "StaticMeshResources.h"
@@ -17,16 +19,51 @@
 #include "UDynamicMesh.h"
 #include "UObject/ConstructorHelpers.h"
 
+TArray<int32> FMiningTreasureDefinition::DefaultValues(FName TreasureId)
+{
+    const TArray<TArray<int32>> Values = {{2,3,4,5}, {8,10,15,20}, {40,60,80,100}, {200,300,400,500},
+        {750,1000,1500,2000}, {4000,6000,8000,10000}, {15000,25000,35000,50000},
+        {75000,125000,175000,250000}, {400000,600000,800000,1000000}};
+    for (int32 Index = 0; Index < Values.Num(); ++Index)
+        if (TreasureId == FName(*FString::FromInt(Index + 1))) return Values[Index];
+    return {};
+}
+
+bool FMiningTreasureDefinition::HasValidSizeRules() const
+{
+    if (ValuesBySize.Num() != 4 || SizeMultipliers.Num() != 4) return false;
+    for (int32 Index = 0; Index < 4; ++Index)
+    {
+        if (ValuesBySize[Index] <= 0 || !FMath::IsFinite(SizeMultipliers[Index]) || SizeMultipliers[Index] <= 0) return false;
+        if (Index > 0 && (ValuesBySize[Index] <= ValuesBySize[Index-1] || SizeMultipliers[Index] <= SizeMultipliers[Index-1])) return false;
+    }
+    return true;
+}
+
 bool FMiningTreasureDefinition::IsEligible(FName Region, bool bGuide) const
 {
-    return !Id.IsNone() && Model && FMath::IsFinite(Weight) && Weight > 0 && MinValue >= 0 && MaxValue >= MinValue &&
+    return !Id.IsNone() && Model && FMath::IsFinite(Weight) && Weight > 0 && HasValidSizeRules() &&
         !Scale.ContainsNaN() && Scale.GetMin() > 0 && Regions.Contains(Region) && (bGuide ? bGuideLayer : bNormalLayer);
 }
 
 AMiningTreasure::AMiningTreasure()
 {
+    DropBody = CreateDefaultSubobject<UBoxComponent>(TEXT("DropBody"));
+    SetRootComponent(DropBody);
+    DropBody->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    DropBody->SetCollisionObjectType(ECC_PhysicsBody);
+    DropBody->SetCollisionResponseToAllChannels(ECR_Ignore);
+    DropBody->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+    DropBody->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+    DropBody->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
+    DropBody->SetGenerateOverlapEvents(false);
+    DropBody->SetCanEverAffectNavigation(false);
+    DropBody->SetUseCCD(true);
+    DropBody->SetLinearDamping(.8f);
+    DropBody->SetAngularDamping(2.f);
     Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TreasureModel"));
-    SetRootComponent(Model);
+    Model->SetupAttachment(DropBody);
+    Model->BodyInstance.bAutoWeld = false;
     Model->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     Model->SetCollisionResponseToAllChannels(ECR_Ignore);
     Model->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
@@ -42,6 +79,8 @@ AMiningTreasure::AMiningTreasure()
     GlowLight->IndirectLightingIntensity = 0;
     CrystalClues = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("EmbeddedCrystalClues"));
     CrystalClues->SetupAttachment(Model);
+    // Rock clues stay anchored to the terrain when the gem starts simulating physics.
+    CrystalClues->SetAbsolute(true,true,true);
     CrystalClues->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     CrystalClues->SetCastShadow(false);
     CrystalClues->SetCanEverAffectNavigation(false);
@@ -49,19 +88,34 @@ AMiningTreasure::AMiningTreasure()
 
 float AMiningTreasure::ValueScale(const FMiningTreasureDefinition& Definition, int32 InValue)
 {
-    if(!Definition.bScaleWithValue || Definition.MaxValue<=Definition.MinValue) return 1.f;
-    const float Ratio=FMath::Clamp(float(InValue-Definition.MinValue)/float(Definition.MaxValue-Definition.MinValue),0.f,1.f);
-    return FMath::Lerp(.70f,1.35f,Ratio);
+    const int32 Tier=Definition.ValuesBySize.IndexOfByKey(InValue);
+    return Definition.SizeMultipliers.IsValidIndex(Tier)?Definition.SizeMultipliers[Tier]:1.f;
 }
 
-bool AMiningTreasure::Configure(const FMiningTreasureDefinition& Definition, int32 InValue, UMaterialInterface* Material)
+bool AMiningTreasure::Configure(const FMiningTreasureDefinition& Definition, int32 InSizeTier, UMaterialInterface* Material)
 {
+    if (!Definition.HasValidSizeRules() || !Definition.ValuesBySize.IsValidIndex(InSizeTier)) return false;
     TreasureId = Definition.Id;
     TreasureName = Definition.Name;
-    Value = InValue;
+    SizeTier = InSizeTier;
+    Value = Definition.ValuesBySize[SizeTier];
+    const FVector ModelScale = Definition.Scale * Definition.SizeMultipliers[SizeTier];
     BaseColor = Definition.Color;
     Model->SetStaticMesh(Definition.Model);
-    Model->SetRelativeScale3D(Definition.Scale*ValueScale(Definition,InValue));
+    Model->SetRelativeScale3D(ModelScale);
+    if (Definition.Model)
+    {
+        const auto Bounds = Definition.Model->GetBounds();
+        const FVector CenterOffset = Bounds.Origin * ModelScale;
+        AddActorWorldOffset(GetActorQuat().RotateVector(Model->GetRelativeLocation() + CenterOffset));
+        Model->SetRelativeLocation(-CenterOffset);
+        DropBody->SetBoxExtent(Bounds.BoxExtent * ModelScale);
+        auto* MaterialPhysics = NewObject<UPhysicalMaterial>(this);
+        MaterialPhysics->Friction = .7f;
+        MaterialPhysics->Restitution = .25f;
+        DropBody->SetPhysMaterialOverride(MaterialPhysics);
+    }
+    BuriedTransform = GetActorTransform();
     if (Material)
     {
         auto* Tint = UMaterialInstanceDynamic::Create(Material, this);
@@ -86,7 +140,7 @@ bool AMiningTreasure::Configure(const FMiningTreasureDefinition& Definition, int
             const FVector First = FVector(Positions.VertexPosition(LOD.IndexBuffer.GetIndex(Offset)));
             const FVector Second = FVector(Positions.VertexPosition(LOD.IndexBuffer.GetIndex(Offset+1)));
             const FVector Third = FVector(Positions.VertexPosition(LOD.IndexBuffer.GetIndex(Offset+2)));
-            TotalArea += FVector::CrossProduct((Second-First)*Definition.Scale, (Third-First)*Definition.Scale).Size()*.5;
+            TotalArea += FVector::CrossProduct((Second-First)*ModelScale, (Third-First)*ModelScale).Size()*.5;
             Areas.Add(TotalArea);
         }
         FRandomStream Samples(4701);
@@ -127,13 +181,21 @@ bool AMiningTreasure::Configure(const FMiningTreasureDefinition& Definition, int
     return !SurfaceSamples.IsEmpty();
 }
 
-float AMiningTreasure::MeasureExposure() const
+float AMiningTreasure::MeasureExposure(FVector* EscapeDirection) const
 {
+    if (bReleased) return 1;
     if (SurfaceSamples.IsEmpty()) return 0;
     TArray<FVector> Points;for(const FVector& P:SurfaceSamples)Points.Add(Model->GetComponentTransform().TransformPosition(P));
     TArray<bool> Covered;MarkCoveredPoints(CoveringRocks,Points,Covered);
     int32 FreeCount = 0;
-    for (bool bCovered : Covered) if (!bCovered) ++FreeCount;
+    FVector FreeDirection = FVector::ZeroVector;
+    for (int32 Index = 0; Index < Covered.Num(); ++Index)
+        if (!Covered[Index])
+        {
+            ++FreeCount;
+            FreeDirection += (Model->GetComponentTransform().TransformPosition(SurfaceSamples[Index]) - Model->Bounds.Origin).GetSafeNormal();
+        }
+    if (EscapeDirection) *EscapeDirection = FreeDirection.GetSafeNormal();
     return float(FreeCount) / SurfaceSamples.Num();
 }
 
@@ -162,12 +224,96 @@ void AMiningTreasure::MarkCoveredPoints(const TArray<TObjectPtr<ADiggableRock>>&
     }
 }
 
-void AMiningTreasure::ConfigureCrystalClues(const FMiningTreasurePlacement& Placement)
+void AMiningTreasure::ConfigureCrystalClues(const FMiningTreasurePlacement& Placement, UStaticMesh* FragmentMesh)
 {
-    CrystalClues->SetStaticMesh(Model->GetStaticMesh());
-    CrystalClues->SetMaterial(0,Model->GetMaterial(0));
+    CrystalClues->SetWorldTransform(FTransform::Identity);
+    CrystalClues->SetStaticMesh(FragmentMesh);
+    auto* GemMaterial=Cast<UMaterialInstanceDynamic>(Model->GetMaterial(0));
+    auto* Tint=UMaterialInstanceDynamic::Create(GemMaterial?GemMaterial->Parent.Get():Model->GetMaterial(0),this);
+    if(GemMaterial)Tint->CopyParameterOverrides(GemMaterial);
+    Tint->SetScalarParameterValue(TEXT("Style"),-1);
+    Tint->SetScalarParameterValue(TEXT("Roughness"),.65f);
+    Tint->SetScalarParameterValue(TEXT("Emission"),.15f);
+    CrystalClues->SetMaterial(0,Tint);
     CrystalTransforms=Placement.Fragments;CrystalSupports=Placement.FragmentSupports;
-    for(const auto& T:CrystalTransforms)CrystalClues->AddInstance(T,true);
+    UpdateCrystalClues();
+}
+
+void AMiningTreasure::UpdateCrystalClues()
+{
+    if(CrystalSupports.IsEmpty())return;
+    TArray<bool> Covered;MarkCoveredPoints(CoveringRocks,CrystalSupports,Covered);
+    CrystalClues->ClearInstances();
+    for(int32 I=0;I<CrystalTransforms.Num();++I)
+        if(Covered.IsValidIndex(I) && Covered[I])CrystalClues->AddInstance(CrystalTransforms[I],true);
+}
+
+bool AMiningTreasure::TryRelease()
+{
+    if (bReleased || bCollected || !GetWorld()) return false;
+    FVector EscapeDirection;
+    Exposure = MeasureExposure(&EscapeDirection);
+    if (!IsExposureEligible(Exposure)) return false;
+    FVector TowardPlayer = EscapeDirection;
+    if (auto* Controller = GetWorld()->GetFirstPlayerController(); Controller && Controller->GetPawn())
+        TowardPlayer = (Controller->GetPawn()->GetPawnViewLocation() - GetActorLocation()).GetSafeNormal();
+    const FVector Directions[] = {EscapeDirection.IsNearlyZero() ? FVector::UpVector : EscapeDirection, TowardPlayer, FVector::UpVector};
+    FCollisionQueryParams Query(SCENE_QUERY_STAT(TreasureDropClearance), true, this);
+    if (auto* Controller = GetWorld()->GetFirstPlayerController()) Query.AddIgnoredActor(Controller->GetPawn());
+    const auto Shape = FCollisionShape::MakeBox(DropBody->GetScaledBoxExtent() + FVector(1));
+    const float MaxOffset = FMath::Clamp(float(Model->Bounds.SphereRadius * 2 + 20), 40.f, 180.f);
+    for (float Distance = 0; Distance <= MaxOffset; Distance += 5)
+        for (const FVector& Direction : Directions)
+        {
+            const FVector Candidate = GetActorLocation() + Direction * Distance;
+            if (GetWorld()->OverlapBlockingTestByChannel(Candidate, GetActorQuat(), ECC_PhysicsBody, Shape, Query)) continue;
+            SetActorLocation(Candidate, false, nullptr, ETeleportType::TeleportPhysics);
+            DropBody->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+            DropBody->SetSimulatePhysics(true);
+            if (!DropBody->IsSimulatingPhysics())
+            {
+                DropBody->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+                SetActorTransform(BuriedTransform, false, nullptr, ETeleportType::TeleportPhysics);
+                return false;
+            }
+            bReleased = true;
+            Exposure = 1;
+            DropBody->SetPhysicsLinearVelocity(Direction * 90 + FVector(0, 0, 100));
+            DropBody->SetPhysicsAngularVelocityInDegrees(FVector(45, 70, 25));
+            return true;
+        }
+    return false;
+}
+
+void AMiningTreasure::SetDropActive(bool bActive)
+{
+    if (!bReleased) return;
+    if ((!bActive || bCollected) && !bDropPaused)
+    {
+        PausedVelocity = DropBody->GetPhysicsLinearVelocity();
+        PausedSpin = DropBody->GetPhysicsAngularVelocityInDegrees();
+        DropBody->SetSimulatePhysics(false);
+        bDropPaused = true;
+    }
+    else if (bActive && !bCollected && bDropPaused)
+    {
+        DropBody->SetSimulatePhysics(true);
+        DropBody->SetPhysicsLinearVelocity(PausedVelocity);
+        DropBody->SetPhysicsAngularVelocityInDegrees(PausedSpin);
+        bDropPaused = false;
+    }
+}
+
+void AMiningTreasure::ResetDrop()
+{
+    if (!bReleased || bCollected) return;
+    DropBody->SetSimulatePhysics(false);
+    DropBody->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    SetActorTransform(BuriedTransform, false, nullptr, ETeleportType::TeleportPhysics);
+    bReleased = bDropPaused = false;
+    PausedVelocity = PausedSpin = FVector::ZeroVector;
+    Exposure = MeasureExposure();
+    HintAmount = BuriedHintAmount;
 }
 
 void AMiningTreasure::SetHighlighted(bool bEnabled)
@@ -182,6 +328,7 @@ void AMiningTreasure::AttachBuriedHint(const FMiningTreasureDefinition& Definiti
 {
     HintMaterials.Reset();
     HintAmount = Definition.bBuriedHint ? 1.f : 0.f;
+    BuriedHintAmount = HintAmount;
     for (ADiggableRock* Rock : CoveringRocks)
     {
         if (!IsValid(Rock) || !Rock->RockMaterial) continue;
@@ -201,7 +348,7 @@ void AMiningTreasure::AttachBuriedHint(const FMiningTreasureDefinition& Definiti
 
 void AMiningTreasure::UpdateGlow(float DeltaSeconds, bool bAllowLight)
 {
-    if (bCollected) HintAmount = FMath::Max(0.f, HintAmount-DeltaSeconds*4);
+    if (bCollected || bReleased) HintAmount = FMath::Max(0.f, HintAmount-DeltaSeconds*4);
     for (UMaterialInstanceDynamic* Hint : HintMaterials) if (IsValid(Hint)) Hint->SetScalarParameterValue(TEXT("HintAmount"), HintAmount);
     GlowLight->SetVisibility(bAllowLight && !bCollected && Exposure > .02f);
     GlowLight->SetIntensity(28*FMath::Clamp(Exposure,0.f,1.f));
@@ -222,7 +369,6 @@ AMiningTreasureField::AMiningTreasureField()
     GuideMaterial = Tint.Object;
     const TCHAR* Names[] = {TEXT("煤炭"),TEXT("铜矿"),TEXT("锡矿"),TEXT("铁矿"),TEXT("硫磺"),TEXT("孔雀石"),TEXT("青金石"),TEXT("紫水晶"),TEXT("钻石")};
     const TCHAR* Colors[] = {TEXT("1C1C1C"),TEXT("D4763A"),TEXT("E4E4E0"),TEXT("5E7388"),TEXT("F2D63A"),TEXT("2F9E6B"),TEXT("2A4FA3"),TEXT("8B4FC4"),TEXT("E7FBFF")};
-    const int32 Values[] = {1,5,20,100,500,2000,10000,50000,250000,1000000};
     for (int32 Index = 0; Index < 9; ++Index)
     {
         auto& Definition = Definitions.AddDefaulted_GetRef();
@@ -237,12 +383,24 @@ AMiningTreasureField::AMiningTreasureField()
         Definition.EmissiveStrength = Index < 4 ? .12f : Index == 8 ? .7f : .45f;
         Definition.Roughness = Index == 0 ? .65f : Index < 4 ? .38f : .28f;
         Definition.Metallic = Index > 0 && Index < 4 ? .65f : .08f;
-        Definition.MinValue = Values[Index];
-        Definition.MaxValue = Values[Index + 1];
+        Definition.ValuesBySize = FMiningTreasureDefinition::DefaultValues(Definition.Id);
         Definition.Regions.Add(RegionId);
     }
     if (auto* Art = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/Showcase/Treasure/Materials/M_TreasureMineral.M_TreasureMineral"), nullptr, LOAD_NoWarn|LOAD_Quiet))) TreasureMaterial = Art;
     if (auto* Art = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/Showcase/Treasure/Materials/M_TreasureRock.M_TreasureRock"), nullptr, LOAD_NoWarn|LOAD_Quiet))) { RockMaterial = Art; GuideMaterial = Art; }
+}
+
+void AMiningTreasureField::PostLoad()
+{
+    Super::PostLoad();
+    for (auto& Definition : Definitions)
+        if (Definition.ValuesBySize.IsEmpty())
+        {
+            Definition.ValuesBySize = FMiningTreasureDefinition::DefaultValues(Definition.Id);
+            if(bUseAuthoredPlacements && Definition.ValuesBySize.Num()==4)
+                for(int32 I=0;I<4;++I) Definition.SizeMultipliers[I]=FMath::Lerp(.7f,1.35f,
+                    float(Definition.ValuesBySize[I]-Definition.ValuesBySize[0])/float(Definition.ValuesBySize[3]-Definition.ValuesBySize[0]));
+        }
 }
 
 int32 AMiningTreasureField::ChooseDefinition(const TArray<FMiningTreasureDefinition>& Catalogue, FName Region, bool bGuide, FRandomStream& Random)
@@ -287,6 +445,7 @@ void AMiningTreasureField::ResetExhibit()
     CollectedCount = 0;
     ToastRemaining = 0;
     FRandomStream Random(RandomSeed);
+    RewardRandom.Initialize(RandomSeed ^ 0x51D39A);
     if(bUseAuthoredPlacements){SpawnAuthored();return;}
     TSet<FName> Seen;
     for (const auto& Definition : Definitions)
@@ -324,8 +483,8 @@ void AMiningTreasureField::ResetExhibit()
             auto* Item = GetWorld()->SpawnActor<AMiningTreasure>(RockTransform.TransformPosition(Offset), GetActorRotation());
             Item->SetOwner(this);
             Item->CoveringRocks.Add(Rock);
-            const int32 Value = Random.RandRange(Definition.MinValue, Definition.MaxValue);
-            const bool bHasSurface = Item->Configure(Definition, Value, TreasureMaterial);
+            const int32 SizeTier = Random.RandRange(0, 3);
+            const bool bHasSurface = Item->Configure(Definition, SizeTier, TreasureMaterial);
             const FBox LocalBounds = Item->Model->Bounds.GetBox().TransformBy(RockTransform.ToInverseMatrixWithScale());
             const FBox SafeBounds(-Rock->RockSize * .5 + FVector(8), Rock->RockSize * .5 - FVector(8));
             if (!bHasSurface || !SafeBounds.IsInsideOrOn(LocalBounds.Min) || !SafeBounds.IsInsideOrOn(LocalBounds.Max))
@@ -344,6 +503,7 @@ void AMiningTreasureField::ResetExhibit()
 void AMiningTreasureField::SetAreaActive(bool bActive)
 {
     bAreaActive = bActive;
+    for (AMiningTreasure* Item : Items) if (IsValid(Item)) Item->SetDropActive(bActive && (!bUseAuthoredPlacements || Item->ActorHasTag(ActiveAreaTag)));
     if (!bActive && IsValid(Target)) Target->SetHighlighted(false);
     if (!bActive) Target = nullptr;
     if (!bActive) for (AMiningTreasure* Item : Items) if (IsValid(Item)) Item->GlowLight->SetVisibility(false);
@@ -386,11 +546,17 @@ void AMiningTreasureField::Tick(float DeltaSeconds)
     for (int32 Index = 0; Index < Items.Num(); ++Index)
     {
         auto* Item = Items[Index].Get();
-        if (!IsValid(Item) || Item->bCollected || (bUseAuthoredPlacements && !Item->ActorHasTag(ActiveAreaTag))) continue;
-        int32 Cuts=0;for(ADiggableRock* Rock:Item->CoveringRocks)if(IsValid(Rock))Cuts+=Rock->SuccessfulCuts;
+        if (!IsValid(Item) || (bUseAuthoredPlacements && !Item->ActorHasTag(ActiveAreaTag))) continue;
+        int32 Cuts=0;for(ADiggableRock* Rock:Item->CoveringRocks)Cuts+=IsValid(Rock)?Rock->SuccessfulCuts:1000003;
         if (ObservedCuts[Index] != Cuts)
         {
-            Item->Exposure = Item->MeasureExposure();
+            Item->UpdateCrystalClues();
+            if(!Item->bCollected)
+            {
+                if (Cuts == 0 && ObservedCuts[Index] > 0) Item->ResetDrop();
+                Item->Exposure = Item->MeasureExposure();
+                Item->TryRelease();
+            }
             ObservedCuts[Index] = Cuts;
         }
     }
@@ -403,16 +569,20 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
     if (!IsValid(Target) || !AMiningTreasure::IsExposureEligible(Target->Exposure)) return false;
     auto* Item = Target.Get();
     Item->bCollected = true;
+    Item->SetDropActive(false);
     Item->SetHighlighted(false);
+    Item->CollectedValue = Item->Value;
     if (bUseSharedWallet && GetGameInstance())
     {
         auto* Wallet = GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
-        Wallet->AddCoins(Item->Value);
+        Item->CollectedValue = Wallet->CalculateMineralReward(Item->Value, RewardRandom.FRand());
+        Wallet->AddCoins(Item->CollectedValue);
         Coins = Wallet->Balance;
     }
     else Coins += Item->Value;
     ++CollectedCount;
-    Toast = FString::Printf(TEXT("%s  +%d 金币"), *Item->TreasureName.ToString(), Item->Value);
+    Toast = FString::Printf(TEXT("%s  +%lld 金币%s"), *Item->TreasureName.ToString(), Item->CollectedValue,
+        Item->CollectedValue > Item->Value ? TEXT(" · 养成奖励翻倍！") : TEXT(""));
     ToastRemaining = 3;
     Item->SetActorEnableCollision(false);
     if(bUseAuthoredPlacements) Item->Model->SetVisibility(false,false);
@@ -424,7 +594,7 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
 FString AMiningTreasureField::GetPrompt() const
 {
     if (ToastRemaining > 0) return Toast;
-    if (IsValid(Target)) return FString::Printf(TEXT("%s · %d 金币 · 暴露 %.0f%%\n%s"), *Target->TreasureName.ToString(), Target->Value, Target->Exposure * 100,
+    if (IsValid(Target)) return FString::Printf(TEXT("%s · 大小 %d/4 · 基础 %d 金币 · 暴露 %.0f%%\n%s"), *Target->TreasureName.ToString(), Target->SizeTier+1, Target->Value, Target->Exposure * 100,
         AMiningTreasure::IsExposureEligible(Target->Exposure) ? TEXT("[ E ] 领取宝物") : TEXT("继续挖掘，暴露超过 50% 后可领取"));
     if (Items.IsEmpty()) return GenerationStatus;
     if (bUseSharedWallet) return FString::Printf(TEXT("左键挖掘 · 瞄准宝物按 E 领取 · 已领取 %d / %d\n金币供全部体验区共用；Tab 打开升级面板"), CollectedCount, Items.Num());

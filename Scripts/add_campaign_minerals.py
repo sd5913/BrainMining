@@ -21,16 +21,17 @@ def populate(world, hall):
     field.set_editor_property('use_shared_wallet',True)
     field.set_editor_property('use_authored_placements',True)
     field.set_editor_property('random_seed',recipe['seed'])
+    assert unreal.MiningDesignerLibrary.build_crystal_clue_mesh()
+    field.set_editor_property('crystal_clue_mesh',unreal.load_asset('/Game/Showcase/Treasure/Meshes/SM_CrystalClue'))
     mineral_material=field.treasure_material
     mineral_material.set_editor_property('used_with_instanced_static_meshes',True)
     unreal.MaterialEditingLibrary.recompile_material(mineral_material)
     assert unreal.EditorAssetLibrary.save_loaded_asset(mineral_material)
     definitions=list(field.definitions)
     for i,d in enumerate(definitions):
-        d.set_editor_property('value_tiers',recipe['values'][i])
-        d.set_editor_property('min_value',min(recipe['values'][i]))
-        d.set_editor_property('max_value',max(recipe['values'][i]))
-        d.set_editor_property('scale_with_value',True)
+        values=recipe['values'][i]
+        d.set_editor_property('values_by_size',values)
+        d.set_editor_property('size_multipliers',[.7+.65*(v-values[0])/(values[-1]-values[0]) for v in values])
         d.set_editor_property('regions',['BM_Campaign_Mine%02d'%(i//3+1)])
         d.set_editor_property('scale',unreal.Vector(.7,.7,.7))
     field.set_editor_property('definitions',definitions)

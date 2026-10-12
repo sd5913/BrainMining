@@ -17,6 +17,8 @@
 #include "Tests/AutomationCommon.h"
 #include "Tests/AutomationEditorCommon.h"
 #include "UnrealClient.h"
+#include "Engine/StaticMesh.h"
+#include "StaticMeshResources.h"
 
 namespace CampaignMineralTests
 {
@@ -54,7 +56,7 @@ public:
                 const int Id=FCString::Atoi(*Item->TreasureId.ToString());
                 Test->TestTrue(TEXT("Only the three assigned types occur in each mine"),Id>=Zone*3+1 && Id<=Zone*3+3);
                 const auto& D=Field->Definitions[Id-1];
-                Test->TestTrue(TEXT("Only one of the four discrete values is used"),D.ValueTiers.Contains(Item->Value));
+                Test->TestTrue(TEXT("Only one of the four discrete values is used"),D.ValuesBySize.Contains(Item->Value));
                 Test->TestTrue(TEXT("Real chunked host initially buries the whole gem"),Item->MeasureExposure()<.01f);
                 Test->TestTrue(TEXT("Each deposit has a scatter of crystal hints"),Item->CrystalClues->GetInstanceCount()>=15);
                 Test->TestTrue(TEXT("Displayed size follows the value"),Item->Model->GetComponentScale().Equals(D.Scale*AMiningTreasure::ValueScale(D,Item->Value),.001));
@@ -68,14 +70,16 @@ public:
                     if(Field->AuthoredPlacements[I].AreaTag==FName(*FString::Printf(TEXT("BM_Campaign_Mine%02d"),Zone+1)) && Field->AuthoredPlacements[I].bGuideLayer==GuideLayer)
                     {Samples.Add(I);break;}
             }
-            for(const auto& D:Field->Definitions)for(int I=1;I<D.ValueTiers.Num();++I)
-                Test->TestTrue(TEXT("Higher value always means a larger same-type gem"),AMiningTreasure::ValueScale(D,D.ValueTiers[I])>AMiningTreasure::ValueScale(D,D.ValueTiers[I-1]));
+            for(const auto& D:Field->Definitions)for(int I=1;I<D.ValuesBySize.Num();++I)
+                Test->TestTrue(TEXT("Higher value always means a larger same-type gem"),AMiningTreasure::ValueScale(D,D.ValuesBySize[I])>AMiningTreasure::ValueScale(D,D.ValuesBySize[I-1]));
             if(Samples.Num()!=6){Test->AddError(TEXT("Missing white/guide collection samples"));return true;}
+            const auto* Mesh=Field->CrystalClueMesh.Get();
+            Test->TestTrue(TEXT("Crystal clues use a simple eight-face shard"),Mesh && Mesh->GetRenderData()->LODResources[0].GetNumTriangles()==8);
             H->UnlockedArea=6;
         }
         else
         {
-            const int Sample=(Step-1)/5,Phase=(Step-1)%5;
+            const int Sample=(Step-1)/6,Phase=(Step-1)%6;
             if(Sample>=Samples.Num())return true;
             const int I=Samples[Sample];auto* Item=Field->Items[I].Get();const auto& P=Field->AuthoredPlacements[I];
             const FVector Normal=P.Surface.GetRotation().GetForwardVector();
@@ -103,19 +107,32 @@ public:
             }
             else if(Phase==2)
             {
-                Aim();Test->TestTrue(TEXT("Crystal clues persist after excavation"),Item->CrystalClues->IsVisible() && Item->CrystalClues->GetInstanceCount()==Fragments);
+                Aim();Test->TestTrue(TEXT("Excavation removes unsupported crystal clues"),Item->CrystalClues->GetInstanceCount()<Fragments);
+                for(int32 F=0;F<Item->CrystalClues->GetInstanceCount();++F)
+                {
+                    FTransform T;Item->CrystalClues->GetInstanceTransform(F,T,true);
+                    Test->TestTrue(TEXT("Remaining clues do not follow the falling gem"),P.Fragments.ContainsByPredicate([&](const auto& Original){return Original.Equals(T,.1);}));
+                }
                 FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/FString::Printf(TEXT("CampaignMineralPreview/%d_Exposed.png"),Sample),true,false);
             }
             else if(Phase==3){Aim();PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E,IE_Pressed,1));}
-            else
+            else if(Phase==4)
             {
                 PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E,IE_Released,0));
                 Test->TestTrue(TEXT("Real E collects the gem"),Item->bCollected && !Item->Model->IsVisible());
                 Test->TestEqual(TEXT("Shared wallet receives exactly its integer value"),Wallet->Balance,Balance+Item->Value);
                 Test->TestFalse(TEXT("A collected gem cannot pay twice"),Field->CollectTarget(PC));
-                Test->TestTrue(TEXT("Crystal clues remain visible after collection"),!Item->IsHidden() && Item->CrystalClues->IsVisible() && Item->CrystalClues->GetInstanceCount()==Fragments);
+                Test->TestTrue(TEXT("Collecting the gem does not hide supported clues"),!Item->IsHidden() && Item->CrystalClues->IsVisible());
+                for(ADiggableRock* Rock:Item->CoveringRocks)Rock->MineSphere(P.Transform.GetLocation(),550);
                 Field->ResetExhibit();Test->TestTrue(TEXT("Reset cannot respawn campaign rewards"),Field->Items[I]==Item && Item->bCollected);
                 FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/FString::Printf(TEXT("CampaignMineralPreview/%d_Collected.png"),Sample),true,false);
+            }
+            else
+            {
+                Test->TestEqual(TEXT("Clues also disappear when support is cut AFTER collection"),Item->CrystalClues->GetInstanceCount(),0);
+                // The wide cleanup cut can reach the next sample's vein. Restore only terrain;
+                // claimed rewards stay claimed, and dropped neighbours are re-buried on the next tick.
+                for(ADiggableRock* Rock:Item->CoveringRocks)Rock->ResetRock();
             }
         }
         ++Step;Changed=FPlatformTime::Seconds();return false;

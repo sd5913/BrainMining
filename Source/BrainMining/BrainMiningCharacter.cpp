@@ -12,6 +12,7 @@
 #include "MiningComponent.h"
 #include "MiningToolEffectsComponent.h"
 #include "MiningBombToolComponent.h"
+#include "MiningProgressionComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningTunnelGenerator.h"
 #include "EngineUtils.h"
@@ -48,6 +49,7 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 	MiningComponent = CreateDefaultSubobject<UMiningComponent>(TEXT("MiningComponent"));
 	MiningToolEffects = CreateDefaultSubobject<UMiningToolEffectsComponent>(TEXT("MiningToolEffects"));
 	BombTool = CreateDefaultSubobject<UMiningBombToolComponent>(TEXT("BombTool"));
+	Progression = CreateDefaultSubobject<UMiningProgressionComponent>(TEXT("Progression"));
 
 	// Keep mounts/models in the blueprint viewport. Only the inner Motion components animate.
 	PickaxeMount = CreateDefaultSubobject<USceneComponent>(TEXT("PickaxeMount"));

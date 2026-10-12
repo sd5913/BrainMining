@@ -1,6 +1,7 @@
 #include "Showcase/MiningTreasure.h"
 #include "DiggableRock.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
 #include "Engine/StaticMesh.h"
@@ -28,8 +29,8 @@ bool FTreasureRulesTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("Zero weights excluded"), AMiningTreasureField::ChooseDefinition(Catalogue, TEXT("TreasureShowcase"), false, Random), 4);
     Catalogue[4].bGuideLayer = false;
     TestEqual(TEXT("Layer filtering applies before sampling"), AMiningTreasureField::ChooseDefinition(Catalogue, TEXT("TreasureShowcase"), true, Random), INDEX_NONE);
-    Catalogue[4].MaxValue = -1;
-    TestEqual(TEXT("Invalid value range excluded"), AMiningTreasureField::ChooseDefinition(Catalogue, TEXT("TreasureShowcase"), false, Random), INDEX_NONE);
+    Catalogue[4].ValuesBySize[2] = -1;
+    TestEqual(TEXT("Invalid size value excluded"), AMiningTreasureField::ChooseDefinition(Catalogue, TEXT("TreasureShowcase"), false, Random), INDEX_NONE);
     return true;
 }
 
@@ -44,8 +45,18 @@ bool FTreasureExposureTest::RunTest(const FString& Parameters)
     {
         TestTrue(TEXT("Nine authored mesh assets replace engine primitives"), Definition.Model && Definition.Model->GetPathName().StartsWith(TEXT("/Game/Showcase/Treasure/Meshes/")));
         auto* Preview = World->SpawnActor<AMiningTreasure>();
-        TestTrue(TEXT("Custom model has valid collision and sampleable surface"), Preview->Configure(Definition, Definition.MinValue, Field->TreasureMaterial));
-        TestEqual(TEXT("Area-weighted external surface samples for every model"), Preview->GetSurfaceSampleCount(), 384);
+        double PreviousSize = 0;
+        for (int32 Tier = 0; Tier < 4; ++Tier)
+        {
+            TestTrue(TEXT("Every model size has sampleable collision"), Preview->Configure(Definition, Tier, Field->TreasureMaterial));
+            TestEqual(TEXT("Area-weighted external surface samples for every size"), Preview->GetSurfaceSampleCount(), 384);
+            TestEqual(TEXT("Size determines its exact value"), Preview->Value, Definition.ValuesBySize[Tier]);
+            TestTrue(TEXT("Drop collision follows the actual model size"), Preview->DropBody->GetScaledBoxExtent().Equals(Preview->Model->Bounds.BoxExtent, .01));
+            TestTrue(TEXT("Reconfiguring size does not translate the authored mesh"), Preview->Model->GetComponentLocation().IsNearlyZero(.01));
+            const double Size = Preview->Model->Bounds.SphereRadius;
+            TestTrue(TEXT("Each higher price has a physically larger model"), Size > PreviousSize);
+            PreviousSize = Size;
+        }
         Preview->Destroy();
     }
     Field->ResetExhibit();
@@ -58,9 +69,10 @@ bool FTreasureExposureTest::RunTest(const FString& Parameters)
         Ids.Add(Item->TreasureId);
         Values.Add(Item->Value);
         TestTrue(TEXT("Spawn completely buried"), Item->MeasureExposure() < .01f);
-        TestFalse(TEXT("No physics-release prerequisite"), Item->Model->IsSimulatingPhysics());
+        TestFalse(TEXT("Buried drop body cannot fall"), Item->DropBody->IsSimulatingPhysics());
+        TestFalse(TEXT("Buried mineral cannot release early"), Item->TryRelease());
         const auto* Definition = Field->Definitions.FindByPredicate([Item](const auto& Entry) { return Entry.Id == Item->TreasureId; });
-        TestTrue(TEXT("Value within definition"), Definition && Item->Value >= Definition->MinValue && Item->Value <= Definition->MaxValue);
+        TestTrue(TEXT("Value matches the generated size tier"), Definition && Definition->ValuesBySize.IsValidIndex(Item->SizeTier) && Item->Value == Definition->ValuesBySize[Item->SizeTier]);
     }
     auto* Item = Field->Items[0].Get();
     auto* Rock = Item->CoveringRocks[0].Get();

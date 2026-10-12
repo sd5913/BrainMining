@@ -1,6 +1,7 @@
 #include "MiningCharacterMovementComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/PlayerController.h"
 
 UMiningCharacterMovementComponent::UMiningCharacterMovementComponent()
 {
@@ -28,13 +29,15 @@ void UMiningCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTic
 
 void UMiningCharacterMovementComponent::UpdateJetpackHeat(float DeltaSeconds, bool bThrustRequested)
 {
-	if (!FlightSettings.bEnabled || !FlightSettings.bEnableHeat)
+	if (!FlightSettings.bEnabled || !FlightSettings.bEnableHeat || bCreativeFlight)
 	{
 		JetpackHeat = JetpackOverheatRemaining = JetpackOverheatDuration = 0.f;
+		CoolingDelayRemaining = 0;
 		return;
 	}
 	if (!FMath::IsFinite(DeltaSeconds) || DeltaSeconds <= 0.f) return;
 	const auto Settings = FlightSettings.Sanitized();
+	if (bThrustRequested) CoolingDelayRemaining = FMath::Max(0.f, CoolingDelay);
 	// Consume the remainder across transitions so cooldown is frame-rate independent.
 	float RemainingTime = DeltaSeconds;
 	while (RemainingTime > 0.f)
@@ -64,6 +67,9 @@ void UMiningCharacterMovementComponent::UpdateJetpackHeat(float DeltaSeconds, bo
 		}
 		else
 		{
+			const float Waiting = FMath::Min(RemainingTime, CoolingDelayRemaining);
+			CoolingDelayRemaining -= Waiting;
+			RemainingTime -= Waiting;
 			JetpackHeat = FMath::Max(0.f, JetpackHeat - RemainingTime / Settings.PassiveCoolSeconds);
 			return;
 		}
@@ -80,6 +86,13 @@ FVector UMiningCharacterMovementComponent::NewFallVelocity(const FVector& Initia
 	const FMiningFlightSettings Settings = FlightSettings.Sanitized();
 	const FVector Up = -GetGravityDirection();
 	const double OldVerticalSpeed = FVector::DotProduct(InitialVelocity, Up);
+	if (bCreativeFlight)
+	{
+		const auto* Controller = CharacterOwner ? Cast<APlayerController>(CharacterOwner->GetController()) : nullptr;
+		const bool bDescend = Controller && Controller->IsInputKeyDown(EKeys::LeftControl) && !CharacterOwner->IsMoveInputIgnored();
+		const double TargetSpeed = (bFlightInputHeld ? 1. : bDescend ? -1. : 0.) * Settings.AscentSpeed * FlightSizeScale;
+		return InitialVelocity + Up * (TargetSpeed - OldVerticalSpeed);
+	}
 	double VerticalSpeed = IsFlightThrustActive()
 		? FMath::FInterpConstantTo(OldVerticalSpeed, double(Settings.AscentSpeed * FlightSizeScale), double(DeltaTime), double(Settings.LiftAcceleration * FlightSizeScale))
 		: OldVerticalSpeed + FVector::DotProduct(Gravity, Up) * Settings.FallGravityMultiplier * DeltaTime;

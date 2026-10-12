@@ -14,6 +14,7 @@ class UInputAction;
 class UMiningComponent;
 class UMiningToolEffectsComponent;
 class UMiningBombToolComponent;
+class UMiningProgressionComponent;
 class USpotLightComponent;
 class UPointLightComponent;
 class USceneComponent;
@@ -45,6 +46,8 @@ class ABrainMiningCharacter : public ACharacter
 	TObjectPtr<UMiningToolEffectsComponent> MiningToolEffects;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<UMiningBombToolComponent> BombTool;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<UMiningProgressionComponent> Progression;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<USpotLightComponent> MiningLight;

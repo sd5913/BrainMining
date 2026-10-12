@@ -13,6 +13,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Editor.h"
 #include "Engine/Level.h"
+#include "Engine/LevelStreaming.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -93,7 +94,12 @@ public:
             InitialPawn=Pawn;
             Test->TestEqual(TEXT("Seven linear sections"),Hall->Areas.Num(),7);
             Test->TestEqual(TEXT("Starts directly in the first mine"),Hall->ActiveArea,0);
-            Test->TestEqual(TEXT("No streamed worlds"),World->GetStreamingLevels().Num(),0);
+            Test->TestEqual(TEXT("Four source rooms loaded seamlessly"),World->GetStreamingLevels().Num(),4);
+            for(int32 RoomIndex:{1,3,5,6})
+                Test->TestTrue(TEXT("Room holds a loaded source level reference"),Hall->Areas[RoomIndex].SourceLevel && Hall->Areas[RoomIndex].SourceLevel->GetLoadedLevel());
+            for(AActor* Room:{static_cast<AActor*>(First<APopupCloseStage>(World)),static_cast<AActor*>(Hall->Journey.Get()),
+                             static_cast<AActor*>(First<AWenSiPuzzle>(World)),static_cast<AActor*>(Hall->Ending.Get())})
+                Test->TestTrue(TEXT("Gameplay runs from source sublevel, never a stale persistent copy"),Room && Room->GetLevel()!=World->PersistentLevel);
             Test->TestEqual(TEXT("Exactly four collectibles, no tutorial duplicate"),Collection->Items.Num(),4);
             Test->TestFalse(TEXT("Unreached room cannot be selected"),Hall->EnterArea(6));
             int32 Regions=0;

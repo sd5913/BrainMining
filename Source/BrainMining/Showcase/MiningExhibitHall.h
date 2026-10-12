@@ -14,6 +14,7 @@ class AMiningGiantRoomEntrance;
 class UMiningGUIHUDWidget;
 class UPostProcessComponent;
 class SWidget;
+class ULevelStreaming;
 
 UENUM(BlueprintType)
 enum class EMiningExperienceKind : uint8 { Legacy, Mining, Collection, Journey, Office, Museum, Ending };
@@ -34,6 +35,8 @@ struct FMiningExperienceArea
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TObjectPtr<AActor> ProgressGate;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FBox MiningBounds = FBox(ForceInit);
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FBox ActivationBounds = FBox(ForceInit);
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Source Room") TObjectPtr<ULevelStreaming> SourceLevel;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Source Room") TArray<FName> SuppressedSourceActors;
 };
 
 UCLASS()
@@ -51,6 +54,7 @@ class BRAINMINING_API AMiningExhibitGameMode : public AGameModeBase
     GENERATED_BODY()
 public:
     AMiningExhibitGameMode();
+    virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 };
 
 UCLASS()
@@ -64,7 +68,6 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FMiningExperienceArea> Areas;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform LobbyEntry;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<int32> UpgradePrices = {100, 200, 300};
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Campaign") bool bLinearCampaign = false;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Campaign") bool bContinuousCampaign = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Campaign") int32 UnlockedArea = 0;
@@ -118,8 +121,6 @@ private:
     TSharedPtr<SWidget> Map;
     TSharedPtr<SWidget> Guide;
     FDelegateHandle SpawnHandle;
-    float BaseRadius = 160;
-    float BaseInterval = .3f;
     FString Notice;
     float CompletionDelay = 0;
     bool InitializeAreas();

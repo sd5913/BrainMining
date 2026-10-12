@@ -102,6 +102,7 @@ APopupCloseStage::APopupCloseStage()
  Ceiling=MakeBox(TEXT("Ceiling"),FVector(0,0,370),FVector(24,18,.2f));
  WallPositiveY=MakeBox(TEXT("WallPositiveY"),FVector(0,900,180),FVector(24,.2f,3.6f));
  WallNegativeY=MakeBox(TEXT("WallNegativeY"),FVector(0,-900,180),FVector(24,.2f,3.6f));
+ ExitDoorModel=MakeBox(TEXT("OfficeBlastDoor"),FVector(1000,0,145),FVector(.22f,1.96f,2.9f));
  TableTop=MakeBox(TEXT("TableTop"),FVector(0,0,74),FVector(1.9f,1.f,.06f));
  for(int32 I=0;I<4;++I)MakeBox(*FString::Printf(TEXT("Leg%d"),I+1),FVector(I<2?60:-60,I%2?28:-28,36),FVector(.08f,.08f,.72f));
  Monitor=MakeBox(TEXT("Monitor"),FVector(48,0,122),FVector(.08f,.72f,.5f));
@@ -147,6 +148,7 @@ void APopupCloseStage::ConfigureOffice()
  Ceiling->SetRelativeLocation(FVector(0,0,370));Ceiling->SetRelativeScale3D(FVector(20,15,.2f));
  WallPositiveY->SetRelativeLocation(FVector(0,750,180));WallNegativeY->SetRelativeLocation(FVector(0,-750,180));
  WallPositiveY->SetRelativeScale3D(FVector(20,.2f,3.6f));WallNegativeY->SetRelativeScale3D(FVector(20,.2f,3.6f));
+ ExitDoorModel->SetRelativeLocation(FVector(1000,0,145));ExitDoorModel->SetRelativeScale3D(FVector(.22f,1.96f,2.9f));
  SpawnPoint->SetRelativeLocation(FVector(-790,0,92));ScreenCamera->SetRelativeLocation(FVector(-75,0,124));
  RoomLight->SetRelativeLocation(FVector(0,0,285));RoomLight->SetIntensity(15000);RoomLight->SetAttenuationRadius(1700);
  Sun->SetIntensity(3);Sky->bRealTimeCapture=false;Sky->SetIntensity(.5f);
@@ -178,6 +180,7 @@ void APopupCloseStage::ApplyColors()
  Paint(Floor,FLinearColor(.14f,.18f,.23f));Paint(Ceiling,FLinearColor(.82f,.84f,.8f));
  Paint(WallPositiveY,FLinearColor(.8f,.82f,.79f));Paint(WallNegativeY,FLinearColor(.8f,.82f,.79f));
  Paint(TableTop,FLinearColor(.38f,.25f,.14f));Paint(Monitor,FLinearColor(.035f,.04f,.05f));
+ Paint(ExitDoorModel,FLinearColor(.23f,.27f,.29f));
  Paint(Screen,FLinearColor(.035f,.08f,.16f));Paint(Stand,FLinearColor(.065f,.08f,.1f));Paint(Keyboard,FLinearColor(.1f,.12f,.15f));
 }
 void APopupCloseStage::Paint(UStaticMeshComponent* Mesh,const FLinearColor& Color) const
@@ -193,6 +196,7 @@ void APopupCloseStage::BeginPlay()
 {
  Super::BeginPlay();ConfigureOffice();ApplyColors();GatherDevices();
  Flood=MakeUnique<FPopupOfficeFlood>(*this);
+ Exit=MakeUnique<FPopupOfficeExit>(*this);
  if (bAreaManaged) SetAreaActive(false);
 }
 void APopupCloseStage::SetAreaActive(bool bActive)
@@ -224,6 +228,7 @@ void APopupCloseStage::ResetCompletedSessions()
  CancelSession();
  for (auto Device : Devices) if (IsValid(Device)){Device->ResetSession();Device->SetScreenInteractive(false);}
  if(Flood)Flood->Reset();
+ if(Exit)Exit->Reset();
  Phase = EPhase::Idle;
  RoundTime = ViewTime = SprayTime = SprayDebt = SlowPhaseScheduledIssues = FirstBurstPeakFrame = 0;
  LastTickTime = 0;
@@ -232,6 +237,7 @@ void APopupCloseStage::ResetCompletedSessions()
 }
 void APopupCloseStage::EndPlay(const EEndPlayReason::Type Reason)
 {
+ Exit.Reset();
  Flood.Reset();
  if(ActiveComputer)ActiveComputer->SetScreenInteractive(false);
  if(auto PC=LockedController.Get())
@@ -368,6 +374,11 @@ void APopupCloseStage::Tick(float Dt)
  }
  TickView(Dt);
  auto PC=GetWorld()->GetFirstPlayerController();
+ if(Exit && Exit->IsWaitingForBomb())
+ {
+  ShowPrompt(PC,Exit->CanCollect(PC)?TEXT("E 获取炸弹技能"):Exit->NeedsDoorBreach()?TEXT("G 装备炸弹 · 左键投掷"):TEXT(""));
+  return;
+ }
  if(auto Device=FocusedDevice(PC))
  {
   ShowPrompt(PC,Phase==EPhase::Idle?TEXT("按 E 开始办公"):
@@ -425,6 +436,10 @@ void APopupCloseStage::BeginBurst()
 void APopupCloseStage::TickSpray(float Dt)
 {
  SprayTime+=Dt;if(Flood)Flood->Tick(Dt);
+ if(Exit && !Exit->HasOfferedBomb() && SprayTime>=FMath::Max(18.f,EruptionBeforeBombSeconds))
+ {
+  if(Flood)Flood->Stop();Exit->OfferBomb();
+ }
  if(SprayTime>.5f)for(auto Device:Devices)Device->CleanupOnePopup();
  if(Phase==EPhase::Spraying && Flood && Flood->IsFloorCovered())
  {
@@ -440,8 +455,14 @@ FString APopupCloseStage::GetSessionStatus() const
  const auto Paper=PaperLandingStatus(GetWorld(),Floor->Bounds.GetBox().Max.Z);
  Status+=FString::Printf(TEXT("\nEmitted papers=%d below_floor=%d CCD=%d lowest_visual_clearance=%.3f cm"),Paper.Count,Paper.BelowFloor,Paper.bCCD,Paper.Count?Paper.LowestClearance:0.f);
  if(Flood)Status+=TEXT("\n")+Flood->Describe();
+ if(Exit)Status+=TEXT("\n")+Exit->Describe();
  if(auto GameInstance=GetGameInstance())if(auto Wallet=GameInstance->GetSubsystem<UMiningWalletSubsystem>())Status+=FString::Printf(TEXT("\nShared wallet balance=%lld"),Wallet->Balance);
  UE_LOG(LogPopupClose,Display,TEXT("%s"),*Status);return Status;
+}
+void APopupCloseStage::OnPlayerBombExploded(FVector Location){if(Exit)Exit->HandleExplosion(Location);}
+FString APopupCloseStage::GetExitStatus() const
+{
+ const FString Status=Exit?Exit->Describe():TEXT("Exit not initialized");UE_LOG(LogPopupClose,Display,TEXT("%s"),*Status);return Status;
 }
 void APopupCloseStage::WriteSessionReport()
 {

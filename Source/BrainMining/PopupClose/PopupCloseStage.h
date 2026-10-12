@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "PopupClose/PopupOfficeFlood.h"
+#include "PopupClose/PopupOfficeExit.h"
 #include "PopupCloseStage.generated.h"
 
 class UArrowComponent;
@@ -23,6 +24,8 @@ class UWidgetInteractionComponent;
 class APopupCloseFlyingWindow;
 class APopupOfficeDevice;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPopupOfficeExitEvent);
+
 UCLASS()
 class BRAINMINING_API APopupCloseStage : public AActor
 {
@@ -37,7 +40,14 @@ public:
  void SetAreaActive(bool bActive);
  void CancelSession();
  void ResetCompletedSessions();
- int32 GetCompletedSessions() const { return Phase == EPhase::Complete ? 1 : 0; }
+ int32 GetCompletedSessions() const { return Exit && Exit->DoorIsOpen() ? 1 : 0; }
+ UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PopupClose|Exit", meta=(ClampMin="18", Units="s")) float EruptionBeforeBombSeconds=32.f;
+ UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PopupClose|Exit", meta=(ClampMin="2", Units="s")) float EvacuationBombSeconds=5.f;
+ UPROPERTY(BlueprintAssignable, Category="PopupClose|Exit") FPopupOfficeExitEvent OnOfficeEscaped;
+ UPROPERTY(BlueprintAssignable, Category="PopupClose|Exit") FPopupOfficeExitEvent OnOfficeDestroyed;
+ UFUNCTION(BlueprintPure, Category="PopupClose|Exit") bool IsOfficeEscaped() const { return Exit && Exit->HasEscaped(); }
+ UFUNCTION(BlueprintPure, Category="PopupClose|Exit") bool IsOfficeDestroyed() const { return Exit && Exit->IsRuined(); }
+ UFUNCTION(BlueprintCallable, Category="PopupClose|Exit") FString GetExitStatus() const;
  bool IsSessionActive() const { return View != EView::Free; }
 
 	virtual void OnConstruction(const FTransform& Transform) override;
@@ -56,6 +66,8 @@ public:
 #endif
 
 private:
+ friend class FPopupOfficeExit;
+ UFUNCTION() void OnPlayerBombExploded(FVector Location);
 
  enum class EPhase : uint8 { Idle, Running, Spraying, Complete };
  enum class EView : uint8 { Free, Entering, InScreen, Exiting };
@@ -89,6 +101,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> WallNegativeY;
+ UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> ExitDoorModel;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> TableTop;
@@ -165,4 +178,5 @@ private:
  TWeakObjectPtr<APawn> LockedPawn;
  TWeakObjectPtr<APlayerController> LockedController;
  TUniquePtr<FPopupOfficeFlood> Flood;
+ TUniquePtr<FPopupOfficeExit> Exit;
 };

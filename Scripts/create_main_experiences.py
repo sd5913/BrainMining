@@ -14,7 +14,7 @@ world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_wor
 world.get_world_settings().set_editor_property('default_game_mode', unreal.MiningExhibitGameMode.static_class())
 specs = [
     ('矿道与矿区 · Shen-Yilang', '/Game/ExternalMining/Maps/Lvl_ExternalMining_Demo', (-250000, 0, 0), 'BM_Mining', '左键挖掘，空格飞行，V 钻头；矿道与矿区使用 Shen-Yilang 版本。'),
-    ('藏品、矿物宝物与金币', '/Game/CollectionPrototype/Maps/Lvl_Collection_V03', (-250000, -100000, 0), 'BM_Collection', '沿环境线索找藏品；矿物暴露后按 E 收集金币。I 图鉴，Tab 升级。'),
+    ('藏品、矿物宝物与金币', '/Game/CollectionPrototype/Maps/Lvl_Collection_V03', (-250000, -100000, 0), 'BM_Collection', '入口前方是两排可挖矿石，身后是藏品探索区。左键挖开岩块，矿物露出超过50%后瞄准按 E，获得统一金币。I 图鉴，Tab 升级。'),
     ('回声 → 巨人卡牌 → 电视逃生', '/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P1', (0, 0, 0), 'BM_Journey', '跟随回声，进入巨人卡牌房间，再完成洪水与电视逃生。'),
     ('四设备办公室', '/Game/PopupClose/Maps/Lvl_PopupClose', (0, -100000, 0), 'BM_Office', '靠近设备按 E；处理电脑弹窗与打印机工作。'),
     ('文思博物馆', '/Game/WenSi/Maps/Lvl_WenSi_ScreenBridge', (250000, -100000, 0), 'BM_Museum', '使用触摸屏、空间拖拽和电路桥，完成新版博物馆谜题。'),
@@ -32,6 +32,8 @@ for title, source, offset, tag, hint in specs:
     if not starts and not offices:
         raise RuntimeError('No authored player start: ' + source)
     entry = starts[0].get_actor_transform() if starts else offices[0].get_player_spawn_transform()
+    if tag == 'BM_Collection':
+        entry.rotation = unreal.Rotator(yaw=180).quaternion()
     if len(groups) in (3, 4):
         location = entry.translation
         entry.translation = unreal.Vector(location.x, location.y, 110)
@@ -64,7 +66,7 @@ collection.set_editor_property('catalogue_key', catalogue_key)
 collection.set_editor_property('shared_abilities', True)
 collection.set_editor_property('show_exploration_hud', False)
 for actor in groups[1]:
-    if actor.get_actor_label() == 'V02 entrance boundary':
+    if actor.get_actor_label().startswith('V02 entrance boundary'):
         actors.destroy_actor(actor)
 office = single(groups[3], unreal.PopupCloseStage)
 office.set_editor_property('area_managed', True)
@@ -100,8 +102,9 @@ def box(name, location, size, tag, material=floor_mat):
     actor.set_actor_scale3d(unreal.Vector(*(value / 100 for value in size)))
     return actor
 
-def label(value, location, tag, size=55):
-    actor = actors.spawn_actor_from_class(unreal.TextRenderActor, unreal.Vector(*location), unreal.Rotator(yaw=180))
+def label(value, location, tag, size=55, yaw=180):
+    actor = actors.spawn_actor_from_class(unreal.TextRenderActor, unreal.Vector(*location), unreal.Rotator(yaw=yaw))
+    actor.set_actor_label(value.split('\n')[0])
     actor.set_editor_property('tags', [tag])
     actor.text_render.set_text(value)
     actor.text_render.set_world_size(size)
@@ -109,8 +112,8 @@ def label(value, location, tag, size=55):
     actor.text_render.set_text_render_color(unreal.Color(140, 245, 225, 255))
 
 box('Collection_Treasure_ConnectedCourt', (-252750, -100000, -25), (5000, 3200, 50), 'BM_Collection')
-label('MINERAL TREASURES / E TO COLLECT', (-252000, -100000, 430), 'BM_Collection', 40)
-label('COLLECTION CLUES >>>', (-251350, -100000, 650), 'BM_Collection', 40)
+label('MINEABLE ORE AHEAD\nLMB: DIG   >50% EXPOSED: E TO COLLECT', (-251700, -100000, 350), 'BM_Collection', 34, yaw=0)
+label('COLLECTION CLUES AHEAD\nI: CATALOGUE   TAB: UPGRADES', (-250650, -100000, 350), 'BM_Collection', 34)
 for position in [(-253300, -100000, 800), (900, -150000, 850)]:
     lamp = actors.spawn_actor_from_class(unreal.PointLight, unreal.Vector(*position))
     lamp.set_editor_property('tags', ['BM_Collection' if position[0] < 0 else 'BM_Hub'])

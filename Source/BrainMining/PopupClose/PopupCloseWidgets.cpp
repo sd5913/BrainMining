@@ -161,9 +161,9 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 					.IsEnabled_Lambda([WeakThis] { return WeakThis.IsValid() && WeakThis->bRepliesEnabled; })
 					.OnClicked_Lambda([WeakThis,Id]()
 					{
-						if(auto Self=WeakThis.Get();Self && Self->bRepliesEnabled)
+						if(auto Self=WeakThis.Get();Self && Self->bRepliesEnabled && Self->ClosePopup(Id))
 						{
-							Self->ClosePopup(Id);++Self->ManuallyClosedCount;
+							++Self->ManuallyClosedCount;
 							if(Self->OnReply)Self->OnReply();
 						}
 						return FReply::Handled();
@@ -189,16 +189,17 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 	Windows.Add({ Id, Window, FVector2D(X,Y), Copy.Size });
 }
 
-void UPopupCloseDesktopWidget::ClosePopup(int32 Id)
+bool UPopupCloseDesktopWidget::ClosePopup(int32 Id)
 {
 	const int32 Index = Windows.IndexOfByPredicate([Id](const FWindow& Window) { return Window.Id == Id; });
 	if (Index == INDEX_NONE || !Canvas.IsValid() || !Windows[Index].Root.IsValid())
 	{
-		return;
+		return false;
 	}
 
 	Canvas->RemoveSlot(Windows[Index].Root.ToSharedRef());
 	Windows.RemoveAt(Index);
+ return true;
 }
 
 void UPopupCloseDesktopWidget::ClearOldestPopup()

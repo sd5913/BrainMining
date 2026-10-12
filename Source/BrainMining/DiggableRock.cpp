@@ -1,4 +1,5 @@
 #include "DiggableRock.h"
+#include "MiningBlastGeometry.h"
 #include "FogChamberComponent.h"
 #include "BrainMining.h"
 #include "Components/DynamicMeshComponent.h"
@@ -71,6 +72,18 @@ void ADiggableRock::ResetRock()
 
 bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
 {
+	return MineCutter(WorldCenter, WorldRadius, nullptr);
+}
+
+bool ADiggableRock::MineBlast(FVector WorldCenter, float WorldRadius, float Roughness, int32 Seed)
+{
+	if (WorldCenter.ContainsNaN() || !FMath::IsFinite(WorldRadius) || WorldRadius <= 0 || !FMath::IsFinite(Roughness)) return false;
+	const FDynamicMesh3 Cutter = MiningBlast::MakeCutter(WorldCenter, WorldRadius, Roughness, Seed);
+	return MineCutter(WorldCenter, WorldRadius * 1.45f, &Cutter);
+}
+
+bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDynamicMesh3* WorldCutter)
+{
 	const double OperationStart = FPlatformTime::Seconds();
 	LastBooleanMilliseconds = 0.0f;
 	LastCollisionMilliseconds = 0.0f;
@@ -105,7 +118,7 @@ bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
 		Generator.Generate();
 		UnitCutter = FDynamicMesh3(&Generator);
 	}
-	FDynamicMesh3 Cutter = UnitCutter;
+	FDynamicMesh3 Cutter = WorldCutter ? *WorldCutter : UnitCutter;
 	if (bUseProceduralCutFallback)
 	{
 		SourceMesh.DiscardAttributes();
@@ -115,11 +128,12 @@ bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
 	}
 	for (int32 VertexID : Cutter.VertexIndicesItr())
 	{
-		Cutter.SetVertex(VertexID, Cutter.GetVertex(VertexID) * LocalRadius + FVector3d(LocalCenter));
+		Cutter.SetVertex(VertexID, WorldCutter ? FVector3d(GetActorTransform().InverseTransformPosition(FVector(Cutter.GetVertex(VertexID))))
+			: Cutter.GetVertex(VertexID) * LocalRadius + FVector3d(LocalCenter));
 	}
 	FDynamicMesh3 Result;
 	FMeshBoolean Operation(&SourceMesh, &Cutter, &Result, FMeshBoolean::EBooleanOp::Difference);
-	Operation.bSimplifyAlongNewEdges = true;
+	Operation.bSimplifyAlongNewEdges = WorldCutter == nullptr;
 	Operation.bPreserveTriangleGroups = !bUseProceduralCutFallback;
 	const double BooleanStart = FPlatformTime::Seconds();
 	const auto IsValidResult = [&Result, &Operation]()
@@ -159,6 +173,11 @@ bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
 	{
 		LastStatus = TEXT("Cut rejected: original rock preserved");
 		UE_LOG(LogBrainMining, Warning, TEXT("Mining rejected invalid boolean result on %s"), *GetName());
+		return false;
+	}
+	if (WorldCutter && SourceMesh.IsSameAs(Result, FDynamicMesh3::FSameAsOptions()))
+	{
+		LastStatus = TEXT("No new rock in blast volume");
 		return false;
 	}
 	const int32 TriangleBudget = FMath::Clamp(MaxTriangles, 1000, 100000);

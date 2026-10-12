@@ -11,6 +11,17 @@ AMiningDebrisBurst::AMiningDebrisBurst()
 
 void AMiningDebrisBurst::Initialize(const TArray<TObjectPtr<UStaticMesh>>& Meshes, UMaterialInterface* Material, const FVector& SurfaceNormal, float CutRadius, int32 Count, float Lifetime)
 {
+	SpawnChunks(Meshes, Material, SurfaceNormal, CutRadius, Count, Lifetime, false);
+}
+
+void AMiningDebrisBurst::InitializeBlast(const TArray<TObjectPtr<UStaticMesh>>& Meshes, UMaterialInterface* Material, const FVector& Direction, float CutRadius, int32 Count, float Lifetime)
+{
+	Tags.AddUnique(TEXT("BM_PlayerEffect"));
+	SpawnChunks(Meshes, Material, Direction, CutRadius, Count, Lifetime, true);
+}
+
+void AMiningDebrisBurst::SpawnChunks(const TArray<TObjectPtr<UStaticMesh>>& Meshes, UMaterialInterface* Material, const FVector& SurfaceNormal, float CutRadius, int32 Count, float Lifetime, bool bBlast)
+{
 	if (Meshes.IsEmpty() || !Material) { Destroy(); return; }
 	SourceMaterial = Material;
 	const FVector Normal = SurfaceNormal.GetSafeNormal(UE_SMALL_NUMBER, FVector::UpVector);
@@ -18,7 +29,7 @@ void AMiningDebrisBurst::Initialize(const TArray<TObjectPtr<UStaticMesh>>& Meshe
 	Normal.FindBestAxisVectors(Tangent, Bitangent);
 	const float SizeFactor = FMath::Clamp(CutRadius / 160.f, 0.55f, 1.8f);
 	const float SpreadRadius = FMath::Clamp(CutRadius * 0.22f, 12.f, 45.f);
-	Count = FMath::Clamp(Count, 12, 64);
+	Count = bBlast ? FMath::Clamp(Count, 1, 96) : FMath::Clamp(Count, 12, 64);
 	for (int32 Index = 0; Index < Count; ++Index)
 	{
 		// Large irregular chunks, medium clods and small crumbs, rather than identical chips.
@@ -52,6 +63,7 @@ void AMiningDebrisBurst::Initialize(const TArray<TObjectPtr<UStaticMesh>>& Meshe
 		Chunk->RegisterComponent();
 		Chunk->SetSimulatePhysics(true);
 		Chunk->SetPhysicsLinearVelocity(Normal * FMath::FRandRange(170.f, 300.f) + Radial * FMath::FRandRange(90.f, 210.f) + FVector::UpVector * FMath::FRandRange(110.f, 240.f));
+		if (bBlast) Chunk->SetPhysicsLinearVelocity(Normal * FMath::FRandRange(450.f, 850.f) + Radial * FMath::FRandRange(100.f, 250.f) + FVector::UpVector * FMath::FRandRange(130.f, 350.f));
 		Chunk->SetPhysicsAngularVelocityInDegrees(FVector(FMath::FRandRange(-420.f, 420.f), FMath::FRandRange(-420.f, 420.f), FMath::FRandRange(-420.f, 420.f)));
 		++ChunkCount;
 	}

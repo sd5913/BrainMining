@@ -121,7 +121,7 @@ bool AMiningExhibitHall::InitializeAreas()
 
 void AMiningExhibitHall::RegisterActor(AActor* Actor)
 {
-    if(!IsValid(Actor) || Actor==this || Actor==Collection || !Actor->GetRootComponent() || KnownActors.Contains(Actor) || Actor->IsA<APawn>() || Actor->IsA<AController>() || Actor->IsA<AHUD>() || Actor->IsA<APlayerCameraManager>() || (Collection && Actor==Collection->Preview)) return;
+    if(!IsValid(Actor) || Actor==this || Actor==Collection || !Actor->GetRootComponent() || KnownActors.Contains(Actor) || Actor->ActorHasTag(TEXT("BM_PlayerEffect")) || Actor->IsA<APawn>() || Actor->IsA<AController>() || Actor->IsA<AHUD>() || Actor->IsA<APlayerCameraManager>() || (Collection && Actor==Collection->Preview)) return;
     int32 AreaIndex=INDEX_NONE;
     bool bExplicit=Actor->ActorHasTag(TEXT("BM_Hub"));
     for(int32 Index=0; Index<Areas.Num(); ++Index) if(Actor->ActorHasTag(Areas[Index].Tag)) { AreaIndex=Index; bExplicit=true; break; }
@@ -303,7 +303,7 @@ void AMiningExhibitHall::Tick(float DeltaSeconds)
             GUI->PickaxeUpgrade->bPreviewUpgrades=false;
             GUI->VortexUpgrade->bPreviewUpgrades=false; GUI->BlastUpgrade->bPreviewUpgrades=false;
             GUI->SetItemUnlocked(0,true); GUI->SetItemUnlocked(1,false); GUI->SetItemUnlocked(2,false);
-            GUI->SetAbilityAvailable(TEXT("G"),false);
+            GUI->SetAbilityAvailable(TEXT("G"),true);
             ApplyUpgrades();
         }
         auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();

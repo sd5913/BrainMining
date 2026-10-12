@@ -40,7 +40,7 @@ protected:
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 private:
-	void ClosePopup(int32 Id);
+	bool ClosePopup(int32 Id);
 
 	TSharedPtr<SConstraintCanvas> Canvas;
 

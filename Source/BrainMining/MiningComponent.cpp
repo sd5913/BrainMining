@@ -1,5 +1,6 @@
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
+#include "MiningBombToolComponent.h"
 #include "MiningTunnelGenerator.h"
 #include "DiggableRock.h"
 #include "DrawDebugHelpers.h"
@@ -99,6 +100,7 @@ bool UMiningComponent::ActivateDrill()
 	if (!GetWorld() || bInputSuspended || IsEncounterBlocked()) return false;
 	UpdateDrillSession();
 	if (bDrillMode || GetDrillCooldownRemaining() > 0) return false;
+	if (auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>()) Bomb->Stow();
 	const double Now = GetWorld()->GetTimeSeconds();
 	const float UseTime = FMath::IsFinite(DrillUseDuration) ? FMath::Max(.1f, DrillUseDuration) : 10.f;
 	const float CooldownTime = FMath::IsFinite(DrillCooldownDuration) ? FMath::Max(.1f, DrillCooldownDuration) : 10.f;
@@ -106,6 +108,12 @@ bool UMiningComponent::ActivateDrill()
 	DrillCooldownEnds = DrillUseEnds + CooldownTime;
 	SetDrillMode(true);
 	return true;
+}
+
+void UMiningComponent::SelectPickaxe()
+{
+	StopMining();
+	SetDrillMode(false);
 }
 
 float UMiningComponent::GetDrillUseRemaining() const
@@ -165,6 +173,7 @@ void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 bool UMiningComponent::TryMine()
 {
+    if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); Bomb && Bomb->bEquipped) return false;
     if(IsEncounterBlocked())return false;
 	if (bInputSuspended || GetWorld()->GetTimeSeconds() < NextMineTime)
 	{
@@ -192,6 +201,11 @@ void UMiningComponent::StartMining()
 {
     if(IsEncounterBlocked())return;
 	if (bInputSuspended) return;
+	if (auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); Bomb && Bomb->bEquipped)
+	{
+		Bomb->ThrowBomb();
+		return;
+	}
 	bMiningHeld = true;
 	TryMine();
 }

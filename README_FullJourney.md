@@ -54,6 +54,8 @@ $projectRoot = (Get-Location).Path
 
 ## 验证
 
+2026-10-12 合并远端 main 的弹窗、炸弹和背包 UI 更新：保留进入电脑房自动启动与贯通出口，并为缩小后的电脑房补上两端各 2 米的门廊，与现有矿道接齐。UE 编辑器目标编译通过；`Saved/Automation/MainMerge20261012/index.json` 的 ContinuityAndClues、WalkEntryAndInteraction、FlowCollectionAndEnding、FracturedCavityAndCollision 四项全部通过。接缝测试增加门口地面连续性检查，流程测试运行实际电脑计时与新版喷涌完成条件。
+
 2026-10-12 白色衔接岩层／加深藏品／鸟群／F7 修订：`Saved/Automation/CampaignWhiteRock/index.json` 中 8 项全部通过，包括完整计时、四件真实 E 收集、卡牌电视逃生、结局和地图。随后加强白色内壁凹凸、改为蚂蚁贴实际岩面爬行并整理快捷键提示；最终报告 `Saved/Automation/CampaignWhiteRockFinal/index.json` 中 BirdsDepthAndSkip、ContinuityAndClues、MiningEntrancePresentation、WalkEntryAndInteraction 四项再次通过，无错误。新增检查覆盖未挖通不飞鸟、挖通后仅触发一次鸟群、飞行位置变化、深埋藏品、F7 对三间小游戏生效而对矿区及结局无效，以及可见蚂蚁贴在真实岩面上。截图包括 `Saved/CampaignPreview/BirdFlight.png`、`Clue_*.png`、`Final_Mine*.png`。独立源地图 SHA-256 保持一致；最终外观调整前的地图在 `Saved/CampaignBackups/white-surface-20261012-150424/Previous.umap`。
 
 2026-10-12 土层与房间触发修订：编译、地图重建及 `BrainMining.Campaign` 全部 7 项测试通过，报告为 `Saved/Automation/CampaignSoilAndRooms/index.json`。新增 `WalkEntryAndInteraction` 从各入口前方通过角色移动走过门口，检查四个房间激活、电脑真实 E 进入和退出、博物馆真实 E 生成思维卡，并在出生点向六个方向检测且实际挖掘土体。流程测试取消直接调用电脑启动函数，改为验证跨入电脑房后自动启动及原有完整计时。旧地图备份为 `Saved/CampaignBackups/continuous-20261012-140412/Previous.umap`。五张独立源地图 SHA-256 保持一致。下方记录属于此前版本。

@@ -2,6 +2,8 @@
 #include "PopupClose/PopupCloseContent.h"
 #include "PopupClose/PopupCloseFlyingWindow.h"
 #include "PopupClose/PopupCloseWidgets.h"
+#include "MiningWalletSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -13,6 +15,15 @@
 #include "InputCoreTypes.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+
+namespace
+{
+ void AwardOfficeCoins(APopupOfficeDevice& Device,int64 Amount)
+ {
+  if(auto GameInstance=Device.GetGameInstance())
+   if(auto Wallet=GameInstance->GetSubsystem<UMiningWalletSubsystem>())Wallet->AddCoins(Amount);
+ }
+}
 
 APopupOfficeDevice::APopupOfficeDevice()
 {
@@ -121,7 +132,13 @@ void APopupOfficeDevice::BeginPlay()
   {
    Desktop=CreateWidget<UPopupCloseDesktopWidget>(PC);Desktop->TakeWidget();Desktop->SetRepliesEnabled(false);Surface->SetWidget(Desktop);Surface->RequestRedraw();
    TWeakObjectPtr<APopupOfficeDevice> WeakThis(this);
-   Desktop->OnReply=[WeakThis] { if(auto Self=WeakThis.Get())Self->RefreshWarning(); };
+   Desktop->OnReply=[WeakThis]
+   {
+    if(auto Self=WeakThis.Get();Self && !Self->IsLocked())
+    {
+     AwardOfficeCoins(*Self,20);Self->RefreshWarning();
+    }
+   };
   }
  }
  RefreshWarning();
@@ -152,7 +169,8 @@ void APopupOfficeDevice::AddProblem()
 bool APopupOfficeDevice::ProcessPaper()
 {
  if(bLocked || !IsPrinter() || Pending()==0)return false;
- PaperStack->RemoveInstance(Pending()-1);++PapersHandled;RefreshWarning();return true;
+ if(!PaperStack->RemoveInstance(Pending()-1))return false;
+ ++PapersHandled;AwardOfficeCoins(*this,10);RefreshWarning();return true;
 }
 void APopupOfficeDevice::RefreshWarning()
 {

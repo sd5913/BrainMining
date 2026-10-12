@@ -15,6 +15,7 @@ public:
  APopupCloseOffice();
  UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bWalkThroughConnections=false;
  virtual void OnConstruction(const FTransform& Transform) override;
+ virtual void BeginPlay() override;
  int32 GetDetailCount() const;
 private:
  void BuildOffice();

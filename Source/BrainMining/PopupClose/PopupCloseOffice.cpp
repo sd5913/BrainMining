@@ -1,4 +1,5 @@
 #include "PopupClose/PopupCloseOffice.h"
+#include "PopupClose/PopupCloseLayout.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/RectLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -20,7 +21,7 @@ APopupCloseOffice::APopupCloseOffice()
  for(int32 X=0;X<3;++X)for(int32 Y=0;Y<3;++Y)
  {
   auto Light=CreateDefaultSubobject<URectLightComponent>(*FString::Printf(TEXT("OfficeLight%d%d"),X,Y));
-  Light->SetupAttachment(Root);Light->SetRelativeLocation(FVector(-750+X*750,-500+Y*500,346));
+  Light->SetupAttachment(Root);Light->SetRelativeLocation(PopupCloseLayout::Compress(FVector(-750+X*750,-500+Y*500,346)));
   Light->SetRelativeRotation(FRotator(-90,0,0));Light->SetMobility(EComponentMobility::Movable);
   Light->SetIntensity(6500);Light->SetAttenuationRadius(1000);Light->SetSourceWidth(130);Light->SetSourceHeight(60);
   Light->SetLightColor(FLinearColor(1.f,.94f,.84f));Light->SetCastShadows(false);
@@ -30,6 +31,10 @@ APopupCloseOffice::APopupCloseOffice()
 void APopupCloseOffice::OnConstruction(const FTransform& Transform)
 {
  Super::OnConstruction(Transform);BuildOffice();
+}
+void APopupCloseOffice::BeginPlay()
+{
+ Super::BeginPlay();BuildOffice();
 }
 
 void APopupCloseOffice::BuildOffice()
@@ -51,14 +56,21 @@ void APopupCloseOffice::BuildOffice()
  }
  auto Box=[&](int32 Group,FVector P,FVector Size,FRotator R=FRotator::ZeroRotator)
  {
-  Groups[Group]->AddInstance(FTransform(R,P,Size/100.f));
+  Groups[Group]->AddInstance(FTransform(R,PopupCloseLayout::Compress(P),PopupCloseLayout::Compress(Size)/100.f));
  };
- // A 24 x 18 m office: over six times the original 9.4 x 7.4 m floor area.
+ // Keep the smaller office and bridge its doors to the existing campaign tunnels.
  if(!bWalkThroughConnections) Box(0,FVector(1200,0,180),FVector(20,1800,360));
  else
  {
   for(float Y:{-510.f,510.f}) Box(0,FVector(1200,Y,180),FVector(20,780,360));
   Box(0,FVector(1200,0,325),FVector(20,240,70));
+  for(float Side:{-1.f,1.f})
+  {
+   // Box applies the 5/6 room compression: these join x=1000 to x=1200.
+   Box(0,FVector(Side*1320,0,-10),FVector(240,264,20));
+   Box(0,FVector(Side*1320,0,370),FVector(240,264,20));
+   for(float Y:{-132.f,132.f})Box(0,FVector(Side*1320,Y,180),FVector(240,24,360));
+  }
  }
  Box(0,FVector(-1200,-510,180),FVector(20,780,360));
  Box(0,FVector(-1200,510,180),FVector(20,780,360));

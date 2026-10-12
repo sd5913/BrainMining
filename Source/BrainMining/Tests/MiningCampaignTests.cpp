@@ -526,6 +526,13 @@ public:
         Test->TestTrue(TEXT("Campaign uses physical transitions"),H->bContinuousCampaign);
         auto* P=W->GetFirstPlayerController()->GetPawn().Get();
         H->UnlockedArea=6;
+        H->EnterArea(1);
+        for(float Side:{-1.f,1.f})for(float X:{950.f,1050.f,1150.f,1250.f})
+        {
+            const FVector Door=H->Areas[1].Origin+FVector(Side*X,0,0);FHitResult FloorHit;
+            Test->TestTrue(TEXT("Resized office doors retain continuous floor to campaign tunnels"),
+                W->LineTraceSingleByChannel(FloorHit,Door+FVector(0,0,80),Door-FVector(0,0,80),ECC_Visibility,FCollisionQueryParams(NAME_None,false,P)));
+        }
         const FCollisionShape Capsule=FCollisionShape::MakeCapsule(30,84);
         for(int I=0;I<6;++I)
         {

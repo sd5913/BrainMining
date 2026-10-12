@@ -1,5 +1,6 @@
 #include "MiningToolEffectsComponent.h"
 #include "MiningComponent.h"
+#include "MiningBombToolComponent.h"
 #include "MiningDebrisBurst.h"
 #include "MiningDrillDustBurst.h"
 #include "BrainMiningCharacter.h"
@@ -291,6 +292,15 @@ void UMiningToolEffectsComponent::TickComponent(float DeltaTime, ELevelTick Tick
 	{
 		if (bSwinging || GetWorld()->GetTimerManager().IsTimerActive(ImpactTimer) || !DebrisActors.IsEmpty() || !DustActors.IsEmpty()) ResetEffects();
 		if (PickaxeMesh) PickaxeMesh->SetVisibility(false);
+		if (DrillMesh) DrillMesh->SetVisibility(false);
+		if (LeftDrillMesh) LeftDrillMesh->SetVisibility(false);
+		bDrillRunning = false;
+		return;
+	}
+	if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); Bomb && Bomb->bEquipped)
+	{
+		if (bSwinging) ResetEffects();
+		PickaxeMesh->SetVisibility(false);
 		if (DrillMesh) DrillMesh->SetVisibility(false);
 		if (LeftDrillMesh) LeftDrillMesh->SetVisibility(false);
 		bDrillRunning = false;

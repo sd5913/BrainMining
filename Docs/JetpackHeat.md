@@ -1,22 +1,29 @@
-# 喷气背包过热条
+# 喷气背包热量仪表
 
-按住空格使用项目已有的喷气背包。持续推力默认 5 秒从白色空条填满；松开时逐渐降温，满热后整条变红，停止上升推力并正常下落。过热锁定 3 秒，红色热量条从右往左逐渐退回白色，退回期间始终无法起飞，松开、重复按空格都无法绕过。红色完全退完才恢复飞行，空格仍按住则继续飞行。
+当前 UI 为屏幕下方正中央的细弧形仪表槽，图层不透明度为 80%，平时隐藏。按住空格使用原有喷气背包时短暂淡入，松开后热量沿槽逐渐回落；降温期间继续显示，清空后停留 0.25 秒，再用 0.35 秒淡出。淡出未结束又使用背包时，从当前透明度平滑恢复。
 
-过热条位于 `Content/UI/MiningGUI/WBP_MiningHUD` 的 `JetpackHeatBar`，在 G/V 图标下面。可在 Designer 中移动、缩放。独立子控件 `WBP_JetpackHeat` 内的 `HeatBar` 图片使用 UI 材质 `MI_JetpackHeat`，可改 ColdGreen（绿）、WarmYellow（黄）、HotRed（红），也可调 Saturation（饱和度，默认 1.1；1 为原色，越大越鲜艳）。材质输出的透明度通道只读取 Alpha；白色原图的黑色段间隙转换成透明遮罩，保留分段形状，避免颜色发灰。`PreviewHeat`（0–1）和 `bPreviewOverheated` 可预览各状态。没有添加数字或字体。
+弧形槽为空时呈深灰，填充沿上拱弧线从左往右推进，降温时向左回退。前 75% 为黄色，最后 25% 为红色，颜色直接分区，没有绿黄红渐变。进入红区后用提供的 G (1).png 显示轻微全屏警戒效果，离开红区后渐隐。警戒图保留原始 RGBA 与透明中心，不遮住鼠标操作。
 
-实际飞行设置来自关卡里唯一的 `MiningTunnelGenerator` 的 **Flight Settings**。没有生成器的关卡可调整 Character 的 Character Movement → Flight Settings。
+持续推力默认 5 秒满热；松开后从满热冷却至零默认 2 秒。满热后保留原有 3 秒飞行锁定，填充在这 3 秒内回落，整个冷却期间无法起飞，松开或重复按空格均无法跳过。热量与冷却由移动组件管理，UI 不改变这些规则。
 
-已开启 `BP_ExternalMiningTestCharacter` 和 `BP_FirstPersonCharacter` 中已有的 Hold-to-Fly 设置，使当前外部挖掘关卡和挖掘实验关卡也能使用空格飞行。角色原有飞行速度和所有镐子、双钻机组件位置均保留。
+## 在 UE 中调整
 
-- `Enable Heat`：是否启用过热。
-- `Heat Up Seconds`：持续使用多久满热，默认 5 秒。
-- `Passive Cool Seconds`：松开后从满条冷却到空条所需时间，默认 2 秒。
-- `Overheat Lock Seconds`：满热后禁止使用时间，默认 3 秒。
+- Content/UI/MiningGUI/WBP_MiningHUD → JetpackHeatBar：Designer 中调整位置、锚点和大小。默认锚点 (0.5, 1)，对齐 (0.5, 1)，位置 (0, -40)，画布 300×120。保持 2.5:1 的比例可维持当前弧线形状。
+- WBP_JetpackHeat → HeatBar：可编辑独立子控件；Appearance → Render Opacity 默认 0.8；Class Defaults → GUI / Jetpack Heat 可改淡入、淡出、停留、警戒阈值和警戒透明度。
+- JetpackGauge/MI_JetpackArc：YellowColor、RedColor、TrackColor、OutlineColor；Radius、Thickness、SweepDegrees 决定弧槽形状。Thickness 默认 0.035，比上一版更细。运行中的 WarningThreshold 来自子控件默认值，默认 0.75。
+- WBP_MiningHUD → JetpackHeatWarning：全屏警戒图层，默认上下左右全屏锚点，Z Order=-100，位于主界面的金币、技能、热量仪表和升级弹窗下方。运行时透明度自动控制，Hit Test Invisible 不拦截输入。Art/T_JetpackHeatWarning 可重导入原图，源文件 SourceAssets/JetpackUI/JetpackHeatWarning.png。
+- 子控件的 PreviewHeat（0–1）与 PreviewOverheated 可在 Designer 中预览填充及锁定边缘。没有新增数字或字体。
 
-热量由移动组件维护，UI 只显示 `JetpackHeat` 与 `IsJetpackOverheated()`。关闭或更换 UI 不会解除冷却，也不影响原有飞行的碰撞、速度、玩家缩放和钻机冷却。
+运行时间参数：GaugeFadeInSeconds=0.16、GaugeFadeOutSeconds=0.35、HideDelaySeconds=0.25、WarningFadeInSeconds=0.25、WarningFadeOutSeconds=0.45、WarningMaxOpacity=0.55。原图自身透明度最高约 0.47，实际屏幕叠加会比参数值轻。
 
-`SourceAssets/JetpackUI` 保留 G.zip 的原始两张图片；材质通过 UV 选取有效条形区域，不改变图片源文件。彩色图保留作调色参考，填充采用白色分段形状和绿色→黄色→红色的可编辑颜色。
+实际飞行设置来自关卡唯一的 MiningTunnelGenerator 的 Flight Settings；没有生成器的关卡可改角色 Character Movement → Flight Settings。Enable Heat、Heat Up Seconds、Passive Cool Seconds、Overheat Lock Seconds 均保留。
 
-`Scripts/create_jetpack_heat_ui.py` 只增加新子控件与新资产，已有布局和道具面板保留。编辑前的文件备份位于 `Saved/Jetpack/Backup`。
+## 资产和验证
 
-Scripts/update_jetpack_cooling_ui.py 只更新现有热量材质，保留条形外观与 HUD 布局。Scripts/verify_jetpack_heat.py 在最新关卡中验证空格飞行、满热阻断、3 秒逐渐退回、冷却后恢复，并保存实际游戏截图。修改前的源文件和现有 UI 资产备份位于 Saved/Jetpack/FourLevelsCoolingBackup。仪表盘方案尚未实施。
+Scripts/create_jetpack_arc_ui.py 创建弧槽材质、导入原始警戒图，更新现有热量子控件及 HUD，仅显式运行时改变槽位置。运行时代码不重建布局，四级升级图层和 Tab 交互保留。
+
+Scripts/verify_jetpack_arc_ui.py 在最新主线关卡发送真实空格输入，验证显隐、75% 警戒、松开后的回落、警戒淡出、过热锁定、重新使用时淡入反转以及 Tab 交互，保存 Saved/Validation/JetpackArc 的报告与游戏截图。
+
+修改前的源文件与 UI 资产备份在 Saved/Jetpack/TransientGaugeBackup；上一版四级升级和横向冷却条已提交为 51542b6。横向材质和原图仍保留在资产目录中以便回退。
+
+设计参考：用户提供的《燕云十六声》截图与按需显隐要求；其他 3D 游戏的自动 HUD 设计可见 [《艾尔登法环》官方指南](https://en.bandainamcoent.eu/elden-ring/news/elden-ring-starter-guide-tips-know-playing-the-game)。本项目淡入淡出时长可编辑。

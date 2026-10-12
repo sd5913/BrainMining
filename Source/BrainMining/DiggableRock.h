@@ -54,11 +54,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Mining")
 	virtual bool MineSphere(FVector WorldCenter, float WorldRadius);
 
+	UFUNCTION(BlueprintCallable, Category="Mining")
+	virtual bool MineBlast(FVector WorldCenter, float WorldRadius, float Roughness = .32f, int32 Seed = 1);
+
 	UFUNCTION(BlueprintCallable, CallInEditor, Category="Mining")
 	virtual void ResetRock();
 
 protected:
 	void CommitMesh(UE::Geometry::FDynamicMesh3&& Mesh);
+	bool MineCutter(FVector WorldCenter, float WorldRadius, const UE::Geometry::FDynamicMesh3* WorldCutter);
 	bool bUseProceduralCutFallback = false;
 
 private:

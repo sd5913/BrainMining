@@ -22,6 +22,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Components/WidgetInteractionComponent.h"
+#include "MiningInteractionHUDWidget.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "EngineUtils.h"
@@ -265,8 +266,22 @@ APopupOfficeDevice* APopupCloseStage::FocusedDevice(APlayerController* PC) const
  for(auto Device:Devices)if(Device && Device->CanInteract(PC))return Device;
  return nullptr;
 }
+FString APopupCloseStage::GetInteractionAction(APlayerController* PC) const
+{
+ if (!bAreaActive) return FString();
+ auto* Device = FocusedDevice(PC);
+ if (!Device) return FString();
+ if (Phase == EPhase::Idle) return TEXT("开始办公");
+ return Device->IsPrinter() ? FString::Printf(TEXT("处理文件 · %d 张"), Device->Pending()) : TEXT("使用电脑");
+}
+
 void APopupCloseStage::ShowPrompt(APlayerController* PC,const FString& Message)
 {
+ if (UMiningInteractionHUDWidget::IsActiveFor(PC) && !GetInteractionAction(PC).IsEmpty())
+ {
+  if (Prompt) Prompt->SetVisibility(ESlateVisibility::Collapsed);
+  return;
+ }
  if(Message.IsEmpty()){if(Prompt)Prompt->SetVisibility(ESlateVisibility::Collapsed);return;}
  if(!PC)return;
  if(!Prompt){Prompt=CreateWidget<UPopupClosePromptWidget>(PC);Prompt->AddToViewport(8);}

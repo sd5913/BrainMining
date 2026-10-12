@@ -9,6 +9,7 @@
 class UInputMappingContext;
 class UUserWidget;
 class UMiningGUIHUDWidget;
+class UMiningInteractionHUDWidget;
 
 /**
  *  Simple first person Player Controller
@@ -32,6 +33,8 @@ public:
 	TSoftClassPtr<UMiningGUIHUDWidget> MiningGUIClass;
 	UPROPERTY(BlueprintReadOnly, Category="Mining GUI")
 	TObjectPtr<UMiningGUIHUDWidget> MiningGUI;
+	UPROPERTY(BlueprintReadOnly, Category="Mining GUI")
+	TObjectPtr<UMiningInteractionHUDWidget> InteractionHUD;
 	UPROPERTY(BlueprintReadOnly, Category="Mining GUI")
 	bool bUpgradeMenuHeld = false;
 	/** Tab and the focused HUD share this entry point, so mouse clicks cannot swallow release. */

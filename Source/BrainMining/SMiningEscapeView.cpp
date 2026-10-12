@@ -1,5 +1,6 @@
 #include "SMiningEscapeView.h"
 #include "MiningRoomEscape.h"
+#include "MiningInteractionHUDWidget.h"
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
 #include "GameFramework/PlayerController.h"
@@ -29,7 +30,7 @@ int32 SMiningEscapeView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSla
     Box(1420,180,18,430,Dark);const float Rise=FMath::Clamp((E->WaterZ-E->WaterStartZ)/FMath::Max(1.f,E->WaterEndZ-E->WaterStartZ),0.f,1.f);
     Box(1422,608-426*Rise,14,426*Rise,Cyan);Text(TEXT("水位"),1404,145,17,Cyan);
     Box(350,798,900,65,Dark);Text(TEXT("按住空格飞行 · 左键挖掘 · R 重试本段"),475,808,21,White);
-    Box(797,447,6,6,White);
+    if (!UMiningInteractionHUDWidget::IsActiveFor(E->GetWorld()->GetFirstPlayerController())) Box(797,447,6,6,White);
     auto* PC=E->GetWorld()->GetFirstPlayerController();if(!PC)return L;
     FVector2D P;const FVector Target=E->GuideTarget();
     if(PC->ProjectWorldLocationToScreen(Target,P,true))

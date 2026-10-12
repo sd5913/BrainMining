@@ -27,6 +27,7 @@ public:
     FSimpleMulticastDelegate OnRestarted;
     FEchoRestartOverride RestartOverride;
     bool bExplorationActive=true;
+    bool bUseSharedInteractionHUD=false;
     UFUNCTION(BlueprintCallable) void Knock();
     UFUNCTION(BlueprintCallable) void Restart();
     UFUNCTION() void OnLanded(const FHitResult& Hit);

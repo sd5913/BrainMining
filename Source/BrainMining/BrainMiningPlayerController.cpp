@@ -10,6 +10,7 @@
 #include "BrainMining.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 #include "MiningGUIWidgets.h"
+#include "MiningInteractionHUDWidget.h"
 #include "Engine/GameViewportClient.h"
 #include "Components/InputComponent.h"
 #include "MiningComponent.h"
@@ -29,6 +30,8 @@ void ABrainMiningPlayerController::BeginPlay()
 	Super::BeginPlay();
 	if (IsLocalPlayerController())
 	{
+		InteractionHUD = CreateWidget<UMiningInteractionHUDWidget>(this);
+		if (InteractionHUD) InteractionHUD->AddToPlayerScreen(30);
 		if (auto* WidgetClass = MiningGUIClass.LoadSynchronous())
 		{
 			MiningGUI = CreateWidget<UMiningGUIHUDWidget>(this, WidgetClass);
@@ -216,6 +219,7 @@ void ABrainMiningPlayerController::EndPlay(const EEndPlayReason::Type Reason)
 		FSlateApplication::Get().OnApplicationActivationStateChanged().Remove(ApplicationActivationHandle);
 	SetUpgradeMenuHeld(false);
 	if (MiningGUI) MiningGUI->RemoveFromParent();
+	if (InteractionHUD) InteractionHUD->RemoveFromParent();
 	if (bOwnsDesktopGUIInput && IsLocalPlayerController())
 	{
 		bShowMouseCursor = false;

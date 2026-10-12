@@ -7,6 +7,7 @@
 #include "Engine/World.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
+#include "HAL/PlatformProcess.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 using namespace UE::Geometry;
@@ -63,6 +64,10 @@ bool FMiningBombFractureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Chunked cave fixture builds"),Chunked->SetChunkedMesh(FDynamicMesh3(&Box),800,true));
 	const double ChunkInitial=RockVolume(Chunked);
 	TestTrue(TEXT("Blast crosses cave chunk boundaries"),Chunked->MineBlast(FVector(0,0,960),520,.35f,42));
+	const double Deadline=FPlatformTime::Seconds()+3;
+	while(Chunked->bCutPending && FPlatformTime::Seconds()<Deadline)
+	{FPlatformProcess::Sleep(.001f);Chunked->Tick(.01f);}
+	TestFalse(TEXT("Accepted blast completes across all chunks"),Chunked->bCutPending);
 	TestTrue(TEXT("Multiple chunks receive the same fracture volume"),Chunked->LastTouchedChunks>1);
 	TestTrue(TEXT("Chunked excavation matches unchunked excavation"),FMath::Abs((ChunkInitial-RockVolume(Chunked))-BombRemoved)<BombRemoved*.001);
 	for(const auto& Chunk:Chunked->Chunks) TestTrue(TEXT("Every touched chunk remains closed"),Chunk.Mesh->GetDynamicMesh()->GetMeshRef().IsClosed());

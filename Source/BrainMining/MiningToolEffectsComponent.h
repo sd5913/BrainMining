@@ -18,6 +18,10 @@ class BRAINMINING_API UMiningToolEffectsComponent : public UActorComponent
 
 	GENERATED_BODY()
 public:
+	void PlayEncounterSwing() { PlaySwing(.48f); }
+	void UpdateEchoPickaxeStyle();
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Effects")
+	bool bEchoPickaxeLines = false;
 	UMiningToolEffectsComponent();
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
@@ -136,6 +140,12 @@ public:
 	void ResetEffects();
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category="Mining|Echo") TSoftObjectPtr<UMaterialInterface> EchoPickaxeBlackAsset;
+	UPROPERTY(EditDefaultsOnly, Category="Mining|Echo") TSoftObjectPtr<UMaterialInterface> EchoPickaxeLinesAsset;
+	UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInterface>> NormalPickaxeMaterials;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> NormalPickaxeOverlay;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> EchoPickaxeBlack;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInterface> EchoPickaxeLines;
 	UPROPERTY(Transient)
 	TObjectPtr<UMiningComponent> Mining;
 	UPROPERTY(Transient)

@@ -25,6 +25,8 @@ public:
     void BindInput(UInputComponent* Input);
     void SetExplorationActive(bool bActive);
     FSimpleMulticastDelegate OnRestarted;
+    FSimpleMulticastDelegate OnKnock;
+    bool bUseSharedPickaxe = false;
     FEchoRestartOverride RestartOverride;
     bool bExplorationActive=true;
     bool bUseSharedInteractionHUD=false;

@@ -12,6 +12,7 @@
 #include "MiningWalletSubsystem.h"
 #include "PopupClose/PopupCloseStage.h"
 #include "WenSi/WenSiPuzzle.h"
+#include "WenSi/WenSiMirrorPuzzle.h"
 #include "EchoPassagePlayer.h"
 #include "CardRoomPlayer.h"
 #include "EchoPassageStage.h"
@@ -91,6 +92,7 @@ void AMiningExhibitHall::BeginPlay()
     for(TActorIterator<AMiningCellUniverse> Actor(GetWorld()); Actor; ++Actor) Ending=*Actor;
     for(TActorIterator<APopupCloseStage> Actor(GetWorld()); Actor; ++Actor) Office=*Actor;
     for(TActorIterator<AWenSiPuzzle> Actor(GetWorld()); Actor; ++Actor) Museum=*Actor;
+    for(TActorIterator<AWenSiMirrorPuzzle> Actor(GetWorld()); Actor; ++Actor) MirrorMuseum=*Actor;
 }
 
 bool AMiningExhibitHall::InitializeAreas()
@@ -180,6 +182,7 @@ void AMiningExhibitHall::CloseInteraction()
     if(Collection && Collection->bCatalogueOpen) Collection->ToggleCatalogue();
     if(Office) Office->CancelSession();
     if(Museum) Museum->SetAreaActive(false);
+    if(MirrorMuseum) MirrorMuseum->SetAreaActive(false);
     Controller->CardInteraction->LeaveSeat();
     Controller->CardInteraction->ReleaseForExploration();
     Controller->EchoInteraction->SetExplorationActive(false);
@@ -232,6 +235,7 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
     Mining->ResetBounds=FBox(Center-FVector(30000,30000,50000),Center+FVector(Kind==EMiningExperienceKind::Ending?200000:60000,30000,50000));
     if(bContinuousCampaign && Areas.IsValidIndex(Index) && Areas[Index].MiningBounds.IsValid) Mining->ResetBounds=Areas[Index].MiningBounds;
     ApplyUpgrades();
+    if(MirrorMuseum) MirrorMuseum->SetAreaActive(Kind==EMiningExperienceKind::Museum);
     if(Kind==EMiningExperienceKind::Journey)
     {
         Controller->EncounterPolicy->Apply(Controller->GetPawn());
@@ -285,7 +289,7 @@ bool AMiningExhibitHall::CanAdvanceCampaign() const
         return bContinuousCampaign || FBox(Areas[ActiveArea].Exit-Areas[ActiveArea].ExitExtent,Areas[ActiveArea].Exit+Areas[ActiveArea].ExitExtent).IsInsideOrOn(Controller->GetPawn()->GetActorLocation());
     case EMiningExperienceKind::Office: return Office && Office->GetCompletedSessions()>0 && !Office->IsSessionActive();
     case EMiningExperienceKind::Journey: return Journey && Journey->Phase==EMiningEscapePhase::Escaped;
-    case EMiningExperienceKind::Museum: return Museum && Museum->bComplete;
+    case EMiningExperienceKind::Museum: return (MirrorMuseum && MirrorMuseum->bComplete) || (Museum && Museum->bComplete);
     case EMiningExperienceKind::Ending: return Ending && Ending->bComplete;
     default: return false;
     }

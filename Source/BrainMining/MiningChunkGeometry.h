@@ -26,7 +26,7 @@ namespace MiningChunks
 	bool Split(const UE::Geometry::FDynamicMesh3& Source, double Length, TArray<UE::Geometry::FDynamicMesh3>& Meshes, TArray<FBox>& Bounds);
 	bool SplitSpatial(const UE::Geometry::FDynamicMesh3& Source, double Length, TArray<UE::Geometry::FDynamicMesh3>& Meshes, TArray<FBox>& Bounds);
 	bool SplitExternalSpatial(const UE::Geometry::FDynamicMesh3& Source, double Length, TArray<UE::Geometry::FDynamicMesh3>& Meshes, TArray<FBox>& Bounds);
-	BRAINMINING_API bool Subtract(const UE::Geometry::FDynamicMesh3& Source, const UE::Geometry::FDynamicMesh3& Cutter, UE::Geometry::FDynamicMesh3& Result, bool bPreserveCutEdges = false);
+	BRAINMINING_API bool Subtract(const UE::Geometry::FDynamicMesh3& Source, const UE::Geometry::FDynamicMesh3& Cutter, UE::Geometry::FDynamicMesh3& Result, bool bPreserveCutEdges = false, double TimeBudgetSeconds = 0);
 	bool Union(const UE::Geometry::FDynamicMesh3& Source, const UE::Geometry::FDynamicMesh3& Added, UE::Geometry::FDynamicMesh3& Result, bool bPreserveCutEdges = false);
 	int32 Simplify(UE::Geometry::FDynamicMesh3& Mesh, const UE::Geometry::FDynamicMesh3& Initial, const FBox& Bounds, double Tolerance);
 	void Normals(UE::Geometry::FDynamicMesh3& Mesh);

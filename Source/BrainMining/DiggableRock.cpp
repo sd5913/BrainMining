@@ -20,6 +20,10 @@ ADiggableRock::ADiggableRock()
 	PrimaryActorTick.bCanEverTick = false;
 	RockMesh = CreateDefaultSubobject<UDynamicMeshComponent>(TEXT("RockMesh"));
 	SetRootComponent(RockMesh);
+	// UE 5.8 dynamic-mesh BLAS can be evicted during topology replacement.
+	// Excavatable terrain uses raster lighting; do not submit stale RT geometry.
+	RockMesh->SetEnableRaytracing(false);
+	RockMesh->SetVisibleInRayTracing(false);
 	RockMesh->SetCollisionProfileName(TEXT("BlockAll"));
 	RockMesh->SetGenerateOverlapEvents(false);
 	RockMesh->SetComplexAsSimpleCollisionEnabled(true, false);
@@ -44,6 +48,9 @@ void ADiggableRock::OnConstruction(const FTransform& Transform)
 void ADiggableRock::CommitMesh(FDynamicMesh3&& Mesh)
 {
 	TriangleCount = Mesh.TriangleCount();
+	// Also enforce this for components serialized in older maps.
+	RockMesh->SetEnableRaytracing(false);
+	RockMesh->SetVisibleInRayTracing(false);
 	RockMesh->SetMesh(MoveTemp(Mesh));
 	RockMesh->GetBodySetup()->SetFlags(RF_Transient);
 	const double CollisionStart = FPlatformTime::Seconds();
@@ -68,6 +75,7 @@ void ADiggableRock::ResetRock()
 	LastBooleanMilliseconds = 0.0f;
 	LastTotalMilliseconds = 0.0f;
 	LastStatus = bRoomValid ? TEXT("Ready") : TEXT("Invalid room bounds: room must fit inside rock with 10cm walls");
+	OnTerrainCommitted.Broadcast(FBox(ForceInit));
 }
 
 bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
@@ -133,6 +141,12 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 	}
 	FDynamicMesh3 Result;
 	FMeshBoolean Operation(&SourceMesh, &Cutter, &Result, FMeshBoolean::EBooleanOp::Difference);
+	// Interactive edits must never run the editor's unbounded retry sequence.
+	const bool bInteractive = GetWorld() && GetWorld()->IsGameWorld();
+	const double Deadline = bInteractive ? FPlatformTime::Seconds() + .035 : 0;
+	FProgressCancel Progress;
+	Progress.CancelF = [Deadline](){ return Deadline > 0 && FPlatformTime::Seconds() >= Deadline; };
+	Operation.Progress = &Progress;
 	Operation.bSimplifyAlongNewEdges = WorldCutter == nullptr;
 	Operation.bPreserveTriangleGroups = !bUseProceduralCutFallback;
 	const double BooleanStart = FPlatformTime::Seconds();
@@ -143,23 +157,25 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 			(Result.TriangleCount() == 0 || Result.IsClosed());
 	};
 	bool bSucceeded = Operation.Compute() && IsValidResult();
-	if (!bSucceeded)
+	if (!bSucceeded && !Progress.Cancelled())
 	{
 		Result.Clear();
 		Operation.bSimplifyAlongNewEdges = false;
 		Operation.CreatedBoundaryEdges.Reset();
 		bSucceeded = Operation.Compute() && IsValidResult();
 	}
-	if (!bSucceeded && bUseProceduralCutFallback)
+	if (!bSucceeded && bUseProceduralCutFallback && !Progress.Cancelled())
 	{
 		SourceMesh.DiscardAttributes();
 		Cutter.DiscardAttributes();
 		if (!SourceMesh.HasTriangleGroups()) SourceMesh.EnableTriangleGroups(0);
 		if (!Cutter.HasTriangleGroups()) Cutter.EnableTriangleGroups(0);
-		for (double Tolerance : {0.00001, 0.0001, 0.001})
+		for (double Tolerance : {0.0000001, 0.000001, 0.00001})
 		{
+			if (Progress.Cancelled()) break;
 			Result.Clear();
 			FMeshBoolean Retry(&SourceMesh, &Cutter, &Result, FMeshBoolean::EBooleanOp::Difference);
+			Retry.Progress = &Progress;
 			Retry.SnapTolerance = Tolerance;
 			Retry.bSimplifyAlongNewEdges = false;
 			bSucceeded = Retry.Compute() && Retry.CreatedBoundaryEdges.IsEmpty() &&
@@ -169,6 +185,28 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 		}
 	}
 	LastBooleanMilliseconds = (FPlatformTime::Seconds() - BooleanStart) * 1000.0;
+	if (!bSucceeded && bUseProceduralCutFallback && !Progress.Cancelled())
+	{
+		// Faceted terrain can put a cutter vertex exactly on an existing edge.
+		// A sub-millimetre translation resolves that coincidence without changing
+		// the player's cut shape perceptibly. Keep the same strict validity gate.
+		for (int32 Attempt = 0; Attempt < 4 && !bSucceeded; ++Attempt)
+		{
+			if (Progress.Cancelled()) break;
+			for (int32 V : Cutter.VertexIndicesItr()) Cutter.SetVertex(V, Cutter.GetVertex(V) + FVector3d(.013,.021,.017));
+			Result.Clear();
+			FMeshBoolean Retry(&SourceMesh, &Cutter, &Result, FMeshBoolean::EBooleanOp::Difference);
+			Retry.Progress = &Progress;
+			// FMeshBoolean normalizes the mesh: .1 here was ~10% of the rock,
+			// merging unrelated edges and taking 12.99 seconds on TunnelSoilRight.
+			const double Tolerances[]={.0000001,.000001,.000001,.00001};
+			Retry.SnapTolerance = Tolerances[Attempt]; Retry.bSimplifyAlongNewEdges = false;
+			bSucceeded = Retry.Compute() && Retry.CreatedBoundaryEdges.IsEmpty() &&
+				(Result.TriangleCount() == 0 || Result.IsClosed()) &&
+				Result.CheckValidity(FDynamicMesh3::FValidityOptions(), EValidityCheckFailMode::ReturnOnly);
+		}
+		LastBooleanMilliseconds = (FPlatformTime::Seconds() - BooleanStart) * 1000.0;
+	}
 	if (!bSucceeded)
 	{
 		LastStatus = TEXT("Cut rejected: original rock preserved");
@@ -215,6 +253,7 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 		FogChamber->ObserveCut(Mesh, LocalCenter, LocalRadius);
 	});
 	++SuccessfulCuts;
+	OnTerrainCommitted.Broadcast(FBox::BuildAABB(WorldCenter, FVector(WorldRadius + 1.0f)));
 	LastTotalMilliseconds = (FPlatformTime::Seconds() - OperationStart) * 1000.0;
 	LastStatus = TriangleCount > 0 ? TEXT("Cut committed") : TEXT("Rock depleted");
 	UE_LOG(LogBrainMining, Display, TEXT("Mining cut %d: triangles=%d boolean=%.2fms collision=%.2fms total=%.2fms"),

@@ -86,6 +86,14 @@ class BRAINMINING_API AWenSiMirrorPuzzle : public AActor
  GENERATED_BODY()
 public:
  AWenSiMirrorPuzzle();
+ UPROPERTY(EditAnywhere, Category="WenSi|Campaign") bool bAreaManaged=false;
+ bool bAreaActive=true;
+ FTransform AreaPlayerStart;
+ void SetAreaActive(bool Active);
+ EWenSiMirrorWord GetPlayerWord() const;
+ bool SetPlayerWord(EWenSiMirrorWord Word);
+ FVector RoomPoint(FVector Local) const { return Local+GetActorLocation(); }
+
  virtual void BeginPlay() override;
  virtual void Tick(float Dt) override;
  virtual void EndPlay(const EEndPlayReason::Type Reason) override;
@@ -116,6 +124,11 @@ private:
  TArray<FTransform> InitialTransforms;
  TArray<EWenSiMirrorWord> InitialWords;
  FTransform StartTransform;
+ FVector PlayerBaseScale=FVector::OneVector;
+ float PlayerBaseSpeed=300;
+ float PlayerBaseRadius=32,PlayerBaseHalfHeight=88,PlayerBaseStepHeight=12;
+ ECollisionResponse PlayerBaseCollision=ECR_Block;
+ EWenSiMirrorWord SharedPlayerWord=EWenSiMirrorWord::Ordinary;
  UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> LampMeshes;
  UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> Lamps;
  UPROPERTY() TObjectPtr<AActor> RewardShutter;

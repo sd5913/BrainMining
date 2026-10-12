@@ -1,5 +1,6 @@
 #include "MiningEncounterPlayer.h"
 #include "MiningComponent.h"
+#include "MiningToolEffectsComponent.h"
 #include "MiningRoomEscape.h"
 #include "MiningGiantRoomEntrance.h"
 #include "CardRoomStage.h"
@@ -33,7 +34,7 @@ void UMiningEncounterPlayerPolicy::Apply(APawn* Pawn)
         }
         Mining->PushEncounterBlock();bMiningBlocked=true;
     }
-    if(Movement.IsValid()) {bOldFlightEnabled=Movement->FlightSettings.bEnabled;bOldHeatEnabled=Movement->FlightSettings.bEnableHeat;Movement->FlightSettings.bEnabled=true;Movement->FlightSettings.bEnableHeat=false;}
+    // Flight and heat remain owned by the shared player progression.
     if(auto* Character=Cast<ACharacter>(Pawn))Character->StopJumping();
     TArray<ULightComponent*> Found;Pawn->GetComponents(Found);
     for(auto* Light:Found)
@@ -52,7 +53,7 @@ void UMiningEncounterPlayerPolicy::Release()
         Mining->SetInputContextEnabled(bOldInputContextEnabled);
     }
     bMiningBlocked=false;bFallResetOverridden=false;
-    if(Movement.IsValid()) {Movement->SetFlightInputHeld(false);Movement->FlightSettings.bEnabled=bOldFlightEnabled;Movement->FlightSettings.bEnableHeat=bOldHeatEnabled;}
+    if(Movement.IsValid()) Movement->SetFlightInputHeld(false);
     for(auto& Light:Lights)if(Light.Key.IsValid())Light.Key->SetVisibility(Light.Value);
     Lights.Reset();Movement.Reset();Mining.Reset();AppliedPawn.Reset();
 }
@@ -62,10 +63,16 @@ AMiningEncounterPlayerController::AMiningEncounterPlayerController()
     static ConstructorHelpers::FClassFinder<ABrainMiningPlayerController> Controller(TEXT("/Game/FirstPerson/Blueprints/BP_FirstPersonPlayerController"));
     if(Controller.Succeeded())UseInputDefaultsFrom(Controller.Class->GetDefaultObject<ABrainMiningPlayerController>());
     EchoInteraction=CreateDefaultSubobject<UEchoPassageInteractionComponent>(TEXT("EchoInteraction"));
+    EchoInteraction->bUseSharedPickaxe=true;
     CardInteraction=CreateDefaultSubobject<UCardRoomInteractionComponent>(TEXT("CardInteraction"));
     EncounterPolicy=CreateDefaultSubobject<UMiningEncounterPlayerPolicy>(TEXT("EncounterPolicy"));
 }
-void AMiningEncounterPlayerController::BeginPlay() {Super::BeginPlay();SetMiningGUIEnabled(false);EncounterPolicy->Apply(GetPawn());}
+void AMiningEncounterPlayerController::BeginPlay()
+{
+    Super::BeginPlay();SetMiningGUIEnabled(false);EncounterPolicy->Apply(GetPawn());
+    EchoInteraction->OnKnock.AddWeakLambda(this,[this]()
+    {if(GetPawn()) if(auto* Effects=GetPawn()->FindComponentByClass<UMiningToolEffectsComponent>()) Effects->PlayEncounterSwing();});
+}
 void AMiningEncounterPlayerController::OnPossess(APawn* InPawn) {Super::OnPossess(InPawn);EncounterPolicy->Apply(InPawn);}
 void AMiningEncounterPlayerController::OnUnPossess() {EncounterPolicy->Release();Super::OnUnPossess();}
 void AMiningEncounterPlayerController::SetupInputComponent()

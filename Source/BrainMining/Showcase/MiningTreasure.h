@@ -81,6 +81,7 @@ public:
     TArray<FTransform> CrystalTransforms;
     void ConfigureCrystalClues(const FMiningTreasurePlacement& Placement, UStaticMesh* FragmentMesh);
     void UpdateCrystalClues();
+    uint32 GetTerrainVersion() const;
     static void MarkCoveredPoints(const TArray<TObjectPtr<ADiggableRock>>& Rocks, const TArray<FVector>& Points, TArray<bool>& Covered);
     static float ValueScale(const FMiningTreasureDefinition& Definition, int32 InValue);
     bool Configure(const FMiningTreasureDefinition& Definition, int32 InSizeTier, UMaterialInterface* Material);
@@ -95,6 +96,15 @@ public:
     float GetHintAmount() const { return HintAmount; }
     int32 GetSurfaceSampleCount() const { return SurfaceSamples.Num(); }
 private:
+    mutable uint32 ExposureVersion = 0;
+    mutable bool bExposureCached = false;
+    mutable FTransform ExposureTransform;
+    mutable float CachedExposure = 0;
+    mutable FVector CachedEscapeDirection;
+    TArray<bool> SupportedCrystals;
+    // ISM slot -> authored fragment. Surviving fragments are never cleared/rebuilt.
+    TArray<int32> CrystalInstanceFragments;
+    void OnTerrainCommitted(const FBox& ChangedBounds);
     FTransform BuriedTransform;
     FVector PausedVelocity = FVector::ZeroVector;
     FVector PausedSpin = FVector::ZeroVector;
@@ -112,6 +122,8 @@ class BRAINMINING_API AMiningTreasureField : public AActor
 public:
     AMiningTreasureField();
     virtual void PostLoad() override;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Treasure|Performance") float LastTerrainUpdateMilliseconds = 0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Treasure|Performance") int32 LastUpdatedDeposits = 0;
     UPROPERTY(EditAnywhere, Category="Treasure") bool bUseSharedWallet = false;
     UPROPERTY(EditAnywhere, Category="Treasure|Campaign") bool bUseAuthoredPlacements = false;
     UPROPERTY(EditAnywhere, Category="Treasure|Campaign") TArray<FMiningTreasurePlacement> AuthoredPlacements;
@@ -144,6 +156,8 @@ private:
     float ToastRemaining = 0;
     FString Toast;
     TArray<int32> ObservedCuts;
+    TMap<TWeakObjectPtr<AMiningTreasure>, uint32> ObservedTerrain;
+    int32 TerrainUpdateCursor = 0;
     bool bAuthoredGenerated = false;
     void SpawnAuthored();
     FRandomStream RewardRandom;

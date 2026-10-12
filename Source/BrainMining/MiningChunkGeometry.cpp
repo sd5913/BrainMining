@@ -9,6 +9,9 @@
 #include "MeshSimplification.h"
 #include "Operations/MeshBoolean.h"
 #include "Operations/MeshPlaneCut.h"
+#include "DynamicMesh/Operations/MergeCoincidentMeshEdges.h"
+#include "MeshBoundaryLoops.h"
+#include "Operations/MinimalHoleFiller.h"
 #include "ConstrainedDelaunay2.h"
 #include "ProjectionTargets.h"
 
@@ -16,6 +19,36 @@ using namespace UE::Geometry;
 
 namespace
 {
+	// Boolean results can contain numerical cracks even with two closed inputs.
+	// Repair only in the background, and require every cap to stay on the actual
+	// source/cutter surfaces. This cannot bridge an intended excavation cavity.
+	bool RepairBooleanCracks(FDynamicMesh3& Result,const FDynamicMesh3& Source,const FDynamicMesh3& Tool,FProgressCancel& Progress)
+	{
+		if(Result.TriangleCount()==0 || !Source.IsClosed() || !Tool.IsClosed() || Progress.Cancelled())return false;
+		FMergeCoincidentMeshEdges Weld(&Result);Weld.MergeVertexTolerance=.01;Weld.OnlyUniquePairs=true;Weld.Apply();
+		if(Result.IsClosed())return Result.CheckValidity(FDynamicMesh3::FValidityOptions(),EValidityCheckFailMode::ReturnOnly);
+		FMeshBoundaryLoops Boundary(&Result);
+		if(Boundary.bAborted || Boundary.bSawOpenSpans || Boundary.Loops.Num()>16)return false;
+		FDynamicMeshAABBTree3 SourceTree(&Source,true),ToolTree(&Tool,true);
+		auto OnSurface=[&](FVector3d P)
+		{
+			double A=DBL_MAX,B=DBL_MAX;SourceTree.FindNearestTriangle(P,A);ToolTree.FindNearestTriangle(P,B);
+			return FMath::Min(A,B)<=.05*.05;
+		};
+		for(const auto& Loop:Boundary.Loops)
+		{
+			if(Progress.Cancelled() || Loop.Vertices.Num()>64)return false;
+			FMinimalHoleFiller Filler(&Result,Loop);if(!Filler.Fill(Result.AllocateTriangleGroup()))return false;
+			for(int T:Filler.NewTriangles)
+			{
+				FVector3d A,B,C;Result.GetTriVertices(T,A,B,C);
+				if(!OnSurface(A) || !OnSurface(B) || !OnSurface(C) || !OnSurface((A+B+C)/3) ||
+					!OnSurface((A+B)/2) || !OnSurface((B+C)/2) || !OnSurface((C+A)/2))return false;
+			}
+		}
+		return !Progress.Cancelled() && Result.IsClosed() && Result.CheckValidity(FDynamicMesh3::FValidityOptions(),EValidityCheckFailMode::ReturnOnly);
+	}
+
 	bool ClipCell(const FDynamicMesh3& Source, const FBox& Cell, FDynamicMesh3& Result)
 	{
 		Result = Source; Result.DiscardAttributes();
@@ -36,8 +69,11 @@ namespace
 		return Result.CheckValidity(FDynamicMesh3::FValidityOptions(), EValidityCheckFailMode::ReturnOnly);
 	}
 
-	bool Boolean(const FDynamicMesh3& Source, const FDynamicMesh3& Tool, FMeshBoolean::EBooleanOp Mode, FDynamicMesh3& Result, bool bPreserveCutEdges = false)
+	bool Boolean(const FDynamicMesh3& Source, const FDynamicMesh3& Tool, FMeshBoolean::EBooleanOp Mode, FDynamicMesh3& Result, bool bPreserveCutEdges = false, double TimeBudgetSeconds = 0)
 	{
+		const double Deadline = TimeBudgetSeconds > 0 ? FPlatformTime::Seconds() + TimeBudgetSeconds : 0;
+		FProgressCancel Progress;
+		Progress.CancelF = [Deadline](){ return Deadline > 0 && FPlatformTime::Seconds() >= Deadline; };
 		FDynamicMesh3 First = Source;
 		FDynamicMesh3 Second = Tool;
 		First.DiscardAttributes();
@@ -48,10 +84,16 @@ namespace
 		// Fine first passes preserve short edges in large external mining regions.
 		const double Tolerances[] = {0.00000001, 0.0000001, 0.000001, 0.00001, 0.0001, 0.001};
 		const double SpatialTolerances[] = {0.000000001, 0.00000001, 0.0000001, 0.000001, 0.00001, 0.0001, 0.001};
-		for (int32 Attempt = 0; Attempt < (bPreserveCutEdges ? 14 : 12); ++Attempt)
+		// Interactive work tries fine tolerances only. A budgeted background retry
+		// may also weld sub-centimetre slivers, without blocking the game thread.
+		const bool bInteractive=TimeBudgetSeconds>0 && TimeBudgetSeconds<=.05;
+		const int32 Attempts=bInteractive?(bPreserveCutEdges?10:8):(bPreserveCutEdges?14:12);
+		for (int32 Attempt = 0; Attempt < Attempts; ++Attempt)
 		{
+			if (Progress.Cancelled()) break;
 			Result.Clear();
 			FMeshBoolean Operation(&First, &Second, &Result, Mode);
+			Operation.Progress = &Progress;
 			Operation.bSimplifyAlongNewEdges = !bPreserveCutEdges && Attempt % 2 == 0;
 			Operation.bCollapseDegenerateEdgesOnCut = !bPreserveCutEdges || Attempt % 2 == 0;
 			Operation.bPreserveTriangleGroups = false;
@@ -60,6 +102,8 @@ namespace
 			if (bComputed && Operation.CreatedBoundaryEdges.IsEmpty() &&
 				(Result.TriangleCount() == 0 || Result.IsClosed()) &&
 				Result.CheckValidity(FDynamicMesh3::FValidityOptions(), EValidityCheckFailMode::ReturnOnly)) return true;
+			if(TimeBudgetSeconds>.05 && !Operation.CreatedBoundaryEdges.IsEmpty() &&
+				RepairBooleanCracks(Result,First,Second,Progress))return true;
 		}
 		return false;
 	}
@@ -311,9 +355,9 @@ bool MiningChunks::SplitSpatialIncremental(const FDynamicMesh3& Source, double L
 	return false;
 }
 
-bool MiningChunks::Subtract(const FDynamicMesh3& Source, const FDynamicMesh3& Cutter, FDynamicMesh3& Result, bool bPreserveCutEdges)
+bool MiningChunks::Subtract(const FDynamicMesh3& Source, const FDynamicMesh3& Cutter, FDynamicMesh3& Result, bool bPreserveCutEdges, double TimeBudgetSeconds)
 {
-	return Boolean(Source, Cutter, FMeshBoolean::EBooleanOp::Difference, Result, bPreserveCutEdges);
+	return Boolean(Source, Cutter, FMeshBoolean::EBooleanOp::Difference, Result, bPreserveCutEdges, TimeBudgetSeconds);
 }
 
 int32 MiningChunks::Simplify(FDynamicMesh3& Mesh, const FDynamicMesh3& Initial, const FBox& Bounds, double Tolerance)

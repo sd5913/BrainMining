@@ -5,6 +5,21 @@
 #include "EngineUtils.h"
 #include "Engine/World.h"
 
+bool UMiningDesignerLibrary::OptimizeCampaignTerrain(AActor* Hall)
+{
+    if(!Hall || !Hall->GetWorld())return false;
+    bool bOK=true;
+    for(TActorIterator<AGeneratedMiningRock> It(Hall->GetWorld());It;++It)
+    {
+        if(It->bChunked || It->TriangleCount<6000 || !It->GetActorLabel().StartsWith(TEXT("Campaign_")))continue;
+        UE::Geometry::FDynamicMesh3 Mesh;It->CopyMiningMesh(Mesh);
+        const bool bSplit=It->SetChunkedMesh(Mesh,400,true,true);
+        UE_LOG(LogTemp,Display,TEXT("Interactive terrain chunks: %s (%d triangles), success=%d"),*It->GetActorLabel(),Mesh.TriangleCount(),bSplit);
+        bOK&=bSplit;
+    }
+    return bOK;
+}
+
 TArray<FMiningTreasurePlacement> UMiningDesignerLibrary::FindCampaignMineralSites(AActor* Actor)
 {
     TArray<FMiningTreasurePlacement> Sites;
@@ -60,47 +75,227 @@ bool UMiningDesignerLibrary::PrepareCampaignMinerals(AMiningTreasureField* Field
     {
         const auto* D=Field->Definitions.FindByPredicate([&](const auto& Definition){return Definition.Id==P.TreasureId;});
         if(!D || P.Hosts.IsEmpty()){++Failures;continue;}
+        const FVector PreviousCore=P.Transform.GetLocation();
         auto* Preview=Field->GetWorld()->SpawnActor<AMiningTreasure>(P.Transform.GetLocation(),P.Transform.Rotator());
         Preview->CoveringRocks=P.Hosts;
         const bool Configured=Preview->Configure(*D,D->ValuesBySize.IndexOfByKey(P.Value),Field->TreasureMaterial);
-        const FVector Normal=P.Surface.GetRotation().GetForwardVector();
-        const float Depth=FMath::Max(85.f,float(Preview->Model->Bounds.SphereRadius)+55.f)+(P.RouteProgress>.82f?35.f:0.f);
-        P.Transform.SetLocation(P.Surface.GetLocation()-Normal*Depth);
-        Preview->SetActorLocation(P.Transform.GetLocation());
+        FVector Normal=P.Surface.GetRotation().GetForwardVector();
+        const float MinDepth=FMath::Max(float(FVector::Dist(P.Transform.GetLocation(),P.Surface.GetLocation()))+65.f,float(Preview->Model->Bounds.SphereRadius)+120.f);
+        const float Rarity=FMath::Clamp((FCString::Atoi(*P.TreasureId.ToString())-1)/8.f,0.f,1.f);
+        const float WantedDepth=MinDepth+Random.FRandRange(25.f,100.f+240.f*Rarity+25.f*Preview->SizeTier);
         // Include every nearby solid, including chunks of the original white shell.
-        const FBox Search=Preview->Model->Bounds.GetBox().ExpandBy(120);
+        const FBox Search(P.Surface.GetLocation()-FVector(1200),P.Surface.GetLocation()+FVector(1200));
         for(TActorIterator<ADiggableRock> It(Field->GetWorld());It;++It)
             if(It->ActorHasTag(P.AreaTag) && It->GetComponentsBoundingBox(true).Intersect(Search))P.Hosts.AddUnique(*It);
         Preview->CoveringRocks=P.Hosts;
-        if(!Configured || Preview->MeasureExposure()>.01f)
+        bool Buried=false;
+        for(float Depth=WantedDepth;Depth>=MinDepth-.1f;Depth=FMath::Max(MinDepth,Depth-25.f))
+        {
+            P.Transform.SetLocation(P.Surface.GetLocation()-Normal*Depth);
+            Preview->SetActorLocation(P.Transform.GetLocation());
+            if(Configured && Preview->MeasureExposure()<.01f){Buried=true;break;}
+            if(Depth<=MinDepth)break;
+        }
+        // A thin guide layer may have no deeper solid along its original normal.
+        // Search the neighboring wall for a thicker pocket, retaining a real surface clue.
+        if(!Buried)
+        {
+            const FVector Original=P.Surface.GetLocation();
+            const FVector Side=FVector::CrossProduct(Normal,FVector::UpVector).GetSafeNormal();
+            for(float Radius:{100.f,200.f,300.f})for(int I=0;I<8 && !Buried;++I)
+            {
+                const FVector Q=Original+Side*(Radius*FMath::Cos(I*PI/4))+FVector::UpVector*(Radius*FMath::Sin(I*PI/4));
+                FHitResult Best;double Distance=BIG_NUMBER;
+                for(ADiggableRock* Host:P.Hosts)if(IsValid(Host))
+                {
+                    FHitResult Hit;
+                    if(Host->ActorLineTraceSingle(Hit,Q+Normal*250,Q-Normal*500,ECC_Visibility,FCollisionQueryParams(NAME_None,true)) && Hit.Distance<Distance)
+                    {Best=Hit;Distance=Hit.Distance;}
+                }
+                if(Distance==BIG_NUMBER)continue;
+                for(float Depth=MinDepth;Depth<=MinDepth+350;Depth+=25)
+                {
+                    P.Transform.SetLocation(Best.ImpactPoint-Best.ImpactNormal*Depth);Preview->SetActorLocation(P.Transform.GetLocation());
+                    if(Configured && Preview->MeasureExposure()<.01f)
+                    {Buried=true;P.Surface=FTransform(Best.ImpactNormal.Rotation(),Best.ImpactPoint);Normal=Best.ImpactNormal;break;}
+                }
+            }
+        }
+        if(!Buried)
         {UE_LOG(LogTemp,Error,TEXT("Mineral not buried: %s %s"),*P.TreasureId.ToString(),*P.Transform.GetLocation().ToString());++Failures;Preview->Destroy();continue;}
+        int PreviousInnerCount=0;
+        // Count from the authored old core, before rebuilding this deposit's hint field.
+        // Surface/trail samples are included: the requested doubling is of visible population.
+        for(const auto& F:P.Fragments)
+            if(FVector::DistSquared(F.GetLocation(),PreviousCore)<160*160)++PreviousInnerCount;
         P.Fragments.Reset();P.FragmentSupports.Reset();
         const FVector Right=FVector::CrossProduct(Normal,FVector::UpVector).GetSafeNormal();
         const FVector Up=FVector::CrossProduct(Right,Normal).GetSafeNormal();
         auto AddChip=[&](FVector Position,FVector Support,float Scale)
         {
+            for(const FVector& Existing:P.FragmentSupports)if(FVector::DistSquared(Existing,Support)<32*32)return;
             TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints(P.Hosts,{Support},Covered);
             if(!Covered[0])return;
-            P.Fragments.Add(FTransform(FRotator(Random.FRandRange(-70,70),Random.FRandRange(0,360),Random.FRandRange(-60,60)),Position,FVector(Scale,Scale*.65,Scale*1.6)));
+            P.Fragments.Add(FTransform(Random.VRand().Rotation(),Position,FVector(Scale,Scale*.85,Scale)));
             P.FragmentSupports.Add(Support);
         };
-        // Small shards are half embedded at the actual uneven surface, not floating on a flat plane.
-        for(int I=0;I<18;++I)
+        // A few flecks break the cave surface; most inclusions remain inside untouched rock.
+        for(int I=0;I<100 && P.Fragments.Num()<5;++I)
         {
-            const FVector Offset=Right*Random.FRandRange(-145,145)+Up*Random.FRandRange(-110,110);
-            const FVector Base=P.Surface.GetLocation()+Offset;FHitResult Hit;
-            if(P.Hosts[0]->ActorLineTraceSingle(Hit,Base+Normal*90,Base-Normal*100,ECC_Visibility,FCollisionQueryParams(NAME_None,true)))
-                AddChip(Hit.ImpactPoint+Hit.ImpactNormal*3,Hit.ImpactPoint-Hit.ImpactNormal*9,Random.FRandRange(.12,.18));
+            const float A=Random.FRandRange(0,2*PI),R=Random.FRandRange(90,330);
+            const FVector Base=P.Surface.GetLocation()+Right*FMath::Cos(A)*R+Up*FMath::Sin(A)*R*.8;
+            FHitResult Best;float Distance=BIG_NUMBER;
+            for(ADiggableRock* Host:P.Hosts)if(IsValid(Host))
+            {
+                FHitResult Hit;
+                if(Host->ActorLineTraceSingle(Hit,Base+Normal*100,Base-Normal*130,ECC_Visibility,FCollisionQueryParams(NAME_None,true)) && Hit.Distance<Distance)
+                {Best=Hit;Distance=Hit.Distance;}
+            }
+            if(Distance<BIG_NUMBER)AddChip(Best.ImpactPoint+Best.ImpactNormal*1.5,Best.ImpactPoint-Best.ImpactNormal*5,Random.FRandRange(.10,.15));
         }
         const int SurfaceCount=P.Fragments.Num();
-        for(int I=1;I<=17;++I)
+        // Uniform radial sampling concentrates density towards the core without overcrowding.
+        for(int I=0;I<500 && P.Fragments.Num()<45;++I)
         {
-            const FVector Q=FMath::Lerp(P.Surface.GetLocation(),P.Transform.GetLocation(),I/18.f)+Right*Random.FRandRange(-100,100)+Up*Random.FRandRange(-85,85);
-            AddChip(Q,Q,Random.FRandRange(.10,.18));
+            const FVector Q=P.Transform.GetLocation()+Random.VRand()*Random.FRandRange(45,310);
+            if(FVector::DotProduct(Q-P.Surface.GetLocation(),Normal)>-12)continue;
+            AddChip(Q,Q,Random.FRandRange(.10,.17));
         }
-        if(SurfaceCount<3){UE_LOG(LogTemp,Error,TEXT("Too few surface clues: %s"),*P.TreasureId.ToString());++Failures;}
+        // Duplicate only the accepted inner population; the outer shell keeps its count.
+        const int BaseCount=P.Fragments.Num();int InnerCount=0;
+        for(int I=SurfaceCount;I<BaseCount;++I)
+            if(FVector::DistSquared(P.FragmentSupports[I],P.Transform.GetLocation())<160*160)++InnerCount;
+        const int Target=BaseCount+FMath::Max(0,2*FMath::Max(PreviousInnerCount,InnerCount)-InnerCount);
+        for(int I=0;I<1200 && P.Fragments.Num()<Target;++I)
+        {
+            const FVector Q=P.Transform.GetLocation()+Random.VRand()*Random.FRandRange(45,160);
+            if(FVector::DotProduct(Q-P.Surface.GetLocation(),Normal)>-12)continue;
+            AddChip(Q,Q,Random.FRandRange(.10,.17));
+        }
+        if(P.Fragments.Num()!=Target){++Failures;UE_LOG(LogTemp,Error,TEXT("Inner crystal density target not met"));}
+        const int TrailCount=FMath::Max(6,FMath::CeilToInt(FVector::Dist(P.Surface.GetLocation(),P.Transform.GetLocation())/65));
+        for(int I=1;I<=TrailCount;++I)
+        {
+            const FVector Q=FMath::Lerp(P.Surface.GetLocation(),P.Transform.GetLocation(),float(I)/(TrailCount+1))+Right*Random.FRandRange(-55,55)+Up*Random.FRandRange(-45,45);
+            AddChip(Q,Q,Random.FRandRange(.10,.14));
+        }
+        if(SurfaceCount<3 || P.Fragments.Num()<20){UE_LOG(LogTemp,Error,TEXT("Too few rock inclusions: %s"),*P.TreasureId.ToString());++Failures;}
         Preview->Destroy();
     }
     UE_LOG(LogTemp,Display,TEXT("Campaign minerals prepared: %d, failures %d"),Field->AuthoredPlacements.Num(),Failures);
+    return Failures==0 && RefineCampaignCrystalClues(Field);
+}
+
+bool UMiningDesignerLibrary::RefineCampaignCrystalClues(AMiningTreasureField* Field, bool bPreserveSurface)
+{
+    if(!Field || !Field->GetWorld())return false;
+    Field->Modify();
+    FRandomStream Random(482771);
+    int Failures=0;
+    for(auto& P:Field->AuthoredPlacements)
+    {
+        const FVector Surface=P.Surface.GetLocation(),Core=P.Transform.GetLocation();
+        const FVector Normal=(Surface-Core).GetSafeNormal();
+        FVector Right,Up;Normal.FindBestAxisVectors(Right,Up);
+        // Rebuild only the clue layout. Core depth, reward, host terrain and rooms
+        // are not moved by this idempotent presentation adjustment.
+        TArray<FTransform> SurfaceFragments;
+        TArray<FVector> SurfaceSupports;
+        if(bPreserveSurface)for(int I=0;I<P.Fragments.Num();++I)
+        {
+            // Authored surface chips have a 6.5 cm inward support offset;
+            // underground inclusions use their actual centres as support points.
+            if(P.FragmentSupports.IsValidIndex(I) && FVector::DistSquared(P.Fragments[I].GetLocation(),P.FragmentSupports[I])>1)
+            {SurfaceFragments.Add(P.Fragments[I]);SurfaceSupports.Add(P.FragmentSupports[I]);}
+        }
+        P.Fragments=MoveTemp(SurfaceFragments);P.FragmentSupports=MoveTemp(SurfaceSupports);
+        auto Add=[&](FVector Position,FVector Support,float Scale,float Spacing=22.f)
+        {
+            for(const FVector& Existing:P.FragmentSupports)
+                if(FVector::DistSquared(Existing,Support)<FMath::Square(Spacing))return;
+            TArray<bool> Solid;AMiningTreasure::MarkCoveredPoints(P.Hosts,{Support},Solid);
+            if(!Solid[0])return;
+            P.FragmentSupports.Add(Support);
+            P.Fragments.Add(FTransform(Random.VRand().Rotation(),Position,FVector(Scale,Scale*.85,Scale)));
+        };
+        // A readable local patch, formerly only five flecks spread over 6.6 m.
+        // Project onto the actual wall so the flecks exist before the first hit.
+        for(int Attempt=0;!bPreserveSurface && Attempt<320 && P.Fragments.Num()<14;++Attempt)
+        {
+            const float Angle=Random.FRandRange(0,2*PI),Radius=Random.FRandRange(20,135);
+            const FVector Q=Surface+Right*(Radius*FMath::Cos(Angle))+Up*(Radius*FMath::Sin(Angle));
+            FHitResult Best;double Distance=BIG_NUMBER;
+            for(ADiggableRock* Host:P.Hosts)if(IsValid(Host))
+            {
+                FHitResult Hit;
+                if(Host->ActorLineTraceSingle(Hit,Q+Normal*110,Q-Normal*160,ECC_Visibility,FCollisionQueryParams(NAME_None,true)) && Hit.Distance<Distance)
+                {Best=Hit;Distance=Hit.Distance;}
+            }
+            if(Distance<BIG_NUMBER)Add(Best.ImpactPoint+Best.ImpactNormal*1.5,Best.ImpactPoint-Best.ImpactNormal*5,Random.FRandRange(.11,.16),20);
+        }
+        const int SurfaceCount=P.Fragments.Num();
+        // A 160 cm pickaxe erased the entire old 130 cm-wide trail. Put enough
+        // inclusions beyond its centre line to reveal on the newly cut walls.
+        // Increasing area density (not just total count) makes the core richer.
+        const float Depth=FVector::Dist(Surface,Core);
+        const int Layers=FMath::Clamp(FMath::CeilToInt(Depth/24),4,40);
+        for(int Layer=1;Layer<=Layers;++Layer)
+        {
+            const float T=float(Layer)/(Layers+1);
+            const int TargetCount=FMath::RoundToInt(24+35*T+70*T*T);
+            const int Before=P.Fragments.Num();
+            for(int Attempt=0;Attempt<TargetCount*18 && P.Fragments.Num()-Before<TargetCount;++Attempt)
+            {
+                const float Angle=Random.FRandRange(0,2*PI);
+                const float Radius=FMath::Sqrt(Random.FRand())*FMath::Lerp(165.f,225.f,T);
+                const FVector Q=FMath::Lerp(Surface,Core,T)+Right*(Radius*FMath::Cos(Angle))+Up*(Radius*FMath::Sin(Angle));
+                // Never add new initial surface flecks: require a buried shell
+                // around the centre, including on curved or overlapping walls.
+                {
+                    TArray<bool> Buried;AMiningTreasure::MarkCoveredPoints(P.Hosts,{Q+Normal*18,Q-Normal*18,Q+Right*18,Q-Right*18,Q+Up*18,Q-Up*18},Buried);
+                    if(Buried.Contains(false))continue;
+                }
+                Add(Q,Q,Random.FRandRange(.11,.17),FMath::Lerp(25.f,17.f,T));
+            }
+        }
+        int Inner=0;for(const FVector& Q:P.FragmentSupports)Inner+=FVector::DistSquared(Q,Core)<225*225;
+        const int Target=P.Fragments.Num()+FMath::Max(0,850-Inner);
+        for(int Attempt=0;Attempt<18000 && P.Fragments.Num()<Target;++Attempt)
+        {
+            // Radial density rises toward the gem, rather than merely increasing
+            // the total number uniformly throughout the whole halo.
+            const FVector Q=Core+Random.VRand()*225*FMath::Pow(Random.FRand(),.6f);
+            // The core halo must not leak additional clues through a shallow wall.
+            TArray<bool> Buried;AMiningTreasure::MarkCoveredPoints(P.Hosts,{Q+Normal*18,Q-Normal*18,Q+Right*18,Q-Right*18,Q+Up*18,Q-Up*18},Buried);
+            if(Buried.Contains(false))continue;
+            Add(Q,Q,Random.FRandRange(.11,.17),17);
+        }
+        // Geometry clipping can make a particular shell sparser than its outer
+        // neighbour. Enforce the density gradient per authored deposit, measured
+        // per unit volume, instead of relying on the average of a random sample.
+        auto CountShell=[&](float Low,float High)
+        {
+            int Count=0;for(const FVector& Q:P.FragmentSupports)
+            {const double D=FVector::DistSquared(Q,Core);Count+=D>=Low*Low && D<High*High;}
+            return Count;
+        };
+        auto FillShell=[&](float Low,float High,int Wanted)
+        {
+            int Count=CountShell(Low,High);
+            for(int Attempt=0;Count<Wanted && Attempt<12000;++Attempt)
+            {
+                const float R=FMath::Pow(FMath::Lerp(Low*Low*Low,High*High*High,Random.FRand()),1.f/3);
+                const FVector Q=Core+Random.VRand()*R;
+                TArray<bool> Buried;AMiningTreasure::MarkCoveredPoints(P.Hosts,{Q+Normal*18,Q-Normal*18,Q+Right*18,Q-Right*18,Q+Up*18,Q-Up*18},Buried);
+                if(Buried.Contains(false))continue;
+                const int Before=P.Fragments.Num();Add(Q,Q,Random.FRandRange(.11,.17),17);
+                Count+=P.Fragments.Num()>Before;
+            }
+        };
+        FillShell(80,160,FMath::CeilToInt(CountShell(160,225)*(160.*160*160-80.*80*80)/(225.*225*225-160.*160*160)*1.4));
+        FillShell(0,80,FMath::CeilToInt(CountShell(80,160)/7.*1.55));
+        if(SurfaceCount<8 || P.Fragments.Num()<45)
+        {++Failures;UE_LOG(LogTemp,Error,TEXT("Compact vein lacks surface breadcrumbs: %s (%d surface, %d total)"),*P.TreasureId.ToString(),SurfaceCount,P.Fragments.Num());}
+    }
     return Failures==0;
 }

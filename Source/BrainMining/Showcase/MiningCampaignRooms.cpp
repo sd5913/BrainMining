@@ -11,6 +11,7 @@
 #include "MiningGiantRoomEntrance.h"
 #include "MiningCellUniverse.h"
 #include "WenSi/WenSiPuzzle.h"
+#include "WenSi/WenSiMirrorPuzzle.h"
 #include "Components/StaticMeshComponent.h"
 
 void AMiningExhibitGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
@@ -41,6 +42,7 @@ void AMiningExhibitGameMode::InitGame(const FString& MapName, const FString& Opt
             if(auto* Echo=Cast<AEchoPassageStage>(Actor))
             {Echo->bWalkThroughConnections=true;Echo->bRoomInSameLevel=true;Echo->DestinationLevel.Reset();}
             if(auto* Puzzle=Cast<AWenSiPuzzle>(Actor)) {Puzzle->bAreaManaged=true;Puzzle->AreaPlayerStart=Area.Entry;}
+            if(auto* Mirror=Cast<AWenSiMirrorPuzzle>(Actor)) {Mirror->bAreaManaged=true;Mirror->AreaPlayerStart=Area.Entry;}
             if(auto* Cell=Cast<AMiningCellUniverse>(Actor))
             {
                 Cell->bAreaManaged=true;

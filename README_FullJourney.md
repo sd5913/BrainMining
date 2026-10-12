@@ -2,6 +2,12 @@
 
 入口：`/Game/Campaign/Maps/Lvl_FullJourney`。双击 `Play_FullJourney.cmd` 或 `Play_Main.cmd`；编辑器默认也打开这张图。源码更新后编译 `BrainMiningEditor / Win64 / Development`。
 
+当前成品采用固定预制布局：所有玩家每次开局的宝石位置、价值与碎晶坐标完全相同。布点工具只在编辑阶段运行并保存进地图；游戏启动仅加载这些坐标，挖掘时只移除失去岩层支撑的碎晶。下方历史记录中的“随机”指离线布点工具，不是每次开局重新随机。
+
+2026-10-13 内部线索修订：保留已有表面碎晶，扩大内部线索带厚度，避免一镐清空整条细线索。131 处矿点均按距主体 0–80、80–160、160–225 cm 的球壳体积校验密度，要求内层高于中层、中层高于外层。编辑迁移入口为 `Scripts/update_mining_interior.py`，保存报告为 `Saved/MiningInteriorBake.json`。复杂岩块的慢速切割改为后台计算，完成时统一提交岩层、碰撞和碎晶支撑变化；通用镐子在回声通道使用黑底白色线框，在卡牌房门口恢复原材质。
+
+内部密度在重新加载的 PIE 地图中再次核对：近层/中层最低 1.55，中层/外层最低 1.40；第一矿点约为 35、22、16 枚/立方米。24 次普通镐击采样中，18 次命中实体的操作全部完成，其余为空挥；主线程镐击耗时最大 28.17 ms，后台提交延迟最大 169.68 ms（非整场帧率保证）。捕获的矿点 42 切割失败来自布尔交界未焊合；后台仅修复贴合原岩面/切割面的裂缝，闭合性、有效性及实际空腔回归通过。共用镐子材质生成入口 `Scripts/shared_pickaxe_materials.py` 必须在启用渲染的编辑器中运行，不能用 `-nullrhi` 替代着色器编译；内部碎晶离线迁移不再改动这两份材质。
+
 ## 流程与场景
 
 挖掘 01 → 电脑弹窗 → 挖掘 02 → 盲人敲地、巨人卡牌与电视逃生 → 挖掘 03 → 文思博物馆 → 宇宙细胞结局。
@@ -40,7 +46,7 @@
 
 房间内部模型和玩法：直接修改并保存源地图，再重新打开全流程图／开始游戏即可取得最新内容，不需要重新拼装。主图中的 Levels 面板可查看四个源子关卡；编辑时把目标源关卡设为 Current Level，避免把新物件误放到主图。贯通门洞、自动启动及区域管理是运行时的主流程覆盖，独立源图保持原玩法；编辑器中可能仍显示源图的封闭墙，实际游戏会应用开门覆盖。
 
-源地图分别为 `Lvl_PopupClose`、`Lvl_EchoMazeToCards_P1`、`Lvl_WenSi_ScreenBridge`、`Lvl_CellUniverse_Demo`，完整路径见 `Config/CampaignLayout.json`。更换整个源地图、改变房间门洞位置、调整矿区地形或顺序时，再运行 `Scripts/create_full_journey.py`。配置在 `Config/CampaignLayout.json`；`continuous: true` 使用连续版生成器，`mine_scale` 控制矿区尺寸，截取范围与 2＋1＋1 分配也在配置里。连续版围绕世界坐标固定的回声/卡牌/电视场景自动推算其他房间位置，旧版 `offset` 字段仅用于 `continuous: false`。修改顺序或房间门洞结构时，需要同步调整 `Scripts/create_continuous_campaign.py` 的接点。
+源地图分别为 `Lvl_PopupClose`、`Lvl_EchoMazeToCards_P1`、`Lvl_WenSi_MirrorMuseum`、`Lvl_CellUniverse_Demo`，完整路径见 `Config/CampaignLayout.json`。更换整个源地图、改变房间门洞位置、调整矿区地形或顺序时，再运行 `Scripts/create_full_journey.py`。配置在 `Config/CampaignLayout.json`；`continuous: true` 使用连续版生成器，`mine_scale` 控制矿区尺寸，截取范围与 2＋1＋1 分配也在配置里。连续版围绕世界坐标固定的回声/卡牌/电视场景自动推算其他房间位置，旧版 `offset` 字段仅用于 `continuous: false`。修改顺序或房间门洞结构时，需要同步调整 `Scripts/create_continuous_campaign.py` 的接点。
 
 ```powershell
 $engineRoot = 'C:\UE_5.8'
@@ -58,7 +64,24 @@ $projectRoot = (Get-Location).Path
 
 `Scripts/link_campaign_rooms.py` 可对旧版成品图做一次房间引用迁移，同时更新低面数碎晶资源；它会先备份主图，只保存主图，不保存四张源地图。新版完整生成器只复制裁切矿区，房间直接引用，不再复制房间 Actor。
 
+## 碎晶与新版博物馆修订
+
+碎晶是岩层中的矿物包裹体：领取只隐藏宝石模型，碎晶组件从宝石模型脱离，保留世界坐标；仅当实际岩体不再覆盖其支撑点时移除。恢复岩层会恢复对应碎晶，但不会补发已领取宝石。
+
+分布围绕宝石核心约 3.1 米，外疏内密，碎晶支撑点最小间距 32 厘米；表面约 3～5 枚提示，内部约 40 枚，并补充通向核心的稀疏线索。稀有度和价值档扩大随机埋深上限，实际落点必须通过完整埋藏检查；薄岩层会回退到较浅的可用位置。碎晶改为宽顶、倒角的 38 三角面模型，取消原来的拉长缩放；保持矿物色相，修正正面绕序，提高面色、降低粗糙度，并采用至少 0.9 的同色发光；深色矿物的碎晶提高明度，煤类仍保留暗色。
+
+FullJourney 的博物馆改为直接引用新版 `Lvl_WenSi_MirrorMuseum`（镜面／词语交换玩法）。共享角色支持缩放、穿透和浮力，退出时恢复原胶囊与尺寸，回访仍保留交换得到的词语；房间的球、奖励门与天平按子关卡偏移运行。出口连接和结局整体后移 9.5 米，避免与新房间重叠。源地图保持独立可玩。
+
+`Scripts/upgrade_campaign_crystals_museum.py` 用于迁移已有主图：备份主图与碎晶资源，替换房间引用、调整出口，并在原矿物落点基础上更新埋深与碎晶；不重建三段矿区，也不改经济数量和价值。记录在 `Saved/CampaignCrystalMuseumUpgrade.json`。
+
 ## 验证
+
+### 2026-10-12 碎晶岩层归属与镜面博物馆
+
+Editor Development 编译通过。`Saved/Automation/CrystalMuseumFinal/index.json` 四项全部通过：矿区接缝与步行不传送、六处真实挖取与领取、镜面博物馆集成、四处房间步行入口与真实 E 交互。镜面玩法另执行 35 项物理／词语／重置检查，0 失败，记录在 `Saved/Validation/WenSiMirror/runtime_checks.txt`。入口测试的一条警告来自 UE 联网探测超时，无玩法断言失败。
+
+碎晶回归明确要求拾取前仍有碎晶，拾取后数量完全不变；其后挖除剩余支撑，数量才归零。检查了六处 Buried／Exposed／Collected 截图，修复了碎晶面的反向剔除。最终明度调整后单独复核六处矿脉，报告为 `Saved/Automation/CrystalGlowFinal/index.json`。本轮随机埋深约 1.2～4.4 米，矿物数量和经济总值保持不变。迁移前备份在 `Saved/CampaignBackups/crystals-museum-*`，四间源房间及原矿区地图均通过 SHA-256 不变检查。
+
 
 ### 2026-10-12 源房间引用与碎晶修订
 
@@ -119,3 +142,30 @@ Editor Development 编译通过；`Saved/Automation/RoomReferencesFinal/index.js
 | 原六区大厅同角色与经济系统 | 通过；最终报告的 PersistentWorldAndEconomy |
 
 第一次报告保留了修正前的接缝失败记录，以最终报告的 ContinuityAndClues 为准。最终报告无失败；画面检查记录了两条 UE 网络连通性探测超时，不影响上述游戏断言。五张独立源地图的 SHA-256 在重建前后均一致。截图为 `Saved/CampaignPreview/Clue_0.png` 至 `Clue_3.png`、`Final_Mine*.png` 与 `Map_Area*.png`。
+
+
+## 2026-10-13：碎晶性能与洞穴观感
+
+- 碎晶/宝石覆盖检查按岩体的 DynamicMesh 共享空间树。网格替换、挖掘、重置、异步简化提交都会使缓存失效；只刷新与矿点范围相交的变化岩块。暴露度不再重复采样，支撑状态未变时不重建碎晶实例。
+- 煤炭线索采用暖琥珀色，锡矿线索采用冷银蓝色，均保留轻微自发光。宝石领取不会删除尚有岩层支撑的碎晶。
+- 共用角色的头灯为暖色柔和光锥，使用低对比度静态透镜环纹，无额外动态光源与投影阴影；盲人回声玩法仍按房间设计关闭头灯。
+- 回声/卡牌房间保留共用角色的飞行时长、热量、冷却和升级；不再强制无限飞行。房间敲击通过委托驱动通用镐子，不生成第二把方块镐子。
+- FullJourney 的主岩层与引导岩层均改为深色暖矿层。12 条连接通道的四面岩体采用相同连续形变，形成起伏拱顶和轻微曲折，并固定两端接缝；碰撞与可挖几何同步。
+- 原位资源迁移：`Scripts/upgrade_campaign_cave_presentation.py`。每次先备份地图/既有材质，通道用 `BM_SoftPassageV1` 标记避免重复形变，源房间地图用 SHA-256 校验。
+- 可重复性能采样：编辑器打开 FullJourney 后运行 `Scripts/profile_campaign_mining.py` 并启动普通 PIE。脚本仅挖掘 PIE 副本，输出 Saved 下 MiningProfileBefore/After.json。
+
+验证结果：`Saved/Automation/CaveRevisionFinal/index.json` 中五项测试全部 Success（关卡连续通行、三矿区六组挖掘/拾取、共用角色隔离、飞行热量、覆盖缓存失效）。同一第一矿区矿点、12 次半径 100cm 切割的编辑器 PIE 采样：P95 帧间隔 266ms → 27.15ms，峰值 297ms → 60.12ms，超过 50ms 的采样帧 14 → 2。统计对象为 Slate 帧间隔，非整场游戏帧率保证；报告见 `Saved/MiningPerformanceComparison.json`。外观截图在 `Saved/CavePresentationPreview` 和 `Saved/CampaignMineralPreview`。
+
+
+## 2026-10-13：集中头灯、自然洞口与 Blender 空间工作文件
+
+- 头灯内/外锥角改为 12° / 30°，收紧透镜图案边缘，保留轻微环纹。
+- 碎晶厚度增加，切面顶点明暗范围扩大，使用独立的碎晶材质分支、较低粗糙度和略强发光。近核以 160 cm 为范围，数量约为修改前两倍；外围仍为稀疏样本和通往表面的线索。
+- 131 处宝石全部增加埋深。洞口形变后会重新校准线索方向；少数被形变压浅的矿点重新寻找真实实心岩层，保持稀疏的表面线索。
+- 入口外侧、主矿道内侧和出生点封口均有局部岩面形变；被原先布尔裁切留下的薄片会重新烘焙成封闭实体。地形仍是独立可挖 Actor，并未反写原始通道 Blender 切割体。
+- 碎晶覆盖刷新改为逐帧轮转、约 4 ms 软预算，避免近核加密后邻近矿点集中在同一帧更新。藏品也使用支持分块岩层的共享覆盖查询。
+- 大范围切割后的碎晶验收以实际残存岩层为准：已移除支撑的碎晶必须消失，仍有支撑的碎晶必须保留。布尔失败不会通过直接删除碎晶来伪装挖掘成功。
+- Blender 工作文件与流程说明：`Art/Mining/FullJourneyExchange/FullJourney_Editable.blend`、同目录 `README.md`。104 个有几何的可挖地形对象独立保留；房间静态参照按源 Actor 分组。坐标、身份映射及选中岩块的回导由配套脚本处理。
+
+性能复核：近核加密、地形细化后，未分帧版本 P95 为 50.69 ms；轮转预算版本降为 22.20 ms，峰值 64.92 ms。碎晶覆盖刷新峰值 56.33 → 10.45 ms。采样为同一矿点 12 次半径 100 cm 切割的编辑器 PIE 帧间隔，不包含截图和模型导出。报告：`Saved/JunctionsPerformanceComparison.json`。Blender 带位移 OBJ 回导的包围盒误差为 0.00026 cm，并通过实际开挖验证。
+最终验收：`Saved/Automation/JunctionsAccepted/index.json` 的 ContinuityAndClues、MineralEconomyAndExcavation、CoverageCacheInvalidation 均为 Success。覆盖 131 处初始埋藏检查、三矿区六组真实开挖/按 E 拾取、领取后保留尚有岩层支撑的碎晶及继续挖掘移除支撑。超大清理球在薄壁处可能被布尔有效性保护拒绝；测试另用普通镐击尺寸直接验证残存碎晶，拒绝的切割保留岩石和碎晶。

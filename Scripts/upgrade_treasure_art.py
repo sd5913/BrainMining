@@ -67,6 +67,7 @@ tint = vector(gem, 'Tint', (.08, .6, .3, 1))
 style = scalar(gem, 'Style', 5)
 highlight = scalar(gem, 'Highlight', 0)
 base = custom(gem, '''
+if (Style < -.5) return Tint.rgb * lerp(.35, 1.05, saturate((V.r-.72)/.28));
 float3 color = Tint.rgb * lerp(.18, .65, pow(V.r, 3));
 if (Style > .5 && Style < 1.5 || Style > 2.5 && Style < 3.5)
     color = lerp(color, float3(.025,.032,.038), Inclusion);

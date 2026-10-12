@@ -9,6 +9,24 @@
 #include "Misc/ScopeExit.h"
 #include "Async/Async.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
+
+namespace
+{
+// FullJourney contains over 15,000 terrain components. Keep their solid meshes
+// and collision, but allocate render proxies only around the player's view.
+void UpdateTerrainVisibility(AGeneratedMiningRock* Rock)
+{
+	if (!Rock->bChunked || !Rock->GetWorld() || !Rock->GetWorld()->IsGameWorld()) return;
+	const auto* PC=Rock->GetWorld()->GetFirstPlayerController();
+	const APawn* Pawn=PC?PC->GetPawn().Get():nullptr;
+	const FVector Local=Pawn?Rock->GetActorTransform().InverseTransformPosition(Pawn->GetPawnViewLocation()):FVector::ZeroVector;
+	const double Radius=3200.0 / FMath::Max(.001,Rock->GetActorScale3D().GetMin());
+	for(auto& Chunk:Rock->Chunks)if(Chunk.Mesh)
+		Chunk.Mesh->SetVisibility(Pawn && Chunk.Bounds.ComputeSquaredDistanceToPoint(Local)<Radius*Radius);
+}
+}
 
 using namespace UE::Geometry;
 
@@ -20,6 +38,24 @@ struct FMiningSimplificationResult
 	int32 Cuts = 0;
 	int32 Removed = 0;
 	double Milliseconds = 0;
+};
+
+struct FMiningDeferredRequest
+{
+	FDynamicMesh3 Cutter;
+	FVector Center;
+	float Radius=0;
+	bool bPreserveEdges=false;
+};
+struct FMiningDeferredCut
+{
+	uint64 Generation=0;
+	TArray<int32> Indices, Cuts;
+	TArray<FDynamicMesh3> Sources, Results;
+	FBox Dirty;
+	bool bValid=false;
+	FString Failure;
+	double Milliseconds=0;
 };
 
 AGeneratedMiningRock::AGeneratedMiningRock()
@@ -43,9 +79,12 @@ void AGeneratedMiningRock::SetGeneratedMesh(FDynamicMesh3&& Mesh)
 
 void AGeneratedMiningRock::ResetRock()
 {
+	RockMesh->SetEnableRaytracing(false);
+	RockMesh->SetVisibleInRayTracing(false);
 	GuideMaterial = nullptr;
 	UMaterialInterface* SurfaceMaterial = GetMiningMaterial();
 	++MeshGeneration;
+	CutQueue.Reset(); bCutPending=false; DeferredCutsCompleted=0;
 	CompletedSimplifications = DiscardedSimplifications = 0;
 	SetActorHiddenInGame(false);
 	if (bChunked)
@@ -54,9 +93,12 @@ void AGeneratedMiningRock::ResetRock()
 		for (FMiningRockChunk& Chunk : Chunks)
 		{
 			if (!Chunk.Mesh || !Chunk.InitialMesh) continue;
+			Chunk.Mesh->SetEnableRaytracing(false);
+			Chunk.Mesh->SetVisibleInRayTracing(false);
 			FDynamicMesh3 Geometry;
 			Chunk.InitialMesh->ProcessMesh([&Geometry](const FDynamicMesh3& Source) { Geometry = Source; });
 			Chunk.Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			if(GetWorld() && GetWorld()->IsGameWorld())Chunk.Mesh->SetVisibility(false);
 			Chunk.Mesh->SetMesh(MoveTemp(Geometry));
 			Chunk.Mesh->GetBodySetup()->SetFlags(RF_Transient);
 			Chunk.Mesh->UpdateCollision(false);
@@ -64,11 +106,13 @@ void AGeneratedMiningRock::ResetRock()
 			Chunk.Cuts = 0;
 		}
 		UpdateChunkStats();
+		UpdateTerrainVisibility(this);
 		SuccessfulCuts = 0;
 		LastTouchedChunks = 0;
 		SimplifiedTriangles = 0;
 		LastBooleanMilliseconds = LastCollisionMilliseconds = LastTotalMilliseconds = LastSimplificationMilliseconds = 0;
 		LastStatus = TEXT("Chunked tunnel restored");
+		OnTerrainCommitted.Broadcast(FBox(ForceInit));
 		return;
 	}
 	RockMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -89,6 +133,7 @@ void AGeneratedMiningRock::ResetRock()
 	LastBooleanMilliseconds = 0.0f;
 	LastTotalMilliseconds = 0.0f;
 	LastStatus = TEXT("Generated tunnel restored");
+	OnTerrainCommitted.Broadcast(FBox(ForceInit));
 }
 
 bool AGeneratedMiningRock::MineSphere(FVector WorldCenter, float WorldRadius)
@@ -117,6 +162,7 @@ void AGeneratedMiningRock::RecycleGeometry()
 {
 	if (SegmentState != EMiningSegmentState::Frozen) return;
 	++MeshGeneration;
+	CutQueue.Reset(); bCutPending=false;
 	SetSegmentState(EMiningSegmentState::Recycled);
 	RockMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CommitMesh(FDynamicMesh3());
@@ -129,12 +175,14 @@ void AGeneratedMiningRock::RecycleGeometry()
 	if (bChunked) UpdateChunkStats();
 	SetActorHiddenInGame(true);
 	LastStatus = TEXT("Completed excavation recycled behind bedrock seal");
+	OnTerrainCommitted.Broadcast(FBox(ForceInit));
 }
 
 void AGeneratedMiningRock::ClearChunks()
 {
 	EditorGrid.Reset();
 	++MeshGeneration;
+	CutQueue.Reset(); bCutPending=false;
 	for (FMiningRockChunk& Chunk : Chunks)
 	{
 		if (Chunk.Mesh) Chunk.Mesh->DestroyComponent();
@@ -202,6 +250,8 @@ bool AGeneratedMiningRock::SetChunkedMesh(const FDynamicMesh3& Mesh, double Leng
 		Chunk.InitialMesh = NewObject<UDynamicMesh>(this, NAME_None, RF_Transactional);
 		Chunk.InitialMesh->SetMesh(MoveTemp(Pieces[Index]));
 		Chunk.Mesh = NewObject<UDynamicMeshComponent>(this, NAME_None, RF_Transactional);
+		Chunk.Mesh->SetEnableRaytracing(false);
+		Chunk.Mesh->SetVisibleInRayTracing(false);
 		AddInstanceComponent(Chunk.Mesh);
 		Chunk.Mesh->SetupAttachment(RootComponent);
 		Chunk.Mesh->SetCollisionProfileName(TEXT("BlockAll"));
@@ -251,6 +301,8 @@ void AGeneratedMiningRock::ApplySpatialGrid(const FDynamicMesh3& Mesh, TSharedPt
 			Chunk.InitialMesh = NewObject<UDynamicMesh>(this, NAME_None, RF_Transactional);
 			Chunk.InitialMesh->SetMesh(FDynamicMesh3(*Cell.Mesh));
 			Chunk.Mesh = NewObject<UDynamicMeshComponent>(this, NAME_None, RF_Transactional);
+			Chunk.Mesh->SetEnableRaytracing(false);
+			Chunk.Mesh->SetVisibleInRayTracing(false);
 			AddInstanceComponent(Chunk.Mesh); Chunk.Mesh->SetupAttachment(RootComponent);
 			Chunk.Mesh->SetVisibility(false);
 			Chunk.Mesh->SetCollisionProfileName(TEXT("BlockAll"));
@@ -355,10 +407,12 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, co
 	for (int32 Vertex : Cutter.VertexIndicesItr()) Cutter.SetVertex(Vertex, WorldCutter
 		? FVector3d(GetActorTransform().InverseTransformPosition(FVector(Cutter.GetVertex(Vertex))))
 		: Cutter.GetVertex(Vertex) * Radius + Center);
+	if(bCutPending)return QueueDeferredCut(WorldCenter,WorldRadius,Cutter,WorldCutter!=nullptr);
 	TArray<int32> Affected;
 	TArray<FDynamicMesh3> Prepared;
 	int32 Removed = 0;
 	const int32 Budget = FMath::Clamp(MaxTriangles, 1000, MiningChunks::MaxChunkTriangles);
+	const double Deadline=GetWorld()->IsGameWorld()?FPlatformTime::Seconds()+FMath::Max(.01f,InteractiveCutBudgetMilliseconds)/1000:0;
 	for (int32 Index = 0; Index < Chunks.Num(); ++Index)
 	{
 		FMiningRockChunk& Chunk = Chunks[Index];
@@ -367,10 +421,14 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, co
 		Chunk.Mesh->GetDynamicMesh()->ProcessMesh([&Source](const FDynamicMesh3& Mesh) { Source = Mesh; });
 		FDynamicMesh3 Result;
 		const double BooleanStart = FPlatformTime::Seconds();
-		const bool bValid = MiningChunks::Subtract(Source, Cutter, Result, WorldCutter != nullptr);
+		if(Deadline>0 && FPlatformTime::Seconds()>=Deadline)
+		{return QueueDeferredCut(WorldCenter,WorldRadius,Cutter,WorldCutter!=nullptr);}
+		const bool bValid = MiningChunks::Subtract(Source, Cutter, Result, WorldCutter != nullptr,
+			Deadline>0?FMath::Max(.0001,Deadline-FPlatformTime::Seconds()):0);
 		LastBooleanMilliseconds += (FPlatformTime::Seconds() - BooleanStart) * 1000;
 		if (!bValid)
 		{
+			if(GetWorld()->IsGameWorld())return QueueDeferredCut(WorldCenter,WorldRadius,Cutter,WorldCutter!=nullptr);
 			LastStatus = TEXT("Boundary cut rejected: ALL chunks preserved");
 			return false;
 		}
@@ -386,7 +444,7 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, co
 		}
 		if (Result.TriangleCount() > Budget)
 		{
-			if (GetWorld()->IsGameWorld()) ScheduleSimplification(Index);
+			if (GetWorld()->IsGameWorld())return QueueDeferredCut(WorldCenter,WorldRadius,Cutter,WorldCutter!=nullptr);
 			LastStatus = TEXT("Local chunk budget reached: whole cut cancelled; dig elsewhere");
 			return false;
 		}
@@ -399,7 +457,15 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, co
 		LastStatus = TriangleCount == 0 ? TEXT("Rock depleted") : TEXT("No new rock in mining sphere");
 		return false;
 	}
-	const double CommitStart = FPlatformTime::Seconds();
+	CommitChunks(Affected,Prepared,FBox::BuildAABB(WorldCenter,FVector(WorldRadius+1.f)));
+	SimplifiedTriangles += Removed;
+	return true;
+}
+
+void AGeneratedMiningRock::CommitChunks(TArray<int32>& Affected,TArray<FDynamicMesh3>& Prepared,const FBox& Dirty)
+{
+	const double CommitStart=FPlatformTime::Seconds();
+	const int32 Budget=FMath::Clamp(MaxTriangles,1000,MiningChunks::MaxChunkTriangles);
 	for (int32 Index = 0; Index < Affected.Num(); ++Index)
 	{
 		FMiningRockChunk& Chunk = Chunks[Affected[Index]];
@@ -412,7 +478,7 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, co
 	UpdateChunkStats();
 	++SuccessfulCuts;
 	LastTouchedChunks = Affected.Num();
-	SimplifiedTriangles += Removed;
+	OnTerrainCommitted.Broadcast(Dirty);
 	if (GetWorld()->IsGameWorld())
 	{
 		for (int32 Index : Affected)
@@ -421,7 +487,94 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, co
 		}
 	}
 	LastStatus = FString::Printf(TEXT("Cut committed across %d chunk(s)"), LastTouchedChunks);
+}
+
+bool AGeneratedMiningRock::QueueDeferredCut(FVector Center,float Radius,const FDynamicMesh3& Cutter,bool bPreserveEdges)
+{
+	auto Request=MakeShared<FMiningDeferredRequest,ESPMode::ThreadSafe>();
+	Request->Center=Center;Request->Radius=Radius;Request->Cutter=Cutter;Request->bPreserveEdges=bPreserveEdges;
+	CutQueue.Add(Request);
+	if(!bCutPending)StartDeferredCut();
+	LastStatus=TEXT("Hit accepted: finishing terrain cut");
 	return true;
+}
+
+void AGeneratedMiningRock::StartDeferredCut()
+{
+	if(CutQueue.IsEmpty())return;
+	auto Request=CutQueue[0];CutQueue.RemoveAt(0);
+	TSharedPtr<FMiningDeferredCut,ESPMode::ThreadSafe> Work=MakeShared<FMiningDeferredCut,ESPMode::ThreadSafe>();
+	Work->Generation=MeshGeneration;
+	Work->Dirty=FBox::BuildAABB(Request->Center,FVector(Request->Radius+1.f));
+	const FVector Local=GetActorTransform().InverseTransformPosition(Request->Center);
+	const double Radius=Request->Radius/GetActorScale3D().X;
+	TArray<FDynamicMesh3> Initial;
+	TArray<FBox> Bounds;
+	for(int32 I=0;I<Chunks.Num();++I)
+	{
+		const auto& Chunk=Chunks[I];
+		if(Chunk.Triangles==0 || Chunk.Bounds.ComputeSquaredDistanceToPoint(Local)>Radius*Radius)continue;
+		Work->Indices.Add(I);Work->Cuts.Add(Chunk.Cuts);Bounds.Add(Chunk.Bounds);
+		Chunk.Mesh->GetDynamicMesh()->ProcessMesh([&](const FDynamicMesh3& M){Work->Sources.Add(M);});
+		Chunk.InitialMesh->ProcessMesh([&](const FDynamicMesh3& M){Initial.Add(M);});
+	}
+	const int32 Budget=FMath::Clamp(MaxTriangles,1000,MiningChunks::MaxChunkTriangles);
+	const double Tolerance=FMath::Clamp<double>(SimplificationTolerance/GetActorScale3D().X,.05,1);
+	bCutPending=true;
+	// Workers own mesh copies only. Neither collision nor crystal instances change
+	// until every affected piece can be committed together on the game thread.
+	CutTask=Async(EAsyncExecution::ThreadPool,[Work,Request,Initial=MoveTemp(Initial),Bounds=MoveTemp(Bounds),Budget,Tolerance]()
+	{
+		const double Started=FPlatformTime::Seconds();
+		for(const FVector3d Offset:{FVector3d::Zero(),FVector3d(.013,.021,.017),FVector3d(-.037,.011,-.023),FVector3d(.061,-.043,.029),FVector3d(.23,.17,-.13),FVector3d(-.61,.43,.29)})
+		{
+			if(FPlatformTime::Seconds()-Started>2)break;
+			FDynamicMesh3 Cutter=Request->Cutter;
+			for(int V:Cutter.VertexIndicesItr())Cutter.SetVertex(V,Cutter.GetVertex(V)+Offset);
+			Work->Results.Reset();Work->bValid=true;
+			for(int I=0;I<Work->Sources.Num();++I)
+			{
+				if(FPlatformTime::Seconds()-Started>2){Work->bValid=false;break;}
+				FDynamicMesh3 Result;
+				if(!MiningChunks::Subtract(Work->Sources[I],Cutter,Result,Request->bPreserveEdges,.25))
+				{Work->Failure=FString::Printf(TEXT("chunk %d boolean, source %d tris closed %d, result %d tris closed %d"),Work->Indices[I],Work->Sources[I].TriangleCount(),Work->Sources[I].IsClosed(),Result.TriangleCount(),Result.IsClosed());Work->bValid=false;break;}
+				if(Result.TriangleCount()>Budget)MiningChunks::Simplify(Result,Initial[I],Bounds[I],Tolerance);
+				if(Result.TriangleCount()>Budget){Work->Failure=FString::Printf(TEXT("chunk %d exceeds triangle budget: %d / %d"),Work->Indices[I],Result.TriangleCount(),Budget);Work->bValid=false;break;}
+				MiningChunks::Normals(Result);Work->Results.Add(MoveTemp(Result));
+			}
+			if(Work->bValid)break;
+		}
+		Work->Milliseconds=(FPlatformTime::Seconds()-Started)*1000;
+		return Work;
+	});
+}
+
+void AGeneratedMiningRock::PollDeferredCut()
+{
+	if(!bCutPending || !CutTask.IsReady())return;
+	auto Work=CutTask.Get();bCutPending=false;
+	bool bCurrent=Work->Generation==MeshGeneration && SegmentState==EMiningSegmentState::Active;
+	for(int I=0;bCurrent && I<Work->Indices.Num();++I)
+		bCurrent=Chunks.IsValidIndex(Work->Indices[I]) && Chunks[Work->Indices[I]].Cuts==Work->Cuts[I];
+	if(bCurrent && Work->bValid)
+	{
+		TArray<int32> Changed;TArray<FDynamicMesh3> Results;
+		for(int I=0;I<Work->Indices.Num();++I)if(!Work->Sources[I].IsSameAs(Work->Results[I],FDynamicMesh3::FSameAsOptions()))
+		{Changed.Add(Work->Indices[I]);Results.Add(MoveTemp(Work->Results[I]));}
+		if(!Changed.IsEmpty())
+		{
+			const double Started=FPlatformTime::Seconds();
+			CommitChunks(Changed,Results,Work->Dirty);++DeferredCutsCompleted;
+			LastBooleanMilliseconds=Work->Milliseconds;LastTotalMilliseconds=(FPlatformTime::Seconds()-Started)*1000;
+		}
+		else LastStatus=TEXT("No new rock in mining sphere");
+	}
+	else if(bCurrent)
+	{
+		LastStatus=TEXT("Cut could not form a closed surface; original terrain preserved");
+		UE_LOG(LogTemp,Warning,TEXT("Deferred mining failed on %s at %s: %s"),*GetName(),*Work->Dirty.GetCenter().ToString(),*Work->Failure);
+	}
+	if(!CutQueue.IsEmpty())StartDeferredCut();
 }
 
 void AGeneratedMiningRock::ScheduleSimplification(int32 Index)
@@ -451,6 +604,9 @@ void AGeneratedMiningRock::ScheduleSimplification(int32 Index)
 void AGeneratedMiningRock::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	UpdateTerrainVisibility(this);
+	PollDeferredCut();
+	if(bCutPending)return;
 	if (!bSimplificationPending || !SimplificationTask.IsReady()) return;
 	const TSharedPtr<FMiningSimplificationResult, ESPMode::ThreadSafe> Result = SimplificationTask.Get();
 	bSimplificationPending = false;
@@ -469,4 +625,5 @@ void AGeneratedMiningRock::Tick(float DeltaSeconds)
 	SimplifiedTriangles += Result->Removed;
 	++CompletedSimplifications;
 	UpdateChunkStats();
+	OnTerrainCommitted.Broadcast(Chunk.Bounds.TransformBy(GetActorTransform()));
 }

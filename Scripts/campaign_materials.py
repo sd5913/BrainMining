@@ -20,18 +20,36 @@ def ensure_blocker_materials():
         lib.recompile_material(material)
         assert unreal.EditorAssetLibrary.save_loaded_asset(material)
 
-def ensure_campaign_limestone():
-    path='/Game/Campaign/Materials/M_CampaignLimestone'
-    if unreal.EditorAssetLibrary.does_asset_exist(path):return unreal.load_asset(path)
-    m=unreal.AssetToolsHelpers.get_asset_tools().create_asset('M_CampaignLimestone','/Game/Campaign/Materials',unreal.Material,unreal.MaterialFactoryNew())
-    lib=unreal.MaterialEditingLibrary
-    c=lib.create_material_expression(m,unreal.MaterialExpressionConstant3Vector)
-    c.set_editor_property('constant',unreal.LinearColor(.66,.68,.70,1))
-    lib.connect_material_property(c,'',unreal.MaterialProperty.MP_BASE_COLOR)
-    r=lib.create_material_expression(m,unreal.MaterialExpressionConstant);r.set_editor_property('r',.95)
-    lib.connect_material_property(r,'',unreal.MaterialProperty.MP_ROUGHNESS)
+def ensure_campaign_limestone(guide=False):
+    """The campaign's existing rock reference now uses dark, warm mineral strata."""
+    name='M_CampaignGuideRock' if guide else 'M_CampaignLimestone'
+    path='/Game/Campaign/Materials/'+name
+    m=unreal.load_asset(path) if unreal.EditorAssetLibrary.does_asset_exist(path) else unreal.AssetToolsHelpers.get_asset_tools().create_asset(name,'/Game/Campaign/Materials',unreal.Material,unreal.MaterialFactoryNew())
+    lib=unreal.MaterialEditingLibrary;lib.delete_all_material_expressions(m)
+    p=lib.create_material_expression(m,unreal.MaterialExpressionWorldPosition)
+    c=lib.create_material_expression(m,unreal.MaterialExpressionCustom)
+    i=unreal.CustomInput();i.set_editor_property('input_name','P');c.set_editor_property('inputs',[i]);c.set_editor_property('output_type',unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    c.set_editor_property('code',"float n=.5+.22*sin(P.x*.009+sin(P.y*.008)*2)+.16*sin(P.z*.018+P.y*.006); float bands=.5+.5*sin(P.z*.033+sin(P.x*.006)*2.4); return lerp(float3(.055,.038,.027),float3(.17,.112,.070),saturate(n))*(.86+.14*bands);")
+    if guide:c.set_editor_property('code',c.get_editor_property('code').replace('float3(.055,.038,.027)','float3(.055,.027,.011)').replace('float3(.17,.112,.070)','float3(.15,.075,.022)'))
+    lib.connect_material_expressions(p,'XYZ',c,'P');lib.connect_material_property(c,'',unreal.MaterialProperty.MP_BASE_COLOR)
+    r=lib.create_material_expression(m,unreal.MaterialExpressionConstant);r.set_editor_property('r',.93);lib.connect_material_property(r,'',unreal.MaterialProperty.MP_ROUGHNESS)
     lib.recompile_material(m);assert unreal.EditorAssetLibrary.save_loaded_asset(m)
     return m
+
+
+def ensure_miner_headlamp():
+    path='/Game/Campaign/Materials/M_MinerHeadlamp'
+    m=unreal.load_asset(path) if unreal.EditorAssetLibrary.does_asset_exist(path) else unreal.AssetToolsHelpers.get_asset_tools().create_asset('M_MinerHeadlamp','/Game/Campaign/Materials',unreal.Material,unreal.MaterialFactoryNew())
+    lib=unreal.MaterialEditingLibrary;lib.delete_all_material_expressions(m)
+    m.set_editor_property('material_domain',unreal.MaterialDomain.MD_LIGHT_FUNCTION)
+    uv=lib.create_material_expression(m,unreal.MaterialExpressionTextureCoordinate)
+    c=lib.create_material_expression(m,unreal.MaterialExpressionCustom)
+    i=unreal.CustomInput();i.set_editor_property('input_name','UV');c.set_editor_property('inputs',[i]);c.set_editor_property('output_type',unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    c.set_editor_property('code',"float2 p=UV-.5; float r=length(p); float a=atan2(p.y,p.x); float ripple=.94+.06*cos(r*62+sin(a*3)*.65); return ripple*lerp(1,.25,smoothstep(.10,.58,r));")
+    lib.connect_material_expressions(uv,'',c,'UV');lib.connect_material_property(c,'',unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    lib.recompile_material(m);assert unreal.EditorAssetLibrary.save_loaded_asset(m)
+    return m
+
 
 def ensure_campaign_door():
     path='/Game/Campaign/Materials/M_CampaignDoor'
@@ -60,7 +78,7 @@ def ensure_campaign_stain():
 float3 q=P-Origin;
 float2 trail=float2(dot(q,Right),q.z);
 float corridor=1-smoothstep(100,145,length(trail*float2(1,.95)));
-float3 color=float3(.66,.68,.70);
+float3 color=float3(.11,.074,.045);
 float layer=floor((dot(q,Forward)+10)/150);
 [unroll] for(int i=0;i<18;++i) {
 float seed=i+layer*23;

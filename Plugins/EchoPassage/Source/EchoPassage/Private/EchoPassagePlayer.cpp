@@ -54,6 +54,7 @@ void UEchoPassageInteractionComponent::RefreshCharacter()
     ReleaseCharacter();Character=P;
     if(!P)return;
     P->LandedDelegate.AddDynamic(this,&UEchoPassageInteractionComponent::OnLanded);
+    if(bUseSharedPickaxe)return;
     auto* Camera=P->FindComponentByClass<UCameraComponent>();if(!Camera)return;
     Pickaxe=NewObject<USceneComponent>(P);Pickaxe->SetupAttachment(Camera);Pickaxe->RegisterComponent();
     auto Make=[&](FVector Location,FVector Size,const TCHAR* Material)
@@ -138,6 +139,7 @@ void UEchoPassageInteractionComponent::Knock()
     }
     if(!Found) {Feedback=TEXT("靠近地面或墙壁，再敲一下");FeedbackUntil=GetWorld()->GetTimeSeconds()+1.5f;return;}
     bWallStrike=FMath::Abs(Hit.ImpactNormal.Z)<.5f;SwingTime=0;
+    OnKnock.Broadcast();
     PendingPoint=Hit.ImpactPoint;StrikeAt=GetWorld()->GetTimeSeconds()+.18f;bPendingStrike=true;
     Feedback=bWallStrike?TEXT("石壁传来回声"):TEXT("敲击地面，听见前路");FeedbackUntil=GetWorld()->GetTimeSeconds()+1.4f;
 }

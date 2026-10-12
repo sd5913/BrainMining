@@ -17,6 +17,7 @@ class UMiningBombToolComponent;
 class UMiningProgressionComponent;
 class USpotLightComponent;
 class UPointLightComponent;
+class UMaterialInterface;
 class USceneComponent;
 class UStaticMeshComponent;
 struct FInputActionValue;
@@ -51,6 +52,8 @@ class ABrainMiningCharacter : public ACharacter
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<USpotLightComponent> MiningLight;
+	UPROPERTY(EditDefaultsOnly, Category="Mining|Lighting")
+	TSoftObjectPtr<UMaterialInterface> HeadlampPattern = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Campaign/Materials/M_MinerHeadlamp.M_MinerHeadlamp")));
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<UPointLightComponent> MiningFillLight;

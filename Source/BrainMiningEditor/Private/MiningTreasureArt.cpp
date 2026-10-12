@@ -92,14 +92,20 @@ namespace MiningTreasureArt
 
 bool UMiningDesignerLibrary::BuildCrystalClueMesh()
 {
-    // A broad chipped shard: six vertices, eight flat triangular faces, no tiny crystal clusters.
+    // Bevelled pebble with broad caps: no spear tips or stretched diamond silhouette.
     MiningTreasureArt::FMineral Mineral(381);
-    const FVector Ring[]={FVector(-42,-6,0),FVector(-8,29,0),FVector(40,5,0),FVector(5,-24,0)};
-    for(int32 I=0;I<4;++I)
+    TArray<FVector> Rings[3];
+    for(int32 R=0;R<3;++R) for(int32 I=0;I<7;++I)
     {
-        Mineral.Face({Ring[I],Ring[(I+1)%4],FVector(7,2,16)},FVector::ZeroVector,0);
-        Mineral.Face({Ring[(I+1)%4],Ring[I],FVector(-5,-2,-12)},FVector::ZeroVector,0);
+        const float A=I*2*PI/7;
+        const float Radius=R==1?1.f:.66f;
+        Rings[R].Add(FVector(FMath::Cos(A)*42*Radius,FMath::Sin(A)*34*Radius,(R-1)*32));
     }
+    Mineral.Face(Rings[0],FVector::ZeroVector,0);
+    Mineral.Face(Rings[2],FVector::ZeroVector,0);
+    for(int32 R=0;R<2;++R) for(int32 I=0;I<7;++I)
+        Mineral.Face({Rings[R][I],Rings[R][(I+1)%7],Rings[R+1][(I+1)%7],Rings[R+1][I]},FVector::ZeroVector,0);
+    for(auto& Face:Mineral.Faces) Face.Shade=FMath::Lerp(.42f,1.f,Face.Shade);
     const FString Name=TEXT("SM_CrystalClue");
     const FString PackageName=TEXT("/Game/Showcase/Treasure/Meshes/")+Name;
     UPackage* Package=CreatePackage(*PackageName);
@@ -110,6 +116,8 @@ bool UMiningDesignerLibrary::BuildCrystalClueMesh()
     Mesh->GetStaticMaterials().Reset();
     Mesh->GetStaticMaterials().Add(FStaticMaterial(UMaterial::GetDefaultMaterial(MD_Surface),TEXT("Mineral")));
     auto Description=Mineral.Build();
+    // UE front faces use clockwise winding; keep the authored outward lighting normals.
+    Description.ReverseAllPolygonFacing();
     UStaticMesh::FBuildMeshDescriptionsParams Build;
     Build.bAllowCpuAccess=true;Build.bBuildSimpleCollision=false;Build.bFastBuild=false;
     Mesh->BuildFromMeshDescriptions({&Description},Build);

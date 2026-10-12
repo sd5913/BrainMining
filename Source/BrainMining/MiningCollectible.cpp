@@ -1,5 +1,6 @@
 #include "MiningCollection.h"
 #include "DiggableRock.h"
+#include "Showcase/MiningTreasure.h"
 #include "Components/BoxComponent.h"
 #include "Components/DynamicMeshComponent.h"
 #include "DynamicMesh/DynamicMeshAttributeSet.h"
@@ -177,18 +178,17 @@ void AMiningCollectible::SetHighlighted(bool Enabled)
 float AMiningCollectible::MeasureExposure() const
 {
     if(!IsValid(HostRock)||HostRock->TriangleCount==0) return 1;
-    const FDynamicMesh3& Mesh=HostRock->RockMesh->GetDynamicMesh()->GetMeshRef();
-    FDynamicMeshAABBTree3 Tree(&Mesh,true); TFastWindingTree<FDynamicMesh3> Winding(&Tree);
     // Sample the actual model surface, independent of attempted/failed cutting spheres.
     const FDynamicMesh3& Art=Model->GetDynamicMesh()->GetMeshRef();
-    int Free=0,Total=0; const int Stride=FMath::Max(1,Art.VertexCount()/100);
+    TArray<FVector> Samples;const int Stride=FMath::Max(1,Art.VertexCount()/100);
     for(int V:Art.VertexIndicesItr()) if(V%Stride==0)
     {
         const FVector World=Model->GetComponentTransform().TransformPosition(Art.GetVertex(V));
-        Free+=FMath::Abs(Winding.FastWindingNumber(HostRock->GetActorTransform().InverseTransformPosition(World)))<.5;
-        ++Total;
+        Samples.Add(World);
     }
-    return Total>0?float(Free)/Total:0;
+    TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints({HostRock},Samples,Covered);
+    int Free=0;for(bool Solid:Covered)Free+=!Solid;
+    return Covered.Num()>0?float(Free)/Covered.Num():0;
 }
 bool AMiningCollectible::CanRelease(float Threshold) const
 {
@@ -202,9 +202,11 @@ void AMiningCollectible::Release()
     FVector Position=GetActorLocation(); bool Clear=!IsValid(HostRock)||HostRock->TriangleCount==0;
     if(!Clear)
     {
-        const auto& Mesh=HostRock->RockMesh->GetDynamicMesh()->GetMeshRef();
-        FDynamicMeshAABBTree3 Tree(&Mesh,true); TFastWindingTree<FDynamicMesh3> Winding(&Tree);
-        auto Air=[&](FVector P) { return FMath::Abs(Winding.FastWindingNumber(HostRock->GetActorTransform().InverseTransformPosition(P)))<.5; };
+        auto Air=[&](FVector P)
+        {
+            TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints({HostRock},{P},Covered);
+            return !Covered[0];
+        };
         const FVector Start=Position;
         for(int Step=0;Step<=10;++Step)
         {

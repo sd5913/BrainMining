@@ -208,11 +208,11 @@ void AMiningCollectible::Release()
         const FVector Start=Position;
         for(int Step=0;Step<=10;++Step)
         {
-            const FVector Candidate=Start-FVector(Step*20,0,0);
+            const FVector Candidate=Start-GetActorForwardVector()*(Step*20);
             if(!Air(Candidate)) break;
             Clear=true;
             for(int X=-1;X<=1;++X) for(int Y=-1;Y<=1;++Y) for(int Z=-1;Z<=1;++Z)
-                Clear &= Air(Candidate+FVector(X*51,Y*47,Z*63));
+                Clear &= Air(Candidate+GetActorQuat().RotateVector(FVector(X*51,Y*47,Z*63)));
             if(Clear) { Position=Candidate; break; }
         }
     }
@@ -220,5 +220,5 @@ void AMiningCollectible::Release()
     SetActorLocation(Position); bReleased=true;
     Body->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     Body->SetSimulatePhysics(true); Body->SetMassOverrideInKg(NAME_None,3,true);
-    Body->AddImpulse(FVector(-55,0,35),NAME_None,true);
+    Body->AddImpulse(-GetActorForwardVector()*55+FVector(0,0,35),NAME_None,true);
 }

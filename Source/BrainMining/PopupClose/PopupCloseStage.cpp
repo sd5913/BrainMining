@@ -197,8 +197,10 @@ void APopupCloseStage::BeginPlay()
 }
 void APopupCloseStage::SetAreaActive(bool bActive)
 {
+ const bool bEntering=bActive && !bAreaActive;
  if (!bActive){CancelSession();if(Flood)Flood->Pause();}
  bAreaActive = bActive;
+ if (bEntering && bStartOnAreaEntry) StartOfficeRound();
  if (!bActive && Prompt) Prompt->SetVisibility(ESlateVisibility::Collapsed);
 }
 void APopupCloseStage::CancelSession()
@@ -372,7 +374,8 @@ void APopupCloseStage::Tick(float Dt)
    Device->IsPrinter()?FString::Printf(TEXT("按 E 处理文件  ·  %d 张"),Device->Pending()):TEXT("按 E 使用电脑"));
   if(PC && PC->WasInputKeyJustPressed(EKeys::E))HandleInteraction(PC,Device);
  }
- else ShowPrompt(PC,TEXT(""));
+ else ShowPrompt(PC,bStartOnAreaEntry && Phase==EPhase::Running && View==EView::Free && RoundTime<10.f
+  ?TEXT("办公已开始 · 靠近电脑或打印机，瞄准后按 E 处理") :TEXT(""));
 }
 void APopupCloseStage::TickIssues(float Dt)
 {

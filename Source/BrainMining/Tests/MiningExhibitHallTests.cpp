@@ -13,6 +13,7 @@
 #include "MiningCellUniverse.h"
 #include "MiningRoomEscape.h"
 #include "MiningWalletSubsystem.h"
+#include "MiningProgressionComponent.h"
 #include "GeneratedMiningRock.h"
 #include "MiningGUIWidgets.h"
 #include "CardRoomStage.h"
@@ -249,10 +250,10 @@ namespace ExhibitHallTests
                 Test->TestFalse(TEXT("Duplicate mineral rejected"),Hall->Treasure->CollectTarget(Controller));
                 Test->TestEqual(TEXT("Duplicate grants no coins"),Wallet->Balance,Balance);
                 Test->TestTrue(TEXT("Affordable upgrade purchased"),Hall->PurchaseUpgrade(0,1));
-                Balance-=Hall->UpgradePrices[0]; Radius=Mining->Radius;
+                Balance-=Controller->GetPawn()->FindComponentByClass<UMiningProgressionComponent>()->Tracks[0].Steps[0].Price; Radius=Mining->Radius;
                 Test->TestEqual(TEXT("Upgrade deducts configured price"),Wallet->Balance,Balance);
                 Test->TestFalse(TEXT("Duplicate upgrade rejected"),Hall->PurchaseUpgrade(0,1));
-                Test->TestFalse(TEXT("Unimplemented skill cannot charge"),Hall->PurchaseUpgrade(1,1));
+                Test->TestFalse(TEXT("Skipping a skill level cannot charge"),Hall->PurchaseUpgrade(1,2));
                 Test->TestEqual(TEXT("Invalid purchases do not charge"),Wallet->Balance,Balance);
                 Hall->ReturnToLobby();
             }

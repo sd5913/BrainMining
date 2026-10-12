@@ -10,6 +10,7 @@ class UMaterialInterface;
 class APlayerController;
 class UPointLightComponent;
 class UMaterialInstanceDynamic;
+class UBoxComponent;
 
 USTRUCT(BlueprintType)
 struct FMiningTreasureDefinition
@@ -28,8 +29,10 @@ struct FMiningTreasureDefinition
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", ClampMax="1")) float Roughness = .4f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", ClampMax="1")) float Metallic = .1f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 SurfaceStyle = 0;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0")) int32 MinValue = 1;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0")) int32 MaxValue = 5;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<int32> ValuesBySize;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<float> SizeMultipliers = {.55f, .7f, .85f, 1.f};
+    static TArray<int32> DefaultValues(FName TreasureId);
+    bool HasValidSizeRules() const;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0")) float Weight = 1;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FName> Regions;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bNormalLayer = true;
@@ -43,17 +46,24 @@ class BRAINMINING_API AMiningTreasure : public AActor
     GENERATED_BODY()
 public:
     AMiningTreasure();
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<UBoxComponent> DropBody;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Model;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UPointLightComponent> GlowLight;
     UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> HintMaterials;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) FName TreasureId;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) FText TreasureName;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int32 Value = 0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int32 SizeTier = 0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int64 CollectedValue = 0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float Exposure = 0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bCollected = false;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bReleased = false;
     UPROPERTY() TArray<TObjectPtr<ADiggableRock>> CoveringRocks;
-    bool Configure(const FMiningTreasureDefinition& Definition, int32 InValue, UMaterialInterface* Material);
-    float MeasureExposure() const;
+    bool Configure(const FMiningTreasureDefinition& Definition, int32 InSizeTier, UMaterialInterface* Material);
+    float MeasureExposure(FVector* EscapeDirection = nullptr) const;
+    bool TryRelease();
+    void SetDropActive(bool bActive);
+    void ResetDrop();
     static bool IsExposureEligible(float Ratio) { return FMath::IsFinite(Ratio) && Ratio > .5f; }
     void SetHighlighted(bool bEnabled);
     void AttachBuriedHint(const FMiningTreasureDefinition& Definition);
@@ -61,9 +71,14 @@ public:
     float GetHintAmount() const { return HintAmount; }
     int32 GetSurfaceSampleCount() const { return SurfaceSamples.Num(); }
 private:
+    FTransform BuriedTransform;
+    FVector PausedVelocity = FVector::ZeroVector;
+    FVector PausedSpin = FVector::ZeroVector;
+    bool bDropPaused = false;
     TArray<FVector> SurfaceSamples;
     FLinearColor BaseColor = FLinearColor::White;
     float HintAmount = 1;
+    float BuriedHintAmount = 1;
 };
 
 UCLASS(Blueprintable)
@@ -72,6 +87,7 @@ class BRAINMINING_API AMiningTreasureField : public AActor
     GENERATED_BODY()
 public:
     AMiningTreasureField();
+    virtual void PostLoad() override;
     UPROPERTY(EditAnywhere, Category="Treasure") bool bUseSharedWallet = false;
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
@@ -100,6 +116,7 @@ private:
     float ToastRemaining = 0;
     FString Toast;
     TArray<int32> ObservedCuts;
+    FRandomStream RewardRandom;
     void RefreshTarget(APlayerController* Controller);
     void ClearGenerated();
 };

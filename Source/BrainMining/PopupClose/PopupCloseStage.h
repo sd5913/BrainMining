@@ -32,6 +32,7 @@ public:
 	APopupCloseStage();
  virtual ~APopupCloseStage() override;
  UPROPERTY(EditAnywhere, Category="Integration") bool bAreaManaged = false;
+ UPROPERTY(EditAnywhere, Category="Integration") bool bStartOnAreaEntry = false;
  bool bAreaActive = true;
  void SetAreaActive(bool bActive);
  void CancelSession();

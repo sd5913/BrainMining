@@ -17,6 +17,7 @@ class BRAINMINING_API AMiningRoomEscape : public AActor
 public:
     AMiningRoomEscape();
     UPROPERTY(EditAnywhere, Category="Integration") bool bAreaManaged = false;
+    UPROPERTY(EditAnywhere, Category="Integration") bool bWalkThroughConnections = false;
     bool bAreaActive = true;
     void SetAreaActive(bool bActive);
     virtual void BeginPlay() override;

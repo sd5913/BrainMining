@@ -15,6 +15,9 @@ class UMiningGUIHUDWidget;
 class UPostProcessComponent;
 class SWidget;
 
+UENUM(BlueprintType)
+enum class EMiningExperienceKind : uint8 { Legacy, Mining, Collection, Journey, Office, Museum, Ending };
+
 USTRUCT(BlueprintType)
 struct FMiningExperienceArea
 {
@@ -24,6 +27,13 @@ struct FMiningExperienceArea
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FName Tag;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FVector Origin = FVector::ZeroVector;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform Entry;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) EMiningExperienceKind Kind = EMiningExperienceKind::Legacy;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FVector Exit = FVector::ZeroVector;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FVector ExitExtent = FVector(180,300,300);
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Navigation") TArray<FVector> MapRoute;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TObjectPtr<AActor> ProgressGate;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FBox MiningBounds = FBox(ForceInit);
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FBox ActivationBounds = FBox(ForceInit);
 };
 
 UCLASS()
@@ -54,17 +64,26 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FMiningExperienceArea> Areas;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform LobbyEntry;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<int32> UpgradePrices = {100, 200, 300};
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Campaign") bool bLinearCampaign = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Campaign") bool bContinuousCampaign = false;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Campaign") int32 UnlockedArea = 0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Campaign") bool bCampaignComplete = false;
+    EMiningExperienceKind AreaKind(int32 Index) const;
+    bool CanAdvanceCampaign() const;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int32 ActiveArea = INDEX_NONE;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bReady = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<AMiningCollectionField> Collection;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<AMiningTreasureField> Treasure;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<AMiningRoomEscape> Journey;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<AMiningCellUniverse> Ending;
-    UFUNCTION(BlueprintCallable) bool EnterArea(int32 Index);
+    UFUNCTION(BlueprintCallable) bool EnterArea(int32 Index, bool bMovePlayer = true);
     UFUNCTION(BlueprintCallable) void ReturnToLobby();
+    UFUNCTION(BlueprintCallable) bool SkipCurrentRoom();
     UFUNCTION(BlueprintCallable) bool PurchaseUpgrade(int32 ItemIndex, int32 RequestedLevel);
     bool ToggleMenu();
+    bool ToggleMap();
+    void CloseMap();
+    bool IsMapOpen() const { return Map.IsValid(); }
     bool IsMenuOpen() const { return Menu.IsValid(); }
     void CloseMenu();
     void ToggleCatalogue();
@@ -88,17 +107,18 @@ private:
     TSet<TWeakObjectPtr<AActor>> KnownActors;
     TArray<FTransform> ResumePoints;
     TSet<int32> Visited;
+    TSet<int32> CompletedAreas;
     TWeakObjectPtr<AMiningExhibitController> Controller;
     TWeakObjectPtr<UMiningGUIHUDWidget> BoundGUI;
     UPROPERTY() TObjectPtr<APopupCloseStage> Office;
     UPROPERTY() TObjectPtr<AWenSiPuzzle> Museum;
     UPROPERTY() TObjectPtr<AMiningGiantRoomEntrance> Entrance;
     TSharedPtr<SWidget> Menu;
+    TSharedPtr<SWidget> Map;
     TSharedPtr<SWidget> Guide;
     FDelegateHandle SpawnHandle;
-    float BaseRadius = 160;
-    float BaseInterval = .3f;
     FString Notice;
+    float CompletionDelay = 0;
     bool InitializeAreas();
     void RegisterActor(AActor* Actor);
     void UpdateActorVisibility();

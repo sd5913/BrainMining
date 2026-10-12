@@ -58,12 +58,24 @@ void APopupCloseOffice::BuildOffice()
  {
   Groups[Group]->AddInstance(FTransform(R,PopupCloseLayout::Compress(P),PopupCloseLayout::Compress(Size)/100.f));
  };
- // Compress the office footprint to 20 x 15 m while preserving its low-fidelity details.
- Box(0,FVector(1200,0,180),FVector(20,1800,360));
+ // Keep the smaller office and bridge its doors to the existing campaign tunnels.
+ if(!bWalkThroughConnections) Box(0,FVector(1200,0,180),FVector(20,1800,360));
+ else
+ {
+  for(float Y:{-510.f,510.f}) Box(0,FVector(1200,Y,180),FVector(20,780,360));
+  Box(0,FVector(1200,0,325),FVector(20,240,70));
+  for(float Side:{-1.f,1.f})
+  {
+   // Box applies the 5/6 room compression: these join x=1000 to x=1200.
+   Box(0,FVector(Side*1320,0,-10),FVector(240,264,20));
+   Box(0,FVector(Side*1320,0,370),FVector(240,264,20));
+   for(float Y:{-132.f,132.f})Box(0,FVector(Side*1320,Y,180),FVector(240,24,360));
+  }
+ }
  Box(0,FVector(-1200,-510,180),FVector(20,780,360));
  Box(0,FVector(-1200,510,180),FVector(20,780,360));
  Box(0,FVector(-1200,0,325),FVector(20,240,70));
- Box(2,FVector(-1206,0,140),FVector(16,208,280)); // Closed entrance door.
+ if(!bWalkThroughConnections) Box(2,FVector(-1206,0,140),FVector(16,208,280));
  for(float Y:{-104.f,104.f})Box(7,FVector(-1188,Y,145),FVector(5,6,290));
  Box(7,FVector(-1187,75,110),FVector(10,4,20));
  for(float Y:{-885.f,885.f})
@@ -136,8 +148,9 @@ void APopupCloseOffice::BuildOffice()
  Box(0,FVector(-840,290,157),FVector(190,82,6));Box(3,FVector(-808,290,182),FVector(45,43,45));
  Box(10,FVector(-850,290,168),FVector(18,18,18));
  for(int32 Cup=0;Cup<4;++Cup)Box(10,FVector(-905+Cup*14,270,166),FVector(8,8,12));
- Box(2,FVector(1185,30,236),FVector(5,200,118));Box(9,FVector(1181,30,236),FVector(2,184,103));
- for(int32 Note=0;Note<7;++Note)Box(Note%2?5:4,FVector(1178,-44+Note%4*45,215+Note/4*40),FVector(1,30,29));
+ const float NoticeY=bWalkThroughConnections?-500.f:30.f;
+ Box(2,FVector(1185,NoticeY,236),FVector(5,200,118));Box(9,FVector(1181,NoticeY,236),FVector(2,184,103));
+ for(int32 Note=0;Note<7;++Note)Box(Note%2?5:4,FVector(1178,NoticeY-74+Note%4*45,215+Note/4*40),FVector(1,30,29));
  for(FVector P:{FVector(-1070,-750,0),FVector(-1070,750,0),FVector(1050,-750,0),FVector(1030,750,0)})
  {
   Box(10,P+FVector(0,0,24),FVector(45,45,48));

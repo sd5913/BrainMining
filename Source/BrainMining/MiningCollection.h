@@ -18,11 +18,23 @@ class UStaticMeshComponent;
 class UPostProcessComponent;
 class AMiningCollectible;
 
+USTRUCT(BlueprintType)
+struct FMiningCollectionPlacement
+{
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 ItemId = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform Transform;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FName AreaTag;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TObjectPtr<ADiggableRock> HostRock;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform ClueTransform;
+};
+
 struct FCollectionAnt
 {
     TWeakObjectPtr<AActor> Actor;
     TArray<TWeakObjectPtr<UStaticMeshComponent>> Legs;
     FVector Start;
+    FTransform Frame;
     float Length=260,Phase=0;
 };
 struct FCollectionBird
@@ -78,6 +90,10 @@ public:
     UPROPERTY(EditAnywhere, Category="Collection") FKey CatalogueKey = EKeys::Tab;
     UPROPERTY(EditAnywhere, Category="Collection") bool bSharedAbilities = false;
     UPROPERTY(EditAnywhere, Category="Collection") bool bShowExplorationHUD = true;
+    // A campaign shares one inventory but authors its four caches across several mines.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|Placement") bool bUseAuthoredPlacements = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|Placement") bool bBuriedWithClues = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|Placement") TArray<FMiningCollectionPlacement> AuthoredPlacements;
     void SetAreaActive(bool bActive);
     bool IsAreaActive() const { return bAreaActive; }
     virtual void Tick(float DeltaSeconds) override;
@@ -113,6 +129,7 @@ public:
 private:
     bool InitializePlayer();
     void SpawnField();
+    void SpawnAuthoredClues(const FMiningCollectionPlacement& Placement);
     void SpawnDeepField();
     void RelocateGeneratedField();
     void TickAmbient(float DeltaSeconds);

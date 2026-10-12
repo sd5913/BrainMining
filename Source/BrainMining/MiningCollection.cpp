@@ -57,7 +57,7 @@ bool AMiningCollectionField::InitializePlayer()
     };
     Bind(EKeys::E,&AMiningCollectionField::CollectTarget);
     Bind(CatalogueKey,&AMiningCollectionField::ToggleCatalogue);
-    Bind(EKeys::R,&AMiningCollectionField::ResetCollection);
+    if(!bUseAuthoredPlacements) Bind(EKeys::R,&AMiningCollectionField::ResetCollection);
     Subsystem->AddMappingContext(CollectionContext,50);
     if(!bAreaManaged)
     {
@@ -86,7 +86,7 @@ bool AMiningCollectionField::InitializePlayer()
         SAssignNew(View,SMiningCollectionView).Owner(this); View->SetVisibility(EVisibility::HitTestInvisible);
         GEngine->GameViewport->AddViewportWidgetContent(View.ToSharedRef(),30);
     }
-    Toast=TEXT("先试试左侧已露出的试管架：瞄准它，按 E 收集"); ToastRemaining=10;
+    Toast=bUseAuthoredPlacements?TEXT("沿矿道寻找藏品，挖开覆盖层后瞄准按 E 收集；I 打开图鉴。"):TEXT("先试试左侧已露出的试管架：瞄准它，按 E 收集"); ToastRemaining=10;
     if(bAreaManaged) SetAreaActive(false);
     return true;
 }
@@ -108,6 +108,25 @@ void AMiningCollectionField::SetAreaActive(bool bActive)
 
 void AMiningCollectionField::SpawnField()
 {
+    if(bUseAuthoredPlacements)
+    {
+        for(const auto& Placement:AuthoredPlacements)
+        {
+            if(Placement.ItemId<0 || Placement.ItemId>=4) continue;
+            auto* Item=GetWorld()->SpawnActor<AMiningCollectible>(Placement.Transform.GetLocation(),Placement.Transform.Rotator());
+            Item->Tags.Add(Placement.AreaTag);
+            Item->BuildModel(Placement.ItemId);
+            if(bBuriedWithClues && Placement.HostRock)
+            {
+                Item->HostRock=Placement.HostRock; Item->BuriedTransform=Item->GetActorTransform();
+                if(Placement.ItemId==3) ResidentBird=Item;
+                SpawnAuthoredClues(Placement);
+            }
+            else { Item->bReleased=true; Item->Exposure=1; Item->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly); }
+            Items.Add(Item); Spawned.Add(Item);
+        }
+        return;
+    }
     if(bDeepField) { SpawnDeepField(); RelocateGeneratedField(); return; }
     ActiveSeed=RandomSeed>0?RandomSeed:FMath::RandRange(1,MAX_int32-1);
     FRandomStream Random(ActiveSeed);
@@ -192,8 +211,8 @@ void AMiningCollectionField::Tick(float Dt)
         if(PreviewRefreshFrames>0) { Capture->CaptureScene(); --PreviewRefreshFrames; }
         return;
     }
-    if(bDeepField) TickAmbient(Dt);
-    if(Player->GetPawn()->GetActorLocation().Z<StartTransform.GetLocation().Z-2000) { ResetCollection(); return; }
+    if(bDeepField || bBuriedWithClues) TickAmbient(Dt);
+    if(!bUseAuthoredPlacements && Player->GetPawn()->GetActorLocation().Z<StartTransform.GetLocation().Z-2000) { ResetCollection(); return; }
     RefreshTarget();
     PollTime+=Dt; if(PollTime<.12f) return; PollTime=0;
     for(AMiningCollectible* Item:Items)
@@ -228,7 +247,7 @@ void AMiningCollectionField::RefreshTarget()
 }
 void AMiningCollectionField::CollectTarget()
 {
-    if(bCatalogueOpen||!Player) return;
+    if(bCatalogueOpen||!Player || (bAreaManaged && !bAreaActive)) return;
     RefreshTarget();
     if(!IsValid(Target)||!Inventory.IsValidIndex(Target->ItemId)) return;
     AMiningCollectible* Item=Target; Item->SetHighlighted(false); Item->bCollected=true;
@@ -285,6 +304,7 @@ void AMiningCollectionField::RotatePreview(float Yaw,float Pitch)
 void AMiningCollectionField::ZoomPreview(float Steps) { PreviewDistance=FMath::Clamp(PreviewDistance-Steps*22,270.f,550.f); RotatePreview(0,0); }
 void AMiningCollectionField::ResetCollection()
 {
+    if(bUseAuthoredPlacements) return; // Campaign retries must never erase global inventory.
     if(!bInitialized||bCatalogueOpen) return;
     if(!bAreaManaged) Mining->ResetField();
     else Mining->CancelMining();

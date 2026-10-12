@@ -106,18 +106,25 @@ def tick(delta):
             capture('02_buried_rock')
             check(not state['item'].get_editor_property('bCollected'), 'Mineral starts uncollected')
             state['value'] = state['item'].value
+            state['buried_z'] = state['item'].get_actor_location().z
             state['balance'] = state['field'].coins
             helper.send_preview_key(state['controller'], 'LeftMouseButton', True)
             state.update(phase='dig', next=now+2)
         elif phase == 'dig' and now >= state['next']:
             helper.send_preview_key(state['controller'], 'LeftMouseButton', False)
             check(state['item'].exposure > 0.5, 'Real left-mouse digging exposes more than half the mineral')
+            check(state['item'].get_editor_property('bReleased'), 'Real digging releases the mineral into physical motion')
+            camera = state['pawn'].get_component_by_class(unreal.CameraComponent)
+            state['controller'].set_control_rotation(unreal.MathLibrary.find_look_at_rotation(camera.get_world_location(), state['item'].get_actor_location()))
+            state.update(phase='aim_drop', next=now+.4)
+        elif phase == 'aim_drop' and now >= state['next']:
             capture('03_exposed_mineral')
             helper.send_preview_key(state['controller'], 'E', True)
             helper.send_preview_key(state['controller'], 'E', False)
             state.update(phase='collected', next=now+1)
         elif phase == 'collected' and now >= state['next']:
             check(state['item'].get_editor_property('bCollected'), 'E collects the exposed mineral')
+            check(not state['item'].drop_body.is_simulating_physics(), 'Collected mineral stops simulating physics')
             check(state['field'].coins == state['balance']+state['value'], 'Mineral credits the shared coin balance once')
             capture('04_collected_coins')
             state['hall'].return_to_lobby()

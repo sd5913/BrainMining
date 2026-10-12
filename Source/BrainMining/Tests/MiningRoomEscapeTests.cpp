@@ -36,7 +36,9 @@ public:
         {
             auto* Hall=AMiningExhibitHall::Find(World);
             if(!Hall || !Hall->bReady || World->GetTimeSeconds()<2.5) return false;
-            if(Hall->ActiveArea!=2) Hall->EnterArea(2);
+            const int32 JourneyIndex=Hall->bLinearCampaign?3:2;
+            if(Hall->bLinearCampaign) Hall->UnlockedArea=JourneyIndex; // Isolated encounter fixture.
+            if(Hall->ActiveArea!=JourneyIndex) Hall->EnterArea(JourneyIndex);
         }
         auto* PC=World?Cast<AMiningEncounterPlayerController>(World->GetFirstPlayerController()):nullptr;
         auto* Pawn=PC?Cast<ACharacter>(PC->GetPawn()):nullptr;
@@ -189,6 +191,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FExhibitCardEscapeTest,"BrainMining.SixAreas.Fu
 bool FExhibitCardEscapeTest::RunTest(const FString&)
 {
     AutomationOpenMap(TEXT("/Game/Showcase/Maps/Lvl_MainExperiences"));
+    ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
+    ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCampaignCardEscapeTest,"BrainMining.Campaign.FullCardAndTelevisionEscape",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FCampaignCardEscapeTest::RunTest(const FString&)
+{
+    AutomationOpenMap(TEXT("/Game/Campaign/Maps/Lvl_FullJourney"));
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;

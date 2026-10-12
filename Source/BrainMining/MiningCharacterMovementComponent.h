@@ -15,6 +15,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight", meta=(ShowOnlyInnerProperties))
 	FMiningFlightSettings FlightSettings;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Heat") float CoolingDelay = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Player Flight|Jetpack Heat") float CoolingDelayRemaining = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Player Flight") bool bCreativeFlight = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Player Flight")
 	bool bFlightInputHeld = false;

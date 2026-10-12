@@ -267,13 +267,18 @@ void AMiningRoomEscape::BuildStudyLayout()
     ExitRamp=Shape((RampStart+RampEnd)*.5f-FVector(0,0,20),FVector(FVector::Distance(RampStart,RampEnd)+80,W*2,40),Wood,true,(RampEnd-RampStart).Rotation());
     const FVector Deck(31900,ComputerEntry.Y,9850);
     Shape(Deck,FVector(1800,2000,100),Wood);
-    Shape(Deck+FVector(950,0,500),FVector(100,2200,1100),Plaster);
+    if(!bWalkThroughConnections) Shape(Deck+FVector(950,0,500),FVector(100,2200,1100),Plaster);
+    else
+    {
+        for(float Side:{-1.f,1.f}) Shape(Deck+FVector(950,Side*690,500),FVector(100,820,1100),Plaster);
+        Shape(Deck+FVector(950,0,900),FVector(100,560,300),Plaster);
+    }
     for(float Side:{-1.f,1.f})
     {
         Shape(Deck+FVector(0,Side*950,260),FVector(1800,60,400),Wood);
         Shape(Deck+FVector(0,Side*950,470),FVector(1800,65,25),Amber,false);
     }
-    Text(Deck+FVector(885,0,590),TEXT("EXIT\nREST AREA"),90,FRotator(0,180,0));
+    Text(Deck+FVector(885,0,590),bWalkThroughConnections?TEXT("MINE 03"):TEXT("EXIT\nREST AREA"),90,FRotator(0,180,0));
     Light(Deck+FVector(0,0,650),350000,2200);
 }
 void AMiningRoomEscape::TickPresentation(float DeltaSeconds)

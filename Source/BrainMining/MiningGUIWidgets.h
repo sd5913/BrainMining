@@ -141,6 +141,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category="GUI|Display") void SetCoinDisplay(FText NewText);
 	UFUNCTION(BlueprintCallable, Category="GUI|Display") void SetItemLevel(int32 ItemIndex, int32 Level, bool bAnimate = true);
 	UFUNCTION(BlueprintCallable, Category="GUI|Display") void SetItemUnlocked(int32 ItemIndex, bool bUnlocked);
+	void EnableProgressionPanel();
+	UMiningGUIUpgradeWidget* GetUpgradeCard(int32 Index) const { return Item(Index); }
+	void SetUpgradeDetails(int32 Index, FText Name, FText Description, int64 Price, bool bAffordable);
 	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void TriggerAbility(FName Ability);
 	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void SetAbilityUsed(FName Ability, bool bUsed);
 	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void SetAbilityAvailable(FName Ability, bool bAvailable);
@@ -151,6 +154,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIUpgradeWidget> PickaxeUpgrade;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIUpgradeWidget> VortexUpgrade;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIUpgradeWidget> BlastUpgrade;
+	UPROPERTY(Transient, BlueprintReadOnly) TObjectPtr<UMiningGUIUpgradeWidget> DrillUpgrade;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIAbilityWidget> AbilityG;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIAbilityWidget> AbilityV;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidgetOptional)) TObjectPtr<UMiningGUIJetpackHeatWidget> JetpackHeatBar;
@@ -168,4 +172,6 @@ protected:
 	UMiningGUIAbilityWidget* AbilityWidget(FName Name) const;
 	FMiningGUISpring PanelSpring;
 	FMiningGUISpring PlusSpring;
+	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> UpgradeNames;
+	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> UpgradeDescriptions;
 };

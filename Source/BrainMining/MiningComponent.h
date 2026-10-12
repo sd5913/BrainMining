@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/HitResult.h"
 #include "Components/ActorComponent.h"
 #include "MiningComponent.generated.h"
 
@@ -56,6 +57,14 @@ public:
 	float DrillUseDuration = 10.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill", meta=(ClampMin="0.1"))
 	float DrillCooldownDuration = 10.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") bool bUseDrillEnergy = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float MaxDrillEnergy = 100;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float DrillRecoveryRate = 10;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float DrillConsumptionRate = 10;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Drill") float DrillEnergy = 100;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Drill") bool bInfiniteDrillEnergy = false;
+	void UpdateDrillEnergy(float DeltaSeconds);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining", meta=(ClampMin="1", ClampMax="4")) float DepthMultiplier = 1;
 	UFUNCTION(BlueprintPure, Category="Mining|Tool")
 	float GetMiningInterval() const;
 	UFUNCTION(BlueprintPure, Category="Mining|Tool")
@@ -88,6 +97,7 @@ public:
 	float FallResetDistance = 2000.0f;
     bool bScopedReset = false;
     FBox ResetBounds = FBox(ForceInit);
+    FName ResetAreaTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining")
 	bool bShowPreview = false;

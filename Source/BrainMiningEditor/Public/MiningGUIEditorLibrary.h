@@ -42,4 +42,7 @@ public:
 	/** Update only the ring art and add the fourth independent green image. */
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Editor")
 	static bool UpgradeGUIToFourLevels();
+	/** Explicitly replace the heat strip with a transient arc and add a full-screen warning image. */
+	UFUNCTION(BlueprintCallable, Category="Mining GUI|Editor")
+	static bool UpgradeJetpackToArcGauge();
 };

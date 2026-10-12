@@ -1,10 +1,17 @@
 #include "PopupClose/PopupCloseStage.h"
 #include "PopupClose/PopupCloseContent.h"
 #include "PopupClose/PopupOfficeDevice.h"
+#include "PopupClose/PopupOfficeFlood.h"
+#include "PopupClose/PopupCloseLayout.h"
 #include "PopupClose/PopupCloseFlyingWindow.h"
 #include "PopupClose/PopupCloseGameMode.h"
 #include "PopupClose/PopupCloseOffice.h"
 #include "PopupClose/PopupCloseWidgets.h"
+#include "MiningWalletSubsystem.h"
+#include "MiningGUIWidgets.h"
+#include "BrainMiningPlayerController.h"
+#include "Engine/GameInstance.h"
+#include "Components/TextBlock.h"
 #include "Camera/CameraComponent.h"
 #include "Components/ArrowComponent.h"
 #include "Components/BoxComponent.h"
@@ -42,8 +49,6 @@ namespace
  constexpr float ScreenExitSeconds=.8f;
  constexpr float PanicSeconds=45.f;
  constexpr float WorkSeconds=65.f;
- constexpr float SpraySeconds=8.f;
- constexpr float SprayInterval=.08f;
  float IssueInterval(float Seconds,int32 Index)
  {
   const float InitialInterval=Index>=2?16.f:14.f;
@@ -51,7 +56,7 @@ namespace
   if(Seconds<PanicSeconds)return FMath::Lerp(InitialInterval,ManageableInterval,FMath::Clamp(Seconds/PanicSeconds,0.f,1.f));
   return ManageableInterval*FMath::Pow(.12f/ManageableInterval,FMath::Clamp((Seconds-PanicSeconds)/(WorkSeconds-PanicSeconds),0.f,1.f));
  }
- const FVector DeviceLocations[]={FVector(0,0,0),FVector(-500,350,0),FVector(750,430,0),FVector(-780,-350,0)};
+ const FVector DeviceLocations[]={PopupCloseLayout::DevicePosition(0),PopupCloseLayout::DevicePosition(1),PopupCloseLayout::DevicePosition(2),PopupCloseLayout::DevicePosition(3)};
  const float DeviceYaws[]={0,180,0,180};
  struct FPaperLandingStatus
  {
@@ -138,19 +143,20 @@ APopupCloseStage::APopupCloseStage()
 void APopupCloseStage::ConfigureOffice()
 {
  // Older saved component overrides must not keep the original small room.
- Floor->SetRelativeScale3D(FVector(24,18,.2f));
- Ceiling->SetRelativeLocation(FVector(0,0,370));Ceiling->SetRelativeScale3D(FVector(24,18,.2f));
- WallPositiveY->SetRelativeLocation(FVector(0,900,180));WallNegativeY->SetRelativeLocation(FVector(0,-900,180));
- WallPositiveY->SetRelativeScale3D(FVector(24,.2f,3.6f));WallNegativeY->SetRelativeScale3D(FVector(24,.2f,3.6f));
- SpawnPoint->SetRelativeLocation(FVector(-950,0,92));ScreenCamera->SetRelativeLocation(FVector(-75,0,124));
+ Floor->SetRelativeScale3D(FVector(20,15,.2f));
+ Ceiling->SetRelativeLocation(FVector(0,0,370));Ceiling->SetRelativeScale3D(FVector(20,15,.2f));
+ WallPositiveY->SetRelativeLocation(FVector(0,750,180));WallNegativeY->SetRelativeLocation(FVector(0,-750,180));
+ WallPositiveY->SetRelativeScale3D(FVector(20,.2f,3.6f));WallNegativeY->SetRelativeScale3D(FVector(20,.2f,3.6f));
+ SpawnPoint->SetRelativeLocation(FVector(-790,0,92));ScreenCamera->SetRelativeLocation(FVector(-75,0,124));
  RoomLight->SetRelativeLocation(FVector(0,0,285));RoomLight->SetIntensity(15000);RoomLight->SetAttenuationRadius(1700);
  Sun->SetIntensity(3);Sky->bRealTimeCapture=false;Sky->SetIntensity(.5f);
  Sun->SetVisibility(!bAreaManaged);Sky->SetVisibility(!bAreaManaged);Atmosphere->SetVisibility(!bAreaManaged);
  ScreenCamera->bOverrideAspectRatioAxisConstraint=true;
  ScreenCamera->AspectRatioAxisConstraint=EAspectRatioAxisConstraint::AspectRatio_MaintainXFOV;
  ScreenCamera->PostProcessBlendWeight=0;
- TableTop->SetRelativeScale3D(FVector(1.9f,1.f,.06f));
- Keyboard->SetRelativeScale3D(FVector(.16f,.36f,.03f));
+ TableTop->SetRelativeScale3D(PopupCloseLayout::Compress(FVector(1.9f,1.f,.06f)));
+ Keyboard->SetRelativeLocation(PopupCloseLayout::Compress(FVector(-10,0,80)));
+ Keyboard->SetRelativeScale3D(PopupCloseLayout::Compress(FVector(.16f,.36f,.03f)));
  // Replacement metal frames are part of the office's instanced geometry.
  TArray<UStaticMeshComponent*> Meshes;GetComponents(Meshes);
  for(auto Mesh:Meshes)if(Mesh->GetName().StartsWith(TEXT("Leg")) || Mesh==Monitor || Mesh==Screen || Mesh==Stand || Mesh->GetName()==TEXT("StandBase"))
@@ -182,14 +188,16 @@ void APopupCloseStage::Paint(UStaticMeshComponent* Mesh,const FLinearColor& Colo
 }
 
 
+APopupCloseStage::~APopupCloseStage()=default;
 void APopupCloseStage::BeginPlay()
 {
  Super::BeginPlay();ConfigureOffice();ApplyColors();GatherDevices();
+ Flood=MakeUnique<FPopupOfficeFlood>(*this);
  if (bAreaManaged) SetAreaActive(false);
 }
 void APopupCloseStage::SetAreaActive(bool bActive)
 {
- if (!bActive) CancelSession();
+ if (!bActive){CancelSession();if(Flood)Flood->Pause();}
  bAreaActive = bActive;
  if (!bActive && Prompt) Prompt->SetVisibility(ESlateVisibility::Collapsed);
 }
@@ -212,7 +220,8 @@ void APopupCloseStage::CancelSession()
 void APopupCloseStage::ResetCompletedSessions()
 {
  CancelSession();
- for (auto Device : Devices) if (IsValid(Device)) Device->ResetSession();
+ for (auto Device : Devices) if (IsValid(Device)){Device->ResetSession();Device->SetScreenInteractive(false);}
+ if(Flood)Flood->Reset();
  Phase = EPhase::Idle;
  RoundTime = ViewTime = SprayTime = SprayDebt = SlowPhaseScheduledIssues = FirstBurstPeakFrame = 0;
  LastTickTime = 0;
@@ -221,6 +230,7 @@ void APopupCloseStage::ResetCompletedSessions()
 }
 void APopupCloseStage::EndPlay(const EEndPlayReason::Type Reason)
 {
+ Flood.Reset();
  if(ActiveComputer)ActiveComputer->SetScreenInteractive(false);
  if(auto PC=LockedController.Get())
  {
@@ -244,6 +254,8 @@ void APopupCloseStage::GatherDevices()
   auto Device=GetWorld()->SpawnActorDeferred<APopupOfficeDevice>(APopupOfficeDevice::StaticClass(),Transform,this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
   if(Device){Device->DeviceIndex=I;Device->FinishSpawning(Transform);Devices[I]=Device;}
  }
+ // Also update copies of the office used in the integrated showcase levels.
+ for(int32 I=0;I<4;++I)if(Devices[I])Devices[I]->SetActorLocationAndRotation(GetActorTransform().TransformPosition(DeviceLocations[I]),GetActorRotation()+FRotator(0,DeviceYaws[I],0));
 }
 APopupOfficeDevice* APopupCloseStage::FocusedDevice(APlayerController* PC) const
 {
@@ -270,7 +282,7 @@ void APopupCloseStage::StartOfficeRound()
   const int32 I=Order[Slot];
   IssueCountdown[I]=(2.f+Slot*1.75f+FMath::FRandRange(0.f,1.5f))/IssueInterval(0.f,I);
  }
- UE_LOG(LogPopupClose,Display,TEXT("Office round started: independent randomized devices, 45s manageable + 20s acceleration + 8s eruption"));
+ UE_LOG(LogPopupClose,Display,TEXT("Office round started: independent randomized devices, 45s manageable + 20s acceleration, then continuous office-wide eruption"));
 }
 void APopupCloseStage::HandleInteraction(APlayerController* PC,APopupOfficeDevice* Device)
 {
@@ -339,9 +351,15 @@ void APopupCloseStage::Tick(float Dt)
  const double Now=FPlatformTime::Seconds();const float Wall=LastTickTime>0?float(Now-LastTickTime):Dt;LastTickTime=Now;
  Super::Tick(Dt);
  if (bAreaManaged && !bAreaActive) return;
- if(Phase==EPhase::Idle || Phase==EPhase::Running)for(auto Device:Devices)if(Device)Device->WarmPool(Dt);
+ if(auto GameInstance=GetGameInstance())if(auto Wallet=GameInstance->GetSubsystem<UMiningWalletSubsystem>())
+  if(auto Controller=Cast<ABrainMiningPlayerController>(GetWorld()->GetFirstPlayerController());Controller && Controller->MiningGUI && Controller->MiningGUI->CoinText)
+  {
+   const FText Coins=FText::AsNumber(Wallet->Balance);
+   if(!Controller->MiningGUI->CoinText->GetText().EqualTo(Coins))Controller->MiningGUI->SetCoinDisplay(Coins);
+  }
+ if(Flood && (Phase==EPhase::Idle || Phase==EPhase::Running))Flood->Warm(Dt);
  if(Phase==EPhase::Running)TickIssues(Dt);
- if(Phase==EPhase::Spraying)
+ if(Phase==EPhase::Spraying || Phase==EPhase::Complete)
  {
   if(SprayTime<1.f)FirstBurstPeakFrame=FMath::Max(FirstBurstPeakFrame,Wall);
   TickSpray(Dt);
@@ -398,19 +416,14 @@ void APopupCloseStage::BeginBurst()
  for(auto Device:Devices)if(auto UI=Device->GetDesktop())UI->SetRepliesEnabled(false);
  for(auto Device:Devices)Device->Lock();
  ExitScreen();
- for(auto Device:Devices)Device->Emit();
+ if(Flood)Flood->Start();
  UE_LOG(LogPopupClose,Display,TEXT("Four-device eruption started immediately at %.2f s; force_exit=%d"),RoundTime,bForcedExit);
 }
 void APopupCloseStage::TickSpray(float Dt)
 {
- SprayTime+=Dt;SprayDebt=FMath::Min(SprayDebt+Dt,SprayInterval*3);
- int32 Count=0;
- while(SprayDebt>=SprayInterval && SprayTime<=SpraySeconds && Count++<3)
- {
-  SprayDebt-=SprayInterval;for(auto Device:Devices)Device->Emit();
- }
+ SprayTime+=Dt;if(Flood)Flood->Tick(Dt);
  if(SprayTime>.5f)for(auto Device:Devices)Device->CleanupOnePopup();
- if(SprayTime>=SpraySeconds)
+ if(Phase==EPhase::Spraying && Flood && Flood->IsFloorCovered())
  {
   Phase=EPhase::Complete;for(auto Device:Devices)Device->HideWarning();
   WriteSessionReport();
@@ -420,19 +433,21 @@ FString APopupCloseStage::GetSessionStatus() const
 {
  FString Status=FString::Printf(TEXT("phase=%d view=%d elapsed=%.2f spray=%.2f"),int32(Phase),int32(View),RoundTime,SprayTime);
  for(auto Device:Devices)if(Device)Status+=FString::Printf(TEXT("\nDevice%d %s pending=%d created=%d handled=%d warning=%d locked=%d emitted=%d"),
- Device->DeviceIndex,Device->IsPrinter()?TEXT("printer"):TEXT("computer"),Device->Pending(),Device->Created(),Device->Handled(),Device->WarningVisible(),Device->IsLocked(),Device->Emitted());
+ Device->DeviceIndex,Device->IsPrinter()?TEXT("printer"):TEXT("computer"),Device->Pending(),Device->Created(),Device->Handled(),Device->WarningVisible(),Device->IsLocked(),Flood?Flood->Emitted(Device->DeviceIndex):0);
  const auto Paper=PaperLandingStatus(GetWorld(),Floor->Bounds.GetBox().Max.Z);
  Status+=FString::Printf(TEXT("\nEmitted papers=%d below_floor=%d CCD=%d lowest_visual_clearance=%.3f cm"),Paper.Count,Paper.BelowFloor,Paper.bCCD,Paper.Count?Paper.LowestClearance:0.f);
+ if(Flood)Status+=TEXT("\n")+Flood->Describe();
+ if(auto GameInstance=GetGameInstance())if(auto Wallet=GameInstance->GetSubsystem<UMiningWalletSubsystem>())Status+=FString::Printf(TEXT("\nShared wallet balance=%lld"),Wallet->Balance);
  UE_LOG(LogPopupClose,Display,TEXT("%s"),*Status);return Status;
 }
 void APopupCloseStage::WriteSessionReport()
 {
  auto PC=GetWorld()->GetFirstPlayerController();
  const bool bInput=PC && !PC->IsMoveInputIgnored() && !PC->IsLookInputIgnored() && !PC->bShowMouseCursor && PC->GetViewTarget()==PC->GetPawn() && View==EView::Free;
- bool bLocked=true,bEmitted=true;for(auto Device:Devices){bLocked &= Device->IsLocked() && !Device->CanInteract(PC);bEmitted &= Device->Emitted()>=95;}
+ bool bLocked=true,bEmitted=true;for(auto Device:Devices){bLocked &= Device->IsLocked() && !Device->CanInteract(PC);bEmitted &= Flood && Flood->Emitted(Device->DeviceIndex)>=95;}
  const auto Paper=PaperLandingStatus(GetWorld(),Floor->Bounds.GetBox().Max.Z);
- const bool bPaperSafe=Paper.Count==Devices[2]->Emitted()+Devices[3]->Emitted() && Paper.Count>=190 && Paper.BelowFloor==0 && Paper.bCCD;
- const bool bPass=bInput && bLocked && bEmitted && bPaperSafe && bAccountingValid && bWarningsValid && bIndependentTimersValid && SlowPhaseScheduledIssues<=24.f && RoundTime+SprayTime<WorkSeconds+SpraySeconds+1.f;
+ const bool bPaperSafe=Paper.BelowFloor==0 && Paper.bCCD && Flood && Flood->IsHealthy();
+ const bool bPass=bInput && bLocked && bEmitted && bPaperSafe && bAccountingValid && bWarningsValid && bIndependentTimersValid && SlowPhaseScheduledIssues<=24.f && Flood->IsFloorCovered();
  FString Report=FString::Printf(TEXT("%s\nTotal time: %.2f s\nManageable phase: %.0f s, %.0f automatically scheduled issues\nRapid acceleration: %.0f s\nAll unresolved problems accumulated: %d\nWarning icons track pending counts: %d\nIndependent randomized timers remain valid: %d\nEruption forced camera exit: %d\nCamera and movement restored: %d\nAll four devices permanently locked: %d\nLargest frame in first eruption second: %.2f ms\n"),
  bPass?TEXT("PASS"):TEXT("FAIL"),RoundTime+SprayTime,PanicSeconds,SlowPhaseScheduledIssues,WorkSeconds-PanicSeconds,bAccountingValid,bWarningsValid,bIndependentTimersValid,bForcedExit,bInput,bLocked,FirstBurstPeakFrame*1000);
  Report+=GetSessionStatus()+TEXT("\n");
@@ -446,19 +461,26 @@ FString APopupCloseStage::ValidateOffice()
  FString Report;int32 Checks=0,Failures=0;
  auto Check=[&](bool Pass,const TCHAR* Label){++Checks;if(!Pass)++Failures;Report+=FString::Printf(TEXT("%s: %s\n"),Pass?TEXT("PASS"):TEXT("FAIL"),Label);};
  auto PC=LockedController.Get();auto Pawn=LockedPawn.Get();
+ auto Wallet=GetGameInstance()?GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>():nullptr;
+ auto Balance=[Wallet]()->int64{return Wallet?Wallet->Balance:0;};
+ Check(Wallet!=nullptr,TEXT("office uses the shared game wallet"));
  Check(Devices.Num()==4 && !Devices[0]->IsPrinter() && !Devices[1]->IsPrinter() && Devices[2]->IsPrinter() && Devices[3]->IsPrinter(),TEXT("two computers and two printers"));
  float MinDistance=FLT_MAX;for(int32 I=0;I<4;++I)for(int32 J=I+1;J<4;++J)MinDistance=FMath::Min(MinDistance,float(FVector::Dist(Devices[I]->GetActorLocation(),Devices[J]->GetActorLocation())));
- Check(MinDistance>=600,TEXT("devices separated by at least six meters"));
+ Check(MinDistance>=500,TEXT("devices remain separated by at least five meters in the smaller office"));
  Check(Devices[0]->GetActorLocation().Equals(GetActorLocation()),TEXT("original computer remains at room center"));
  Check(ActiveComputer->GetSurface()->GetWidgetSpace()==EWidgetSpace::World && PC->GetViewTarget()==ActiveComputer,TEXT("physical monitor and bezel used for computer view"));
  if(ActiveComputer->Pending()==0)ActiveComputer->AddProblem();
+ const int64 BeforeReply=Balance();
  Check(ActiveComputer->ClickReplyForValidation(),TEXT("actual reply button removes exactly one message"));
+ Check(Wallet && Balance()-BeforeReply==20,TEXT("one real popup reply awards exactly 20 shared coins"));
  ActiveComputer->AddProblem();ActiveComputer->AddProblem();const int32 PendingBefore=ActiveComputer->Pending();
+ Check(Balance()==BeforeReply+20,TEXT("new pending messages award no coins"));
  auto First=ActiveComputer.Get();ExitScreen();
  // Finish the same exit path immediately for deterministic checks in this one-frame validation.
  if(PC->PlayerCameraManager)PC->PlayerCameraManager->UpdateCamera(ScreenExitSeconds+.01f);
  RestorePlayerControl();PC->SetViewTarget(Pawn);View=EView::Free;ActiveComputer=nullptr;
  Check(First->Pending()==PendingBefore && !PC->IsMoveInputIgnored() && !PC->IsLookInputIgnored() && !PC->bShowMouseCursor,TEXT("exiting preserves unresolved messages and restores controls"));
+ Check(Balance()==BeforeReply+20,TEXT("exiting a computer awards no coins"));
  auto AimAt=[&](APopupOfficeDevice* Device)
  {
   const FVector P=Device->GetActorLocation()-Device->GetActorForwardVector()*215+FVector(0,0,98);
@@ -470,16 +492,21 @@ FString APopupCloseStage::ValidateOffice()
  {
   auto Printer=Devices[I];while(Printer->Pending()<2)Printer->AddProblem();
   AimAt(Printer);Check(Printer->CanInteract(PC),TEXT("printer requires approaching and aiming"));
-  const int32 Before=Printer->Pending();HandleInteraction(PC,Printer);
+  const int32 Before=Printer->Pending();const int64 BeforePaper=Balance();HandleInteraction(PC,Printer);
   Check(Printer->Pending()==Before-1 && Printer->WarningVisible(),TEXT("one interaction processes one sheet; warning remains for backlog"));
+  Check(Wallet && Balance()-BeforePaper==10,TEXT("one processed sheet awards exactly 10 shared coins"));
   for(int32 Remaining=Printer->Pending();Remaining>0 && Printer->CanInteract(PC);--Remaining)HandleInteraction(PC,Printer);
   Check(Printer->Pending()==0 && !Printer->WarningVisible() && Printer->AccountingValid(),TEXT("paper stack and warning clear only after every sheet is processed"));
+  Check(Balance()-BeforePaper==Before*10,TEXT("all sheets are rewarded individually without a bulk bonus"));
+  const int64 BeforeEmpty=Balance();
+  Check(!Printer->ProcessPaper() && Balance()==BeforeEmpty,TEXT("empty printer interaction awards no coins"));
  }
  Pawn->SetActorLocation(Devices[1]->GetActorLocation()+FVector(1000,0,98),false,nullptr,ETeleportType::TeleportPhysics);
  Check(!Devices[1]->CanInteract(PC),TEXT("remote interaction rejected"));
  AimAt(Devices[1]);Check(Devices[1]->CanInteract(PC),TEXT("second computer can be approached and aimed at"));
- HandleInteraction(PC,Devices[1]);
+ const int64 BeforeEnter=Balance();HandleInteraction(PC,Devices[1]);
  Check(ActiveComputer==Devices[1] && View==EView::Entering && First->Pending()==PendingBefore,TEXT("switching computer preserves the first computer's backlog"));
+ Check(Balance()==BeforeEnter,TEXT("entering another computer awards no coins"));
  // The second computer remains active so the end-of-round test exercises forced ejection.
  bool Faster=true;for(int32 I=1;I<=100;++I)Faster &= IssueInterval(WorkSeconds*I/100.f,0)<IssueInterval(WorkSeconds*(I-1)/100.f,0);
  Check(Faster,TEXT("problem frequency continuously accelerates with no peak hold"));
@@ -528,4 +555,9 @@ void APopupCloseStage::CreateLevel()
 }
 static FAutoConsoleCommand CreatePopupLevel(TEXT("PopupClose.CreateLevel"),TEXT("Create office level"),FConsoleCommandDelegate::CreateStatic(&APopupCloseStage::CreateLevel));
 static FAutoConsoleCommand UpgradePopupOffice(TEXT("PopupClose.UpgradeOffice"),TEXT("Upgrade office with two computers and two printers"),FConsoleCommandDelegate::CreateStatic(&APopupCloseStage::UpgradeOffice));
+static FAutoConsoleCommand ResetPopupOffice(TEXT("PopupClose.Reset"),TEXT("Reset the active office, including its persistent flood layer"),FConsoleCommandDelegate::CreateLambda([]()
+{
+ if(!GEditor || !GEditor->PlayWorld)return;
+ for(TActorIterator<APopupCloseStage> It(GEditor->PlayWorld);It;++It){It->ResetCompletedSessions();It->GetSessionStatus();}
+}));
 #endif

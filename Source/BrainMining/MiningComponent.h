@@ -46,6 +46,8 @@ public:
 	/** V starts a timed drill session. Active sessions and cooldown cannot be restarted. */
 	UFUNCTION(BlueprintCallable, Category="Mining|Drill")
 	bool ActivateDrill();
+	/** Stow an active drill without clearing its existing use/cooldown deadlines. */
+	UFUNCTION(BlueprintCallable, Category="Mining|Tool") void SelectPickaxe();
 	UFUNCTION(BlueprintPure, Category="Mining|Drill")
 	float GetDrillUseRemaining() const;
 	UFUNCTION(BlueprintPure, Category="Mining|Drill")

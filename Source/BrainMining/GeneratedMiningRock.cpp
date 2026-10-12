@@ -1,4 +1,5 @@
 #include "GeneratedMiningRock.h"
+#include "MiningBlastGeometry.h"
 #include "Components/DynamicMeshComponent.h"
 #include "FogChamberComponent.h"
 #include "UDynamicMesh.h"
@@ -316,7 +317,16 @@ UDynamicMesh* AGeneratedMiningRock::GetCombinedMesh() const
 	return Combined;
 }
 
-bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius)
+bool AGeneratedMiningRock::MineBlast(FVector WorldCenter, float WorldRadius, float Roughness, int32 Seed)
+{
+	if (SegmentIndex != INDEX_NONE && SegmentState != EMiningSegmentState::Active) return false;
+	if (WorldCenter.ContainsNaN() || !FMath::IsFinite(WorldRadius) || WorldRadius <= 0 || !FMath::IsFinite(Roughness)) return false;
+	if (!bChunked) return Super::MineBlast(WorldCenter, WorldRadius, Roughness, Seed);
+	const FDynamicMesh3 Cutter = MiningBlast::MakeCutter(WorldCenter, WorldRadius, Roughness, Seed);
+	return MineChunks(WorldCenter, WorldRadius * 1.45f, &Cutter);
+}
+
+bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, const FDynamicMesh3* WorldCutter)
 {
 	const double Started = FPlatformTime::Seconds();
 	ON_SCOPE_EXIT { LastTotalMilliseconds = (FPlatformTime::Seconds() - Started) * 1000; };
@@ -341,8 +351,10 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius)
 		ChunkCutter = FDynamicMesh3(&Generator);
 		ChunkCutter.DiscardAttributes();
 	}
-	FDynamicMesh3 Cutter = ChunkCutter;
-	for (int32 Vertex : Cutter.VertexIndicesItr()) Cutter.SetVertex(Vertex, Cutter.GetVertex(Vertex) * Radius + Center);
+	FDynamicMesh3 Cutter = WorldCutter ? *WorldCutter : ChunkCutter;
+	for (int32 Vertex : Cutter.VertexIndicesItr()) Cutter.SetVertex(Vertex, WorldCutter
+		? FVector3d(GetActorTransform().InverseTransformPosition(FVector(Cutter.GetVertex(Vertex))))
+		: Cutter.GetVertex(Vertex) * Radius + Center);
 	TArray<int32> Affected;
 	TArray<FDynamicMesh3> Prepared;
 	int32 Removed = 0;
@@ -355,7 +367,7 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius)
 		Chunk.Mesh->GetDynamicMesh()->ProcessMesh([&Source](const FDynamicMesh3& Mesh) { Source = Mesh; });
 		FDynamicMesh3 Result;
 		const double BooleanStart = FPlatformTime::Seconds();
-		const bool bValid = MiningChunks::Subtract(Source, Cutter, Result);
+		const bool bValid = MiningChunks::Subtract(Source, Cutter, Result, WorldCutter != nullptr);
 		LastBooleanMilliseconds += (FPlatformTime::Seconds() - BooleanStart) * 1000;
 		if (!bValid)
 		{

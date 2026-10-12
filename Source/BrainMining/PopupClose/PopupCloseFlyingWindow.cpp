@@ -40,10 +40,10 @@ APopupCloseFlyingWindow::APopupCloseFlyingWindow()
  SetActorHiddenInGame(true);
 }
 
-void APopupCloseFlyingWindow::PrepareForPool(int32 Variant,bool bPaper)
+void APopupCloseFlyingWindow::PrepareForPool(int32 Variant,bool bPaper,float SizeScale)
 {
  const auto& Copy=PopupCloseContent::Get(Variant);
- const float Width=bPaper?21.f:Copy.Size.X*.13f,Height=bPaper?29.7f:Copy.Size.Y*.13f;
+ const float Width=(bPaper?21.f:Copy.Size.X*.13f)*SizeScale,Height=(bPaper?29.7f:Copy.Size.Y*.13f)*SizeScale;
  Body->SetRelativeScale3D(FVector(bPaper?.0015f:.025f,Width/100.f,Height/100.f));
  auto Collision=CastChecked<UBoxComponent>(GetRootComponent());
  // A 1 cm collision slab protects the 0.15 cm paper visual at high speed and when resting.
@@ -67,6 +67,18 @@ void APopupCloseFlyingWindow::PrepareForPool(int32 Variant,bool bPaper)
  // Allocate Chaos bodies ahead of the eruption, while the window is hidden and sleeping.
  Collision->SetSimulatePhysics(true);Collision->SetMassOverrideInKg(NAME_None,bPaper?.02f:.35f,true);
  Collision->PutAllRigidBodiesToSleep();
+}
+void APopupCloseFlyingWindow::SetDenseRendering()
+{
+ // At flood density the tiny 3D text is unreadable; keep the familiar window frame.
+ TitleText->SetVisibility(false);BodyText->SetVisibility(false);
+}
+void APopupCloseFlyingWindow::RetireToPool()
+{
+ auto Collision=CastChecked<UBoxComponent>(GetRootComponent());
+ Collision->SetPhysicsLinearVelocity(FVector::ZeroVector);Collision->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+ Collision->SetCollisionResponseToAllChannels(ECR_Ignore);Collision->SetEnableGravity(false);
+ Collision->PutAllRigidBodiesToSleep();SetActorHiddenInGame(true);
 }
 
 void APopupCloseFlyingWindow::Launch(const FLinearColor& Color,const FVector& Velocity)

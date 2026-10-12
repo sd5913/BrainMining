@@ -11,6 +11,7 @@
 #include "BrainMining.h"
 #include "MiningComponent.h"
 #include "MiningToolEffectsComponent.h"
+#include "MiningBombToolComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningTunnelGenerator.h"
 #include "EngineUtils.h"
@@ -46,6 +47,7 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 
 	MiningComponent = CreateDefaultSubobject<UMiningComponent>(TEXT("MiningComponent"));
 	MiningToolEffects = CreateDefaultSubobject<UMiningToolEffectsComponent>(TEXT("MiningToolEffects"));
+	BombTool = CreateDefaultSubobject<UMiningBombToolComponent>(TEXT("BombTool"));
 
 	// Keep mounts/models in the blueprint viewport. Only the inner Motion components animate.
 	PickaxeMount = CreateDefaultSubobject<USceneComponent>(TEXT("PickaxeMount"));
@@ -75,13 +77,21 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 	DrillLeftModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DrillLeftModel"));
 	DrillLeftModel->SetupAttachment(DrillLeftMotion);
 	DrillLeftModel->SetRelativeScale3D(FVector(.72, -.72, .72));
+	BombMount = CreateDefaultSubobject<USceneComponent>(TEXT("BombMount"));
+	BombMount->SetupAttachment(FirstPersonCameraComponent);
+	BombMount->SetRelativeLocationAndRotation(FVector(45, 23, -20), FRotator(-12, 0, -8));
+	BombModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BombModel"));
+	BombModel->SetupAttachment(BombMount);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> BombAsset(TEXT("/Game/Bomb/SM_Bomb.SM_Bomb"));
+	BombModel->SetStaticMesh(BombAsset.Object);
+	if (BombAsset.Object) BombModel->SetRelativeLocation(-BombAsset.Object->GetBounds().Origin);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> PickaxeAsset(TEXT("/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> DrillAsset(TEXT("/Game/Drill/SM_Drill.SM_Drill"));
 	PickaxeModel->SetStaticMesh(PickaxeAsset.Object);
 	DrillRightModel->SetStaticMesh(DrillAsset.Object);
 	DrillLeftModel->SetStaticMesh(DrillAsset.Object);
-	for (UStaticMeshComponent* Model : { PickaxeModel.Get(), DrillRightModel.Get(), DrillLeftModel.Get() })
+	for (UStaticMeshComponent* Model : { PickaxeModel.Get(), DrillRightModel.Get(), DrillLeftModel.Get(), BombModel.Get() })
 	{
 		Model->SetCollisionProfileName(TEXT("NoCollision"));
 		Model->SetCastShadow(false);

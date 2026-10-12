@@ -13,6 +13,7 @@
 #include "Engine/GameViewportClient.h"
 #include "Components/InputComponent.h"
 #include "MiningComponent.h"
+#include "MiningBombToolComponent.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GameFramework/Pawn.h"
 
@@ -129,7 +130,13 @@ void ABrainMiningPlayerController::SetMiningGUIEnabled(bool bEnabled)
  if (MiningGUI) MiningGUI->SetVisibility(bEnabled ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 }
 
-void ABrainMiningPlayerController::UseAbilityG() { if (bMiningGUIEnabled && !IsMoveInputIgnored() && !IsPaused() && MiningGUI) MiningGUI->TriggerAbility(TEXT("G")); }
+void ABrainMiningPlayerController::UseAbilityG()
+{
+	if (!bMiningGUIEnabled || IsMoveInputIgnored() || IsLookInputIgnored() || IsPaused() || bUpgradeMenuHeld) return;
+	if (MiningGUI && MiningGUI->AbilityG && !MiningGUI->AbilityG->bAvailable) return;
+	auto* Bomb = GetPawn() ? GetPawn()->FindComponentByClass<UMiningBombToolComponent>() : nullptr;
+	if (Bomb && Bomb->ToggleEquipped() && MiningGUI) MiningGUI->OnAbilityRequested.Broadcast(TEXT("G"));
+}
 void ABrainMiningPlayerController::UseAbilityV()
 {
  if (IsMoveInputIgnored() || IsLookInputIgnored() || IsPaused() || bUpgradeMenuHeld) return;
@@ -141,6 +148,16 @@ void ABrainMiningPlayerController::UseAbilityV()
 
 bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 {
+	// Consume the throw before Enhanced Input sees a mining press. A held throw
+	// therefore cannot turn into a pickaxe swing after the bomb leaves the hand.
+	if (Params.Key == EKeys::LeftMouseButton && Params.Event == IE_Pressed)
+	{
+		if (auto* Bomb = GetPawn() ? GetPawn()->FindComponentByClass<UMiningBombToolComponent>() : nullptr; Bomb && Bomb->bEquipped)
+		{
+			Bomb->ThrowBomb();
+			return true;
+		}
+	}
 	if (bOwnsDesktopGUIInput && bMiningGUIEnabled)
 	{
 		if (Params.Key == EKeys::Tab && (bUpgradeMenuHeld || (!IsMoveInputIgnored() && !IsLookInputIgnored() && !IsPaused())))

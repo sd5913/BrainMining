@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "PopupClose/PopupOfficeFlood.h"
 #include "PopupCloseStage.generated.h"
 
 class UArrowComponent;
@@ -29,6 +30,7 @@ class BRAINMINING_API APopupCloseStage : public AActor
 
 public:
 	APopupCloseStage();
+ virtual ~APopupCloseStage() override;
  UPROPERTY(EditAnywhere, Category="Integration") bool bAreaManaged = false;
  bool bAreaActive = true;
  void SetAreaActive(bool bActive);
@@ -161,4 +163,5 @@ private:
  bool bLookSuppressed=false;
  TWeakObjectPtr<APawn> LockedPawn;
  TWeakObjectPtr<APlayerController> LockedController;
+ TUniquePtr<FPopupOfficeFlood> Flood;
 };

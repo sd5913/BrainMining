@@ -14,6 +14,7 @@ class BRAINMINING_API APopupCloseOffice : public AActor
 public:
  APopupCloseOffice();
  virtual void OnConstruction(const FTransform& Transform) override;
+ virtual void BeginPlay() override;
  int32 GetDetailCount() const;
 private:
  void BuildOffice();

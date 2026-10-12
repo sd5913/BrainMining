@@ -42,13 +42,6 @@ void AMiningHUD::DrawHUD()
 		return;
 	}
 	const FLinearColor Accent(0.2f, 0.9f, 0.8f);
-	const FLinearColor Reticle = IsValid(Mining->TargetRock) ? Accent : FLinearColor::White;
-	const float CenterX = Canvas->ClipX * 0.5f;
-	const float CenterY = Canvas->ClipY * 0.5f;
-	DrawLine(CenterX - 9, CenterY, CenterX - 3, CenterY, Reticle, 1.5f);
-	DrawLine(CenterX + 3, CenterY, CenterX + 9, CenterY, Reticle, 1.5f);
-	DrawLine(CenterX, CenterY - 9, CenterX, CenterY - 3, Reticle, 1.5f);
-	DrawLine(CenterX, CenterY + 3, CenterX, CenterY + 9, Reticle, 1.5f);
 	if (!bShowDeveloperOverlay) return;
 	const AMiningTunnelGenerator* Layout = nullptr;
 	for (TActorIterator<AMiningTunnelGenerator> Generator(GetWorld()); Generator; ++Generator)

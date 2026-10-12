@@ -73,9 +73,10 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     if(R.Phase==ECardRoomPhase::Exploring)
     {
         const bool Near=Owner->GetPawn()&&Owner->Stage->IsPlayerNear(Owner->GetPawn()->GetActorLocation());
-        Box(486,740,628,89,Dark); Text(Near?TEXT("[ E ]  入座，开始一场奇怪的牌局"):(Owner->ExplorationHint.IsEmpty()?TEXT("走近前方牌桌，寻找你的座位"):Owner->ExplorationHint),530,756,22,Cream);
+        Box(486,740,628,89,Dark); Text(Near?(Owner->bUseSharedInteractionHUD?TEXT("入座，开始一场奇怪的牌局"):TEXT("[ E ]  入座，开始一场奇怪的牌局")):(Owner->ExplorationHint.IsEmpty()?TEXT("走近前方牌桌，寻找你的座位"):Owner->ExplorationHint),530,756,22,Cream);
         Text(TEXT("WASD 移动   按住空格飞行   松开下落   R 重来"),544,794,13,Gold);
-        Box(797,447,6,6,Cream); return L;
+        if (!Owner->bUseSharedInteractionHUD) Box(797,447,6,6,Cream);
+        return L;
     }
     Button(FSlateRect(1440,80,1572,118),TEXT("Q  离席"));
     if(R.Round>0)

@@ -39,6 +39,7 @@ public:
  void ResetCompletedSessions();
  int32 GetCompletedSessions() const { return Phase == EPhase::Complete ? 1 : 0; }
  bool IsSessionActive() const { return View != EView::Free; }
+ FString GetInteractionAction(APlayerController* PC) const;
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void Tick(float DeltaSeconds) override;

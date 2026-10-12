@@ -1,5 +1,7 @@
 #include "Showcase/MiningTreasure.h"
 #include "MiningWalletSubsystem.h"
+#include "BrainMiningPlayerController.h"
+#include "MiningInteractionHUDWidget.h"
 #include "Engine/GameInstance.h"
 #include "DiggableRock.h"
 #include "GeneratedMiningRock.h"
@@ -579,7 +581,12 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
         Wallet->AddCoins(Item->CollectedValue);
         Coins = Wallet->Balance;
     }
-    else Coins += Item->Value;
+    else
+    {
+        Coins += Item->Value;
+        if (auto* MiningController = Cast<ABrainMiningPlayerController>(Controller); MiningController && MiningController->InteractionHUD)
+            MiningController->InteractionHUD->ShowCoinGain(Item->Value);
+    }
     ++CollectedCount;
     Toast = FString::Printf(TEXT("%s  +%lld 金币%s"), *Item->TreasureName.ToString(), Item->CollectedValue,
         Item->CollectedValue > Item->Value ? TEXT(" · 养成奖励翻倍！") : TEXT(""));

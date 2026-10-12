@@ -1,5 +1,7 @@
 #include "SMiningCollectionView.h"
 #include "MiningCollection.h"
+#include "MiningInteractionHUDWidget.h"
+#include "Engine/World.h"
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
 #include "Engine/TextureRenderTarget2D.h"
@@ -29,8 +31,9 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
         Box(50,762,940,88,Ink);
         Text(TEXT("左键 挖掘    E 收集    Tab 图鉴    按住空格 上升 / 松开 下落"),70,775,18,Cream);
         Text(TEXT("WASD 移动    R 新一轮（清空收集）    高处鸟巢可用飞行接近"),70,814,14,Muted);
-        Box(798,448,4,4,F->Target?Gold:Cream);
-        if(F->Target)
+        const bool SharedHUD = UMiningInteractionHUDWidget::IsActiveFor(F->GetWorld()->GetFirstPlayerController());
+        if (!SharedHUD) Box(798,448,4,4,F->Target?Gold:Cream);
+        if(F->Target && !SharedHUD)
         {
             Box(570,568,460,58,Ink); Text(TEXT("[ E ]  收集  ")+AMiningCollectible::ItemName(F->Target->ItemId),600,580,23,Gold);
         }

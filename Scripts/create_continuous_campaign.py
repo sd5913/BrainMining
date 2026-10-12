@@ -70,17 +70,22 @@ def corridor(a,b,i,width=400,height=360):
     for side in [-1,1]:soil('Campaign_TunnelSoilLeft' if side<0 else 'Campaign_TunnelSoilRight',mid+V(0,side*(width/2+350),height/2),V(length,700,height),i,roughness=V(0,70,18))
     light(mid+V(0,0,230),i)
 def getone(group,cls):return next(a for a in group if isinstance(a,cls))
+def configure_area(i,offset):
+    spec=recipe['stages'][i]
+    area=areas[i]
+    for k,val in [('title',spec['title']),('instructions',spec['hint']),('tag','BM_Campaign_'+spec['id']),('kind',getattr(unreal.MiningExperienceKind,spec['kind'])),('origin',offset)]:area.set_editor_property(k,val)
+    reports[i]=dict(id=spec['id'],source=spec['source'],source_sha256=hashlib.sha256((root/'Content'/(spec['source'][6:]+'.umap')).read_bytes()).hexdigest())
+
 def copy(i,offset):
+    configure_area(i,offset)
     spec=recipe['stages'][i];g=list(unreal.MiningDesignerLibrary.copy_experience_actors(spec['source'],offset,'BM_Campaign_'+spec['id']))
     assert g
     for a in g:
         if isinstance(a,unreal.PlayerStart):actors.destroy_actor(a)
     g=[a for a in g if not isinstance(a,unreal.PlayerStart)]
     groups[i]=g
-    area=areas[i]
-    for k,val in [('title',spec['title']),('instructions',spec['hint']),('tag','BM_Campaign_'+spec['id']),('kind',getattr(unreal.MiningExperienceKind,spec['kind'])),('origin',offset)]:area.set_editor_property(k,val)
-    reports[i]=dict(id=spec['id'],source=spec['source'],source_sha256=hashlib.sha256((root/'Content'/(spec['source'][6:]+'.umap')).read_bytes()).hexdigest())
     return g
+
 def make_mine(i,target,anchor_end=False):
     spec=recipe['stages'][i];g=copy(i,V());region=getone(g,unreal.MiningExternalRegion)
     rt=region.get_actor_transform();ct=region.cutters[0].local_transform
@@ -158,33 +163,20 @@ def make_mine(i,target,anchor_end=False):
 # Anchor the existing echo/card/TV room at its original world coordinates.
 mine2=make_mine(2,V(-1600,0,1020),True)
 office_origin=mine2['entry']-V(1800,0,0)
-office=copy(1,office_origin)
-getone(office,unreal.PopupCloseStage).set_editor_property('area_managed',True)
-getone(office,unreal.PopupCloseStage).set_editor_property('start_on_area_entry',True)
-getone(office,unreal.PopupCloseOffice).set_editor_property('walk_through_connections',True)
+configure_area(1,office_origin)
 areas[1].set_editor_property('entry',unreal.Transform(location=office_origin+V(-1020,0,96)))
 mine1=make_mine(0,office_origin+V(-2250,0,120),True)
-journey=copy(3,V())
-echo=getone(journey,unreal.EchoPassageStage);echo.set_editor_property('walk_through_connections',True);echo.set_editor_property('room_in_same_level',True);echo.set_editor_property('destination_level',None)
-escapes=[a for a in journey if isinstance(a,unreal.MiningRoomEscape)]
-escape=escapes[0] if escapes else tag(actors.spawn_actor_from_class(unreal.MiningRoomEscape,V()),'Campaign_JourneyEscape',3)
-escape.set_editor_property('area_managed',True);escape.set_editor_property('walk_through_connections',True)
-escape.set_editor_property('card_stage',getone(journey,unreal.CardRoomStage));escape.set_editor_property('entrance',getone(journey,unreal.MiningGiantRoomEntrance))
+configure_area(3,V())
 areas[3].set_editor_property('entry',unreal.Transform(location=V(-650,0,996)))
 mine3=make_mine(4,V(33800,11750,10020))
 museum_origin=mine3['exit']+V(1545,0,0)
-museum=copy(5,museum_origin)
-puzzle=getone(museum,unreal.WenSiPuzzle);puzzle.set_editor_property('area_managed',True)
-areas[5].set_editor_property('entry',unreal.Transform(location=museum_origin+V(-800,0,96)));puzzle.set_editor_property('area_player_start',areas[5].entry)
-for a in museum:
-    if re.fullmatch(r'(BackWall|EndWall)\d*',a.get_actor_label()):actors.destroy_actor(a)
+configure_area(5,museum_origin)
+areas[5].set_editor_property('entry',unreal.Transform(location=museum_origin+V(-800,0,96)))
 for x in [-945,1510]:
     for y in [-405,405]:box('Campaign_MuseumDoorWall',museum_origin+V(x,y,250),V(20,410,500),5)
     box('Campaign_MuseumDoorHeader',museum_origin+V(x,0,430),V(20,400,140),5)
 ending_origin=museum_origin+V(2300,0,0)
-ending=copy(6,ending_origin);cell=getone(ending,unreal.MiningCellUniverse);cell.set_editor_property('area_managed',True)
-for c in cell.get_components_by_class(unreal.StaticMeshComponent):
-    if c.get_name().startswith('BackWall'):c.set_collision_profile_name('NoCollision');c.set_visibility(False)
+configure_area(6,ending_origin)
 areas[6].set_editor_property('entry',unreal.Transform(location=ending_origin+V(150,0,96)))
 
 # Join real floors to real door openings, not teleport destinations.
@@ -222,6 +214,8 @@ key=unreal.Key();key.set_editor_property('key_name','I');collection.set_editor_p
 hall=actors.spawn_actor_from_class(unreal.MiningExhibitHall,areas[0].entry.translation);hall.set_actor_label('CAMPAIGN_ContinuousFlow_EditAreasHere')
 hall.set_editor_property('linear_campaign',True);hall.set_editor_property('continuous_campaign',True);hall.set_editor_property('areas',areas);hall.set_editor_property('lobby_entry',areas[0].entry)
 actors.spawn_actor_from_class(unreal.PlayerStart,areas[0].entry.translation)
+runpy.run_path(str(root/'Scripts/add_campaign_minerals.py'))['populate'](world,hall)
+runpy.run_path(str(root/'Scripts/link_campaign_rooms.py'))['link'](world,hall)
 assert unreal.EditorLoadingAndSavingUtils.save_map(world,destination)
 (root/'Saved/FullJourneyManifest.json').write_text(json.dumps(dict(map=destination,continuous=True,stages=reports,recipe=recipe),ensure_ascii=False,indent=2),encoding='utf-8')
 unreal.log('CONTINUOUS_CAMPAIGN_SAVED '+destination)

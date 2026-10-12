@@ -2,6 +2,7 @@
 #include "BrainMiningCharacter.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningComponent.h"
+#include "MiningInteractionHUDWidget.h"
 #include "DiggableRock.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -55,7 +56,8 @@ public:
         Text(D->StageName(),1210,71,18,Cream);
         const auto* M=D->GetMining();
         const FLinearColor Aim=M&&M->TargetRock?CellUniverse::Cyan:Cream;
-        Box(798,441,3,7,Aim); Box(798,453,3,7,Aim); Box(791,449,6,2,Aim); Box(803,449,6,2,Aim);
+        if (!UMiningInteractionHUDWidget::IsActiveFor(D->GetWorld()->GetFirstPlayerController()))
+        { Box(798,441,3,7,Aim); Box(798,453,3,7,Aim); Box(791,449,6,2,Aim); Box(803,449,6,2,Aim); }
         if(!D->bAreaManaged)
         {
             Box(36,781,1528,86,Dark);

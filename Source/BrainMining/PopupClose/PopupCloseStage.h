@@ -49,6 +49,7 @@ public:
  UFUNCTION(BlueprintPure, Category="PopupClose|Exit") bool IsOfficeDestroyed() const { return Exit && Exit->IsRuined(); }
  UFUNCTION(BlueprintCallable, Category="PopupClose|Exit") FString GetExitStatus() const;
  bool IsSessionActive() const { return View != EView::Free; }
+ FString GetInteractionAction(APlayerController* PC) const;
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void Tick(float DeltaSeconds) override;

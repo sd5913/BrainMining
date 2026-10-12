@@ -1,5 +1,6 @@
 #include "Showcase/MiningShowcase.h"
 #include "Showcase/MiningTreasure.h"
+#include "MiningInteractionHUDWidget.h"
 #include "Fonts/CompositeFont.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Input/SButton.h"
@@ -40,7 +41,7 @@ TSharedRef<SWidget> UMiningShowcaseWidget::RebuildWidget()
                     .Text_Lambda([this]() { return Director.IsValid() && Director->TreasureField ? FText::FromString(Director->TreasureField->GetPrompt()) : FText::GetEmpty(); })]]
             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
             [SNew(STextBlock).Font(MiningShowcaseUI::Font(22)).Text(FText::FromString(TEXT("+")))
-                .Visibility_Lambda([this]() { return Director.IsValid() && Director->TreasureField && Director->TreasureField->IsAreaActive() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })]
+                .Visibility_Lambda([this]() { return !UMiningInteractionHUDWidget::IsActiveFor(GetOwningPlayer()) && Director.IsValid() && Director->TreasureField && Director->TreasureField->IsAreaActive() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })]
             + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(24)
             [
                 SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))

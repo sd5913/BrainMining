@@ -90,6 +90,35 @@ namespace MiningTreasureArt
     };
 }
 
+bool UMiningDesignerLibrary::BuildCrystalClueMesh()
+{
+    // A broad chipped shard: six vertices, eight flat triangular faces, no tiny crystal clusters.
+    MiningTreasureArt::FMineral Mineral(381);
+    const FVector Ring[]={FVector(-42,-6,0),FVector(-8,29,0),FVector(40,5,0),FVector(5,-24,0)};
+    for(int32 I=0;I<4;++I)
+    {
+        Mineral.Face({Ring[I],Ring[(I+1)%4],FVector(7,2,16)},FVector::ZeroVector,0);
+        Mineral.Face({Ring[(I+1)%4],Ring[I],FVector(-5,-2,-12)},FVector::ZeroVector,0);
+    }
+    const FString Name=TEXT("SM_CrystalClue");
+    const FString PackageName=TEXT("/Game/Showcase/Treasure/Meshes/")+Name;
+    UPackage* Package=CreatePackage(*PackageName);
+    auto* Mesh=FindObject<UStaticMesh>(Package,*Name);
+    const bool bNew=!Mesh;
+    if(!Mesh)Mesh=NewObject<UStaticMesh>(Package,*Name,RF_Public|RF_Standalone);
+    Mesh->bAllowCPUAccess=true;
+    Mesh->GetStaticMaterials().Reset();
+    Mesh->GetStaticMaterials().Add(FStaticMaterial(UMaterial::GetDefaultMaterial(MD_Surface),TEXT("Mineral")));
+    auto Description=Mineral.Build();
+    UStaticMesh::FBuildMeshDescriptionsParams Build;
+    Build.bAllowCpuAccess=true;Build.bBuildSimpleCollision=false;Build.bFastBuild=false;
+    Mesh->BuildFromMeshDescriptions({&Description},Build);
+    if(bNew)FAssetRegistryModule::AssetCreated(Mesh);
+    Mesh->MarkPackageDirty();
+    FSavePackageArgs Args;Args.TopLevelFlags=RF_Public|RF_Standalone;
+    return UPackage::SavePackage(Package,Mesh,*FPackageName::LongPackageNameToFilename(PackageName,FPackageName::GetAssetPackageExtension()),Args);
+}
+
 bool UMiningDesignerLibrary::BuildTreasureMeshes()
 {
     using namespace MiningTreasureArt;

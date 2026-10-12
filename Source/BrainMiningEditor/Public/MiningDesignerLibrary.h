@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Templates/SubclassOf.h"
+#include "Showcase/MiningTreasure.h"
 #include "MiningDesignerLibrary.generated.h"
 
 class AActor;
@@ -19,6 +20,10 @@ class BRAINMININGEDITOR_API UMiningDesignerLibrary : public UBlueprintFunctionLi
 	GENERATED_BODY()
 public:
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static TArray<FMiningTreasurePlacement> FindCampaignMineralSites(AActor* Hall);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool PrepareCampaignMinerals(AMiningTreasureField* Field);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
     static bool BuildCampaignSoil(AActor* Actor, FVector Size, FVector Roughness);
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
     static bool FitCampaignSoil(const TArray<AActor*>& SoilActors, const TArray<AActor*>& SourceActors);
@@ -31,6 +36,8 @@ public:
     static TArray<AActor*> CopyExperienceActors(const FString& SourceMap, FVector Offset, FName AreaTag, TSubclassOf<AActor> ActorClass = nullptr);
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Showcase")
     static bool BuildTreasureMeshes();
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Showcase")
+    static bool BuildCrystalClueMesh();
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Showcase")
     static TArray<AActor*> ImportShowcaseRoom(const FString& SourceMap, FVector Offset, const TArray<FString>& ExcludedLabels);
 	UFUNCTION(BlueprintCallable, Category="Mining Designer")

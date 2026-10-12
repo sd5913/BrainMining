@@ -35,7 +35,7 @@ int32 SEchoPassageView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const 
     else
     {
         // Quiet center reticle remains legible without revealing the environment.
-        Box(797,448,6,2,FLinearColor(.55f,.59f,.6f));Box(799,446,2,6,FLinearColor(.55f,.59f,.6f));
+        if (!Owner->bUseSharedInteractionHUD) { Box(797,448,6,2,FLinearColor(.55f,.59f,.6f));Box(799,446,2,6,FLinearColor(.55f,.59f,.6f)); }
         FString Hint;
         if(Time-Stage->LandingTime<6)Hint=TEXT("什么也看不见……用镐子敲一下试试。");
         else if(Time<Owner->FeedbackUntil)Hint=Owner->Feedback;

@@ -1,4 +1,5 @@
 #include "WenSi/WenSiPuzzle.h"
+#include "MiningInteractionHUDWidget.h"
 #include "Fonts/CompositeFont.h"
 #include "Input/DragAndDrop.h"
 #include "InputCoreTypes.h"
@@ -107,7 +108,7 @@ TSharedRef<SWidget> UWenSiPuzzleWidget::RebuildWidget()
  auto Overlay=SNew(SOverlay)
   +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center).Padding(24,0)[SAssignNew(Cards[0],SBorder).BorderImage(FCoreStyle::Get().GetBrush(TEXT("NoBrush")))[MakeCard(0)]]
   +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center).Padding(24,0)[SAssignNew(Cards[1],SBorder).BorderImage(FCoreStyle::Get().GetBrush(TEXT("NoBrush")))[MakeCard(1)]]
-  +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("·"))).Font(ThoughtFont(24)).Visibility_Lambda([this](){return Puzzle.IsValid() && !Puzzle->bEditing && (!Puzzle->bComplete || Puzzle->ResetButton) ? EVisibility::HitTestInvisible:EVisibility::Collapsed;})]
+  +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("·"))).Font(ThoughtFont(24)).Visibility_Lambda([this](){return !UMiningInteractionHUDWidget::IsActiveFor(GetOwningPlayer()) && Puzzle.IsValid() && !Puzzle->bEditing && (!Puzzle->bComplete || Puzzle->ResetButton) ? EVisibility::HitTestInvisible:EVisibility::Collapsed;})]
   +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,40)[SAssignNew(Hint,STextBlock).Font(ThoughtFont(18)).ColorAndOpacity(FLinearColor::White).ShadowOffset(FVector2D(1,1))];
  Signature.Empty();
  return Overlay;
@@ -145,13 +146,14 @@ void UWenSiPuzzleWidget::Refresh()
   }
  }
  FString Message;
- if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("E 重置谜题");
+ const bool SharedHUD = UMiningInteractionHUDWidget::IsActiveFor(GetOwningPlayer());
+ if(Puzzle->bAimReset && !Puzzle->bEditing) { if (!SharedHUD) Message=TEXT("E 重置谜题"); }
  else if (!Puzzle->bComplete)
  {
   if (Puzzle->bEditing) Message=TEXT("拖动红词交换    G 返回    × 放下思考");
   else
   {
-   if (Puzzle->Aim!=INDEX_NONE) Message=TEXT("E 思考    ");
+   if (Puzzle->Aim!=INDEX_NONE && !SharedHUD) Message=TEXT("E 思考    ");
    if(Puzzle->Thoughts[0].IsValid() || Puzzle->Thoughts[1].IsValid()) Message+=TEXT("G 重组    Q 放下左侧    R 放下右侧");
   }
  }

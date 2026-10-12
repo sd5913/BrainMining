@@ -14,6 +14,7 @@ class AMiningGiantRoomEntrance;
 class UMiningGUIHUDWidget;
 class UPostProcessComponent;
 class SWidget;
+class ULevelStreaming;
 
 UENUM(BlueprintType)
 enum class EMiningExperienceKind : uint8 { Legacy, Mining, Collection, Journey, Office, Museum, Ending };
@@ -34,6 +35,8 @@ struct FMiningExperienceArea
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TObjectPtr<AActor> ProgressGate;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FBox MiningBounds = FBox(ForceInit);
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FBox ActivationBounds = FBox(ForceInit);
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Source Room") TObjectPtr<ULevelStreaming> SourceLevel;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Source Room") TArray<FName> SuppressedSourceActors;
 };
 
 UCLASS()
@@ -51,6 +54,7 @@ class BRAINMINING_API AMiningExhibitGameMode : public AGameModeBase
     GENERATED_BODY()
 public:
     AMiningExhibitGameMode();
+    virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 };
 
 UCLASS()

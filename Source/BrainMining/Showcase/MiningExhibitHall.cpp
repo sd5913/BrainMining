@@ -61,7 +61,7 @@ bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
         if (Params.Key==EKeys::I) { if(Params.Event==IE_Pressed) Hall->ToggleCatalogue(); return true; }
         if (Params.Key==EKeys::F6) { if(Params.Event==IE_Pressed) Hall->ReturnToLobby(); return true; }
         if (Params.Key==EKeys::F7) { if(Params.Event==IE_Pressed) Hall->SkipCurrentRoom(); return true; }
-        if (Params.Key==EKeys::E && Params.Event==IE_Pressed && Hall->AreaKind(Hall->ActiveArea)==EMiningExperienceKind::Collection && !Hall->IsInteractionOpen() && Hall->Treasure && Hall->Treasure->CollectTarget(this)) return true;
+        if (Params.Key==EKeys::E && Params.Event==IE_Pressed && !Hall->IsInteractionOpen() && Hall->Treasure && Hall->Treasure->IsAreaActive() && Hall->Treasure->CollectTarget(this)) return true;
         if (Params.Key==EKeys::E && Hall->ActiveArea==INDEX_NONE && !Hall->IsInteractionOpen())
         { if(Params.Event==IE_Pressed) Hall->InteractPortal(); return true; }
     }
@@ -123,7 +123,7 @@ bool AMiningExhibitHall::InitializeAreas()
 
 void AMiningExhibitHall::RegisterActor(AActor* Actor)
 {
-    if(!IsValid(Actor) || Actor==this || Actor==Collection || !Actor->GetRootComponent() || KnownActors.Contains(Actor) || Actor->ActorHasTag(TEXT("BM_PlayerEffect")) || Actor->IsA<APawn>() || Actor->IsA<AController>() || Actor->IsA<AHUD>() || Actor->IsA<APlayerCameraManager>() || (Collection && Actor==Collection->Preview)) return;
+    if(!IsValid(Actor) || Actor==this || Actor==Collection || Actor==Treasure || !Actor->GetRootComponent() || KnownActors.Contains(Actor) || Actor->ActorHasTag(TEXT("BM_PlayerEffect")) || Actor->IsA<APawn>() || Actor->IsA<AController>() || Actor->IsA<AHUD>() || Actor->IsA<APlayerCameraManager>() || (Collection && Actor==Collection->Preview)) return;
     int32 AreaIndex=INDEX_NONE;
     bool bExplicit=Actor->ActorHasTag(TEXT("BM_Hub"));
     for(int32 Index=0; Index<Areas.Num(); ++Index) if(Actor->ActorHasTag(Areas[Index].Tag)) { AreaIndex=Index; bExplicit=true; break; }
@@ -209,7 +209,12 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
     const auto Kind=AreaKind(Index);
     UpdateActorVisibility();
     Collection->SetAreaActive(Kind==EMiningExperienceKind::Collection || (bLinearCampaign && Kind==EMiningExperienceKind::Mining));
-    if(Treasure) Treasure->SetAreaActive(Kind==EMiningExperienceKind::Collection);
+    if(Treasure)
+    {
+        Treasure->ActiveAreaTag=Areas.IsValidIndex(Index)?Areas[Index].Tag:NAME_None;
+        Treasure->SetActorTickEnabled(true);
+        Treasure->SetAreaActive(Kind==EMiningExperienceKind::Collection || (bContinuousCampaign && Kind==EMiningExperienceKind::Mining));
+    }
     if(Office) Office->SetAreaActive(Kind==EMiningExperienceKind::Office);
     if(Museum) Museum->SetAreaActive(Kind==EMiningExperienceKind::Museum);
     if(Ending) Ending->SetAreaActive(Kind==EMiningExperienceKind::Ending);
@@ -397,6 +402,7 @@ FString AMiningExhibitHall::StatusText() const
         if(bContinuousCampaign && CompletedAreas.Contains(ActiveArea) && AreaKind(ActiveArea)!=EMiningExperienceKind::Mining) Hint=TEXT("本段完成，出口已打开；沿通道步行前往下一段。");
         else if(CompletionDelay>0 && AreaKind(ActiveArea)!=EMiningExperienceKind::Mining) Hint=TEXT("本段完成，正在前往下一段……");
         if(AreaKind(ActiveArea)==EMiningExperienceKind::Ending && Ending) Hint=Ending->Hint();
+        if(Treasure && Treasure->IsAreaActive() && Treasure->Target) Hint=Treasure->GetPrompt();
         if(bCampaignComplete) Hint=TEXT("全流程完成。可按 F4 回访已到达的区域，补齐藏品。");
         return FString::Printf(TEXT("%d / %d · %s    藏品 %d / 4\n%s\nM 地图   I 图鉴   Tab 升级   F4 已到达区域   F6 本段入口\nF7 跳过当前小游戏（保留藏品）"),ActiveArea+1,Areas.Num(),Areas.IsValidIndex(ActiveArea)?*Areas[ActiveArea].Title.ToString():TEXT(""),Collection?Collection->UniqueCount():0,*Hint);
     }

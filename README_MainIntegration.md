@@ -33,6 +33,12 @@
 
 藏品单独记录在图鉴，不自动出售。卡牌奖励保持原玩法用途，未转换成金币。暂未新增磁盘存档，关闭游戏或重新开始 PIE 会重开一轮。价格与数值仅供当前展示，整体经济、叙事和其余规则冲突后续再调整。
 
+### 矿石体验入口
+
+进入“藏品、矿物宝物与金币”后，正前方是两排各九块的可挖岩石，身后是藏品探索区。沿中间通道靠近岩块，按左键挖掘；矿物露出严格超过 50% 后，瞄准并按 E 领取统一金币。外层岩块不直接显示完整矿物，需要先挖开。
+
+2026-10-12 修复了导入后残留的入口挡墙，同时调整出生朝向与双向指示牌。墙体复制后名称会带后缀，生成脚本现在按名称前缀识别并移除它，避免重建地图时再次堵路。
+
 ## 来源
 
 | 来源 | 核对提交 | 保留内容 |
@@ -55,8 +61,11 @@
 - Saved/MainExperiencesManifest.json 记录源地图、复制数量和出生点；Saved/SixAreasPreview 保存试玩截图。
 - 自动化入口：BrainMining.SixAreas.PersistentWorldAndEconomy，验证同一 World / Pawn、六区版本与引用、真实 E / I / Tab / F4 / F6 交互、矿物结算、升级扣费和跨区保持。
 - BrainMining.SixAreas.SharedCharacterPresentation 验证镐头与双钻头在 4:3、16:10、16:9 视野内、V / 左键钻机旋转、到期收起及回声区往返后矿灯恢复；截图保存在 Saved/SharedTools。
+- Scripts/verify_main_treasure_access.py 使用完整编辑器的 -ExecutePythonScript 运行，验证从正常区域入口步行到矿石、真实左键挖掘、E 领取金币及离区返回后的状态；不直接传送到矿物旁。报告和截图位于 Saved/Validation/MainTreasureAccess。
 
 ## 验证记录
+
+- 2026-10-12 矿石入口专项：修复前，正常入口步行在挡墙处失败；修复后，18 件矿物生成、入口可见、步行抵达、左键挖出铜矿并领取 11 金币、离区返回保留领取状态和同一角色均通过。已检查入口与挖开矿物的实际截图。本次仅修改地图、生成脚本与验证脚本，无 C++ 变更。
 
 - UE 5.8.2：BrainMiningEditor Win64 Development 与 BrainMining Win64 Shipping 编译均通过。日志：Saved/six-areas-build.log、Saved/six-areas-shipping.log。
 - 最终专项 6/6 通过，无警告、无失败。报告：Saved/Automation/SixAreasFinal/index.json。

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/HitResult.h"
 #include "Components/ActorComponent.h"
 #include "MiningComponent.generated.h"
 
@@ -86,6 +87,7 @@ public:
 	float FallResetDistance = 2000.0f;
     bool bScopedReset = false;
     FBox ResetBounds = FBox(ForceInit);
+    FName ResetAreaTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining")
 	bool bShowPreview = false;

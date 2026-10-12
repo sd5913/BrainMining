@@ -2,13 +2,13 @@
 
 ## main 整合入口
 
-当前 main 的默认地图为六区体验关卡。双击 Play_Main.cmd，靠近大厅入口按 E，或按 F4 选择区域。同一角色在同一个 Persistent Level 内移动，金币、藏品和升级跨区保留。Tab 升级，I 图鉴，F6 返回大厅。源码更新后先编译 BrainMiningEditor。
+当前默认地图为全流程试玩关卡。双击 Play_Main.cmd 或 Play_FullJourney.cmd，依次体验三段挖掘与四个怪诞房间。同一角色、同一 Persistent Level，四类收藏跨段保留。详见 [全流程试玩与重新拼装说明](README_FullJourney.md)。源码更新后先编译 BrainMiningEditor。
 
-完整入口、来源版本和整合边界见 [main 整合说明](README_MainIntegration.md)。六区独立展示，暂未串成一条完整故事路线。
+原六区大厅保留，通过 Play_Main.cmd -Experience Overview 打开；其来源和展示规则见 [main 整合说明](README_MainIntegration.md)。
 
 ## 六区体验地图
 
-默认入口：/Game/Showcase/Maps/Lvl_MainExperiences。
+旧展示大厅入口：/Game/Showcase/Maps/Lvl_MainExperiences。
 六区分别为 Shen-Yilang 矿区、藏品与矿物金币、回声到巨人卡牌及电视逃生、四设备办公室、新版文思博物馆、细胞宇宙。所有场景复制到主关卡，区域菜单只移动角色，没有 OpenLevel 或运行时子关卡切换。
 原连续七区地图与成员独立地图作为开发和回归入口保留。旧地图说明见 [README_ContinuousShowcase.md](README_ContinuousShowcase.md)，其按键和功能不代表当前默认六区地图。
 
@@ -53,7 +53,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Editor build failed; inspect the build output 
 ```
 
 也可以右键工程文件生成 Visual Studio 工程文件，然后构建 `Development Editor / Win64`。生成的解决方案和 IDE 文件不提交。
-默认地图为 `/Game/MiningPrototype/Maps/Lvl_MiningLab`，打开后点击 Play 验证。
+默认地图为 `/Game/Campaign/Maps/Lvl_FullJourney`，打开后点击 Play 验证。
 首次编译、着色器编译和派生数据生成需要时间。仅做美术或蓝图且不准备安装编译环境的成员，需要团队另行提供与源码提交匹配的编辑器模块构建产物。
 
 ## 协作约定

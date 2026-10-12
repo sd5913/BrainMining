@@ -243,12 +243,12 @@ void UMiningComponent::ResetField()
 	}
 	for (TActorIterator<ADiggableRock> Rock(GetWorld()); Rock; ++Rock)
 	{
-		if (bScopedReset && !ResetBounds.IsInsideOrOn(Rock->GetActorLocation())) continue;
+		if (bScopedReset && (ResetAreaTag.IsNone() ? !ResetBounds.IsInsideOrOn(Rock->GetActorLocation()) : !Rock->ActorHasTag(ResetAreaTag))) continue;
 		Rock->ResetRock();
 	}
 	for (TActorIterator<AMiningTunnelGenerator> Generator(GetWorld()); Generator; ++Generator)
 	{
-		if (bScopedReset && !ResetBounds.IsInsideOrOn(Generator->GetActorLocation())) continue;
+		if (bScopedReset && (ResetAreaTag.IsNone() ? !ResetBounds.IsInsideOrOn(Generator->GetActorLocation()) : !Generator->ActorHasTag(ResetAreaTag))) continue;
 		Generator->ResetProgression();
 	}
 	NextMineTime = 0.0;

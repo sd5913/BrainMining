@@ -13,6 +13,7 @@ class BRAINMINING_API APopupCloseOffice : public AActor
  GENERATED_BODY()
 public:
  APopupCloseOffice();
+ UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bWalkThroughConnections=false;
  virtual void OnConstruction(const FTransform& Transform) override;
  int32 GetDetailCount() const;
 private:

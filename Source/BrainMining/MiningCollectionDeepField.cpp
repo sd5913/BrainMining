@@ -139,13 +139,15 @@ bool AMiningCollectionField::FindBirdExit(TArray<FVector>& Path) const
     const auto& Mesh=Rock->RockMesh->GetDynamicMesh()->GetMeshRef();
     UE::Geometry::FDynamicMeshAABBTree3 Tree(&Mesh,true);
     UE::Geometry::TFastWindingTree<UE::Geometry::FDynamicMesh3> Winding(&Tree);
-    const FVector Origin=ResidentBird->GetActorLocation()+FVector(-60,0,45),Center=Rock->GetActorLocation(),Half=Rock->RockSize*.5f;
+    Path.Reset();
+    const FTransform Frame=Rock->GetActorTransform();
+    const FVector Origin=Frame.InverseTransformPosition(ResidentBird->GetActorLocation())+FVector(-60,0,45),Center=FVector::ZeroVector,Half=Rock->RockSize*.5f;
     const float Front=Center.X-Half.X;
     auto Air=[&](FVector P)
     {
         if(P.Z<Center.Z-Half.Z+30||P.Z>Center.Z+Half.Z-30||FMath::Abs(P.Y-Center.Y)>Half.Y-30||P.X>Center.X+Half.X-30||P.X<Front-110) return false;
         for(FVector Offset:{FVector::ZeroVector,FVector(24,0,0),FVector(-24,0,0),FVector(0,24,0),FVector(0,-24,0),FVector(0,0,24),FVector(0,0,-24)})
-            if(Mesh.TriangleCount()>0&&FMath::Abs(Winding.FastWindingNumber(Rock->GetActorTransform().InverseTransformPosition(P+Offset)))>.5) return false;
+            if(Mesh.TriangleCount()>0&&FMath::Abs(Winding.FastWindingNumber(P+Offset))>.5) return false;
         return true;
     };
     if(!Air(Origin)) return false;
@@ -168,7 +170,23 @@ bool AMiningCollectionField::FindBirdExit(TArray<FVector>& Path) const
     }
     if(End==INDEX_NONE) return false;
     for(int Id=End;Id!=INDEX_NONE;Id=Parent[Id]) Path.Insert(Origin+FVector(Queue[Id])*65,0);
-    const FVector Exit=Path.Last(); Path.Add(Exit+FVector(-350,0,130)); Path.Add(Exit+FVector(-850,0,850));
+    for(FVector& P:Path) P=Frame.TransformPosition(P);
+    const FVector Exit=Path.Last();
+    if(!bBuriedWithClues)
+    {Path.Add(Exit+Frame.TransformVector(FVector(-350,0,130)));Path.Add(Exit+Frame.TransformVector(FVector(-850,0,850)));}
+    else
+    {
+        // The campaign is an enclosed cave. Clip the flight to clear air instead of flying through the opposite wall.
+        FCollisionQueryParams Query(SCENE_QUERY_STAT(CampaignBirdFlight),true,ResidentBird.Get());
+        if(Player && Player->GetPawn())Query.AddIgnoredActor(Player->GetPawn());
+        for(FVector Delta:{Frame.TransformVector(FVector(-150,0,15)),FVector(280,0,35),FVector(260,0,25)})
+        {
+            FHitResult Hit;const FVector Start=Path.Last(),Destination=Start+Delta;
+            const bool Blocked=GetWorld()->SweepSingleByChannel(Hit,Start,Destination,FQuat::Identity,ECC_Visibility,FCollisionShape::MakeSphere(22),Query);
+            const FVector Next=Blocked?Start+Delta*FMath::Max(0.f,Hit.Time-.08f):Destination;
+            if(FVector::Distance(Start,Next)>30)Path.Add(Next);
+        }
+    }
     return true;
 }
 
@@ -179,8 +197,23 @@ void AMiningCollectionField::TickAmbient(float Dt)
     for(FCollectionAnt& Ant:Ants) if(Ant.Actor.IsValid())
     {
         const float T=FMath::Fmod(AmbientTime*32/Ant.Length+Ant.Phase,1.f);
-        Ant.Actor->SetActorLocation(Ant.Start+FVector(T*Ant.Length,FMath::Sin(T*PI*4+Ant.Phase)*5,.4f*FMath::Sin(AmbientTime*20)));
-        Ant.Actor->SetActorRotation(FRotator(0,FMath::Cos(T*PI*4+Ant.Phase)*8,0));
+        if(Ant.Actor->ActorHasTag(TEXT("CampaignWallAnt")))
+        {
+            auto* Surface=Cast<ADiggableRock>(Ant.Actor->GetOwner());FHitResult Hit;
+            const FVector Local=Ant.Start+FVector(0,T*Ant.Length,FMath::Sin(T*PI*4+Ant.Phase)*4);
+            const bool Supported=Surface && Surface->ActorLineTraceSingle(Hit,Ant.Frame.TransformPosition(Local-FVector(50,0,0)),Ant.Frame.TransformPosition(Local+FVector(50,0,0)),ECC_Visibility,FCollisionQueryParams(NAME_None,true));
+            Ant.Actor->SetActorHiddenInGame(!Supported);
+            if(Supported)
+            {
+                Ant.Actor->SetActorLocation(Hit.ImpactPoint+Hit.ImpactNormal*1.5);
+                Ant.Actor->SetActorRotation(FRotationMatrix::MakeFromXZ(Ant.Frame.TransformVector(FVector(0,1,0)),Hit.ImpactNormal).ToQuat());
+            }
+        }
+        else
+        {
+            Ant.Actor->SetActorLocation(Ant.Frame.TransformPosition(Ant.Start+FVector(T*Ant.Length,FMath::Sin(T*PI*4+Ant.Phase)*5,.4f*FMath::Sin(AmbientTime*20))));
+            Ant.Actor->SetActorRotation(Ant.Frame.GetRotation()*FRotator(0,FMath::Cos(T*PI*4+Ant.Phase)*8,0).Quaternion());
+        }
         for(int i=0;i<Ant.Legs.Num();++i) if(Ant.Legs[i].IsValid()) Ant.Legs[i]->SetRelativeRotation(FRotator(0,FMath::Sin(AmbientTime*18+i*PI)*27,0));
     }
     if(ResidentBird.IsValid()&&!ResidentBird->bCollected)

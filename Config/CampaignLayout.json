@@ -1,0 +1,121 @@
+{
+  "map": "/Game/Campaign/Maps/Lvl_FullJourney",
+  "continuous": true,
+  "mine_scale": 0.5,
+  "mine_centerlines": "Art/Mining/TunnelWideV2/centerlines.json",
+  "mine_blockers": "Art/Mining/TunnelFill50V3/placement_plan.json",
+  "stages": [
+    {
+      "id": "Mine01",
+      "title": "挖掘 01 · 初入矿道",
+      "kind": "MINING",
+      "source": "/Game/ExternalMining/Maps/Lvl_ExternalMining_Demo",
+      "offset": [
+        -250000,
+        0,
+        0
+      ],
+      "hint": "沿青色路标向下挖掘，到矿道末端进入电脑房。本段有 2 件藏品。",
+      "collectibles": [
+        {
+          "item_id": 0,
+          "gap_after": 1
+        },
+        {
+          "item_id": 1,
+          "gap_after": 2
+        }
+      ],
+      "start_arc_m": 4,
+      "end_arc_m": 126
+    },
+    {
+      "id": "Office",
+      "title": "房间 1 · 电脑弹窗",
+      "kind": "OFFICE",
+      "source": "/Game/PopupClose/Maps/Lvl_PopupClose",
+      "offset": [
+        -250000,
+        -100000,
+        0
+      ],
+      "hint": "进门自动开始办公；靠近电脑或打印机，瞄准后按 E 处理，完成喷发后继续。"
+    },
+    {
+      "id": "Mine02",
+      "title": "挖掘 02 · 深入矿道",
+      "kind": "MINING",
+      "source": "/Game/ExternalMining/Maps/Lvl_ExternalMining_Demo",
+      "offset": [
+        -150000,
+        0,
+        0
+      ],
+      "hint": "沿青色路标向下挖掘，前往回声与卡牌房。本段有 1 件藏品。",
+      "collectibles": [
+        {
+          "item_id": 2,
+          "gap_after": 5
+        }
+      ],
+      "start_arc_m": 174.5,
+      "end_arc_m": 279
+    },
+    {
+      "id": "Journey",
+      "title": "房间 2 · 盲人敲地与卡牌",
+      "kind": "JOURNEY",
+      "source": "/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P1",
+      "offset": [
+        0,
+        0,
+        0
+      ],
+      "hint": "完成回声探索、巨人牌局和电视逃生后，继续下一段矿道。"
+    },
+    {
+      "id": "Mine03",
+      "title": "挖掘 03 · 通向博物馆",
+      "kind": "MINING",
+      "source": "/Game/ExternalMining/Maps/Lvl_ExternalMining_Demo",
+      "offset": [
+        150000,
+        0,
+        0
+      ],
+      "hint": "沿青色路标向下挖掘，前往文思博物馆。本段有 1 件藏品。",
+      "collectibles": [
+        {
+          "item_id": 3,
+          "gap_after": 10
+        }
+      ],
+      "start_arc_m": 395,
+      "end_arc_m": 459.6
+    },
+    {
+      "id": "Museum",
+      "title": "房间 3 · 文思泉涌",
+      "kind": "MUSEUM",
+      "source": "/Game/WenSi/Maps/Lvl_WenSi_ScreenBridge",
+      "offset": [
+        250000,
+        -100000,
+        0
+      ],
+      "hint": "完成博物馆的压力与导电机关后，进入结局。"
+    },
+    {
+      "id": "Ending",
+      "title": "结局房间 · 宇宙细胞",
+      "kind": "ENDING",
+      "source": "/Game/CellUniverse/Maps/Lvl_CellUniverse_Demo",
+      "offset": [
+        250000,
+        0,
+        0
+      ],
+      "hint": "挖掘并穿过十一段尺度旅程，完成本轮试玩。"
+    }
+  ]
+}

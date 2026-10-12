@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Templates/SubclassOf.h"
 #include "MiningDesignerLibrary.generated.h"
 
 class AActor;
@@ -17,6 +18,15 @@ class BRAINMININGEDITOR_API UMiningDesignerLibrary : public UBlueprintFunctionLi
 {
 	GENERATED_BODY()
 public:
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool BuildCampaignSoil(AActor* Actor, FVector Size, FVector Roughness);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool FitCampaignSoil(const TArray<AActor*>& SoilActors, const TArray<AActor*>& SourceActors);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static FVector FindCampaignWall(AActor* Rock, FVector Start, FVector End);
+    // Bake a compact source-rock excerpt and door/cache openings. Box scales are full sizes in cm.
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool BakeCampaignRock(AActor* Actor, FVector BoundsMin, FVector BoundsMax, const TArray<FTransform>& Openings);
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Showcase")
     static TArray<AActor*> CopyExperienceActors(const FString& SourceMap, FVector Offset, FName AreaTag, TSubclassOf<AActor> ActorClass = nullptr);
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Showcase")

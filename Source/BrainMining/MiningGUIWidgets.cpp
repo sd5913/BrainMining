@@ -329,6 +329,18 @@ void UMiningGUIHUDWidget::ForwardLevel(int32 Index, int32 Level) { OnLevelChange
 void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 {
 	Super::NativeTick(Geometry, DeltaTime);
+	const APawn* AimPawn = GetOwningPlayerPawn();
+	const auto* AimMining = AimPawn ? AimPawn->FindComponentByClass<UMiningComponent>() : nullptr;
+	const auto* AimBomb = AimPawn ? AimPawn->FindComponentByClass<UMiningBombToolComponent>() : nullptr;
+	const auto* AimController = GetOwningPlayer();
+	const bool bShowAim = AimMining && AimController && !AimController->IsPaused()
+		&& !bUpgradePanelOpen && !AimMining->IsInputSuspended()
+		&& !AimController->bShowMouseCursor && !AimController->IsLookInputIgnored()
+		&& AimController->GetViewTarget() == AimPawn;
+	const int32 AimTool = AimBomb && AimBomb->bEquipped ? 2 : AimMining && AimMining->bDrillMode ? 1 : 0;
+	const FName ReticleNames[] = { TEXT("ReticlePickaxe"), TEXT("ReticleDrill"), TEXT("ReticleBomb") };
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(ReticleNames); ++Index)
+		Visible(GetWidgetFromName(ReticleNames[Index]), bShowAim && AimTool == Index);
 	if (JetpackHeatBar)
 	{
 		const auto* Pawn = GetOwningPlayerPawn();
@@ -342,6 +354,8 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 	{
 		const APawn* Pawn = GetOwningPlayerPawn();
 		const auto* Bomb = Pawn ? Pawn->FindComponentByClass<UMiningBombToolComponent>() : nullptr;
+		AbilityG->SetAvailable(Bomb && Bomb->IsSkillUnlocked());
+		SetItemUnlocked(2, Bomb && Bomb->IsSkillUnlocked());
 		AbilityG->SetUsed(Bomb && Bomb->bEquipped);
 		AbilityG->SetCooldownRemaining(0.f);
 		if (Bomb && Bomb->bUseInventory && AbilityG->CooldownText)

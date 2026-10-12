@@ -88,6 +88,8 @@ FText UMiningProgressionComponent::GetNextDescription(int32 TrackIndex) const
 bool UMiningProgressionComponent::Purchase(int32 TrackIndex, int32 RequestedLevel)
 {
     if (!bInitialized || !Tracks.IsValidIndex(TrackIndex)) return false;
+    if (TrackIndex == 2)
+        if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); !Bomb || !Bomb->IsSkillUnlocked()) return false;
     auto* Wallet = GetOwner()->GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     const int32 Current = Wallet->GetUpgradeLevel(TrackIndex);
     const auto& Steps = Tracks[TrackIndex].Steps;

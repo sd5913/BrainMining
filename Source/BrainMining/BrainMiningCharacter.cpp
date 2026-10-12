@@ -83,14 +83,16 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 	BombMount = CreateDefaultSubobject<USceneComponent>(TEXT("BombMount"));
 	BombMount->SetupAttachment(FirstPersonCameraComponent);
 	BombMount->SetRelativeLocationAndRotation(FVector(45, 23, -20), FRotator(-12, 0, -8));
+	BombMotion = CreateDefaultSubobject<USceneComponent>(TEXT("BombMotion"));
+	BombMotion->SetupAttachment(BombMount);
 	BombModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BombModel"));
-	BombModel->SetupAttachment(BombMount);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> BombAsset(TEXT("/Game/Bomb/SM_Bomb.SM_Bomb"));
+	BombModel->SetupAttachment(BombMotion);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> BombAsset(TEXT("/Game/Bomb/SM_StickyBomb.SM_StickyBomb"));
 	BombModel->SetStaticMesh(BombAsset.Object);
 	if (BombAsset.Object) BombModel->SetRelativeLocation(-BombAsset.Object->GetBounds().Origin);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> PickaxeAsset(TEXT("/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> DrillAsset(TEXT("/Game/Drill/SM_Drill.SM_Drill"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> DrillAsset(TEXT("/Game/Drill/Stylized/SM_DrillStylized.SM_DrillStylized"));
 	PickaxeModel->SetStaticMesh(PickaxeAsset.Object);
 	DrillRightModel->SetStaticMesh(DrillAsset.Object);
 	DrillLeftModel->SetStaticMesh(DrillAsset.Object);

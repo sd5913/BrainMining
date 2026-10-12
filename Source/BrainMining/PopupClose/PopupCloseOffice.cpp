@@ -59,17 +59,23 @@ void APopupCloseOffice::BuildOffice()
   Groups[Group]->AddInstance(FTransform(R,PopupCloseLayout::Compress(P),PopupCloseLayout::Compress(Size)/100.f));
  };
  // Keep the smaller office and bridge its doors to the existing campaign tunnels.
- if(!bWalkThroughConnections) Box(0,FVector(1200,0,180),FVector(20,1800,360));
- else
+ // The positive-X doorway is the bomb exit, including in the standalone map.
  {
   for(float Y:{-510.f,510.f}) Box(0,FVector(1200,Y,180),FVector(20,780,360));
   Box(0,FVector(1200,0,325),FVector(20,240,70));
   for(float Side:{-1.f,1.f})
   {
+   if(Side<0 && !bWalkThroughConnections)continue;
    // Box applies the 5/6 room compression: these join x=1000 to x=1200.
    Box(0,FVector(Side*1320,0,-10),FVector(240,264,20));
    Box(0,FVector(Side*1320,0,370),FVector(240,264,20));
    for(float Y:{-132.f,132.f})Box(0,FVector(Side*1320,Y,180),FVector(240,24,360));
+  }
+  if(!bWalkThroughConnections)
+  {
+   Box(0,FVector(1770,0,-10),FVector(660,264,20));
+   Box(0,FVector(1770,0,370),FVector(660,264,20));
+   for(float Y:{-132.f,132.f})Box(0,FVector(1770,Y,180),FVector(660,24,360));
   }
  }
  Box(0,FVector(-1200,-510,180),FVector(20,780,360));
@@ -148,7 +154,7 @@ void APopupCloseOffice::BuildOffice()
  Box(0,FVector(-840,290,157),FVector(190,82,6));Box(3,FVector(-808,290,182),FVector(45,43,45));
  Box(10,FVector(-850,290,168),FVector(18,18,18));
  for(int32 Cup=0;Cup<4;++Cup)Box(10,FVector(-905+Cup*14,270,166),FVector(8,8,12));
- const float NoticeY=bWalkThroughConnections?-500.f:30.f;
+ const float NoticeY=-500.f;
  Box(2,FVector(1185,NoticeY,236),FVector(5,200,118));Box(9,FVector(1181,NoticeY,236),FVector(2,184,103));
  for(int32 Note=0;Note<7;++Note)Box(Note%2?5:4,FVector(1178,NoticeY-74+Note%4*45,215+Note/4*40),FVector(1,30,29));
  for(FVector P:{FVector(-1070,-750,0),FVector(-1070,750,0),FVector(1050,-750,0),FVector(1030,750,0)})

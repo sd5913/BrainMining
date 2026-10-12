@@ -340,12 +340,12 @@ void AMiningShowcaseDirector::ActivateLoadedExhibit()
     }
     const EMiningShowcaseKind Kind = GetActiveKind();
     if (Kind == EMiningShowcaseKind::Mining) Player()->ClientSetHUD(AMiningHUD::StaticClass());
-    else if (Kind != EMiningShowcaseKind::Collection)
+    else if (Kind != EMiningShowcaseKind::Collection && Kind != EMiningShowcaseKind::Popup)
     {
         Policy->Apply(Player()->GetPawn());
         if (auto* Movement = Player()->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) Movement->FlightSettings.bEnabled = false;
     }
-    if (auto* Controller = Cast<ABrainMiningPlayerController>(Player())) Controller->SetMiningGUIEnabled(Kind == EMiningShowcaseKind::Mining);
+    if (auto* Controller = Cast<ABrainMiningPlayerController>(Player())) Controller->SetMiningGUIEnabled(Kind == EMiningShowcaseKind::Mining || Kind == EMiningShowcaseKind::Popup);
     if (Kind == EMiningShowcaseKind::Echo)
     {
         for (AActor* Actor : Level->Actors) if (auto* Stage = Cast<AEchoPassageStage>(Actor))
@@ -460,7 +460,7 @@ void AMiningShowcaseDirector::Tick(float DeltaSeconds)
         if (GetActiveKind() == EMiningShowcaseKind::WenSi)
             for (TActorIterator<AWenSiPuzzle> Puzzle(GetWorld()); Puzzle; ++Puzzle) if (Puzzle->bComplete) ReportCompletion(Exhibits[ActiveIndex].Id);
         if (GetActiveKind() == EMiningShowcaseKind::Popup)
-            for (TActorIterator<APopupCloseStage> Stage(GetWorld()); Stage; ++Stage) if (Stage->GetCompletedSessions() > 0) ReportCompletion(Exhibits[ActiveIndex].Id);
+            for (TActorIterator<APopupCloseStage> Stage(GetWorld()); Stage; ++Stage) if (Stage->IsOfficeEscaped()) ReportCompletion(Exhibits[ActiveIndex].Id);
     }
 }
 void AMiningShowcaseDirector::EndPlay(const EEndPlayReason::Type Reason)

@@ -8,6 +8,10 @@
 #include "MiningCellUniverse.h"
 #include "PopupClose/PopupCloseStage.h"
 #include "PopupClose/PopupOfficeDevice.h"
+#include "MiningBombToolComponent.h"
+#include "MiningBombActor.h"
+#include "Components/SphereComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "WenSi/WenSiPuzzle.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
 #include "Camera/PlayerCameraManager.h"
@@ -160,6 +164,46 @@ public:
         }
         else if(Step==10)
         {
+            if(Hall->ActiveArea==1)
+            {
+                auto* Office=First<APopupCloseStage>(World);
+                auto* Bomb=Pawn->FindComponentByClass<UMiningBombToolComponent>();
+                if(!Office || !Bomb)return false;
+                if(OfficeBombAction==0)
+                {
+                    if(!Office->GetExitStatus().Contains(TEXT("Exit phase=2")))return false;
+                    UStaticMeshComponent* Pickup=nullptr;TArray<UStaticMeshComponent*> OfficeMeshes;Office->GetComponents(OfficeMeshes);
+                    for(auto Mesh:OfficeMeshes)if(Mesh->GetName()==TEXT("OfficeBombSkillPickup")){Pickup=Mesh;break;}
+                    if(!Pickup || !Pickup->GetAttachParent())return false;
+                    const FVector PickupTarget=Pickup->GetAttachParent()->GetComponentLocation();
+                    FVector Local=Office->GetActorTransform().InverseTransformPosition(PickupTarget);Local.X-=110.f;Local.Z=98;
+                    Place(Office->GetActorTransform().TransformPosition(Local));
+                    FVector Eye;FRotator R;PC->GetPlayerViewPoint(Eye,R);
+                    PC->SetControlRotation((PickupTarget-Eye).Rotation());
+                    PC->PlayerCameraManager->UpdateCamera(.01f);Key(EKeys::E,IE_Pressed);
+                }
+                else if(OfficeBombAction==1)
+                {
+                    Key(EKeys::E,IE_Released);if(!Test->TestTrue(TEXT("Office pickup unlocks the campaign bomb skill"),Bomb->IsSkillUnlocked()))return true;
+                    PC->SetControlRotation(Office->GetActorRotation());Key(EKeys::G,IE_Pressed);
+                }
+                else if(OfficeBombAction==2){Key(EKeys::G,IE_Released);Key(EKeys::LeftMouseButton,IE_Pressed);}
+                else if(OfficeBombAction==3)
+                {
+                    Key(EKeys::LeftMouseButton,IE_Released);
+                    if(!Test->TestTrue(TEXT("Campaign throws a real ability bomb"),Bomb->LastThrownBomb.IsValid()))return true;
+                    Bomb->LastThrownBomb->SetActorLocation(Office->GetActorTransform().TransformPosition(FVector(968,0,85)),false,nullptr,ETeleportType::TeleportPhysics);
+                    Bomb->LastThrownBomb->Collision->SetPhysicsLinearVelocity(FVector::ZeroVector);
+                }
+                else
+                {
+                    if(Office->GetCompletedSessions()==0)return false;
+                    if(Hall->bContinuousCampaign)Exit(1);
+                    else if(!Office->IsOfficeEscaped())Place(Office->GetActorTransform().TransformPosition(FVector(1135,0,98)));
+                    return false;
+                }
+                ++OfficeBombAction;Changed=FPlatformTime::Seconds();return false;
+            }
             if(Hall->bContinuousCampaign && Hall->ActiveArea==1 && Hall->CanAdvanceCampaign()) { Exit(1);return false; }
             // Exercise the office's real timer/eruption completion (no fake success flag).
             if(Hall->ActiveArea!=2) return false;
@@ -254,7 +298,7 @@ public:
     }
 private:
     FAutomationTestBase* Test;
-    int32 Step=0;
+    int32 Step=0,OfficeBombAction=0;
     double Started=FPlatformTime::Seconds(),Changed=0;
     TWeakObjectPtr<APawn> InitialPawn;
     bool bCatalogueCaptured=false,bEchoCaptured=false;

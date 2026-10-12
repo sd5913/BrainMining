@@ -129,6 +129,9 @@ def tick(delta):
         elif phase == 'contact' and now-state['launch'] >= 2.:
             bomb = state['bomb']
             check(valid(bomb) and bomb.contact_count > 0, 'Bomb contacts the wall or floor and remains intact before its fuse expires')
+            check(bomb.get_editor_property('bStuck') and not bomb.collision.is_simulating_physics(), 'First physical contact sticks the bomb and stops simulation')
+            check(bomb.collision.get_attach_parent() is not None, 'Sticky bomb is attached to the contacted surface')
+            check(bomb.get_velocity().length() < 1., 'Sticky bomb does not bounce or slide after contact')
             check(bomb.get_actor_location().z >= base.z+8., 'Collision keeps the physical bomb above the floor')
             pos = bomb.get_actor_location()
             move_player(unreal.Vector(pos.x-220., pos.y, base.z+state['height']+1.))

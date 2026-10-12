@@ -1,6 +1,8 @@
 #include "MiningBombToolComponent.h"
 #include "MiningBombActor.h"
 #include "MiningComponent.h"
+#include "MiningWalletSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "BrainMiningCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -35,8 +37,38 @@ bool UMiningBombToolComponent::CanUse() const
 	const auto* Pawn = Cast<APawn>(GetOwner());
 	const auto* PC = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
 	const auto* Mining = GetOwner()->FindComponentByClass<UMiningComponent>();
-	return PC && PC->IsLocalController() && !PC->IsPaused() && !PC->IsMoveInputIgnored()
+	return IsSkillUnlocked() && PC && PC->IsLocalController() && !PC->IsPaused() && !PC->IsMoveInputIgnored()
 		&& !PC->IsLookInputIgnored() && Mining && !Mining->IsInputSuspended() && !Mining->IsEncounterBlocked();
+}
+
+bool UMiningBombToolComponent::IsSkillUnlocked() const
+{
+	const auto* Instance = GetOwner() ? GetOwner()->GetGameInstance() : nullptr;
+	const auto* Wallet = Instance ? Instance->GetSubsystem<UMiningWalletSubsystem>() : nullptr;
+	return !Wallet || !Wallet->bBombSkillRequiresUnlock || Wallet->bBombSkillUnlocked;
+}
+
+void UMiningBombToolComponent::RequireSkillUnlock()
+{
+	if (auto* Instance = GetOwner() ? GetOwner()->GetGameInstance() : nullptr)
+		if (auto* Wallet = Instance->GetSubsystem<UMiningWalletSubsystem>()) Wallet->bBombSkillRequiresUnlock = true;
+	if (!IsSkillUnlocked()) Stow();
+}
+
+bool UMiningBombToolComponent::UnlockSkill()
+{
+	auto* Instance = GetOwner() ? GetOwner()->GetGameInstance() : nullptr;
+	auto* Wallet = Instance ? Instance->GetSubsystem<UMiningWalletSubsystem>() : nullptr;
+	if (!Wallet) return false;
+	const bool bNew = !Wallet->bBombSkillUnlocked;
+	Wallet->bBombSkillUnlocked = true;
+	if (bNew)
+	{
+		BombCount = FMath::Max(BombCount, FMath::Max(1, MaxBombs));
+		RechargeProgress = 0;
+		OnSkillUnlocked.Broadcast();
+	}
+	return true;
 }
 
 bool UMiningBombToolComponent::ToggleEquipped()

@@ -1,0 +1,23 @@
+{
+  "objects": [
+    "Bolt.001_Baked",
+    "drill_press_01_gear_b_Baked",
+    "drill_press_01_gear_b.001_Baked",
+    "\u67f1\u4f53.001_Baked",
+    "\u7acb\u65b9\u4f53.005_Baked"
+  ],
+  "triangles": 23746,
+  "shaft_axis": [
+    1,
+    0,
+    0
+  ],
+  "shaft_pivot": [
+    0,
+    0,
+    0
+  ],
+  "length_cm": 58.603,
+  "curve_policy": "Reuse existing CF_DrillSpin",
+  "source_actions": []
+}

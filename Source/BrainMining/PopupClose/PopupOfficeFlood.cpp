@@ -17,6 +17,23 @@ namespace
  constexpr float WindowScale=1.4f;
  constexpr float AdditionalComputerDelay=3.f;
  constexpr float EmissionRampSeconds=12.f;
+ constexpr float WindowLayerSpacing=3.2f;
+ constexpr int32 MaxWindowLayers=20;
+ constexpr float PaperStackLayerSpacing=.6f;
+ constexpr float PaperStackThickness=.55f;
+ int32 WindowLayersAt(const FVector& P)
+ {
+  // Localized mounds leave the central pickup and the exit approach clear.
+  static const FVector Centers[]={FVector(-520,100,0),FVector(-480,-180,0),FVector(350,-300,0),FVector(570,60,0),FVector(120,450,0),FVector(-30,-470,0)};
+  static const float Radii[]={110.f,105.f,135.f,115.f,120.f,100.f};
+  float Height=0.f;
+  for(int32 I=0;I<UE_ARRAY_COUNT(Centers);++I)
+  {
+   const float Distance=FVector::Dist2D(P,Centers[I])/Radii[I];
+   Height=FMath::Max(Height,FMath::Clamp(1.f-Distance,0.f,1.f));
+  }
+  return 1+FMath::FloorToInt(Height*(MaxWindowLayers-1));
+ }
  float EmissionRate(float Seconds,bool bAdditionalComputer)
  {
   const float Start=bAdditionalComputer?AdditionalComputerDelay:0.f;
@@ -41,7 +58,7 @@ FPopupOfficeFlood::FPopupOfficeFlood(AActor& InOwner):Owner(InOwner)
   auto Material=UMaterialInstanceDynamic::Create(Parent,Mesh);Material->SetVectorParameterValue(TEXT("Color"),Color);Mesh->SetMaterial(0,Material);
   Mesh->RegisterComponent();Ground.Add(Mesh);
  }
- // Shuffled cells spread the persistent layer over the room instead of piling up centrally.
+ // Shuffled cells preserve floor coverage underneath the localized mounds.
  for(float X=-968.f;X<=968.f;X+=32.f)for(float Y=-716.f;Y<=716.f;Y+=44.f)
   Cells.Add(FVector(X+FMath::FRandRange(-2.f,2.f),Y+FMath::FRandRange(-2.f,2.f),2.f));
  CellState.Init(0,Cells.Num());
@@ -90,9 +107,11 @@ void FPopupOfficeFlood::Start()
 }
 void FPopupOfficeFlood::Tick(float Dt)
 {
- if(!bStarted)return;
+ if(!bStarted && !Slots.ContainsByPredicate([](const FSlot& Slot){return Slot.bActive;}))return;
  Time+=Dt;PeakFrame=FMath::Max(PeakFrame,Dt);
  for(auto& Slot:Slots)if(Slot.bActive && Time>=Slot.RetireTime)Retire(Slot,true);
+ // Stopping emission does not cancel the last batch's flight or floor deposits.
+ if(!bStarted)return;
  if(Time>=AdditionalComputerDelay && !bAllSources)
  {
   bAllSources=true;
@@ -136,6 +155,15 @@ void FPopupOfficeFlood::Emit(int32 SourceIndex)
  if(Slot.bActive)Retire(Slot,true);
  auto Actor=Slot.Actor.Get();if(!Actor)return;
  const auto& Source=Sources[SourceIndex];Slot.Cell=SelectCell(Source,bPaper);Slot.Target=Cells[Slot.Cell];
+ if(bPaper && Source.Count%4!=0)
+ {
+  // Three out of four sheets settle in loose stacks near their own printer.
+  // Assign layers at launch so their ballistic destinations match the deposits.
+  static const FVector Centers[]={FVector(510,260,0),FVector(660,180,0),FVector(-500,-230,0),FVector(-680,-100,0)};
+  const int32 Stack=(SourceIndex==2?0:2)+(Source.Count/4)%2;
+  const int32 Layer=(Source.Count/8)*3+Source.Count%4-1;
+  Slot.Target=Centers[Stack]+FVector(FMath::FRandRange(-5.f,5.f),FMath::FRandRange(-6.f,6.f),7.f+PaperStackLayerSpacing*Layer);
+ }
  const FTransform Room=Owner.GetActorTransform();
  const FVector Origin=Room.TransformPosition(Source.Origin);
  const FVector Target=Room.TransformPosition(Slot.Target);
@@ -162,27 +190,57 @@ void FPopupOfficeFlood::AddGround(int32 Group,FVector P,FVector Size,FRotator Ro
 }
 void FPopupOfficeFlood::Deposit(const FSlot& Slot)
 {
- const float Yaw=FMath::FRandRange(-180.f,180.f);
- const FRotator R(-90,Yaw,0);
  FVector P=Slot.Target;
- P.X+=FMath::FRandRange(-8.f,8.f);P.Y+=FMath::FRandRange(-12.f,12.f);
- P.Z+=FMath::FRandRange(0.f,1.2f);
  if(Slot.bPaper)
  {
-  if(FloorPapers>=PaperFloorBudget)return;
-  P.Z=5.f+FMath::FRandRange(0.f,.6f);AddGround(10,P,FVector(.15f,21,29.7f),R);++FloorPapers;return;
+  if(FloorPapers>=PaperFloorBudget+(bStarted?0:PaperBudget))return;
+  const bool bStacked=P.Z>4.f;
+  const float Yaw=bStacked?FMath::FRandRange(-18.f,18.f):FMath::FRandRange(-180.f,180.f);
+  if(!bStacked)P.Z=7.f+(WindowLayersAt(P)-1)*WindowLayerSpacing;
+  else if(!bStarted && FloorPapers>=PaperFloorBudget)
+  {
+   // Earlier capped sheets leave no gaps underneath the final visible sheets.
+   const int32 LastBaseLayer=PaperFloorBudget*3/16-1;
+   const int32 TailLayer=1+(FloorPapers-PaperFloorBudget)/4;
+   P.Z=FMath::Min(P.Z,7.f+PaperStackLayerSpacing*(LastBaseLayer+TailLayer));
+  }
+  AddGround(10,P,FVector(bStacked?PaperStackThickness:.15f,21,29.7f),FRotator(-90,Yaw,0));++FloorPapers;return;
  }
- if(CellState[Slot.Cell]==2)return;
- CellState[Slot.Cell]=2;++FloorWindows;
- const auto& Copy=PopupCloseContent::Get(Slot.Variant);
- const float W=Copy.Size.X*.13f*WindowScale,H=Copy.Size.Y*.13f*WindowScale;
- AddGround(Slot.Variant,P,FVector(2.5f,W,H),R);
- AddGround(8,P+R.RotateVector(FVector(-1.5f,0,H*.43f)),FVector(3.25f,W,H*.14f),R);
- AddGround(9,P+R.RotateVector(FVector(-2.75f,W*.43f,H*.43f)),FVector(3.75f,W*.10f,H*.11f),R);
+ const bool bCoveredCell=CellState[Slot.Cell]==2;
+ if(bCoveredCell && bStarted)return;
+ if(!bCoveredCell){CellState[Slot.Cell]=2;++FloorWindows;}
+ // At most one extra persistent window per airborne slot survives the handoff.
+ const int32 Layers=bCoveredCell?1:WindowLayersAt(P);
+ const float BaseZ=bCoveredCell?7.f+(WindowLayersAt(P)-1)*WindowLayerSpacing:2.f;
+ const float Yaw=FMath::FRandRange(-180.f,180.f);
+ P.X+=FMath::FRandRange(-8.f,8.f);P.Y+=FMath::FRandRange(-12.f,12.f);
+ P.Z=BaseZ+FMath::FRandRange(0.f,.6f);
+ for(int32 Layer=0;Layer<Layers;++Layer)
+ {
+  const int32 Variant=(Slot.Variant+Layer)%PopupCloseContent::Count;
+  const auto& Copy=PopupCloseContent::Get(Variant);
+  const float W=Copy.Size.X*.13f*WindowScale,H=Copy.Size.Y*.13f*WindowScale;
+  const FRotator R(-90,Yaw+Layer*31.f,FMath::FRandRange(-2.f,2.f));
+  const FVector LayerP=P+FVector(FMath::FRandRange(-4.f,4.f),FMath::FRandRange(-4.f,4.f),Layer*WindowLayerSpacing);
+  AddGround(Variant,LayerP,FVector(2.5f,W,H),R);
+  AddGround(8,LayerP+R.RotateVector(FVector(-1.5f,0,H*.43f)),FVector(3.25f,W,H*.14f),R);
+  AddGround(9,LayerP+R.RotateVector(FVector(-2.75f,W*.43f,H*.43f)),FVector(3.75f,W*.10f,H*.11f),R);
+ }
 }
 void FPopupOfficeFlood::Pause()
 {
  for(auto& Slot:Slots)if(Slot.bActive)Retire(Slot,true);
+}
+void FPopupOfficeFlood::Stop()
+{
+ if(!bStarted)return;
+ bStarted=false;
+ int32 Active=0;for(const auto& Slot:Slots)Active+=Slot.bActive?1:0;
+ UE_LOG(LogOfficeFlood,Display,TEXT("Emission stopped; %d airborne popups/papers continue landing and remain on the floor"),Active);
+}
+void FPopupOfficeFlood::ClearVisuals()
+{
+ Stop();Pause();for(auto Mesh:Ground)if(Mesh.IsValid())Mesh->ClearInstances();
 }
 void FPopupOfficeFlood::Reset()
 {
@@ -197,15 +255,25 @@ bool FPopupOfficeFlood::IsHealthy() const
 {
  bool SourcesHealthy=bAllSources;
  for(const auto& Source:Sources)SourcesHealthy &= Source.Count>0;
- return SourcesHealthy && Slots.Num()<=WindowBudget+PaperBudget && FloorWindows<=Cells.Num() && FloorPapers<=PaperFloorBudget && BelowFloorPapers==0;
+ return SourcesHealthy && Slots.Num()<=WindowBudget+PaperBudget && FloorWindows<=Cells.Num() && FloorPapers<=PaperFloorBudget+PaperBudget && BelowFloorPapers==0;
 }
 int32 FPopupOfficeFlood::Emitted(int32 Source) const{return Sources.IsValidIndex(Source)?Sources[Source].Count:0;}
 FString FPopupOfficeFlood::Describe() const
 {
  int32 Active=0,Total=0;for(const auto& Slot:Slots)Active+=Slot.bActive?1:0;for(const auto& Source:Sources)Total+=Source.Count;
- FString Text=FString::Printf(TEXT("Flood time=%.2f sources=%d coverage=%.1f%% ground_windows=%d/%d ground_papers=%d/384 airborne=%d pool=%d/240 total_emitted=%d recycled=%d paper_below_floor=%d max_frame=%.2fms"),
+ FString Text=FString::Printf(TEXT("Flood time=%.2f sources=%d coverage=%.1f%% ground_windows=%d/%d ground_papers=%d/432 airborne=%d pool=%d/240 total_emitted=%d recycled=%d paper_below_floor=%d max_frame=%.2fms"),
  Time,bAllSources?12:4,100.f*FloorWindows/Cells.Num(),FloorWindows,Cells.Num(),FloorPapers,Active,Slots.Num(),Total,Recycled,BelowFloorPapers,PeakFrame*1000.f);
  for(int32 I=0;I<Sources.Num();++I)Text+=FString::Printf(TEXT("\nSource%d emitted=%d"),I,Sources[I].Count);
- Text+=FString::Printf(TEXT("\nCurrent emission rate=%.2f/s"),4.f*EmissionRate(Time,false)+(bAllSources?8.f*EmissionRate(Time,true):0.f));
+ Text+=FString::Printf(TEXT("\nCurrent emission rate=%.2f/s"),bStarted?4.f*EmissionRate(Time,false)+(bAllSources?8.f*EmissionRate(Time,true):0.f):0.f);
+ int32 VisibleWindows=0;float HighestCenter=0.f;
+ for(int32 I=0;I<Ground.Num();++I)if(auto Mesh=Ground[I].Get())
+ {
+  if(I<8)VisibleWindows+=Mesh->GetInstanceCount();
+  if(I<8 || I==10)for(int32 J=0;J<Mesh->GetInstanceCount();++J)
+  {
+   FTransform Transform;if(Mesh->GetInstanceTransform(J,Transform))HighestCenter=FMath::Max(HighestCenter,static_cast<float>(Transform.GetLocation().Z));
+  }
+ }
+ Text+=FString::Printf(TEXT("\nGround heaps: visible_windows=%d extra_layers=%d highest_center=%.1fcm paper_stacks=4"),VisibleWindows,VisibleWindows-FloorWindows,HighestCenter);
  return Text;
 }

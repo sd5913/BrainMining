@@ -1,5 +1,6 @@
 #include "MiningInteractionHUDWidget.h"
 #include "BrainMiningPlayerController.h"
+#include "MiningGUIWidgets.h"
 #include "MiningCollection.h"
 #include "MiningWalletSubsystem.h"
 #include "Showcase/MiningExhibitHall.h"
@@ -153,7 +154,15 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
             Geometry.ToPaintGeometry(FVector2f(TextSize), FSlateLayoutTransform(FVector2f(Offset))), Label, Font,
             ESlateDrawEffect::None, Color * WidgetStyle.GetColorAndOpacityTint());
     };
-    if (bExplorationVisible)
+    bool bToolReticleVisible = false;
+    if (const auto* MiningController = GetOwningPlayer<ABrainMiningPlayerController>();
+        MiningController && MiningController->MiningGUI && MiningController->MiningGUI->IsVisible())
+    {
+        for (const FName Name : {FName(TEXT("ReticlePickaxe")), FName(TEXT("ReticleDrill")), FName(TEXT("ReticleBomb"))})
+            if (const auto* Reticle = MiningController->MiningGUI->GetWidgetFromName(Name); Reticle && Reticle->IsVisible())
+                bToolReticleVisible = true;
+    }
+    if (bExplorationVisible && !bToolReticleVisible)
     {
         Box(FVector2D(-3, -3), FVector2D(6, 6), Circle, FLinearColor(.015f, .02f, .025f, .85f));
         Box(FVector2D(-2, -2), FVector2D(4, 4), Circle, FLinearColor::White);

@@ -1,0 +1,18 @@
+{
+  "scale": 0.5,
+  "triangles": 18428,
+  "materials": [
+    "BombBody",
+    "BombFuseLamp",
+    "BombCountdownDisplay"
+  ],
+  "lamp_objects": [
+    "SB_Detail_28",
+    "SB_Detail_28.001"
+  ],
+  "display_center_cm": [
+    1.1644467699999999,
+    6.705604495,
+    2.2925
+  ]
+}

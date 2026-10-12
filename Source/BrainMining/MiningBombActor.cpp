@@ -129,7 +129,7 @@ void AMiningBombActor::Explode()
 
 void AMiningBombActor::ExcavateTerrain(const FVector& Location)
 {
-	const float Radius = FMath::Clamp(Settings.ExcavationRadius, 100.f, 1000.f);
+	const float Radius = FMath::Clamp(Settings.ExcavationRadius, 100.f, 2000.f);
 	const float Reach = Radius * 1.45f;
 	struct FSurface { FHitResult Hit; UMaterialInterface* Material; };
 	TArray<FSurface> Surfaces;

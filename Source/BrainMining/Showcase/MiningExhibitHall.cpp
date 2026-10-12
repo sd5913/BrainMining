@@ -1,5 +1,6 @@
 #include "Showcase/MiningExhibitHall.h"
 #include "Showcase/SMiningCampaignMap.h"
+#include "MiningProgressionComponent.h"
 #include "Showcase/MiningTreasure.h"
 #include "MiningCollection.h"
 #include "MiningComponent.h"
@@ -99,7 +100,8 @@ bool AMiningExhibitHall::InitializeAreas()
     if(bLinearCampaign ? Collection->Items.Num()!=Collection->AuthoredPlacements.Num() : (Areas.Num()!=6 || Collection->Items.Num()!=5 || !Treasure || Treasure->Items.IsEmpty())) return false;
     auto* Mining=Controller->GetPawn()->FindComponentByClass<UMiningComponent>();
     if(!Mining) return false;
-    BaseRadius=Mining->Radius; BaseInterval=Mining->Interval;
+    auto* Progression=Controller->GetPawn()->FindComponentByClass<UMiningProgressionComponent>();
+    if(!Progression || !Progression->InitializeProgression()) return false;
     ResumePoints.SetNum(Areas.Num());
     for(int32 Index=0; Index<Areas.Num(); ++Index) ResumePoints[Index]=Areas[Index].Entry;
     for(TActorIterator<AActor> Actor(GetWorld()); Actor; ++Actor) RegisterActor(*Actor);
@@ -300,16 +302,19 @@ void AMiningExhibitHall::Tick(float DeltaSeconds)
         if(BoundGUI.Get()!=GUI)
         {
             GUI->OnUpgradeRequested.AddUniqueDynamic(this,&AMiningExhibitHall::OnUpgradeRequested); BoundGUI=GUI;
-            GUI->PickaxeUpgrade->bPreviewUpgrades=false;
-            GUI->VortexUpgrade->bPreviewUpgrades=false; GUI->BlastUpgrade->bPreviewUpgrades=false;
-            GUI->SetItemUnlocked(0,true); GUI->SetItemUnlocked(1,false); GUI->SetItemUnlocked(2,false);
+            GUI->EnableProgressionPanel();
             GUI->SetAbilityAvailable(TEXT("G"),true);
             ApplyUpgrades();
         }
         auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
         GUI->SetCoinDisplay(FText::AsNumber(Wallet->Balance));
-        const int32 Level=Wallet->PickaxeLevel;
-        GUI->PickaxeUpgrade->SetPriceDisplay(UpgradePrices.IsValidIndex(Level)?FText::AsNumber(UpgradePrices[Level]):FText::FromString(TEXT("MAX")));
+        if(auto* Progression=Controller->GetPawn()->FindComponentByClass<UMiningProgressionComponent>())
+            for(int32 Index=0; Index<4 && Progression->Tracks.IsValidIndex(Index); ++Index)
+            {
+                GUI->SetItemLevel(Index, Progression->GetLevel(Index), false);
+                GUI->SetUpgradeDetails(Index, Progression->Tracks[Index].Name, Progression->GetNextDescription(Index),
+                    Progression->GetNextPrice(Index), Wallet->Balance>=Progression->GetNextPrice(Index));
+            }
         if(Treasure) Treasure->Coins=Wallet->Balance;
     }
     if(bContinuousCampaign && Areas.IsValidIndex(ActiveArea) && !IsInteractionOpen())
@@ -348,19 +353,15 @@ void AMiningExhibitHall::Tick(float DeltaSeconds)
 void AMiningExhibitHall::ApplyUpgrades()
 {
     if(!Controller.IsValid() || !Controller->GetPawn()) return;
-    const int32 Level=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>()->PickaxeLevel;
-    if(auto* Mining=Controller->GetPawn()->FindComponentByClass<UMiningComponent>())
-    { Mining->Radius=BaseRadius*(1.f+.05f*Level); Mining->Interval=BaseInterval*(1.f-.1f*Level); }
-    if(Controller->MiningGUI) Controller->MiningGUI->SetItemLevel(0,Level,false);
+    if(auto* Progression=Controller->GetPawn()->FindComponentByClass<UMiningProgressionComponent>()) Progression->ApplyUpgrades();
 }
 
 bool AMiningExhibitHall::PurchaseUpgrade(int32 ItemIndex, int32 RequestedLevel)
 {
-    auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
-    if(ItemIndex!=0 || RequestedLevel!=Wallet->PickaxeLevel+1 || RequestedLevel>3 || !UpgradePrices.IsValidIndex(Wallet->PickaxeLevel)) return false;
-    if(!Wallet->Spend(UpgradePrices[Wallet->PickaxeLevel])) { Notice=TEXT("金币不足：在收集与宝物区挖取矿物后再升级。"); return false; }
-    Wallet->PickaxeLevel=RequestedLevel; ApplyUpgrades();
-    Notice=TEXT("升级完成：镐子切割范围增加，挖掘间隔缩短。所有体验区共用。");
+    if(!bReady || !Controller.IsValid() || !Controller->GetPawn()) return false;
+    auto* Progression=Controller->GetPawn()->FindComponentByClass<UMiningProgressionComponent>();
+    if(!Progression || !Progression->Purchase(ItemIndex,RequestedLevel)) { Notice=TEXT("无法升级：检查金币余额、等级顺序和配置。"); return false; }
+    Notice=TEXT("升级完成，能力与金币在所有体验区共用。");
     return true;
 }
 void AMiningExhibitHall::OnUpgradeRequested(int32 ItemIndex, int32 RequestedLevel) { PurchaseUpgrade(ItemIndex,RequestedLevel); }

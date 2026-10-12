@@ -3,6 +3,8 @@
 #include "MiningComponent.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Blueprint/WidgetTree.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
@@ -128,7 +130,7 @@ void UMiningGUIUpgradeWidget::RefreshVisuals()
 	Visible(GreenSegment2, bUnlocked && UpgradeLevel >= 2);
 	Visible(GreenSegment3, bUnlocked && UpgradeLevel >= 3);
 	Visible(GreenSegment4, bUnlocked && UpgradeLevel >= 4);
-	if (CoinButton) CoinButton->SetIsEnabled(bUnlocked && bInteractionAllowed);
+	if (CoinButton) CoinButton->SetIsEnabled(bUnlocked && bInteractionAllowed && UpgradeLevel < 4);
 }
 void UMiningGUIUpgradeWidget::SetUpgradeLevel(int32 NewLevel, bool bAnimate)
 {
@@ -147,7 +149,7 @@ void UMiningGUIUpgradeWidget::SetUnlocked(bool bNewUnlocked)
 void UMiningGUIUpgradeWidget::SetPriceDisplay(FText NewText) { if (PriceText) PriceText->SetText(NewText); }
 void UMiningGUIUpgradeWidget::RequestUpgrade()
 {
-	if (!bUnlocked || !bInteractionAllowed) return;
+	if (!bUnlocked || !bInteractionAllowed || UpgradeLevel >= 4) return;
 	ClickSpring.Target = 1.f;
 	ClickSpring.Velocity = 2.8f;
 	const int32 RequestedLevel = FMath::Min(UpgradeLevel + 1, 4);
@@ -213,7 +215,84 @@ FReply UMiningGUIHUDWidget::NativeOnKeyUp(const FGeometry& Geometry, const FKeyE
 }
 UMiningGUIUpgradeWidget* UMiningGUIHUDWidget::Item(int32 Index) const
 {
-	return Index == 0 ? PickaxeUpgrade.Get() : Index == 1 ? VortexUpgrade.Get() : Index == 2 ? BlastUpgrade.Get() : nullptr;
+	return Index == 0 ? PickaxeUpgrade.Get() : Index == 1 ? VortexUpgrade.Get() : Index == 2 ? BlastUpgrade.Get() : Index == 3 ? DrillUpgrade.Get() : nullptr;
+}
+
+void UMiningGUIHUDWidget::EnableProgressionPanel()
+{
+	if (AbilityG && AbilityG->AbilityContent && !AbilityG->CooldownText)
+	{
+		AbilityG->CooldownText = WidgetTree->ConstructWidget<UTextBlock>();
+		AbilityG->CooldownText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 18));
+		AbilityG->CooldownText->SetColorAndOpacity(FLinearColor::White);
+		AbilityG->CooldownText->SetJustification(ETextJustify::Center);
+		AbilityG->CooldownText->SetVisibility(ESlateVisibility::HitTestInvisible);
+		auto* CountSlot = AbilityG->AbilityContent->AddChildToCanvas(AbilityG->CooldownText);
+		CountSlot->SetPosition(FVector2D(0, -32));
+		CountSlot->SetSize(FVector2D(100, 28));
+	}
+	if (DrillUpgrade || !PickaxeUpgrade || !UpgradePanel) return;
+	DrillUpgrade = CreateWidget<UMiningGUIUpgradeWidget>(GetOwningPlayer(), PickaxeUpgrade->GetClass());
+	if (!DrillUpgrade) return;
+	UpgradePanel->AddChildToCanvas(DrillUpgrade);
+	DrillUpgrade->ItemIndex = 3;
+	DrillUpgrade->OnUpgradeRequested.AddUniqueDynamic(this, &ThisClass::ForwardUpgrade);
+	DrillUpgrade->OnLevelChanged.AddUniqueDynamic(this, &ThisClass::ForwardLevel);
+	if (AbilityV && AbilityV->NormalTexture) DrillUpgrade->ItemIcon->SetBrushFromTexture(AbilityV->NormalTexture);
+	if (auto* PanelSlot = Cast<UCanvasPanelSlot>(UpgradePanel->Slot)) PanelSlot->SetSize(FVector2D(724, 384));
+	for (int32 Index = 0; Index < 4; ++Index)
+	{
+		auto* Card = Item(Index);
+		Card->bPreviewUpgrades = false;
+		Card->SetUnlocked(true);
+		Card->SetInteractionAllowed(bUpgradePanelOpen);
+		if (auto* CardSlot = Cast<UCanvasPanelSlot>(Card->Slot))
+		{
+			CardSlot->SetPosition(FVector2D(Index*184, 32));
+			CardSlot->SetSize(FVector2D(148, 208));
+		}
+		auto PriceFont = Card->PriceText->GetFont(); PriceFont.Size = 16; Card->PriceText->SetFont(PriceFont);
+		if (auto* ButtonSlot = Cast<UCanvasPanelSlot>(Card->CoinButton->Slot))
+		{
+			ButtonSlot->SetPosition(FVector2D(0, 168));
+			ButtonSlot->SetSize(FVector2D(148, 60));
+		}
+		if (auto* TextSlot = Cast<UCanvasPanelSlot>(Card->PriceText->Slot))
+		{
+			TextSlot->SetPosition(FVector2D(54, 14));
+			TextSlot->SetSize(FVector2D(90, 30));
+		}
+		if (auto* Background = Cast<UImage>(Card->GetWidgetFromName(TEXT("PriceBackground"))))
+		{
+			if (auto* BackgroundSlot = Cast<UCanvasPanelSlot>(Background->Slot)) BackgroundSlot->SetSize(FVector2D(148, 60));
+		}
+		for (int32 Row = 0; Row < 2; ++Row)
+		{
+			auto* Label = WidgetTree->ConstructWidget<UTextBlock>();
+			Label->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), Row == 0 ? 22 : 17));
+			Label->SetColorAndOpacity(FLinearColor::White);
+			Label->SetJustification(ETextJustify::Center);
+			Label->SetAutoWrapText(true);
+			Label->SetVisibility(ESlateVisibility::HitTestInvisible);
+			auto* LabelSlot = UpgradePanel->AddChildToCanvas(Label);
+			LabelSlot->SetPosition(FVector2D(Index*184-10, Row == 0 ? 0 : 272));
+			LabelSlot->SetSize(FVector2D(168, Row == 0 ? 30 : 110));
+			(Row == 0 ? UpgradeNames : UpgradeDescriptions).Add(Label);
+		}
+	}
+}
+
+void UMiningGUIHUDWidget::SetUpgradeDetails(int32 Index, FText Name, FText Description, int64 Price, bool bAffordable)
+{
+	if (auto* Card = Item(Index))
+	{
+		Card->SetPriceDisplay(Price > 0 ? FText::AsNumber(Price) : FText::FromString(TEXT("MAX")));
+		Card->PriceText->SetColorAndOpacity(Price > 0 && !bAffordable ? FLinearColor(1,.4f,.3f) : FLinearColor::White);
+		Card->CoinButton->SetIsEnabled(bUpgradePanelOpen && Card->bUnlocked && Card->UpgradeLevel < 4 && bAffordable && Price > 0);
+		if (UpgradeNames.IsValidIndex(Index)) UpgradeNames[Index]->SetText(Name);
+		if (UpgradeDescriptions.IsValidIndex(Index)) UpgradeDescriptions[Index]->SetText(FText::FromString(
+			FString::Printf(TEXT("%d / 4\n%s"), Card->UpgradeLevel, *Description.ToString())));
+	}
 }
 UMiningGUIAbilityWidget* UMiningGUIHUDWidget::AbilityWidget(FName Name) const
 {
@@ -224,7 +303,7 @@ void UMiningGUIHUDWidget::SetUpgradePanelOpen(bool bOpen)
 {
 	if (bUpgradePanelOpen == bOpen) return;
 	bUpgradePanelOpen = bOpen;
-	for (int32 Index = 0; Index < 3; ++Index)
+	for (int32 Index = 0; Index < 4; ++Index)
 		if (auto* Card = Item(Index)) Card->SetInteractionAllowed(bOpen);
 	PanelSpring.Target = bOpen ? 1.f : 0.f;
 	UpgradePanel->SetVisibility(bOpen ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::HitTestInvisible);
@@ -265,6 +344,12 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 		const auto* Bomb = Pawn ? Pawn->FindComponentByClass<UMiningBombToolComponent>() : nullptr;
 		AbilityG->SetUsed(Bomb && Bomb->bEquipped);
 		AbilityG->SetCooldownRemaining(0.f);
+		if (Bomb && Bomb->bUseInventory && AbilityG->CooldownText)
+		{
+			AbilityG->CooldownText->SetVisibility(ESlateVisibility::HitTestInvisible);
+			AbilityG->CooldownText->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), Bomb->BombCount, Bomb->MaxBombs)));
+			AbilityG->SetUsed(Bomb->BombCount == 0);
+		}
 	}
 	if (AbilityV)
 	{
@@ -273,6 +358,13 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 		const float Cooldown = Mining ? Mining->GetDrillCooldownRemaining() : 0.f;
 		AbilityV->SetUsed(Cooldown > 0);
 		AbilityV->SetCooldownRemaining(Cooldown);
+		if (Mining && Mining->bUseDrillEnergy && AbilityV->CooldownText)
+		{
+			AbilityV->CooldownText->SetVisibility(ESlateVisibility::HitTestInvisible);
+			AbilityV->CooldownText->SetText(FText::FromString(Mining->bInfiniteDrillEnergy ? TEXT("∞") :
+				FString::Printf(TEXT("%.0f%%"), 100.f * Mining->DrillEnergy / FMath::Max(1.f, Mining->MaxDrillEnergy))));
+			AbilityV->SetUsed(!Mining->bInfiniteDrillEnergy && Mining->DrillEnergy <= UE_SMALL_NUMBER);
+		}
 	}
 	PlusSpring.Step(DeltaTime, 420.f, 19.f);
 	Scale(PlusContent, PlusSpring.Value);

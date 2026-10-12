@@ -33,7 +33,6 @@ struct FMiningBombSettings
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMiningBombExplosionEvent, FVector, Location);
 
-/** G equips a bomb; one fresh left click throws it. No inventory or cooldown policy. */
 UCLASS(ClassGroup=(Mining), meta=(BlueprintSpawnableComponent))
 class BRAINMINING_API UMiningBombToolComponent : public UActorComponent
 {
@@ -44,6 +43,12 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction) override;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Bomb") FMiningBombSettings Settings;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Bomb") bool bUseInventory = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Bomb", meta=(ClampMin="1")) int32 MaxBombs = 3;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Bomb", meta=(ClampMin="0.1")) float RechargeSeconds = 10;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Bomb") int32 BombCount = 3;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Bomb") float RechargeProgress = 0;
+	void UpdateInventory(float DeltaSeconds);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Bomb|Assets") TSoftObjectPtr<UNiagaraSystem> ExplosionAsset;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Bomb") bool bEquipped = false;
 	UPROPERTY(BlueprintReadOnly, Category="Mining|Bomb") TWeakObjectPtr<AMiningBombActor> LastThrownBomb;

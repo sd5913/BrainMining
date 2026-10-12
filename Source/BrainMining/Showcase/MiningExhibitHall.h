@@ -64,7 +64,6 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FMiningExperienceArea> Areas;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform LobbyEntry;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<int32> UpgradePrices = {100, 200, 300};
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Campaign") bool bLinearCampaign = false;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Campaign") bool bContinuousCampaign = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Campaign") int32 UnlockedArea = 0;
@@ -118,8 +117,6 @@ private:
     TSharedPtr<SWidget> Map;
     TSharedPtr<SWidget> Guide;
     FDelegateHandle SpawnHandle;
-    float BaseRadius = 160;
-    float BaseInterval = .3f;
     FString Notice;
     float CompletionDelay = 0;
     bool InitializeAreas();

@@ -99,7 +99,13 @@ bool UMiningComponent::ActivateDrill()
 {
 	if (!GetWorld() || bInputSuspended || IsEncounterBlocked()) return false;
 	UpdateDrillSession();
+	if (bUseDrillEnergy && bDrillMode)
+	{
+		SelectPickaxe();
+		return true;
+	}
 	if (bDrillMode || GetDrillCooldownRemaining() > 0) return false;
+	if (bUseDrillEnergy && !bInfiniteDrillEnergy && DrillEnergy <= UE_SMALL_NUMBER) return false;
 	if (auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>()) Bomb->Stow();
 	const double Now = GetWorld()->GetTimeSeconds();
 	const float UseTime = FMath::IsFinite(DrillUseDuration) ? FMath::Max(.1f, DrillUseDuration) : 10.f;
@@ -118,17 +124,32 @@ void UMiningComponent::SelectPickaxe()
 
 float UMiningComponent::GetDrillUseRemaining() const
 {
+	if (bUseDrillEnergy) return bDrillMode ? (bInfiniteDrillEnergy ? MaxDrillEnergy : DrillEnergy) / FMath::Max(.01f, DrillConsumptionRate) : 0;
 	return bDrillMode && GetWorld() ? FMath::Max(0.0, DrillUseEnds - GetWorld()->GetTimeSeconds()) : 0.f;
 }
 
 float UMiningComponent::GetDrillCooldownRemaining() const
 {
+	if (bUseDrillEnergy) return 0;
 	return !bDrillMode && GetWorld() ? FMath::Max(0.0, DrillCooldownEnds - GetWorld()->GetTimeSeconds()) : 0.f;
 }
 
 void UMiningComponent::UpdateDrillSession()
 {
+	if (bUseDrillEnergy) return;
 	if (bDrillMode && GetWorld()->GetTimeSeconds() >= DrillUseEnds) SetDrillMode(false);
+}
+
+void UMiningComponent::UpdateDrillEnergy(float DeltaSeconds)
+{
+	if (!bUseDrillEnergy || !FMath::IsFinite(DeltaSeconds) || DeltaSeconds <= 0) return;
+	if (bInfiniteDrillEnergy) { DrillEnergy = MaxDrillEnergy; return; }
+	if (bDrillMode && !bInputSuspended && !IsEncounterBlocked())
+	{
+		DrillEnergy = FMath::Max(0.f, DrillEnergy - FMath::Max(0.f, DrillConsumptionRate) * DeltaSeconds);
+		if (DrillEnergy <= UE_SMALL_NUMBER) SetDrillMode(false);
+	}
+	else if (!bDrillMode) DrillEnergy = FMath::Min(MaxDrillEnergy, DrillEnergy + FMath::Max(0.f, DrillRecoveryRate) * DeltaSeconds);
 }
 
 void UMiningComponent::RefreshTarget()
@@ -155,6 +176,7 @@ void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	UpdateDrillSession();
     if(IsEncounterBlocked())return;
+	UpdateDrillEnergy(DeltaTime);
 	RefreshTarget();
 	if (bShowPreview && IsValid(TargetRock))
 	{
@@ -191,7 +213,13 @@ bool UMiningComponent::TryMine()
 	LastMinedRock = TargetRock;
 	const FVector Center = GetCutCenter();
 	const FHitResult MiningHit = TargetHit;
-	const bool bResult = TargetRock->MineSphere(Center, GetMiningRadius());
+	bool bResult = TargetRock->MineSphere(Center, GetMiningRadius());
+	const float Depth = FMath::IsFinite(DepthMultiplier) ? FMath::Clamp(DepthMultiplier, 1.f, 4.f) : 1.f;
+	for (float Step = 1.f; Step < Depth; Step += 1.f)
+	{
+		const float ExtraDepth = FMath::Min(Step, Depth - 1.f) * GetMiningRadius() * (1.f + InsetFraction);
+		bResult |= TargetRock->MineSphere(Center - MiningHit.ImpactNormal * ExtraDepth, GetMiningRadius());
+	}
 	Status = TargetRock->LastStatus;
 	if (bResult) OnMiningHit.Broadcast(MiningHit);
 	return bResult;

@@ -199,6 +199,7 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
 {
     if(!bReady || !Controller.IsValid() || !Controller->GetPawn() || (Index!=INDEX_NONE && !Areas.IsValidIndex(Index))) return false;
     if(bLinearCampaign && (Index<0 || Index>UnlockedArea)) return false;
+    if(Areas.IsValidIndex(Index) && AreaKind(Index)==EMiningExperienceKind::Office && Office && Office->IsOfficeEscaped()) return false;
     if(Areas.IsValidIndex(ActiveArea) && (!Controller->IsMoveInputIgnored() || Menu.IsValid() || Collection->bCatalogueOpen || Controller->bUpgradeMenuHeld)) ResumePoints[ActiveArea]=Controller->GetPawn()->GetActorTransform();
     auto* Movement=Controller->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>();
     const FVector Velocity=Movement?Movement->Velocity:FVector::ZeroVector;
@@ -250,6 +251,10 @@ void AMiningExhibitHall::ReturnToLobby()
     if(!Areas.IsValidIndex(ActiveArea) || !Controller.IsValid()) return;
     // A rescue returns to this section's entrance without resetting the run.
     const int32 Index=ActiveArea;
+    if(AreaKind(Index)==EMiningExperienceKind::Office && Office && Office->IsOfficeEscaped() && Areas.IsValidIndex(Index+1))
+    {
+        UnlockedArea=FMath::Max(UnlockedArea,Index+1);EnterArea(Index+1);return;
+    }
     ActiveArea=INDEX_NONE;
     ResumePoints[Index]=Areas[Index].Entry;
     EnterArea(Index);
@@ -283,7 +288,7 @@ bool AMiningExhibitHall::CanAdvanceCampaign() const
     {
     case EMiningExperienceKind::Mining:
         return bContinuousCampaign || FBox(Areas[ActiveArea].Exit-Areas[ActiveArea].ExitExtent,Areas[ActiveArea].Exit+Areas[ActiveArea].ExitExtent).IsInsideOrOn(Controller->GetPawn()->GetActorLocation());
-    case EMiningExperienceKind::Office: return Office && Office->GetCompletedSessions()>0 && !Office->IsSessionActive();
+    case EMiningExperienceKind::Office: return Office && (bContinuousCampaign ? Office->GetCompletedSessions()>0 : Office->IsOfficeEscaped()) && !Office->IsSessionActive();
     case EMiningExperienceKind::Journey: return Journey && Journey->Phase==EMiningEscapePhase::Escaped;
     case EMiningExperienceKind::Museum: return Museum && Museum->bComplete;
     case EMiningExperienceKind::Ending: return Ending && Ending->bComplete;

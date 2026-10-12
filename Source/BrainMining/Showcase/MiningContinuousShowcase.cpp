@@ -108,9 +108,9 @@ void AMiningShowcaseDirector::SwitchContinuousRegion(int32 Index)
     for (TActorIterator<APopupCloseStage> Stage(GetWorld()); Stage; ++Stage) Stage->SetAreaActive(bHasRegion && Kind == EMiningShowcaseKind::Popup);
     auto* Controller = Player();
     if (!Controller || !Controller->GetPawn()) return;
-    if (!bHasRegion || (Kind != EMiningShowcaseKind::Mining && Kind != EMiningShowcaseKind::Collection && Kind != EMiningShowcaseKind::Treasure)) Policy->Apply(Controller->GetPawn());
+    if (!bHasRegion || (Kind != EMiningShowcaseKind::Mining && Kind != EMiningShowcaseKind::Collection && Kind != EMiningShowcaseKind::Treasure && Kind != EMiningShowcaseKind::Popup)) Policy->Apply(Controller->GetPawn());
     if (auto* MiningController = Cast<ABrainMiningPlayerController>(Controller))
-        MiningController->SetMiningGUIEnabled(bHasRegion && (Kind == EMiningShowcaseKind::Mining || Kind == EMiningShowcaseKind::Treasure));
+        MiningController->SetMiningGUIEnabled(bHasRegion && (Kind == EMiningShowcaseKind::Mining || Kind == EMiningShowcaseKind::Treasure || Kind == EMiningShowcaseKind::Popup));
     if (auto* Movement = Controller->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())
     {
         Movement->SetFlightInputHeld(false);

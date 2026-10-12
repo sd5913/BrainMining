@@ -16,6 +16,8 @@ public:
  void Start();
  void Tick(float Dt);
  void Pause();
+ void Stop();
+ void ClearVisuals();
  void Reset();
  bool IsFloorCovered() const;
  bool IsHealthy() const;

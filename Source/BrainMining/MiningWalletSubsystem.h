@@ -14,6 +14,9 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int64 Balance = 0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TArray<int32> UpgradeLevels = {0, 0, 0, 0};
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float MineralDoubleChance = 0;
+    // Ability ownership follows the game instance, just like upgrade purchases.
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Abilities") bool bBombSkillRequiresUnlock = false;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Abilities") bool bBombSkillUnlocked = false;
     int32 GetUpgradeLevel(int32 Index) const { return UpgradeLevels.IsValidIndex(Index) ? UpgradeLevels[Index] : INDEX_NONE; }
     int64 CalculateMineralReward(int32 BaseValue, float Roll) const
     {

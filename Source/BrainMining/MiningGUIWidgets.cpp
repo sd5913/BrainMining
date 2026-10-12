@@ -354,6 +354,8 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 	{
 		const APawn* Pawn = GetOwningPlayerPawn();
 		const auto* Bomb = Pawn ? Pawn->FindComponentByClass<UMiningBombToolComponent>() : nullptr;
+		AbilityG->SetAvailable(Bomb && Bomb->IsSkillUnlocked());
+		SetItemUnlocked(2, Bomb && Bomb->IsSkillUnlocked());
 		AbilityG->SetUsed(Bomb && Bomb->bEquipped);
 		AbilityG->SetCooldownRemaining(0.f);
 		if (Bomb && Bomb->bUseInventory && AbilityG->CooldownText)

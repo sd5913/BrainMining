@@ -32,6 +32,7 @@ struct FMiningBombSettings
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMiningBombExplosionEvent, FVector, Location);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMiningBombSkillUnlockedEvent);
 
 UCLASS(ClassGroup=(Mining), meta=(BlueprintSpawnableComponent))
 class BRAINMINING_API UMiningBombToolComponent : public UActorComponent
@@ -58,6 +59,10 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category="Mining|Bomb") int32 LastExcavatedRocks = 0;
 	UPROPERTY(BlueprintReadOnly, Category="Mining|Bomb") int32 LastDebrisCount = 0;
 	UPROPERTY(BlueprintAssignable, Category="Mining|Bomb") FMiningBombExplosionEvent OnBombExploded;
+	UPROPERTY(BlueprintAssignable, Category="Mining|Bomb") FMiningBombSkillUnlockedEvent OnSkillUnlocked;
+	UFUNCTION(BlueprintPure, Category="Mining|Bomb") bool IsSkillUnlocked() const;
+	UFUNCTION(BlueprintCallable, Category="Mining|Bomb") void RequireSkillUnlock();
+	UFUNCTION(BlueprintCallable, Category="Mining|Bomb") bool UnlockSkill();
 	UFUNCTION(BlueprintCallable, Category="Mining|Bomb") bool ToggleEquipped();
 	UFUNCTION(BlueprintCallable, Category="Mining|Bomb") void Stow();
 	UFUNCTION(BlueprintCallable, Category="Mining|Bomb") bool ThrowBomb();

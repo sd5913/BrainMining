@@ -222,6 +222,7 @@ key=unreal.Key();key.set_editor_property('key_name','I');collection.set_editor_p
 hall=actors.spawn_actor_from_class(unreal.MiningExhibitHall,areas[0].entry.translation);hall.set_actor_label('CAMPAIGN_ContinuousFlow_EditAreasHere')
 hall.set_editor_property('linear_campaign',True);hall.set_editor_property('continuous_campaign',True);hall.set_editor_property('areas',areas);hall.set_editor_property('lobby_entry',areas[0].entry)
 actors.spawn_actor_from_class(unreal.PlayerStart,areas[0].entry.translation)
+runpy.run_path(str(root/'Scripts/add_campaign_minerals.py'))['populate'](world,hall)
 assert unreal.EditorLoadingAndSavingUtils.save_map(world,destination)
 (root/'Saved/FullJourneyManifest.json').write_text(json.dumps(dict(map=destination,continuous=True,stages=reports,recipe=recipe),ensure_ascii=False,indent=2),encoding='utf-8')
 unreal.log('CONTINUOUS_CAMPAIGN_SAVED '+destination)

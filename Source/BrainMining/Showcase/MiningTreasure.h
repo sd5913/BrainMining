@@ -10,6 +10,7 @@ class UMaterialInterface;
 class APlayerController;
 class UPointLightComponent;
 class UMaterialInstanceDynamic;
+class UInstancedStaticMeshComponent;
 
 USTRUCT(BlueprintType)
 struct FMiningTreasureDefinition
@@ -30,11 +31,29 @@ struct FMiningTreasureDefinition
     UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 SurfaceStyle = 0;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0")) int32 MinValue = 1;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0")) int32 MaxValue = 5;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<int32> ValueTiers;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bScaleWithValue = false;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0")) float Weight = 1;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FName> Regions;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bNormalLayer = true;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bGuideLayer = true;
     bool IsEligible(FName Region, bool bGuide) const;
+};
+
+USTRUCT(BlueprintType)
+struct FMiningTreasurePlacement
+{
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FName TreasureId;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 Value = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FName AreaTag;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float RouteProgress = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bGuideLayer = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform Transform;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform Surface;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<TObjectPtr<ADiggableRock>> Hosts;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FTransform> Fragments;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FVector> FragmentSupports;
 };
 
 UCLASS()
@@ -52,6 +71,12 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float Exposure = 0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bCollected = false;
     UPROPERTY() TArray<TObjectPtr<ADiggableRock>> CoveringRocks;
+    UPROPERTY(VisibleAnywhere) TObjectPtr<UInstancedStaticMeshComponent> CrystalClues;
+    UPROPERTY() TArray<FVector> CrystalSupports;
+    TArray<FTransform> CrystalTransforms;
+    void ConfigureCrystalClues(const FMiningTreasurePlacement& Placement);
+    static void MarkCoveredPoints(const TArray<TObjectPtr<ADiggableRock>>& Rocks, const TArray<FVector>& Points, TArray<bool>& Covered);
+    static float ValueScale(const FMiningTreasureDefinition& Definition, int32 InValue);
     bool Configure(const FMiningTreasureDefinition& Definition, int32 InValue, UMaterialInterface* Material);
     float MeasureExposure() const;
     static bool IsExposureEligible(float Ratio) { return FMath::IsFinite(Ratio) && Ratio > .5f; }
@@ -73,6 +98,9 @@ class BRAINMINING_API AMiningTreasureField : public AActor
 public:
     AMiningTreasureField();
     UPROPERTY(EditAnywhere, Category="Treasure") bool bUseSharedWallet = false;
+    UPROPERTY(EditAnywhere, Category="Treasure|Campaign") bool bUseAuthoredPlacements = false;
+    UPROPERTY(EditAnywhere, Category="Treasure|Campaign") TArray<FMiningTreasurePlacement> AuthoredPlacements;
+    FName ActiveAreaTag;
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
@@ -100,6 +128,8 @@ private:
     float ToastRemaining = 0;
     FString Toast;
     TArray<int32> ObservedCuts;
+    bool bAuthoredGenerated = false;
+    void SpawnAuthored();
     void RefreshTarget(APlayerController* Controller);
     void ClearGenerated();
 };

@@ -2,6 +2,8 @@
 #include "MiningWalletSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "DiggableRock.h"
+#include "GeneratedMiningRock.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/DynamicMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -38,6 +40,18 @@ AMiningTreasure::AMiningTreasure()
     GlowLight->SetCastShadows(false);
     GlowLight->SetVisibility(false);
     GlowLight->IndirectLightingIntensity = 0;
+    CrystalClues = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("EmbeddedCrystalClues"));
+    CrystalClues->SetupAttachment(Model);
+    CrystalClues->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    CrystalClues->SetCastShadow(false);
+    CrystalClues->SetCanEverAffectNavigation(false);
+}
+
+float AMiningTreasure::ValueScale(const FMiningTreasureDefinition& Definition, int32 InValue)
+{
+    if(!Definition.bScaleWithValue || Definition.MaxValue<=Definition.MinValue) return 1.f;
+    const float Ratio=FMath::Clamp(float(InValue-Definition.MinValue)/float(Definition.MaxValue-Definition.MinValue),0.f,1.f);
+    return FMath::Lerp(.70f,1.35f,Ratio);
 }
 
 bool AMiningTreasure::Configure(const FMiningTreasureDefinition& Definition, int32 InValue, UMaterialInterface* Material)
@@ -47,7 +61,7 @@ bool AMiningTreasure::Configure(const FMiningTreasureDefinition& Definition, int
     Value = InValue;
     BaseColor = Definition.Color;
     Model->SetStaticMesh(Definition.Model);
-    Model->SetRelativeScale3D(Definition.Scale);
+    Model->SetRelativeScale3D(Definition.Scale*ValueScale(Definition,InValue));
     if (Material)
     {
         auto* Tint = UMaterialInstanceDynamic::Create(Material, this);
@@ -116,24 +130,44 @@ bool AMiningTreasure::Configure(const FMiningTreasureDefinition& Definition, int
 float AMiningTreasure::MeasureExposure() const
 {
     if (SurfaceSamples.IsEmpty()) return 0;
-    TArray<bool> Covered;
-    Covered.Init(false, SurfaceSamples.Num());
-    for (const auto& Rock : CoveringRocks)
-    {
-        if (!IsValid(Rock) || Rock->TriangleCount == 0) continue;
-        const auto& Mesh = Rock->RockMesh->GetDynamicMesh()->GetMeshRef();
-        UE::Geometry::FDynamicMeshAABBTree3 Tree(&Mesh, true);
-        UE::Geometry::TFastWindingTree<UE::Geometry::FDynamicMesh3> Winding(&Tree);
-        for (int32 Index = 0; Index < SurfaceSamples.Num(); ++Index)
-        {
-            if (Covered[Index]) continue;
-            const FVector WorldPoint = Model->GetComponentTransform().TransformPosition(SurfaceSamples[Index]);
-            Covered[Index] = FMath::Abs(Winding.FastWindingNumber(Rock->GetActorTransform().InverseTransformPosition(WorldPoint))) >= .5;
-        }
-    }
+    TArray<FVector> Points;for(const FVector& P:SurfaceSamples)Points.Add(Model->GetComponentTransform().TransformPosition(P));
+    TArray<bool> Covered;MarkCoveredPoints(CoveringRocks,Points,Covered);
     int32 FreeCount = 0;
     for (bool bCovered : Covered) if (!bCovered) ++FreeCount;
     return float(FreeCount) / SurfaceSamples.Num();
+}
+
+void AMiningTreasure::MarkCoveredPoints(const TArray<TObjectPtr<ADiggableRock>>& Rocks,const TArray<FVector>& Points,TArray<bool>& Covered)
+{
+    Covered.Init(false,Points.Num());
+    if(Points.IsEmpty())return;
+    for(ADiggableRock* Rock:Rocks)
+    {
+        if(!IsValid(Rock))continue;
+        TArray<FVector> Local;FBox QueryBounds(ForceInit);
+        for(const FVector& P:Points){const FVector L=Rock->GetActorTransform().InverseTransformPosition(P);Local.Add(L);QueryBounds+=L;}
+        auto Mark=[&](UDynamicMeshComponent* Component,const FBox& Bounds)
+        {
+            if(!Component || !Bounds.Intersect(QueryBounds))return;
+            const auto& Mesh=Component->GetDynamicMesh()->GetMeshRef();if(!Mesh.TriangleCount())return;
+            UE::Geometry::FDynamicMeshAABBTree3 Tree(&Mesh,true);
+            UE::Geometry::TFastWindingTree<UE::Geometry::FDynamicMesh3> Winding(&Tree);
+            for(int I=0;I<Local.Num();++I)if(!Covered[I] && Bounds.IsInsideOrOn(Local[I]))
+                Covered[I]=FMath::Abs(Winding.FastWindingNumber(Local[I]))>=.5;
+        };
+        if(auto* Generated=Cast<AGeneratedMiningRock>(Rock);Generated && Generated->bChunked)
+        {for(const auto& Chunk:Generated->Chunks)Mark(Chunk.Mesh,Chunk.Bounds);}
+        else if(Rock->RockMesh)
+        {const auto Bounds=Rock->RockMesh->GetDynamicMesh()->GetMeshRef().GetBounds();Mark(Rock->RockMesh,FBox(FVector(Bounds.Min),FVector(Bounds.Max)));}
+    }
+}
+
+void AMiningTreasure::ConfigureCrystalClues(const FMiningTreasurePlacement& Placement)
+{
+    CrystalClues->SetStaticMesh(Model->GetStaticMesh());
+    CrystalClues->SetMaterial(0,Model->GetMaterial(0));
+    CrystalTransforms=Placement.Fragments;CrystalSupports=Placement.FragmentSupports;
+    for(const auto& T:CrystalTransforms)CrystalClues->AddInstance(T,true);
 }
 
 void AMiningTreasure::SetHighlighted(bool bEnabled)
@@ -246,11 +280,14 @@ void AMiningTreasureField::ClearGenerated()
 
 void AMiningTreasureField::ResetExhibit()
 {
+    // Authored campaign ore belongs to this run: re-entering/resetting soil must not mint it again.
+    if(bUseAuthoredPlacements && bAuthoredGenerated)return;
     ClearGenerated();
     Coins = bUseSharedWallet && GetGameInstance() ? GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>()->Balance : 0;
     CollectedCount = 0;
     ToastRemaining = 0;
     FRandomStream Random(RandomSeed);
+    if(bUseAuthoredPlacements){SpawnAuthored();return;}
     TSet<FName> Seen;
     for (const auto& Definition : Definitions)
     {
@@ -325,7 +362,7 @@ void AMiningTreasureField::RefreshTarget(APlayerController* Controller)
     if (GetWorld()->LineTraceSingleByChannel(Hit, View, View + Rotation.Vector() * 400, ECC_Visibility, Query))
     {
         auto* Item = Cast<AMiningTreasure>(Hit.GetActor());
-        if (IsValid(Item) && Items.Contains(Item) && !Item->bCollected)
+        if (IsValid(Item) && Items.Contains(Item) && !Item->bCollected && (!bUseAuthoredPlacements || Item->ActorHasTag(ActiveAreaTag)))
         {
             Target = Item;
             Target->Exposure = Target->MeasureExposure();
@@ -349,9 +386,8 @@ void AMiningTreasureField::Tick(float DeltaSeconds)
     for (int32 Index = 0; Index < Items.Num(); ++Index)
     {
         auto* Item = Items[Index].Get();
-        if (!IsValid(Item) || Item->bCollected) continue;
-        auto* Rock = Item->CoveringRocks.IsEmpty() ? nullptr : Item->CoveringRocks[0].Get();
-        const int32 Cuts = IsValid(Rock) ? Rock->SuccessfulCuts : INDEX_NONE;
+        if (!IsValid(Item) || Item->bCollected || (bUseAuthoredPlacements && !Item->ActorHasTag(ActiveAreaTag))) continue;
+        int32 Cuts=0;for(ADiggableRock* Rock:Item->CoveringRocks)if(IsValid(Rock))Cuts+=Rock->SuccessfulCuts;
         if (ObservedCuts[Index] != Cuts)
         {
             Item->Exposure = Item->MeasureExposure();
@@ -379,7 +415,8 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
     Toast = FString::Printf(TEXT("%s  +%d 金币"), *Item->TreasureName.ToString(), Item->Value);
     ToastRemaining = 3;
     Item->SetActorEnableCollision(false);
-    Item->SetActorHiddenInGame(true);
+    if(bUseAuthoredPlacements) Item->Model->SetVisibility(false,false);
+    else Item->SetActorHiddenInGame(true);
     Target = nullptr;
     return true;
 }

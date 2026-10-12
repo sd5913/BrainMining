@@ -77,6 +77,8 @@ class ABrainMiningCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<USceneComponent> BombMount;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<USceneComponent> BombMotion;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<UStaticMeshComponent> BombModel;
 
 protected:
@@ -156,5 +158,6 @@ public:
 	USceneComponent* GetDrillLeftMotion() const { return DrillLeftMotion; }
 	UStaticMeshComponent* GetDrillLeftModel() const { return DrillLeftModel; }
 	UStaticMeshComponent* GetBombModel() const { return BombModel; }
+	USceneComponent* GetBombMotion() const { return BombMotion; }
 
 };

@@ -12,7 +12,7 @@ class UNiagaraComponent;
 class UPointLightComponent;
 class UInstancedStaticMeshComponent;
 
-/** Chaos rigid body: gravity, CCD, ground/wall contacts and a throw-started fuse. */
+/** Physical flight until first contact, then attached until the throw-started fuse expires. */
 UCLASS()
 class BRAINMINING_API AMiningBombActor : public AActor
 {
@@ -27,6 +27,8 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category="Bomb") double LaunchedAt = -1;
 	UPROPERTY(BlueprintReadOnly, Category="Bomb") int32 ContactCount = 0;
 	UPROPERTY(BlueprintReadOnly, Category="Bomb") bool bExploded = false;
+	UPROPERTY(BlueprintReadOnly, Category="Bomb") bool bStuck = false;
+	UPROPERTY(BlueprintReadOnly, Category="Bomb") double StuckAt = -1;
 	UFUNCTION(BlueprintCallable, Category="Bomb") void Explode();
 private:
 	UPROPERTY() TObjectPtr<UPhysicalMaterial> BounceMaterial;

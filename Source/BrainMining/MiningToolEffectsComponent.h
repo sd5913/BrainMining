@@ -67,7 +67,7 @@ public:
 	FVector LeftDrillLocation = FVector(64, -25, -10);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Legacy Runtime Pose", AdvancedDisplay)
 	FRotator LeftDrillRotation = FRotator(14, 18, 0);
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill|Presentation", meta=(ClampMin="0.05", ClampMax="0.6"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Tools|Presentation", meta=(ClampMin="0.05", ClampMax="0.6"))
 	float ToolEquipDuration = 0.22f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill|Effects", meta=(ClampMin="12", ClampMax="64"))
 	int32 DrillDebrisChunkCount = 56;
@@ -125,6 +125,8 @@ public:
 	TObjectPtr<USceneComponent> PickaxePivot;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Effects")
 	TObjectPtr<UStaticMeshComponent> PickaxeMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Tools|Presentation")
+	TObjectPtr<USceneComponent> BombPivot;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Effects")
 	bool bSwinging = false;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Effects")
@@ -165,6 +167,7 @@ private:
 	double SwingStart = 0;
 	double DrillAnimationTime = 0;
 	float EquipElapsed = 1;
+	int32 LastPresentedTool = 0;
 	bool bPendingDrillImpact = false;
 	bool bUsesCharacterComponents = false;
 	static constexpr float SourceSwingDuration = 13.f / 30.f;

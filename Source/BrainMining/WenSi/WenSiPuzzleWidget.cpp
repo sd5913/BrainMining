@@ -13,7 +13,7 @@
 
 namespace
 {
- FSlateFontInfo ThoughtFont(float Size)
+ FSlateFontInfo PuzzleThoughtFont(float Size)
  {
   static TSharedPtr<const FCompositeFont> Font;
   if (!Font)
@@ -23,10 +23,10 @@ namespace
   }
   return Font ? FSlateFontInfo(Font,Size) : FCoreStyle::GetDefaultFontStyle(TEXT("Regular"),Size);
  }
- class FThoughtDrag : public FDragDropOperation
+ class FPuzzleThoughtDrag : public FDragDropOperation
  {
  public:
-  DRAG_DROP_OPERATOR_TYPE(FThoughtDrag,FDragDropOperation)
+  DRAG_DROP_OPERATOR_TYPE(FPuzzleThoughtDrag,FDragDropOperation)
   int32 ThoughtIndex=0;
   FString Word;
   TWeakObjectPtr<AWenSiObject> Source;
@@ -35,7 +35,7 @@ namespace
   {
    bCreateNewWindow=true;
    Decorator=SNew(SBorder).Padding(FMargin(8,4)).BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"))).BorderBackgroundColor(FLinearColor(.22f,.045f,.03f,.95f)).Visibility(EVisibility::HitTestInvisible)
-    [SNew(STextBlock).Text(FText::FromString(Word)).Font(ThoughtFont(23)).ColorAndOpacity(FLinearColor(1.f,.22f,.18f))];
+    [SNew(STextBlock).Text(FText::FromString(Word)).Font(PuzzleThoughtFont(23)).ColorAndOpacity(FLinearColor(1.f,.22f,.18f))];
    Construct();
   }
   virtual void OnDragged(const FDragDropEvent& Event) override
@@ -47,10 +47,10 @@ namespace
   virtual TSharedPtr<SWidget> GetDefaultDecorator() const override
   { return Decorator; }
  };
- class SThoughtWord : public SBorder
+ class SPuzzleThoughtWord : public SBorder
  {
  public:
-  SLATE_BEGIN_ARGS(SThoughtWord) {}
+  SLATE_BEGIN_ARGS(SPuzzleThoughtWord) {}
    SLATE_ARGUMENT(int32,ThoughtIndex)
    SLATE_ARGUMENT(FString,Word)
    SLATE_ARGUMENT(TWeakObjectPtr<AWenSiPuzzle>,Puzzle)
@@ -63,7 +63,7 @@ namespace
    Index=Args._ThoughtIndex; Puzzle=Args._Puzzle; Word=Args._Word;
    SBorder::Construct(SBorder::FArguments().Padding(FMargin(5,2)).BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"))).BorderBackgroundColor(FLinearColor(.22,.045,.03,.9))
     [ SNew(SVerticalBox)
-      +SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(Word)).Font(ThoughtFont(22)).ColorAndOpacity(FLinearColor(1,.28,.22))]
+      +SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(Word)).Font(PuzzleThoughtFont(22)).ColorAndOpacity(FLinearColor(1,.28,.22))]
       +SVerticalBox::Slot().AutoHeight()[SNew(SBorder).Padding(FMargin(0,1)).BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"))).BorderBackgroundColor(FLinearColor(1,.28,.22))]
     ]);
    SetVisibility(EVisibility::Visible);
@@ -78,13 +78,13 @@ namespace
   virtual FReply OnDragDetected(const FGeometry&,const FPointerEvent& Event) override
   {
    if (!Puzzle.IsValid() || !Puzzle->bEditing || !Puzzle->Thoughts[Index].IsValid()) return FReply::Unhandled();
-   auto Drag=MakeShared<FThoughtDrag>(); Drag->ThoughtIndex=Index; Drag->Word=Word; Drag->Source=Puzzle->Thoughts[Index]; Drag->InitializeDecorator();
+   auto Drag=MakeShared<FPuzzleThoughtDrag>(); Drag->ThoughtIndex=Index; Drag->Word=Word; Drag->Source=Puzzle->Thoughts[Index]; Drag->InitializeDecorator();
    Drag->OnDragged(FDragDropEvent(Event,Drag));
    return FReply::Handled().BeginDragDrop(Drag);
   }
   virtual FReply OnDrop(const FGeometry&,const FDragDropEvent& E) override
   {
-   auto Drag=E.GetOperationAs<FThoughtDrag>();
+   auto Drag=E.GetOperationAs<FPuzzleThoughtDrag>();
    UE_LOG(LogTemp,Verbose,TEXT("WenSi word drop: index=%d payload=%d"),Index,Drag.IsValid());
    if (Drag && Puzzle.IsValid() && Drag->ThoughtIndex!=Index && Drag->Source==Puzzle->Thoughts[Drag->ThoughtIndex])
    { Puzzle->SwapRules(Drag->ThoughtIndex,Index); return FReply::Handled(); }
@@ -108,8 +108,8 @@ TSharedRef<SWidget> UWenSiPuzzleWidget::RebuildWidget()
  auto Overlay=SNew(SOverlay)
   +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center).Padding(24,0)[SAssignNew(Cards[0],SBorder).BorderImage(FCoreStyle::Get().GetBrush(TEXT("NoBrush")))[MakeCard(0)]]
   +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center).Padding(24,0)[SAssignNew(Cards[1],SBorder).BorderImage(FCoreStyle::Get().GetBrush(TEXT("NoBrush")))[MakeCard(1)]]
-  +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("·"))).Font(ThoughtFont(24)).Visibility_Lambda([this](){return !UMiningInteractionHUDWidget::IsActiveFor(GetOwningPlayer()) && Puzzle.IsValid() && !Puzzle->bEditing && (!Puzzle->bComplete || Puzzle->ResetButton) ? EVisibility::HitTestInvisible:EVisibility::Collapsed;})]
-  +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,40)[SAssignNew(Hint,STextBlock).Font(ThoughtFont(18)).ColorAndOpacity(FLinearColor::White).ShadowOffset(FVector2D(1,1))];
+  +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("·"))).Font(PuzzleThoughtFont(24)).Visibility_Lambda([this](){return !UMiningInteractionHUDWidget::IsActiveFor(GetOwningPlayer()) && Puzzle.IsValid() && !Puzzle->bEditing && (!Puzzle->bComplete || Puzzle->ResetButton) ? EVisibility::HitTestInvisible:EVisibility::Collapsed;})]
+  +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,40)[SAssignNew(Hint,STextBlock).Font(PuzzleThoughtFont(18)).ColorAndOpacity(FLinearColor::White).ShadowOffset(FVector2D(1,1))];
  Signature.Empty();
  return Overlay;
 }
@@ -140,9 +140,9 @@ void UWenSiPuzzleWidget::Refresh()
    auto Obj=Puzzle->Thoughts[I].Get();
    Cards[I]->SetVisibility(Obj ? (Puzzle->bEditing ? EVisibility::Visible:EVisibility::HitTestInvisible) : EVisibility::Collapsed);
    Rows[I]->ClearChildren(); if (!Obj) continue;
-   Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("这是一个"))).Font(ThoughtFont(22))];
-   Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(SThoughtWord).ThoughtIndex(I).Word(Obj->Adjective()).Puzzle(Puzzle)];
-   Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("的")+Obj->Noun()+TEXT("。"))).Font(ThoughtFont(22))];
+   Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("这是一个"))).Font(PuzzleThoughtFont(22))];
+   Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(SPuzzleThoughtWord).ThoughtIndex(I).Word(Obj->Adjective()).Puzzle(Puzzle)];
+   Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("的")+Obj->Noun()+TEXT("。"))).Font(PuzzleThoughtFont(22))];
   }
  }
  FString Message;

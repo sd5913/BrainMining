@@ -1,4 +1,5 @@
 #include "MiningBombActor.h"
+#include "MiningBombPresentationComponent.h"
 #include "DiggableRock.h"
 #include "MiningDebrisBurst.h"
 #include "MiningDrillDustBurst.h"
@@ -32,7 +33,7 @@ AMiningBombActor::AMiningBombActor()
 	Collision->OnComponentHit.AddDynamic(this, &ThisClass::Contact);
 	BounceMaterial = CreateDefaultSubobject<UPhysicalMaterial>(TEXT("BombBounceMaterial"));
 	BounceMaterial->Friction = .45f;
-	BounceMaterial->Restitution = .4f;
+	BounceMaterial->Restitution = 0.f;
 	Collision->SetPhysMaterialOverride(BounceMaterial);
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BombModel"));
 	Model->SetupAttachment(Collision);
@@ -57,16 +58,35 @@ void AMiningBombActor::Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMining
 	Collision->SetPhysicsLinearVelocity(Velocity);
 	Collision->SetPhysicsAngularVelocityInDegrees(FVector(250, 180, 90));
 	LaunchedAt = GetWorld()->GetTimeSeconds();
+	auto* Presentation = NewObject<UMiningBombPresentationComponent>(this, TEXT("BombCountdownPresentation"));
+	Presentation->RegisterComponent();
+	Presentation->Initialize(Model, LaunchedAt, Settings.FuseSeconds);
 	GetWorldTimerManager().SetTimer(FuseTimer, this, &ThisClass::Explode, FMath::Clamp(Settings.FuseSeconds, .1f, 30.f), false);
 	GetWorldTimerManager().SetTimer(PawnGraceTimer, [this]()
 	{
-		if (!bExploded) Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		if (!bExploded && !bStuck) Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	}, .15f, false);
 }
 
-void AMiningBombActor::Contact(UPrimitiveComponent*, AActor*, UPrimitiveComponent*, FVector, const FHitResult&)
+void AMiningBombActor::Contact(UPrimitiveComponent*, AActor* Other, UPrimitiveComponent* OtherComponent, FVector, const FHitResult& Result)
 {
 	++ContactCount;
+	if (bExploded || bStuck || !IsValid(OtherComponent) || Other == this) return;
+	// Latch before stopping physics because one physics step may report several
+	// contacts. Do not restart the fuse: it still counts from the throw.
+	bStuck = true;
+	StuckAt = GetWorld()->GetTimeSeconds();
+	GetWorldTimerManager().ClearTimer(PawnGraceTimer);
+	Collision->SetPhysicsLinearVelocity(FVector::ZeroVector);
+	Collision->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	Collision->SetSimulatePhysics(false);
+	Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	const FVector Normal = Result.ImpactNormal.GetSafeNormal();
+	if (Result.bBlockingHit && !Result.ImpactPoint.ContainsNaN() && !Normal.IsNearlyZero())
+		SetActorLocation(Result.ImpactPoint + Normal * (Collision->GetScaledSphereRadius() + .5f), false, nullptr, ETeleportType::TeleportPhysics);
+	// Keep the flight orientation; follow moving components and skeletal bones
+	// without welding the bomb into the contacted body's physics simulation.
+	AttachToComponent(OtherComponent, FAttachmentTransformRules::KeepWorldTransform, Result.BoneName);
 }
 
 void AMiningBombActor::ApplyShockwave(const FVector& Location)

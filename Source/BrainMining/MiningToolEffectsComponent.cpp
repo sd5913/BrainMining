@@ -18,7 +18,7 @@ UMiningToolEffectsComponent::UMiningToolEffectsComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	PickaxeMeshAsset = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe")));
 	SwingCurveAsset = TSoftObjectPtr<UCurveFloat>(FSoftObjectPath(TEXT("/Game/Pickaxe/CF_PickaxeSwing.CF_PickaxeSwing")));
-	DrillMeshAsset = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Drill/SM_Drill.SM_Drill")));
+	DrillMeshAsset = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Drill/Stylized/SM_DrillStylized.SM_DrillStylized")));
 	DrillSpinCurveAsset = TSoftObjectPtr<UCurveFloat>(FSoftObjectPath(TEXT("/Game/Drill/CF_DrillSpin.CF_DrillSpin")));
 	DrillDustMaterialAsset = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Drill/M_DrillDust.M_DrillDust")));
 	DrillSmokeMaterialAsset = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Drill/M_DrillSmoke.M_DrillSmoke")));
@@ -60,6 +60,7 @@ void UMiningToolEffectsComponent::BeginPlay()
 		bUsesCharacterComponents = true;
 		PickaxePivot = Character->GetPickaxeMotion();
 		PickaxeMesh = Character->GetPickaxeModel();
+		BombPivot = Character->GetBombMotion();
 		DrillPivot = Character->GetDrillRightMotion();
 		DrillMesh = Character->GetDrillRightModel();
 		LeftDrillPivot = Character->GetDrillLeftMotion();
@@ -130,6 +131,7 @@ void UMiningToolEffectsComponent::BeginPlay()
 	Mining->OnToolModeChanged.AddDynamic(this, &UMiningToolEffectsComponent::UpdateToolMode);
 	UpdateToolMode(Mining->bDrillMode);
 	EquipElapsed = ToolEquipDuration;
+	LastPresentedTool = Mining->bDrillMode ? 1 : 0;
 }
 
 void UMiningToolEffectsComponent::UpdateToolMode(bool bDrillMode)
@@ -297,9 +299,23 @@ void UMiningToolEffectsComponent::TickComponent(float DeltaTime, ELevelTick Tick
 		bDrillRunning = false;
 		return;
 	}
-	if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); Bomb && Bomb->bEquipped)
+	const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>();
+	const bool bBombEquipped = Bomb && Bomb->bEquipped;
+	if (bBombEquipped && bSwinging) ResetEffects();
+	const int32 PresentedTool = bBombEquipped ? 2 : Mining->bDrillMode ? 1 : 0;
+	if (PresentedTool != LastPresentedTool)
 	{
-		if (bSwinging) ResetEffects();
+		LastPresentedTool = PresentedTool;
+		EquipElapsed = 0;
+	}
+	EquipElapsed += FMath::Max(0.f, DeltaTime);
+	const float EquipAlpha = FMath::Clamp(EquipElapsed / FMath::Max(0.05f, ToolEquipDuration), 0.f, 1.f);
+	const float EquipOffset = FMath::Pow(1.f - EquipAlpha, 3.f);
+	const FVector Lowered(0, 0, -14.f * EquipOffset);
+	const FRotator EquipTilt(-12.f * EquipOffset, 0, 0);
+	ApplyToolMotion(BombPivot, FVector(45, 23, -20), FRotator(-12, 0, -8), Lowered, EquipTilt);
+	if (bBombEquipped)
+	{
 		PickaxeMesh->SetVisibility(false);
 		if (DrillMesh) DrillMesh->SetVisibility(false);
 		if (LeftDrillMesh) LeftDrillMesh->SetVisibility(false);
@@ -324,11 +340,6 @@ void UMiningToolEffectsComponent::TickComponent(float DeltaTime, ELevelTick Tick
 		if (DrillMesh) DrillMesh->SetRelativeScale3D(FVector(SafeScale));
 		if (LeftDrillMesh) LeftDrillMesh->SetRelativeScale3D(FVector(SafeScale, -SafeScale, SafeScale));
 	}
-	EquipElapsed += FMath::Max(0.f, DeltaTime);
-	const float EquipAlpha = FMath::Clamp(EquipElapsed / FMath::Max(0.05f, ToolEquipDuration), 0.f, 1.f);
-	const float EquipOffset = FMath::Pow(1.f - EquipAlpha, 3.f);
-	const FVector Lowered(0, 0, -14.f * EquipOffset);
-	const FRotator EquipTilt(-12.f * EquipOffset, 0, 0);
 	ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator, Lowered, EquipTilt);
 	bDrillRunning = Mining->bDrillMode && Mining->IsMiningActive() && IsValid(DrillMesh) && IsValid(DrillSpinCurve);
 	if (bDrillRunning)
@@ -376,6 +387,7 @@ void UMiningToolEffectsComponent::ResetEffects()
 	ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator, FVector::ZeroVector, FRotator::ZeroRotator);
 	ApplyToolMotion(DrillPivot, DrillLocation, DrillRotation, FVector::ZeroVector, FRotator::ZeroRotator);
 	ApplyToolMotion(LeftDrillPivot, LeftDrillLocation, LeftDrillRotation, FVector::ZeroVector, FRotator::ZeroRotator);
+	ApplyToolMotion(BombPivot, FVector(45, 23, -20), FRotator(-12, 0, -8), FVector::ZeroVector, FRotator::ZeroRotator);
 	for (const TWeakObjectPtr<AActor>& Actor : DebrisActors) if (Actor.IsValid()) Actor->Destroy();
 	DebrisActors.Reset();
 	for (const TWeakObjectPtr<AActor>& Actor : DustActors) if (Actor.IsValid()) Actor->Destroy();

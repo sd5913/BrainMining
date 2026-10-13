@@ -69,12 +69,15 @@ public:
  TWeakObjectPtr<AWenSiPuzzle> Puzzle;
  virtual TSharedRef<SWidget> RebuildWidget() override;
  virtual FReply NativeOnKeyDown(const FGeometry& Geometry, const FKeyEvent& Event) override;
+ virtual void NativeTick(const FGeometry& MyGeometry,float InDeltaTime) override;
  void Refresh();
 private:
  UPROPERTY(Transient) TObjectPtr<class UTexture2D> ThoughtTexture;
  FSlateBrush ThoughtBrushes[2];
  TSharedPtr<SHorizontalBox> Rows[2];
  TSharedPtr<SWidget> Cards[2];
+ TWeakObjectPtr<UObject> PresentedThoughts[2];
+ float FlightAge[2]={-1.f,-1.f};
  TSharedPtr<STextBlock> Hint;
  FString Signature;
 };

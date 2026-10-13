@@ -121,6 +121,11 @@ FReply UWenSiMirrorWidget::NativeOnKeyDown(const FGeometry& G,const FKeyEvent& E
  }
  return Super::NativeOnKeyDown(G,E);
 }
+void UWenSiMirrorWidget::NativeTick(const FGeometry& MyGeometry,float InDeltaTime)
+{
+ Super::NativeTick(MyGeometry,InDeltaTime);
+ for(int32 I=0;I<2;++I)WenSiThoughtBubble::AdvanceFlight(Cards[I],MyGeometry,InDeltaTime,FlightAge[I]);
+}
 void UWenSiMirrorWidget::Refresh()
 {
  if (!Puzzle.IsValid() || !Hint.IsValid()) return;
@@ -136,6 +141,12 @@ void UWenSiMirrorWidget::Refresh()
   for (int32 I=0;I<2;++I)
   {
    auto Obj=Puzzle->Thoughts[I].Get();
+   if(PresentedThoughts[I].Get()!=Obj)
+   {
+    PresentedThoughts[I]=Obj;FlightAge[I]=Obj ? 0.f:-1.f;
+    Cards[I]->SetRenderOpacity(Obj ? 0.f:1.f);
+    Cards[I]->SetRenderTransform(FSlateRenderTransform());
+   }
    Cards[I]->SetVisibility(Obj ? (Puzzle->bEditing ? EVisibility::Visible:EVisibility::HitTestInvisible) : EVisibility::Collapsed);
    Rows[I]->ClearChildren(); if (!Obj) continue;
    WenSiThoughtBubble::AddText(Rows[I],TEXT("这是一个"),ThoughtFont(26));

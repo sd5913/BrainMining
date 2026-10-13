@@ -1,5 +1,7 @@
 # BrainMining
 
+关卡、工具和说明文档统一入口：[项目导航（供开发者与 AI 快速定位）](PROJECT_INDEX.md)。
+
 ## main 整合入口
 
 当前默认地图为全流程试玩关卡。双击 Play_Main.cmd 或 Play_FullJourney.cmd，依次体验三段挖掘与四个怪诞房间。同一角色、同一 Persistent Level，四类收藏跨段保留。详见 [全流程试玩与重新拼装说明](README_FullJourney.md)。源码更新后先编译 BrainMiningEditor。

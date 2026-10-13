@@ -1,0 +1,262 @@
+{
+  "seed": 20261015,
+  "factor": 0.9999999910593033,
+  "objects": [
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 6.0,
+      "allowed_end_m": 10.199544654867328,
+      "name": "SM_MainGame_Stalagmite_Blocker_01",
+      "seed": 20261206,
+      "start_arc_m": 6.000000018773427,
+      "end_arc_m": 10.1995446360939,
+      "arc_length_m": 4.199544617320473,
+      "center_m": [
+        -57.336204528808594,
+        -0.6968903541564941,
+        62.4754524230957
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 11.699544654867328,
+      "allowed_end_m": 15.899089309734656,
+      "name": "SM_MainGame_Stalagmite_Blocker_02",
+      "seed": 20261397,
+      "start_arc_m": 11.699544673640755,
+      "end_arc_m": 15.899089290961228,
+      "arc_length_m": 4.199544617320473,
+      "center_m": [
+        -51.98081588745117,
+        -1.476668357849121,
+        60.699012756347656
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 17.399089309734656,
+      "allowed_end_m": 27.298178619469308,
+      "name": "SM_MainGame_Stalagmite_Blocker_03",
+      "seed": 20261588,
+      "start_arc_m": 17.39908935398703,
+      "end_arc_m": 27.29817857521693,
+      "arc_length_m": 9.8990892212299,
+      "center_m": [
+        -44.62584686279297,
+        -4.7884440422058105,
+        58.03435516357422
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 36.29817861946931,
+      "allowed_end_m": 55.60205189613979,
+      "name": "SM_MainGame_Stalagmite_Blocker_04",
+      "seed": 20261779,
+      "start_arc_m": 36.29817870576436,
+      "end_arc_m": 55.60205180984475,
+      "arc_length_m": 19.303873104080395,
+      "center_m": [
+        -23.447805404663086,
+        -7.752986907958984,
+        50.678218841552734
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 64.60205189613978,
+      "allowed_end_m": 72.17884051887648,
+      "name": "SM_MainGame_Stalagmite_Blocker_05",
+      "seed": 20261970,
+      "start_arc_m": 64.60205193001067,
+      "end_arc_m": 72.1788404850056,
+      "arc_length_m": 7.57678855499492,
+      "center_m": [
+        -9.510828971862793,
+        7.828596115112305,
+        43.683990478515625
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 79.57884051887649,
+      "allowed_end_m": 87.98099353144104,
+      "name": "SM_MainGame_Stalagmite_Blocker_06",
+      "seed": 20262161,
+      "start_arc_m": 79.57884055643704,
+      "end_arc_m": 87.98099349388049,
+      "arc_length_m": 8.402152937443446,
+      "center_m": [
+        3.7217352390289307,
+        13.26148796081543,
+        38.88738250732422
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 89.48099353144104,
+      "allowed_end_m": 97.88314654400558,
+      "name": "SM_MainGame_Stalagmite_Blocker_07",
+      "seed": 20262352,
+      "start_arc_m": 89.4809935690016,
+      "end_arc_m": 97.88314650644504,
+      "arc_length_m": 8.402152937443446,
+      "center_m": [
+        10.295183181762695,
+        9.296086311340332,
+        35.80107116699219
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 106.88314654400558,
+      "allowed_end_m": 112.60342020597201,
+      "name": "SM_MainGame_Stalagmite_Blocker_08",
+      "seed": 20262543,
+      "start_arc_m": 106.8831465695772,
+      "end_arc_m": 112.6034201804004,
+      "arc_length_m": 5.720273610823199,
+      "center_m": [
+        6.669875144958496,
+        -5.343287467956543,
+        30.795093536376953
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 114.10342020597201,
+      "allowed_end_m": 119.82369386793846,
+      "name": "SM_MainGame_Stalagmite_Blocker_09",
+      "seed": 20262734,
+      "start_arc_m": 114.10342023154362,
+      "end_arc_m": 119.82369384236685,
+      "arc_length_m": 5.720273610823227,
+      "center_m": [
+        12.154327392578125,
+        -9.126070976257324,
+        28.54467010498047
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 127.22369386793847,
+      "allowed_end_m": 131.1968148585055,
+      "name": "SM_MainGame_Stalagmite_Blocker_10",
+      "seed": 20262925,
+      "start_arc_m": 127.22369388569969,
+      "end_arc_m": 131.19681484074425,
+      "arc_length_m": 3.973120955044564,
+      "center_m": [
+        23.60589027404785,
+        -10.98613452911377,
+        24.72760581970215
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 132.6968148585055,
+      "allowed_end_m": 136.66993584907254,
+      "name": "SM_MainGame_Stalagmite_Blocker_11",
+      "seed": 20263116,
+      "start_arc_m": 132.69681487626673,
+      "end_arc_m": 136.6699358313113,
+      "arc_length_m": 3.9731209550445783,
+      "center_m": [
+        28.7736873626709,
+        -10.613312721252441,
+        23.021738052368164
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 145.66993584907254,
+      "allowed_end_m": 166.46241981134068,
+      "name": "SM_MainGame_Stalagmite_Blocker_12",
+      "seed": 20263307,
+      "start_arc_m": 145.6699359420222,
+      "end_arc_m": 166.46241971839103,
+      "arc_length_m": 20.79248377636884,
+      "center_m": [
+        46.60917663574219,
+        -1.0102580785751343,
+        16.35712242126465
+      ]
+    },
+    {
+      "path_index": 1,
+      "path_name": "Branch_01",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.470192312139883,
+      "name": "SM_MainGame_Stalagmite_Blocker_13",
+      "seed": 20263498,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.470192285451043,
+      "arc_length_m": 5.970192258762204,
+      "center_m": [
+        -38.39845275878906,
+        -17.588449478149414,
+        51.7765007019043
+      ]
+    },
+    {
+      "path_index": 2,
+      "path_name": "Branch_02",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.470192312139883,
+      "name": "SM_MainGame_Stalagmite_Blocker_14",
+      "seed": 20263689,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.470192285451043,
+      "arc_length_m": 5.970192258762204,
+      "center_m": [
+        -7.494086742401123,
+        -4.669582366943359,
+        42.95471954345703
+      ]
+    },
+    {
+      "path_index": 3,
+      "path_name": "Branch_03",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.47019231213988,
+      "name": "SM_MainGame_Stalagmite_Blocker_15",
+      "seed": 20263880,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.47019228545104,
+      "arc_length_m": 5.9701922587622,
+      "center_m": [
+        -1.198325276374817,
+        1.98734712600708,
+        29.77650260925293
+      ]
+    },
+    {
+      "path_index": 4,
+      "path_name": "Branch_04",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.47019231213989,
+      "name": "SM_MainGame_Stalagmite_Blocker_16",
+      "seed": 20264071,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.47019228545105,
+      "arc_length_m": 5.970192258762211,
+      "center_m": [
+        40.745574951171875,
+        -14.38769817352295,
+        17.687393188476562
+      ]
+    }
+  ]
+}

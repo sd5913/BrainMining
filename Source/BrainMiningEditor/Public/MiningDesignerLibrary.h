@@ -25,6 +25,9 @@ public:
     static bool PrepareCampaignMinerals(AMiningTreasureField* Field);
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
     static bool RefineCampaignCrystalClues(AMiningTreasureField* Field, bool bPreserveSurface = false);
+    // Read-only editor validation. JSON contains ok, errors and per-deposit density/support data.
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static FString ValidateCampaignMinerals(AMiningTreasureField* Field);
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
     static bool OptimizeCampaignTerrain(AActor* Hall);
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")

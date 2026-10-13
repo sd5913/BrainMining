@@ -4,6 +4,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "EngineUtils.h"
 #include "Engine/World.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 
 bool UMiningDesignerLibrary::OptimizeCampaignTerrain(AActor* Hall)
 {
@@ -23,13 +25,14 @@ bool UMiningDesignerLibrary::OptimizeCampaignTerrain(AActor* Hall)
 TArray<FMiningTreasurePlacement> UMiningDesignerLibrary::FindCampaignMineralSites(AActor* Actor)
 {
     TArray<FMiningTreasurePlacement> Sites;
-    auto* Hall=Cast<AMiningExhibitHall>(Actor);if(!Hall)return Sites;
+    auto* Hall=Cast<AMiningExhibitHall>(Actor);if(!Hall || !Hall->GetWorld() || Hall->GetWorld()->IsGameWorld())return Sites;
     for(const auto& Area:Hall->Areas)
     {
         if(Area.Kind!=EMiningExperienceKind::Mining || Area.MapRoute.Num()<2)continue;
         TArray<ADiggableRock*> Rocks;
         for(TActorIterator<ADiggableRock> It(Hall->GetWorld());It;++It)
             if(It->ActorHasTag(Area.Tag) && !It->GetActorLabel().Contains(TEXT("BuriedBank")))Rocks.Add(*It);
+        Rocks.Sort([](const ADiggableRock& A,const ADiggableRock& B){return A.GetPathName()<B.GetPathName();});
         TArray<double> Arcs={0};
         for(int I=1;I<Area.MapRoute.Num();++I)Arcs.Add(Arcs.Last()+FVector::Dist(Area.MapRoute[I-1],Area.MapRoute[I]));
         const double Length=Arcs.Last();
@@ -69,7 +72,7 @@ TArray<FMiningTreasurePlacement> UMiningDesignerLibrary::FindCampaignMineralSite
 
 bool UMiningDesignerLibrary::PrepareCampaignMinerals(AMiningTreasureField* Field)
 {
-    if(!Field)return false;
+    if(!Field || !Field->GetWorld() || Field->GetWorld()->IsGameWorld())return false;
     FRandomStream Random(74621);int Failures=0;
     for(auto& P:Field->AuthoredPlacements)
     {
@@ -188,7 +191,7 @@ bool UMiningDesignerLibrary::PrepareCampaignMinerals(AMiningTreasureField* Field
 
 bool UMiningDesignerLibrary::RefineCampaignCrystalClues(AMiningTreasureField* Field, bool bPreserveSurface)
 {
-    if(!Field || !Field->GetWorld())return false;
+    if(!Field || !Field->GetWorld() || Field->GetWorld()->IsGameWorld())return false;
     Field->Modify();
     FRandomStream Random(482771);
     int Failures=0;
@@ -258,7 +261,8 @@ bool UMiningDesignerLibrary::RefineCampaignCrystalClues(AMiningTreasureField* Fi
                 Add(Q,Q,Random.FRandRange(.11,.17),FMath::Lerp(25.f,17.f,T));
             }
         }
-        int Inner=0;for(const FVector& Q:P.FragmentSupports)Inner+=FVector::DistSquared(Q,Core)<225*225;
+        int Inner=0;for(int I=0;I<P.FragmentSupports.Num();++I)
+            Inner+=FVector::DistSquared(P.FragmentSupports[I],Core)<225*225 && FVector::DistSquared(P.Fragments[I].GetLocation(),P.FragmentSupports[I])<=1;
         const int Target=P.Fragments.Num()+FMath::Max(0,850-Inner);
         for(int Attempt=0;Attempt<18000 && P.Fragments.Num()<Target;++Attempt)
         {
@@ -275,8 +279,13 @@ bool UMiningDesignerLibrary::RefineCampaignCrystalClues(AMiningTreasureField* Fi
         // per unit volume, instead of relying on the average of a random sample.
         auto CountShell=[&](float Low,float High)
         {
-            int Count=0;for(const FVector& Q:P.FragmentSupports)
-            {const double D=FVector::DistSquared(Q,Core);Count+=D>=Low*Low && D<High*High;}
+            int Count=0;for(int I=0;I<P.FragmentSupports.Num();++I)
+            {
+                // Density is for buried inclusions only; shallow surface clues
+                // must not artificially satisfy the inner-shell target.
+                if(FVector::DistSquared(P.Fragments[I].GetLocation(),P.FragmentSupports[I])>1)continue;
+                const double D=FVector::DistSquared(P.FragmentSupports[I],Core);Count+=D>=Low*Low && D<High*High;
+            }
             return Count;
         };
         auto FillShell=[&](float Low,float High,int Wanted)
@@ -294,8 +303,79 @@ bool UMiningDesignerLibrary::RefineCampaignCrystalClues(AMiningTreasureField* Fi
         };
         FillShell(80,160,FMath::CeilToInt(CountShell(160,225)*(160.*160*160-80.*80*80)/(225.*225*225-160.*160*160)*1.4));
         FillShell(0,80,FMath::CeilToInt(CountShell(80,160)/7.*1.55));
+        const double MiddleDensity=CountShell(80,160)/(160.*160*160-80.*80*80);
+        const double OuterDensity=CountShell(160,225)/(225.*225*225-160.*160*160);
+        const double InnerDensity=CountShell(0,80)/(80.*80*80);
+        if(OuterDensity<=0 || MiddleDensity+1.e-12<OuterDensity*1.4 || InnerDensity+1.e-12<MiddleDensity*1.55)
+        {++Failures;UE_LOG(LogTemp,Error,TEXT("Crystal density cannot fit this rock pocket: %s at %s"),*P.TreasureId.ToString(),*Core.ToString());}
         if(SurfaceCount<8 || P.Fragments.Num()<45)
         {++Failures;UE_LOG(LogTemp,Error,TEXT("Compact vein lacks surface breadcrumbs: %s (%d surface, %d total)"),*P.TreasureId.ToString(),SurfaceCount,P.Fragments.Num());}
     }
     return Failures==0;
+}
+
+FString UMiningDesignerLibrary::ValidateCampaignMinerals(AMiningTreasureField* Field)
+{
+    auto Report=MakeShared<FJsonObject>();
+    TArray<TSharedPtr<FJsonValue>> Errors,Rows;
+    auto Error=[&](const FString& Message){Errors.Add(MakeShared<FJsonValueString>(Message));};
+    if(!IsValid(Field) || !Field->GetWorld() || Field->GetWorld()->IsGameWorld())Error(TEXT("Use a valid field in an editor world; stop PIE first."));
+    else
+    {
+        if(!Field->bUseAuthoredPlacements || Field->AuthoredPlacements.IsEmpty())Error(TEXT("Authored placements must be enabled and nonempty."));
+        if(!Field->CrystalClueMesh || !Field->TreasureMaterial)Error(TEXT("Missing crystal mesh or treasure material."));
+        for(int Index=0;Index<Field->AuthoredPlacements.Num();++Index)
+        {
+            const auto& P=Field->AuthoredPlacements[Index];
+            auto Row=MakeShared<FJsonObject>();
+            Row->SetNumberField(TEXT("index"),Index);Row->SetStringField(TEXT("id"),P.TreasureId.ToString());
+            Row->SetStringField(TEXT("area"),P.AreaTag.ToString());Row->SetNumberField(TEXT("value"),P.Value);
+            auto Fail=[&](const FString& Why){Error(FString::Printf(TEXT("Placement %d (%s): %s"),Index,*P.TreasureId.ToString(),*Why));};
+            if(P.Transform.ContainsNaN() || P.Surface.ContainsNaN()){Fail(TEXT("Non-finite core/surface transform."));continue;}
+            if(P.Hosts.IsEmpty())Fail(TEXT("No host rocks."));
+            for(ADiggableRock* Host:P.Hosts)if(!IsValid(Host) || Host->GetWorld()!=Field->GetWorld() || !Host->ActorHasTag(P.AreaTag))Fail(TEXT("Missing, foreign-world or incorrectly tagged host."));
+            if(P.Fragments.Num()!=P.FragmentSupports.Num())Fail(TEXT("Fragment/support counts differ."));
+            const auto* Definition=Field->Definitions.FindByPredicate([&](const auto& D){return D.Id==P.TreasureId;});
+            if(!Definition || !Definition->ValuesBySize.Contains(P.Value))Fail(TEXT("Unknown mineral or invalid value tier."));
+            else
+            {
+                auto* Preview=Field->GetWorld()->SpawnActor<AMiningTreasure>(P.Transform.GetLocation(),P.Transform.Rotator());
+                if(!Preview)Fail(TEXT("Could not create validation preview."));
+                else
+                {
+                    Preview->CoveringRocks=P.Hosts;
+                    if(!Preview->Configure(*Definition,Definition->ValuesBySize.IndexOfByKey(P.Value),Field->TreasureMaterial) || Preview->MeasureExposure()>=.01f)Fail(TEXT("Gem is not fully buried in the current terrain."));
+                    Preview->Destroy();
+                }
+            }
+            TArray<FVector> Points={P.Transform.GetLocation()};
+            bool Finite=true;
+            for(const auto& Q:P.FragmentSupports)Finite&=!Q.ContainsNaN();
+            for(const auto& F:P.Fragments)Finite&=!F.ContainsNaN();
+            if(!Finite){Fail(TEXT("Non-finite crystal coordinates."));continue;}
+            Points.Append(P.FragmentSupports);
+            TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints(P.Hosts,Points,Covered);
+            int Unsupported=0;for(bool Solid:Covered)Unsupported+=!Solid;
+            if(Unsupported)Fail(FString::Printf(TEXT("%d core/support points are outside remaining rock; rebuild after terrain edits."),Unsupported));
+            int Surface=0;int Counts[3]={0,0,0};
+            for(int I=0;I<P.FragmentSupports.Num();++I)
+            {
+                if(!P.Fragments.IsValidIndex(I))continue;
+                if(FVector::DistSquared(P.Fragments[I].GetLocation(),P.FragmentSupports[I])>1){++Surface;continue;}
+                const double D=FVector::Dist(P.FragmentSupports[I],P.Transform.GetLocation());
+                if(D<80)++Counts[0];else if(D<160)++Counts[1];else if(D<225)++Counts[2];
+            }
+            const double Volumes[]={4.*PI/3*80*80*80,4.*PI/3*(160.*160*160-80.*80*80),4.*PI/3*(225.*225*225-160.*160*160)};
+            TArray<TSharedPtr<FJsonValue>> Densities,ShellCounts;
+            for(int I=0;I<3;++I){Densities.Add(MakeShared<FJsonValueNumber>(Counts[I]*1.e6/Volumes[I]));ShellCounts.Add(MakeShared<FJsonValueNumber>(Counts[I]));}
+            if(Surface<8)Fail(TEXT("Fewer than 8 surface clues."));
+            if(Counts[2]==0 || Counts[1]/Volumes[1]+1.e-12<1.4*Counts[2]/Volumes[2] || Counts[0]/Volumes[0]+1.e-12<1.55*Counts[1]/Volumes[1])Fail(TEXT("Interior density must increase: middle >= 1.40 x outer, inner >= 1.55 x middle."));
+            Row->SetNumberField(TEXT("surface_fragments"),Surface);Row->SetNumberField(TEXT("fragments"),P.Fragments.Num());
+            Row->SetNumberField(TEXT("unsupported_points"),Unsupported);
+            Row->SetArrayField(TEXT("inner_middle_outer_counts"),ShellCounts);Row->SetArrayField(TEXT("inner_middle_outer_per_m3"),Densities);
+            Rows.Add(MakeShared<FJsonValueObject>(Row));
+        }
+    }
+    Report->SetBoolField(TEXT("ok"),Errors.IsEmpty());Report->SetArrayField(TEXT("errors"),Errors);Report->SetArrayField(TEXT("placements"),Rows);
+    FString Json;FJsonSerializer::Serialize(Report,TJsonWriterFactory<>::Create(&Json));return Json;
 }

@@ -1,0 +1,262 @@
+{
+  "seed": 20261016,
+  "factor": 0.9999999910593033,
+  "objects": [
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 6.0,
+      "allowed_end_m": 9.334248130721713,
+      "name": "SM_MainGame_Neural_Blocker_01",
+      "seed": 20261207,
+      "start_arc_m": 6.00000001490525,
+      "end_arc_m": 9.334248115816463,
+      "arc_length_m": 3.3342481009112124,
+      "center_m": [
+        -57.76731491088867,
+        0.07091402262449265,
+        62.462345123291016
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 10.834248130721713,
+      "allowed_end_m": 14.168496261443426,
+      "name": "SM_MainGame_Neural_Blocker_02",
+      "seed": 20261398,
+      "start_arc_m": 10.834248145626965,
+      "end_arc_m": 14.168496246538176,
+      "arc_length_m": 3.3342481009112106,
+      "center_m": [
+        -53.246788024902344,
+        0.5995407104492188,
+        60.862308502197266
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 15.668496261443426,
+      "allowed_end_m": 23.836992522886852,
+      "name": "SM_MainGame_Neural_Blocker_03",
+      "seed": 20261589,
+      "start_arc_m": 15.668496297959452,
+      "end_arc_m": 23.836992486370832,
+      "arc_length_m": 8.16849618841138,
+      "center_m": [
+        -47.640968322753906,
+        4.332510471343994,
+        58.462257385253906
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 32.83699252288685,
+      "allowed_end_m": 48.6755909071457,
+      "name": "SM_MainGame_Neural_Blocker_04",
+      "seed": 20261780,
+      "start_arc_m": 32.83699259369091,
+      "end_arc_m": 48.67559083634164,
+      "arc_length_m": 15.838598242650733,
+      "center_m": [
+        -30.08125114440918,
+        12.30856990814209,
+        51.51052474975586
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 57.6755909071457,
+      "allowed_end_m": 61.965145594311366,
+      "name": "SM_MainGame_Neural_Blocker_05",
+      "seed": 20261971,
+      "start_arc_m": 57.675590926321505,
+      "end_arc_m": 61.965145575135566,
+      "arc_length_m": 4.289554648814061,
+      "center_m": [
+        -15.21745491027832,
+        3.1878812313079834,
+        45.20071792602539
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 63.465145594311366,
+      "allowed_end_m": 67.75470028147703,
+      "name": "SM_MainGame_Neural_Blocker_06",
+      "seed": 20262162,
+      "start_arc_m": 63.46514561348717,
+      "end_arc_m": 67.75470026230123,
+      "arc_length_m": 4.289554648814061,
+      "center_m": [
+        -11.57353401184082,
+        -0.8689486980438232,
+        43.28449630737305
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 75.15470028147703,
+      "allowed_end_m": 82.6802695468736,
+      "name": "SM_MainGame_Neural_Blocker_07",
+      "seed": 20262353,
+      "start_arc_m": 75.15470031511894,
+      "end_arc_m": 82.68026951323169,
+      "arc_length_m": 7.525569198112748,
+      "center_m": [
+        -4.004758834838867,
+        -10.837106704711914,
+        38.879974365234375
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 84.1802695468736,
+      "allowed_end_m": 91.70583881227017,
+      "name": "SM_MainGame_Neural_Blocker_08",
+      "seed": 20262544,
+      "start_arc_m": 84.18026958051551,
+      "end_arc_m": 91.70583877862826,
+      "arc_length_m": 7.525569198112748,
+      "center_m": [
+        4.1146135330200195,
+        -12.321247100830078,
+        35.892704010009766
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 100.70583881227017,
+      "allowed_end_m": 112.6216051093812,
+      "name": "SM_MainGame_Neural_Blocker_09",
+      "seed": 20262735,
+      "start_arc_m": 100.7058388655378,
+      "end_arc_m": 112.62160505611357,
+      "arc_length_m": 11.915766190575766,
+      "center_m": [
+        17.82421112060547,
+        -2.478984832763672,
+        29.696556091308594
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 120.02160510938121,
+      "allowed_end_m": 123.48029118862274,
+      "name": "SM_MainGame_Neural_Blocker_10",
+      "seed": 20262926,
+      "start_arc_m": 120.02160512484274,
+      "end_arc_m": 123.4802911731612,
+      "arc_length_m": 3.4586860483184694,
+      "center_m": [
+        25.68722915649414,
+        8.956902503967285,
+        24.703001022338867
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 124.98029118862274,
+      "allowed_end_m": 128.43897726786426,
+      "name": "SM_MainGame_Neural_Blocker_11",
+      "seed": 20263117,
+      "start_arc_m": 124.98029120408428,
+      "end_arc_m": 128.43897725240274,
+      "arc_length_m": 3.458686048318455,
+      "center_m": [
+        30.17074966430664,
+        10.241104125976562,
+        23.06178092956543
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 137.43897726786426,
+      "allowed_end_m": 156.1737215848303,
+      "name": "SM_MainGame_Neural_Blocker_12",
+      "seed": 20263308,
+      "start_arc_m": 137.4389773516151,
+      "end_arc_m": 156.17372150107946,
+      "arc_length_m": 18.734744149464348,
+      "center_m": [
+        47.82395553588867,
+        5.559276103973389,
+        16.410192489624023
+      ]
+    },
+    {
+      "path_index": 1,
+      "path_name": "Branch_01",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.47019231213988,
+      "name": "SM_MainGame_Neural_Blocker_13",
+      "seed": 20263499,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.47019228545104,
+      "arc_length_m": 5.9701922587622,
+      "center_m": [
+        -37.72522735595703,
+        1.1829618215560913,
+        52.30844497680664
+      ]
+    },
+    {
+      "path_index": 2,
+      "path_name": "Branch_02",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.470192312139893,
+      "name": "SM_MainGame_Neural_Blocker_14",
+      "seed": 20263690,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.470192285451054,
+      "arc_length_m": 5.970192258762214,
+      "center_m": [
+        -27.931190490722656,
+        4.168222904205322,
+        44.08739471435547
+      ]
+    },
+    {
+      "path_index": 3,
+      "path_name": "Branch_03",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.470192312139883,
+      "name": "SM_MainGame_Neural_Blocker_15",
+      "seed": 20263881,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.470192285451043,
+      "arc_length_m": 5.970192258762204,
+      "center_m": [
+        17.691999435424805,
+        -15.966196060180664,
+        29.845287322998047
+      ]
+    },
+    {
+      "path_index": 4,
+      "path_name": "Branch_04",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.470192312139897,
+      "name": "SM_MainGame_Neural_Blocker_16",
+      "seed": 20264072,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.470192285451057,
+      "arc_length_m": 5.970192258762218,
+      "center_m": [
+        36.675968170166016,
+        19.317657470703125,
+        17.687393188476562
+      ]
+    }
+  ]
+}

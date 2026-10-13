@@ -13,6 +13,7 @@ bool FMiningToolModeSettingsTest::RunTest(const FString& Parameters)
 	UMiningComponent* Mining = NewObject<UMiningComponent>(Owner);
 	Owner->AddInstanceComponent(Mining);
 	Mining->RegisterComponent();
+	Mining->bUseDrillEnergy = false; // Explicit legacy compatibility; energy mode tested separately.
 	Mining->Interval = 0.5f;
 	Mining->Radius = 120;
 	TestEqual(TEXT("Original per-level pickaxe interval retained"), Mining->GetMiningInterval(), 0.5f);

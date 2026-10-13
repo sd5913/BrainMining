@@ -11,7 +11,7 @@ APopupCloseOffice::APopupCloseOffice()
  static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
  static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
  static ConstructorHelpers::FObjectFinder<UStaticMesh> Sphere(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
- for(int32 I=0;I<13;++I)
+ for(int32 I=0;I<15;++I)
  {
   auto Group=CreateDefaultSubobject<UInstancedStaticMeshComponent>(*FString::Printf(TEXT("OfficeGroup%d"),I));
   Group->SetupAttachment(Root);Group->SetStaticMesh(I==10?Cylinder.Object:(I==11?Sphere.Object:Cube.Object));
@@ -24,7 +24,7 @@ APopupCloseOffice::APopupCloseOffice()
   Light->SetupAttachment(Root);Light->SetRelativeLocation(PopupCloseLayout::Compress(FVector(-750+X*750,-500+Y*500,346)));
   Light->SetRelativeRotation(FRotator(-90,0,0));Light->SetMobility(EComponentMobility::Movable);
   Light->SetIntensity(6500);Light->SetAttenuationRadius(1000);Light->SetSourceWidth(130);Light->SetSourceHeight(60);
-  Light->SetLightColor(FLinearColor(1.f,.94f,.84f));Light->SetCastShadows(false);
+  Light->SetLightColor(FLinearColor(1.f,.94f,.84f));Light->SetCastShadows(false);CeilingLights.Add(Light);
  }
 }
 
@@ -39,6 +39,18 @@ void APopupCloseOffice::BeginPlay()
 
 void APopupCloseOffice::BuildOffice()
 {
+ if(bReplacePerimeterWorkstations)
+ {
+  TInlineComponentArray<URectLightComponent*> Lights(this);
+  for(auto Light:Lights)
+  {
+   const bool bCorner=Light->GetFName()==TEXT("OfficeLight02") || Light->GetFName()==TEXT("OfficeLight20");
+   Light->SetIntensityUnits(ELightUnits::Lumens);
+   Light->SetIntensity(bCorner?CornerLightLumens:InteriorLightLumens);
+   Light->SetLightColor(FLinearColor::White);Light->SetUseTemperature(true);
+   Light->SetTemperature(InteriorLightTemperature);Light->SetCastShadows(true);
+  }
+ }
  auto Parent=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
  const FLinearColor Colors[]={
   FLinearColor(.8f,.82f,.79f),FLinearColor(.12f,.19f,.24f),FLinearColor(.38f,.25f,.14f),
@@ -51,8 +63,11 @@ void APopupCloseOffice::BuildOffice()
  for(int32 I=0;I<Groups.Num();++I)
  {
   Groups[I]->ClearInstances();
-  auto Surface=UMaterialInstanceDynamic::Create(Parent,this);Surface->SetVectorParameterValue(TEXT("Color"),Colors[I]);
-  Groups[I]->SetMaterial(0,Surface);Surfaces.Add(Surface);
+  auto Surface=UMaterialInstanceDynamic::Create(Parent,this);Surface->SetVectorParameterValue(TEXT("Color"),Colors[I==13?1:I==14?0:I]);
+  UMaterialInterface* Override=SurfaceOverrides.IsValidIndex(I)?SurfaceOverrides[I].Get():nullptr;
+  if(I==13)Override=CarpetMaterial.Get();
+  if(I==14)Override=CeilingTileMaterial.Get();
+  Groups[I]->SetMaterial(0,Override?Override:Surface);Surfaces.Add(Surface);
  }
  auto Box=[&](int32 Group,FVector P,FVector Size,FRotator R=FRotator::ZeroRotator)
  {
@@ -84,7 +99,7 @@ void APopupCloseOffice::BuildOffice()
  if(!bWalkThroughConnections) Box(2,FVector(-1206,0,140),FVector(16,208,280));
  for(float Y:{-104.f,104.f})Box(7,FVector(-1188,Y,145),FVector(5,6,290));
  Box(7,FVector(-1187,75,110),FVector(10,4,20));
- for(float Y:{-885.f,885.f})
+ if(!bUseImportedArchitecture)for(float Y:{-885.f,885.f})
  {
   Box(1,FVector(0,Y,45),FVector(2380,8,90));Box(7,FVector(0,Y,93),FVector(2380,5,3));
   for(float X:{-830.f,-280.f,280.f,830.f})
@@ -95,17 +110,22 @@ void APopupCloseOffice::BuildOffice()
    for(int32 Slat=0;Slat<6;++Slat)Box(5,FVector(X,Y-(Y>0?10:-10),288+Slat*5),FVector(425,9,2));
   }
  }
- for(int32 X=0;X<12;++X)for(int32 Y=0;Y<9;++Y)
+ if(!bUseImportedArchitecture)for(int32 X=0;X<12;++X)for(int32 Y=0;Y<9;++Y)
  {
-  Box((X+Y)%2?1:8,FVector(-1100+X*200,-800+Y*200,.3),FVector(199,199,.5));
-  Box(0,FVector(-1100+X*200,-800+Y*200,357),FVector(196,196,2));
+  if(!CarpetMaterial)Box((X+Y)%2?1:8,FVector(-1100+X*200,-800+Y*200,.3),FVector(199,199,.5));
+  if(!CeilingTileMaterial)Box(14,FVector(-1100+X*200,-800+Y*200,357),FVector(196,196,2));
  }
- for(float X:{-750.f,0.f,750.f})for(float Y:{-500.f,0.f,500.f})
+ if(CarpetMaterial && !bUseImportedArchitecture)Box(13,FVector(0,0,.3f),FVector(2380,1780,.5f));
+ if(CeilingTileMaterial && !bUseImportedArchitecture)
+  for(int32 X=0;X<33;++X)for(int32 Y=0;Y<25;++Y)
+   Box(14,FVector(-1152+X*72,-864+Y*72,357),FVector(71.8f,71.8f,2));
+ if(!bUseImportedArchitecture)for(float X:{-750.f,0.f,750.f})for(float Y:{-500.f,0.f,500.f})
  {
   Box(3,FVector(X,Y,352),FVector(148,78,6));Box(12,FVector(X,Y,348),FVector(138,68,2));
  }
  auto Chair=[&](FVector P,float Yaw)
  {
+  if(bReplacePerimeterWorkstations)return;
   const FRotator R(0,Yaw,0);
   auto Part=[&](int32 G,FVector L,FVector Size){Box(G,P+R.RotateVector(L),Size,R);};
   Part(3,FVector(0,0,48),FVector(46,46,10));Part(6,FVector(0,0,54),FVector(43,43,4));
@@ -130,8 +150,11 @@ void APopupCloseOffice::BuildOffice()
   Box(10,P+R.RotateVector(FVector(-38,26,87)),FVector(8,8,12),R);
   Chair(P+R.RotateVector(FVector(-95,0,0)),Yaw);
  };
- for(float X:{-820.f,-370.f,370.f,820.f})for(float Y:{-620.f,620.f})Desk(FVector(X,Y,0),Y<0?-90:90);
+ if(!bReplacePerimeterWorkstations)
+  for(float X:{-820.f,-370.f,370.f,820.f})for(float Y:{-620.f,620.f})Desk(FVector(X,Y,0),Y<0?-90:90);
  // Meeting area and office services stay clear of the central interaction and spray corridor.
+ if(!bReplacePerimeterWorkstations)
+ {
  Box(2,FVector(740,-170,76),FVector(220,105,8));
  for(float X:{660.f,820.f})Box(3,FVector(X,-170,36),FVector(10,65,72));
  for(float X:{660.f,820.f})for(float Y:{-265.f,-75.f})Chair(FVector(X,Y,0),Y<-170?90:-90);
@@ -165,7 +188,9 @@ void APopupCloseOffice::BuildOffice()
    Box(11,P+FVector(FMath::Cos(Leaf*1.25f)*22,FMath::Sin(Leaf*1.25f)*22,75+Leaf*8),FVector(38,25,43),FRotator(0,Leaf*72,25));
  }
  Box(10,FVector(-780,365,25),FVector(30,30,50));Box(3,FVector(-780,365,49),FVector(26,26,4));
+ }
  // Central workstation: wood slab, inset edging and powder-coated U frames.
+ if(bReplacePerimeterWorkstations)return; // Detailed art actors provide the furniture; devices keep their own logic.
  Box(3,FVector(0,0,69.5f),FVector(183,93,3));
  for(float Y:{-48.f,48.f})Box(7,FVector(0,Y,73),FVector(188,1.5f,3));
  for(float X:{-93.f,93.f})Box(7,FVector(X,0,73),FVector(1.5f,96,3));

@@ -2,8 +2,11 @@
 #include "PopupClose/PopupCloseLayout.h"
 #include "PopupClose/PopupCloseFlyingWindow.h"
 #include "PopupClose/PopupCloseContent.h"
+#include "PopupClose/PopupOfficeDevice.h"
+#include "EngineUtils.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/WidgetComponent.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -56,6 +59,8 @@ FPopupOfficeFlood::FPopupOfficeFlood(AActor& InOwner):Owner(InOwner)
   Mesh->SetCastShadow(false);Mesh->SetCanEverAffectNavigation(false);
   const FLinearColor Color=I<8?PopupCloseContent::Get(I).Color:I==8?FLinearColor(.11f,.19f,.29f):I==9?FLinearColor(.85f,.12f,.10f):FLinearColor(.94f,.92f,.86f);
   auto Material=UMaterialInstanceDynamic::Create(Parent,Mesh);Material->SetVectorParameterValue(TEXT("Color"),Color);Mesh->SetMaterial(0,Material);
+  if(I<PopupCloseContent::ArtCount)
+   if(auto Art=LoadObject<UMaterialInterface>(nullptr,*(FString(TEXT("/Game/PopupClose/PopupArt/M_Popup"))+PopupCloseContent::GetArt(I).AssetName)))Mesh->SetMaterial(0,Art);
   Mesh->RegisterComponent();Ground.Add(Mesh);
  }
  // Shuffled cells preserve floor coverage underneath the localized mounds.
@@ -70,8 +75,27 @@ FPopupOfficeFlood::FPopupOfficeFlood(AActor& InOwner):Owner(InOwner)
   FSource Source;Source.Origin=PopupCloseLayout::DevicePosition(I)+R.RotateVector(I>=2?FVector(-65,0,118):FVector(24,0,124));
   Source.Direction=-R.Vector();Sources.Add(Source);
  }
- // These match the eight monitors already built into the office desks.
- for(float X:{-820.f,-370.f,370.f,820.f})for(float Y:{-620.f,620.f})
+ // Follow the actual copier tray overrides, including translated / rotated room instances.
+ const FTransform Room=Owner.GetActorTransform();
+ for(TActorIterator<APopupOfficeDevice> It(Owner.GetWorld());It;++It)
+ {
+  auto Device=*It;const int32 I=Device->DeviceIndex;
+  if(!Sources.IsValidIndex(I) || FVector::Dist2D(Device->GetActorLocation(),Owner.GetActorLocation())>1500.f)continue;
+  Sources[I].Origin=Room.InverseTransformPosition(Device->GetActorTransform().TransformPosition(I>=2?Device->PaperOutputPosition+Device->PaperOutputDirection.GetSafeNormal()*16+FVector(0,0,6):Device->GetSurface()->GetRelativeLocation()+FVector(-15.5f,0,0)));
+  Sources[I].Direction=Room.InverseTransformVectorNoScale(I>=2?Device->GetActorTransform().TransformVectorNoScale(Device->PaperOutputDirection).GetSafeNormal():-Device->GetActorForwardVector());
+ }
+ bool bCustomMonitors=false;
+ for(TActorIterator<AActor> It(Owner.GetWorld());It;++It)
+ {
+  if(!It->ActorHasTag(TEXT("OfficePopupEmitter")) || FVector::Dist2D(It->GetActorLocation(),Owner.GetActorLocation())>1500.f)continue;
+  FVector Center,Extent;It->GetActorBounds(false,Center,Extent);
+  FSource Source;Source.Origin=Room.InverseTransformPosition(Center-It->GetActorRightVector()*8.f);
+  if(It->ActorHasTag(TEXT("OfficeCRTPopupEmitter")))
+   Source.Origin=Room.InverseTransformPosition(It->GetActorTransform().TransformPosition(FVector(0,-19.f,27.8f))-It->GetActorRightVector()*6.f);
+  Source.Direction=Room.InverseTransformVectorNoScale(-It->GetActorRightVector());Sources.Add(Source);bCustomMonitors=true;
+ }
+ // Existing maps without an art layout retain their original eight monitor sources.
+ if(!bCustomMonitors)for(float X:{-820.f,-370.f,370.f,820.f})for(float Y:{-620.f,620.f})
  {
   const FRotator R(0,Y<0?-90.f:90.f,0);
   FSource Source;Source.Origin=PopupCloseLayout::Compress(FVector(X,Y,0)+R.RotateVector(FVector(15,0,116)));
@@ -92,7 +116,7 @@ void FPopupOfficeFlood::Warm(float Dt)
  while(WarmDebt>=.02f && Slots.Num()<WindowBudget+PaperBudget && Added++<3)
  {
   WarmDebt-=.02f;
-  FSlot Slot;Slot.bPaper=Slots.Num()>=WindowBudget;Slot.Variant=Slots.Num()%8;
+  FSlot Slot;Slot.bPaper=Slots.Num()>=WindowBudget;Slot.Variant=Slots.Num()%PopupCloseContent::ArtCount;
   FActorSpawnParameters Params;Params.Owner=&Owner;Params.SpawnCollisionHandlingOverride=ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
   auto Actor=Owner.GetWorld()->SpawnActor<APopupCloseFlyingWindow>(Owner.GetActorLocation()+FVector(0,0,-10000-Slots.Num()*30),FRotator::ZeroRotator,Params);
   if(!Actor)break;
@@ -116,7 +140,7 @@ void FPopupOfficeFlood::Tick(float Dt)
  {
   bAllSources=true;
   for(int32 I=4;I<Sources.Num();++I)Sources[I].Debt=FMath::FRandRange(0.f,.75f);
-  UE_LOG(LogOfficeFlood,Display,TEXT("Eight office computers joined at %.2f s; their emission rate starts at zero and ramps over 12 seconds"),Time);
+  UE_LOG(LogOfficeFlood,Display,TEXT("%d additional office monitors joined at %.2f s; their emission rate starts at zero and ramps over 12 seconds"),Sources.Num()-4,Time);
  }
  const int32 SourceCount=bAllSources?Sources.Num():4;
  for(int32 I=0;I<SourceCount;++I)
@@ -217,14 +241,20 @@ void FPopupOfficeFlood::Deposit(const FSlot& Slot)
  P.Z=BaseZ+FMath::FRandRange(0.f,.6f);
  for(int32 Layer=0;Layer<Layers;++Layer)
  {
-  const int32 Variant=(Slot.Variant+Layer)%PopupCloseContent::Count;
+  const int32 Variant=(Slot.Variant+Layer)%PopupCloseContent::ArtCount;
   const auto& Copy=PopupCloseContent::Get(Variant);
-  const float W=Copy.Size.X*.13f*WindowScale,H=Copy.Size.Y*.13f*WindowScale;
+  const auto& Skin=PopupCloseContent::GetArt(Variant);
+  const bool bArtwork=Ground[Variant]->GetMaterial(0) && Ground[Variant]->GetMaterial(0)->GetName().StartsWith(TEXT("M_Popup"));
+  const FVector2D Size=bArtwork?Skin.Size:Copy.Size;
+  const float W=Size.X*.13f*WindowScale,H=Size.Y*.13f*WindowScale;
   const FRotator R(-90,Yaw+Layer*31.f,FMath::FRandRange(-2.f,2.f));
   const FVector LayerP=P+FVector(FMath::FRandRange(-4.f,4.f),FMath::FRandRange(-4.f,4.f),Layer*WindowLayerSpacing);
   AddGround(Variant,LayerP,FVector(2.5f,W,H),R);
-  AddGround(8,LayerP+R.RotateVector(FVector(-1.5f,0,H*.43f)),FVector(3.25f,W,H*.14f),R);
-  AddGround(9,LayerP+R.RotateVector(FVector(-2.75f,W*.43f,H*.43f)),FVector(3.75f,W*.10f,H*.11f),R);
+  if(!bArtwork)
+  {
+   AddGround(8,LayerP+R.RotateVector(FVector(-1.5f,0,H*.43f)),FVector(3.25f,W,H*.14f),R);
+   AddGround(9,LayerP+R.RotateVector(FVector(-2.75f,W*.43f,H*.43f)),FVector(3.75f,W*.10f,H*.11f),R);
+  }
  }
 }
 void FPopupOfficeFlood::Pause()
@@ -262,9 +292,9 @@ FString FPopupOfficeFlood::Describe() const
 {
  int32 Active=0,Total=0;for(const auto& Slot:Slots)Active+=Slot.bActive?1:0;for(const auto& Source:Sources)Total+=Source.Count;
  FString Text=FString::Printf(TEXT("Flood time=%.2f sources=%d coverage=%.1f%% ground_windows=%d/%d ground_papers=%d/432 airborne=%d pool=%d/240 total_emitted=%d recycled=%d paper_below_floor=%d max_frame=%.2fms"),
- Time,bAllSources?12:4,100.f*FloorWindows/Cells.Num(),FloorWindows,Cells.Num(),FloorPapers,Active,Slots.Num(),Total,Recycled,BelowFloorPapers,PeakFrame*1000.f);
+ Time,bAllSources?Sources.Num():4,100.f*FloorWindows/Cells.Num(),FloorWindows,Cells.Num(),FloorPapers,Active,Slots.Num(),Total,Recycled,BelowFloorPapers,PeakFrame*1000.f);
  for(int32 I=0;I<Sources.Num();++I)Text+=FString::Printf(TEXT("\nSource%d emitted=%d"),I,Sources[I].Count);
- Text+=FString::Printf(TEXT("\nCurrent emission rate=%.2f/s"),bStarted?4.f*EmissionRate(Time,false)+(bAllSources?8.f*EmissionRate(Time,true):0.f):0.f);
+ Text+=FString::Printf(TEXT("\nCurrent emission rate=%.2f/s"),bStarted?4.f*EmissionRate(Time,false)+(bAllSources?(Sources.Num()-4)*EmissionRate(Time,true):0.f):0.f);
  int32 VisibleWindows=0;float HighestCenter=0.f;
  for(int32 I=0;I<Ground.Num();++I)if(auto Mesh=Ground[I].Get())
  {

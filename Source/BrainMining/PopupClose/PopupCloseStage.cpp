@@ -1,4 +1,5 @@
 #include "PopupClose/PopupCloseStage.h"
+#include "HAL/IConsoleManager.h"
 #include "PopupClose/PopupCloseContent.h"
 #include "PopupClose/PopupOfficeDevice.h"
 #include "PopupClose/PopupOfficeFlood.h"
@@ -151,13 +152,15 @@ void APopupCloseStage::ConfigureOffice()
  WallPositiveY->SetRelativeScale3D(FVector(20,.2f,3.6f));WallNegativeY->SetRelativeScale3D(FVector(20,.2f,3.6f));
  ExitDoorModel->SetRelativeLocation(FVector(1000,0,145));ExitDoorModel->SetRelativeScale3D(FVector(.22f,1.96f,2.9f));
  SpawnPoint->SetRelativeLocation(FVector(-790,0,92));ScreenCamera->SetRelativeLocation(FVector(-75,0,124));
- RoomLight->SetRelativeLocation(FVector(0,0,285));RoomLight->SetIntensity(15000);RoomLight->SetAttenuationRadius(1700);
+ RoomLight->SetRelativeLocation(FVector(0,0,285));RoomLight->SetIntensityUnits(bInteriorLighting?ELightUnits::Lumens:ELightUnits::Unitless);RoomLight->SetIntensity(bInteriorLighting?InteriorFillIntensity:15000);RoomLight->SetAttenuationRadius(1700);
  Sun->SetIntensity(3);Sky->bRealTimeCapture=false;Sky->SetIntensity(.5f);
- Sun->SetVisibility(!bAreaManaged);Sky->SetVisibility(!bAreaManaged);Atmosphere->SetVisibility(!bAreaManaged);
+ Sun->SetVisibility(!bAreaManaged && !bInteriorLighting);Sky->SetVisibility(!bAreaManaged && !bInteriorLighting);Atmosphere->SetVisibility(!bAreaManaged && !bInteriorLighting);
  ScreenCamera->bOverrideAspectRatioAxisConstraint=true;
  ScreenCamera->AspectRatioAxisConstraint=EAspectRatioAxisConstraint::AspectRatio_MaintainXFOV;
  ScreenCamera->PostProcessBlendWeight=0;
  TableTop->SetRelativeScale3D(PopupCloseLayout::Compress(FVector(1.9f,1.f,.06f)));
+ TableTop->SetVisibility(!bReplaceCentralDesk);TableTop->SetCollisionEnabled(bReplaceCentralDesk?ECollisionEnabled::NoCollision:ECollisionEnabled::QueryAndPhysics);
+ Keyboard->SetVisibility(!bReplaceCentralDesk);Keyboard->SetCollisionEnabled(bReplaceCentralDesk?ECollisionEnabled::NoCollision:ECollisionEnabled::QueryAndPhysics);
  Keyboard->SetRelativeLocation(PopupCloseLayout::Compress(FVector(-10,0,80)));
  Keyboard->SetRelativeScale3D(PopupCloseLayout::Compress(FVector(.16f,.36f,.03f)));
  // Replacement metal frames are part of the office's instanced geometry.
@@ -183,6 +186,10 @@ void APopupCloseStage::ApplyColors()
  Paint(TableTop,FLinearColor(.38f,.25f,.14f));Paint(Monitor,FLinearColor(.035f,.04f,.05f));
  Paint(ExitDoorModel,FLinearColor(.23f,.27f,.29f));
  Paint(Screen,FLinearColor(.035f,.08f,.16f));Paint(Stand,FLinearColor(.065f,.08f,.1f));Paint(Keyboard,FLinearColor(.1f,.12f,.15f));
+ if(FloorArtMaterial)Floor->SetMaterial(0,FloorArtMaterial);
+ if(CeilingArtMaterial)Ceiling->SetMaterial(0,CeilingArtMaterial);
+ if(WallArtMaterial){WallPositiveY->SetMaterial(0,WallArtMaterial);WallNegativeY->SetMaterial(0,WallArtMaterial);}
+ if(DesktopArtMaterial)TableTop->SetMaterial(0,DesktopArtMaterial);
 }
 void APopupCloseStage::Paint(UStaticMeshComponent* Mesh,const FLinearColor& Color) const
 {
@@ -199,12 +206,31 @@ void APopupCloseStage::BeginPlay()
  Flood=MakeUnique<FPopupOfficeFlood>(*this);
  Exit=MakeUnique<FPopupOfficeExit>(*this);
  if (bAreaManaged) SetAreaActive(false);
+ else ConfigureArtRendering(bAreaActive);
+}
+void APopupCloseStage::ConfigureArtRendering(bool bActive)
+{
+ // The mining project deliberately disables AA; textured office furniture benefits from temporal AA.
+ // Restore both the previous value and its existing priority when leaving this art room.
+ if(!GetWorld() || !GetWorld()->IsGameWorld())return;
+ auto AA=IConsoleManager::Get().FindConsoleVariable(TEXT("r.AntiAliasingMethod"));
+ if(!AA)return;
+ if(bActive && bInteriorLighting)
+ {
+  if(!SavedOfficeAntiAliasing.IsSet()){SavedOfficeAntiAliasing=AA->GetInt();AA->SetWithCurrentPriority(2);}
+ }
+ else if(SavedOfficeAntiAliasing.IsSet())
+ {
+  if(AA->GetInt()==2)AA->SetWithCurrentPriority(SavedOfficeAntiAliasing.GetValue());
+  SavedOfficeAntiAliasing.Reset();
+ }
 }
 void APopupCloseStage::SetAreaActive(bool bActive)
 {
  const bool bEntering=bActive && !bAreaActive;
  if (!bActive){CancelSession();if(Flood)Flood->Pause();}
  bAreaActive = bActive;
+ ConfigureArtRendering(bActive);
  if (bEntering && bStartOnAreaEntry) StartOfficeRound();
  if (!bActive && Prompt) Prompt->SetVisibility(ESlateVisibility::Collapsed);
 }
@@ -238,6 +264,7 @@ void APopupCloseStage::ResetCompletedSessions()
 }
 void APopupCloseStage::EndPlay(const EEndPlayReason::Type Reason)
 {
+ ConfigureArtRendering(false);
  Exit.Reset();
  Flood.Reset();
  if(ActiveComputer)ActiveComputer->SetScreenInteractive(false);

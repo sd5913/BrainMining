@@ -70,11 +70,8 @@ void UMiningGUIJetpackHeatWidget::AdvancePresentation(float DeltaSeconds)
 	GaugeFade = FMath::FInterpConstantTo(GaugeFade, bShow ? 1.f : 0.f, DeltaSeconds, 1.f / Duration);
 	GaugeOpacity = FMath::SmoothStep(0.f, 1.f, GaugeFade);
 	SetRenderOpacity(GaugeOpacity);
-	const float Threshold = FMath::Clamp(WarningThreshold, .1f, .95f);
-	const float Danger = FMath::Clamp((DisplayedHeat - Threshold) / (1.f - Threshold), 0.f, 1.f);
-	const float Target = DisplayedHeat >= Threshold ? FMath::Clamp(WarningMaxOpacity, 0.f, 1.f) * (.45f + .55f * Danger) : 0.f;
-	const float WarningDuration = FMath::Max(.01f, Target > WarningOpacity ? WarningFadeInSeconds : WarningFadeOutSeconds);
-	WarningOpacity = FMath::FInterpConstantTo(WarningOpacity, Target, DeltaSeconds, FMath::Max(.01f, WarningMaxOpacity) / WarningDuration);
+	// Heat warnings stay on the gauge. The full-screen red wash reads as damage.
+	WarningOpacity = 0.f;
 }
 
 void UMiningGUIAbilityWidget::NativePreConstruct()
@@ -183,6 +180,12 @@ void UMiningGUIUpgradeWidget::NativeTick(const FGeometry& Geometry, float DeltaT
 void UMiningGUIHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	if (JetpackHeatWarning)
+	{
+		JetpackHeatWarning->SetRenderOpacity(0.f);
+		JetpackHeatWarning->SetVisibility(ESlateVisibility::Collapsed);
+		JetpackHeatWarning->RemoveFromParent();
+	}
 	DrillEnergyFade = 0.f;
 	if (DrillEnergyBar)
 	{
@@ -374,7 +377,6 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 		JetpackHeatBar->SetHeatState(bHeatEnabled ? Flight->JetpackHeat : 0.f, bHeatEnabled && Flight->IsJetpackOverheated(), bHeatEnabled && Flight->IsFlightThrustActive());
 		JetpackHeatBar->AdvancePresentation(DeltaTime);
 	}
-	if (JetpackHeatWarning) JetpackHeatWarning->SetRenderOpacity(JetpackHeatBar ? JetpackHeatBar->WarningOpacity : 0.f);
 	if (AbilityG)
 	{
 		const APawn* Pawn = GetOwningPlayerPawn();

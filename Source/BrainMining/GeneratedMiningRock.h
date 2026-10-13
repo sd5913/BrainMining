@@ -95,6 +95,9 @@ public:
 	float LastSimplificationMilliseconds = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	float LastTerrainNotificationMilliseconds = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
 	int32 CompletedSimplifications = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")

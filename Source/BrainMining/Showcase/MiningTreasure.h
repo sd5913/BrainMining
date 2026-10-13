@@ -102,6 +102,7 @@ private:
     mutable float CachedExposure = 0;
     mutable FVector CachedEscapeDirection;
     TArray<bool> SupportedCrystals;
+    FBox CrystalSupportBounds = FBox(ForceInit);
     // ISM slot -> authored fragment. Surviving fragments are never cleared/rebuilt.
     TArray<int32> CrystalInstanceFragments;
     void OnTerrainCommitted(const FBox& ChangedBounds);

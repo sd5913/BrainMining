@@ -11,9 +11,15 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
+#include "HAL/IConsoleManager.h"
+#include "ProfilingDebugging/CpuProfilerTrace.h"
 
 namespace
 {
+TAutoConsoleVariable<float> CVarMiningInteractiveBudgetMilliseconds(
+	TEXT("bm.Mining.InteractiveBudgetMs"), 3.0f,
+	TEXT("Maximum synchronous boolean work per chunked cut; remaining work completes in the background."));
+
 // FullJourney contains over 15,000 terrain components. Keep their solid meshes
 // and collision, but allocate render proxies only around the player's view.
 void UpdateTerrainVisibility(AGeneratedMiningRock* Rock)
@@ -380,6 +386,7 @@ bool AGeneratedMiningRock::MineBlast(FVector WorldCenter, float WorldRadius, flo
 
 bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, const FDynamicMesh3* WorldCutter)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(Mining_Cut);
 	const double Started = FPlatformTime::Seconds();
 	ON_SCOPE_EXIT { LastTotalMilliseconds = (FPlatformTime::Seconds() - Started) * 1000; };
 	LastBooleanMilliseconds = LastCollisionMilliseconds = LastSimplificationMilliseconds = 0;
@@ -412,7 +419,9 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, co
 	TArray<FDynamicMesh3> Prepared;
 	int32 Removed = 0;
 	const int32 Budget = FMath::Clamp(MaxTriangles, 1000, MiningChunks::MaxChunkTriangles);
-	const double Deadline=GetWorld()->IsGameWorld()?FPlatformTime::Seconds()+FMath::Max(.01f,InteractiveCutBudgetMilliseconds)/1000:0;
+	const float InteractiveBudget = FMath::Clamp(FMath::Min(InteractiveCutBudgetMilliseconds,
+		CVarMiningInteractiveBudgetMilliseconds.GetValueOnGameThread()), .01f, 40.f);
+	const double Deadline=GetWorld()->IsGameWorld()?Started+InteractiveBudget/1000:0;
 	for (int32 Index = 0; Index < Chunks.Num(); ++Index)
 	{
 		FMiningRockChunk& Chunk = Chunks[Index];
@@ -464,6 +473,7 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, co
 
 void AGeneratedMiningRock::CommitChunks(TArray<int32>& Affected,TArray<FDynamicMesh3>& Prepared,const FBox& Dirty)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(Mining_Commit);
 	const double CommitStart=FPlatformTime::Seconds();
 	const int32 Budget=FMath::Clamp(MaxTriangles,1000,MiningChunks::MaxChunkTriangles);
 	for (int32 Index = 0; Index < Affected.Num(); ++Index)
@@ -478,7 +488,12 @@ void AGeneratedMiningRock::CommitChunks(TArray<int32>& Affected,TArray<FDynamicM
 	UpdateChunkStats();
 	++SuccessfulCuts;
 	LastTouchedChunks = Affected.Num();
-	OnTerrainCommitted.Broadcast(Dirty);
+	const double NotificationStart = FPlatformTime::Seconds();
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(Mining_TerrainListeners);
+		OnTerrainCommitted.Broadcast(Dirty);
+	}
+	LastTerrainNotificationMilliseconds = (FPlatformTime::Seconds() - NotificationStart) * 1000;
 	if (GetWorld()->IsGameWorld())
 	{
 		for (int32 Index : Affected)

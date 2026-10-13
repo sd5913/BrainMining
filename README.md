@@ -6,6 +6,8 @@
 
 原六区大厅保留，通过 Play_Main.cmd -Experience Overview 打开；其来源和展示规则见 [main 整合说明](README_MainIntegration.md)。
 
+主入口默认使用 1600×900 Balanced 画质；`Play_Main.cmd -Quality Epic` 恢复原光照、反射和阴影档位。性能改动、实测结果和复测方法见 [运行性能说明](Docs/Performance.md)。
+
 ## 六区体验地图
 
 旧展示大厅入口：/Game/Showcase/Maps/Lvl_MainExperiences。

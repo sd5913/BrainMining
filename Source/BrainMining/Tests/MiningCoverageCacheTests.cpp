@@ -64,6 +64,13 @@ bool FMiningClueCommitTest::RunTest(const FString&)
         Item->ConfigureCrystalClues(Placement,FragmentMesh);
         auto AssertSurvivors=[&](const TCHAR* Context)
         {
+            const double Deadline = FPlatformTime::Seconds() + 3;
+            while (Rock->bCutPending && FPlatformTime::Seconds() < Deadline)
+            {
+                FPlatformProcess::Sleep(.001f);
+                Rock->Tick(.01f);
+            }
+            TestFalse(TEXT("Accepted cut finishes before inspecting its committed support"), Rock->bCutPending);
             TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints(Item->CoveringRocks,Placement.FragmentSupports,Covered);
             int32 Expected=0;for(bool Solid:Covered)Expected+=Solid;
             TestEqual(Context,Item->CrystalClues->GetInstanceCount(),Expected);
@@ -94,6 +101,39 @@ bool FMiningClueCommitTest::RunTest(const FString&)
     }
     return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningBatchedCluesTest,"BrainMining.Treasure.BatchedCrystalRemoval",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningBatchedCluesTest::RunTest(const FString&)
+{
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    auto* Rock = World->SpawnActor<ADiggableRock>();
+    Rock->RockSize = FVector(1000);
+    Rock->ResetRock();
+    auto* Item = World->SpawnActor<AMiningTreasure>();
+    Item->CoveringRocks = {Rock};
+    Item->Model->SetMaterial(0, UMaterial::GetDefaultMaterial(MD_Surface));
+    FMiningTreasurePlacement Placement;
+    Placement.FragmentSupports = {FVector(470, 0, 0), FVector(-470, 0, 0), FVector(470, 30, 0),
+        FVector(-470, 30, 0), FVector(470, -30, 0), FVector(-470, -30, 0)};
+    for (const FVector& Point : Placement.FragmentSupports)
+        Placement.Fragments.Add(FTransform(FQuat::Identity, Point, FVector(.1)));
+    Item->ConfigureCrystalClues(Placement, LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")));
+    TestEqual(TEXT("All authored inclusions start supported"), Item->CrystalClues->GetInstanceCount(), 6);
+    TestTrue(TEXT("One cut removes alternating instance slots"), Rock->MineSphere(FVector(500, 0, 0), 150));
+    TestEqual(TEXT("Exactly three supported inclusions survive the batch"), Item->CrystalClues->GetInstanceCount(), 3);
+    for (int32 Slot = 0; Slot < Item->CrystalClues->GetInstanceCount(); ++Slot)
+    {
+        FTransform Transform;
+        Item->CrystalClues->GetInstanceTransform(Slot, Transform, true);
+        TestTrue(TEXT("Swap removal preserves the uncut side"), Transform.GetLocation().X < 0);
+    }
+    Rock->OnTerrainCommitted.Broadcast(FBox::BuildAABB(FVector(500, 0, 0), FVector(151)));
+    TestEqual(TEXT("Repeated notification does not revive removed fragments"), Item->CrystalClues->GetInstanceCount(), 3);
+    Rock->ResetRock();
+    TestEqual(TEXT("Reset restores the complete authored vein"), Item->CrystalClues->GetInstanceCount(), 6);
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningThinEntranceBudgetTest,"BrainMining.Terrain.ThinEntranceCutBudget",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FMiningThinEntranceBudgetTest::RunTest(const FString&)
 {

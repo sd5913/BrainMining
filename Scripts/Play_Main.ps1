@@ -2,6 +2,13 @@ param(
     [string]$EngineRoot = '',
     [ValidateSet('Campaign', 'Overview', 'Mine', 'Journey', 'WenSi', 'Office', 'Ending', 'Collection', 'Spatial', 'Manual', 'Chain')]
     [string]$Experience = 'Campaign',
+    [ValidateSet('Balanced', 'Epic')]
+    [string]$Quality = 'Balanced',
+    [ValidateRange(800, 7680)]
+    [int]$Width = 1600,
+    [ValidateRange(600, 4320)]
+    [int]$Height = 900,
+    [switch]$Profile,
     [switch]$Editor
 )
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -31,7 +38,17 @@ $maps = @{
 }
 if (-not (Test-Path -LiteralPath $executable)) { throw "Unreal Editor not found: $executable. Supply -EngineRoot." }
 $launchArguments = @($project, $maps[$Experience], '-NoSplash')
-if (-not $Editor) { $launchArguments += @('-game', '-windowed', '-ResX=1600', '-ResY=900') }
+if ($Editor -and $Profile) { throw 'Performance capture requires game mode; omit -Editor.' }
+if (-not $Editor) {
+    $tier = if ($Quality -eq 'Epic') { 3 } else { 2 }
+    $qualityCommands = @("sg.GlobalIlluminationQuality $tier", "sg.ReflectionQuality $tier", "sg.ShadowQuality $tier")
+    if ($Profile) {
+        $qualityCommands += @('t.MaxFPS 0', 'r.VSync 0', 'csvprofile frames=1800')
+        $launchArguments += @('-csvGpuStats', '-csvCompression=0', '-ExitAfterCsvProfiling')
+        Write-Host 'Capturing 1800 frames; the game exits when complete. Reports: Saved\Profiling\CSV'
+    }
+    $launchArguments += @('-game', '-windowed', "-ResX=$Width", "-ResY=$Height", ('-ExecCmds="' + ($qualityCommands -join ',') + '"'))
+}
 Push-Location (Split-Path -Parent $executable)
 try { & $executable @launchArguments }
 finally { Pop-Location }

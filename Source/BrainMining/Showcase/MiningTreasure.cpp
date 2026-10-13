@@ -20,6 +20,7 @@
 #include "DynamicMesh/DynamicMeshAABBTree3.h"
 #include "UDynamicMesh.h"
 #include "UObject/ConstructorHelpers.h"
+#include "ProfilingDebugging/CpuProfilerTrace.h"
 
 // Each dynamic mesh broadcasts replacements, edits, resets and background simplification
 // commits. Invalidate from that event rather than from cut counts (which can reset).
@@ -52,6 +53,7 @@ public:
     FEntry& Get(UDynamicMeshComponent* Component)
     {
         UDynamicMesh* Mesh=Component->GetDynamicMesh();
+        if (const auto* Entry = Entries.Find(Mesh)) return **Entry;
         for(auto It=Entries.CreateIterator();It;++It) if(!It.Key().IsValid()) It.RemoveCurrent();
         auto& Entry=Entries.FindOrAdd(Mesh);
         if(!Entry)
@@ -75,8 +77,8 @@ FMiningTerrainQuery& TerrainQuery(ADiggableRock* Rock)
 
 uint32 AMiningTreasure::GetTerrainVersion() const
 {
-    FBox WorldBounds(ForceInit);
-    for(const auto& Point:CrystalSupports) WorldBounds+=Point;
+    TRACE_CPUPROFILER_EVENT_SCOPE(Mining_TerrainVersion);
+    FBox WorldBounds = CrystalSupportBounds;
     // Keep monitoring the buried site after the reward falls or is collected.
     WorldBounds+=BuriedTransform.GetLocation()-Model->Bounds.BoxExtent*2;
     WorldBounds+=BuriedTransform.GetLocation()+Model->Bounds.BoxExtent*2;
@@ -288,6 +290,7 @@ float AMiningTreasure::MeasureExposure(FVector* EscapeDirection) const
 
 void AMiningTreasure::MarkCoveredPoints(const TArray<TObjectPtr<ADiggableRock>>& Rocks,const TArray<FVector>& Points,TArray<bool>& Covered)
 {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Mining_Coverage);
     Covered.Init(false,Points.Num());
     if(Points.IsEmpty())return;
     for(ADiggableRock* Rock:Rocks)
@@ -342,17 +345,21 @@ void AMiningTreasure::ConfigureCrystalClues(const FMiningTreasurePlacement& Plac
 
 void AMiningTreasure::UpdateCrystalClues()
 {
+    CrystalSupportBounds = FBox(ForceInit);
+    for (const FVector& Point : CrystalSupports) CrystalSupportBounds += Point;
     OnTerrainCommitted(FBox(ForceInit));
 }
 
 void AMiningTreasure::OnTerrainCommitted(const FBox& ChangedBounds)
 {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Mining_CrystalSupport);
     if(CrystalSupports.IsEmpty())return;
+    if (ChangedBounds.IsValid && CrystalSupportBounds.IsValid && !ChangedBounds.Intersect(CrystalSupportBounds)) return;
     if(SupportedCrystals.Num()!=CrystalSupports.Num())SupportedCrystals.Init(false,CrystalSupports.Num());
     TArray<FVector> Points;
     TArray<int32> Fragments;
     for(int32 I=0;I<CrystalSupports.Num();++I)
-        if(!ChangedBounds.IsValid || ChangedBounds.IsInsideOrOn(CrystalSupports[I]))
+        if(!ChangedBounds.IsValid || (SupportedCrystals[I] && ChangedBounds.IsInsideOrOn(CrystalSupports[I])))
         { Points.Add(CrystalSupports[I]); Fragments.Add(I); }
     if(Points.IsEmpty())return;
     TArray<bool> Covered;MarkCoveredPoints(CoveringRocks,Points,Covered);
@@ -368,10 +375,13 @@ void AMiningTreasure::OnTerrainCommitted(const FBox& ChangedBounds)
     }
     // Remove back-to-front, matching whichever removal policy the ISM uses.
     // No ClearInstances: unaffected instance identities/render history survive.
+    TArray<int32> RemovedSlots;
     for(int32 Slot=CrystalInstanceFragments.Num()-1;Slot>=0;--Slot)
         if(!SupportedCrystals[CrystalInstanceFragments[Slot]])
+            RemovedSlots.Add(Slot);
+    if (CrystalClues->RemoveInstances(RemovedSlots, true))
+        for (const int32 Slot : RemovedSlots)
         {
-            CrystalClues->RemoveInstance(Slot);
             if(CrystalClues->SupportsRemoveSwap())CrystalInstanceFragments.RemoveAtSwap(Slot);
             else CrystalInstanceFragments.RemoveAt(Slot);
         }

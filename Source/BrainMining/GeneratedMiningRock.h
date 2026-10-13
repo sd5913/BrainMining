@@ -8,6 +8,7 @@
 
 class UDynamicMesh;
 class UMaterialInstanceDynamic;
+class UMiningTerrainSource;
 struct FMiningSimplificationResult;
 struct FMiningDeferredCut;
 struct FMiningDeferredRequest;
@@ -18,7 +19,7 @@ struct FMiningRockChunk
 {
 	GENERATED_BODY()
 
-	UPROPERTY(VisibleAnywhere, Instanced, BlueprintReadOnly, Category="Chunk")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Chunk")
 	TObjectPtr<UDynamicMesh> InitialMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Chunk")
@@ -34,6 +35,8 @@ struct FMiningRockChunk
 	int32 Triangles = 0;
 	UPROPERTY()
 	int32 SpatialCell = INDEX_NONE;
+	UPROPERTY(Transient)
+	bool bRuntimeDeferred = false;
 };
 
 UENUM(BlueprintType)
@@ -48,6 +51,14 @@ class BRAINMINING_API AGeneratedMiningRock : public ADiggableRock
 	GENERATED_BODY()
 public:
 	AGeneratedMiningRock();
+	virtual void PostLoad() override;
+	virtual void PreRegisterAllComponents() override;
+	UPROPERTY(VisibleAnywhere, Category="Mining|Source")
+	TObjectPtr<UMiningTerrainSource> TerrainSource;
+#if WITH_EDITOR
+	bool ExtractTerrainSource(UMiningTerrainSource* Destination);
+#endif
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void ResetRock() override;
 	virtual bool MineSphere(FVector WorldCenter, float WorldRadius) override;
@@ -63,6 +74,13 @@ public:
 	void CopyMiningMesh(UE::Geometry::FDynamicMesh3& Mesh) const;
 	void CopyEditorPreviewMesh(UE::Geometry::FDynamicMesh3& Mesh) const;
 	UMaterialInterface* GetMiningMaterial();
+	UDynamicMesh* GetChunkQueryMesh(const FMiningRockChunk& Chunk) const;
+	void PrepareRuntimeGeometry(const FVector& WorldPosition, float WorldRadius);
+	static void PrepareTerrainAt(UWorld* World, const FVector& WorldPosition, float WorldRadius = 5000.f);
+	static int32 GetBackgroundTaskCount();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	int32 DeferredRuntimeChunks = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Hollow Region")
 	TArray<FMiningGuideVolume> GuideMaterialVolumes;
@@ -121,16 +139,26 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Segment")
 	EMiningSegmentState SegmentState = EMiningSegmentState::Active;
 
+protected:
+	virtual void InitializeForPlay() override;
+
 private:
+	bool bRuntimeInitializationEnabled = false;
+	FBox RuntimeChunkBounds = FBox(ForceInit);
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> GuideMaterial;
 	void ClearChunks();
+	void EnsureChunkComponent(FMiningRockChunk& Chunk);
+	void MakeSourceEditable();
 	void UpdateChunkStats();
 	bool MineChunks(FVector WorldCenter, float WorldRadius, const UE::Geometry::FDynamicMesh3* WorldCutter = nullptr);
 	void ScheduleSimplification(int32 Index);
 	bool QueueDeferredCut(FVector WorldCenter, float WorldRadius, const UE::Geometry::FDynamicMesh3& LocalCutter, bool bPreserveEdges);
 	void StartDeferredCut();
 	void PollDeferredCut();
+	void PollBackgroundWork();
+	void EnsureBackgroundPolling();
+	FTimerHandle BackgroundWorkTimer;
 	void CommitChunks(TArray<int32>& Indices, TArray<UE::Geometry::FDynamicMesh3>& Meshes, const FBox& Dirty);
 	TArray<TSharedPtr<FMiningDeferredRequest, ESPMode::ThreadSafe>> CutQueue;
 	TFuture<TSharedPtr<FMiningDeferredCut, ESPMode::ThreadSafe>> CutTask;
@@ -138,7 +166,7 @@ private:
 	uint64 MeshGeneration = 0;
 	TSharedPtr<const MiningChunks::FSpatialGrid, ESPMode::ThreadSafe> EditorGrid;
 	UE::Geometry::FDynamicMesh3 ChunkCutter;
-	UPROPERTY(VisibleAnywhere, Instanced, Category="Generated")
+	UPROPERTY(VisibleAnywhere, Category="Generated")
 	TObjectPtr<UDynamicMesh> InitialMesh;
 
 	UPROPERTY()

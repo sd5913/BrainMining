@@ -62,6 +62,7 @@ public:
         auto* Wallet=W->GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
         if(Step==0)
         {
+            for(const auto& Placement:Field->AuthoredPlacements) Field->PrepareAuthoredArea(Placement.AreaTag);
             Test->TestEqual(TEXT("Every authored mineral spawns"),Field->Items.Num(),Field->AuthoredPlacements.Num());
             if(Field->Items.Num()!=Field->AuthoredPlacements.Num() || Field->Items.IsEmpty())return true;
             int64 Totals[3]={};int White[3]={},Guide[3]={};

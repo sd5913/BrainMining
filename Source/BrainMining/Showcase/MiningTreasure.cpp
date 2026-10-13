@@ -50,9 +50,8 @@ public:
         }
     };
     TMap<TWeakObjectPtr<UDynamicMesh>, TSharedPtr<FEntry>> Entries;
-    FEntry& Get(UDynamicMeshComponent* Component)
+    FEntry& Get(UDynamicMesh* Mesh)
     {
-        UDynamicMesh* Mesh=Component->GetDynamicMesh();
         if (const auto* Entry = Entries.Find(Mesh)) return **Entry;
         for(auto It=Entries.CreateIterator();It;++It) if(!It.Key().IsValid()) It.RemoveCurrent();
         auto& Entry=Entries.FindOrAdd(Mesh);
@@ -90,11 +89,11 @@ uint32 AMiningTreasure::GetTerrainVersion() const
         Version=HashCombineFast(Version,GetTypeHash(Rock->GetActorLocation()));
         Version=HashCombineFast(Version,GetTypeHash(Rock->GetActorRotation().Euler()));
         Version=HashCombineFast(Version,GetTypeHash(Rock->GetActorScale3D()));
-        auto Add=[&](UDynamicMeshComponent* Mesh)
+        auto Add=[&](UDynamicMesh* Mesh)
         { if(Mesh) Version=HashCombineFast(Version,HashCombineFast(GetTypeHash(Mesh),TerrainQuery(Rock).Get(Mesh).Revision)); };
         if(auto* Generated=Cast<AGeneratedMiningRock>(Rock);Generated && Generated->bChunked)
-        { for(const auto& Chunk:Generated->Chunks) if(Chunk.Bounds.Intersect(Bounds)) Add(Chunk.Mesh); }
-        else Add(Rock->RockMesh);
+        { for(const auto& Chunk:Generated->Chunks) if(Chunk.Bounds.Intersect(Bounds)) Add(Generated->GetChunkQueryMesh(Chunk)); }
+        else if (Rock->RockMesh) Add(Rock->RockMesh->GetDynamicMesh());
     }
     return Version;
 }
@@ -298,18 +297,18 @@ void AMiningTreasure::MarkCoveredPoints(const TArray<TObjectPtr<ADiggableRock>>&
         if(!IsValid(Rock))continue;
         TArray<FVector> Local;FBox QueryBounds(ForceInit);
         for(const FVector& P:Points){const FVector L=Rock->GetActorTransform().InverseTransformPosition(P);Local.Add(L);QueryBounds+=L;}
-        auto Mark=[&](UDynamicMeshComponent* Component,const FBox& Bounds)
+        auto Mark=[&](UDynamicMesh* QueryMesh,const FBox& Bounds)
         {
-            if(!Component || !Bounds.Intersect(QueryBounds))return;
-            const auto& Mesh=Component->GetDynamicMesh()->GetMeshRef();if(!Mesh.TriangleCount())return;
-            auto& Query=TerrainQuery(Rock).Get(Component);
+            if(!QueryMesh || !Bounds.Intersect(QueryBounds))return;
+            const auto& Mesh=QueryMesh->GetMeshRef();if(!Mesh.TriangleCount())return;
+            auto& Query=TerrainQuery(Rock).Get(QueryMesh);
             for(int I=0;I<Local.Num();++I)if(!Covered[I] && Bounds.IsInsideOrOn(Local[I]))
                 Covered[I]=Query.Contains(Local[I]);
         };
         if(auto* Generated=Cast<AGeneratedMiningRock>(Rock);Generated && Generated->bChunked)
-        {for(const auto& Chunk:Generated->Chunks)Mark(Chunk.Mesh,Chunk.Bounds);}
+        {for(const auto& Chunk:Generated->Chunks)Mark(Generated->GetChunkQueryMesh(Chunk),Chunk.Bounds);}
         else if(Rock->RockMesh)
-        {const auto Bounds=Rock->RockMesh->GetDynamicMesh()->GetMeshRef().GetBounds();Mark(Rock->RockMesh,FBox(FVector(Bounds.Min),FVector(Bounds.Max)));}
+        {const auto Bounds=Rock->RockMesh->GetDynamicMesh()->GetMeshRef().GetBounds();Mark(Rock->RockMesh->GetDynamicMesh(),FBox(FVector(Bounds.Min),FVector(Bounds.Max)));}
     }
 }
 
@@ -574,6 +573,7 @@ void AMiningTreasureField::BeginPlay()
 void AMiningTreasureField::ClearGenerated()
 {
     Target = nullptr;
+    PendingAuthoredItems.Reset();
     for (AMiningTreasure* Item : Items) if (IsValid(Item)) Item->Destroy();
     for (ADiggableRock* Rock : Rocks) if (IsValid(Rock)) Rock->Destroy();
     Items.Reset();
@@ -650,6 +650,7 @@ void AMiningTreasureField::ResetExhibit()
 void AMiningTreasureField::SetAreaActive(bool bActive)
 {
     bAreaActive = bActive;
+    if(bActive && bUseAuthoredPlacements) PrepareAuthoredArea(ActiveAreaTag);
     for (AMiningTreasure* Item : Items) if (IsValid(Item)) Item->SetDropActive(bActive && (!bUseAuthoredPlacements || Item->ActorHasTag(ActiveAreaTag)));
     if (!bActive && IsValid(Target)) Target->SetHighlighted(false);
     if (!bActive) Target = nullptr;

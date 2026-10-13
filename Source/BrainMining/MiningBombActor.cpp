@@ -1,6 +1,7 @@
 #include "MiningBombActor.h"
 #include "MiningBombPresentationComponent.h"
 #include "DiggableRock.h"
+#include "GeneratedMiningRock.h"
 #include "MiningDebrisBurst.h"
 #include "MiningDrillDustBurst.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -21,6 +22,9 @@
 
 AMiningBombActor::AMiningBombActor()
 {
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
+	PrimaryActorTick.TickGroup = TG_PrePhysics;
 	Tags.Add(TEXT("BM_PlayerEffect"));
 	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("BombCollision"));
 	SetRootComponent(Collision);
@@ -44,6 +48,8 @@ void AMiningBombActor::Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMining
 	const FMiningBombSettings& InSettings, const FVector& Velocity)
 {
 	Settings = InSettings;
+	AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), GetActorLocation(), 1000.f);
+	SetActorTickEnabled(true);
 	Explosion = Effect;
 	SourceTool = Tool;
 	Model->SetStaticMesh(Mesh);
@@ -68,6 +74,14 @@ void AMiningBombActor::Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMining
 	}, .15f, false);
 }
 
+void AMiningBombActor::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if (!bExploded && !bStuck)
+		AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), GetActorLocation(),
+			1000.f + Collision->GetPhysicsLinearVelocity().Size() * FMath::Max(0.f, DeltaSeconds));
+}
+
 void AMiningBombActor::Contact(UPrimitiveComponent*, AActor* Other, UPrimitiveComponent* OtherComponent, FVector, const FHitResult& Result)
 {
 	++ContactCount;
@@ -75,6 +89,7 @@ void AMiningBombActor::Contact(UPrimitiveComponent*, AActor* Other, UPrimitiveCo
 	// Latch before stopping physics because one physics step may report several
 	// contacts. Do not restart the fuse: it still counts from the throw.
 	bStuck = true;
+	SetActorTickEnabled(false);
 	StuckAt = GetWorld()->GetTimeSeconds();
 	GetWorldTimerManager().ClearTimer(PawnGraceTimer);
 	Collision->SetPhysicsLinearVelocity(FVector::ZeroVector);
@@ -151,6 +166,7 @@ void AMiningBombActor::ExcavateTerrain(const FVector& Location)
 {
 	const float Radius = FMath::Clamp(Settings.ExcavationRadius, 100.f, 2000.f);
 	const float Reach = Radius * 1.45f;
+	AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), Location, Reach + 1.f);
 	struct FSurface { FHitResult Hit; UMaterialInterface* Material; };
 	TArray<FSurface> Surfaces;
 	FCollisionQueryParams Query(SCENE_QUERY_STAT(BombTerrainSample), true, this);

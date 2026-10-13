@@ -5,6 +5,7 @@
 #include "MiningCollection.h"
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
+#include "GeneratedMiningRock.h"
 #include "MiningCellUniverse.h"
 #include "MiningRoomEscape.h"
 #include "MiningGiantRoomEntrance.h"
@@ -225,6 +226,7 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
     const FTransform Destination=Index==INDEX_NONE?LobbyEntry:(bContinuousCampaign?Areas[Index].Entry:ResumePoints[Index]);
     if(bMovePlayer)
     {
+        AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), Destination.GetLocation());
         Controller->GetPawn()->SetActorTransform(Destination,false,nullptr,ETeleportType::TeleportPhysics);
         Controller->SetControlRotation(Destination.Rotator());
     }

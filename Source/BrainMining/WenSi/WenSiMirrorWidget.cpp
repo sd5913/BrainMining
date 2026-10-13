@@ -1,4 +1,6 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "WenSi/WenSiThoughtBubble.h"
+#include "Engine/Texture2D.h"
 #include "Fonts/CompositeFont.h"
 #include "Input/DragAndDrop.h"
 #include "InputCoreTypes.h"
@@ -62,7 +64,7 @@ namespace
    Index=Args._ThoughtIndex; Puzzle=Args._Puzzle; Word=Args._Word;
    SBorder::Construct(SBorder::FArguments().Padding(FMargin(5,2)).BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"))).BorderBackgroundColor(FLinearColor(.22,.045,.03,.9))
     [ SNew(SVerticalBox)
-      +SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(Word)).Font(ThoughtFont(22)).ColorAndOpacity(FLinearColor(1,.28,.22))]
+      +SVerticalBox::Slot().AutoHeight()[SNew(STextBlock).Text(FText::FromString(Word)).Font(ThoughtFont(26)).ColorAndOpacity(FLinearColor(1,.28,.22))]
       +SVerticalBox::Slot().AutoHeight()[SNew(SBorder).Padding(FMargin(0,1)).BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"))).BorderBackgroundColor(FLinearColor(1,.28,.22))]
     ]);
    SetVisibility(EVisibility::Visible);
@@ -95,14 +97,11 @@ namespace
 TSharedRef<SWidget> UWenSiMirrorWidget::RebuildWidget()
 {
  SetIsFocusable(true);
+ ThoughtTexture=LoadObject<UTexture2D>(nullptr,TEXT("/Game/WenSi/UI/T_ThoughtBubbleRight.T_ThoughtBubbleRight"));
+ for(int32 I=0;I<2;++I)ThoughtBrushes[I]=WenSiThoughtBubble::MakeBrush(ThoughtTexture,I);
  auto MakeCard=[this](int32 Index)->TSharedRef<SWidget>
  {
-  return SNew(SBorder).Padding(16).BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"))).BorderBackgroundColor(FLinearColor(.025,.035,.045,.85))
-  [SNew(SVerticalBox)
-   +SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
-   [SNew(SButton).IsFocusable(false).Text(FText::FromString(TEXT("×"))).OnClicked_Lambda([this,Index](){if(Puzzle.IsValid())Puzzle->CloseThought(Index);return FReply::Handled();})]
-   +SVerticalBox::Slot().AutoHeight().Padding(0,8)[SAssignNew(Rows[Index],SHorizontalBox)]
-  ];
+  return WenSiThoughtBubble::MakeCard(Index,&ThoughtBrushes[Index],Rows[Index],FOnClicked::CreateLambda([this,Index](){if(Puzzle.IsValid())Puzzle->CloseThought(Index);return FReply::Handled();}));
  };
  auto Overlay=SNew(SOverlay)
   +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center).Padding(24,0)[SAssignNew(Cards[0],SBorder).BorderImage(FCoreStyle::Get().GetBrush(TEXT("NoBrush")))[MakeCard(0)]]
@@ -139,9 +138,9 @@ void UWenSiMirrorWidget::Refresh()
    auto Obj=Puzzle->Thoughts[I].Get();
    Cards[I]->SetVisibility(Obj ? (Puzzle->bEditing ? EVisibility::Visible:EVisibility::HitTestInvisible) : EVisibility::Collapsed);
    Rows[I]->ClearChildren(); if (!Obj) continue;
-   Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("这是一个"))).Font(ThoughtFont(22))];
+   WenSiThoughtBubble::AddText(Rows[I],TEXT("这是一个"),ThoughtFont(26));
    Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(SThoughtWord).ThoughtIndex(I).Word(Obj->Adjective()).Puzzle(Puzzle)];
-   Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("的")+Obj->Noun()+TEXT("。"))).Font(ThoughtFont(22))];
+   WenSiThoughtBubble::AddText(Rows[I],TEXT("的")+Obj->Noun()+TEXT("。"),ThoughtFont(26));
   }
  }
  FString Message;

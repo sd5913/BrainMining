@@ -74,6 +74,8 @@ public:
  virtual FReply NativeOnKeyDown(const FGeometry&,const FKeyEvent&) override;
  void Refresh();
 private:
+ UPROPERTY(Transient) TObjectPtr<class UTexture2D> ThoughtTexture;
+ FSlateBrush ThoughtBrushes[2];
  TSharedPtr<SHorizontalBox> Rows[2];
  TSharedPtr<SWidget> Cards[2];
  TSharedPtr<STextBlock> Hint;

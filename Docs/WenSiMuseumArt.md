@@ -7,7 +7,7 @@ columns, panel mouldings, parquet, ceiling, paintings, statues,
 plinths, windows and benches. Original Museum assets are not edited.
 
 Warm exhibit lighting combines with soft neutral gallery fill and passage light.
-The ceiling uses room-sized modular panels and small reliefs; no oversized or
+The ceiling uses room-sized modular panels; no oversized or
 flattened arches project down into the rooms. Column height and floor/ceiling
 coverage follow the existing room dimensions.
 Fixed exposure, modest vignette and low atmospheric fog retain visibility of

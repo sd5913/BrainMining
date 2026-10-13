@@ -86,7 +86,6 @@ def dress(name):
   for ix in range(nx):
    for iy in range(ny):mesh('SM_ModularCeiling01',(x0+(ix+.5)*span/nx,-width/2+(iy+.5)*width/ny,height-10),(span/nx/300,width/ny/300,1))
   for x in [x0+span*.25,x0+span*.75]:
-   mesh('SM_CeilingDetail03',(x,0,height-18),(1,1,1),(180,0,0),'CeilingRelief')
    light((x,0,height-35),(x,0,0),2400,(.93,.90,.84),58,1000)
   fill=subsystem.spawn_actor_from_class(unreal.PointLight,unreal.Vector((x0+x1)/2,0,height-65));fill.set_actor_label('MM_SoftGalleryFill');fill.set_folder_path('MysteryMuseum/Lighting');fill.tags=[TAG]
   component=fill.get_component_by_class(unreal.PointLightComponent);component.set_mobility(unreal.ComponentMobility.MOVABLE);component.set_intensity_units(unreal.LightUnits.LUMENS);component.set_intensity(300 if height>350 else 160);component.set_attenuation_radius(1500);component.set_light_color(unreal.LinearColor(.93,.90,.84));component.set_cast_shadows(False);count['lights']+=1

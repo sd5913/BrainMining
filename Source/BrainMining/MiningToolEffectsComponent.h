@@ -10,6 +10,7 @@ class USceneComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
 class UMaterialInterface;
+class AMiningDebrisBurst;
 
 /** Presentation for the existing mining operation; never performs a rock cut. */
 UCLASS(ClassGroup=(Mining), meta=(BlueprintSpawnableComponent))
@@ -161,6 +162,10 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> PendingSurfaceMaterial;
 	TArray<TWeakObjectPtr<AActor>> DebrisActors;
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<AMiningDebrisBurst>> DebrisPool;
+	int32 NextDebrisPoolIndex = 0;
+	void WarmDebrisPool();
 	TArray<TWeakObjectPtr<AActor>> DustActors;
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> LoadedDustMaterial;

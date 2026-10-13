@@ -10,6 +10,10 @@
 
 主入口默认使用 1600×900 Balanced 画质；`Play_Main.cmd -Quality Epic` 恢复原光照、反射和阴影档位。性能改动、实测结果和复测方法见 [运行性能说明](Docs/Performance.md)。
 
+编辑器与游戏默认打开 FullJourney。启动入口检查已有 UE 进程和可用内存，并记录资源占用。完整关卡内的按需地形注册、低配档、安全编译和验证限制见 [启动与内存优化](Docs/StartupMemory.md)。
+
+FullJourney 原始地形已拆为 `Content/Campaign/TerrainData/` 共享资源，必须与地图一起同步。首次地形切割直接进入后台队列，原生土块效果分帧预备并复用；旧打包程序需重新构建才能获得这些改动。
+
 ## 六区体验地图
 
 旧展示大厅入口：/Game/Showcase/Maps/Lvl_MainExperiences。

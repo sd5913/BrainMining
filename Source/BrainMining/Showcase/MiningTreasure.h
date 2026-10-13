@@ -148,6 +148,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Treasure") TObjectPtr<AMiningTreasure> Target;
     bool IsAreaActive() const { return bAreaActive; }
     void SetAreaActive(bool bActive);
+    void PrepareAuthoredArea(FName AreaTag);
     UFUNCTION(BlueprintCallable, Category="Treasure") void ResetExhibit();
     bool CollectTarget(APlayerController* Controller);
     FString GetPrompt() const;
@@ -160,6 +161,8 @@ private:
     TMap<TWeakObjectPtr<AMiningTreasure>, uint32> ObservedTerrain;
     int32 TerrainUpdateCursor = 0;
     bool bAuthoredGenerated = false;
+    TMap<TWeakObjectPtr<AMiningTreasure>, int32> PendingAuthoredItems;
+    bool InitializeAuthoredItem(AMiningTreasure* Item, const FMiningTreasurePlacement& Placement);
     void SpawnAuthored();
     FRandomStream RewardRandom;
     void RefreshTarget(APlayerController* Controller);

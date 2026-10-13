@@ -34,6 +34,8 @@ public:
     void PopFlightBlock() {FlightBlockCount=FMath::Max(0,FlightBlockCount-1);}
     bool IsFlightAvailable() const {return FlightSettings.bEnabled && FlightBlockCount==0;}
 private:
+    FVector LastTerrainPreparePosition = FVector::ZeroVector;
+    bool bPreparedTerrain = false;
     int32 FlightBlockCount=0;
 	// Capture the duration at overheat start so runtime settings edits cannot jump the bar.
 	float JetpackOverheatDuration = 0.f;

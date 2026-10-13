@@ -1,0 +1,59 @@
+{
+  "vertices": 16027,
+  "edges": 48104,
+  "faces": 32069,
+  "connected_components": 1,
+  "boundary_edges": 0,
+  "nonmanifold_edges": 0,
+  "inconsistent_winding_edges": 0,
+  "degenerate_faces": 0,
+  "duplicate_faces": 0,
+  "euler_characteristic": -8,
+  "signed_volume_m3": 7895.428490146534,
+  "nonadjacent_bbox_pairs": 0,
+  "self_intersection_pairs": 0,
+  "examples": [],
+  "passed": true,
+  "main_length_m": 166.1737215848303,
+  "main_drop_m": 55.0,
+  "start": [
+    -65.0,
+    0.0,
+    65.0
+  ],
+  "end": [
+    65.0,
+    0.0,
+    10.0
+  ],
+  "width_min_m": 3.300002870093122,
+  "width_max_m": 12.799999950974986,
+  "branch_count": 4,
+  "branch_lengths_m": [
+    17.47019231213988,
+    17.470192312139893,
+    17.470192312139883,
+    17.470192312139897
+  ],
+  "branch_clearances_m": [
+    6.984541527949634,
+    5.638422292536901,
+    6.651698006421008,
+    4.377566043717724
+  ],
+  "cavern_centers_arc_m": [
+    71.45470028147703,
+    116.32160510938121
+  ],
+  "cavern_width_m": 12.8,
+  "cavern_height_m": 10.0,
+  "neural_rock_count": 4,
+  "reserved_connection_length_m": 18.0,
+  "reserved_connection_width_m": 12.0,
+  "reserved_connection_height_m": 8.0,
+  "dimensions_m": [
+    136.77377319335938,
+    49.79079818725586,
+    61.99821853637695
+  ]
+}

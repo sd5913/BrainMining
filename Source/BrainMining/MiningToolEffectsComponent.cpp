@@ -213,6 +213,30 @@ void UMiningToolEffectsComponent::QueueImpact(const FHitResult& Hit)
 	else GetWorld()->GetTimerManager().SetTimer(ImpactTimer, this, &UMiningToolEffectsComponent::SpawnImpact, SwingDuration * SourceImpactTime / SourceSwingDuration, false);
 }
 
+void UMiningToolEffectsComponent::WarmDebrisPool()
+{
+	if (LoadedDebrisClass != AMiningDebrisBurst::StaticClass() || LoadedDebrisMeshes.IsEmpty()) return;
+	DebrisPool.RemoveAll([](const TObjectPtr<AMiningDebrisBurst>& Burst) { return !IsValid(Burst); });
+	for (AMiningDebrisBurst* Burst : DebrisPool)
+	{
+		if (IsValid(Burst) && !Burst->IsPoolActive() && Burst->GetPreparedChunkCount() < 64)
+		{
+			Burst->PreparePool(LoadedDebrisMeshes, 4);
+			return;
+		}
+	}
+	if (DebrisPool.Num() >= 4) return;
+	FActorSpawnParameters Params;
+	Params.Owner = GetOwner();
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	auto* Burst = GetWorld()->SpawnActor<AMiningDebrisBurst>(GetOwner()->GetActorLocation(), FRotator::ZeroRotator, Params);
+	if (Burst)
+	{
+		Burst->PreparePool(LoadedDebrisMeshes, 4);
+		DebrisPool.Add(Burst);
+	}
+}
+
 void UMiningToolEffectsComponent::SpawnImpact()
 {
 	if (!CanShowEffects() || !LoadedDebrisClass || !PendingHit.bBlockingHit) return;
@@ -254,7 +278,19 @@ void UMiningToolEffectsComponent::SpawnImpact()
 			DustActors.Add(Dust);
 		}
 	}
-	AActor* Burst = GetWorld()->SpawnActor<AActor>(LoadedDebrisClass, Transform, Params);
+	AActor* Burst = nullptr;
+	if (LoadedDebrisClass == AMiningDebrisBurst::StaticClass())
+	{
+		for (AMiningDebrisBurst* Candidate : DebrisPool)
+			if (IsValid(Candidate) && !Candidate->IsPoolActive() && Candidate->GetPreparedChunkCount() > 0) { Burst = Candidate; break; }
+		if (!Burst && !DebrisPool.IsEmpty()) Burst = DebrisPool[NextDebrisPoolIndex++ % DebrisPool.Num()];
+		if (auto* Pooled = Cast<AMiningDebrisBurst>(Burst))
+		{
+			Pooled->ReleaseToPool();
+			Pooled->SetActorTransform(Transform);
+		}
+	}
+	else Burst = GetWorld()->SpawnActor<AActor>(LoadedDebrisClass, Transform, Params);
 	if (AMiningDebrisBurst* SoilBurst = Cast<AMiningDebrisBurst>(Burst))
 	{
 		const int32 BaseCount = bPendingDrillImpact ? DrillDebrisChunkCount : DebrisChunkCount;
@@ -273,12 +309,13 @@ void UMiningToolEffectsComponent::SpawnImpact()
 		Primitive->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	}
 	if (Burst->GetLifeSpan() <= 0) Burst->SetLifeSpan(DebrisLifetime);
-	DebrisActors.RemoveAll([](const TWeakObjectPtr<AActor>& Actor) { return !Actor.IsValid(); });
+	DebrisActors.RemoveAll([Burst](const TWeakObjectPtr<AActor>& Actor) { return !Actor.IsValid() || Actor.Get() == Burst; });
 	// Bound the physics cost even if a level uses a very short mining interval.
 	const int32 MaxBursts = bPendingDrillImpact ? 6 : 8;
 	while (DebrisActors.Num() >= MaxBursts)
 	{
-		if (DebrisActors[0].IsValid()) DebrisActors[0]->Destroy();
+		if (auto* Pooled = Cast<AMiningDebrisBurst>(DebrisActors[0].Get()); Pooled && Pooled->IsPooled()) Pooled->ReleaseToPool();
+		else if (DebrisActors[0].IsValid()) DebrisActors[0]->Destroy();
 		DebrisActors.RemoveAt(0);
 	}
 	DebrisActors.Add(Burst);
@@ -324,6 +361,7 @@ void UMiningToolEffectsComponent::ApplyToolMotion(USceneComponent* Motion, const
 void UMiningToolEffectsComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, TickFunction);
+	if (CanShowEffects()) WarmDebrisPool();
 	UpdateEchoPickaxeStyle();
 	if (!CanShowEffects())
 	{
@@ -423,7 +461,11 @@ void UMiningToolEffectsComponent::ResetEffects()
 	ApplyToolMotion(DrillPivot, DrillLocation, DrillRotation, FVector::ZeroVector, FRotator::ZeroRotator);
 	ApplyToolMotion(LeftDrillPivot, LeftDrillLocation, LeftDrillRotation, FVector::ZeroVector, FRotator::ZeroRotator);
 	ApplyToolMotion(BombPivot, FVector(45, 23, -20), FRotator(-12, 0, -8), FVector::ZeroVector, FRotator::ZeroRotator);
-	for (const TWeakObjectPtr<AActor>& Actor : DebrisActors) if (Actor.IsValid()) Actor->Destroy();
+	for (const TWeakObjectPtr<AActor>& Actor : DebrisActors) if (Actor.IsValid())
+	{
+		if (auto* Burst = Cast<AMiningDebrisBurst>(Actor.Get()); Burst && Burst->IsPooled()) Burst->ReleaseToPool();
+		else Actor->Destroy();
+	}
 	DebrisActors.Reset();
 	for (const TWeakObjectPtr<AActor>& Actor : DustActors) if (Actor.IsValid()) Actor->Destroy();
 	DustActors.Reset();
@@ -432,6 +474,8 @@ void UMiningToolEffectsComponent::ResetEffects()
 void UMiningToolEffectsComponent::EndPlay(const EEndPlayReason::Type Reason)
 {
 	ResetEffects();
+	for (AMiningDebrisBurst* Burst : DebrisPool) if (IsValid(Burst)) Burst->Destroy();
+	DebrisPool.Reset();
 	if (Mining)
 	{
 		Mining->OnMiningAttempt.RemoveDynamic(this, &UMiningToolEffectsComponent::PlaySwing);

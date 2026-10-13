@@ -1,0 +1,262 @@
+{
+  "seed": 20261014,
+  "factor": 0.9999999910593033,
+  "objects": [
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 6.0,
+      "allowed_end_m": 10.012171565514269,
+      "name": "SM_MainGame_Cavern_Blocker_01",
+      "seed": 20261205,
+      "start_arc_m": 6.000000017935804,
+      "end_arc_m": 10.012171547578465,
+      "arc_length_m": 4.012171529642661,
+      "center_m": [
+        -57.42330551147461,
+        0.6888632774353027,
+        62.50939178466797
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 11.512171565514269,
+      "allowed_end_m": 15.524343131028537,
+      "name": "SM_MainGame_Cavern_Blocker_02",
+      "seed": 20261396,
+      "start_arc_m": 11.512171583450073,
+      "end_arc_m": 15.524343113092733,
+      "arc_length_m": 4.012171529642661,
+      "center_m": [
+        -52.239166259765625,
+        1.420292854309082,
+        60.794612884521484
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 17.024343131028537,
+      "allowed_end_m": 26.54868626205707,
+      "name": "SM_MainGame_Cavern_Blocker_03",
+      "seed": 20261587,
+      "start_arc_m": 17.02434317360567,
+      "end_arc_m": 26.548686219479936,
+      "arc_length_m": 9.524343045874268,
+      "center_m": [
+        -45.08726501464844,
+        4.530551910400391,
+        58.22244644165039
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 33.548686262057075,
+      "allowed_end_m": 53.103339237828436,
+      "name": "SM_MainGame_Cavern_Blocker_04",
+      "seed": 20261778,
+      "start_arc_m": 33.548686349473186,
+      "end_arc_m": 53.103339150412324,
+      "arc_length_m": 19.554652800939138,
+      "center_m": [
+        -25.893835067749023,
+        7.870476245880127,
+        51.5217399597168
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 60.103339237828436,
+      "allowed_end_m": 65.46325774041642,
+      "name": "SM_MainGame_Cavern_Blocker_05",
+      "seed": 20261969,
+      "start_arc_m": 60.10333926178914,
+      "end_arc_m": 65.46325771645571,
+      "arc_length_m": 5.359918454666577,
+      "center_m": [
+        -12.722146987915039,
+        -4.3405656814575195,
+        45.46878433227539
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 66.96325774041642,
+      "allowed_end_m": 72.3231762430044,
+      "name": "SM_MainGame_Cavern_Blocker_06",
+      "seed": 20262160,
+      "start_arc_m": 66.96325776437712,
+      "end_arc_m": 72.32317621904369,
+      "arc_length_m": 5.35991845466657,
+      "center_m": [
+        -8.800614356994629,
+        -9.533881187438965,
+        43.33473587036133
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 79.7231762430044,
+      "allowed_end_m": 98.87517528817118,
+      "name": "SM_MainGame_Cavern_Blocker_07",
+      "seed": 20262351,
+      "start_arc_m": 79.72317632862051,
+      "end_arc_m": 98.87517520255507,
+      "arc_length_m": 19.15199887393456,
+      "center_m": [
+        8.573836326599121,
+        -13.38381576538086,
+        37.21997833251953
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 105.87517528817118,
+      "allowed_end_m": 112.21691714420544,
+      "name": "SM_MainGame_Cavern_Blocker_08",
+      "seed": 20262542,
+      "start_arc_m": 105.87517531652097,
+      "end_arc_m": 112.21691711585564,
+      "arc_length_m": 6.34174179933467,
+      "center_m": [
+        6.801046371459961,
+        4.63615083694458,
+        31.076936721801758
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 113.71691714420544,
+      "allowed_end_m": 120.0586590002397,
+      "name": "SM_MainGame_Cavern_Blocker_09",
+      "seed": 20262733,
+      "start_arc_m": 113.71691717255524,
+      "end_arc_m": 120.05865897188991,
+      "arc_length_m": 6.34174179933467,
+      "center_m": [
+        12.658614158630371,
+        9.023768424987793,
+        28.637454986572266
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 127.4586590002397,
+      "allowed_end_m": 131.9835035474054,
+      "name": "SM_MainGame_Cavern_Blocker_10",
+      "seed": 20262924,
+      "start_arc_m": 127.45865902046735,
+      "end_arc_m": 131.9835035271778,
+      "arc_length_m": 4.524844506710437,
+      "center_m": [
+        24.45136833190918,
+        11.957645416259766,
+        24.645153045654297
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 133.4835035474054,
+      "allowed_end_m": 138.0083480945711,
+      "name": "SM_MainGame_Cavern_Blocker_11",
+      "seed": 20263115,
+      "start_arc_m": 133.48350356763305,
+      "end_arc_m": 138.00834807434344,
+      "arc_length_m": 4.524844506710394,
+      "center_m": [
+        30.076875686645508,
+        11.22385025024414,
+        22.770889282226562
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 145.0083480945711,
+      "allowed_end_m": 166.79808428605673,
+      "name": "SM_MainGame_Cavern_Blocker_12",
+      "seed": 20263306,
+      "start_arc_m": 145.0083481919788,
+      "end_arc_m": 166.79808418864903,
+      "arc_length_m": 21.78973599667023,
+      "center_m": [
+        46.27423858642578,
+        1.109183669090271,
+        16.500171661376953
+      ]
+    },
+    {
+      "path_index": 1,
+      "path_name": "Branch_01",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.470192312139876,
+      "name": "SM_MainGame_Cavern_Blocker_13",
+      "seed": 20263497,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.470192285451036,
+      "arc_length_m": 5.9701922587621965,
+      "center_m": [
+        -41.19525146484375,
+        16.850046157836914,
+        52.33956527709961
+      ]
+    },
+    {
+      "path_index": 2,
+      "path_name": "Branch_02",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.470192312139886,
+      "name": "SM_MainGame_Cavern_Blocker_14",
+      "seed": 20263688,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.470192285451047,
+      "arc_length_m": 5.970192258762207,
+      "center_m": [
+        -9.752761840820312,
+        6.948792457580566,
+        44.078697204589844
+      ]
+    },
+    {
+      "path_index": 3,
+      "path_name": "Branch_03",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.47019231213989,
+      "name": "SM_MainGame_Cavern_Blocker_15",
+      "seed": 20263879,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.47019228545105,
+      "arc_length_m": 5.970192258762211,
+      "center_m": [
+        -1.856265664100647,
+        -1.370397686958313,
+        29.839567184448242
+      ]
+    },
+    {
+      "path_index": 4,
+      "path_name": "Branch_04",
+      "allowed_start_m": 6.5,
+      "allowed_end_m": 12.470192312139872,
+      "name": "SM_MainGame_Cavern_Blocker_16",
+      "seed": 20264070,
+      "start_arc_m": 6.50000002668884,
+      "end_arc_m": 12.470192285451033,
+      "arc_length_m": 5.970192258762193,
+      "center_m": [
+        32.692447662353516,
+        0.14318637549877167,
+        17.665653228759766
+      ]
+    }
+  ]
+}

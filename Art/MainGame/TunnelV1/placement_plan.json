@@ -1,0 +1,262 @@
+{
+  "seed": 20261013,
+  "factor": 0.9784373015165329,
+  "objects": [
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 8.0,
+      "allowed_end_m": 16.127219627855478,
+      "name": "SM_MainGame_Blocker_01",
+      "seed": 20261204,
+      "start_arc_m": 8.087622393172182,
+      "end_arc_m": 16.039597234683296,
+      "arc_length_m": 7.951974841511113,
+      "center_m": [
+        -53.59220886230469,
+        -0.4842112064361572,
+        61.12547302246094
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 18.627219627855478,
+      "allowed_end_m": 26.754439255710956,
+      "name": "SM_MainGame_Blocker_02",
+      "seed": 20261395,
+      "start_arc_m": 18.714842021027657,
+      "end_arc_m": 26.666816862538774,
+      "arc_length_m": 7.951974841511117,
+      "center_m": [
+        -44.052146911621094,
+        2.41040301322937,
+        57.712276458740234
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 34.754439255710956,
+      "allowed_end_m": 46.629070204913646,
+      "name": "SM_MainGame_Blocker_03",
+      "seed": 20261586,
+      "start_arc_m": 34.882463799091006,
+      "end_arc_m": 46.50104566153359,
+      "arc_length_m": 11.618581862442582,
+      "center_m": [
+        -28.711275100708008,
+        9.804405212402344,
+        51.93083190917969
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 49.129070204913646,
+      "allowed_end_m": 61.00370115411634,
+      "name": "SM_MainGame_Blocker_04",
+      "seed": 20261777,
+      "start_arc_m": 49.257094748293696,
+      "end_arc_m": 60.87567661073629,
+      "arc_length_m": 11.618581862442596,
+      "center_m": [
+        -17.467060089111328,
+        5.195230484008789,
+        47.314064025878906
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 69.00370115411634,
+      "allowed_end_m": 74.56472228939128,
+      "name": "SM_MainGame_Blocker_05",
+      "seed": 20261968,
+      "start_arc_m": 69.06365646511641,
+      "end_arc_m": 74.50476697839123,
+      "arc_length_m": 5.441110513274822,
+      "center_m": [
+        -7.529000759124756,
+        -6.890934944152832,
+        41.94472122192383
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 77.06472228939128,
+      "allowed_end_m": 82.62574342466624,
+      "name": "SM_MainGame_Blocker_06",
+      "seed": 20262159,
+      "start_arc_m": 77.12467760039135,
+      "end_arc_m": 82.56578811366617,
+      "arc_length_m": 5.441110513274822,
+      "center_m": [
+        -0.3701785206794739,
+        -9.463305473327637,
+        39.3557243347168
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 85.12574342466624,
+      "allowed_end_m": 98.74778569521615,
+      "name": "SM_MainGame_Blocker_07",
+      "seed": 20262350,
+      "start_arc_m": 85.2726074197707,
+      "end_arc_m": 98.6009217001117,
+      "arc_length_m": 13.328314280341004,
+      "center_m": [
+        5.35150671005249,
+        -4.367861747741699,
+        35.47222900390625
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 106.74778569521615,
+      "allowed_end_m": 111.4351011698175,
+      "name": "SM_MainGame_Blocker_08",
+      "seed": 20262541,
+      "start_arc_m": 106.79832128035402,
+      "end_arc_m": 111.38456558467963,
+      "arc_length_m": 4.586244304325618,
+      "center_m": [
+        7.672613620758057,
+        8.220608711242676,
+        29.96257781982422
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 113.9351011698175,
+      "allowed_end_m": 118.62241664441883,
+      "name": "SM_MainGame_Blocker_09",
+      "seed": 20262732,
+      "start_arc_m": 113.98563675495537,
+      "end_arc_m": 118.57188105928098,
+      "arc_length_m": 4.586244304325618,
+      "center_m": [
+        14.420976638793945,
+        9.039098739624023,
+        27.654191970825195
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 121.12241664441883,
+      "allowed_end_m": 125.80973211902017,
+      "name": "SM_MainGame_Blocker_10",
+      "seed": 20262923,
+      "start_arc_m": 121.17295222955669,
+      "end_arc_m": 125.7591965338823,
+      "arc_length_m": 4.586244304325618,
+      "center_m": [
+        21.223995208740234,
+        8.984559059143066,
+        25.345808029174805
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 128.30973211902017,
+      "allowed_end_m": 132.99704759362152,
+      "name": "SM_MainGame_Blocker_11",
+      "seed": 20263114,
+      "start_arc_m": 128.36026770415802,
+      "end_arc_m": 132.94651200848367,
+      "arc_length_m": 4.586244304325646,
+      "center_m": [
+        27.840503692626953,
+        7.474905014038086,
+        23.03742218017578
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 140.99704759362152,
+      "allowed_end_m": 161.2463094920269,
+      "name": "SM_MainGame_Blocker_12",
+      "seed": 20263305,
+      "start_arc_m": 141.21536195803554,
+      "end_arc_m": 161.02799512761288,
+      "arc_length_m": 19.81263316957734,
+      "center_m": [
+        46.058650970458984,
+        0.8716499209403992,
+        16.463523864746094
+      ]
+    },
+    {
+      "path_index": 1,
+      "path_name": "Branch_01",
+      "allowed_start_m": 8.0,
+      "allowed_end_m": 12.470192312139897,
+      "name": "SM_MainGame_Blocker_13",
+      "seed": 20263496,
+      "start_arc_m": 8.048194704494893,
+      "end_arc_m": 12.421997607645004,
+      "arc_length_m": 4.373802903150111,
+      "center_m": [
+        -41.3535041809082,
+        14.692866325378418,
+        51.53109359741211
+      ]
+    },
+    {
+      "path_index": 2,
+      "path_name": "Branch_02",
+      "allowed_start_m": 8.0,
+      "allowed_end_m": 12.470192312139876,
+      "name": "SM_MainGame_Blocker_14",
+      "seed": 20263687,
+      "start_arc_m": 8.048194704494893,
+      "end_arc_m": 12.421997607644983,
+      "arc_length_m": 4.373802903150089,
+      "center_m": [
+        -20.837936401367188,
+        -6.886529922485352,
+        40.53109359741211
+      ]
+    },
+    {
+      "path_index": 3,
+      "path_name": "Branch_03",
+      "allowed_start_m": 8.0,
+      "allowed_end_m": 11.558946124268601,
+      "name": "SM_MainGame_Blocker_15",
+      "seed": 20263878,
+      "start_arc_m": 8.038370241098253,
+      "end_arc_m": 11.520575883170348,
+      "arc_length_m": 3.4822056420720955,
+      "center_m": [
+        -6.396193981170654,
+        6.099672317504883,
+        28.374370574951172
+      ]
+    },
+    {
+      "path_index": 4,
+      "path_name": "Branch_04",
+      "allowed_start_m": 8.0,
+      "allowed_end_m": 12.470192312139893,
+      "name": "SM_MainGame_Blocker_16",
+      "seed": 20264069,
+      "start_arc_m": 8.048194704494893,
+      "end_arc_m": 12.421997607645,
+      "arc_length_m": 4.373802903150107,
+      "center_m": [
+        30.01230812072754,
+        -3.6402604579925537,
+        17.408641815185547
+      ]
+    }
+  ]
+}

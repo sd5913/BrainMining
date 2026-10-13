@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "progress_samples": 1001,
+  "max_route_shape_difference_m": 26.823573890925328,
+  "mean_route_shape_difference_m": 12.601524616265996,
+  "max_difference_from_y_mirror_m": 14.407675474412828,
+  "new_length_m": 166.1737215848303,
+  "previous_length_m": 176.46241981134068,
+  "world_translation_excluded": true
+}

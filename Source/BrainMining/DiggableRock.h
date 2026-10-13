@@ -69,6 +69,7 @@ public:
 	virtual void ResetRock();
 
 protected:
+	virtual void InitializeForPlay();
 	void CommitMesh(UE::Geometry::FDynamicMesh3&& Mesh);
 	bool MineCutter(FVector WorldCenter, float WorldRadius, const UE::Geometry::FDynamicMesh3* WorldCutter);
 	bool bUseProceduralCutFallback = false;

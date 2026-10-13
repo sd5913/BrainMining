@@ -36,6 +36,11 @@ ADiggableRock::ADiggableRock()
 void ADiggableRock::BeginPlay()
 {
 	Super::BeginPlay();
+	InitializeForPlay();
+}
+
+void ADiggableRock::InitializeForPlay()
+{
 	ResetRock();
 }
 

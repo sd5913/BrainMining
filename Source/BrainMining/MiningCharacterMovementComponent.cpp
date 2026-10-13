@@ -2,6 +2,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
+#include "GeneratedMiningRock.h"
 
 UMiningCharacterMovementComponent::UMiningCharacterMovementComponent()
 {
@@ -21,6 +22,16 @@ void UMiningCharacterMovementComponent::SetFlightInputHeld(bool bHeld)
 
 void UMiningCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
+	if (CharacterOwner && CharacterOwner->IsPlayerControlled())
+	{
+		const FVector Position = CharacterOwner->GetActorLocation();
+		if (!bPreparedTerrain || FVector::DistSquared(Position, LastTerrainPreparePosition) >= FMath::Square(500.f))
+		{
+			AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), Position, 5000.f + Velocity.Size() * FMath::Max(0.f, DeltaTime));
+			LastTerrainPreparePosition = Position;
+			bPreparedTerrain = true;
+		}
+	}
 	const bool bCanThrust = CharacterOwner && CharacterOwner->GetController() && !CharacterOwner->IsMoveInputIgnored()
 		&& (IsMovingOnGround() || IsFalling());
 	UpdateJetpackHeat(DeltaTime, bCanThrust && bFlightInputHeld);

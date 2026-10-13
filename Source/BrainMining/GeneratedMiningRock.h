@@ -9,6 +9,8 @@
 class UDynamicMesh;
 class UMaterialInstanceDynamic;
 struct FMiningSimplificationResult;
+struct FMiningDeferredCut;
+struct FMiningDeferredRequest;
 namespace MiningChunks { struct FSpatialGrid; }
 
 USTRUCT(BlueprintType)
@@ -93,6 +95,9 @@ public:
 	float LastSimplificationMilliseconds = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	float LastTerrainNotificationMilliseconds = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
 	int32 CompletedSimplifications = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
@@ -100,6 +105,13 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
 	bool bSimplificationPending = false;
+	// A time slice ending defers the accepted hit; it must not silently cancel it.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	bool bCutPending = false;
+	UPROPERTY(EditAnywhere, Category="Mining|Chunks", meta=(ClampMin="0.01", ClampMax="40"))
+	float InteractiveCutBudgetMilliseconds = 12;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")
+	int32 DeferredCutsCompleted = 0;
 	void SetSegmentState(EMiningSegmentState State);
 	void RecycleGeometry();
 
@@ -116,6 +128,12 @@ private:
 	void UpdateChunkStats();
 	bool MineChunks(FVector WorldCenter, float WorldRadius, const UE::Geometry::FDynamicMesh3* WorldCutter = nullptr);
 	void ScheduleSimplification(int32 Index);
+	bool QueueDeferredCut(FVector WorldCenter, float WorldRadius, const UE::Geometry::FDynamicMesh3& LocalCutter, bool bPreserveEdges);
+	void StartDeferredCut();
+	void PollDeferredCut();
+	void CommitChunks(TArray<int32>& Indices, TArray<UE::Geometry::FDynamicMesh3>& Meshes, const FBox& Dirty);
+	TArray<TSharedPtr<FMiningDeferredRequest, ESPMode::ThreadSafe>> CutQueue;
+	TFuture<TSharedPtr<FMiningDeferredCut, ESPMode::ThreadSafe>> CutTask;
 	TFuture<TSharedPtr<FMiningSimplificationResult, ESPMode::ThreadSafe>> SimplificationTask;
 	uint64 MeshGeneration = 0;
 	TSharedPtr<const MiningChunks::FSpatialGrid, ESPMode::ThreadSafe> EditorGrid;

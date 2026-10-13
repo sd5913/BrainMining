@@ -10,6 +10,7 @@ class AMiningRoomEscape;
 class AMiningCellUniverse;
 class APopupCloseStage;
 class AWenSiPuzzle;
+class AWenSiMirrorPuzzle;
 class AMiningGiantRoomEntrance;
 class UMiningGUIHUDWidget;
 class UPostProcessComponent;
@@ -116,6 +117,7 @@ private:
     TWeakObjectPtr<UMiningGUIHUDWidget> BoundGUI;
     UPROPERTY() TObjectPtr<APopupCloseStage> Office;
     UPROPERTY() TObjectPtr<AWenSiPuzzle> Museum;
+    UPROPERTY() TObjectPtr<AWenSiMirrorPuzzle> MirrorMuseum;
     UPROPERTY() TObjectPtr<AMiningGiantRoomEntrance> Entrance;
     TSharedPtr<SWidget> Menu;
     TSharedPtr<SWidget> Map;

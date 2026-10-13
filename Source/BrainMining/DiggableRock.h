@@ -8,6 +8,11 @@
 class UDynamicMeshComponent;
 class UMaterialInterface;
 class UFogChamberComponent;
+class FMiningTerrainQuery;
+
+// Emitted before returning a committed terrain edit, so inclusions and rock are
+// submitted to the renderer in the same frame. Invalid bounds mean a full reset.
+DECLARE_MULTICAST_DELEGATE_OneParam(FMiningTerrainCommitted, const FBox&);
 
 UCLASS()
 class BRAINMINING_API ADiggableRock : public AActor
@@ -15,6 +20,9 @@ class BRAINMINING_API ADiggableRock : public AActor
 	GENERATED_BODY()
 public:
 	ADiggableRock();
+	// Shared by nearby deposits, released with this rock.
+	TSharedPtr<FMiningTerrainQuery> TerrainQuery;
+	FMiningTerrainCommitted OnTerrainCommitted;
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 

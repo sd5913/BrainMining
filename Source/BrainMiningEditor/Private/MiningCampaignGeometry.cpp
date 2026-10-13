@@ -1,4 +1,5 @@
 #include "MiningDesignerLibrary.h"
+#include "EngineUtils.h"
 #include "GeneratedMiningRock.h"
 #include "DynamicMesh/DynamicMesh3.h"
 #include "DynamicMesh/DynamicMeshAttributeSet.h"
@@ -51,6 +52,53 @@ bool UMiningDesignerLibrary::BuildCampaignSoil(AActor* Actor,FVector Size,FVecto
     }
     Mesh.EnableAttributes();FMeshNormals::InitializeOverlayToPerTriangleNormals(Mesh.Attributes()->PrimaryNormals());
     Rock->RockSize=Size;Rock->SetGeneratedMesh(MoveTemp(Mesh));return true;
+}
+
+bool UMiningDesignerLibrary::SoftenCampaignPassage(AActor* Actor)
+{
+    using namespace UE::Geometry;
+    auto* Rock=Cast<AGeneratedMiningRock>(Actor);
+    if(!Rock || !Rock->GetActorLabel().StartsWith(TEXT("Campaign_Tunnel")))return false;
+    const FString Name=Rock->GetActorLabel();
+    const FVector Size=Rock->RockSize;
+    const bool Ground=Name.Contains(TEXT("Ground")), Roof=Name.Contains(TEXT("Roof"));
+    const double Height=360;
+    double Width=(Ground || Roof)?Size.Y-1400:400;
+    // The card-room exit is wider. The paired roof provides the exact shared frame.
+    FVector Frame=Rock->GetActorLocation();
+    if(Ground)Frame.Z+=500;
+    else if(Roof)Frame.Z-=Height+350;
+    else
+    {
+        for(TActorIterator<AGeneratedMiningRock> It(Rock->GetWorld());It;++It)
+            if(It->GetActorLabel().StartsWith(TEXT("Campaign_TunnelRoof")) &&
+                FMath::Abs(It->GetActorLocation().X-Frame.X)<1 && FMath::Abs(It->RockSize.X-Size.X)<1 &&
+                FMath::Abs(It->GetActorLocation().Z-(Frame.Z+Height*.5+350))<1)
+            {Width=It->RockSize.Y-1400;break;}
+        Frame.Y+=Name.Contains(TEXT("SoilLeft"))?Width*.5+350:-Width*.5-350;
+        Frame.Z-=Height*.5;
+    }
+    FDynamicMesh3 Mesh;Rock->CopyMiningMesh(Mesh);Mesh.DiscardAttributes();
+    const FTransform Transform=Rock->GetActorTransform();
+    for(int V:Mesh.VertexIndicesItr())
+    {
+        FVector P=Transform.TransformPosition(Mesh.GetVertex(V))-Frame;
+        const double T=FMath::Clamp(P.X/Size.X+.5,0.,1.);
+        // Shared deformation for all four pieces keeps their boundaries watertight.
+        // Pin the actual door/cave seams and ease into an asymmetric arched section.
+        const double Fade=FMath::Square(FMath::Sin(PI*T));
+        const double Y=P.Y, Z=P.Z;
+        const double Upper=FMath::SmoothStep(Height*.52,Height,Z);
+        const double Arch=FMath::Max(0.,1-FMath::Square(Y/(Width*.62)));
+        const double Near=FMath::Exp(-FMath::Square(Y/(Width*1.5)));
+        P.Y+=Fade*(Y*(.12-.26*Upper)*Near+42*FMath::Sin(T*5+Frame.X*.001));
+        P.Z+=Fade*(105*Arch*Upper+2*FMath::Sin(T*9));
+        Mesh.SetVertex(V,Transform.InverseTransformPosition(Frame+P));
+    }
+    Mesh.EnableAttributes();FMeshNormals::InitializeOverlayToPerTriangleNormals(Mesh.Attributes()->PrimaryNormals());
+    Rock->Modify();
+    if(Mesh.TriangleCount()>12000)return Rock->SetChunkedMesh(Mesh,700,true,true);
+    Rock->SetGeneratedMesh(MoveTemp(Mesh));return true;
 }
 
 bool UMiningDesignerLibrary::FitCampaignSoil(const TArray<AActor*>& SoilActors,const TArray<AActor*>& SourceActors)

@@ -17,6 +17,7 @@
 #include "MiningTunnelGenerator.h"
 #include "EngineUtils.h"
 #include "Components/SpotLightComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -141,6 +142,7 @@ void ABrainMiningCharacter::PostInitializeComponents()
 		InitializePlayerMining();
 		InitializePlayerScale();
 		InitializePlayerFlight();
+		ConfigureMiningLighting(1.4f,.22f);
 	}
 }
 
@@ -237,9 +239,13 @@ void ABrainMiningCharacter::ConfigureMiningLighting(float HeadlampBrightness, fl
 	MiningLight->SetLightFalloffExponent(2);
 	MiningLight->SetIntensity(FMath::Clamp(HeadlampBrightness, 0.f, 20.f));
 	MiningLight->SetRelativeLocation(FVector(-20, 0, 0));
-	MiningLight->SetInnerConeAngle(45);
-	MiningLight->SetOuterConeAngle(80);
-	MiningLight->SetAttenuationRadius(2200);
+	MiningLight->SetInnerConeAngle(12);
+	MiningLight->SetOuterConeAngle(46);
+	MiningLight->SetAttenuationRadius(1800);
+	MiningLight->SetLightColor(FLinearColor(1.f,.90f,.76f));
+	MiningLight->SetCastShadows(false);
+	MiningLight->SetLightFunctionMaterial(HeadlampPattern.LoadSynchronous());
+	MiningLight->SetVisibility(true);
 	MiningFillLight->SetUseInverseSquaredFalloff(false);
 	MiningFillLight->SetIntensityUnits(ELightUnits::Unitless);
 	MiningFillLight->SetLightFalloffExponent(2);

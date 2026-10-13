@@ -31,6 +31,7 @@ edge=unreal.load_asset('/Game/Showcase/Materials/M_ContinuousEdge')
 door_material=runpy.run_path(str(root/'Scripts/campaign_materials.py'))['ensure_campaign_door']()
 earth=unreal.load_asset('/Game/CollectionPrototype/Materials/M_CollectionEarth')
 white_rock=runpy.run_path(str(root/'Scripts/campaign_materials.py'))['ensure_campaign_limestone']()
+guide_rock=runpy.run_path(str(root/'Scripts/campaign_materials.py'))['ensure_campaign_limestone'](True)
 soil_actors=[]
 points=json.loads((root/recipe['mine_centerlines']).read_text())[0]['points']
 arcs=[0.0]
@@ -88,6 +89,8 @@ def copy(i,offset):
 
 def make_mine(i,target,anchor_end=False):
     spec=recipe['stages'][i];g=copy(i,V());region=getone(g,unreal.MiningExternalRegion)
+    region.set_editor_property('rock_material',white_rock)
+    if region.generated_rock:region.generated_rock.set_editor_property('rock_material',white_rock)
     rt=region.get_actor_transform();ct=region.cutters[0].local_transform
     def original(d):
         j=max(1,min(len(points)-1,bisect.bisect_left(arcs,d)));t=(d-arcs[j-1])/(arcs[j]-arcs[j-1]);p=[a+(b-a)*t for a,b in zip(points[j-1],points[j])]
@@ -136,7 +139,9 @@ def make_mine(i,target,anchor_end=False):
         placements.append(placement);caches.append(dict(item_id=cache['item_id'],front=xyz(front),position=xyz(placement.transform.translation)))
         light(p+V(0,0,160),i)
     for a in g:
-        if isinstance(a,unreal.GeneratedMiningRock):assert unreal.MiningDesignerLibrary.bake_campaign_rock(a,low,high,openings),a.get_actor_label()
+        if isinstance(a,unreal.GeneratedMiningRock):
+            a.set_editor_property('rock_material',guide_rock if '引导' in a.get_actor_label() else white_rock)
+            assert unreal.MiningDesignerLibrary.bake_campaign_rock(a,low,high,openings),a.get_actor_label()
     # Diggable soil encloses the cropped footprint; no static blue support blocks.
     center=(low+high)/2;size=high-low
     for z in [low.z-1500,high.z+1500]:soil('Campaign_OuterSoil',V(center.x,center.y,z),V(size.x,size.y+6000,3000),i,roughness=V())
@@ -172,10 +177,11 @@ mine3=make_mine(4,V(33800,11750,10020))
 museum_origin=mine3['exit']+V(1545,0,0)
 configure_area(5,museum_origin)
 areas[5].set_editor_property('entry',unreal.Transform(location=museum_origin+V(-800,0,96)))
-for x in [-945,1510]:
-    for y in [-405,405]:box('Campaign_MuseumDoorWall',museum_origin+V(x,y,250),V(20,410,500),5)
+for x in [-945,2460]:
+    for y in [-435,435]:box('Campaign_MuseumDoorWall',museum_origin+V(x,y,250),V(20,470,500),5)
     box('Campaign_MuseumDoorHeader',museum_origin+V(x,0,430),V(20,400,140),5)
-ending_origin=museum_origin+V(2300,0,0)
+box('Campaign_MuseumEntranceFloorAdapter',museum_origin+V(-920,0,-15),V(70,400,30),5)
+ending_origin=museum_origin+V(3250,0,0)
 configure_area(6,ending_origin)
 areas[6].set_editor_property('entry',unreal.Transform(location=ending_origin+V(150,0,96)))
 
@@ -185,10 +191,12 @@ corridor(office_origin+V(1200,0,0),mine2['entry'],1)
 corridor(mine2['exit'],V(-750,0,900),2)
 corridor(V(32750,11750,9900),mine3['entry'],3,500)
 corridor(mine3['exit'],museum_origin-V(945,0,0),4)
-corridor(museum_origin+V(1510,0,0),ending_origin-V(60,0,0),5)
+corridor(museum_origin+V(2460,0,0),ending_origin-V(60,0,0),5)
 # Resolve overlaps against the cropped source geometry and each previously fitted soil section.
 assert unreal.MiningDesignerLibrary.fit_campaign_soil(soil_actors,[a for i in [0,2,4] for a in groups[i] if isinstance(a,unreal.GeneratedMiningRock)])
-thresholds=[office_origin+V(-1350,0,100),office_origin+V(1450,0,100),V(-900,0,1000),V(33100,11750,10000),museum_origin+V(-1095,0,100),museum_origin+V(1760,0,100)]
+for a in soil_actors:
+    if a.get_actor_label().startswith('Campaign_Tunnel'):assert unreal.MiningDesignerLibrary.soften_campaign_passage(a)
+thresholds=[office_origin+V(-1350,0,100),office_origin+V(1450,0,100),V(-900,0,1000),V(33100,11750,10000),museum_origin+V(-1095,0,100),museum_origin+V(2710,0,100)]
 for i,p in enumerate(thresholds):
     areas[i].set_editor_property('exit',p);areas[i].set_editor_property('exit_extent',V(200,380,450))
     if i in [1,3,5]:
@@ -202,6 +210,7 @@ for i,p in enumerate(thresholds):
 for i,a in enumerate(areas):
     if i not in mines:
         mn=a.origin-V(1500,1200,500);mx=a.origin+V(1900,1200,1500)
+        if i==5:mx=a.origin+V(2850,1200,1500)
         if i==3:mn=V(-1000,-600,-300);mx=V(33100,15000,14000)
         if i==6:mn=a.origin-V(200,30000,6000);mx=a.origin+V(200000,90000,90000)
         a.set_editor_property('mining_bounds',unreal.Box(min=mn,max=mx))
@@ -214,6 +223,8 @@ key=unreal.Key();key.set_editor_property('key_name','I');collection.set_editor_p
 hall=actors.spawn_actor_from_class(unreal.MiningExhibitHall,areas[0].entry.translation);hall.set_actor_label('CAMPAIGN_ContinuousFlow_EditAreasHere')
 hall.set_editor_property('linear_campaign',True);hall.set_editor_property('continuous_campaign',True);hall.set_editor_property('areas',areas);hall.set_editor_property('lobby_entry',areas[0].entry)
 actors.spawn_actor_from_class(unreal.PlayerStart,areas[0].entry.translation)
+assert unreal.MiningDesignerLibrary.naturalize_campaign_junctions(hall)
+assert unreal.MiningDesignerLibrary.optimize_campaign_terrain(hall)
 runpy.run_path(str(root/'Scripts/add_campaign_minerals.py'))['populate'](world,hall)
 runpy.run_path(str(root/'Scripts/link_campaign_rooms.py'))['link'](world,hall)
 assert unreal.EditorLoadingAndSavingUtils.save_map(world,destination)

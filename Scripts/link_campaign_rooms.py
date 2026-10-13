@@ -36,7 +36,7 @@ def link(world, hall):
         assert imported,source
         area.set_editor_property('source_level',stream)
         area.set_editor_property('suppressed_source_actors',[
-            a.get_name() for a in imported if index==5 and re.fullmatch(r'(BackWall|EndWall)\d*',a.get_actor_label())])
+            a.get_name() for a in imported if index==5 and re.fullmatch(r'(BackWall|EndWall)_?\d*',a.get_actor_label())])
         unreal.log('CAMPAIGN_ROOM_REFERENCE '+source+' actors='+str(len(imported)))
     hall.set_editor_property('areas',areas)
 

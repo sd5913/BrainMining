@@ -20,6 +20,84 @@
 #include "DynamicMesh/DynamicMeshAABBTree3.h"
 #include "UDynamicMesh.h"
 #include "UObject/ConstructorHelpers.h"
+#include "ProfilingDebugging/CpuProfilerTrace.h"
+
+// Each dynamic mesh broadcasts replacements, edits, resets and background simplification
+// commits. Invalidate from that event rather than from cut counts (which can reset).
+class FMiningTerrainQuery
+{
+public:
+    struct FEntry : TSharedFromThis<FEntry>
+    {
+        TWeakObjectPtr<UDynamicMesh> Source;
+        FDelegateHandle Changed;
+        uint32 Revision = 1;
+        TUniquePtr<UE::Geometry::FDynamicMeshAABBTree3> Tree;
+        TUniquePtr<UE::Geometry::TFastWindingTree<UE::Geometry::FDynamicMesh3>> Winding;
+        ~FEntry() { if(Source.IsValid()) Source->OnMeshChanged().Remove(Changed); }
+        void Invalidate(UDynamicMesh*, FDynamicMeshChangeInfo)
+        { Winding.Reset(); Tree.Reset(); ++Revision; }
+        bool Contains(const FVector& P)
+        {
+            const auto& Mesh=Source->GetMeshRef();
+            if(!Mesh.TriangleCount()) return false;
+            if(!Tree)
+            {
+                Tree=MakeUnique<UE::Geometry::FDynamicMeshAABBTree3>(&Mesh,true);
+                Winding=MakeUnique<UE::Geometry::TFastWindingTree<UE::Geometry::FDynamicMesh3>>(Tree.Get());
+            }
+            return FMath::Abs(Winding->FastWindingNumber(P))>=.5;
+        }
+    };
+    TMap<TWeakObjectPtr<UDynamicMesh>, TSharedPtr<FEntry>> Entries;
+    FEntry& Get(UDynamicMeshComponent* Component)
+    {
+        UDynamicMesh* Mesh=Component->GetDynamicMesh();
+        if (const auto* Entry = Entries.Find(Mesh)) return **Entry;
+        for(auto It=Entries.CreateIterator();It;++It) if(!It.Key().IsValid()) It.RemoveCurrent();
+        auto& Entry=Entries.FindOrAdd(Mesh);
+        if(!Entry)
+        {
+            // Editor rebuilds can replace components; do not retain their old spatial trees.
+            Entry=MakeShared<FEntry>();Entry->Source=Mesh;
+            Entry->Changed=Mesh->OnMeshChanged().AddSP(Entry.ToSharedRef(),&FEntry::Invalidate);
+        }
+        return *Entry;
+    }
+};
+
+namespace
+{
+FMiningTerrainQuery& TerrainQuery(ADiggableRock* Rock)
+{
+    if(!Rock->TerrainQuery) Rock->TerrainQuery=MakeShared<FMiningTerrainQuery>();
+    return *Rock->TerrainQuery;
+}
+}
+
+uint32 AMiningTreasure::GetTerrainVersion() const
+{
+    TRACE_CPUPROFILER_EVENT_SCOPE(Mining_TerrainVersion);
+    FBox WorldBounds = CrystalSupportBounds;
+    // Keep monitoring the buried site after the reward falls or is collected.
+    WorldBounds+=BuriedTransform.GetLocation()-Model->Bounds.BoxExtent*2;
+    WorldBounds+=BuriedTransform.GetLocation()+Model->Bounds.BoxExtent*2;
+    uint32 Version=1;
+    for(ADiggableRock* Rock:CoveringRocks)
+    {
+        if(!IsValid(Rock)) {Version=HashCombineFast(Version,0);continue;}
+        const FBox Bounds=WorldBounds.TransformBy(Rock->GetActorTransform().ToInverseMatrixWithScale());
+        Version=HashCombineFast(Version,GetTypeHash(Rock->GetActorLocation()));
+        Version=HashCombineFast(Version,GetTypeHash(Rock->GetActorRotation().Euler()));
+        Version=HashCombineFast(Version,GetTypeHash(Rock->GetActorScale3D()));
+        auto Add=[&](UDynamicMeshComponent* Mesh)
+        { if(Mesh) Version=HashCombineFast(Version,HashCombineFast(GetTypeHash(Mesh),TerrainQuery(Rock).Get(Mesh).Revision)); };
+        if(auto* Generated=Cast<AGeneratedMiningRock>(Rock);Generated && Generated->bChunked)
+        { for(const auto& Chunk:Generated->Chunks) if(Chunk.Bounds.Intersect(Bounds)) Add(Chunk.Mesh); }
+        else Add(Rock->RockMesh);
+    }
+    return Version;
+}
 
 TArray<int32> FMiningTreasureDefinition::DefaultValues(FName TreasureId)
 {
@@ -71,6 +149,7 @@ AMiningTreasure::AMiningTreasure()
     Model->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
     Model->SetGenerateOverlapEvents(false);
     Model->SetCanEverAffectNavigation(false);
+    Model->SetCullDistance(3000);
     GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ExposedGemLight"));
     GlowLight->SetupAttachment(Model);
     GlowLight->SetIntensityUnits(ELightUnits::Lumens);
@@ -80,12 +159,13 @@ AMiningTreasure::AMiningTreasure()
     GlowLight->SetVisibility(false);
     GlowLight->IndirectLightingIntensity = 0;
     CrystalClues = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("EmbeddedCrystalClues"));
-    CrystalClues->SetupAttachment(Model);
+    CrystalClues->SetupAttachment(DropBody);
     // Rock clues stay anchored to the terrain when the gem starts simulating physics.
     CrystalClues->SetAbsolute(true,true,true);
     CrystalClues->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     CrystalClues->SetCastShadow(false);
     CrystalClues->SetCanEverAffectNavigation(false);
+    CrystalClues->SetCullDistances(2800,3000);
 }
 
 float AMiningTreasure::ValueScale(const FMiningTreasureDefinition& Definition, int32 InValue)
@@ -187,6 +267,10 @@ float AMiningTreasure::MeasureExposure(FVector* EscapeDirection) const
 {
     if (bReleased) return 1;
     if (SurfaceSamples.IsEmpty()) return 0;
+    const uint32 Version=GetTerrainVersion();
+    const FTransform Transform=Model->GetComponentTransform();
+    if(bExposureCached && ExposureVersion==Version && ExposureTransform.Equals(Transform))
+    { if(EscapeDirection) *EscapeDirection=CachedEscapeDirection; return CachedExposure; }
     TArray<FVector> Points;for(const FVector& P:SurfaceSamples)Points.Add(Model->GetComponentTransform().TransformPosition(P));
     TArray<bool> Covered;MarkCoveredPoints(CoveringRocks,Points,Covered);
     int32 FreeCount = 0;
@@ -197,12 +281,16 @@ float AMiningTreasure::MeasureExposure(FVector* EscapeDirection) const
             ++FreeCount;
             FreeDirection += (Model->GetComponentTransform().TransformPosition(SurfaceSamples[Index]) - Model->Bounds.Origin).GetSafeNormal();
         }
-    if (EscapeDirection) *EscapeDirection = FreeDirection.GetSafeNormal();
-    return float(FreeCount) / SurfaceSamples.Num();
+    CachedEscapeDirection=FreeDirection.GetSafeNormal();
+    CachedExposure=float(FreeCount)/SurfaceSamples.Num();
+    ExposureVersion=Version;ExposureTransform=Transform;bExposureCached=true;
+    if(EscapeDirection) *EscapeDirection=CachedEscapeDirection;
+    return CachedExposure;
 }
 
 void AMiningTreasure::MarkCoveredPoints(const TArray<TObjectPtr<ADiggableRock>>& Rocks,const TArray<FVector>& Points,TArray<bool>& Covered)
 {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Mining_Coverage);
     Covered.Init(false,Points.Num());
     if(Points.IsEmpty())return;
     for(ADiggableRock* Rock:Rocks)
@@ -214,10 +302,9 @@ void AMiningTreasure::MarkCoveredPoints(const TArray<TObjectPtr<ADiggableRock>>&
         {
             if(!Component || !Bounds.Intersect(QueryBounds))return;
             const auto& Mesh=Component->GetDynamicMesh()->GetMeshRef();if(!Mesh.TriangleCount())return;
-            UE::Geometry::FDynamicMeshAABBTree3 Tree(&Mesh,true);
-            UE::Geometry::TFastWindingTree<UE::Geometry::FDynamicMesh3> Winding(&Tree);
+            auto& Query=TerrainQuery(Rock).Get(Component);
             for(int I=0;I<Local.Num();++I)if(!Covered[I] && Bounds.IsInsideOrOn(Local[I]))
-                Covered[I]=FMath::Abs(Winding.FastWindingNumber(Local[I]))>=.5;
+                Covered[I]=Query.Contains(Local[I]);
         };
         if(auto* Generated=Cast<AGeneratedMiningRock>(Rock);Generated && Generated->bChunked)
         {for(const auto& Chunk:Generated->Chunks)Mark(Chunk.Mesh,Chunk.Bounds);}
@@ -228,26 +315,81 @@ void AMiningTreasure::MarkCoveredPoints(const TArray<TObjectPtr<ADiggableRock>>&
 
 void AMiningTreasure::ConfigureCrystalClues(const FMiningTreasurePlacement& Placement, UStaticMesh* FragmentMesh)
 {
+    CrystalClues->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
     CrystalClues->SetWorldTransform(FTransform::Identity);
     CrystalClues->SetStaticMesh(FragmentMesh);
     auto* GemMaterial=Cast<UMaterialInstanceDynamic>(Model->GetMaterial(0));
     auto* Tint=UMaterialInstanceDynamic::Create(GemMaterial?GemMaterial->Parent.Get():Model->GetMaterial(0),this);
     if(GemMaterial)Tint->CopyParameterOverrides(GemMaterial);
+    // Tiny inclusions have no point light of their own. Preserve hue but lift their
+    // value so the same mineral remains readable on an unlit cave wall.
+    FLinearColor ClueColor=BaseColor/FMath::Max(.35f,FMath::Max3(BaseColor.R,BaseColor.G,BaseColor.B));
+    // Coal keeps a warm mineral glint; tin reads as cool silver-blue instead of grey.
+    if(TreasureId==TEXT("1")) ClueColor=FLinearColor(.62f,.30f,.10f);
+    if(TreasureId==TEXT("3")) ClueColor=FLinearColor(.25f,.65f,1.f);
+    ClueColor.A=1;
+    Tint->SetVectorParameterValue(TEXT("Tint"),ClueColor);
     Tint->SetScalarParameterValue(TEXT("Style"),-1);
-    Tint->SetScalarParameterValue(TEXT("Roughness"),.65f);
-    Tint->SetScalarParameterValue(TEXT("Emission"),.15f);
+    Tint->SetScalarParameterValue(TEXT("Roughness"),.19f);
+    Tint->SetScalarParameterValue(TEXT("Metallic"),.12f);
+    Tint->SetScalarParameterValue(TEXT("Emission"),FMath::Max(1.15f,GemMaterial?GemMaterial->K2_GetScalarParameterValue(TEXT("Emission"))*1.2f:1.15f));
     CrystalClues->SetMaterial(0,Tint);
     CrystalTransforms=Placement.Fragments;CrystalSupports=Placement.FragmentSupports;
+    for(ADiggableRock* Rock:CoveringRocks) if(IsValid(Rock))
+    {
+        Rock->OnTerrainCommitted.RemoveAll(this);
+        Rock->OnTerrainCommitted.AddUObject(this,&AMiningTreasure::OnTerrainCommitted);
+    }
     UpdateCrystalClues();
 }
 
 void AMiningTreasure::UpdateCrystalClues()
 {
+    CrystalSupportBounds = FBox(ForceInit);
+    for (const FVector& Point : CrystalSupports) CrystalSupportBounds += Point;
+    OnTerrainCommitted(FBox(ForceInit));
+}
+
+void AMiningTreasure::OnTerrainCommitted(const FBox& ChangedBounds)
+{
+    TRACE_CPUPROFILER_EVENT_SCOPE(Mining_CrystalSupport);
     if(CrystalSupports.IsEmpty())return;
-    TArray<bool> Covered;MarkCoveredPoints(CoveringRocks,CrystalSupports,Covered);
-    CrystalClues->ClearInstances();
-    for(int32 I=0;I<CrystalTransforms.Num();++I)
-        if(Covered.IsValidIndex(I) && Covered[I])CrystalClues->AddInstance(CrystalTransforms[I],true);
+    if (ChangedBounds.IsValid && CrystalSupportBounds.IsValid && !ChangedBounds.Intersect(CrystalSupportBounds)) return;
+    if(SupportedCrystals.Num()!=CrystalSupports.Num())SupportedCrystals.Init(false,CrystalSupports.Num());
+    TArray<FVector> Points;
+    TArray<int32> Fragments;
+    for(int32 I=0;I<CrystalSupports.Num();++I)
+        if(!ChangedBounds.IsValid || (SupportedCrystals[I] && ChangedBounds.IsInsideOrOn(CrystalSupports[I])))
+        { Points.Add(CrystalSupports[I]); Fragments.Add(I); }
+    if(Points.IsEmpty())return;
+    TArray<bool> Covered;MarkCoveredPoints(CoveringRocks,Points,Covered);
+    TArray<int32> Added;
+    for(int32 I=0;I<Fragments.Num();++I)
+    {
+        const int32 Fragment=Fragments[I];
+        // Subtraction cannot create solid support. Only initialization/reset may
+        // restore a removed inclusion, even near winding-number tolerances.
+        const bool bSupported=Covered[I] && (!ChangedBounds.IsValid || SupportedCrystals[Fragment]);
+        if(bSupported && !SupportedCrystals[Fragment])Added.Add(Fragment);
+        SupportedCrystals[Fragment]=bSupported;
+    }
+    // Remove back-to-front, matching whichever removal policy the ISM uses.
+    // No ClearInstances: unaffected instance identities/render history survive.
+    TArray<int32> RemovedSlots;
+    for(int32 Slot=CrystalInstanceFragments.Num()-1;Slot>=0;--Slot)
+        if(!SupportedCrystals[CrystalInstanceFragments[Slot]])
+            RemovedSlots.Add(Slot);
+    if (CrystalClues->RemoveInstances(RemovedSlots, true))
+        for (const int32 Slot : RemovedSlots)
+        {
+            if(CrystalClues->SupportsRemoveSwap())CrystalInstanceFragments.RemoveAtSwap(Slot);
+            else CrystalInstanceFragments.RemoveAt(Slot);
+        }
+    for(int32 Fragment:Added)if(CrystalTransforms.IsValidIndex(Fragment))
+    {
+        CrystalClues->AddInstance(CrystalTransforms[Fragment],true);
+        CrystalInstanceFragments.Add(Fragment);
+    }
 }
 
 bool AMiningTreasure::TryRelease()
@@ -359,7 +501,7 @@ void AMiningTreasure::UpdateGlow(float DeltaSeconds, bool bAllowLight)
 AMiningTreasureField::AMiningTreasureField()
 {
     PrimaryActorTick.bCanEverTick = true;
-    PrimaryActorTick.TickInterval = .1f;
+    PrimaryActorTick.TickInterval = 0;
     SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Sphere(TEXT("/Engine/BasicShapes/Sphere"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube"));
@@ -425,6 +567,7 @@ int32 AMiningTreasureField::ChooseDefinition(const TArray<FMiningTreasureDefinit
 void AMiningTreasureField::BeginPlay()
 {
     Super::BeginPlay();
+    SetActorTickInterval(0);
     ResetExhibit();
 }
 
@@ -436,6 +579,8 @@ void AMiningTreasureField::ClearGenerated()
     Items.Reset();
     Rocks.Reset();
     ObservedCuts.Reset();
+    ObservedTerrain.Reset();
+    TerrainUpdateCursor=0;
 }
 
 void AMiningTreasureField::ResetExhibit()
@@ -545,23 +690,32 @@ void AMiningTreasureField::Tick(float DeltaSeconds)
     if (Nearby.Num() > 4) Nearby.SetNum(4);
     for (AMiningTreasure* Item : Items) if (IsValid(Item)) Item->UpdateGlow(DeltaSeconds, bAreaActive && Nearby.Contains(Item));
     if (!bAreaActive) return;
-    for (int32 Index = 0; Index < Items.Num(); ++Index)
+    const double TerrainStarted=FPlatformTime::Seconds();
+    LastUpdatedDeposits=0;
+    // Only reward exposure/release is time-sliced. Terrain inclusions are updated
+    // synchronously by OnTerrainCommitted, before a cut can reach the renderer.
+    for (int32 Visited = 0; Visited < Items.Num(); ++Visited)
     {
+        if(Visited>0 && (FPlatformTime::Seconds()-TerrainStarted)>.004)break;
+        const int32 Index=TerrainUpdateCursor++%Items.Num();
+        if(TerrainUpdateCursor>=Items.Num())TerrainUpdateCursor=0;
         auto* Item = Items[Index].Get();
         if (!IsValid(Item) || (bUseAuthoredPlacements && !Item->ActorHasTag(ActiveAreaTag))) continue;
         int32 Cuts=0;for(ADiggableRock* Rock:Item->CoveringRocks)Cuts+=IsValid(Rock)?Rock->SuccessfulCuts:1000003;
-        if (ObservedCuts[Index] != Cuts)
+        const uint32 Version=Item->GetTerrainVersion();
+        if (!ObservedTerrain.Contains(Item) || ObservedTerrain[Item]!=Version)
         {
-            Item->UpdateCrystalClues();
+            ++LastUpdatedDeposits;
             if(!Item->bCollected)
             {
                 if (Cuts == 0 && ObservedCuts[Index] > 0) Item->ResetDrop();
-                Item->Exposure = Item->MeasureExposure();
                 Item->TryRelease();
             }
             ObservedCuts[Index] = Cuts;
+            ObservedTerrain.Add(Item,Version);
         }
     }
+    LastTerrainUpdateMilliseconds=(FPlatformTime::Seconds()-TerrainStarted)*1000;
     RefreshTarget(GetWorld()->GetFirstPlayerController());
 }
 
@@ -592,8 +746,9 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
         Item->CollectedValue > Item->Value ? TEXT(" · 养成奖励翻倍！") : TEXT(""));
     ToastRemaining = 3;
     Item->SetActorEnableCollision(false);
-    if(bUseAuthoredPlacements) Item->Model->SetVisibility(false,false);
-    else Item->SetActorHiddenInGame(true);
+    // Hide only the reward. Terrain inclusions survive collection in every field.
+    Item->Model->SetVisibility(false,false);
+    Item->GlowLight->SetVisibility(false);
     Target = nullptr;
     return true;
 }

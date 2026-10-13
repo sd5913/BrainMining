@@ -84,7 +84,7 @@ namespace ExhibitHallTests
                 Test->TestTrue(TEXT("Headlamp and near-player fill are both restored"),Headlamp->IsVisible() && Fill->IsVisible() && Headlamp->Intensity>0 && Fill->Intensity>0);
                 Test->TestFalse(TEXT("Headlamp avoids inverse-square hotspot at close mining range"),Headlamp->bUseInverseSquaredFalloff);
                 Test->TestFalse(TEXT("Fill uses bounded falloff"),Fill->bUseInverseSquaredFalloff);
-                Test->TestTrue(TEXT("Headlamp covers tunnel edges"),Headlamp->OuterConeAngle>=75 && Headlamp->GetRelativeLocation().X<=0);
+                Test->TestTrue(TEXT("Headlamp concentrates on the central view"),Headlamp->OuterConeAngle>=25 && Headlamp->OuterConeAngle<=35 && Headlamp->GetRelativeLocation().X<=0);
             };
             auto CheckFraming=[&](UStaticMeshComponent* Model,bool bDrill)
             {

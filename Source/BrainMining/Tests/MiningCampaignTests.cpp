@@ -13,6 +13,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "WenSi/WenSiPuzzle.h"
+#include "WenSi/WenSiMirrorPuzzle.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Editor.h"
@@ -102,7 +103,7 @@ public:
             for(int32 RoomIndex:{1,3,5,6})
                 Test->TestTrue(TEXT("Room holds a loaded source level reference"),Hall->Areas[RoomIndex].SourceLevel && Hall->Areas[RoomIndex].SourceLevel->GetLoadedLevel());
             for(AActor* Room:{static_cast<AActor*>(First<APopupCloseStage>(World)),static_cast<AActor*>(Hall->Journey.Get()),
-                             static_cast<AActor*>(First<AWenSiPuzzle>(World)),static_cast<AActor*>(Hall->Ending.Get())})
+                             static_cast<AActor*>(First<AWenSiMirrorPuzzle>(World)),static_cast<AActor*>(Hall->Ending.Get())})
                 Test->TestTrue(TEXT("Gameplay runs from source sublevel, never a stale persistent copy"),Room && Room->GetLevel()!=World->PersistentLevel);
             Test->TestEqual(TEXT("Exactly four collectibles, no tutorial duplicate"),Collection->Items.Num(),4);
             Test->TestFalse(TEXT("Unreached room cannot be selected"),Hall->EnterArea(6));
@@ -258,8 +259,8 @@ public:
         else if(Step==17)
         {
             if(Hall->ActiveArea!=5) return false;
-            auto* Museum=First<AWenSiPuzzle>(World);
-            Test->TestTrue(TEXT("Translated museum validates both real puzzle solutions"),Museum->ValidateCircuitPuzzle().StartsWith(TEXT("PASS")));
+            auto* Museum=First<AWenSiMirrorPuzzle>(World);
+            Test->TestTrue(TEXT("Translated museum validates both real puzzle solutions"),Museum->ValidateMirrorPuzzle().StartsWith(TEXT("PASS")));
             Shot(TEXT("06_Museum"));
             Museum->bComplete=true; // End-signal routing; solutions were exercised above.
         }
@@ -315,7 +316,7 @@ public:
         auto* H=AMiningExhibitHall::Find(W);
         if(!W || W->GetTimeSeconds()<3 || !H || !H->bReady) return false;
         auto* PC=W->GetFirstPlayerController();auto* P=Cast<ACharacter>(PC->GetPawn());
-        auto* Office=First<APopupCloseStage>(W);auto* Museum=First<AWenSiPuzzle>(W);
+        auto* Office=First<APopupCloseStage>(W);auto* Museum=First<AWenSiMirrorPuzzle>(W);
         const int Previous[]={0,2,4,5};
         if(Room>=4)return true;
         auto Key=[&](EInputEvent E){PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E,E,E==IE_Pressed?1:0));};
@@ -367,7 +368,7 @@ public:
             }
             else
             {
-                for(auto O:Museum->Objects)if(Museum->CanThinkAbout(O)){Object=O;break;}
+                Object=Museum->Find(3);
                 if(!Test->TestNotNull(TEXT("Museum has an available exhibit"),Object.Get()))return true;
                 Aim=Object->GetActorLocation();
                 Place(Aim+FVector(-210,0,65));
@@ -379,7 +380,7 @@ public:
         {
             if(Now-Changed<1)return false;
             if(Room==0)Test->TestTrue(TEXT("Actual sight line reaches computer"),Device->CanInteract(PC));
-            else Test->TestTrue(TEXT("Actual sight line reaches museum exhibit"),Museum->Aim!=INDEX_NONE);
+            else Test->TestTrue(TEXT("Actual sight line reaches museum exhibit"),Museum->Aim.IsValid());
             Key(IE_Pressed);
         }
         else if(Step==5)
@@ -404,7 +405,7 @@ public:
     }
 private:
     FAutomationTestBase* Test;int Room=0,Step=0;double Started=FPlatformTime::Seconds(),Changed=0;
-    TWeakObjectPtr<APopupOfficeDevice> Device;TWeakObjectPtr<AWenSiObject> Object;
+    TWeakObjectPtr<APopupOfficeDevice> Device;TWeakObjectPtr<AWenSiMirrorExhibit> Object;
 };
 
 class FAssemblyRevision : public IAutomationLatentCommand

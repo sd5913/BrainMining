@@ -97,7 +97,7 @@
       "id": "Museum",
       "title": "房间 3 · 文思泉涌",
       "kind": "MUSEUM",
-      "source": "/Game/WenSi/Maps/Lvl_WenSi_ScreenBridge",
+      "source": "/Game/WenSi/Maps/Lvl_WenSi_MirrorMuseum",
       "offset": [
         250000,
         -100000,

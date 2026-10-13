@@ -24,7 +24,23 @@ public:
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
     static bool PrepareCampaignMinerals(AMiningTreasureField* Field);
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool RefineCampaignCrystalClues(AMiningTreasureField* Field, bool bPreserveSurface = false);
+    // Read-only editor validation. JSON contains ok, errors and per-deposit density/support data.
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static FString ValidateCampaignMinerals(AMiningTreasureField* Field);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool OptimizeCampaignTerrain(AActor* Hall);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
     static bool BuildCampaignSoil(AActor* Actor, FVector Size, FVector Roughness);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool SoftenCampaignPassage(AActor* Actor);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool NaturalizeCampaignJunctions(AActor* Hall);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool ExportCampaignLayout(AActor* Hall, const FString& Directory);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool ImportCampaignRock(AActor* Rock, const FString& Filename);
+
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
     static bool FitCampaignSoil(const TArray<AActor*>& SoilActors, const TArray<AActor*>& SourceActors);
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")

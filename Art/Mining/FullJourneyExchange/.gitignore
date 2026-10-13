@@ -1,0 +1,4 @@
+# Reproducible interchange cache; the editable .blend and actor manifest are retained.
+Source/*.obj
+Edited/
+*.blend1

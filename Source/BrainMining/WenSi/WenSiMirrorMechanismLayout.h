@@ -15,7 +15,7 @@ namespace WenSiMuseumMechanisms
   Actor->SetActorRotation(FRotationMatrix::MakeFromZ(Delta).Rotator());
   Actor->SetActorScale3D(FVector(Diameter,Diameter,Delta.Size())/100.f);
  }
- inline void UpdateBalance(UWorld* World,float Alpha)
+ inline void UpdateBalance(UWorld* World,float Alpha,FVector Origin=FVector::ZeroVector)
  {
   Alpha=FMath::Clamp(Alpha,0.f,1.f);
   const float Drop=BalanceTravel*Alpha;
@@ -24,18 +24,18 @@ namespace WenSiMuseumMechanisms
   for(TActorIterator<AActor> It(World);It;++It)
   {
    if(It->ActorHasTag(TEXT("WenSiBalanceBeam")))It->SetActorRotation(FRotator(Angle,0,0));
-   else if(It->ActorHasTag(TEXT("WenSiBalanceLeftTray")))It->SetActorLocation(FVector(1500,-430,44-Drop));
-   else if(It->ActorHasTag(TEXT("WenSiBalanceRightTray")))It->SetActorLocation(FVector(1680,-430,44+Drop));
-   else if(It->ActorHasTag(TEXT("WenSiBalanceCounterweight")))It->SetActorLocation(FVector(1680,-430,66+Drop));
-   else if(It->ActorHasTag(TEXT("WenSiBalanceButton")))It->SetActorLocation(FVector(1500,-430,18.f-FMath::Max(0.f,Drop-14.f)));
-   else if(It->ActorHasTag(TEXT("WenSiBalanceLeftSpreader")))It->SetActorLocation(FVector(1500,-430,170-Drop));
-   else if(It->ActorHasTag(TEXT("WenSiBalanceRightSpreader")))It->SetActorLocation(FVector(1680,-430,170+Drop));
+   else if(It->ActorHasTag(TEXT("WenSiBalanceLeftTray")))It->SetActorLocation(Origin+FVector(1500,-430,44-Drop));
+   else if(It->ActorHasTag(TEXT("WenSiBalanceRightTray")))It->SetActorLocation(Origin+FVector(1680,-430,44+Drop));
+   else if(It->ActorHasTag(TEXT("WenSiBalanceCounterweight")))It->SetActorLocation(Origin+FVector(1680,-430,66+Drop));
+   else if(It->ActorHasTag(TEXT("WenSiBalanceButton")))It->SetActorLocation(Origin+FVector(1500,-430,18.f-FMath::Max(0.f,Drop-14.f)));
+   else if(It->ActorHasTag(TEXT("WenSiBalanceLeftSpreader")))It->SetActorLocation(Origin+FVector(1500,-430,170-Drop));
+   else if(It->ActorHasTag(TEXT("WenSiBalanceRightSpreader")))It->SetActorLocation(Origin+FVector(1680,-430,170+Drop));
    else
     for(int32 Side=0;Side<2;++Side)for(int32 Edge=0;Edge<2;++Edge)
      if(It->ActorHasTag(*FString::Printf(TEXT("WenSiBalanceHanger%d%d"),Side,Edge)))
      {
       const float Sign=Side?1.f:-1.f;
-      CylinderBetween(*It,FVector(1590+Sign*Offset,Edge?-379:-481,170+Sign*Drop),FVector(Side?1680:1500,Edge?-379:-481,49+Sign*Drop),2.2f);
+      CylinderBetween(*It,Origin+FVector(1590+Sign*Offset,Edge?-379:-481,170+Sign*Drop),Origin+FVector(Side?1680:1500,Edge?-379:-481,49+Sign*Drop),2.2f);
      }
   }
  }

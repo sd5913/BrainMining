@@ -22,9 +22,8 @@ public:
     bool IsMiningAllowed() const {return !bMiningBlocked;}
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 private:
-    bool bMiningBlocked=false,bOldFlightEnabled=false,bOldInputContextEnabled=true;
+    bool bMiningBlocked=false,bOldInputContextEnabled=true;
     bool bFallResetOverridden=false;
-    bool bOldHeatEnabled = true;
     float OldFallResetDistance=0.f;
     TWeakObjectPtr<APawn> AppliedPawn;
     TWeakObjectPtr<UMiningComponent> Mining;

@@ -199,8 +199,8 @@ void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 bool UMiningComponent::TryMine()
 {
+    if(IsEncounterBlocked() || !GetOwner() || !GetWorld())return false;
     if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); Bomb && Bomb->bEquipped) return false;
-    if(IsEncounterBlocked())return false;
 	if (bInputSuspended || GetWorld()->GetTimeSeconds() < NextMineTime)
 	{
 		return false;

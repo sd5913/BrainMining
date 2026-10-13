@@ -4,6 +4,9 @@
 #include "MiningDebrisBurst.h"
 #include "MiningDrillDustBurst.h"
 #include "BrainMiningCharacter.h"
+#include "EchoPassagePlayer.h"
+#include "GameFramework/Controller.h"
+#include "Materials/MaterialInterface.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -16,6 +19,8 @@
 UMiningToolEffectsComponent::UMiningToolEffectsComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	EchoPickaxeBlackAsset=TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Passages/Echo/Materials/M_SharedPickaxeBlack.M_SharedPickaxeBlack")));
+	EchoPickaxeLinesAsset=TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Passages/Echo/Materials/M_SharedPickaxeLines.M_SharedPickaxeLines")));
 	PickaxeMeshAsset = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe")));
 	SwingCurveAsset = TSoftObjectPtr<UCurveFloat>(FSoftObjectPath(TEXT("/Game/Pickaxe/CF_PickaxeSwing.CF_PickaxeSwing")));
 	DrillMeshAsset = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Drill/Stylized/SM_DrillStylized.SM_DrillStylized")));
@@ -132,6 +137,35 @@ void UMiningToolEffectsComponent::BeginPlay()
 	UpdateToolMode(Mining->bDrillMode);
 	EquipElapsed = ToolEquipDuration;
 	LastPresentedTool = Mining->bDrillMode ? 1 : 0;
+	EchoPickaxeBlack=EchoPickaxeBlackAsset.LoadSynchronous();
+	EchoPickaxeLines=EchoPickaxeLinesAsset.LoadSynchronous();
+}
+
+void UMiningToolEffectsComponent::UpdateEchoPickaxeStyle()
+{
+	if(!PickaxeMesh)return;
+	const auto* Pawn=Cast<APawn>(GetOwner());
+	const auto* Controller=Pawn?Pawn->GetController():nullptr;
+	const auto* Echo=Controller?Controller->FindComponentByClass<UEchoPassageInteractionComponent>():nullptr;
+	// GiantRoomEntrance already turns exploration off at the warm doorway and
+	// back on when walking back into the passage. Share that exact boundary.
+	const bool bLines=Echo && Echo->Stage && Echo->bExplorationActive && EchoPickaxeBlack && EchoPickaxeLines;
+	if(bLines==bEchoPickaxeLines)return;
+	if(bLines)
+	{
+		NormalPickaxeMaterials.Reset();
+		for(int Slot=0;Slot<PickaxeMesh->GetNumMaterials();++Slot)
+		{NormalPickaxeMaterials.Add(PickaxeMesh->GetMaterial(Slot));PickaxeMesh->SetMaterial(Slot,EchoPickaxeBlack);}
+		NormalPickaxeOverlay=PickaxeMesh->GetOverlayMaterial();
+		PickaxeMesh->SetOverlayMaterial(EchoPickaxeLines);
+	}
+	else
+	{
+		for(int Slot=0;Slot<NormalPickaxeMaterials.Num();++Slot)PickaxeMesh->SetMaterial(Slot,NormalPickaxeMaterials[Slot]);
+		PickaxeMesh->SetOverlayMaterial(NormalPickaxeOverlay);
+		NormalPickaxeMaterials.Reset();NormalPickaxeOverlay=nullptr;
+	}
+	bEchoPickaxeLines=bLines;
 }
 
 void UMiningToolEffectsComponent::UpdateToolMode(bool bDrillMode)
@@ -290,6 +324,7 @@ void UMiningToolEffectsComponent::ApplyToolMotion(USceneComponent* Motion, const
 void UMiningToolEffectsComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, TickFunction);
+	UpdateEchoPickaxeStyle();
 	if (!CanShowEffects())
 	{
 		if (bSwinging || GetWorld()->GetTimerManager().IsTimerActive(ImpactTimer) || !DebrisActors.IsEmpty() || !DustActors.IsEmpty()) ResetEffects();

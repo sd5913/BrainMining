@@ -59,6 +59,6 @@ Mesh preparation: export the Fab mesh to `Saved/HeavenPreview/toilet_source.fbx`
 inspect it with the local Blender helper, then run
 `Scripts/prepare_heaven_toilet_parts.py` and `Scripts/import_heaven_toilet_parts.py`.
 Install in the preview with `Scripts/install_heaven_toilet.py`.
-`Scripts/verify_heaven_toilet.py` checks its full proximity lifecycle in PIE.
+`Scripts/verify_heaven_toilet_arttest.py` checks its full proximity lifecycle in PIE.
 `Scripts/tune_heaven_water.py` reapplies the documented simulation settings via
 native Niagara MCP tools; save both preview Niagara systems after they compile.

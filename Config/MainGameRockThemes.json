@@ -1,0 +1,13 @@
+{
+  "folder": "/Game/MainGame/Materials",
+  "master": "M_MainGameStageRock",
+  "source": "/Game/WenSi/Museum/Materials/M_MuseumSurface",
+  "guide_material": "/Game/Campaign/Materials/M_CampaignGuideRock",
+  "themes": [
+    {"tag":"BM_MainGame_V1","name":"MI_01_Silica","label":"平滑冷灰硅质岩 / 电脑房","scalars":{"Theme":0,"Roughness":0.70,"RoughnessVariation":0.04,"Specular":0.28,"PatternScale":0.007,"DetailScale":0.023,"BumpDepth":0.045,"VeinStrength":0.10,"GlowStrength":0,"Metallic":0},"vectors":{"Tint":[0.18,0.205,0.215],"MineralLight":[0.32,0.355,0.36],"Accent":[0.44,0.465,0.46]}},
+    {"tag":"BM_MainGame_CavernV2","name":"MI_02_DreamMineral","label":"平滑蓝紫岩 / 坠落与盲人敲地","scalars":{"Theme":1,"Roughness":0.62,"RoughnessVariation":0.05,"Specular":0.30,"PatternScale":0.006,"DetailScale":0.019,"BumpDepth":0.05,"VeinStrength":0.20,"GlowStrength":0,"Metallic":0},"vectors":{"Tint":[0.105,0.13,0.185],"MineralLight":[0.21,0.235,0.31],"Accent":[0.25,0.335,0.35]}},
+    {"tag":"BM_MainGame_StalagmiteV3","name":"MI_03_MuseumCrystal","label":"平滑暖灰石 / 博物馆","scalars":{"Theme":2,"Roughness":0.48,"RoughnessVariation":0.04,"Specular":0.32,"PatternScale":0.008,"DetailScale":0.021,"BumpDepth":0.035,"VeinStrength":0.28,"GlowStrength":0,"Metallic":0},"vectors":{"Tint":[0.29,0.285,0.255],"MineralLight":[0.46,0.455,0.41],"Accent":[0.62,0.61,0.55]}},
+    {"tag":"BM_MainGame_NeuralV4","name":"MI_Guide_04_RoughStone","label":"异化红褐岩壁 / 结局细胞房","scalars":{"Theme":4,"Roughness":0.80,"RoughnessVariation":0.10,"Specular":0.22,"PatternScale":0.010,"DetailScale":0.035,"BumpDepth":6.0,"VeinStrength":0.58,"GlowStrength":0,"Metallic":0},"vectors":{"Tint":[0.16,0.075,0.065],"MineralLight":[0.32,0.17,0.14],"Accent":[0.46,0.30,0.24]}}
+  ],
+  "reserves":{"BM_MainGame_FutureRoom":0,"BM_MainGame_FutureRoom_02":1,"BM_MainGame_FutureRoom_03":2}
+}

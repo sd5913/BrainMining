@@ -27,6 +27,34 @@
 
 默认编辑器及游戏启动地图仍为 `/Game/MiningPrototype/Maps/Lvl_MiningLab`，没有改成收集关卡。
 
+### 天堂马桶独立关卡（2026-10-14）
+
+双击根目录 `Play_HeavenToilet.cmd`，或在编辑器打开
+`/Game/CollectionPrototype/HeavenToilet/Maps/Lvl_HeavenToilet` 后 Play。
+该关卡只包含天堂马桶：外露水管 → 三层真实可挖土体 → 带入口的半球大厅 → 中央马桶。
+当前半球内径 **2640 cm、高 1320 cm**，为首次独立版线性尺寸的 60%；原 V03 的小洞室及合集地图不变。
+地面灌水 **48 cm**，使用 UE **Single Layer Water** 着色，包括深度吸收/散射、折射、反射、双向波纹与角色移动扰动。水面无阻挡碰撞，角色在原地面上涉水行走。
+该地图的后处理单独使用屏幕空间反射，避免当前项目硬件 Lumen 水面反射的条纹噪点，不改变项目的全局渲染设置。
+马桶保持原模型和正常尺寸，放在顶面 **90 cm** 的三级圆台上，每级高 30 cm；室内主管道和接箍位于水面下，末端立管接到抬高的水箱。
+WASD 移动，左键挖掘，空格飞行，E 收集，Tab 图鉴。
+独立版使用 authored placement，不绑定 R 重置；重新开始请退出试玩后再次启动。
+
+地图中土层、管段、半球壳、圆形地面、装饰和灯光按 `Heaven` 文件夹分类，可直接编辑。
+土层 X=460–1380 cm，入口位置不变，大厅中心为 (2580,0,0)，马桶运行时位置 (2580,0,144)。
+编辑器中收集物由 `Heaven Toilet - single authored collectible` 的 `AuthoredPlacements` 指定，Play 时生成原有模型。
+半球使用带实际入口的凹面静态网格和 ComplexAsSimple 碰撞，不是实心球；底部由独立圆形地面承托。
+
+`Heaven water - 48cm basin and breach outflow` Actor 管理水面与洞口出水。它只在土层切割计数变化后，以实际切割网格的内外查询和相邻射线检查低处空气连通性；高于水位的洞和未贯穿入口的盲洞不会触发。
+连通后，流水网格沿已挖出的低处空隙延伸到外部短水流和小水洼，最初较强，随后减弱为持续的小流量视觉效果。室内水位始终维持 48 cm，不做体积流失或流体守恒模拟；恢复土体会关闭出水。此效果针对独立关卡固定入口的约 3.4 米宽检测带，非通用任意地形液体系统。
+运行时实现为 `Source/BrainMining/HeavenToiletWater.h/.cpp`，材质和升级脚本为 `Scripts/update_heaven_toilet_water.py`。
+
+生成源为 `Scripts/create_heaven_toilet.py` 和 `SourceAssets/HeavenToilet/SM_HeavenHemisphere.obj`，初次生成后自动执行当前水体升级脚本。
+生成器发现已有地图会拒绝覆盖，保护手动编辑。升级脚本首次运行备份旧地图到 `Saved/Backups/HeavenToilet_BeforeWater.umap`，重复运行不再次缩放，但会重建本关卡管道与中心台座。
+新地图与材质资产均在 `Content/CollectionPrototype/HeavenToilet/`；半球源网格保留原尺寸，由关卡实例以 0.6 缩放使用。
+验证脚本 `Scripts/verify_heaven_toilet.py` 使用独立编辑器的 `-ExecutePythonScript` 运行；
+搭配 `-RenderOffscreen -NoSound` 会生成入口、水面大厅、马桶、洞口出水和图鉴截图，`-nullrhi` 则只验证逻辑。
+结果写入 `Saved/Validation/HeavenToiletWater/validation.json`。脚本检查土层挖掘、角色胶囊通路、半球碰撞、低处连通出水/高洞不出水/盲洞不出水、水位保持、收集和图鉴，并回归 V03 五件物品生成；不保存运行时挖掘结果。
+
 建议向同事演示：先收集教学试管架并查看图鉴，再挖掉化学污渍所在土面，飞到鸟窝观察羽毛失去支撑后飘落，最后沿水管或蚂蚁线索找到洞内藏品。正数 RandomSeed 可固定演示布局。
 
 ## 2. 当前玩法规则

@@ -1,0 +1,49 @@
+{
+  "vertices": 11521,
+  "edges": 34557,
+  "faces": 23038,
+  "connected_components": 1,
+  "boundary_edges": 0,
+  "nonmanifold_edges": 0,
+  "inconsistent_winding_edges": 0,
+  "degenerate_faces": 0,
+  "duplicate_faces": 0,
+  "euler_characteristic": 2,
+  "signed_volume_m3": 7286.424138393426,
+  "nonadjacent_bbox_pairs": 0,
+  "self_intersection_pairs": 0,
+  "examples": [],
+  "passed": true,
+  "main_length_m": 171.2463094920269,
+  "main_drop_m": 55.0,
+  "start": [
+    -65.0,
+    0.0,
+    65.0
+  ],
+  "end": [
+    65.0,
+    0.0,
+    10.0
+  ],
+  "width_min_m": 3.300143849047162,
+  "width_max_m": 9.799507599750099,
+  "branch_count": 4,
+  "branch_lengths_m": [
+    17.470192312139897,
+    17.470192312139876,
+    16.5589461242686,
+    17.470192312139893
+  ],
+  "branch_clearances_m": [
+    7.165615773394053,
+    3.629913991285309,
+    6.428107831648727,
+    6.2916470141552
+  ],
+  "dimensions_m": [
+    137.99658203125,
+    35.12177276611328,
+    63.1435546875
+  ]
+}

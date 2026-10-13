@@ -1,0 +1,6 @@
+{
+  "units": "centimeters",
+  "halo_radius": 80.0,
+  "halo_vertices": 768,
+  "halo_faces": 768
+}

@@ -4,6 +4,15 @@
 #include "MiningBombToolComponent.h"
 #include "Engine/World.h"
 
+bool UMiningComponent::ApplyPickaxeBalance(const FMiningPickaxeLevel& Level)
+{
+	FString Error;
+	if (!Level.Validate(Error)) return false;
+	PickaxeBalance = Level;
+	bUsePickaxeBalance = true;
+	return true;
+}
+
 float UMiningComponent::GetPickaxeImpactDelay() const
 {
 	return FMath::Min(13.f / 30.f, GetMiningInterval()) * (.19f / (13.f / 30.f));
@@ -55,6 +64,14 @@ void UMiningComponent::BuildPickaxeCut(const FHitResult& Hit, FTransform& Frame,
 	const float ExtraDepth = (Depth - 1.f) * CutRadius * (1.f + Inset);
 	const FVector Offset = -FVector::UpVector * Lowering;
 	const FVector TangentOffset = Offset - Direction * FVector::DotProduct(Offset, Direction);
+	if (bUsePickaxeBalance)
+	{
+		const float FrontDepth = CutRadius * (1.f - Inset);
+		const float FinalDepth = PickaxeBalance.Depth * PickaxeSizeScale;
+		Frame = FTransform(Rotation, Hit.ImpactPoint + Direction * ((FinalDepth - FrontDepth) * .5f) + TangentOffset.GetClampedToMaxSize(CutRadius * .8));
+		HalfSize = FVector((FinalDepth + FrontDepth) * .5f, CutRadius, CutRadius);
+		return;
+	}
 	const float AxialOffset = FMath::Clamp(FVector::DotProduct(Offset, Direction), -CutRadius * .5, CutRadius * (1 - Inset) * .8);
 	const FVector Center = Hit.ImpactPoint + Direction * (CutRadius * Inset + ExtraDepth * .5f + AxialOffset) + TangentOffset.GetClampedToMaxSize(CutRadius * .8);
 	Frame = FTransform(Rotation, Center);
@@ -99,6 +116,22 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 		Patch.LocalFrame = Frame.GetRelativeTransform(Rock->GetActorTransform());
 		Patch.HalfSize = HalfSize;
 		Patch.Radius = GetMiningRadius();
+		if (bUsePickaxeBalance)
+		{
+			Patch.Stages = PickaxeBalance.Stages;
+			Patch.Roughness = PickaxeBalance.Roughness;
+		}
+		else
+		{
+			const float Depths[] = {23, 56, 100};
+			const float Widths[] = {82, 94, 100};
+			for (int32 StageIndex = 0; StageIndex < 3; ++StageIndex)
+			{
+				auto& Stage = Patch.Stages.AddDefaulted_GetRef();
+				Stage.DepthPercent = Depths[StageIndex];
+				Stage.WidthPercent = Widths[StageIndex];
+			}
+		}
 		Patch.Id = ++NextPickaxePatchId;
 		Patch.Seed = HashCombine(GetTypeHash(Rock->GetFName()), GetTypeHash(FIntVector(
 			FMath::RoundToInt(Patch.LocalPoint.X / 4), FMath::RoundToInt(Patch.LocalPoint.Y / 4), FMath::RoundToInt(Patch.LocalPoint.Z / 4))));
@@ -130,22 +163,24 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 	const FMiningPickaxePatch Request = PickaxePatches[Index];
 	FTransform Frame = Request.LocalFrame * Rock->GetActorTransform();
 	FVector HalfSize = Request.HalfSize;
-	if (Request.Strikes < 3)
+	const int32 RequiredStrikes = Request.Stages.Num();
+	if (Request.Strikes < RequiredStrikes)
 	{
+		const auto& Stage = Request.Stages[Request.Strikes - 1];
 		const FVector Direction = Frame.GetUnitAxis(EAxis::X);
 		const FVector Anchor = Rock->GetActorTransform().TransformPosition(Request.LocalPoint);
 		const float SurfaceOffset = FVector::DotProduct(Anchor - Frame.GetLocation(), Direction);
-		const float End = SurfaceOffset + Request.EarlyDepthLimit * (Request.Strikes == 1 ? .23f : .56f);
+		const float End = SurfaceOffset + Request.EarlyDepthLimit * Stage.DepthPercent * .01f;
 		const float Start = -HalfSize.X;
 		Frame.AddToTranslation(Direction * ((Start + End) * .5f));
 		HalfSize.X = (End - Start) * .5f;
-		HalfSize.Y *= Request.Strikes == 1 ? .82f : .94f;
-		HalfSize.Z *= Request.Strikes == 1 ? .82f : .94f;
+		HalfSize.Y *= Stage.WidthPercent * .01f;
+		HalfSize.Z *= Stage.WidthPercent * .01f;
 	}
-	const bool bAccepted = Rock->MinePickaxe(Frame, HalfSize, Request.Seed);
+	const bool bAccepted = Rock->MinePickaxe(Frame, HalfSize, Request.Seed, Request.Roughness);
 	Status = Rock->LastStatus;
-	bLastPickaxeBreak = bAccepted && Request.Strikes == 3;
-	TargetPickaxeHits = bAccepted ? (Request.Strikes < 3 ? Request.Strikes : 0) : Request.Strikes - 1;
+	bLastPickaxeBreak = bAccepted && Request.Strikes == RequiredStrikes;
+	TargetPickaxeHits = bAccepted ? (Request.Strikes < RequiredStrikes ? Request.Strikes : 0) : Request.Strikes - 1;
 	if (!bAccepted)
 	{
 		for (auto& Patch : PickaxePatches)
@@ -172,7 +207,7 @@ void UMiningComponent::InvalidatePickaxePatches(TWeakObjectPtr<ADiggableRock> Ro
 			const FTransform Frame = Patch.LocalFrame * Rock->GetActorTransform();
 			const FVector Direction = Frame.GetUnitAxis(EAxis::X);
 			FHitResult Surface;
-			if (Patch.bPending && Patch.Strikes < 3)
+			if (Patch.bPending && Patch.Strikes < Patch.Stages.Num())
 			{
 				if (Rock->ActorLineTraceSingle(Surface, Frame.GetLocation() - Direction * (Patch.HalfSize.X + 1),
 					Frame.GetLocation() + Direction * (Patch.HalfSize.X + 1), ECC_Visibility,

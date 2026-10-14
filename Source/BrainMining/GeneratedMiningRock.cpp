@@ -403,7 +403,7 @@ void AGeneratedMiningRock::SetSegmentState(EMiningSegmentState State)
 	SegmentState = State;
 }
 
-bool AGeneratedMiningRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed)
+bool AGeneratedMiningRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed, float Roughness)
 {
 	if (SegmentIndex != INDEX_NONE && SegmentState != EMiningSegmentState::Active)
 	{
@@ -411,8 +411,8 @@ bool AGeneratedMiningRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, 
 		return false;
 	}
 	if (!WorldFrame.IsValid() || HalfSize.ContainsNaN() || HalfSize.GetMin() <= 0) return false;
-	if (!bChunked) return Super::MinePickaxe(WorldFrame, HalfSize, Seed);
-	const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(WorldFrame, HalfSize, Seed);
+	if (!bChunked) return Super::MinePickaxe(WorldFrame, HalfSize, Seed, Roughness);
+	const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(WorldFrame, HalfSize, Seed, Roughness);
 	return MineChunks(WorldFrame.GetLocation(), HalfSize.Size() * 1.12, &Cutter);
 }
 

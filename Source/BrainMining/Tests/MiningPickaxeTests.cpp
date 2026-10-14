@@ -206,4 +206,106 @@ bool FMiningPickaxeChunkTest::RunTest(const FString&)
 	Mining->ResetField();
 	return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningPickaxeConfiguredStagesTest, "BrainMining.Pickaxe.ConfiguredStagesAndSnapshot", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMiningPickaxeConfiguredStagesTest::RunTest(const FString&)
+{
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    auto* Rock = World->SpawnActor<ADiggableRock>();
+    Rock->RockSize = FVector(50, 1000, 1000);
+    Rock->ResetRock();
+    auto* Mining = CreatePickaxe(World);
+    auto Three = UMiningPickaxeSettings::MakeRecommendedLevels()[0];
+    Three.Width = 200; Three.Depth = 130;
+    auto Two = Three;
+    Two.Stages = UMiningPickaxeSettings::MakeRecommendedLevels()[4].Stages;
+    TestTrue(TEXT("Three-hit profile applies"), Mining->ApplyPickaxeBalance(Three));
+    TestTrue(TEXT("First hit cuts real terrain"), Mining->ApplyPickaxeHit(PickaxeSurface(Rock)));
+    TestTrue(TEXT("Thin wall survives first hit"), PickaxeBlocked(Rock, 0, 0));
+    TestTrue(TEXT("Upgrade can change profile mid-cavity"), Mining->ApplyPickaxeBalance(Two));
+    TestTrue(TEXT("Second hit continues existing cavity"), Mining->ApplyPickaxeHit(PickaxeSurface(Rock)));
+    TestFalse(TEXT("Existing cavity keeps its original three-hit requirement"), Mining->bLastPickaxeBreak);
+    TestTrue(TEXT("Existing thin wall survives second hit after upgrade"), PickaxeBlocked(Rock, 0, 0));
+    TestTrue(TEXT("Third hit finishes old cavity"), Mining->ApplyPickaxeHit(PickaxeSurface(Rock)));
+    TestTrue(TEXT("Old cavity opens on third hit"), Mining->bLastPickaxeBreak && !PickaxeBlocked(Rock, 0, 0));
+    Mining->ResetField();
+    TestTrue(TEXT("New cavity starts with two-hit profile"), Mining->ApplyPickaxeHit(PickaxeSurface(Rock)));
+    TestTrue(TEXT("First of two hits retains wall"), PickaxeBlocked(Rock, 0, 0));
+    TestTrue(TEXT("Second configured hit succeeds"), Mining->ApplyPickaxeHit(PickaxeSurface(Rock)));
+    TestTrue(TEXT("Two-hit profile opens on second hit"), Mining->bLastPickaxeBreak && !PickaxeBlocked(Rock, 0, 0));
+    Mining->ResetField();
+    auto Single = Two;
+    Single.Stages.RemoveAt(0);
+    TestTrue(TEXT("One-hit profile is supported"), Mining->ApplyPickaxeBalance(Single));
+    TestTrue(TEXT("Single final stage succeeds"), Mining->ApplyPickaxeHit(PickaxeSurface(Rock)));
+    TestFalse(TEXT("One-hit profile immediately opens thin wall"), PickaxeBlocked(Rock, 0, 0));
+    TestTrue(TEXT("Configured cuts remain watertight"), Rock->RockMesh->GetDynamicMesh()->GetMeshRef().IsClosed());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningPickaxeIndependentDimensionsTest, "BrainMining.Pickaxe.IndependentDimensionsAndRoughness", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMiningPickaxeIndependentDimensionsTest::RunTest(const FString&)
+{
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    auto* Rock = World->SpawnActor<ADiggableRock>();
+    Rock->RockSize = FVector(1000, 1000, 1000);
+    auto* Mining = CreatePickaxe(World);
+    auto Profile = UMiningPickaxeSettings::MakeRecommendedLevels()[0];
+    Profile.Width = 200; Profile.Depth = 130; Profile.Stages.RemoveAt(0, 2);
+    const auto CutDepth = [&]()
+    {
+        Mining->ResetField();
+        Rock->ResetRock();
+        Mining->ApplyPickaxeBalance(Profile);
+        TestTrue(TEXT("Configured final cut succeeds"), Mining->ApplyPickaxeHit(PickaxeSurface(Rock)));
+        return PickaxeSurface(Rock).ImpactPoint.X + 500;
+    };
+    const double Baseline = CutDepth();
+    Profile.Width = 400;
+    TestTrue(TEXT("Doubling width does not double centre depth"), FMath::IsNearlyEqual(CutDepth(), Baseline, 1.));
+    Profile.Depth = 260;
+    TestTrue(TEXT("Explicit depth setting controls centre depth"), FMath::IsNearlyEqual(CutDepth(), Baseline * 2, 1.));
+    Mining->PickaxeSizeScale = .7f;
+    TestTrue(TEXT("Character size still scales depth"), FMath::IsNearlyEqual(CutDepth(), Baseline * 2 * .7, 1.));
+    for (float Strength : {0.f, .5f, 1.f})
+    {
+        const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(FTransform::Identity, FVector(100), 37, Strength);
+        TestTrue(TEXT("All roughness settings keep closed valid cutters"), Cutter.IsClosed() && Cutter.CheckValidity(FDynamicMesh3::FValidityOptions(), EValidityCheckFailMode::ReturnOnly));
+        TestTrue(TEXT("Same patch roughness stays deterministic"), Cutter.IsSameAs(MiningPickaxe::MakeCutter(FTransform::Identity, FVector(100), 37, Strength), FDynamicMesh3::FSameAsOptions()));
+    }
+    TestFalse(TEXT("Roughness changes actual cutter geometry"), MiningPickaxe::MakeCutter(FTransform::Identity, FVector(100), 37, 0).IsSameAs(
+        MiningPickaxe::MakeCutter(FTransform::Identity, FVector(100), 37, 1), FDynamicMesh3::FSameAsOptions()));
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningPickaxeConfiguredChunkTest, "BrainMining.Pickaxe.ConfiguredChunkStages", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMiningPickaxeConfiguredChunkTest::RunTest(const FString&)
+{
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    FMinimalBoxMeshGenerator Box;
+    Box.Box = FOrientedBox3d(FVector3d::Zero(), FVector3d(25, 500, 500));
+    Box.Generate();
+    auto* Rock = World->SpawnActor<AGeneratedMiningRock>();
+    if (!TestTrue(TEXT("Thin chunked wall builds"), Rock->SetChunkedMesh(FDynamicMesh3(&Box), 400, true))) return false;
+    Rock->InteractiveCutBudgetMilliseconds = .01f;
+    auto* Mining = CreatePickaxe(World);
+    auto Profile = UMiningPickaxeSettings::MakeRecommendedLevels()[4];
+    Profile.Width = 500; Profile.Depth = 130; Profile.Roughness = .5f;
+    Mining->ApplyPickaxeBalance(Profile);
+    for (int32 Strike = 1; Strike <= 2; ++Strike)
+    {
+        const auto Hit = PickaxeSurface(Rock);
+        TestTrue(TEXT("Configured chunked stage accepted"), Mining->ApplyPickaxeHit(Hit));
+        if (Rock->bCutPending) TestFalse(TEXT("Pending stage cannot be submitted twice"), Mining->ApplyPickaxeHit(Hit));
+        DrainPickaxe(Rock);
+        TestFalse(TEXT("Configured stage finishes asynchronous work"), Rock->bCutPending);
+        TestEqual(TEXT("One cut per configured stage"), Rock->SuccessfulCuts, Strike);
+        TestEqual(TEXT("Thin chunked wall opens only on the final stage"), PickaxeBlocked(Rock, 0, 0), Strike < 2);
+    }
+    for (const auto& Chunk : Rock->Chunks)
+        TestTrue(TEXT("Configurable cut preserves watertight chunks"), Chunk.Mesh->GetDynamicMesh()->GetMeshRef().IsClosed());
+    return true;
+}
 #endif

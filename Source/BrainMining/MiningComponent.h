@@ -4,6 +4,7 @@
 #include "Engine/HitResult.h"
 #include "Components/ActorComponent.h"
 #include "MiningPickaxeState.h"
+#include "MiningPickaxeSettings.h"
 #include "MiningComponent.generated.h"
 
 class ADiggableRock;
@@ -23,6 +24,13 @@ class BRAINMINING_API UMiningComponent : public UActorComponent
 	GENERATED_BODY()
 public:
 	UMiningComponent();
+	bool ApplyPickaxeBalance(const FMiningPickaxeLevel& Level);
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
+	FMiningPickaxeLevel PickaxeBalance;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
+	bool bUsePickaxeBalance = false;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
+	float PickaxeSizeScale = 1;
 	bool ApplyPickaxeHit(const FHitResult& Hit);
 	float GetPickaxeImpactDelay() const;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")

@@ -14,7 +14,7 @@ enum class EMiningUpgradeEffect : uint8
     MiningDepth, MiningRadius, MiningInterval, MineralDoubleChance,
     CoolingDelay, CoolingRate, HeatCapacity, CreativeFlight,
     BombRecharge, BombCapacity, BombRadius, BombCapacityAndFuse,
-    DrillRecovery, DrillCapacity, DrillConsumption, InfiniteDrill
+    DrillRecovery, DrillCapacity, DrillConsumption, InfiniteDrill, PickaxeProfile
 };
 
 USTRUCT(BlueprintType)
@@ -53,6 +53,7 @@ public:
     UFUNCTION(BlueprintPure, Category="Progression") UMiningWalletSubsystem* GetWallet() const;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Progression") bool bInitialized = false;
 private:
+    void RefreshPickaxeTrack();
     float BaseRadius = 160;
     float BaseDepth = 1;
     float BaseInterval = .3f;

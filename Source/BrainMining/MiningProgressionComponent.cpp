@@ -21,10 +21,9 @@ UMiningProgressionComponent::UMiningProgressionComponent()
         Step.Price = Price; Step.Effect = Effect; Step.Value = Value; Step.SecondaryValue = Secondary;
         Step.Description = FText::FromString(Description);
     };
-    Add(0, 50, EMiningUpgradeEffect::MiningDepth, 2, TEXT("单次挖掘深度 ×2"));
-    Add(0, 1000, EMiningUpgradeEffect::MiningRadius, 2, TEXT("单次挖掘范围 ×2"));
-    Add(0, 5000, EMiningUpgradeEffect::MiningInterval, .5f, TEXT("挖掘间隔 ×0.5"));
-    Add(0, 50000, EMiningUpgradeEffect::MineralDoubleChance, .5f, TEXT("收矿时有50%概率金币翻倍"));
+    const auto PickaxeLevels = UMiningPickaxeSettings::MakeRecommendedLevels();
+    for (int32 Level = 1; Level <= 4; ++Level)
+        Add(0, PickaxeLevels[Level].Price, EMiningUpgradeEffect::PickaxeProfile, Level, *PickaxeLevels[Level].GetDescription().ToString());
     Add(1, 250, EMiningUpgradeEffect::CoolingDelay, .5f, TEXT("开始自然散热的等待时间 ×0.5"));
     Add(1, 7500, EMiningUpgradeEffect::CoolingRate, 2, TEXT("自然散热速度 ×2"));
     Add(1, 25000, EMiningUpgradeEffect::HeatCapacity, 2, TEXT("最大热量 ×2"));
@@ -75,12 +74,14 @@ int32 UMiningProgressionComponent::GetLevel(int32 TrackIndex) const
 int64 UMiningProgressionComponent::GetNextPrice(int32 TrackIndex) const
 {
     const int32 Level = GetLevel(TrackIndex);
+    if (TrackIndex == 0) return Level >= 0 && Level < 4 ? UMiningPickaxeSettings::ResolveLevel(Level + 1).Price : 0;
     return Tracks.IsValidIndex(TrackIndex) && Tracks[TrackIndex].Steps.IsValidIndex(Level) && Level < 4 ? Tracks[TrackIndex].Steps[Level].Price : 0;
 }
 
 FText UMiningProgressionComponent::GetNextDescription(int32 TrackIndex) const
 {
     const int32 Level = GetLevel(TrackIndex);
+    if (TrackIndex == 0) return Level >= 0 && Level < 4 ? UMiningPickaxeSettings::ResolveLevel(Level + 1).GetDescription() : FText::FromString(TEXT("已满级"));
     return Tracks.IsValidIndex(TrackIndex) && Tracks[TrackIndex].Steps.IsValidIndex(Level) && Level < 4 ?
         Tracks[TrackIndex].Steps[Level].Description : FText::FromString(TEXT("已满级"));
 }
@@ -92,12 +93,36 @@ bool UMiningProgressionComponent::Purchase(int32 TrackIndex, int32 RequestedLeve
         if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); !Bomb || !Bomb->IsSkillUnlocked()) return false;
     auto* Wallet = GetOwner()->GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     const int32 Current = Wallet->GetUpgradeLevel(TrackIndex);
+    if (TrackIndex == 0)
+    {
+        if (Current < 0 || RequestedLevel != Current + 1 || RequestedLevel > 4) return false;
+        if (!Wallet->Spend(UMiningPickaxeSettings::ResolveLevel(RequestedLevel).Price)) return false;
+        Wallet->UpgradeLevels[0] = RequestedLevel;
+        ApplyUpgrades();
+        return true;
+    }
     const auto& Steps = Tracks[TrackIndex].Steps;
     if (Current < 0 || RequestedLevel != Current + 1 || RequestedLevel > 4 || !Steps.IsValidIndex(Current) || !Steps[Current].IsValid()) return false;
     if (!Wallet->Spend(Steps[Current].Price)) return false;
     Wallet->UpgradeLevels[TrackIndex] = RequestedLevel;
     ApplyUpgrades();
     return true;
+}
+
+void UMiningProgressionComponent::RefreshPickaxeTrack()
+{
+    if (Tracks.IsEmpty()) Tracks.AddDefaulted();
+    Tracks[0].Name = FText::FromString(TEXT("矿镐"));
+    Tracks[0].Steps.Reset();
+    for (int32 Level = 1; Level <= 4; ++Level)
+    {
+        const auto Profile = UMiningPickaxeSettings::ResolveLevel(Level);
+        auto& Step = Tracks[0].Steps.AddDefaulted_GetRef();
+        Step.Price = Profile.Price;
+        Step.Description = Profile.GetDescription();
+        Step.Effect = EMiningUpgradeEffect::PickaxeProfile;
+        Step.Value = Level;
+    }
 }
 
 void UMiningProgressionComponent::ApplyUpgrades()
@@ -118,7 +143,9 @@ void UMiningProgressionComponent::ApplyUpgrades()
     Flight->CoolingDelay = BaseCoolingDelay; Flight->bCreativeFlight = false;
     Bomb->Settings = BaseBomb; Bomb->MaxBombs = BaseBombCapacity; Bomb->RechargeSeconds = BaseBombRecharge;
     Wallet->MineralDoubleChance = 0;
-    for (int32 TrackIndex = 0; TrackIndex < Tracks.Num(); ++TrackIndex)
+    RefreshPickaxeTrack();
+    Mining->ApplyPickaxeBalance(UMiningPickaxeSettings::ResolveLevel(GetLevel(0)));
+    for (int32 TrackIndex = 1; TrackIndex < Tracks.Num(); ++TrackIndex)
     {
         const auto& Steps = Tracks[TrackIndex].Steps;
         for (int32 Level = 0; Level < FMath::Min3(GetLevel(TrackIndex), Steps.Num(), 4); ++Level)

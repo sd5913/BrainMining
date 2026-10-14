@@ -19,7 +19,8 @@ Sentence colors are dark on the white paper; the swappable word stays red.
 Each newly selected thought starts near the first-person viewport center as a
 larger, tilted plane. Perspective depth recedes from 360 to 600 units; pitch,
 yaw and roll foreshorten/skew the complete card while it travels to its side
-over 0.85 seconds. The camera-facing foreground phase precedes lateral motion.
+over 0.42 seconds. Depth retreat and lateral motion share one immediate cubic
+ease-out, removing the old 0.17-second foreground pause and slow second phase.
 It then resets to an identity transform and stays anchored in screen space,
 without bounce, drift, camera-follow motion or idle floating.
 The artwork, perspective sentence, close

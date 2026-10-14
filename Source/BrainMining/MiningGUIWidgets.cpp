@@ -23,6 +23,13 @@ namespace
 	{
 		if (Widget) Widget->SetRenderScale(FVector2D(Value));
 	}
+	void AbilityArtwork(UImage* Image, UTexture2D* Texture)
+	{
+		if (!Image || !Texture) return;
+		// Keep the designer's edge treatment when switching between normal/used art.
+		if (auto* Material = Image->GetDynamicMaterial()) Material->SetTextureParameterValue(TEXT("Artwork"), Texture);
+		else Image->SetBrushFromTexture(Texture, false);
+	}
 }
 
 void UMiningGUIJetpackHeatWidget::NativePreConstruct()
@@ -63,18 +70,15 @@ void UMiningGUIJetpackHeatWidget::AdvancePresentation(float DeltaSeconds)
 	GaugeFade = FMath::FInterpConstantTo(GaugeFade, bShow ? 1.f : 0.f, DeltaSeconds, 1.f / Duration);
 	GaugeOpacity = FMath::SmoothStep(0.f, 1.f, GaugeFade);
 	SetRenderOpacity(GaugeOpacity);
-	const float Threshold = FMath::Clamp(WarningThreshold, .1f, .95f);
-	const float Danger = FMath::Clamp((DisplayedHeat - Threshold) / (1.f - Threshold), 0.f, 1.f);
-	const float Target = DisplayedHeat >= Threshold ? FMath::Clamp(WarningMaxOpacity, 0.f, 1.f) * (.45f + .55f * Danger) : 0.f;
-	const float WarningDuration = FMath::Max(.01f, Target > WarningOpacity ? WarningFadeInSeconds : WarningFadeOutSeconds);
-	WarningOpacity = FMath::FInterpConstantTo(WarningOpacity, Target, DeltaSeconds, FMath::Max(.01f, WarningMaxOpacity) / WarningDuration);
+	// Heat warnings stay on the gauge. The full-screen red wash reads as damage.
+	WarningOpacity = 0.f;
 }
 
 void UMiningGUIAbilityWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 	if (AbilityIcon && (bUsed ? UsedTexture : NormalTexture))
-		AbilityIcon->SetBrushFromTexture(bUsed ? UsedTexture : NormalTexture, false);
+		AbilityArtwork(AbilityIcon, bUsed ? UsedTexture : NormalTexture);
 	SetVisibility(bAvailable ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	SetCooldownRemaining(CooldownRemaining);
 }
@@ -83,7 +87,7 @@ void UMiningGUIAbilityWidget::SetUsed(bool bNewUsed)
 	if (bUsed == bNewUsed) return;
 	bUsed = bNewUsed;
 	if (AbilityIcon && (bUsed ? UsedTexture : NormalTexture))
-		AbilityIcon->SetBrushFromTexture(bUsed ? UsedTexture : NormalTexture, false);
+		AbilityArtwork(AbilityIcon, bUsed ? UsedTexture : NormalTexture);
 	Pulse.Value = 0.84f;
 	Pulse.Velocity = 3.f;
 }
@@ -176,6 +180,18 @@ void UMiningGUIUpgradeWidget::NativeTick(const FGeometry& Geometry, float DeltaT
 void UMiningGUIHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	if (JetpackHeatWarning)
+	{
+		JetpackHeatWarning->SetRenderOpacity(0.f);
+		JetpackHeatWarning->SetVisibility(ESlateVisibility::Collapsed);
+		JetpackHeatWarning->RemoveFromParent();
+	}
+	DrillEnergyFade = 0.f;
+	if (DrillEnergyBar)
+	{
+		DrillEnergyBar->SetRenderOpacity(0.f);
+		Visible(DrillEnergyBar, false);
+	}
 	SetIsFocusable(true);
 	// The supplied plus artwork remains; Tab owns the popup instead of mouse toggling.
 	PlusButton->SetVisibility(ESlateVisibility::HitTestInvisible);
@@ -341,6 +357,18 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 	const FName ReticleNames[] = { TEXT("ReticlePickaxe"), TEXT("ReticleDrill"), TEXT("ReticleBomb") };
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(ReticleNames); ++Index)
 		Visible(GetWidgetFromName(ReticleNames[Index]), bShowAim && AimTool == Index);
+	if (DrillEnergyBar)
+	{
+		const bool bShowEnergy = bShowAim && AimMining && AimMining->bUseDrillEnergy && AimMining->bDrillMode;
+		// Match the jetpack's short eased fade, keeping the image visible until fade-out ends.
+		DrillEnergyFade = FMath::FInterpConstantTo(DrillEnergyFade, bShowEnergy ? 1.f : 0.f,
+			DeltaTime, 1.f / (bShowEnergy ? .16f : .35f));
+		DrillEnergyBar->SetRenderOpacity(FMath::SmoothStep(0.f, 1.f, DrillEnergyFade));
+		Visible(DrillEnergyBar, DrillEnergyFade > KINDA_SMALL_NUMBER);
+		if (auto* EnergyMaterial = DrillEnergyBar->GetDynamicMaterial())
+			EnergyMaterial->SetScalarParameterValue(TEXT("Energy"), AimMining ?
+				(AimMining->bInfiniteDrillEnergy ? 1.f : FMath::Clamp(AimMining->DrillEnergy / FMath::Max(1.f, AimMining->MaxDrillEnergy), 0.f, 1.f)) : 0.f);
+	}
 	if (JetpackHeatBar)
 	{
 		const auto* Pawn = GetOwningPlayerPawn();
@@ -349,7 +377,6 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 		JetpackHeatBar->SetHeatState(bHeatEnabled ? Flight->JetpackHeat : 0.f, bHeatEnabled && Flight->IsJetpackOverheated(), bHeatEnabled && Flight->IsFlightThrustActive());
 		JetpackHeatBar->AdvancePresentation(DeltaTime);
 	}
-	if (JetpackHeatWarning) JetpackHeatWarning->SetRenderOpacity(JetpackHeatBar ? JetpackHeatBar->WarningOpacity : 0.f);
 	if (AbilityG)
 	{
 		const APawn* Pawn = GetOwningPlayerPawn();
@@ -372,11 +399,9 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 		const float Cooldown = Mining ? Mining->GetDrillCooldownRemaining() : 0.f;
 		AbilityV->SetUsed(Cooldown > 0);
 		AbilityV->SetCooldownRemaining(Cooldown);
-		if (Mining && Mining->bUseDrillEnergy && AbilityV->CooldownText)
+		if (Mining && Mining->bUseDrillEnergy)
 		{
-			AbilityV->CooldownText->SetVisibility(ESlateVisibility::HitTestInvisible);
-			AbilityV->CooldownText->SetText(FText::FromString(Mining->bInfiniteDrillEnergy ? TEXT("∞") :
-				FString::Printf(TEXT("%.0f%%"), 100.f * Mining->DrillEnergy / FMath::Max(1.f, Mining->MaxDrillEnergy))));
+			AbilityV->SetCooldownRemaining(0.f);
 			AbilityV->SetUsed(!Mining->bInfiniteDrillEnergy && Mining->DrillEnergy <= UE_SMALL_NUMBER);
 		}
 	}

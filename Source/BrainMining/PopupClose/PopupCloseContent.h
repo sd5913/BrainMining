@@ -28,6 +28,28 @@ namespace PopupCloseContent
   return Copies[(Index%8+8)%8];
  }
  constexpr int32 Count=8;
+ struct FPopupArt
+ {
+  const TCHAR* AssetName;
+  FVector2D Size;
+  // Normalized hit area on the supplied artwork: x, y, width, height.
+  FVector4 CloseRect;
+  FVector4 TextRect;
+  bool bUseWorkText;
+ };
+ constexpr int32 ArtCount=6;
+ inline const FPopupArt& GetArt(int32 Index)
+ {
+  static const FPopupArt Skins[]={
+   {TEXT("Window"),FVector2D(300,302),FVector4(.365,.725,.28,.17),FVector4(.07,.25,.86,.45),true},
+   {TEXT("SystemMessage"),FVector2D(420,257),FVector4(.176,.725,.303,.15),FVector4(.065,.24,.87,.47),true},
+   {TEXT("SystemError"),FVector2D(520,177),FVector4(.251,.713,.231,.151),FVector4(.18,.22,.76,.44),true},
+   {TEXT("Robot"),FVector2D(420,116.5),FVector4(.057,.32,.097,.35),FVector4(0,0,0,0),false},
+   {TEXT("Message"),FVector2D(340,283),FVector4(.37,.783,.275,.094),FVector4(0,0,0,0),false},
+   {TEXT("Loading"),FVector2D(440,274),FVector4(.54,.745,.305,.125),FVector4(0,0,0,0),false}
+  };
+  return Skins[(Index%ArtCount+ArtCount)%ArtCount];
+ }
  constexpr int32 DesktopWidth=1280;
  constexpr int32 DesktopHeight=800;
 }

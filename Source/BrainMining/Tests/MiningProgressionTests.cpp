@@ -3,6 +3,7 @@
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "Engine/GameInstance.h"
+#include "Engine/World.h"
 #include "Misc/AutomationTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -21,6 +22,8 @@ bool FMiningProgressionRulesTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Failed charge keeps balance"), Wallet->Balance, int64(49));
     TestFalse(TEXT("Negative price cannot mint coins"), Wallet->Spend(-50));
 
+    UWorld* ResourceWorld = UWorld::CreateWorld(EWorldType::Editor, false);
+    AActor* ResourceOwner = ResourceWorld->SpawnActor<AActor>();
     for (int32 FPS : {15, 60, 120})
     {
         auto* Bomb = NewObject<UMiningBombToolComponent>();
@@ -32,22 +35,33 @@ bool FMiningProgressionRulesTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("Refill never exceeds capacity"), Bomb->BombCount, 3);
         TestEqual(TEXT("Full capacity cannot bank refill time"), Bomb->RechargeProgress, 0.f);
 
-        auto* Mining = NewObject<UMiningComponent>();
+        auto* Mining = NewObject<UMiningComponent>(ResourceOwner);
+        ResourceOwner->AddInstanceComponent(Mining); Mining->RegisterComponent();
         Mining->bUseDrillEnergy = true; Mining->bDrillMode = true;
         Mining->DrillConsumptionRate = 7.5f; Mining->DrillEnergy = 100;
+        Mining->BeginMiningInput();
         for (int32 Frame = 0; Frame < FPS*4; ++Frame) Mining->UpdateDrillEnergy(1.f/FPS);
         TestTrue(TEXT("Upgraded drill consumption is stable"), FMath::IsNearlyEqual(Mining->DrillEnergy, 70.f, .01f));
         Mining->SetInputSuspended(true); Mining->UpdateDrillEnergy(2);
         TestTrue(TEXT("UI suspension does not drain drill"), FMath::IsNearlyEqual(Mining->DrillEnergy, 70.f, .01f));
-        Mining->SetInputSuspended(false); Mining->UpdateDrillEnergy(20);
+        Mining->SetInputSuspended(false); Mining->BeginMiningInput(); Mining->UpdateDrillEnergy(20);
         TestFalse(TEXT("Empty energy stows the drill"), Mining->bDrillMode);
         Mining->DrillRecoveryRate = 15; Mining->MaxDrillEnergy = 150;
         Mining->UpdateDrillEnergy(5);
         TestEqual(TEXT("Stored drill naturally recovers"), Mining->DrillEnergy, 75.f);
+        Mining->bDrillMode = true;
+        Mining->UpdateDrillEnergy(1);
+        TestEqual(TEXT("Equipped but idle drill also recharges"), Mining->DrillEnergy, 90.f);
+        ResourceWorld->TimeSeconds += 100;
+        Mining->TickComponent(0, LEVELTICK_All, nullptr);
+        TestTrue(TEXT("Idle drill has no timed expiry"), Mining->bDrillMode);
+        TestEqual(TEXT("Energy mode has no countdown"), Mining->GetDrillUseRemaining(), 0.f);
+        TestEqual(TEXT("Energy mode has no cooldown"), Mining->GetDrillCooldownRemaining(), 0.f);
         Mining->bInfiniteDrillEnergy = true; Mining->bDrillMode = true; Mining->UpdateDrillEnergy(100);
         TestTrue(TEXT("Infinite upgrade keeps drill active"), Mining->bDrillMode);
         TestEqual(TEXT("Infinite energy stays full"), Mining->DrillEnergy, 150.f);
     }
+    ResourceWorld->DestroyWorld(false);
 
     auto* Flight = NewObject<UMiningCharacterMovementComponent>();
     Flight->FlightSettings.bEnabled = true; Flight->CoolingDelay = .5f;

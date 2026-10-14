@@ -202,11 +202,47 @@ if not unreal.EditorAssetLibrary.does_asset_exist(path):
     lib.connect_material_property(custom, '', unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     lib.recompile_material(m); unreal.EditorAssetLibrary.save_loaded_asset(m)
 
+# Animated lens deformation and peripheral radial defocus. The centre stays
+# readable, so the destination remains a physical place throughout the flight.
+path = ROOT + '/Materials/M_EE_PulseTransit'
+if not unreal.EditorAssetLibrary.does_asset_exist(path):
+    m = assets.create_asset('M_EE_PulseTransit', ROOT + '/Materials', unreal.Material, unreal.MaterialFactoryNew())
+    m.set_editor_property('material_domain', unreal.MaterialDomain.MD_POST_PROCESS)
+    m.set_editor_property('blendable_location', unreal.BlendableLocation.BL_SCENE_COLOR_AFTER_TONEMAPPING)
+    uv = lib.create_material_expression(m, unreal.MaterialExpressionScreenPosition)
+    scene = lib.create_material_expression(m, unreal.MaterialExpressionSceneTexture)
+    scene.set_editor_property('scene_texture_id', unreal.SceneTextureId.PPI_POST_PROCESS_INPUT0)
+    strength = lib.create_material_expression(m, unreal.MaterialExpressionScalarParameter)
+    strength.set_editor_property('parameter_name', 'Strength')
+    strength.set_editor_property('default_value', 0.0)
+    custom = lib.create_material_expression(m, unreal.MaterialExpressionCustom)
+    custom.set_editor_property('output_type', unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    ins = []
+    for n in ['UV', 'SC', 'Strength']:
+        i = unreal.CustomInput(); i.set_editor_property('input_name', n); ins.append(i)
+    custom.set_editor_property('inputs', ins)
+    custom.set_editor_property('code', '''
+    float2 p=UV-.5;
+    float r=dot(p,p), edge=smoothstep(.015,.32,r);
+    float2 warped=.5+p*(1+Strength*(.6*r-.13));
+    float3 color=0;
+    [unroll] for(int i=0;i<9;i++) {
+        float tap=(i-4)/4.0;
+        float2 q=warped+p*tap*.065*Strength*edge;
+        color+=SceneTextureLookup(ViewportUVToSceneTextureUV(clamp(q,.002,.998),14),14,false).rgb;
+    }
+    return lerp(SC.rgb,color/9,Strength);
+    ''')
+    for source, output, name in [(uv, 'ViewportUV', 'UV'), (scene, 'Color', 'SC'), (strength, '', 'Strength')]:
+        lib.connect_material_expressions(source, output, custom, name)
+    lib.connect_material_property(custom, '', unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    lib.recompile_material(m); assert unreal.EditorAssetLibrary.save_loaded_asset(m)
+
 # Original placeholder sound design: no speech synthesis or external assets.
 audio_dir = Path(unreal.Paths.project_dir()) / 'SourceAssets' / 'EndingEmergence' / 'Audio'
 audio_dir.mkdir(parents=True, exist_ok=True)
 rate = 22050
-for name, seconds, loop in [('Cell',12,True),('Blood',12,True),('Brain',12,True),('Street',12,True),('Space',16,True),('Afternoon',12,True),('Hit',.3,False),('Connect',1.6,False),('Pencil',2.8,False),('Wake',.55,False)]:
+for name, seconds, loop in [('Cell',12,True),('Blood',12,True),('Brain',12,True),('Street',12,True),('Space',16,True),('Afternoon',12,True),('Hit',.3,False),('Connect',1.6,False),('Pencil',2.8,False),('Wake',.55,False),('PulseFlight',1.15,False)]:
     if unreal.EditorAssetLibrary.does_asset_exist(ROOT+'/Audio/S_EE_'+name):
         continue
     rng = random.Random(77); frames = bytearray(); filtered = 0
@@ -226,6 +262,9 @@ for name, seconds, loop in [('Cell',12,True),('Blood',12,True),('Brain',12,True)
         elif name=='Hit': v=(.28*noise+.3*math.sin(2*math.pi*130*t))*math.exp(-t*28)
         elif name=='Connect': v=(.15*math.sin(2*math.pi*440*t)+.07*math.sin(2*math.pi*660*t))*math.exp(-t*3)*min(1,t*80)
         elif name=='Wake': v=filtered*2.2*math.exp(-t*7)*min(1,t*35)
+        elif name=='PulseFlight':
+            env=math.sin(math.pi*t/seconds)**2
+            v=(filtered*1.5+noise*.065+math.sin(2*math.pi*(160*t+100*t*t))*.07)*env
         else: v=noise*.17*(.5+.5*math.sin(t*19))*min(1,t*40)*min(1,(seconds-t)*8)
         # Fade the loop seam so placeholder ambience stays free of clicks.
         v*=min(1,t*15,(seconds-t)*15)
@@ -268,6 +307,7 @@ for name,value in [('override_auto_exposure_min_brightness',True),('override_aut
     settings.set_editor_property(name,value)
 volume.set_editor_property('settings',settings)
 unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).set_level_viewport_camera_info(unreal.Vector(160,0,-100),unreal.Rotator(0,0,0))
-assert len(demo.gates)==5
+assert len(demo.gates)==1
+assert len(demo.neuron_positions)==22
 assert levels.save_current_level()
 unreal.log('ENDING_EMERGENCE_CREATED '+MAP)

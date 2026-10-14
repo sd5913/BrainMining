@@ -45,4 +45,7 @@ public:
 	/** Explicitly replace the heat strip with a transient arc and add a full-screen warning image. */
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Editor")
 	static bool UpgradeJetpackToArcGauge();
+	/** Add only the artist's right-hand energy bar, preserving all existing HUD slots. */
+	UFUNCTION(BlueprintCallable, Category="Mining GUI|Editor")
+	static bool AddDrillEnergyBar();
 };

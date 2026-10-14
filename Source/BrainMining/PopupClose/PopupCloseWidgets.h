@@ -5,6 +5,8 @@
 #include "PopupCloseWidgets.generated.h"
 
 class SConstraintCanvas;
+class UTexture2D;
+struct FSlateBrush;
 
 UCLASS()
 class BRAINMINING_API UPopupClosePromptWidget : public UUserWidget
@@ -41,6 +43,9 @@ protected:
 
 private:
 	bool ClosePopup(int32 Id);
+ TSharedRef<SWidget> MakeArtPopup(int32 Id,int32 Variant);
+ UPROPERTY(Transient) TArray<TObjectPtr<UTexture2D>> ArtTextures;
+ TArray<TSharedPtr<FSlateBrush>> ArtBrushes;
 
 	TSharedPtr<SConstraintCanvas> Canvas;
 
@@ -50,6 +55,7 @@ private:
 		TSharedPtr<SWidget> Root;
 		FVector2D Position;
 		FVector2D Size;
+  FVector2D ClosePoint;
 	};
 
 	TArray<FWindow> Windows;
@@ -66,4 +72,7 @@ public:
 	int32 PendingCount=0;
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+private:
+ UPROPERTY(Transient) TObjectPtr<UTexture2D> WarningTexture;
+ TSharedPtr<FSlateBrush> WarningBrush;
 };

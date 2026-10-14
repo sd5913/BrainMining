@@ -34,13 +34,15 @@ namespace Ending
     const float GateX[]={1600,5800,7300,8650,10000};
     const float GateY[]={0,0,-170,170,0};
     float Ease(float V) { V=FMath::Clamp(V,0.f,1.f); return V*V*(3-2*V); }
-    const FVector BrainCenter(8200,0,-3637.3067);
-    constexpr float BrainRadius=4200;
+    const FVector BrainCenter(16500,0,-5500);
+    constexpr float BrainRadius=6500;
+    constexpr int NeuronCount=22;
+    int Layer(int I) { return I==0?0:I==NeuronCount-1?5:1+(I-1)/5; }
     float Ground(float X,float Y=0)
     {
         if(X<1600)return 850-1140*FMath::Sqrt(FMath::Max(0.f,1-X*X/(2400*2400.f)-Y*Y/(1300*1300.f)));
-        if(X<=6100)return 850-FMath::Sqrt(FMath::Max(0.f,850*850.f-Y*Y));
-        return BrainCenter.Z+FMath::Sqrt(FMath::Max(0.f,BrainRadius*BrainRadius-FMath::Square(X-8200)-Y*Y));
+        if(X<=12000)return 850-FMath::Sqrt(FMath::Max(0.f,850*850.f-Y*Y));
+        return BrainCenter.Z+FMath::Sqrt(FMath::Max(0.f,BrainRadius*BrainRadius-FMath::Square(X-BrainCenter.X)-Y*Y));
     }
 }
 
@@ -74,14 +76,39 @@ public:
         {
             const auto* P=D->GetWorld()->GetFirstPlayerController();
             const auto* M=P&&P->GetPawn()?P->GetPawn()->FindComponentByClass<UMiningComponent>():nullptr;
-            const FLinearColor C=M&&M->TargetRock?Ending::Teal:Paper;
+            const FLinearColor C=D->GateIndex==2?(D->TargetNeuron>=0?Ending::Gold:Paper):M&&M->TargetRock?Ending::Teal:Paper;
             Box(795,449,10,2,C); Box(799,445,2,10,C);
-            for(int I=0;I<5;++I) Box(61+I*28,143,20,2,I<D->GateIndex?Ending::Gold:Muted*.35f);
+            if(D->GateIndex==2)
+            {
+                Text(FString::Printf(TEXT("脉冲跃迁 %d 次  ·  汇向最大的金色神经元"),D->PossessionCount),61,143,13,Muted);
+                for(int I=0;I<D->NeuronPositions.Num();++I)if(D->CanPossess(I))
+                {
+                    FVector2D Screen;
+                    if(P&&P->ProjectWorldLocationToScreen(D->NeuronWorldPosition(I),Screen,false))
+                    {
+                        // Projection returns viewport pixels; Slate's geometry
+                        // can have a different DPI/render scale (including PIE).
+                        int32 Width=0,Height=0;P->GetViewportSize(Width,Height);
+                        if(Width<=0||Height<=0)continue;
+                        Screen*=FVector2D(Size.X/Width,Size.Y/Height);
+                        const float X=(Screen.X-O.X)/S,Y=(Screen.Y-O.Y)/S;
+                        if(X>45&&X<1555&&Y>160&&Y<710)
+                        {
+                            const FLinearColor Mark=I==D->TargetNeuron?Ending::Gold:Ending::Teal;
+                            const float R=I==D->TargetNeuron?26:18;
+                            Box(X-R,Y-R,10,2,Mark);Box(X-R,Y-R,2,10,Mark);
+                            Box(X+R-10,Y+R,10,2,Mark);Box(X+R,Y+R-8,2,10,Mark);
+                        }
+                    }
+                }
+            }
         }
         const FString Sub=D->Subtitle();
         if(!Sub.IsEmpty()) {Box(220,722,1160,66,Ink);Text(Sub,248,739,23,Paper);}
         Text(D->Hint(),61,811,14,Paper);
-        if(D->Shot<0) Text(TEXT("WASD 移动   鼠标 观察   左键 挖掘   R 重玩   P 镜头预览"),61,865,12,Muted);
+        if(D->Shot<0) Text(D->GateIndex==0?TEXT("WASD 移动   鼠标 观察   左键 挖掘   R 重玩   P 镜头预览"):
+            D->GateIndex==1?TEXT("自动漂浮前进   W 加速   S 无效   A / D 微调   鼠标 观察   C 平稳   R 重玩"):
+            D->GateIndex==2?TEXT("鼠标 瞄准神经元   空格 穿梭附身   C 平稳   R 重玩   P 镜头预览"):TEXT("R 重玩"),61,865,12,Muted);
         else Text(D->bComfortMode?TEXT("C 恢复漂移   ·   R 重玩"):TEXT("C 平稳镜头   ·   R 重玩"),1210,866,11,Muted);
         if(D->bComplete)
         {
@@ -157,7 +184,7 @@ void AEndingEmergence::Person(FVector P,float S,FLinearColor Tint,USceneComponen
     }
 }
 
-void AEndingEmergence::Shell(const TCHAR* Name,const TArray<FVector>& Centers,const TArray<FVector2D>& Radii,FLinearColor Tint,const TCHAR* Material)
+void AEndingEmergence::Shell(const TCHAR* Name,const TArray<FVector>& Centers,const TArray<FVector2D>& Radii,FLinearColor Tint,const TCHAR* Material,bool FollowCurve)
 {
     using namespace UE::Geometry;
     FDynamicMesh3 Mesh(true,false,false,false);
@@ -165,7 +192,9 @@ void AEndingEmergence::Shell(const TCHAR* Name,const TArray<FVector>& Centers,co
     for(int Row=0;Row<Centers.Num();++Row)for(int I=0;I<Sides;++I)
     {
         const float A=I*2*PI/Sides;
-        Mesh.AppendVertex(FVector3d(Centers[Row]+FVector(0,FMath::Cos(A)*Radii[Row].X,FMath::Sin(A)*Radii[Row].Y)));
+        const FVector Offset(0,FMath::Cos(A)*Radii[Row].X,FMath::Sin(A)*Radii[Row].Y);
+        const FRotator Frame=(Centers[FMath::Min(Row+1,Centers.Num()-1)]-Centers[FMath::Max(Row-1,0)]).Rotation();
+        Mesh.AppendVertex(FVector3d(Centers[Row]+(FollowCurve?Frame.RotateVector(Offset):Offset)));
     }
     for(int Row=0;Row<Centers.Num()-1;++Row)for(int I=0;I<Sides;++I)
     {
@@ -208,34 +237,48 @@ void AEndingEmergence::BuildJourney()
     }
     Shape(TEXT("CellNucleus"),FVector(560,-650,650),FVector(690,520,650),FLinearColor(.11f,.075f,.28f),TEXT("Sphere"),Set,TEXT("Organic"));
     Shape(TEXT("Nucleolus"),FVector(340,-500,780),FVector(130),Ending::Gold,TEXT("Sphere"),Set,TEXT("Glow"));
-    // The vessel is 45 m long; the walkable bottom belongs to the tube itself.
-    Centers.Empty();Radii.Empty();
-    for(int Row=0;Row<=75;++Row)
+    // Arc-length sampling is shared by the tube, camera and blood cells. The
+    // gentle corkscrew never inverts the player or changes speed on a bend.
+    VesselPath.Empty();VesselDistances.Empty();Centers.Empty();Radii.Empty();
+    for(int Row=0;Row<=240;++Row)
     {
-        const float X=1600+Row*60;
-        Centers.Add(FVector(X,0,850));Radii.Add(FVector2D(FMath::Lerp(969.f,850.f,FMath::Clamp((X-1600)/240,0.f,1.f)),850));
+        const float T=Row/240.f,A=T*2*PI;
+        const FVector P(1600+10400*T,2100*FMath::Sin(A)*FMath::Square(FMath::Sin(PI*T)),850+1100*(1-FMath::Cos(A)));
+        VesselDistances.Add(Row?VesselDistances.Last()+FVector::Dist(P,VesselPath.Last()):0);VesselPath.Add(P);
+        if(T<=.9f)
+        {
+            const float Flare=Ending::Ease((T-.77f)/.23f);
+            Centers.Add(P);Radii.Add(FVector2D(FMath::Lerp(969.f,850.f,Ending::Ease(T/.025f))+Flare*400,850+Flare*400));
+        }
     }
-    Shell(TEXT("RedCylindricalVessel"),Centers,Radii,FLinearColor(.38f,.018f,.026f),TEXT("Vessel"));
-    for(int I=0;I<20;++I)Ring(FVector(1730+I*220,0,850),843,Ending::Rose*.44f,Set,0,10);
-    for(int I=0;I<72;++I)
+    Shell(TEXT("RedSpirallingVessel"),Centers,Radii,FLinearColor(.38f,.018f,.026f),TEXT("Vessel"),true);
+    const float Length=VesselDistances.Last();
+    for(int I=0;I<38;++I)
+    {
+        const float D=150+I*(Length-150)/38,Open=Ending::Ease((D/Length-.77f)/.23f);
+        auto* Rib=Group(TEXT("CurvedVesselRib"),VesselPoint(D),Set);Rib->SetRelativeRotation(VesselRotation(D));
+        Ring(FVector::ZeroVector,843+Open*400,FMath::Lerp(Ending::Rose*.44f,Ending::Teal*.18f,Open),Rib,0,10-Open*6);
+    }
+    // The final skin opens into a sparse lattice: the brain becomes visible
+    // through it before the camera leaves the blood stream.
+    for(int Strand=0;Strand<12;++Strand)for(int J=0;J<16;++J)
+    {
+        auto P=[&](int K){const float T=.86f+.14f*K/16,A=Strand*2*PI/12+K*.012f;return VesselPoint(Length*T)+VesselRotation(Length*T).RotateVector(FVector(0,FMath::Cos(A),FMath::Sin(A))*(850+Ending::Ease((T-.77f)/.23f)*400));};
+        Rod(P(J),P(J+1),7,FMath::Lerp(Ending::Rose*.3f,Ending::Teal*.28f,J/16.f),Set);
+    }
+    for(int I=0;I<130;++I)
     {
         const float A=R.FRandRange(-PI,PI),Rad=R.FRandRange(440,650);
-        const FVector P(R.FRandRange(1700,6000),FMath::Cos(A)*Rad,850+FMath::Sin(A)*Rad);
+        const FVector Origin(R.FRandRange(100,Length-100),FMath::Cos(A)*Rad,FMath::Sin(A)*Rad);
+        const FVector P=VesselPoint(Origin.X)+VesselRotation(Origin.X).RotateVector(FVector(0,Origin.Y,Origin.Z));
         auto* B=Shape(TEXT("BloodCell"),P,FVector(220,210,62),FLinearColor(.66f,.045f,.035f),TEXT("Sphere"),Set,TEXT("Blood"));
-        B->SetRelativeRotation(FRotator(I*31,I*43,22));Blood.Add(B);BloodOrigins.Add(P);
+        B->SetRelativeRotation(FRotator(I*31,I*43,22));Blood.Add(B);BloodOrigins.Add(Origin);
     }
-    // A short lip joins the tube tangent to a genuinely spherical walking surface.
-    Shape(TEXT("VesselExitLip"),FVector(6060,0,-20),FVector(240,600,40),Ending::Rose*.45f,TEXT("Cube"),Set,TEXT("Vessel"),true);
     Shape(TEXT("WalkableBrainPlanet"),Ending::BrainCenter,FVector(Ending::BrainRadius*2),FLinearColor(.10f,.04f,.15f),TEXT("Sphere"),Set,TEXT("BrainGround"),true);
-    for(int Sign:{-1,1})
+    // Ambient neural filaments follow the small planet's surface.
+    for(int I=0;I<180;++I)
     {
-        auto* Boundary=Shape(TEXT("BrainRouteBoundary"),FVector(8350,Sign*1120,200),FVector(4600,60,6000),FLinearColor::Black,TEXT("Cube"),Set,TEXT("Surface"),true);
-        Boundary->SetHiddenInGame(true);
-    }
-    // Existing three excavation connections now sit on the curved surface.
-    for(int I=0;I<100;++I)
-    {
-        const float X=R.FRandRange(6300,10400),Y=R.FRandRange(-1000,1000);
+        const float X=R.FRandRange(13000,20200),Y=R.FRandRange(-2400,2400);
         const FVector P(X,Y,Ending::Ground(X,Y)+18);
         const FVector Q(X+110,Y+40,Ending::Ground(X+110,Y+40)+18);
         Nerves.Add(Rod(P,Q,8,Ending::Teal*.07f,Set));
@@ -247,7 +290,35 @@ void AEndingEmergence::BuildJourney()
             Shape(TEXT("NeuralSpark"),P+FVector(70,90,330),FVector(37),Ending::Gold*.55f,TEXT("Sphere"),Set,TEXT("Glow"));
         }
     }
-    for(int I=0;I<5;++I)
+    // Twenty-two hosts: four layers with five lanes and longer visible flights.
+    NeuronPositions.Add(FVector(13200,0,Ending::Ground(13200)+480));
+    for(int Row=0;Row<4;++Row)for(int Lane=-2;Lane<=2;++Lane)
+    {
+        const float X=14500+Row*1300,Y=Lane*800;
+        NeuronPositions.Add(FVector(X,Y,Ending::Ground(X,Y)+480));
+    }
+    NeuronPositions.Add(FVector(19700,0,Ending::Ground(19700)+600));
+    for(int I=0;I<NeuronPositions.Num();++I)
+    {
+        const FVector P=NeuronPositions[I];const bool Goal=I==NeuronPositions.Num()-1;
+        const float Size=Goal?360:140;
+        NeuronCores.Add(Shape(Goal?TEXT("LargestNeuron"):TEXT("PossessableNeuron"),P,FVector(Size),Goal?Ending::Gold*.85f:Ending::Teal*.65f,TEXT("Sphere"),Set,TEXT("Glow")));
+        Ring(P,Goal?190:75,Goal?Ending::Gold*.55f:Ending::Teal*.28f,Set,1,Goal?7:3);
+        for(int J=0;J<6;++J)
+        {
+            const float A=J*2*PI/6;
+            const FVector Branch=P+FVector(FMath::Cos(A)*Size,FMath::Sin(A)*Size,-Size*.4f);
+            Rod(P,Branch,Goal?13:6,Ending::Teal*.35f,Set);
+            Rod(Branch,Branch+FVector(FMath::Cos(A+.6f)*Size*.65f,FMath::Sin(A+.6f)*Size*.65f,Size*.35f),Goal?8:4,Ending::Teal*.25f,Set);
+        }
+    }
+    for(int A=0;A<NeuronPositions.Num();++A)for(int B=A+1;B<NeuronPositions.Num();++B)
+        if(Ending::Layer(B)-Ending::Layer(A)==1&&FVector::Dist(NeuronPositions[A],NeuronPositions[B])<2050)
+            Nerves.Add(Rod(NeuronPositions[A],NeuronPositions[B],4,Ending::Teal*.16f,Set));
+    PulseTrail=Rod(NeuronPositions[0],NeuronPositions[1],12,Ending::Gold,Set);
+    PulseTrail->SetVisibility(false);
+    // Only the final cell membrane is excavatable. Blood and brain need no tool.
+    for(int I=0;I<1;++I)
     {
         const float X=Ending::GateX[I],Y=Ending::GateY[I],Z=Ending::Ground(X,Y);
         if(I<2)
@@ -482,7 +553,7 @@ void AEndingEmergence::BuildDemo()
     for(ADiggableRock* G:Gates)if(IsValid(G))G->Destroy();Gates.Empty();
     TArray<UActorComponent*> Old;GetComponents(Old);
     for(int I=Old.Num()-1;I>=0;--I)if(Old[I]->ComponentHasTag(Ending::Tag)){RemoveInstanceComponent(Old[I]);Old[I]->DestroyComponent();}
-    Sets.Empty();Nerves.Empty();Sketch.Empty();Blood.Empty();BloodOrigins.Empty();CrowdOrigins.Empty();EyeLids.Empty();LidOrigins.Empty();
+    Sets.Empty();Nerves.Empty();Sketch.Empty();Blood.Empty();BloodOrigins.Empty();CrowdOrigins.Empty();EyeLids.Empty();LidOrigins.Empty();NeuronPositions.Empty();NeuronCores.Empty();
     Sets.Add(Group(TEXT("01_PlayableCellsBloodBrain"),FVector::ZeroVector));
     Sets.Add(Group(TEXT("02_CityAndPeople"),Ending::City));
     Sets.Add(Group(TEXT("03_Earth"),Ending::Earth));
@@ -517,7 +588,7 @@ void AEndingEmergence::BeginPlay()
 bool AEndingEmergence::Initialize()
 {
     Player=GetWorld()->GetFirstPlayerController();
-    if(!Player||!Player->GetPawn()||!Player->InputComponent||Gates.Num()!=5||Sets.Num()!=5)return false;
+    if(!Player||!Player->GetPawn()||!Player->InputComponent||Gates.Num()!=1||Sets.Num()!=5||NeuronPositions.Num()!=Ending::NeuronCount||VesselPath.Num()<2)return false;
     Mining=Player->GetPawn()->FindComponentByClass<UMiningComponent>();
     if(!Mining)return false;
     if(auto* PC=Cast<ABrainMiningPlayerController>(Player))
@@ -526,6 +597,8 @@ bool AEndingEmergence::Initialize()
         if(PC->InteractionHUD)PC->InteractionHUD->SetVisibility(ESlateVisibility::Collapsed);
     }
     FisheyeMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_Fisheye"));
+    if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_PulseTransit")))
+    {TransitMaterial=UMaterialInstanceDynamic::Create(Base,this);Camera->GetCameraComponent()->AddOrUpdateBlendable(TransitMaterial,1);}
     // Local instance only: the authored route is a short, grounded finale.
     if(auto* M=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())M->FlightSettings.bEnabled=false;
     Mining->OnFieldReset.AddDynamic(this,&AEndingEmergence::RestartDemo);
@@ -554,10 +627,14 @@ void AEndingEmergence::RestartDemo()
     if(bRestoring||!Player||!Mining)return;
     TGuardValue<bool> Guard(bRestoring,true);
     GateIndex=0;Shot=-1;ShotTime=0;Age=0;BeatAt=0;LastCuts=0;bComplete=false;BloodTravel=0;
+    CurrentNeuron=TargetNeuron=TravellingToNeuron=INDEX_NONE;PossessionCount=0;VisitedNeurons.Empty();BloodSpeed=480;VesselDistance=150;BloodY=0;PulseAt=-100;bEnteringBrain=false;TransitEffects(0);
+    if(DroppedPickaxe){DroppedPickaxe->DestroyComponent();DroppedPickaxe=nullptr;}
     DriftOffset=DriftVelocity=FVector::ZeroVector;
     PullbackBoost=0;PullbackRate=1;
     for(ADiggableRock* G:Gates)if(IsValid(G)){G->ResetRock();G->SetActorHiddenInGame(false);}
     for(int I=0;I<Sets.Num();++I)Sets[I]->SetVisibility(I==0,true);
+    if(PulseTrail)PulseTrail->SetVisibility(false);
+    for(int I=0;I<NeuronCores.Num();++I)if(auto* M=Cast<UMaterialInstanceDynamic>(NeuronCores[I]->GetMaterial(0)))M->SetVectorParameterValue(TEXT("Tint"),I==NeuronPositions.Num()-1?Ending::Gold*.85f:Ending::Teal*.65f);
     Universe->SetRelativeScale3D(FVector(1));Cell->SetRelativeScale3D(FVector(32));
     if(Speaker)Speaker->SetRelativeRotation(FRotator::ZeroRotator);
     for(UStaticMeshComponent* S:Sketch)S->SetVisibility(false);Idea->SetVisibility(false,true);
@@ -574,6 +651,7 @@ void AEndingEmergence::RestartDemo()
 void AEndingEmergence::PreviewFilm()
 {
     if(!bReady||Shot>=0)return;
+    bEnteringBrain=false;TravellingToNeuron=INDEX_NONE;TransitEffects(0);
     Mining->SetInputSuspended(true);Mining->SetInputContextEnabled(false);
     Player->SetIgnoreMoveInput(true);Player->SetIgnoreLookInput(true);
     if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->DisableMovement();}
@@ -696,38 +774,199 @@ void AEndingEmergence::UpdateNerves()
     }
 }
 
+void AEndingEmergence::EnterBlood()
+{
+    GateIndex=1;BloodAt=Age;BeatAt=Age+3;BloodSpeed=480;BloodY=0;
+    const FVector Eye=Player->PlayerCameraManager->GetCameraLocation();
+    const FVector LocalEye=GetActorTransform().InverseTransformPosition(Eye);
+    VesselDistance=FMath::Max(150.f,float(LocalEye.X)-1600);BloodStartZ=LocalEye.Z;
+    VesselLook=VesselRotation(VesselDistance);
+    // A visible copy leaves the hand before the hidden pawn becomes a pulse.
+    TArray<UStaticMeshComponent*> Parts;Player->GetPawn()->GetComponents(Parts);
+    for(auto* Part:Parts)if(Part->GetName()==TEXT("PickaxeModel")&&Part->GetStaticMesh())
+    {
+        DroppedPickaxe=NewObject<UStaticMeshComponent>(this,NAME_None,RF_Transient);
+        DroppedPickaxe->SetupAttachment(RootComponent);DroppedPickaxe->SetStaticMesh(Part->GetStaticMesh());
+        DroppedPickaxe->SetCollisionEnabled(ECollisionEnabled::NoCollision);DroppedPickaxe->SetCastShadow(false);
+        for(int I=0;I<Part->GetNumMaterials();++I)DroppedPickaxe->SetMaterial(I,Part->GetMaterial(I));
+        DroppedPickaxe->RegisterComponent();DroppedPickaxe->SetWorldTransform(Part->GetComponentTransform());
+        // First-person meshes use a separate render transform. Place the dropped
+        // world mesh ahead of the eye so it visibly leaves the frame, not behind it.
+        const FRotationMatrix ViewAxes(Player->GetControlRotation());
+        PickaxeStart=LocalEye+GetActorTransform().InverseTransformVectorNoScale(ViewAxes.GetUnitAxis(EAxis::X)*130+ViewAxes.GetUnitAxis(EAxis::Y)*55-ViewAxes.GetUnitAxis(EAxis::Z)*40);
+        DroppedPickaxe->SetRelativeLocation(PickaxeStart);break;
+    }
+    Mining->SetInputSuspended(true);Mining->SetInputContextEnabled(false);
+    Player->SetIgnoreMoveInput(true);Player->GetPawn()->SetActorHiddenInGame(true);
+    if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->DisableMovement();}
+    Camera->SetActorLocation(Eye);Camera->SetActorRotation(Player->GetControlRotation());Player->SetViewTarget(Camera);
+    SetAmbience(TEXT("Blood"),.42f);Sound(TEXT("Connect"),.45f);
+}
+
+FVector AEndingEmergence::NeuronWorldPosition(int32 I) const
+{
+    return NeuronPositions.IsValidIndex(I)?GetActorTransform().TransformPosition(NeuronPositions[I]):GetActorLocation();
+}
+
+bool AEndingEmergence::CanPossess(int32 I) const
+{
+    if(Shot>=0||GateIndex!=2||TravellingToNeuron!=INDEX_NONE||!NeuronPositions.IsValidIndex(I)||!NeuronPositions.IsValidIndex(CurrentNeuron)||I==CurrentNeuron)return false;
+    return FMath::Abs(Ending::Layer(I)-Ending::Layer(CurrentNeuron))==1&&FVector::Dist(NeuronPositions[I],NeuronPositions[CurrentNeuron])<2050;
+}
+
+void AEndingEmergence::EnterBrain()
+{
+    // Leave the open vessel in the same shot; slow down and settle into host 0.
+    bEnteringBrain=true;BrainEntryAt=Age;TransitStart=Camera->GetActorLocation();
+    TransitEnd=NeuronWorldPosition(0)+GetActorUpVector()*110;TransitLook=Camera->GetActorRotation();
+    Player->SetIgnoreLookInput(true);
+    if(Ambience){Ambience->bAutoDestroy=true;Ambience->FadeOut(2,0);Ambience=nullptr;}
+    SetAmbience(TEXT("Brain"),.4f);if(Ambience)Ambience->FadeIn(2,.4f);
+    if(DroppedPickaxe)DroppedPickaxe->SetVisibility(false);
+}
+
+void AEndingEmergence::PossessNeuron(int32 I)
+{
+    if(!CanPossess(I))return;
+    TravellingToNeuron=I;TargetNeuron=INDEX_NONE;PulseAt=Age;
+    TransitStart=Camera->GetActorLocation();TransitEnd=NeuronWorldPosition(I)+GetActorUpVector()*(I==NeuronPositions.Num()-1?220:110);
+    TransitLook=Camera->GetActorRotation();
+    TransitDuration=FMath::Clamp(float(FVector::Dist(TransitStart,TransitEnd))/2100.f+.35f,.95f,1.35f);
+    Player->SetIgnoreLookInput(true);Sound(TEXT("PulseFlight"),.6f,1.15f/TransitDuration);
+}
+
+FVector AEndingEmergence::VesselPoint(float Distance) const
+{
+    if(VesselPath.Num()<2)return FVector(1600,0,850);
+    Distance=FMath::Clamp(Distance,0.f,VesselDistances.Last());
+    int Low=0,High=VesselDistances.Num()-1;
+    while(High-Low>1){const int Mid=(Low+High)/2;if(VesselDistances[Mid]<Distance)Low=Mid;else High=Mid;}
+    const float T=(Distance-VesselDistances[Low])/FMath::Max(1.f,VesselDistances[High]-VesselDistances[Low]);
+    return FMath::Lerp(VesselPath[Low],VesselPath[High],T);
+}
+
+FRotator AEndingEmergence::VesselRotation(float Distance) const
+{
+    return (VesselPoint(Distance+35)-VesselPoint(Distance-35)).Rotation();
+}
+
+void AEndingEmergence::TransitEffects(float Strength)
+{
+    Strength*=bComfortMode?.12f:1.f;
+    if(TransitMaterial)TransitMaterial->SetScalarParameterValue(TEXT("Strength"),Strength);
+    auto& PP=Camera->GetCameraComponent()->PostProcessSettings;
+    PP.MotionBlurAmount=.25f*Strength;
+    PP.bOverride_SceneFringeIntensity=true;PP.SceneFringeIntensity=1.1f*Strength;
+    PP.VignetteIntensity=.3f+.18f*Strength;
+}
+
+void AEndingEmergence::BeginThought()
+{
+    GateIndex=5;BeatAt=Age+4;TargetNeuron=INDEX_NONE;UpdateNerves();
+    TakeoffStart=GetActorTransform().InverseTransformPosition(Camera->GetActorLocation());
+    TakeoffLook=TakeoffStart+GetActorTransform().InverseTransformVectorNoScale(Player->GetControlRotation().Vector())*850;
+    Player->SetIgnoreLookInput(true);Sound(TEXT("Connect"),.65f,.85f);
+}
+
+void AEndingEmergence::UpdatePulse(float Dt)
+{
+    if(GateIndex==1&&!bEnteringBrain)
+    {
+        const float T=Age-BloodAt;
+        BloodSpeed=FMath::FInterpTo(BloodSpeed,Player->IsInputKeyDown(EKeys::W)?950.f:480.f,Dt,3);
+        VesselDistance=FMath::Min(VesselDistance+BloodSpeed*Dt,VesselDistances.Last());
+        BloodY=FMath::Clamp(BloodY+Dt*150*(float(Player->IsInputKeyDown(EKeys::D))-float(Player->IsInputKeyDown(EKeys::A))),-240.f,240.f);
+        const float Z=(BloodStartZ-850)*(1-Ending::Ease(T/1.8f))+(bComfortMode?0:18*FMath::Sin(T*1.6f)*Ending::Ease(T));
+        const FRotator Frame=VesselRotation(VesselDistance);
+        Camera->SetActorLocation(GetActorTransform().TransformPosition(VesselPoint(VesselDistance)+Frame.RotateVector(FVector(0,BloodY,Z))));
+        // Carry the free-look offset around bends without fighting mouse input.
+        const FQuat Turn=GetActorQuat()*Frame.Quaternion()*VesselLook.Quaternion().Inverse()*GetActorQuat().Inverse();
+        FRotator Look=(Turn*Player->GetControlRotation().Quaternion()).Rotator();Look.Roll=0;Player->SetControlRotation(Look);
+        VesselLook=Frame;Look.Roll=bComfortMode?0:FMath::Sin(T*.55f)*2.2f;Camera->SetActorRotation(Look);
+        Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(90.f,100.f,(BloodSpeed-480)/470));
+        if(DroppedPickaxe)
+        {
+            DroppedPickaxe->SetRelativeLocation(PickaxeStart+FVector(600*T,50*T,120*T-260*T*T));
+            DroppedPickaxe->AddLocalRotation(FRotator(155*Dt,30*Dt,65*Dt));
+            DroppedPickaxe->SetVisibility(T<2.1f);
+        }
+        if(VesselDistance>=VesselDistances.Last())EnterBrain();
+    }
+    if(bEnteringBrain)
+    {
+        const float T=FMath::Clamp((Age-BrainEntryAt)/3.6f,0.f,1.f);
+        // Hermite tangent starts at the final blood speed and ends at rest.
+        const FVector StartVelocity=GetActorTransform().TransformVectorNoScale(VesselRotation(VesselDistances.Last()).Vector())*BloodSpeed*3.6f;
+        Camera->SetActorLocation(FMath::CubicInterp(TransitStart,StartVelocity,TransitEnd,FVector::ZeroVector,T));
+        const FRotator ArriveLook=(NeuronWorldPosition(3)-TransitEnd).Rotation();
+        Camera->SetActorRotation(FQuat::Slerp(TransitLook.Quaternion(),ArriveLook.Quaternion(),Ending::Ease(T)));
+        Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(FMath::Lerp(90.f,100.f,(BloodSpeed-480)/470),94.f,Ending::Ease(T)));
+        if(T>=1)
+        {
+            bEnteringBrain=false;GateIndex=2;CurrentNeuron=0;VisitedNeurons.Add(0);BeatAt=Age+4;
+            Player->SetControlRotation(ArriveLook);Player->ResetIgnoreLookInput();Sound(TEXT("Connect"),.3f,1.3f);
+        }
+    }
+    if(GateIndex==2&&TravellingToNeuron!=INDEX_NONE)
+    {
+        const float T=FMath::Clamp((Age-PulseAt)/TransitDuration,0.f,1.f),Travel=Ending::Ease(T),Envelope=FMath::Square(FMath::Sin(PI*T));
+        const FVector Position=FMath::Lerp(TransitStart,TransitEnd,Travel)+GetActorUpVector()*(110*FMath::Sin(PI*Travel));
+        Camera->SetActorLocation(Position);
+        FRotator Look=FQuat::Slerp(TransitLook.Quaternion(),(TransitEnd-TransitStart).Rotation().Quaternion(),Ending::Ease(T/.3f)).Rotator();
+        Look.Roll=bComfortMode?0:2.5f*FMath::Sin(T*2*PI)*Envelope;Camera->SetActorRotation(Look);
+        Camera->GetCameraComponent()->SetFieldOfView(94+(bComfortMode?4:22)*Envelope);TransitEffects(Envelope);
+        // A short wake trails behind the moving viewpoint, never a full-screen flash.
+        const FVector From=GetActorTransform().InverseTransformPosition(TransitStart),To=GetActorTransform().InverseTransformPosition(Position);
+        PulseTrail->SetRelativeLocation((From+To)*.5);PulseTrail->SetRelativeScale3D(FVector(.07,.07,(To-From).Size()/100));
+        PulseTrail->SetRelativeRotation(FRotationMatrix::MakeFromZ(To-From).Rotator());
+        if(T>=1)
+        {
+            CurrentNeuron=TravellingToNeuron;TravellingToNeuron=INDEX_NONE;++PossessionCount;VisitedNeurons.Add(CurrentNeuron);
+            Look.Roll=0;Player->SetControlRotation(Look);Player->ResetIgnoreLookInput();TransitEffects(0);
+            Sound(TEXT("Connect"),.28f,1+CurrentNeuron*.018f);
+            if(CurrentNeuron==NeuronPositions.Num()-1)BeginThought();
+        }
+    }
+    else if(GateIndex==2)
+    {
+        Camera->SetActorLocation(NeuronWorldPosition(CurrentNeuron)+GetActorUpVector()*110);
+        Camera->SetActorRotation(Player->GetControlRotation());
+        Camera->GetCameraComponent()->SetFieldOfView(94);TransitEffects(0);
+        TargetNeuron=INDEX_NONE;float Best=.990f;
+        for(int I=0;I<NeuronPositions.Num();++I)if(CanPossess(I))
+        {
+            const float Alignment=FVector::DotProduct(Camera->GetActorForwardVector(),(NeuronWorldPosition(I)-Camera->GetActorLocation()).GetSafeNormal());
+            if(Alignment>Best){Best=Alignment;TargetNeuron=I;}
+        }
+        if(Player->WasInputKeyJustPressed(EKeys::SpaceBar)&&TargetNeuron!=INDEX_NONE)PossessNeuron(TargetNeuron);
+    }
+    if(PulseTrail)PulseTrail->SetVisibility(TravellingToNeuron!=INDEX_NONE);
+    for(int I=0;I<NeuronCores.Num();++I)
+    {
+        NeuronCores[I]->SetVisibility(I!=CurrentNeuron||GateIndex==5||TravellingToNeuron!=INDEX_NONE);
+        if(auto* M=Cast<UMaterialInstanceDynamic>(NeuronCores[I]->GetMaterial(0)))
+            M->SetVectorParameterValue(TEXT("Tint"),I==TargetNeuron||I==TravellingToNeuron?Ending::Gold*1.5f:I==NeuronPositions.Num()-1?Ending::Gold*.85f:VisitedNeurons.Contains(I)?Ending::Teal:Ending::Teal*.45f);
+    }
+}
+
 void AEndingEmergence::Tick(float Dt)
 {
     Super::Tick(Dt);
     if(!bReady){bReady=Initialize();if(!bReady)return;RestartDemo();}
     Age+=Dt;
     if(Player->WasInputKeyJustPressed(EKeys::C))bComfortMode=!bComfortMode;
-    if(Shot>=0&&Player->WasInputKeyJustPressed(EKeys::R)){RestartDemo();return;}
+    if(Player->WasInputKeyJustPressed(EKeys::R)){RestartDemo();return;}
     if(Shot<0&&Player->WasInputKeyJustPressed(EKeys::P)){PreviewFilm();return;}
     if(Shot<0)
     {
         const FVector P=GetActorTransform().InverseTransformPosition(Player->GetPawn()->GetActorLocation());
-        if(Gates.IsValidIndex(GateIndex))
+        if(GateIndex==0&&Gates.IsValidIndex(0))
         {
             auto* Gate=Gates[GateIndex].Get();
             if(Gate->SuccessfulCuts!=LastCuts){LastCuts=Gate->SuccessfulCuts;Sound(TEXT("Hit"),.36f,1+GateIndex*.08f);}
             if(Gate->SuccessfulCuts>0 && P.X>Ending::GateX[GateIndex]+150)
             {
-                ++GateIndex;LastCuts=0;UpdateNerves();Sound(TEXT("Connect"),.5f,1+GateIndex*.07f);
-                if(GateIndex==1)SetAmbience(TEXT("Blood"),.42f);
-                if(GateIndex==2)SetAmbience(TEXT("Brain"),.4f);
-                BeatAt=Age+3;
-                if(GateIndex>=5)
-                {
-                    // Detach the viewpoint as a thought, rising while the scene dissolves.
-                    BeatAt=Age+4;
-                    TakeoffStart=GetActorTransform().InverseTransformPosition(Player->PlayerCameraManager->GetCameraLocation());
-                    TakeoffLook=TakeoffStart+GetActorTransform().InverseTransformVectorNoScale(Player->PlayerCameraManager->GetCameraRotation().Vector())*850;
-                    Player->SetIgnoreMoveInput(true);
-                    if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->DisableMovement();}
-                    Mining->SetInputSuspended(true);
-                    Player->SetIgnoreLookInput(true);Player->GetPawn()->SetActorHiddenInGame(true);Player->SetViewTarget(Camera);
-                }
+                LastCuts=0;EnterBlood();
             }
         }
         if(auto* C=Player->GetPawn()->FindComponentByClass<UCameraComponent>())
@@ -735,6 +974,7 @@ void AEndingEmergence::Tick(float Dt)
             C->SetFieldOfView(FMath::FInterpTo(C->FieldOfView,bComfortMode?90.f:FMath::Lerp(90.f,96.f,BrainLens()),Dt,2));
             if(FisheyeMaterial)C->AddOrUpdateBlendable(FisheyeMaterial,bComfortMode?0:BrainLens()*.22f);
         }
+        UpdatePulse(Dt);
         if(GateIndex>=5)
         {
             const float Lift=FMath::Clamp(4-(BeatAt-Age),0.f,4.f);
@@ -765,9 +1005,12 @@ void AEndingEmergence::Tick(float Dt)
         BloodTravel+=Dt*(510+120*FMath::Sin(Age*5.2f));
         for(int I=0;I<Blood.Num();++I)
         {
-            FVector P=BloodOrigins[I];P.X=1700+FMath::Fmod(P.X-1700+BloodTravel*(.88f+(I%7)*.04f),4300.f);
-            P.Y+=FMath::Sin(Age*1.4f+I)*18;P.Z+=FMath::Cos(Age*1.8f+I)*22;
-            Blood[I]->SetRelativeLocation(P);Blood[I]->SetRelativeRotation(FRotator(I*31+FMath::Sin(Age+I)*14,I*43+Age*8,22));
+            const FVector Origin=BloodOrigins[I];const float D=FMath::Fmod(Origin.X+BloodTravel*(.88f+(I%7)*.04f),VesselDistances.Last());
+            const FRotator Frame=VesselRotation(D);
+            const FVector Offset(0,Origin.Y+FMath::Sin(Age*1.4f+I)*18,Origin.Z+FMath::Cos(Age*1.8f+I)*22);
+            Blood[I]->SetRelativeLocation(VesselPoint(D)+Frame.RotateVector(Offset));
+            Blood[I]->SetRelativeRotation(Frame.Quaternion()*FRotator(I*31+FMath::Sin(Age+I)*14,I*43+Age*8,22).Quaternion());
+            Blood[I]->SetRelativeScale3D(FVector(2.2,2.1,.62)*Ending::Ease(D/180)*Ending::Ease((VesselDistances.Last()-D)/450));
         }
     }
     if(Shot>=0&&Shot<=2&&Crowd)
@@ -804,9 +1047,12 @@ FString AEndingEmergence::Title() const
 
 FString AEndingEmergence::Hint() const
 {
-    if(Shot<0)return GateIndex>=5?TEXT("光连起来了。"):
-        GateIndex<2?TEXT("沿金色痕迹前进，靠近发光薄膜，按住左键挖开，再穿过去。"):
-        TEXT("打通剩下的连接。每一个小缺口，都让更多微光亮起来。   C 平稳镜头");
+    if(Shot<0)return GateIndex>=5?TEXT("所有微光，汇成一个念头。"):
+        GateIndex==0?TEXT("沿金色痕迹前进，靠近发光薄膜，按住左键挖开，再穿过去。"):
+        GateIndex==1?(bEnteringBrain?TEXT("血流散开，一道脉冲正接住你。"):TEXT("让血流托住你。按住 W 加速，松手继续漂浮。")):
+        TravellingToNeuron!=INDEX_NONE?TEXT("穿过连接，成为下一束光。"):
+        TargetNeuron>=0?(TargetNeuron==NeuronPositions.Num()-1?TEXT("空格 · 汇入最大的神经元"):TEXT("空格 · 穿梭到这个神经元")):
+        TEXT("瞄准有标记的神经元，再按空格。不同的路径，都通向那束最大的光。");
     if(Shot>=1&&Shot<=6)return TEXT("S 加速拉远 · A / D 微调方向 · W 无效 · C 平稳镜头");
     if(Shot==10)return TEXT("R 再经历一次");
     return TEXT("");
@@ -816,8 +1062,10 @@ FString AEndingEmergence::Subtitle() const
 {
     if(Shot<0)
     {
-        if(Age<9)return TEXT("最后一块矿里，好像有光在流动。");
+        if(GateIndex==0&&Age<9)return TEXT("最后一块矿里，好像有光在流动。");
+        if(bEnteringBrain)return TEXT("血流的尽头，微光开始彼此连接。");
         if(GateIndex==1&&Age<BeatAt+5)return TEXT("它和更多的微光，汇进了同一条河。");
+        if(GateIndex==2&&Age<BeatAt)return TEXT("你不再拿着镐子。你就是那一道脉冲。");
         if(GateIndex>=5)return TEXT("一个念头，出现了。");
         return TEXT("");
     }

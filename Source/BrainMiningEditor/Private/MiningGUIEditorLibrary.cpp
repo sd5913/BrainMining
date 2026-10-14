@@ -329,6 +329,26 @@ bool UMiningGUIEditorLibrary::UpgradeJetpackToArcGauge()
 	return Complete(HUD, FVector2D(1920.f, 1080.f));
 }
 
+bool UMiningGUIEditorLibrary::AddDrillEnergyBar()
+{
+	using namespace MiningGUIEditor;
+	auto* HUD = LoadObject<UWidgetBlueprint>(nullptr, TEXT("/Game/UI/MiningGUI/WBP_MiningHUD.WBP_MiningHUD"));
+	auto* Material = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/UI/MiningGUI/DrillEnergy/M_DrillEnergy.M_DrillEnergy"));
+	if (!HUD || !HUD->WidgetTree || !Material) return false;
+	auto* Root = Cast<UCanvasPanel>(HUD->WidgetTree->RootWidget);
+	if (!Root) return false;
+	auto* Bar = Cast<UImage>(HUD->WidgetTree->FindWidget(TEXT("DrillEnergyBar")));
+	if (!Bar)
+	{
+		Bar = Widget<UImage>(HUD, TEXT("DrillEnergyBar"));
+		Place(Root, Bar, FVector2D(-38.f, 0.f), FVector2D(56.f, 196.f), FVector2D(1.f, .5f), FVector2D(1.f, .5f));
+		CastChecked<UCanvasPanelSlot>(Bar->Slot)->SetZOrder(30);
+	}
+	Bar->SetBrushFromMaterial(Material);
+	Bar->SetVisibility(ESlateVisibility::HitTestInvisible);
+	return Complete(HUD, FVector2D(1920.f, 1080.f));
+}
+
 bool UMiningGUIEditorLibrary::CreateMiningGUIAssets()
 {
 	using namespace MiningGUIEditor;

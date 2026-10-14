@@ -33,6 +33,14 @@ class BRAINMINING_API APopupCloseStage : public AActor
 
 public:
 	APopupCloseStage();
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") bool bInteriorLighting=false;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") bool bReplaceCentralDesk=false;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art",meta=(ClampMin="0")) float InteriorFillIntensity=180.f;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") TObjectPtr<UMaterialInterface> FloorArtMaterial;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") TObjectPtr<UMaterialInterface> WallArtMaterial;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") TObjectPtr<UMaterialInterface> CeilingArtMaterial;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") TObjectPtr<UMaterialInterface> DesktopArtMaterial;
+ UFUNCTION(BlueprintCallable,CallInEditor,Category="Office Art") void RefreshOfficeArt(){ConfigureOffice();ApplyColors();}
  virtual ~APopupCloseStage() override;
  UPROPERTY(EditAnywhere, Category="Integration") bool bAreaManaged = false;
  UPROPERTY(EditAnywhere, Category="Integration") bool bStartOnAreaEntry = false;
@@ -73,6 +81,8 @@ private:
  enum class EPhase : uint8 { Idle, Running, Spraying, Complete };
  enum class EView : uint8 { Free, Entering, InScreen, Exiting };
  void ApplyColors();
+ void ConfigureArtRendering(bool bActive);
+ TOptional<int32> SavedOfficeAntiAliasing;
  void ConfigureOffice();
  void Paint(UStaticMeshComponent* Mesh,const FLinearColor& Color) const;
  void GatherDevices();

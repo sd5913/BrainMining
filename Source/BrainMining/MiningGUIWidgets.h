@@ -159,6 +159,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UMiningGUIAbilityWidget> AbilityV;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidgetOptional)) TObjectPtr<UMiningGUIJetpackHeatWidget> JetpackHeatBar;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidgetOptional)) TObjectPtr<UImage> JetpackHeatWarning;
+	UPROPERTY(BlueprintReadOnly, meta=(BindWidgetOptional)) TObjectPtr<UImage> DrillEnergyBar;
 protected:
 	virtual void NativeConstruct() override;
 	virtual FReply NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event) override;
@@ -172,6 +173,7 @@ protected:
 	UMiningGUIAbilityWidget* AbilityWidget(FName Name) const;
 	FMiningGUISpring PanelSpring;
 	FMiningGUISpring PlusSpring;
+	float DrillEnergyFade = 0.f;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> UpgradeNames;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> UpgradeDescriptions;
 };

@@ -92,7 +92,7 @@ namespace MiningTreasureTests
             else if (Step == 5)
             {
                 Test->TestTrue(TEXT("Use real player digging path"), Mining->TryMine());
-                ++Step;
+                if (++PickaxeStrikes == 3) ++Step;
                 Changed = FPlatformTime::Seconds();
                 return false;
             }
@@ -177,6 +177,7 @@ namespace MiningTreasureTests
         FAutomationTestBase* Test;
         TWeakObjectPtr<APawn> Pawn;
         int32 Step = 0;
+        int32 PickaxeStrikes = 0;
         int64 ExpectedCoins = 0;
         double Started = FPlatformTime::Seconds();
         double Changed = FPlatformTime::Seconds();

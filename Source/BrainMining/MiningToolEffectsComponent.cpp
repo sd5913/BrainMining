@@ -170,7 +170,6 @@ void UMiningToolEffectsComponent::UpdateEchoPickaxeStyle()
 
 void UMiningToolEffectsComponent::UpdateToolMode(bool bDrillMode)
 {
-	if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(ImpactTimer);
 	PendingHit = FHitResult();
 	PendingSurfaceMaterial = nullptr;
 	bSwinging = false;
@@ -191,11 +190,9 @@ bool UMiningToolEffectsComponent::CanShowEffects() const
 void UMiningToolEffectsComponent::PlaySwing(float MiningInterval)
 {
 	if (!CanShowEffects()) return;
-	GetWorld()->GetTimerManager().ClearTimer(ImpactTimer);
 	PendingHit = FHitResult();
 	PendingSurfaceMaterial = nullptr;
 	if (Mining->bDrillMode) return;
-	// Fit the source curve into the existing dig cadence; the dig timing itself is unchanged.
 	SwingDuration = FMath::Min(SourceSwingDuration, FMath::Max(0.1f, FMath::IsFinite(MiningInterval) ? MiningInterval : 0.3f));
 	SwingStart = GetWorld()->GetTimeSeconds();
 	bSwinging = true;
@@ -205,12 +202,11 @@ void UMiningToolEffectsComponent::PlaySwing(float MiningInterval)
 
 void UMiningToolEffectsComponent::QueueImpact(const FHitResult& Hit)
 {
-	if (!CanShowEffects() || (!Mining->bDrillMode && !bSwinging) || !Hit.bBlockingHit || Hit.ImpactPoint.ContainsNaN() || Hit.ImpactNormal.ContainsNaN()) return;
+	if (!CanShowEffects() || !Hit.bBlockingHit || Hit.ImpactPoint.ContainsNaN() || Hit.ImpactNormal.ContainsNaN()) return;
 	PendingHit = Hit;
 	PendingSurfaceMaterial = Hit.GetComponent() ? Hit.GetComponent()->GetMaterial(0) : nullptr;
 	bPendingDrillImpact = Mining->bDrillMode;
-	if (bPendingDrillImpact) SpawnImpact();
-	else GetWorld()->GetTimerManager().SetTimer(ImpactTimer, this, &UMiningToolEffectsComponent::SpawnImpact, SwingDuration * SourceImpactTime / SourceSwingDuration, false);
+	SpawnImpact();
 }
 
 void UMiningToolEffectsComponent::WarmDebrisPool()
@@ -293,9 +289,11 @@ void UMiningToolEffectsComponent::SpawnImpact()
 	else Burst = GetWorld()->SpawnActor<AActor>(LoadedDebrisClass, Transform, Params);
 	if (AMiningDebrisBurst* SoilBurst = Cast<AMiningDebrisBurst>(Burst))
 	{
-		const int32 BaseCount = bPendingDrillImpact ? DrillDebrisChunkCount : DebrisChunkCount;
+		const bool bLightStrike = !bPendingDrillImpact && !Mining->bLastPickaxeBreak;
+		const int32 BaseCount = bPendingDrillImpact ? DrillDebrisChunkCount : (bLightStrike ? 12 + Mining->TargetPickaxeHits * 3 : DebrisChunkCount);
 		const int32 Count = FMath::RandRange(FMath::Clamp(BaseCount - 6, 12, 64), FMath::Clamp(BaseCount + 6, 12, 64));
-		SoilBurst->Initialize(LoadedDebrisMeshes, PendingSurfaceMaterial, Normal, Mining->GetMiningRadius(), Count, bPendingDrillImpact ? DrillDebrisLifetime : DebrisLifetime);
+		const float DebrisScale = bLightStrike ? (Mining->TargetPickaxeHits == 1 ? .42f : .65f) : 1.f;
+		SoilBurst->Initialize(LoadedDebrisMeshes, PendingSurfaceMaterial, Normal, Mining->GetMiningRadius() * DebrisScale, Count, bPendingDrillImpact ? DrillDebrisLifetime : DebrisLifetime);
 	}
 	PendingHit = FHitResult();
 	PendingSurfaceMaterial = nullptr;
@@ -365,7 +363,7 @@ void UMiningToolEffectsComponent::TickComponent(float DeltaTime, ELevelTick Tick
 	UpdateEchoPickaxeStyle();
 	if (!CanShowEffects())
 	{
-		if (bSwinging || GetWorld()->GetTimerManager().IsTimerActive(ImpactTimer) || !DebrisActors.IsEmpty() || !DustActors.IsEmpty()) ResetEffects();
+		if (bSwinging || !DebrisActors.IsEmpty() || !DustActors.IsEmpty()) ResetEffects();
 		if (PickaxeMesh) PickaxeMesh->SetVisibility(false);
 		if (DrillMesh) DrillMesh->SetVisibility(false);
 		if (LeftDrillMesh) LeftDrillMesh->SetVisibility(false);
@@ -449,7 +447,6 @@ void UMiningToolEffectsComponent::TickComponent(float DeltaTime, ELevelTick Tick
 
 void UMiningToolEffectsComponent::ResetEffects()
 {
-	if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(ImpactTimer);
 	PendingHit = FHitResult();
 	PendingSurfaceMaterial = nullptr;
 	bSwinging = false;

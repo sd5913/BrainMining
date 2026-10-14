@@ -63,6 +63,9 @@ public:
 	virtual bool MineSphere(FVector WorldCenter, float WorldRadius);
 
 	UFUNCTION(BlueprintCallable, Category="Mining")
+	virtual bool MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed = 0);
+
+	UFUNCTION(BlueprintCallable, Category="Mining")
 	virtual bool MineBlast(FVector WorldCenter, float WorldRadius, float Roughness = .32f, int32 Seed = 1);
 
 	UFUNCTION(BlueprintCallable, CallInEditor, Category="Mining")

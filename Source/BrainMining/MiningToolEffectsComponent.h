@@ -176,7 +176,6 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> DustPlane;
 	FSoftObjectPath LastDrillAssetPath;
-	FTimerHandle ImpactTimer;
 	FHitResult PendingHit;
 	float SwingDuration = 0.3f;
 	double SwingStart = 0;
@@ -186,7 +185,6 @@ private:
 	bool bPendingDrillImpact = false;
 	bool bUsesCharacterComponents = false;
 	static constexpr float SourceSwingDuration = 13.f / 30.f;
-	static constexpr float SourceImpactTime = 0.19f;
 
 	UFUNCTION()
 	void PlaySwing(float MiningInterval);

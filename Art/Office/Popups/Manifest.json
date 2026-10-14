@@ -1,0 +1,110 @@
+[
+  {
+    "name": "Window",
+    "source": "5.png",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "trim": [
+      383,
+      0,
+      1457,
+      1080
+    ],
+    "size": [
+      1074,
+      1080
+    ]
+  },
+  {
+    "name": "SystemMessage",
+    "source": "6.png",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "trim": [
+      193,
+      45,
+      1709,
+      973
+    ],
+    "size": [
+      1516,
+      928
+    ]
+  },
+  {
+    "name": "SystemError",
+    "source": "7.png",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "trim": [
+      32,
+      243,
+      1888,
+      873
+    ],
+    "size": [
+      1856,
+      630
+    ]
+  },
+  {
+    "name": "Robot",
+    "source": "8.png",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "trim": [
+      436,
+      391,
+      1489,
+      683
+    ],
+    "size": [
+      1053,
+      292
+    ]
+  },
+  {
+    "name": "Message",
+    "source": "9.png",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "trim": [
+      427,
+      76,
+      1516,
+      983
+    ],
+    "size": [
+      1089,
+      907
+    ]
+  },
+  {
+    "name": "Loading",
+    "source": "10.png",
+    "original_size": [
+      1920,
+      1080
+    ],
+    "trim": [
+      347,
+      144,
+      1620,
+      936
+    ],
+    "size": [
+      1273,
+      792
+    ]
+  }
+]

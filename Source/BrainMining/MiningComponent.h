@@ -44,7 +44,7 @@ public:
 	/** Suspend held mouse mining while the upgrade UI owns the pointer. */
 	void SetInputSuspended(bool bSuspended);
     bool IsInputSuspended() const { return bInputSuspended; }
-	/** V starts a timed drill session. Active sessions and cooldown cannot be restarted. */
+	/** V equips/stows the energy drill; selecting it never starts mining. */
 	UFUNCTION(BlueprintCallable, Category="Mining|Drill")
 	bool ActivateDrill();
 	/** Stow an active drill without clearing its existing use/cooldown deadlines. */
@@ -57,7 +57,7 @@ public:
 	float DrillUseDuration = 10.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill", meta=(ClampMin="0.1"))
 	float DrillCooldownDuration = 10.f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") bool bUseDrillEnergy = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") bool bUseDrillEnergy = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float MaxDrillEnergy = 100;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float DrillRecoveryRate = 10;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float DrillConsumptionRate = 10;

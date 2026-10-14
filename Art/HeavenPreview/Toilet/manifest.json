@@ -1,0 +1,39 @@
+{
+  "source": "/Game/Fab/Toilet/toilet1",
+  "hinge_blender_m": [
+    -0.028738999739289284,
+    0.800000011920929,
+    2.6449999809265137
+  ],
+  "hinge_ue_cm": [
+    -2.8739,
+    -80,
+    264.5
+  ],
+  "lid_groups": [
+    4,
+    5,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17
+  ],
+  "parts": [
+    {
+      "name": "SM_HeavenToiletBody",
+      "vertices": 20057,
+      "polygons": 39648,
+      "file": "Art\\HeavenPreview\\Toilet\\SM_HeavenToiletBody.fbx"
+    },
+    {
+      "name": "SM_HeavenToiletLid",
+      "vertices": 22282,
+      "polygons": 43520,
+      "file": "Art\\HeavenPreview\\Toilet\\SM_HeavenToiletLid.fbx"
+    }
+  ]
+}

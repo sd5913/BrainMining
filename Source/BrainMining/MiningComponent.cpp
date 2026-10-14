@@ -107,11 +107,14 @@ bool UMiningComponent::ActivateDrill()
 	if (bDrillMode || GetDrillCooldownRemaining() > 0) return false;
 	if (bUseDrillEnergy && !bInfiniteDrillEnergy && DrillEnergy <= UE_SMALL_NUMBER) return false;
 	if (auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>()) Bomb->Stow();
-	const double Now = GetWorld()->GetTimeSeconds();
-	const float UseTime = FMath::IsFinite(DrillUseDuration) ? FMath::Max(.1f, DrillUseDuration) : 10.f;
-	const float CooldownTime = FMath::IsFinite(DrillCooldownDuration) ? FMath::Max(.1f, DrillCooldownDuration) : 10.f;
-	DrillUseEnds = Now + UseTime;
-	DrillCooldownEnds = DrillUseEnds + CooldownTime;
+	if (!bUseDrillEnergy) // Compatibility for explicitly configured legacy levels.
+	{
+		const double Now = GetWorld()->GetTimeSeconds();
+		const float UseTime = FMath::IsFinite(DrillUseDuration) ? FMath::Max(.1f, DrillUseDuration) : 10.f;
+		const float CooldownTime = FMath::IsFinite(DrillCooldownDuration) ? FMath::Max(.1f, DrillCooldownDuration) : 10.f;
+		DrillUseEnds = Now + UseTime;
+		DrillCooldownEnds = DrillUseEnds + CooldownTime;
+	}
 	SetDrillMode(true);
 	return true;
 }
@@ -124,7 +127,7 @@ void UMiningComponent::SelectPickaxe()
 
 float UMiningComponent::GetDrillUseRemaining() const
 {
-	if (bUseDrillEnergy) return bDrillMode ? (bInfiniteDrillEnergy ? MaxDrillEnergy : DrillEnergy) / FMath::Max(.01f, DrillConsumptionRate) : 0;
+	if (bUseDrillEnergy) return 0; // Energy UI replaces the old countdown.
 	return bDrillMode && GetWorld() ? FMath::Max(0.0, DrillUseEnds - GetWorld()->GetTimeSeconds()) : 0.f;
 }
 
@@ -144,12 +147,13 @@ void UMiningComponent::UpdateDrillEnergy(float DeltaSeconds)
 {
 	if (!bUseDrillEnergy || !FMath::IsFinite(DeltaSeconds) || DeltaSeconds <= 0) return;
 	if (bInfiniteDrillEnergy) { DrillEnergy = MaxDrillEnergy; return; }
-	if (bDrillMode && !bInputSuspended && !IsEncounterBlocked())
+	if (bInputSuspended || IsEncounterBlocked()) return;
+	if (bDrillMode && IsMiningActive())
 	{
 		DrillEnergy = FMath::Max(0.f, DrillEnergy - FMath::Max(0.f, DrillConsumptionRate) * DeltaSeconds);
 		if (DrillEnergy <= UE_SMALL_NUMBER) SetDrillMode(false);
 	}
-	else if (!bDrillMode) DrillEnergy = FMath::Min(MaxDrillEnergy, DrillEnergy + FMath::Max(0.f, DrillRecoveryRate) * DeltaSeconds);
+	else DrillEnergy = FMath::Min(MaxDrillEnergy, DrillEnergy + FMath::Max(0.f, DrillRecoveryRate) * DeltaSeconds);
 }
 
 void UMiningComponent::RefreshTarget()

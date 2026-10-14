@@ -9,6 +9,7 @@
 | 主流程、三段挖掘与房间拼接 | `Lvl_FullJourney` | [FullJourney](README_FullJourney.md)；[流程配置](Config/CampaignLayout.json) |
 | 盲人通道 → 卡牌房 | `Lvl_EchoMazeToCards_P1` | [盲人通道](README_EchoPassage.md)、[卡牌房](README_CardRoom.md) |
 | 新结尾房「涌现·那个下午」 | `Lvl_EndingEmergence_Demo` | [新结尾房](README_EndingEmergence.md)；[独立启动](Play_EndingEmergence_Demo.cmd) |
+| 天堂马桶独立半球大厅 | `Lvl_HeavenToilet` | [收集玩法说明](README_Collection.md)；[独立启动](Play_HeavenToilet.cmd)；[地图](Content/CollectionPrototype/HeavenToilet/Maps/Lvl_HeavenToilet.umap) |
 | 博物馆 / BABA-3D / 文思镜像博物馆 | `Lvl_WenSi_MirrorMuseum` | [主流程与源房间关系](README_FullJourney.md)；[WenSi 源码](Source/BrainMining/WenSi/) |
 | 第一个电脑房 / 弹窗办公室 | `Lvl_PopupClose` | [办公室](README_PopupOffice.md) |
 | 宝石和碎晶生成工具 | **MineralAuthoring** | [完整接入文档](Docs/MineralAuthoring.md)；[Python API](Scripts/campaign_minerals_api.py) |

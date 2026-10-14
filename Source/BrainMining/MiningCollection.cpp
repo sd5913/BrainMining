@@ -86,7 +86,7 @@ bool AMiningCollectionField::InitializePlayer()
         SAssignNew(View,SMiningCollectionView).Owner(this); View->SetVisibility(EVisibility::HitTestInvisible);
         GEngine->GameViewport->AddViewportWidgetContent(View.ToSharedRef(),30);
     }
-    Toast=bUseAuthoredPlacements?TEXT("沿矿道寻找藏品，挖开覆盖层后瞄准按 E 收集；I 打开图鉴。"):TEXT("先试试左侧已露出的试管架：瞄准它，按 E 收集"); ToastRemaining=10;
+    Toast=bUseAuthoredPlacements?FString::Printf(TEXT("沿水管或矿道寻找藏品，挖开覆盖层后瞄准按 E 收集；%s 打开图鉴。"),*CatalogueKey.GetDisplayName().ToString()):TEXT("先试试左侧已露出的试管架：瞄准它，按 E 收集"); ToastRemaining=10;
     if(bAreaManaged) SetAreaActive(false);
     return true;
 }

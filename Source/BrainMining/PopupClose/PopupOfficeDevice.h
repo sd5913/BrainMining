@@ -10,6 +10,10 @@ class UWidgetInteractionComponent;
 class UPopupCloseDesktopWidget;
 class UPopupCloseWarningWidget;
 class APopupCloseFlyingWindow;
+class UStaticMesh;
+class UStaticMeshComponent;
+class UMaterialInterface;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class BRAINMINING_API APopupOfficeDevice : public AActor
@@ -21,7 +25,17 @@ public:
  void ResetSession();
  virtual void OnConstruction(const FTransform& Transform) override;
  virtual void BeginPlay() override;
+ virtual void Tick(float DeltaSeconds) override;
  UPROPERTY(EditAnywhere,Category="Office",meta=(ClampMin="0",ClampMax="3")) int32 DeviceIndex=0;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") TObjectPtr<UStaticMesh> ReplacementModel;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") FTransform ReplacementTransform;
+ // Optional render-target material for curved CRT glass; interaction stays on Surface.
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") TObjectPtr<UMaterialInterface> ScreenProjectionMaterial;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") TArray<TObjectPtr<UMaterialInterface>> ModelMaterialOverrides;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") FVector PaperOutputPosition=FVector(-49,0,112);
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") FVector PaperOutputDirection=FVector(-1,0,0);
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Office Art") float PaperOutputYaw=0.f;
+ UFUNCTION(BlueprintCallable,CallInEditor,Category="Office Art") void RefreshOfficeArt(){BuildModel();}
  bool IsPrinter() const { return DeviceIndex>=2; }
  bool IsLocked() const { return bLocked; }
  int32 Pending() const;
@@ -49,7 +63,9 @@ public:
  UWidgetComponent* GetSurface() const { return Surface; }
 private:
  void BuildModel();
+ bool TraceDesktopGlass(const FVector& Origin,const FVector& Direction,FHitResult& WidgetHit) const;
  UPROPERTY(VisibleAnywhere) TObjectPtr<USceneComponent> SceneRoot;
+ UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Office Art",meta=(AllowPrivateAccess="true")) TObjectPtr<UStaticMeshComponent> ArtShell;
  UPROPERTY(VisibleAnywhere) TObjectPtr<UBoxComponent> Aim;
  UPROPERTY(VisibleAnywhere) TObjectPtr<UCameraComponent> Camera;
  UPROPERTY(VisibleAnywhere) TObjectPtr<UWidgetComponent> Surface;
@@ -58,6 +74,7 @@ private:
  UPROPERTY(VisibleAnywhere) TObjectPtr<UInstancedStaticMeshComponent> PaperStack;
  UPROPERTY() TArray<TObjectPtr<UInstancedStaticMeshComponent>> Model;
  UPROPERTY() TObjectPtr<UPopupCloseDesktopWidget> Desktop;
+ UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> ProjectedDesktop;
  UPROPERTY() TObjectPtr<UPopupCloseWarningWidget> WarningUI;
  UPROPERTY() TArray<TObjectPtr<APopupCloseFlyingWindow>> Pool;
  float WarmDebt=0;

@@ -1,0 +1,693 @@
+{
+  "meshes": [
+    {
+      "name": "SM_CubicleDesk",
+      "source": "table1",
+      "size_m": [
+        1.3589874505996704,
+        1.6656821966171265,
+        1.032827615737915
+      ],
+      "materials": [
+        "table1_Brushed_aluminium",
+        "table1_Desk_board_004",
+        "table1_Fabric_129",
+        "table1_Desk_board",
+        "table1_Desk_board_005",
+        "table1_Fingerprint",
+        "table1_Material_002",
+        "table1_Office_Laminate",
+        "table1_Desk_board_002",
+        "table1_Brushed_Aluminum_Black_Stained",
+        "table1_matte_metal_002"
+      ]
+    },
+    {
+      "name": "SM_OfficeDesk",
+      "source": "table2",
+      "size_m": [
+        1.8137494325637817,
+        0.679153561592102,
+        0.9123607277870178
+      ],
+      "materials": [
+        "table2_Paint_mat",
+        "table2_Black_Paint",
+        "table2_Handle_mat",
+        "table2_Paint_edge_mat",
+        "table2_Key_metal",
+        "table2_Main_table"
+      ]
+    },
+    {
+      "name": "SM_Copier",
+      "source": "printer1",
+      "size_m": [
+        0.9169411659240723,
+        0.7148851156234741,
+        1.2152835130691528
+      ],
+      "materials": [
+        "printer1_TFSPlastic_V2_Light",
+        "printer1_TFSPlastic_V2_Dark",
+        "printer1_TFSPlastic_V2_Black",
+        "printer1_Printer_Display"
+      ]
+    },
+    {
+      "name": "SM_FilingCabinet",
+      "source": "guizi1",
+      "size_m": [
+        0.6760210990905762,
+        0.4908575713634491,
+        0.6137348413467407
+      ],
+      "materials": [
+        "guizi1_Wood"
+      ]
+    },
+    {
+      "name": "SM_Calculator",
+      "source": "table3",
+      "size_m": [
+        0.14564865827560425,
+        0.16354741156101227,
+        0.01986795663833618
+      ],
+      "materials": [
+        "table3_calculator_mat_001"
+      ]
+    },
+    {
+      "name": "SM_CoffeeCup",
+      "source": "table3",
+      "size_m": [
+        0.09415662288665771,
+        0.09415662288665771,
+        0.1260303258895874
+      ],
+      "materials": [
+        "table3_cofee_cup_mat_001"
+      ]
+    },
+    {
+      "name": "SM_Folder",
+      "source": "table3",
+      "size_m": [
+        0.2674062252044678,
+        0.34171485900878906,
+        0.08828061819076538
+      ],
+      "materials": [
+        "table3_folder_mat"
+      ]
+    },
+    {
+      "name": "SM_Keyboard",
+      "source": "table3",
+      "size_m": [
+        0.3870511054992676,
+        0.1858724057674408,
+        0.023301243782043457
+      ],
+      "materials": [
+        "table3_keyboard_mat_004"
+      ]
+    },
+    {
+      "name": "SM_Mouse",
+      "source": "table3",
+      "size_m": [
+        0.05348460376262665,
+        0.08681641519069672,
+        0.02638024091720581
+      ],
+      "materials": [
+        "table3_mouse_mat_004"
+      ]
+    },
+    {
+      "name": "SM_Notebook",
+      "source": "table3",
+      "size_m": [
+        0.21708285808563232,
+        0.23006153106689453,
+        0.010368943214416504
+      ],
+      "materials": [
+        "table3_notepad_mat_001"
+      ]
+    },
+    {
+      "name": "SM_PaperTray",
+      "source": "table3",
+      "size_m": [
+        0.32058972120285034,
+        0.37667030096054077,
+        0.2688295245170593
+      ],
+      "materials": [
+        "table3_paper_tray_mat"
+      ]
+    },
+    {
+      "name": "SM_DeskMonitor",
+      "source": "table3",
+      "size_m": [
+        0.5341095924377441,
+        0.15947073698043823,
+        0.3619898557662964
+      ],
+      "materials": [
+        "table3_Monitor_main_black_mat",
+        "table3_Monitor_screen_mat"
+      ]
+    },
+    {
+      "name": "SM_Paper",
+      "source": "table3",
+      "size_m": [
+        0.22621238231658936,
+        0.3082329034805298,
+        0.0030698776245117188
+      ],
+      "materials": [
+        "table3_paperA4_mat"
+      ]
+    },
+    {
+      "name": "SM_PaperStack",
+      "source": "table3",
+      "size_m": [
+        0.256672203540802,
+        0.3280560374259949,
+        0.0059999823570251465
+      ],
+      "materials": [
+        "table3_stack_paper_mat"
+      ]
+    },
+    {
+      "name": "SM_DeskChair",
+      "source": "table3",
+      "size_m": [
+        0.6505550742149353,
+        0.6736577153205872,
+        1.3077009916305542
+      ],
+      "materials": [
+        "table3_ikea_markus_mat_001"
+      ]
+    },
+    {
+      "name": "SM_PenCup",
+      "source": "table3",
+      "size_m": [
+        0.16106104850769043,
+        0.0950193703174591,
+        0.207200288772583
+      ],
+      "materials": [
+        "table3_Stationery_set_mat"
+      ]
+    }
+  ],
+  "materials": {
+    "table1_Brushed_aluminium": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table1_Brushed_aluminium_BaseColor.png",
+        "Normal": "table1_Brushed_aluminium_Normal.png",
+        "Roughness": "table1_Brushed_aluminium_Roughness.png",
+        "Metallic": "table1_Brushed_aluminium_Metallic.png"
+      }
+    },
+    "table1_Desk_board_004": {
+      "color": [
+        0.46,
+        0.41,
+        0.31,
+        1
+      ],
+      "roughness": 0.78,
+      "metallic": 0.0,
+      "textures": {}
+    },
+    "table1_Fabric_129": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "Roughness": "table1_Fabric_129_Roughness.png"
+      }
+    },
+    "table1_Desk_board": {
+      "color": [
+        0.46,
+        0.41,
+        0.31,
+        1
+      ],
+      "roughness": 0.78,
+      "metallic": 0.0,
+      "textures": {}
+    },
+    "table1_Desk_board_005": {
+      "color": [
+        0.46,
+        0.41,
+        0.31,
+        1
+      ],
+      "roughness": 0.78,
+      "metallic": 0.0,
+      "textures": {}
+    },
+    "table1_Fingerprint": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.78,
+      "metallic": 0.0,
+      "textures": {}
+    },
+    "table1_Material_002": {
+      "color": [
+        0.009259926155209541,
+        0.009259926155209541,
+        0.009259926155209541,
+        1.0
+      ],
+      "roughness": 0.78,
+      "metallic": 0.44086021184921265,
+      "textures": {}
+    },
+    "table1_Office_Laminate": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.78,
+      "metallic": 0.0,
+      "textures": {}
+    },
+    "table1_Desk_board_002": {
+      "color": [
+        0.46,
+        0.41,
+        0.31,
+        1
+      ],
+      "roughness": 0.78,
+      "metallic": 0.6294416189193726,
+      "textures": {}
+    },
+    "table1_Brushed_Aluminum_Black_Stained": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table1_Brushed_Aluminum_Black_Stained_BaseColor.png",
+        "Normal": "table1_Brushed_Aluminum_Black_Stained_Normal.png",
+        "Roughness": "table1_Brushed_Aluminum_Black_Stained_Roughness.png",
+        "Metallic": "table1_Brushed_Aluminum_Black_Stained_Metallic.png"
+      }
+    },
+    "table1_matte_metal_002": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.7150537371635437,
+      "textures": {
+        "Normal": "table1_matte_metal_002_Normal.png"
+      }
+    },
+    "table2_Paint_mat": {
+      "color": [
+        0.5,
+        0.5,
+        0.5,
+        1.0
+      ],
+      "roughness": 0.7487671971321106,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table2_Paint_mat_BaseColor.png",
+        "Normal": "table2_Paint_mat_Normal.png",
+        "Roughness": "table2_Paint_mat_Roughness.png"
+      }
+    },
+    "table2_Black_Paint": {
+      "color": [
+        0.011849389411509037,
+        0.012188500724732876,
+        0.014577435329556465,
+        1.0
+      ],
+      "roughness": 0.3545454740524292,
+      "metallic": 0.0,
+      "textures": {
+        "Normal": "table2_Black_Paint_Normal.png"
+      }
+    },
+    "table2_Handle_mat": {
+      "color": [
+        0.019542422145605087,
+        0.019542422145605087,
+        0.019542422145605087,
+        1.0
+      ],
+      "roughness": 0.3896763026714325,
+      "metallic": 0.0,
+      "textures": {}
+    },
+    "table2_Paint_edge_mat": {
+      "color": [
+        0.5,
+        0.5,
+        0.5,
+        1.0
+      ],
+      "roughness": 0.7487671971321106,
+      "metallic": 0.0,
+      "textures": {
+        "Normal": "table2_Paint_edge_mat_Normal.png",
+        "Roughness": "table2_Paint_edge_mat_Roughness.png"
+      }
+    },
+    "table2_Key_metal": {
+      "color": [
+        0.5,
+        0.5,
+        0.5,
+        1.0
+      ],
+      "roughness": 0.7487671971321106,
+      "metallic": 1.0,
+      "textures": {}
+    },
+    "table2_Main_table": {
+      "color": [
+        0.5,
+        0.5,
+        0.5,
+        1.0
+      ],
+      "roughness": 0.7487671971321106,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table2_Main_table_BaseColor.png",
+        "Normal": "table2_Main_table_Normal.png",
+        "Roughness": "table2_Main_table_Roughness.png"
+      }
+    },
+    "printer1_TFSPlastic_V2_Light": {
+      "color": [
+        0.5382261872291565,
+        0.49278923869132996,
+        0.4698592722415924,
+        1.0
+      ],
+      "roughness": 0.2545454502105713,
+      "metallic": 0.0,
+      "textures": {}
+    },
+    "printer1_TFSPlastic_V2_Dark": {
+      "color": [
+        0.23301607370376587,
+        0.23301607370376587,
+        0.23301607370376587,
+        1.0
+      ],
+      "roughness": 0.2545454502105713,
+      "metallic": 0.0,
+      "textures": {}
+    },
+    "printer1_TFSPlastic_V2_Black": {
+      "color": [
+        0.027209879830479622,
+        0.027209879830479622,
+        0.027209879830479622,
+        1.0
+      ],
+      "roughness": 0.36818182468414307,
+      "metallic": 0.0,
+      "textures": {}
+    },
+    "printer1_Printer_Display": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.331818163394928,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "printer1_Printer_Display_BaseColor.png"
+      }
+    },
+    "guizi1_Wood": {
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "roughness": 0.0,
+      "metallic": 0.0,
+      "textures": {}
+    },
+    "table3_calculator_mat_001": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_calculator_mat_001_BaseColor.png",
+        "Normal": "table3_calculator_mat_001_Normal.png",
+        "Roughness": "table3_calculator_mat_001_Roughness.png",
+        "Metallic": "table3_calculator_mat_001_Metallic.png"
+      }
+    },
+    "table3_cofee_cup_mat_001": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_cofee_cup_mat_001_BaseColor.png",
+        "Normal": "table3_cofee_cup_mat_001_Normal.png",
+        "Roughness": "table3_cofee_cup_mat_001_Roughness.png"
+      }
+    },
+    "table3_folder_mat": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_folder_mat_BaseColor.png",
+        "Normal": "table3_folder_mat_Normal.png",
+        "Roughness": "table3_folder_mat_Roughness.png",
+        "Metallic": "table3_folder_mat_Metallic.png"
+      }
+    },
+    "table3_keyboard_mat_004": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_keyboard_mat_004_BaseColor.png",
+        "Normal": "table3_keyboard_mat_004_Normal.png",
+        "Roughness": "table3_keyboard_mat_004_Roughness.png",
+        "Metallic": "table3_keyboard_mat_004_Metallic.png"
+      }
+    },
+    "table3_mouse_mat_004": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_mouse_mat_004_BaseColor.png",
+        "Normal": "table3_mouse_mat_004_Normal.png",
+        "Roughness": "table3_mouse_mat_004_Roughness.png",
+        "Metallic": "table3_mouse_mat_004_Metallic.png"
+      }
+    },
+    "table3_notepad_mat_001": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_notepad_mat_001_BaseColor.png",
+        "Normal": "table3_notepad_mat_001_Normal.png",
+        "Roughness": "table3_notepad_mat_001_Roughness.png",
+        "Metallic": "table3_notepad_mat_001_Metallic.png"
+      }
+    },
+    "table3_paper_tray_mat": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_paper_tray_mat_BaseColor.png",
+        "Opacity": "table3_paper_tray_mat_Opacity.png",
+        "Normal": "table3_paper_tray_mat_Normal.png",
+        "Roughness": "table3_paper_tray_mat_Roughness.png",
+        "Metallic": "table3_paper_tray_mat_Metallic.png"
+      }
+    },
+    "table3_Monitor_main_black_mat": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_Monitor_main_black_mat_BaseColor.png",
+        "Normal": "table3_Monitor_main_black_mat_Normal.png",
+        "Roughness": "table3_Monitor_main_black_mat_Roughness.png",
+        "Metallic": "table3_Monitor_main_black_mat_Metallic.png"
+      }
+    },
+    "table3_Monitor_screen_mat": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.4000000059604645,
+      "metallic": 0.0,
+      "textures": {}
+    },
+    "table3_paperA4_mat": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_paperA4_mat_BaseColor.png",
+        "Normal": "table3_paperA4_mat_Normal.png",
+        "Roughness": "table3_paperA4_mat_Roughness.png",
+        "Metallic": "table3_paperA4_mat_Metallic.png"
+      }
+    },
+    "table3_stack_paper_mat": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_stack_paper_mat_BaseColor.png",
+        "Normal": "table3_stack_paper_mat_Normal.png",
+        "Roughness": "table3_stack_paper_mat_Roughness.png",
+        "Metallic": "table3_stack_paper_mat_Metallic.png"
+      }
+    },
+    "table3_ikea_markus_mat_001": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_ikea_markus_mat_001_BaseColor.png",
+        "Opacity": "table3_ikea_markus_mat_001_Opacity.png",
+        "Normal": "table3_ikea_markus_mat_001_Normal.png",
+        "Roughness": "table3_ikea_markus_mat_001_Roughness.png",
+        "Metallic": "table3_ikea_markus_mat_001_Metallic.png"
+      }
+    },
+    "table3_Stationery_set_mat": {
+      "color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "textures": {
+        "BaseColor": "table3_Stationery_set_mat_BaseColor.png",
+        "Opacity": "table3_Stationery_set_mat_Opacity.png",
+        "Normal": "table3_Stationery_set_mat_Normal.png",
+        "Roughness": "table3_Stationery_set_mat_Roughness.png",
+        "Metallic": "table3_Stationery_set_mat_Metallic.png"
+      }
+    }
+  }
+}

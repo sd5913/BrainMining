@@ -51,8 +51,8 @@ bool UMiningProgressionComponent::InitializeProgression()
     BaseCoolingDelay = Flight->CoolingDelay > 0 ? Flight->CoolingDelay : 1.f;
     BaseBomb = Bomb->Settings; BaseBombCapacity = FMath::Max(1, Bomb->MaxBombs); BaseBombRecharge = FMath::Max(.1f, Bomb->RechargeSeconds);
     BaseDrillCapacity = FMath::Max(1.f, Mining->MaxDrillEnergy);
-    BaseDrillRecovery = BaseDrillCapacity / FMath::Max(.1f, Mining->DrillCooldownDuration);
-    BaseDrillConsumption = BaseDrillCapacity / FMath::Max(.1f, Mining->DrillUseDuration);
+    BaseDrillRecovery = FMath::Max(0.f, Mining->DrillRecoveryRate);
+    BaseDrillConsumption = FMath::Max(0.f, Mining->DrillConsumptionRate);
     Mining->bUseDrillEnergy = true; Mining->DrillEnergy = BaseDrillCapacity;
     Bomb->bUseInventory = true; Bomb->BombCount = BaseBombCapacity;
     bInitialized = true;

@@ -47,6 +47,8 @@ class BRAINMINING_API AMiningExhibitController : public AMiningEncounterPlayerCo
 public:
     virtual void BeginPlay() override;
     virtual bool InputKey(const FInputKeyEventArgs& Params) override;
+protected:
+    virtual void OnPossess(APawn* InPawn) override;
 };
 
 UCLASS()

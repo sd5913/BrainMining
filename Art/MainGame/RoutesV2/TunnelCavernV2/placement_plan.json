@@ -1,0 +1,262 @@
+{
+  "seed": 20261016,
+  "factor": 0.88,
+  "objects": [
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 12.0,
+      "allowed_end_m": 19.488407414358186,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_01",
+      "seed": 20261306,
+      "start_arc_m": 12.449304444861491,
+      "end_arc_m": 19.039102969496696,
+      "arc_length_m": 6.589798524635205,
+      "center_m": [
+        -51.487545013427734,
+        1.9817063808441162,
+        57.79957962036133
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 58.59379112135801,
+      "allowed_end_m": 73.07371038939537,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_02",
+      "seed": 20261497,
+      "start_arc_m": 59.462586277440245,
+      "end_arc_m": 72.20491523331313,
+      "arc_length_m": 12.742328955872885,
+      "center_m": [
+        -20.49563980102539,
+        -7.633063793182373,
+        51.47850799560547
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 75.47371038939538,
+      "allowed_end_m": 89.95362965743274,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_03",
+      "seed": 20261688,
+      "start_arc_m": 76.34250554547762,
+      "end_arc_m": 89.08483450135051,
+      "arc_length_m": 12.742328955872892,
+      "center_m": [
+        -13.581147193908691,
+        5.657729625701904,
+        44.58073806762695
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 97.95362965743274,
+      "allowed_end_m": 113.97197341329746,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_04",
+      "seed": 20261879,
+      "start_arc_m": 98.91473028278463,
+      "end_arc_m": 113.01087278794557,
+      "arc_length_m": 14.096142505160941,
+      "center_m": [
+        5.439272403717041,
+        8.528141975402832,
+        38.06834030151367
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 116.37197341329747,
+      "allowed_end_m": 132.3903171691622,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_05",
+      "seed": 20262070,
+      "start_arc_m": 117.33307403864936,
+      "end_arc_m": 131.4292165438103,
+      "arc_length_m": 14.096142505160941,
+      "center_m": [
+        6.307833194732666,
+        -7.570650100708008,
+        32.90911102294922
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 134.79031716916217,
+      "allowed_end_m": 150.8086609250269,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_06",
+      "seed": 20262261,
+      "start_arc_m": 135.75141779451405,
+      "end_arc_m": 149.84756029967502,
+      "arc_length_m": 14.09614250516097,
+      "center_m": [
+        -9.63094711303711,
+        -10.000308990478516,
+        27.7498836517334
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 153.2086609250269,
+      "allowed_end_m": 169.2270046808916,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_07",
+      "seed": 20262452,
+      "start_arc_m": 154.16976155037878,
+      "end_arc_m": 168.26590405553975,
+      "arc_length_m": 14.09614250516097,
+      "center_m": [
+        -14.010992050170898,
+        5.858387470245361,
+        22.93233871459961
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 177.2270046808916,
+      "allowed_end_m": 191.61793863528834,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_08",
+      "seed": 20262643,
+      "start_arc_m": 178.09046071815544,
+      "end_arc_m": 190.75448259802454,
+      "arc_length_m": 12.664021879869097,
+      "center_m": [
+        2.3382697105407715,
+        17.316238403320312,
+        19.62616729736328
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 227.61793863528834,
+      "allowed_end_m": 239.7952100966142,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_09",
+      "seed": 20262834,
+      "start_arc_m": 228.34857492296788,
+      "end_arc_m": 239.06457380893465,
+      "arc_length_m": 10.71599888596677,
+      "center_m": [
+        13.848367691040039,
+        -13.40652084350586,
+        23.399341583251953
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 242.19521009661418,
+      "allowed_end_m": 254.37248155794003,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_10",
+      "seed": 20263025,
+      "start_arc_m": 242.92584638429372,
+      "end_arc_m": 253.6418452702605,
+      "arc_length_m": 10.71599888596677,
+      "center_m": [
+        26.33643341064453,
+        -18.100852966308594,
+        19.201580047607422
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 262.37248155794003,
+      "allowed_end_m": 269.2887871187087,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_11",
+      "seed": 20263216,
+      "start_arc_m": 262.78745989158614,
+      "end_arc_m": 268.8738087850625,
+      "arc_length_m": 6.086348893476384,
+      "center_m": [
+        41.33840560913086,
+        -11.341750144958496,
+        16.554523468017578
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 271.68878711870866,
+      "allowed_end_m": 278.6050926794773,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_12",
+      "seed": 20263407,
+      "start_arc_m": 272.1037654523548,
+      "end_arc_m": 278.1901143458312,
+      "arc_length_m": 6.086348893476384,
+      "center_m": [
+        48.524269104003906,
+        -5.634746074676514,
+        15.194746017456055
+      ]
+    },
+    {
+      "path_index": 1,
+      "path_name": "Branch_01",
+      "allowed_start_m": 7.0,
+      "allowed_end_m": 12.270332766668954,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_13",
+      "seed": 20263598,
+      "start_arc_m": 7.316219966000137,
+      "end_arc_m": 11.954112800668817,
+      "arc_length_m": 4.63789283466868,
+      "center_m": [
+        -46.59012985229492,
+        -5.236009120941162,
+        55.284759521484375
+      ]
+    },
+    {
+      "path_index": 2,
+      "path_name": "Branch_02",
+      "allowed_start_m": 7.0,
+      "allowed_end_m": 17.757330187152935,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_14",
+      "seed": 20263789,
+      "start_arc_m": 7.645439811229176,
+      "end_arc_m": 17.111890375923757,
+      "arc_length_m": 9.466450564694581,
+      "center_m": [
+        -10.050993919372559,
+        22.87436294555664,
+        39.12237548828125
+      ]
+    },
+    {
+      "path_index": 3,
+      "path_name": "Branch_03",
+      "allowed_start_m": 7.0,
+      "allowed_end_m": 19.937102012369653,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_15",
+      "seed": 20263980,
+      "start_arc_m": 7.776226120742179,
+      "end_arc_m": 19.160875891627473,
+      "arc_length_m": 11.384649770885293,
+      "center_m": [
+        -19.91973304748535,
+        22.402992248535156,
+        22.448165893554688
+      ]
+    },
+    {
+      "path_index": 4,
+      "path_name": "Branch_04",
+      "allowed_start_m": 7.0,
+      "allowed_end_m": 15.835191852401685,
+      "name": "SM_RoutesV2_TunnelCavernV2_Blocker_16",
+      "seed": 20264171,
+      "start_arc_m": 7.530111511144101,
+      "end_arc_m": 15.305080341257584,
+      "arc_length_m": 7.774968830113483,
+      "center_m": [
+        43.827457427978516,
+        -23.78777313232422,
+        14.434120178222656
+      ]
+    }
+  ]
+}

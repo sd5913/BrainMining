@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MiningPickaxeSettings.h"
 
 class ADiggableRock;
 
@@ -16,5 +17,7 @@ struct FMiningPickaxePatch
 	int32 Seed = 0;
 	int32 Id = 0;
 	int32 Strikes = 0;
+	TArray<FMiningPickaxeStage> Stages;
+	float Roughness = 1;
 	bool bPending = false;
 };

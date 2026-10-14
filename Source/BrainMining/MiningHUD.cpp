@@ -53,7 +53,7 @@ void AMiningHUD::DrawHUD()
 	DrawText(Mining->Status, FLinearColor::White, 36, 59, GEngine->GetSmallFont());
 	const ABrainMiningCharacter* Character = Cast<ABrainMiningCharacter>(PlayerOwner->GetPawn());
 	DrawText(FString::Printf(TEXT("Scale %.0f%%  |  Reach %.1fm  |  Radius %.2fm"), Character ? Character->AppliedPlayerScale * 100 : 100,
-		Mining->Reach / 100.0f, Mining->Radius / 100.0f), FLinearColor::White, 36, 81, GEngine->GetSmallFont());
+		Mining->Reach / 100.0f, Mining->GetMiningRadius() / 100.0f), FLinearColor::White, 36, 81, GEngine->GetSmallFont());
 	const ADiggableRock* Rock = IsValid(Mining->TargetRock) ? Mining->TargetRock.Get() : Mining->LastMinedRock.Get();
 	if (Layout)
 	{

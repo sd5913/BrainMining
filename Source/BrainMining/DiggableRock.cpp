@@ -1,6 +1,7 @@
 #include "DiggableRock.h"
 #include "MiningBlastGeometry.h"
 #include "MiningPickaxeGeometry.h"
+#include "Engine/World.h"
 #include "FogChamberComponent.h"
 #include "BrainMining.h"
 #include "Components/DynamicMeshComponent.h"
@@ -89,10 +90,10 @@ bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
 	return MineCutter(WorldCenter, WorldRadius, nullptr);
 }
 
-bool ADiggableRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed)
+bool ADiggableRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed, float Roughness)
 {
 	if (!WorldFrame.IsValid() || HalfSize.ContainsNaN() || HalfSize.GetMin() <= 0) return false;
-	const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(WorldFrame, HalfSize, Seed);
+	const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(WorldFrame, HalfSize, Seed, Roughness);
 	return MineCutter(WorldFrame.GetLocation(), HalfSize.Size() * 1.12, &Cutter);
 }
 

@@ -1,11 +1,13 @@
 #include "MiningPickaxeGeometry.h"
+#include "Math/RandomStream.h"
 
-UE::Geometry::FDynamicMesh3 MiningPickaxe::MakeCutter(const FTransform& Frame, const FVector& HalfSize, int32 Seed)
+UE::Geometry::FDynamicMesh3 MiningPickaxe::MakeCutter(const FTransform& Frame, const FVector& HalfSize, int32 Seed, float Roughness)
 {
 	using namespace UE::Geometry;
 	FDynamicMesh3 Mesh;
 	Mesh.EnableTriangleGroups(0);
 	FRandomStream Random(Seed);
+	const float Strength = FMath::IsFinite(Roughness) ? FMath::Clamp(Roughness, 0.f, 1.f) : 1.f;
 	constexpr int32 Sides = 16;
 	TArray<FVector2D> Outline;
 	TArray<double> ShoulderDepth;
@@ -14,14 +16,14 @@ UE::Geometry::FDynamicMesh3 MiningPickaxe::MakeCutter(const FTransform& Frame, c
 	TArray<double> InnerWidth;
 	for (int32 Corner = 0; Corner < Sides; ++Corner)
 	{
-		const double Angle = (Corner + .5) * TWO_PI / Sides + Random.FRandRange(-.045f, .045f);
+		const double Angle = (Corner + .5) * TWO_PI / Sides + Random.FRandRange(-.045f, .045f) * Strength;
 		const FVector2D Direction(FMath::Cos(Angle), FMath::Sin(Angle));
 		const double SquareRadius = 1. / FMath::Max(FMath::Abs(Direction.X), FMath::Abs(Direction.Y));
-		Outline.Add(Direction * SquareRadius * Random.FRandRange(.86f, 1.08f));
-		ShoulderDepth.Add(Random.FRandRange(.05f, .42f));
-		InnerDepth.Add(Random.FRandRange(.50f, .88f));
-		ShoulderWidth.Add(Random.FRandRange(.80f, .96f));
-		InnerWidth.Add(Random.FRandRange(.36f, .60f));
+		Outline.Add(Direction * SquareRadius * FMath::Lerp(1.f, Random.FRandRange(.86f, 1.08f), Strength));
+		ShoulderDepth.Add(FMath::Lerp(.235f, Random.FRandRange(.05f, .42f), Strength));
+		InnerDepth.Add(FMath::Lerp(.69f, Random.FRandRange(.50f, .88f), Strength));
+		ShoulderWidth.Add(FMath::Lerp(.88f, Random.FRandRange(.80f, .96f), Strength));
+		InnerWidth.Add(FMath::Lerp(.48f, Random.FRandRange(.36f, .60f), Strength));
 	}
 	for (int32 Layer = 0; Layer < 3; ++Layer)
 	{

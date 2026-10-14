@@ -23,6 +23,7 @@ UMiningComponent::UMiningComponent()
 void UMiningComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	if (!bUsePickaxeBalance) ApplyPickaxeBalance(UMiningPickaxeSettings::ResolveLevel(0));
 	InitialTransform = GetOwner()->GetActorTransform();
 	bHasInitialTransform = true;
 }
@@ -76,6 +77,7 @@ void UMiningComponent::BindInput(UEnhancedInputComponent* Input)
 
 float UMiningComponent::GetMiningInterval() const
 {
+	if (!bDrillMode && bUsePickaxeBalance) return PickaxeBalance.Interval;
 	const float Base = FMath::IsFinite(Interval) ? FMath::Max(0.1f, Interval) : 0.3f;
 	const float Multiplier = FMath::IsFinite(DrillIntervalMultiplier) ? FMath::Clamp(DrillIntervalMultiplier, 0.1f, 1.f) : 0.4f;
 	return bDrillMode ? FMath::Max(0.04f, Base * Multiplier) : Base;
@@ -83,6 +85,7 @@ float UMiningComponent::GetMiningInterval() const
 
 float UMiningComponent::GetMiningRadius() const
 {
+	if (!bDrillMode && bUsePickaxeBalance) return PickaxeBalance.Width * .5f * PickaxeSizeScale;
 	const float Base = FMath::IsFinite(Radius) ? FMath::Max(1.f, Radius) : 160.f;
 	const float Multiplier = FMath::IsFinite(DrillRadiusMultiplier) ? FMath::Clamp(DrillRadiusMultiplier, 1.f, 2.f) : 1.2f;
 	return bDrillMode ? Base * Multiplier : Base;

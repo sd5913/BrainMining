@@ -62,7 +62,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void ResetRock() override;
 	virtual bool MineSphere(FVector WorldCenter, float WorldRadius) override;
-	virtual bool MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed = 0) override;
+	virtual bool MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed = 0, float Roughness = 1) override;
 	virtual bool MineBlast(FVector WorldCenter, float WorldRadius, float Roughness = .32f, int32 Seed = 1) override;
 	void SetGeneratedMesh(UE::Geometry::FDynamicMesh3&& Mesh);
 	// Large external regions explicitly opt in; existing mining grids keep their original limit.

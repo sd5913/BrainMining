@@ -17,6 +17,8 @@ class SMiningCollectionView;
 class UStaticMeshComponent;
 class UPostProcessComponent;
 class AMiningCollectible;
+class AHeavenToilet;
+class UMaterialInstanceDynamic;
 
 USTRUCT(BlueprintType)
 struct FMiningCollectionPlacement
@@ -27,6 +29,8 @@ struct FMiningCollectionPlacement
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FName AreaTag;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TObjectPtr<ADiggableRock> HostRock;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform ClueTransform;
+    // Optional authored prop replaces only the generated presentation.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TObjectPtr<AActor> PresentationActor;
 };
 
 struct FCollectionAnt
@@ -68,6 +72,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bCollected = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float Exposure = 0;
     UPROPERTY() TObjectPtr<ADiggableRock> HostRock;
+    UPROPERTY() TObjectPtr<AActor> PresentationActor;
     int32 LastObservedCuts = INDEX_NONE;
     FTransform BuriedTransform;
     void BuildModel(int32 Id, bool Flying=false);
@@ -114,7 +119,9 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Collection") TObjectPtr<AMiningCollectible> Target;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Collection") TObjectPtr<AMiningCollectible> Preview;
     UPROPERTY() TObjectPtr<UTextureRenderTarget2D> PreviewTexture;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> PreviewMaterial;
     UPROPERTY() TObjectPtr<USceneCaptureComponent2D> Capture;
+    UPROPERTY() TObjectPtr<AHeavenToilet> PreviewToilet;
     UPROPERTY() TObjectPtr<UPostProcessComponent> HighlightPostProcess;
     UFUNCTION(BlueprintCallable) void CollectTarget();
     UFUNCTION(BlueprintCallable) void ToggleCatalogue();

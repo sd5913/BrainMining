@@ -2,6 +2,7 @@
 #include "DiggableRock.h"
 #include "Showcase/MiningTreasure.h"
 #include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Components/DynamicMeshComponent.h"
 #include "DynamicMesh/DynamicMeshAttributeSet.h"
 #include "DynamicMesh/MeshNormals.h"
@@ -174,6 +175,16 @@ void AMiningCollectible::SetHighlighted(bool Enabled)
     // Keep the old inverted hull disabled: it can cover surfaces or outline internal seams.
     Outline->SetVisibility(false);
     Model->SetRenderCustomDepth(Enabled&&!bCollected);
+    if(IsValid(PresentationActor))
+    {
+        Model->SetRenderCustomDepth(false);
+        TArray<UPrimitiveComponent*> Components;PresentationActor->GetComponents(Components);
+        for(auto* Component:Components) if(Component->IsA<UStaticMeshComponent>())
+        {
+            Component->SetCustomDepthStencilValue(1);
+            Component->SetRenderCustomDepth(Enabled&&!bCollected);
+        }
+    }
 }
 float AMiningCollectible::MeasureExposure() const
 {

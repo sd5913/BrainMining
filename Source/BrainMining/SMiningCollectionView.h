@@ -1,8 +1,8 @@
 #pragma once
-#include "Widgets/SLeafWidget.h"
+#include "Widgets/SCompoundWidget.h"
 #include "Styling/SlateBrush.h"
 class AMiningCollectionField;
-class SMiningCollectionView : public SLeafWidget
+class SMiningCollectionView : public SCompoundWidget
 {
 public:
     SLATE_BEGIN_ARGS(SMiningCollectionView) {} SLATE_ARGUMENT(TWeakObjectPtr<AMiningCollectionField>, Owner) SLATE_END_ARGS()
@@ -16,11 +16,15 @@ public:
     virtual FReply OnMouseMove(const FGeometry&, const FPointerEvent&) override;
     virtual FReply OnMouseWheel(const FGeometry&, const FPointerEvent&) override;
     virtual FReply OnKeyDown(const FGeometry&, const FKeyEvent&) override;
+    virtual void OnMouseLeave(const FPointerEvent&) override;
     virtual void OnMouseCaptureLost(const FCaptureLostEvent&) override { bDragging=false; }
 private:
     TWeakObjectPtr<AMiningCollectionField> Owner;
     FSlateBrush PreviewBrush;
     bool bDragging = false;
     FVector2D LastMouse;
+    FVector2D HoverMouse=FVector2D(-1,-1);
+    int32 SlotAt(FVector2D) const;
+    void TurnPage(int32 Direction);
     FVector2D ToVirtual(const FGeometry&, const FVector2D&) const;
 };

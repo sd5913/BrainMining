@@ -10,6 +10,7 @@
 #include "CardRoomPlayer.h"
 #include "CardRoomStage.h"
 #include "EchoPassagePlayer.h"
+#include "StartRoom/MiningStartRoom.h"
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
@@ -74,6 +75,11 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
 {
     auto* Controller = GetOwningPlayer();
     if (!Controller || !Controller->GetPawn()) return FString();
+    if (auto* Room = AMiningStartRoom::Find(GetWorld()))
+    {
+        const FString Action = Room->GetInteractionAction(Controller);
+        if (!Action.IsEmpty()) return Action;
+    }
     for (TActorIterator<APopupCloseStage> Office(GetWorld()); Office; ++Office)
         if (Office->bAreaActive)
         {

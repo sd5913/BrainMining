@@ -14,6 +14,11 @@ class UAudioComponent;
 class UMaterialInterface;
 class UMaterialInstanceDynamic;
 class SEmergenceEndingView;
+class UTextureRenderTarget2D;
+class UStaticMesh;
+class UDynamicMeshComponent;
+class AMiningDebrisBurst;
+class UPointLightComponent;
 
 /** Standalone playable ending study; never changes the campaign or shared pawn defaults. */
 UCLASS()
@@ -33,9 +38,24 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending", meta=(ClampMin="0.25",ClampMax="4")) float FilmSpeed = 1;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ending") TArray<TObjectPtr<ADiggableRock>> Gates;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") int32 GateIndex = 0;
-    // -1: gameplay, 0..6: scale journey, 7: blackout, 8: eye, 9: developers, 10: end.
+    // -1: gameplay, 0..6: scale journey, 7: voices/tool, 8: strikes, 9: water/fracture, 10: flying paper, 11: title hold.
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") int32 Shot = -1;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") float ShotTime = 0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") int32 RealityHits = 0;
+    float StrikeReadiness() const;
+    float NeuralFlash(int32 Index) const;
+    UPROPERTY(VisibleAnywhere, Transient, Category="Ending") float WetLens = 0;
+    UPROPERTY(VisibleAnywhere, Transient, Category="Ending") int32 PapersLanded = 0;
+    UPROPERTY(VisibleAnywhere, Transient, Category="Ending") int32 PapersArrived = 0;
+    UPROPERTY(VisibleAnywhere, Transient, Category="Ending") bool bFinalPaperVisible = false;
+    UPROPERTY(VisibleAnywhere, Transient, Category="Ending") TArray<TObjectPtr<UDynamicMeshComponent>> EndingPapers;
+    UPROPERTY(VisibleAnywhere, Category="Ending") int32 UniverseCellCount = 0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") float Exhaustion = 0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") float RetreatSpeed = 0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") int32 EndingDebrisBursts = 0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") TArray<TObjectPtr<UDynamicMeshComponent>> UniverseShards;
+    UPROPERTY(VisibleAnywhere, Transient, Category="Ending") TObjectPtr<UDynamicMeshComponent> UniverseSurround;
+    UPROPERTY(VisibleAnywhere, Transient, Category="Ending") TArray<TObjectPtr<UDynamicMeshComponent>> WaterJets;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") bool bComplete = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") FVector DriftVelocity = FVector::ZeroVector;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") FVector DriftOffset = FVector::ZeroVector;
@@ -59,6 +79,44 @@ public:
     float BrainLens() const;
     static float Duration(int32 Index);
 private:
+    friend class SEmergenceEndingView;
+    UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> NeuralWaveShells;
+    UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> WaterDrops;
+    UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> WetLensMaterial;
+    TArray<FVector> WaterOrigins, WaterVelocities;
+    TArray<FVector2D> PaperCenters, PaperSizes;
+    TArray<float> PaperRolls;
+    TArray<FVector4> PaperMotion;
+    void BuildWaterAndPaper();
+    void UpdateWaterAndPaper();
+    UPROPERTY() TObjectPtr<USceneComponent> EndingHand;
+    UPROPERTY() TObjectPtr<USceneComponent> EndingTool;
+    UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Fingers;
+    UPROPERTY(Transient) TObjectPtr<UTextureRenderTarget2D> UniverseSnapshot;
+    UPROPERTY(Transient) TObjectPtr<UAudioComponent> Voice;
+    UPROPERTY() TObjectPtr<UStaticMeshComponent> ReturnedPickaxe;
+    UPROPERTY(Transient) TObjectPtr<UPointLightComponent> ToolLight;
+    UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> ExhaustionMaterial;
+    UPROPERTY(Transient) TArray<TObjectPtr<AMiningDebrisBurst>> EndingDebris;
+    UPROPERTY(Transient) TArray<TObjectPtr<UStaticMesh>> EndingDebrisMeshes;
+    TArray<FVector> NeuralWaveCenters;
+    TArray<float> NeuralWaveTimes;
+    TArray<FVector> ShardOrigins, ShardVelocities, ShardSpins;
+    FVector RetreatStart = FVector::ZeroVector;
+    float RetreatInitialSpeed = 0;
+    float ImpactAt = -100;
+    void NeuralWave();
+    float NeuralFlashAt(FVector Position) const;
+    void EndingImpact();
+    void BuildUniverseShards();
+    void UpdateUniverseShards();
+    void ClearEndingEffects();
+    float LastStrike = -100;
+    bool bImpactPending = false;
+    void UpdateEndingHand();
+    void StrikeUniverse();
+    void CaptureUniverse();
+    void Speak(const TCHAR* Name);
     UPROPERTY() TArray<TObjectPtr<USceneComponent>> Sets;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Nerves;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Sketch;
@@ -67,6 +125,7 @@ private:
     UPROPERTY() TArray<FVector> VesselPath;
     UPROPERTY() TArray<float> VesselDistances;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> NeuronCores;
+    UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> AmbientNeuronCores;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> PulseTrail;
     UPROPERTY(Transient) TObjectPtr<UStaticMeshComponent> DroppedPickaxe;
     UPROPERTY() TObjectPtr<USceneComponent> Universe;
@@ -75,11 +134,6 @@ private:
     UPROPERTY() TObjectPtr<USceneComponent> EyePerson;
     UPROPERTY() TObjectPtr<USceneComponent> NightContinent;
     UPROPERTY() TObjectPtr<USceneComponent> Pencil;
-    UPROPERTY() TObjectPtr<USceneComponent> Idea;
-    UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> EyeLids;
-    UPROPERTY() TArray<FVector> LidOrigins;
-    UPROPERTY() TObjectPtr<USceneComponent> Speaker;
-    UPROPERTY() TObjectPtr<UStaticMeshComponent> SpeakerMouth;
     UPROPERTY() TObjectPtr<UInstancedStaticMeshComponent> Crowd;
     UPROPERTY() TObjectPtr<UInstancedStaticMeshComponent> CrowdHeads;
     UPROPERTY() TArray<FTransform> CrowdOrigins;

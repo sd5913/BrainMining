@@ -308,4 +308,82 @@ bool FMiningPickaxeConfiguredChunkTest::RunTest(const FString&)
         TestTrue(TEXT("Configurable cut preserves watertight chunks"), Chunk.Mesh->GetDynamicMesh()->GetMeshRef().IsClosed());
     return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAudioContactTest, "BrainMining.AudioPilot.ContactAndCommittedBreak", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMiningAudioContactTest::RunTest(const FString&)
+{
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    auto* Rock = World->SpawnActor<ADiggableRock>();
+    Rock->RockSize = FVector(50, 1000, 1000);
+    Rock->ResetRock();
+    auto* Mining = CreatePickaxe(World);
+    TArray<int32> Events;
+    Mining->OnPickaxeContact.AddLambda([&](const FHitResult& Hit, int32 Stage)
+    {
+        TestTrue(TEXT("Contact identifies the mined rock"), Hit.GetActor() == Rock);
+        Events.Add(Stage);
+    });
+    Mining->OnPickaxeBreak.AddLambda([&](const FVector& Position)
+    {
+        TestEqual(TEXT("Break follows a real final terrain commit"), Rock->SuccessfulCuts, 3);
+        TestTrue(TEXT("Break has a valid world position"), !Position.ContainsNaN());
+        Events.Add(99);
+    });
+    TestFalse(TEXT("Invalid hits are silent"), Mining->ApplyPickaxeHit(FHitResult()));
+    TestEqual(TEXT("No event for invalid hit"), Events.Num(), 0);
+    for (int32 Stage = 1; Stage <= 3; ++Stage)
+    {
+        TestTrue(TEXT("Progressive strike succeeds"), Mining->ApplyPickaxeHit(PickaxeSurface(Rock)));
+        TestEqual(TEXT("Only final stage adds a break"), Events.Num(), Stage == 3 ? 4 : Stage);
+    }
+    TestTrue(TEXT("Contact precedes synchronous break"), Events == TArray<int32>({1, 2, 3, 99}));
+    Rock->ResetRock();
+    TestEqual(TEXT("Reset is silent"), Events.Num(), 4);
+    TestTrue(TEXT("First hit after reset succeeds"), Mining->ApplyPickaxeHit(PickaxeSurface(Rock)));
+    Rock->ResetRock();
+    TestEqual(TEXT("Reset of damaged rock adds no break"), Events.Num(), 5);
+    Mining->OnPickaxeContact.Clear();
+    Mining->OnPickaxeBreak.Clear();
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAudioDeferredTest, "BrainMining.AudioPilot.DeferredBreakAndCancellation", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMiningAudioDeferredTest::RunTest(const FString&)
+{
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    FMinimalBoxMeshGenerator Box;
+    Box.Box = FOrientedBox3d(FVector3d::Zero(), FVector3d(700, 800, 800));
+    Box.Generate();
+    auto* Rock = World->SpawnActor<AGeneratedMiningRock>();
+    TestTrue(TEXT("Async fixture builds"), Rock->SetChunkedMesh(FDynamicMesh3(&Box), 400, true));
+    Rock->InteractiveCutBudgetMilliseconds = .01f;
+    auto* Mining = CreatePickaxe(World);
+    int32 Contacts = 0;
+    int32 Breaks = 0;
+    Mining->OnPickaxeContact.AddLambda([&](const FHitResult&, int32) { ++Contacts; });
+    Mining->OnPickaxeBreak.AddLambda([&](const FVector&) { ++Breaks; });
+    for (int32 Pass = 0; Pass < 2; ++Pass)
+    {
+        for (int32 Stage = 1; Stage <= 3; ++Stage)
+        {
+            const auto Hit = PickaxeSurface(Rock);
+            TestTrue(TEXT("Strike accepted"), Mining->ApplyPickaxeHit(Hit));
+            TestTrue(TEXT("Fixture uses deferred cuts"), Rock->bCutPending);
+            TestEqual(TEXT("Acceptance alone never plays break"), Breaks, 0);
+            const int32 BeforeDuplicate = Contacts;
+            TestFalse(TEXT("Pending strike cannot repeat"), Mining->ApplyPickaxeHit(Hit));
+            TestEqual(TEXT("Pending strike does not duplicate contact"), Contacts, BeforeDuplicate);
+            if (Pass == 0 && Stage == 3) Rock->ResetRock();
+            else DrainPickaxe(Rock);
+            TestFalse(TEXT("No cut remains pending"), Rock->bCutPending);
+        }
+        TestEqual(TEXT("Cancelled final cut silent; committed final cut once"), Breaks, Pass);
+    }
+    Rock->ResetRock();
+    TestEqual(TEXT("Later reset does not replay break"), Breaks, 1);
+    Mining->OnPickaxeContact.Clear();
+    Mining->OnPickaxeBreak.Clear();
+    return true;
+}
 #endif

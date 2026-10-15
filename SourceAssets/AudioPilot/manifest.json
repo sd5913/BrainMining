@@ -1,0 +1,664 @@
+[
+  {
+    "asset": "S_DigLight_00",
+    "seconds": 0.675,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.65,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactMining_000.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, silence trim, 5ms fades, peak -3.7dBFS",
+    "sha256": "651ff089b145dfe700dc6f54531f180af5cdffd608a82348cbe4fade72533548"
+  },
+  {
+    "asset": "S_DigDeep_00",
+    "seconds": 0.7174,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.72,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactMining_000.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      },
+      {
+        "pack": "breaking",
+        "file": "bfh1_rock_falling_01.ogg",
+        "author": "rubberduck",
+        "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mining impact plus rock fragments, mono, fades, peak -2.9dBFS",
+    "sha256": "0eeda66ddcf99037283bdf3620d910871e6ba0c83f709370008baa87c1e620d6"
+  },
+  {
+    "asset": "S_DigLight_01",
+    "seconds": 0.6404,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.65,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactMining_001.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, silence trim, 5ms fades, peak -3.7dBFS",
+    "sha256": "89ce8b19d0299b6bd2c9190691ed807451ab71faa239bb25a10afba051aea82a"
+  },
+  {
+    "asset": "S_DigDeep_01",
+    "seconds": 0.5786,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.72,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactMining_001.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      },
+      {
+        "pack": "breaking",
+        "file": "bfh1_rock_falling_02.ogg",
+        "author": "rubberduck",
+        "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mining impact plus rock fragments, mono, fades, peak -2.9dBFS",
+    "sha256": "61fd9dc06b57d4143eb2ed4383eeb855bd3886e8400e4e5d9ff488e13837fa48"
+  },
+  {
+    "asset": "S_DigLight_02",
+    "seconds": 0.5358,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.65,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactMining_002.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, silence trim, 5ms fades, peak -3.7dBFS",
+    "sha256": "2ce91a757c7b66c758c7dc5b95e9ae5d8c0793d39bd9e7378a8cb4350b4b8c4b"
+  },
+  {
+    "asset": "S_DigDeep_02",
+    "seconds": 0.687,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.72,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactMining_002.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      },
+      {
+        "pack": "breaking",
+        "file": "bfh1_rock_falling_03.ogg",
+        "author": "rubberduck",
+        "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mining impact plus rock fragments, mono, fades, peak -2.9dBFS",
+    "sha256": "fc10985d2ff001e0c26a74a555caa9062ad5c1f32103549c438c564a7e6b4c99"
+  },
+  {
+    "asset": "S_DigLight_03",
+    "seconds": 0.6513,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.65,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactMining_003.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, silence trim, 5ms fades, peak -3.7dBFS",
+    "sha256": "326fc23878cc92da9061a58720e86486282e0e45253234dbfcc260ddf2398196"
+  },
+  {
+    "asset": "S_DigDeep_03",
+    "seconds": 0.6513,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.72,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactMining_003.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      },
+      {
+        "pack": "breaking",
+        "file": "bfh1_rock_falling_04.ogg",
+        "author": "rubberduck",
+        "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mining impact plus rock fragments, mono, fades, peak -2.9dBFS",
+    "sha256": "ce1127551316947059d9c9fd0078a05b6146cf5733ac44f9a811c7ddf7f77f97"
+  },
+  {
+    "asset": "S_DigLight_04",
+    "seconds": 0.6199,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.65,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactMining_004.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, silence trim, 5ms fades, peak -3.7dBFS",
+    "sha256": "66b87f4f917c323b6158a079e588f173612126cf7573b19feb24251c48cea366"
+  },
+  {
+    "asset": "S_DigDeep_04",
+    "seconds": 0.5677,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.72,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactMining_004.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      },
+      {
+        "pack": "breaking",
+        "file": "bfh1_rock_falling_05.ogg",
+        "author": "rubberduck",
+        "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mining impact plus rock fragments, mono, fades, peak -2.9dBFS",
+    "sha256": "15a13c39d1639c4f04584307b282dc22c22acf39f7e52a03bdd5d10661a9598d"
+  },
+  {
+    "asset": "S_DigBreak_00",
+    "seconds": 0.5081,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.78,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "breaking",
+        "file": "bfh1_rock_breaking_01.ogg",
+        "author": "rubberduck",
+        "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, short fades, peak -2.2dBFS",
+    "sha256": "ff82a1f8c9b9023c41a19029a189769803127ec081d5b2c67c1cae79824753a7"
+  },
+  {
+    "asset": "S_DigBreak_01",
+    "seconds": 0.8405,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.78,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "breaking",
+        "file": "bfh1_rock_breaking_02.ogg",
+        "author": "rubberduck",
+        "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, short fades, peak -2.2dBFS",
+    "sha256": "9df2411e242db80d8d44097c9c07f7423622310405b9bf6d3d9786a234336c57"
+  },
+  {
+    "asset": "S_DigBreak_02",
+    "seconds": 0.4472,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.78,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "breaking",
+        "file": "bfh1_rock_breaking_03.ogg",
+        "author": "rubberduck",
+        "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, short fades, peak -2.2dBFS",
+    "sha256": "c7ac2e05b59d156687012ce43421467719ed20a5e1879f61781f2e76f178ff59"
+  },
+  {
+    "asset": "S_Swing_00",
+    "seconds": 0.3876,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.45,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "rpg",
+        "file": "Audio/knifeSlice.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/rpg-audio",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Light tool swish/cloth substitute; mono, trimmed, peak -6.9dBFS",
+    "sha256": "fb3feca04f70e61ae6f7fce1b671d955024c20506290d41e1f8429708abcebfd"
+  },
+  {
+    "asset": "S_Swing_01",
+    "seconds": 0.4682,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.45,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "rpg",
+        "file": "Audio/knifeSlice2.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/rpg-audio",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Light tool swish/cloth substitute; mono, trimmed, peak -6.9dBFS",
+    "sha256": "eaecca9a06107ff6723d507ae6c30771602820488b8af551d72693d5e865dc14"
+  },
+  {
+    "asset": "S_Swing_02",
+    "seconds": 0.5646,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.45,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "rpg",
+        "file": "Audio/cloth1.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/rpg-audio",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Light tool swish/cloth substitute; mono, trimmed, peak -6.9dBFS",
+    "sha256": "6c223154a495d96a0044b06a99a354098a0a1c01e6259d4f70bcfa6e69b35798"
+  },
+  {
+    "asset": "S_Foot_concrete_00",
+    "seconds": 0.1059,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.5,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/footstep_concrete_000.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6dBFS",
+    "sha256": "f0a6ea38f24afea49543b636eaf88618470e5a60f0f582440571e0f2d1c5a229"
+  },
+  {
+    "asset": "S_Foot_concrete_01",
+    "seconds": 0.1076,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.5,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/footstep_concrete_001.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6dBFS",
+    "sha256": "d45316861627ffc71cb0ae779a9a11998becac7c0a803461d934df88ede1c7f8"
+  },
+  {
+    "asset": "S_Foot_concrete_02",
+    "seconds": 0.1128,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.5,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/footstep_concrete_002.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6dBFS",
+    "sha256": "633fbc0ac8e6b826df14d313dc43fdda52485935132533498a7b771ccd3852be"
+  },
+  {
+    "asset": "S_Foot_concrete_03",
+    "seconds": 0.1105,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.5,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/footstep_concrete_003.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6dBFS",
+    "sha256": "fbdbf31daf4a39e0fe0bacd8da085a7b49f773150a77d94c96fd12f69407c349"
+  },
+  {
+    "asset": "S_Foot_concrete_04",
+    "seconds": 0.1144,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.5,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/footstep_concrete_004.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6dBFS",
+    "sha256": "981d76cfbfe452c21e622ed7573ce14380574051c4b35a6011422dc14c6fe2ca"
+  },
+  {
+    "asset": "S_Foot_wood_00",
+    "seconds": 0.2496,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.5,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/footstep_wood_000.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6dBFS",
+    "sha256": "51b48e03430bf010ae9d069fa393c6926ba1c4dc44b91f61c166d7662a341ce8"
+  },
+  {
+    "asset": "S_Foot_wood_01",
+    "seconds": 0.2516,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.5,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/footstep_wood_001.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6dBFS",
+    "sha256": "8dcd93156a3c7e1d54fff18da82ddd6fb555346771eb22ba1636e105f5376afb"
+  },
+  {
+    "asset": "S_Foot_wood_02",
+    "seconds": 0.2514,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.5,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/footstep_wood_002.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6dBFS",
+    "sha256": "8f5fef0493bdef3358cf57db7779d11757d98edae22e613d860b54cde00f6fa7"
+  },
+  {
+    "asset": "S_Foot_wood_03",
+    "seconds": 0.2515,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.5,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/footstep_wood_003.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6dBFS",
+    "sha256": "008a16fb5019062e9f1dea871f20757c381d426ae3bfe45ba798a93a74e37075"
+  },
+  {
+    "asset": "S_Foot_wood_04",
+    "seconds": 0.2479,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.5,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/footstep_wood_004.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6dBFS",
+    "sha256": "50b9dd92cb89b33c529511916720dcb5923aa2086af5ebf8722d4fc64905ca12"
+  },
+  {
+    "asset": "S_UI_Open",
+    "seconds": 0.1478,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.45,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "interface",
+        "file": "Audio/open_001.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/interface-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6.9dBFS",
+    "sha256": "78eb98cc146665e452686878b215cc632dab4a23cd5fc96328737fbf2e4372d6"
+  },
+  {
+    "asset": "S_UI_Close",
+    "seconds": 0.1478,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.45,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "interface",
+        "file": "Audio/close_001.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/interface-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6.9dBFS",
+    "sha256": "c28574178a20059182c8a2a48ec78f7d09576f2b4aef8e3b694ca0a6cf7acd09"
+  },
+  {
+    "asset": "S_UI_Confirm",
+    "seconds": 0.2898,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.45,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "interface",
+        "file": "Audio/confirmation_001.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/interface-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6.9dBFS",
+    "sha256": "5589c95543730296fc9388a7dbb0f596d1d00cb73cbca10c761784dfe38aaaeb"
+  },
+  {
+    "asset": "S_UI_Reject",
+    "seconds": 0.1646,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.45,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "interface",
+        "file": "Audio/error_001.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/interface-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6.9dBFS",
+    "sha256": "aaca281d0ecb18f77482b2d9b95433a42b4eaeb9d0350b81549647e9a2a58f8c"
+  },
+  {
+    "asset": "S_Coin",
+    "seconds": 0.1024,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.45,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "interface",
+        "file": "Audio/pluck_001.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/interface-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono, trimmed, fades, peak -6.9dBFS",
+    "sha256": "308c2f89ec3acb6c763905f7b7ad6673bfa4bb48484233f06835cda44de861cd"
+  },
+  {
+    "asset": "S_Land",
+    "seconds": 0.5051,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.65,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactSoft_heavy_000.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Mono soft landing, trimmed, fades",
+    "sha256": "da5ae055b1ae6a42eb91876890cef7bef55075ea36796b660c4011396abd09a6"
+  },
+  {
+    "asset": "M_DreamyFlashback_Loop",
+    "seconds": 123.6155,
+    "channels": 2,
+    "sample_rate": 48000,
+    "peak": 0.75,
+    "loop": true,
+    "sources": [
+      {
+        "pack": "music",
+        "file": "DreamyFlashback.mp3",
+        "author": "Kevin MacLeod",
+        "url": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532",
+        "license": "CC-BY 4.0"
+      }
+    ],
+    "processing": "Full track with 3s equal-gain tail/head overlap, stereo, peak -2.5dBFS; artistic loop transition needs in-game audition",
+    "sha256": "dcecb574ba3bd66dfa2db48be8985827fabf1a4696d0f10a737c7fe2639d2a9b"
+  }
+]

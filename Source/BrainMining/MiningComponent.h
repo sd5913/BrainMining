@@ -17,6 +17,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMiningAttemptEvent, float, MiningIn
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMiningHitEvent, const FHitResult&, Hit);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMiningResetEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMiningToolModeEvent, bool, bDrillMode);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FMiningPickaxeContactEvent, const FHitResult&, int32);
+DECLARE_MULTICAST_DELEGATE_OneParam(FMiningPickaxeBreakEvent, const FVector&);
 
 UCLASS(ClassGroup=(Mining), meta=(BlueprintSpawnableComponent))
 class BRAINMINING_API UMiningComponent : public UActorComponent
@@ -24,6 +26,8 @@ class BRAINMINING_API UMiningComponent : public UActorComponent
 	GENERATED_BODY()
 public:
 	UMiningComponent();
+	FMiningPickaxeContactEvent OnPickaxeContact;
+	FMiningPickaxeBreakEvent OnPickaxeBreak;
 	bool ApplyPickaxeBalance(const FMiningPickaxeLevel& Level);
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
 	FMiningPickaxeLevel PickaxeBalance;

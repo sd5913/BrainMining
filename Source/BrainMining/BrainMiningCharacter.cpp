@@ -10,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BrainMining.h"
 #include "MiningComponent.h"
+#include "MiningAudioComponent.h"
 #include "MiningToolEffectsComponent.h"
 #include "MiningBombToolComponent.h"
 #include "MiningProgressionComponent.h"
@@ -48,6 +49,7 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 	FirstPersonCameraComponent->FirstPersonScale = 0.6f;
 
 	MiningComponent = CreateDefaultSubobject<UMiningComponent>(TEXT("MiningComponent"));
+	MiningAudio = CreateDefaultSubobject<UMiningAudioComponent>(TEXT("MiningAudio"));
 	MiningToolEffects = CreateDefaultSubobject<UMiningToolEffectsComponent>(TEXT("MiningToolEffects"));
 	BombTool = CreateDefaultSubobject<UMiningBombToolComponent>(TEXT("BombTool"));
 	Progression = CreateDefaultSubobject<UMiningProgressionComponent>(TEXT("Progression"));

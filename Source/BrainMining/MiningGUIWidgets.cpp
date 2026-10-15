@@ -1,6 +1,7 @@
 #include "MiningGUIWidgets.h"
 #include "MiningBombToolComponent.h"
 #include "MiningComponent.h"
+#include "MiningAudioComponent.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -255,7 +256,16 @@ void UMiningGUIHUDWidget::EnableProgressionPanel()
 	DrillUpgrade->OnUpgradeRequested.AddUniqueDynamic(this, &ThisClass::ForwardUpgrade);
 	DrillUpgrade->OnLevelChanged.AddUniqueDynamic(this, &ThisClass::ForwardLevel);
 	if (AbilityV && AbilityV->NormalTexture) DrillUpgrade->ItemIcon->SetBrushFromTexture(AbilityV->NormalTexture);
-	if (auto* PanelSlot = Cast<UCanvasPanelSlot>(UpgradePanel->Slot)) PanelSlot->SetSize(FVector2D(724, 384));
+	if (auto* PanelSlot = Cast<UCanvasPanelSlot>(UpgradePanel->Slot)) PanelSlot->SetSize(FVector2D(724, 510));
+	auto* Credits = WidgetTree->ConstructWidget<UTextBlock>();
+	Credits->SetText(FText::FromString(TEXT("Music: Dreamy Flashback — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — creativecommons.org/licenses/by/4.0/\nSource: incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532\nEdited: 48 kHz conversion, loop crossfade and volume adjustment.\nSound effects: Kenney / rubberduck — CC0")));
+	Credits->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 12));
+	Credits->SetColorAndOpacity(FLinearColor(.8f,.84f,.87f));
+	Credits->SetAutoWrapText(true);
+	Credits->SetVisibility(ESlateVisibility::HitTestInvisible);
+	auto* CreditSlot = UpgradePanel->AddChildToCanvas(Credits);
+	CreditSlot->SetPosition(FVector2D(0, 390));
+	CreditSlot->SetSize(FVector2D(724, 120));
 	for (int32 Index = 0; Index < 4; ++Index)
 	{
 		auto* Card = Item(Index);
@@ -319,6 +329,8 @@ void UMiningGUIHUDWidget::SetUpgradePanelOpen(bool bOpen)
 {
 	if (bUpgradePanelOpen == bOpen) return;
 	bUpgradePanelOpen = bOpen;
+	if (auto* Pawn = GetOwningPlayerPawn())
+		if (auto* Audio = Pawn->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPanel(bOpen);
 	for (int32 Index = 0; Index < 4; ++Index)
 		if (auto* Card = Item(Index)) Card->SetInteractionAllowed(bOpen);
 	PanelSpring.Target = bOpen ? 1.f : 0.f;

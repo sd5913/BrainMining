@@ -1,6 +1,9 @@
 #include "EndingEmergence.h"
 #include "DiggableRock.h"
 #include "MiningComponent.h"
+#include "MiningDebrisBurst.h"
+#include "MiningToolEffectsComponent.h"
+#include "Engine/StaticMesh.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningInteractionHUDWidget.h"
 #include "MiningCharacterMovementComponent.h"
@@ -9,6 +12,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/AudioComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/DynamicMeshComponent.h"
 #include "DynamicMesh/DynamicMeshAttributeSet.h"
 #include "DynamicMesh/MeshNormals.h"
@@ -25,6 +29,13 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Rendering/SlateRenderer.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Engine/Texture2D.h"
+#include "RenderingThread.h"
+#include "Fonts/FontMeasure.h"
 
 namespace Ending
 {
@@ -34,10 +45,10 @@ namespace Ending
     const float GateX[]={1600,5800,7300,8650,10000};
     const float GateY[]={0,0,-170,170,0};
     float Ease(float V) { V=FMath::Clamp(V,0.f,1.f); return V*V*(3-2*V); }
-    const FVector BrainCenter(16500,0,-5500);
-    constexpr float BrainRadius=6500;
-    constexpr int NeuronCount=22;
-    int Layer(int I) { return I==0?0:I==NeuronCount-1?5:1+(I-1)/5; }
+    const FVector BrainCenter(19700,0,-8146.21125);
+    constexpr float BrainRadius=10500;
+    constexpr int NeuronCount=47;
+    int Layer(int I) { return I==0?0:I==NeuronCount-1?10:1+(I-1)/5; }
     float Ground(float X,float Y=0)
     {
         if(X<1600)return 850-1140*FMath::Sqrt(FMath::Max(0.f,1-X*X/(2400*2400.f)-Y*Y/(1300*1300.f)));
@@ -59,9 +70,37 @@ public:
         auto Geo=[&](float X,float Y,float W,float H){return G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(O+FVector2D(X,Y)*S)));};
         auto Box=[&](float X,float Y,float W,float H,FLinearColor C){FSlateDrawElement::MakeBox(Out,++L,Geo(X,Y,W,H),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,C);};
         auto Text=[&](const FString& T,float X,float Y,int F,FLinearColor C){FSlateDrawElement::MakeText(Out,++L,Geo(X,Y,1500,70),T,FCoreStyle::GetDefaultFontStyle("Regular",FMath::Max(9,FMath::RoundToInt(F*S))),ESlateDrawEffect::None,C);};
-        // A hard cut to complete black; no labels or controls may leak through.
-        if(D->Shot==7){Box(-O.X/S,-O.Y/S,Size.X/S,Size.Y/S,FLinearColor::Black);return L;}
-        if(D->Shot==8 || (D->Shot==9&&D->ShotTime<2))return L;
+        if(D->Shot>=9)
+        {
+            if(D->bComplete)Text(TEXT("R 重玩"),1460,855,14,FLinearColor(.14f,.19f,.17f));
+            return L;
+        }
+        if(D->Shot==8&&D->RealityHits>0)
+        {
+            auto Line=[&](FVector2D A,FVector2D B,float Width,FLinearColor C)
+            {TArray<FVector2D> P{O+A*S,O+B*S};FSlateDrawElement::MakeLines(Out,++L,G.ToPaintGeometry(),P,ESlateDrawEffect::None,C,true,Width*S);};
+            const FVector2D Center(800,450);
+            for(int Branch=0;Branch<16;++Branch)
+            {
+                FRandomStream R(510+Branch*17);
+                const float Angle=Branch*2*PI/16+R.FRandRange(-.15f,.15f);
+                FVector2D Previous=Center;
+                for(int Segment=0;Segment<2+D->RealityHits;++Segment)
+                {
+                    const float Distance=(Segment+1)*42;
+                    FVector2D Next=Center+FVector2D(FMath::Cos(Angle),FMath::Sin(Angle))*Distance+FVector2D(R.FRandRange(-20,20),R.FRandRange(-20,20));
+                    Line(Previous,Next,3+D->RealityHits*2,FLinearColor(.001f,.003f,.008f,.9f));
+                    Line(Previous+FVector2D(2,1),Next+FVector2D(2,1),1.2f,FLinearColor(.55f,.8f,.83f,.9f));
+                    if(Segment>0)
+                    {
+                        const FVector2D Fork=Previous+FVector2D(FMath::Cos(Angle+.5f),FMath::Sin(Angle+.5f))*(22+D->RealityHits*9);
+                        Line(Previous,Fork,2.2f,FLinearColor(.55f,.8f,.83f,.85f));
+                        if(D->RealityHits>=2)Line(Next,Center+FVector2D(FMath::Cos(Angle+.28f),FMath::Sin(Angle+.28f))*Distance,1.8f,FLinearColor(.55f,.8f,.83f,.7f));
+                    }
+                    Previous=Next;
+                }
+            }
+        }
         const FLinearColor Ink(.007f,.012f,.022f,.78f), Paper(.94f,.9f,.8f), Muted(.55f,.64f,.65f);
         const float Flash=D->OverlayAlpha();
         if(Flash>0) Box(-O.X/S,-O.Y/S,Size.X/S,Size.Y/S,FLinearColor(.86f,.96f,.95f,Flash));
@@ -102,6 +141,13 @@ public:
                     }
                 }
             }
+        }
+        if(D->Shot==8)
+        {
+            const float Ready=D->StrikeReadiness();
+            Box(650,667,300,4,FLinearColor(.08f,.14f,.15f,.8f));
+            Box(650,667,300*Ready,4,Ready>=1?Ending::Gold:Ending::Teal);
+            Text(FString::Printf(TEXT("%d / 3    %s"),D->RealityHits,Ready>=1?TEXT("挥镐"):TEXT("收镐…")),710,683,15,Paper);
         }
         const FString Sub=D->Subtitle();
         if(!Sub.IsEmpty()) {Box(220,722,1160,66,Ink);Text(Sub,248,739,23,Paper);}
@@ -276,13 +322,13 @@ void AEndingEmergence::BuildJourney()
     }
     Shape(TEXT("WalkableBrainPlanet"),Ending::BrainCenter,FVector(Ending::BrainRadius*2),FLinearColor(.10f,.04f,.15f),TEXT("Sphere"),Set,TEXT("BrainGround"),true);
     // Ambient neural filaments follow the small planet's surface.
-    for(int I=0;I<180;++I)
+    for(int I=0;I<330;++I)
     {
-        const float X=R.FRandRange(13000,20200),Y=R.FRandRange(-2400,2400);
+        const float X=R.FRandRange(13000,26700),Y=R.FRandRange(-2400,2400);
         const FVector P(X,Y,Ending::Ground(X,Y)+18);
         const FVector Q(X+110,Y+40,Ending::Ground(X+110,Y+40)+18);
         Nerves.Add(Rod(P,Q,8,Ending::Teal*.07f,Set));
-        Shape(TEXT("Neuron"),P,FVector(24),Ending::Teal*.7f,TEXT("Sphere"),Set,TEXT("Glow"));
+        AmbientNeuronCores.Add(Shape(TEXT("Neuron"),P,FVector(24),Ending::Teal*.7f,TEXT("Sphere"),Set,TEXT("Glow")));
         if(I%6==0&&FMath::Abs(Y)>380)
         {
             Rod(P,P+FVector(20,0,260),9,Ending::Teal*.3f,Set);
@@ -290,14 +336,14 @@ void AEndingEmergence::BuildJourney()
             Shape(TEXT("NeuralSpark"),P+FVector(70,90,330),FVector(37),Ending::Gold*.55f,TEXT("Sphere"),Set,TEXT("Glow"));
         }
     }
-    // Twenty-two hosts: four layers with five lanes and longer visible flights.
+    // Nine branching layers: twice the original forward distance and ten hops to the goal.
     NeuronPositions.Add(FVector(13200,0,Ending::Ground(13200)+480));
-    for(int Row=0;Row<4;++Row)for(int Lane=-2;Lane<=2;++Lane)
+    for(int Row=0;Row<9;++Row)for(int Lane=-2;Lane<=2;++Lane)
     {
         const float X=14500+Row*1300,Y=Lane*800;
         NeuronPositions.Add(FVector(X,Y,Ending::Ground(X,Y)+480));
     }
-    NeuronPositions.Add(FVector(19700,0,Ending::Ground(19700)+600));
+    NeuronPositions.Add(FVector(26200,0,Ending::Ground(26200)+600));
     for(int I=0;I<NeuronPositions.Num();++I)
     {
         const FVector P=NeuronPositions[I];const bool Goal=I==NeuronPositions.Num()-1;
@@ -441,21 +487,24 @@ void AEndingEmergence::BuildSpace()
     OtherCells=Group(TEXT("ManyUniversesInsideCells"),FVector::ZeroVector,Sets[3]);
     auto* SmallStars=Instances(TEXT("UniversesInOtherCells"),TEXT("Sphere"),FLinearColor(.32f,.43f,.70f),OtherCells,TEXT("Glow"));
     auto* WarmStars=Instances(TEXT("WarmUniversesInOtherCells"),TEXT("Sphere"),Ending::Gold*.55f,OtherCells,TEXT("Glow"));
-    for(int Row=-2;Row<=2;++Row)for(int Col=-2;Col<=2;++Col)
+    auto* Membranes=Instances(TEXT("DenseCellMembranes"),TEXT("Sphere"),Ending::Teal*.29f,OtherCells,TEXT("Atmosphere"));
+    auto* Nuclei=Instances(TEXT("DenseCellNuclei"),TEXT("Sphere"),FLinearColor(.14f,.04f,.23f),OtherCells,TEXT("Organic"));
+    auto* Galaxies=Instances(TEXT("DenseCellGalaxies"),TEXT("Sphere"),FLinearColor(.18f,.06f,.29f),OtherCells,TEXT("Haze"));
+    UniverseCellCount=1;
+    for(int Row=-11;Row<=11;++Row)for(int Col=-14;Col<=14;++Col)
     {
         if(Row==0&&Col==0)continue;
-        const FVector Center((Row+Col)%3*35000,Col*164000+(FMath::Abs(Row)%2)*65000,Row*150000);
-        const float Radius=R.FRandRange(42000,57000);
-        auto* Neighbor=Group(TEXT("NeighborCell"),Center,OtherCells);
-        Shape(TEXT("NeighborMembrane"),FVector::ZeroVector,FVector(Radius*2,Radius*2.2,Radius*1.9),Ending::Teal*.21f,TEXT("Sphere"),Neighbor,TEXT("Atmosphere"));
-        Ring(FVector::ZeroVector,Radius,Ending::Teal*.35f,Neighbor,0,Radius*.004f);
-        Shape(TEXT("NeighborNucleus"),FVector(0,Radius*.60,Radius*.18),FVector(Radius*.30),FLinearColor(.14f,.04f,.23f),TEXT("Sphere"),Neighbor,TEXT("Organic"));
-        Shape(TEXT("NeighborGalaxyHaze"),FVector::ZeroVector,FVector(Radius*1.05,Radius*.9,Radius*.13),FLinearColor(.18f,.06f,.29f),TEXT("Sphere"),Neighbor,TEXT("Haze"));
-        for(int I=0;I<150;++I)
+        ++UniverseCellCount;
+        const FVector Center(R.FRandRange(-32000,32000),Col*145000+(FMath::Abs(Row)%2)*72500+R.FRandRange(-6000,6000),Row*128000+R.FRandRange(-5000,5000));
+        const float Radius=R.FRandRange(66000,74000);
+        Membranes->AddInstance(FTransform(FRotator::ZeroRotator,Center,FVector(Radius*2,Radius*2.05,Radius*1.96)/100));
+        Nuclei->AddInstance(FTransform(FRotator::ZeroRotator,Center+FVector(0,Radius*.60,Radius*.18),FVector(Radius*.30/100)));
+        Galaxies->AddInstance(FTransform(FRotator(0,0,R.FRandRange(-25,25)),Center,FVector(Radius*1.05,Radius*.9,Radius*.13)/100));
+        for(int I=0;I<64;++I)
         {
             const float Dist=R.FRandRange(.015f,.7f)*Radius,A=Dist/Radius*11+(I%3)*2*PI/3;
             const FVector P=Center+FVector(FMath::Cos(A)*Dist*.45,FMath::Sin(A)*Dist,FMath::Cos(A)*Dist*.85);
-            (I%3?SmallStars:WarmStars)->AddInstance(FTransform(FRotator::ZeroRotator,P,FVector(R.FRandRange(120,330)/100)));
+            (I%3?SmallStars:WarmStars)->AddInstance(FTransform(FRotator::ZeroRotator,P,FVector(R.FRandRange(160,400)/100)));
         }
     }
 }
@@ -466,7 +515,7 @@ void AEndingEmergence::BuildAfternoon()
     const FLinearColor Wood(.28f,.13f,.057f),Cream(.69f,.61f,.44f),Ink(.018f,.039f,.045f);
     Shape(TEXT("RoomFloor"),FVector(0,0,-14),FVector(1700,1500,25),FLinearColor(.12f,.14f,.135f),TEXT("Cube"),Set);
     Shape(TEXT("BackWall"),FVector(620,0,240),FVector(25,1500,500),Cream*.7f,TEXT("Cube"),Set);
-    Shape(TEXT("WarmWallBehindSpeaker"),FVector(-620,0,240),FVector(25,1500,500),Cream*.62f,TEXT("Cube"),Set);
+    Shape(TEXT("WarmRoomWall"),FVector(-620,0,240),FVector(25,1500,500),Cream*.62f,TEXT("Cube"),Set);
     Shape(TEXT("SideWall"),FVector(0,680,240),FVector(1250,25,500),Cream*.6f,TEXT("Cube"),Set);
     Shape(TEXT("AfternoonWindow"),FVector(80,662,290),FVector(680,8,280),FLinearColor(.79f,.60f,.33f),TEXT("Cube"),Set,TEXT("Glow"));
     for(int I=-1;I<=1;++I) Shape(TEXT("WindowMullion"),FVector(80+I*220,650,290),FVector(8,10,290),Wood,TEXT("Cube"),Set);
@@ -497,45 +546,22 @@ void AEndingEmergence::BuildAfternoon()
     auto* Screen=Shape(TEXT("LaptopScreen"),FVector(95,34,111),FVector(3,78,48),Ink,TEXT("Cube"),Set);Screen->SetRelativeRotation(FRotator(0,0,-10));
     Shape(TEXT("LaptopDisplay"),FVector(92,34,111),FVector(1,71,40),Ending::Blue*.6f,TEXT("Cube"),Set,TEXT("Glow"));
     for(int I=0;I<5;++I) Shape(TEXT("LaptopLines"),FVector(91,20,99+I*5),FVector(.4,38-I*3,1),Ending::Teal*.5f,TEXT("Cube"),Set,TEXT("Glow"));
-    for(int I=0;I<3;++I)
-    {
-        const FVector P(I==0?-198:I==1?0:180,I==1?-164:25,0);
-        auto* Dev=Group(TEXT("Developer"),P,Set);Dev->SetRelativeRotation(FRotator(0,I==0?0:I==1?90:180,0));
-        if(I==0)Speaker=Dev;
-        Person(FVector::ZeroVector,1,I==0?Ending::Teal*.38f:I==1?FLinearColor(.25f,.15f,.07f):Ending::Blue,Dev);
-        const FLinearColor Skin(.6f,.38f,.24f),Dark(.023f,.013f,.012f);
-        for(int Side:{-1,1})
-        {
-            const FVector Eye(17,Side*7,166);
-            Shape(TEXT("EyeWhite"),Eye,FVector(3.4,11,7),FLinearColor(.74f,.71f,.61f),TEXT("Sphere"),Dev);
-            Shape(TEXT("Iris"),Eye+FVector(2.1,0,0),FVector(1.4,5.7,5.7),FLinearColor(.20f,.09f,.027f),TEXT("Sphere"),Dev,TEXT("Iris"));
-            Shape(TEXT("Pupil"),Eye+FVector(2.9,0,0),FVector(.9,2.4,2.9),Dark,TEXT("Sphere"),Dev);
-            Shape(TEXT("EyeCatchlight"),Eye+FVector(3.3,-.8,1),FVector(.4,.5,.5),FLinearColor(.78f,.79f,.69f),TEXT("Sphere"),Dev,TEXT("Glow"));
-            for(int Upper:{-1,1})
-            {
-                const FVector Origin=Eye+FVector(4.8,0,Upper*3.5);
-                auto* Lid=Shape(TEXT("Eyelid"),Origin,FVector(2.5,12,7),Skin,TEXT("Sphere"),Dev);
-                if(I==0){EyeLids.Add(Lid);LidOrigins.Add(Origin);}
-                else Lid->SetRelativeLocation(Origin+FVector(-7.5,0,Upper*3.1));
-            }
-            Rod(FVector(18,Side*7-4,175),FVector(17,Side*7+4,175.8),1.4f,Dark,Dev,TEXT("Surface"));
-        }
-        for(int Segment=0;Segment<10;++Segment)
-        {
-            const float A=-1+Segment*.2f,B=A+.2f;
-            Rod(FVector(16.5,A*8,150+A*A*3),FVector(16.5,B*8,150+B*B*3),.8f,Dark,Dev,TEXT("Surface"));
-        }
-        Shape(TEXT("Nose"),FVector(18,0,159),FVector(6,5,8),Skin,TEXT("Sphere"),Dev);
-        if(I==0)SpeakerMouth=Shape(TEXT("SpeakingSmile"),FVector(16.8,0,151),FVector(1.4,10,2),Dark,TEXT("Sphere"),Dev);
-        Rod(FVector(5,-28,120),FVector(51,-23,84),11,FLinearColor(.48f,.30f,.18f),Dev,TEXT("Surface"));
-        Rod(FVector(5,28,120),FVector(51,23,84),11,FLinearColor(.48f,.30f,.18f),Dev,TEXT("Surface"));
-        Shape(TEXT("Mug"),FVector(-40+I*76,75-I*70,94),FVector(13,13,19),Cream,TEXT("Cylinder"),Set);
-        Shape(TEXT("Coffee"),FVector(-40+I*76,75-I*70,104),FVector(11,11,.5),Wood*.12f,TEXT("Cylinder"),Set);
-    }
-    // A tiny echo of the opening cave grows out of the drawn path, then settles.
-    Idea=Group(TEXT("MiniatureIdea"),FVector(-10,0,90),Set);
-    for(int I=0;I<12;++I) Shape(TEXT("LittleMine"),FVector(FMath::Cos(I*.52)*18,FMath::Sin(I*.52)*30,8),FVector(8,9,10),Ending::Teal*.5f,TEXT("Cube"),Idea);
-    Shape(TEXT("IdeaSpark"),FVector(0,0,21),FVector(5),Ending::Gold,TEXT("Sphere"),Idea,TEXT("Glow"));
+    Shape(TEXT("Mug"),FVector(-10,-75,97),FVector(15,15,23),Cream,TEXT("Cylinder"),Set);
+    Shape(TEXT("Coffee"),FVector(-10,-75,109),FVector(13,13,.5),Wood*.12f,TEXT("Cylinder"),Set);
+    // Authored in view space, attached to the rail camera at runtime. A distinct
+    // thumb and four articulated fingers make the final snap readable in first person.
+    EndingHand=Group(TEXT("FirstPersonRealityHand"),FVector::ZeroVector,Set);
+    const FLinearColor Skin(.62f,.36f,.22f);
+    Rod(FVector(-12,1,-32),FVector(0,0,-5),8.5f,Ending::Teal*.35f,EndingHand,TEXT("Surface"));
+    Shape(TEXT("Wrist"),FVector(0,0,-6),FVector(7,7,12),Skin,TEXT("Sphere"),EndingHand);
+    Shape(TEXT("Palm"),FVector(0,0,2),FVector(5.8,12,14),Skin,TEXT("Sphere"),EndingHand);
+    for(int Finger=0;Finger<5;++Finger)for(int Joint=0;Joint<3;++Joint)
+        Fingers.Add(Shape(TEXT("FingerJoint"),FVector::ZeroVector,FVector(3),Skin,TEXT("Sphere"),EndingHand));
+    EndingTool=Group(TEXT("ReturnedPickaxe"),FVector::ZeroVector,EndingHand);
+    ReturnedPickaxe=Shape(TEXT("MainGamePickaxe"),FVector::ZeroVector,FVector(65),FLinearColor::White,TEXT("Cube"),EndingTool);
+    ReturnedPickaxe->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe")));
+    ReturnedPickaxe->EmptyOverrideMaterials();
+    EndingHand->SetVisibility(false,true);
     // Plant, pinboard and loose notes keep the final room recognizably human.
     Shape(TEXT("Pinboard"),FVector(600,-330,235),FVector(12,360,190),Wood*.7f,TEXT("Cube"),Set);
     for(int I=0;I<9;++I)Shape(TEXT("StickyNote"),FVector(591,-460+(I%3)*110,175+(I/3)*55),FVector(2,60,38),I%2?Cream:Ending::Gold*.55f,TEXT("Cube"),Set);
@@ -553,7 +579,7 @@ void AEndingEmergence::BuildDemo()
     for(ADiggableRock* G:Gates)if(IsValid(G))G->Destroy();Gates.Empty();
     TArray<UActorComponent*> Old;GetComponents(Old);
     for(int I=Old.Num()-1;I>=0;--I)if(Old[I]->ComponentHasTag(Ending::Tag)){RemoveInstanceComponent(Old[I]);Old[I]->DestroyComponent();}
-    Sets.Empty();Nerves.Empty();Sketch.Empty();Blood.Empty();BloodOrigins.Empty();CrowdOrigins.Empty();EyeLids.Empty();LidOrigins.Empty();NeuronPositions.Empty();NeuronCores.Empty();
+    Sets.Empty();Nerves.Empty();Sketch.Empty();Blood.Empty();BloodOrigins.Empty();CrowdOrigins.Empty();Fingers.Empty();NeuronPositions.Empty();NeuronCores.Empty();AmbientNeuronCores.Empty();
     Sets.Add(Group(TEXT("01_PlayableCellsBloodBrain"),FVector::ZeroVector));
     Sets.Add(Group(TEXT("02_CityAndPeople"),Ending::City));
     Sets.Add(Group(TEXT("03_Earth"),Ending::Earth));
@@ -607,6 +633,35 @@ bool AEndingEmergence::Initialize()
         SAssignNew(View,SEmergenceEndingView).Owner(this);View->SetVisibility(EVisibility::HitTestInvisible);
         GEngine->GameViewport->AddViewportWidgetContent(View.ToSharedRef(),100);
     }
+    if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_Exhaustion")))
+    {ExhaustionMaterial=UMaterialInstanceDynamic::Create(Base,this);Camera->GetCameraComponent()->AddOrUpdateBlendable(ExhaustionMaterial,1);}
+    // Copy the active pawn's actual mesh and material overrides, including its current style.
+    TArray<UStaticMeshComponent*> PawnParts;Player->GetPawn()->GetComponents(PawnParts);
+    for(auto* Part:PawnParts)if(Part->GetName()==TEXT("PickaxeModel"))
+    {
+        ReturnedPickaxe->SetStaticMesh(Part->GetStaticMesh());
+        ReturnedPickaxe->SetRelativeTransform(Part->GetRelativeTransform());
+        ReturnedPickaxe->SetOverlayMaterial(Part->GetOverlayMaterial());
+        for(int I=0;I<Part->GetNumMaterials();++I)ReturnedPickaxe->SetMaterial(I,Part->GetMaterial(I));
+    }
+    // Present the broad face of the real axe instead of its thin edge.
+    EndingTool->SetRelativeRotation(FRotator(0,75,0));
+    if(auto* Effects=Player->GetPawn()->FindComponentByClass<UMiningToolEffectsComponent>())
+        for(const auto& Asset:Effects->DebrisMeshAssets)if(auto* Mesh=Asset.LoadSynchronous())EndingDebrisMeshes.Add(Mesh);
+    EndingHand->AttachToComponent(Camera->GetCameraComponent(),FAttachmentTransformRules::KeepRelativeTransform);
+    EndingHand->SetVisibility(false,true);
+    ToolLight=NewObject<UPointLightComponent>(this,NAME_None,RF_Transient);
+    ToolLight->SetupAttachment(Camera->GetCameraComponent());ToolLight->SetRelativeLocation(FVector(10,-20,35));
+    ToolLight->SetIntensity(900);ToolLight->SetAttenuationRadius(350);ToolLight->SetCastShadows(false);ToolLight->RegisterComponent();ToolLight->SetVisibility(false);
+    for(int I=0;I<4;++I)
+    {
+        auto* Shell=NewObject<UStaticMeshComponent>(this,NAME_None,RF_Transient);
+        Shell->SetupAttachment(RootComponent);Shell->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Sphere.Sphere")));
+        auto* M=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_Atmosphere")),this);
+        Shell->SetMaterial(0,M);Shell->SetCollisionEnabled(ECollisionEnabled::NoCollision);Shell->SetCastShadow(false);Shell->RegisterComponent();Shell->SetVisibility(false);NeuralWaveShells.Add(Shell);
+    }
+    if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_WetLens")))
+    {WetLensMaterial=UMaterialInstanceDynamic::Create(Base,this);Camera->GetCameraComponent()->AddOrUpdateBlendable(WetLensMaterial,1);}
     SetAmbience(TEXT("Cell"),.34f);return true;
 }
 
@@ -636,8 +691,11 @@ void AEndingEmergence::RestartDemo()
     if(PulseTrail)PulseTrail->SetVisibility(false);
     for(int I=0;I<NeuronCores.Num();++I)if(auto* M=Cast<UMaterialInstanceDynamic>(NeuronCores[I]->GetMaterial(0)))M->SetVectorParameterValue(TEXT("Tint"),I==NeuronPositions.Num()-1?Ending::Gold*.85f:Ending::Teal*.65f);
     Universe->SetRelativeScale3D(FVector(1));Cell->SetRelativeScale3D(FVector(32));
-    if(Speaker)Speaker->SetRelativeRotation(FRotator::ZeroRotator);
-    for(UStaticMeshComponent* S:Sketch)S->SetVisibility(false);Idea->SetVisibility(false,true);
+    ClearEndingEffects();
+    RealityHits=0;LastStrike=-100;bImpactPending=false;UniverseSnapshot=nullptr;
+    if(Voice){Voice->Stop();Voice->DestroyComponent();Voice=nullptr;}
+    EndingHand->SetVisibility(false,true);
+    for(UStaticMeshComponent* S:Sketch)S->SetVisibility(false);
     Player->ResetIgnoreMoveInput();Player->ResetIgnoreLookInput();
     Player->GetPawn()->SetActorHiddenInGame(false);
     Player->GetPawn()->SetActorLocation(GetActorTransform().TransformPosition(FVector(100,0,Ending::Ground(100)+110)),false,nullptr,ETeleportType::TeleportPhysics);
@@ -662,14 +720,14 @@ void AEndingEmergence::PreviewFilm()
 
 float AEndingEmergence::Duration(int32 Index)
 {
-    const float Seconds[]={5,20,14,18,27,20,18,.7f,2.4f,12,0};
+    const float Seconds[]={5,20,14,18,27,20,18,12,0,2.4f,6.3f,0};
     return Index>=0&&Index<UE_ARRAY_COUNT(Seconds)?Seconds[Index]:0;
 }
 
 void AEndingEmergence::SetShot(int32 Index)
 {
     Shot=Index;ShotTime=0;
-    const int SetIndex=Shot<=2?1:Shot==3?2:Shot<=6?3:4;
+    const int SetIndex=Shot<=2?1:Shot==3?2:3;
     for(int I=0;I<Sets.Num();++I)Sets[I]->SetVisibility(I==SetIndex,true);
     if(NightContinent)NightContinent->SetVisibility(Shot==2,true);
     if(Shot<=2)
@@ -679,15 +737,24 @@ void AEndingEmergence::SetShot(int32 Index)
         EyePerson->SetVisibility(Shot<=1,true);
     }
     if(Shot==4){Universe->SetRelativeScale3D(FVector(1));Cell->SetRelativeScale3D(FVector(32));}
+    EndingHand->SetVisibility(Shot==7||Shot==8,true);
+    EndingTool->SetVisibility(Shot==7||Shot==8,true);
+    if(ToolLight)ToolLight->SetVisibility(Shot==7||Shot==8);
     if(Shot==7)
     {
-        for(UStaticMeshComponent* S:Sketch)S->SetVisibility(false);Idea->SetVisibility(false,true);
-        Pencil->SetRelativeLocation(FVector(-27,-18,95));DriftOffset=DriftVelocity=FVector::ZeroVector;
-        if(Ambience){Ambience->Stop();Ambience->DestroyComponent();Ambience=nullptr;}
+        // Continue directly from the last cell-group view; the voice arrives before the tool.
+        RetreatStart=GetActorTransform().InverseTransformPosition(Camera->GetActorLocation())-Ending::Cosmos;
+        RetreatInitialSpeed=FMath::Max(45000.f,RetreatSpeed);DriftVelocity=FVector::ZeroVector;
+        RealityHits=0;LastStrike=-100;bImpactPending=false;
+        Speak(TEXT("BlockedThought"));
+        BuildWaterAndPaper();
+        if(Ambience)Ambience->AdjustVolume(2,.09f);
     }
-    if(Shot==8){Sound(TEXT("Wake"),.55f);SetAmbience(TEXT("Afternoon"),.6f);}
-    if(Shot==9){for(UStaticMeshComponent* S:Sketch)S->SetVisibility(true);}
-    if(Shot==10){bComplete=true;Idea->SetVisibility(false,true);}
+    if(Shot==8){LastStrike=Age-.95f;SetAmbience(TEXT("Brain"),.18f);}
+    if(Shot>=9)Sets[4]->SetVisibility(false,true);
+    if(Shot==9){Sound(TEXT("Shatter"),.85f);if(Ambience)Ambience->AdjustVolume(.4f,0);BuildUniverseShards();Sound(TEXT("WaterBurst"),1.35f,.86f);}
+    if(Shot==10){for(auto Shard:UniverseShards)Shard->SetVisibility(false);}
+    if(Shot==11)bComplete=true;
     if(Shot==0)SetAmbience(TEXT("Street"),.48f);
     if(Shot==3)SetAmbience(TEXT("Space"),.32f);
     UE_LOG(LogTemp,Display,TEXT("ENDING_SHOT %d"),Shot);
@@ -746,22 +813,387 @@ void AEndingEmergence::UpdateFilm(float Dt)
             Ending::Cosmos,62,FMath::Sin(27*.16)*3.5*W*Decay);break;
     }
     case 6:
-        Pose(Ending::Cosmos+FMath::Lerp(FVector(-5200,-250,900)*32,FVector(-620000,-110000,185000),Zoom),Ending::Cosmos,62,FMath::Sin(ShotTime*.13)*1.2*W);break;
+        Pose(Ending::Cosmos+FMath::Lerp(FVector(-5200,-250,900)*32,FVector(-760000,-135000,230000),Zoom),Ending::Cosmos,62,FMath::Sin(ShotTime*.13)*1.2*W);break;
     case 7:
-        break;
     case 8:
-    case 9:
-    case 10:
     {
-        const float A=Shot==8?0:Shot==10?1:Ending::Ease(ShotTime/9);
-        Pose(Ending::Desk+FMath::Lerp(FVector(-155,18,166),FVector(380,-390,310),A),Ending::Desk+FMath::Lerp(FVector(-178,18,166),FVector(-15,0,125),A),FMath::Lerp(36.f,53.f,A));
-        const float Open=Shot==8?Ending::Ease((ShotTime-.06f)/.18f):1;
-        for(int I=0;I<EyeLids.Num();++I)EyeLids[I]->SetRelativeLocation(LidOrigins[I]+FVector(-7.5f*Open,0,(I%2?1:-1)*3.1f*Open));
-        const bool Talking=Shot==9&&ShotTime>4&&ShotTime<7.2f;
-        if(SpeakerMouth)SpeakerMouth->SetRelativeScale3D(FVector(.014,.1,Talking?.018f+.014f*FMath::Abs(FMath::Sin(ShotTime*12)):.018f));
-        if(Speaker)Speaker->SetRelativeRotation(FRotator(0,Talking?FMath::Sin((ShotTime-4)*1.3f)*3:0,Talking?FMath::Sin((ShotTime-4)*2)*1.2f:0));
+        const float Time=FMath::Min(16.f,Shot==7?ShotTime:Duration(7)+ShotTime);
+        const float Travel=RetreatInitialSpeed*(Time-Time*Time/16+Time*Time*Time/(3*16*16));
+        RetreatSpeed=RetreatInitialSpeed*FMath::Square(1-Time/16);
+        Pose(Ending::Cosmos+RetreatStart.GetSafeNormal()*(RetreatStart.Size()+Travel),Ending::Cosmos,62,FMath::Sin(18*.13f)*1.2f*W*(1-Ending::Ease(Time/4)));
         break;
     }
+    case 9:
+    case 10:
+    case 11:
+        // Keep the strike camera and its temporal history. The aperture, spray and
+        // papers unfold in this same view, without a cut to the old desk scene.
+        break;
+    }
+    if(Shot>=7)UpdateEndingHand();
+    if(Shot==9)UpdateUniverseShards();
+    if(Shot>=9)UpdateWaterAndPaper();
+    const float TargetGray=Shot==6?.88f*Ending::Ease((T-.6f)/.4f):Shot==7?.88f:Shot==8?.88f*(1-RealityHits/3.f):0;
+    Exhaustion=FMath::FInterpTo(Exhaustion,TargetGray,Dt,Shot==8?5.f:1.2f);
+    if(ExhaustionMaterial)
+    {
+        ExhaustionMaterial->SetScalarParameterValue(TEXT("Gray"),Exhaustion);
+        ExhaustionMaterial->SetScalarParameterValue(TEXT("RippleAge"),(Shot==8||Shot==9)?Age-ImpactAt:100);
+        ExhaustionMaterial->SetScalarParameterValue(TEXT("ShakeStrength"),bComfortMode?.0006f:(RealityHits==3?.009f:.002f));
+    }
+
+}
+
+float AEndingEmergence::StrikeReadiness() const
+{
+    return FMath::Clamp((Age-LastStrike)/.95f,0.f,1.f);
+}
+
+void AEndingEmergence::Speak(const TCHAR* Name)
+{
+    if(Voice){Voice->Stop();Voice->DestroyComponent();Voice=nullptr;}
+    if(auto* S=LoadObject<USoundBase>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Audio/S_EE_"))+Name)))
+        Voice=UGameplayStatics::SpawnSound2D(this,S,.95f,1,0,nullptr,false,false);
+}
+
+void AEndingEmergence::StrikeUniverse()
+{
+    // A forgiving recovery beat, not a timing score: early clicks never erase progress.
+    if(Shot!=8||RealityHits>=3||StrikeReadiness()<1||bImpactPending)return;
+    LastStrike=Age;bImpactPending=true;Sound(TEXT("Swing"),.6f);
+}
+
+void AEndingEmergence::BuildWaterAndPaper()
+{
+    FRandomStream R(605);
+    // A sustained pressure jet, with many smaller droplets crossing the hole plane.
+    for(int I=0;I<360;++I)
+    {
+        auto* Drop=NewObject<UStaticMeshComponent>(this,NAME_None,RF_Transient);
+        Drop->SetupAttachment(Camera->GetCameraComponent());Drop->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Sphere.Sphere")));
+        Drop->SetMaterial(0,LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_WaterSpray")));
+        Drop->SetCollisionEnabled(ECollisionEnabled::NoCollision);Drop->SetCastShadow(false);Drop->RegisterComponent();Drop->SetVisibility(false);
+        const float Size=R.FRandRange(.12f,.62f);Drop->SetRelativeScale3D(FVector(Size*R.FRandRange(2,5),Size,Size*.7f)/100);
+        WaterDrops.Add(Drop);WaterOrigins.Add(FVector(R.FRandRange(37,44),R.FRandRange(-3,3),R.FRandRange(-2,2)));
+        WaterVelocities.Add(FVector(R.FRandRange(-130,-75),R.FRandRange(-95,95),R.FRandRange(-60,80)));
+    }
+    for(int I=0;I<12;++I)
+    {
+        auto* Jet=NewObject<UDynamicMeshComponent>(this,NAME_None,RF_Transient);
+        Jet->SetupAttachment(Camera->GetCameraComponent());Jet->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        Jet->SetCastShadow(false);Jet->SetEnableRaytracing(false);
+        auto* M=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_WaterJet")),this);
+        M->SetScalarParameterValue(TEXT("Seed"),I*.173f);Jet->SetMaterial(0,M);Jet->RegisterComponent();Jet->SetVisibility(false);WaterJets.Add(Jet);
+    }
+    for(int I=0;I<15;++I)
+    {
+        const bool Final=I==14;
+        const int Idea=Final?10:1+I%9;
+        auto* Photo=LoadObject<UTexture2D>(nullptr,*FString::Printf(TEXT("/Game/EndingEmergence/Textures/T_EE_Idea%d"),Idea));
+        const FVector2D CropSize=Final?FVector2D(1,1):FVector2D(R.FRandRange(.72f,1.f),R.FRandRange(.68f,1.f));
+        const FVector2D CropOffset=Final?FVector2D::ZeroVector:FVector2D(R.FRandRange(0,1-CropSize.X),R.FRandRange(0,1-CropSize.Y));
+        float Aspect=16.f/9;
+        // Imported editor textures may still return square placeholder dimensions
+        // while compiling. Source dimensions are stable for the supplied photos.
+#if WITH_EDITORONLY_DATA
+        if(Photo&&Photo->Source.GetSizeX()>0)Aspect=float(Photo->Source.GetSizeY())/Photo->Source.GetSizeX();
+#else
+        if(Photo&&Photo->GetSizeX()>0)Aspect=float(Photo->GetSizeY())/Photo->GetSizeX();
+#endif
+        PaperCenters.Add(Final?FVector2D(0,.015):FVector2D(R.FRandRange(-.78f,.78f),R.FRandRange(-.15f,.65f)));
+        // X is viewport width fraction, Y is the true aspect after rotation/crop.
+        PaperSizes.Add(FVector2D(Final?.70f:R.FRandRange(.22f,.43f),Aspect*CropSize.X/CropSize.Y));
+        PaperRolls.Add(Final?-3.f:R.FRandRange(-38.f,38.f));
+        PaperMotion.Add(FVector4(Final?5.65f:.70f+I*.235f+R.FRandRange(-.09f,.09f),Final?1.15f:R.FRandRange(.60f,.95f),R.FRandRange(.95f,1.55f),R.FRandRange(0.f,2*PI)));
+        auto* Paper=NewObject<UDynamicMeshComponent>(this,NAME_None,RF_Transient);
+        Paper->SetupAttachment(Camera->GetCameraComponent());Paper->SetCollisionEnabled(ECollisionEnabled::NoCollision);Paper->SetCastShadow(false);Paper->SetEnableRaytracing(false);
+        auto* M=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_IdeaPaper")),this);
+        M->SetTextureParameterValue(TEXT("Idea"),Photo);
+        M->SetVectorParameterValue(TEXT("PhotoCrop"),FLinearColor(CropOffset.X,CropOffset.Y,CropSize.X,CropSize.Y));
+        M->SetVectorParameterValue(TEXT("Tint"),FLinearColor(1.18f,1.16f,1.12f));
+        M->SetScalarParameterValue(TEXT("Seed"),I*.137f);
+        Paper->SetMaterial(0,M);Paper->RegisterComponent();Paper->SetVisibility(false);EndingPapers.Add(Paper);
+    }
+    WetLens=0;PapersLanded=0;PapersArrived=0;bFinalPaperVisible=false;
+}
+
+void AEndingEmergence::UpdateWaterAndPaper()
+{
+    using namespace UE::Geometry;
+    const float T=Shot==9?ShotTime:Shot==10?Duration(9)+ShotTime:Duration(9)+Duration(10);
+    WetLens=Ending::Ease((T-.35f)/.7f)*(1-.7f*Ending::Ease((T-4)/4))*(1-Ending::Ease((T-5.3f)/2));
+    if(WetLensMaterial){WetLensMaterial->SetScalarParameterValue(TEXT("Wet"),WetLens);WetLensMaterial->SetScalarParameterValue(TEXT("SplashTime"),T);}
+    for(int I=0;I<WaterDrops.Num();++I)
+    {
+        const float Delay=.025f+(I%90)*.020f;
+        const float AgeOfDrop=FMath::Fmod(FMath::Max(0.f,T-Delay),.30f);
+        const FVector P=WaterOrigins[I]+WaterVelocities[I]*AgeOfDrop+FVector(0,0,-35*AgeOfDrop*AgeOfDrop);
+        WaterDrops[I]->SetVisibility(T>=Delay&&T<2.7f&&P.X>10);
+        WaterDrops[I]->SetRelativeLocation(P);WaterDrops[I]->SetRelativeRotation(WaterVelocities[I].Rotation());
+    }
+    for(int I=0;I<WaterJets.Num();++I)
+    {
+        auto* Jet=WaterJets[I].Get();Jet->SetVisibility(T>0&&T<2.5f);
+        if(T<=0||T>=2.5f)continue;
+        const float Strength=Ending::Ease(T/.09f)*(1-Ending::Ease((T-1.65f)/.85f));
+        Cast<UMaterialInstanceDynamic>(Jet->GetMaterial(0))->SetScalarParameterValue(TEXT("Flow"),Strength);
+        FDynamicMesh3 Mesh;Mesh.EnableAttributes();auto* UV=Mesh.Attributes()->PrimaryUV();
+        const float Angle=I*2*PI/12+.19f*FMath::Sin(I*2.73f);
+        for(int Y=0;Y<=24;++Y)for(int X=0;X<=6;++X)
+        {
+            const float U=X/6.f,V=Y/24.f;
+            const float A=Angle+(U-.5f)*.72f+.13f*FMath::Sin(V*17-T*18+I);
+            const float Radius=(1.3f+V*V*(15+I%4*3))*Strength;
+            const float Ripple=1+.085f*FMath::Sin(V*25-T*24+U*8+I);
+            Mesh.AppendVertex(FVector(43-V*30+FMath::Sin(U*12+V*18-T*23)*.6f,Radius*FMath::Cos(A)*Ripple,Radius*FMath::Sin(A)*Ripple-2*V*V));
+            UV->AppendElement(FVector2f(U,V));
+        }
+        for(int Y=0;Y<24;++Y)for(int X=0;X<6;++X)
+        {
+            const int A=Y*7+X,B=A+1,C=A+7,D=C+1;
+            const int One=Mesh.AppendTriangle(A,B,D),Two=Mesh.AppendTriangle(A,D,C);
+            UV->SetTriangle(One,FIndex3i(A,B,D));UV->SetTriangle(Two,FIndex3i(A,D,C));
+        }
+        FMeshNormals::InitializeOverlayToPerVertexNormals(Mesh.Attributes()->PrimaryNormals(),false);Jet->SetMesh(MoveTemp(Mesh));
+    }
+    int Width=1280,Height=720;Player->GetViewportSize(Width,Height);
+    int Arrived=0;
+    for(int I=0;I<EndingPapers.Num();++I)
+    {
+        const bool Final=I==EndingPapers.Num()-1;
+        const FVector4 Timing=PaperMotion[I];
+        const float Local=T-Timing.X,U=FMath::Clamp(Local/Timing.Y,0.f,1.f),Travel=1-FMath::Pow(1-U,3.f);
+        const float Slide=Final?0:FMath::Max(0.f,Local-Timing.Y)/Timing.Z;
+        const float Phase=Timing.W;
+        auto* Paper=EndingPapers[I].Get();
+        if(U>=1)++Arrived;
+        if(U<=0||Slide>=1.65f){Paper->SetVisibility(false);continue;}
+        if(!Paper->IsVisible())Sound(TEXT("PaperFlutter"),.22f,1+I*.025f);
+        Paper->SetVisibility(true);
+        const float Depth=Final?23.5f:25.f+(I%5)*.8f,HalfWidth=Depth*FMath::Tan(FMath::DegreesToRadians(31.f)),HalfHeight=HalfWidth*Height/FMath::Max(1,Width);
+        const FVector End(Depth,PaperCenters[I].X*HalfWidth,PaperCenters[I].Y*HalfHeight);
+        const FVector Begin(48,FMath::Sin(Phase)*2,-1);
+        const FVector Arc(0,FMath::Sin(U*PI)*(I%2?5:-5),FMath::Sin(U*PI)*(5+I%4));
+        // The transient sheets catch briefly, then peel, flutter and accelerate down.
+        const FVector Slip(-.6f*Slide,FMath::Sin(Phase+Slide*3)*Slide*2.5f,-HalfHeight*(.22f*Slide+1.9f*Slide*Slide));
+        Paper->SetRelativeLocation(FMath::Lerp(Begin,End,Travel)+Arc+Slip);
+        Paper->SetRelativeRotation(FRotator((1-Travel)*(I%2?62:-55)+Slide*18*FMath::Sin(Phase+Slide*4),(1-Travel)*25+Slide*8*FMath::Cos(Phase+Slide*3),PaperRolls[I]+(1-Travel)*(I%2?150:-130)+Slide*(I%2?19:-16)));
+        FDynamicMesh3 Mesh;Mesh.EnableAttributes();auto* UV=Mesh.Attributes()->PrimaryUV();
+        for(int Y=0;Y<=4;++Y)for(int X=0;X<=6;++X)
+        {
+            const float A=X/6.f,B=Y/4.f;
+            const float Curl=((1-Travel)*2.6f+FMath::Min(Slide,1.f)*1.4f)*FMath::Sin(A*PI)*FMath::Cos(B*PI+T*8+Phase)+.08f*FMath::Sin(A*PI*2+B*3+Phase);
+            const float Shape=Final?.008f:.035f;
+            const float PX=(A*2-1)*(1+Shape*FMath::Sin(B*9+Phase))+.025f*(B-.5f);
+            const float PY=(1-B*2)*(1+Shape*FMath::Sin(A*13+Phase));
+            const float Wide=PaperSizes[I].X*HalfWidth,Tall=Wide/PaperSizes[I].Y;
+            Mesh.AppendVertex(FVector(Curl,PX*Wide,PY*Tall));UV->AppendElement(FVector2f(A,B));
+        }
+        for(int Y=0;Y<4;++Y)for(int X=0;X<6;++X)
+        {
+            const int A=Y*7+X,B=A+1,C=A+7,D=C+1;
+            const int One=Mesh.AppendTriangle(A,B,D),Two=Mesh.AppendTriangle(A,D,C);
+            UV->SetTriangle(One,FIndex3i(A,B,D));UV->SetTriangle(Two,FIndex3i(A,D,C));
+        }
+        FMeshNormals::InitializeOverlayToPerVertexNormals(Mesh.Attributes()->PrimaryNormals(),false);Paper->SetMesh(MoveTemp(Mesh));
+    }
+    if(Arrived>PapersArrived)Sound(TEXT("PaperSlap"),Arrived==EndingPapers.Num()?.6f:.16f,1+(Arrived%3)*.08f);
+    PapersArrived=Arrived;bFinalPaperVisible=Arrived==EndingPapers.Num();PapersLanded=bFinalPaperVisible?1:0;
+}
+
+void AEndingEmergence::CaptureUniverse()
+{
+    // Freeze the actual view for the front faces of the solid mesh fragments.
+    UniverseSnapshot=NewObject<UTextureRenderTarget2D>(this,NAME_None,RF_Transient);
+    int32 Width=1280,Height=720;Player->GetViewportSize(Width,Height);
+    UniverseSnapshot->RenderTargetFormat=RTF_RGBA16f;
+    UniverseSnapshot->InitAutoFormat(FMath::Max(1,Width),FMath::Max(1,Height));
+    UniverseSnapshot->TargetGamma=2.2f;UniverseSnapshot->UpdateResourceImmediate(true);
+    auto* Capture=NewObject<USceneCaptureComponent2D>(this,NAME_None,RF_Transient);
+    Capture->bCaptureEveryFrame=false;Capture->bCaptureOnMovement=false;
+    Capture->CaptureSource=ESceneCaptureSource::SCS_SceneColorHDR;
+    Capture->TextureTarget=UniverseSnapshot;Capture->FOVAngle=Camera->GetCameraComponent()->FieldOfView;
+    Capture->PostProcessSettings=Camera->GetCameraComponent()->PostProcessSettings;
+    Capture->RegisterComponent();Capture->SetWorldTransform(Camera->GetActorTransform());
+    for(auto Burst:EndingDebris)if(IsValid(Burst))Capture->HiddenActors.Add(Burst.Get());
+    TArray<USceneComponent*> HandParts;EndingHand->GetChildrenComponents(true,HandParts);
+    for(auto Part:HandParts)if(auto Primitive=Cast<UPrimitiveComponent>(Part))Capture->HiddenComponents.Add(Primitive);
+    Capture->CaptureScene();Capture->DestroyComponent();
+}
+
+void AEndingEmergence::NeuralWave()
+{
+    NeuralWaveCenters.Add(NeuronPositions[CurrentNeuron]);NeuralWaveTimes.Add(Age);
+    while(NeuralWaveTimes.Num()>0&&Age-NeuralWaveTimes[0]>3)
+    {NeuralWaveTimes.RemoveAt(0);NeuralWaveCenters.RemoveAt(0);}
+}
+
+float AEndingEmergence::NeuralFlash(int32 Index) const
+{
+    return NeuronPositions.IsValidIndex(Index)?NeuralFlashAt(NeuronPositions[Index]):0;
+}
+
+float AEndingEmergence::NeuralFlashAt(FVector Position) const
+{
+    float Brightness=0;
+    for(int I=0;I<NeuralWaveTimes.Num();++I)
+    {
+        const float Distance=FVector::Dist(Position,NeuralWaveCenters[I]);
+        const float T=Age-NeuralWaveTimes[I]-Distance/14000.f;
+        if(Distance<=5500&&T>=0&&T<.48f)
+            Brightness=FMath::Max(Brightness,FMath::Min(1.f,T/.025f)*FMath::Exp(-T*5.f)*(1-Distance/9000));
+    }
+    return Brightness;
+}
+
+void AEndingEmergence::EndingImpact()
+{
+    ImpactAt=Age;
+    FActorSpawnParameters Params;Params.Owner=this;Params.SpawnCollisionHandlingOverride=ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    auto* Burst=GetWorld()->SpawnActor<AMiningDebrisBurst>(Camera->GetActorLocation()+Camera->GetActorForwardVector()*180,FRotator::ZeroRotator,Params);
+    if(Burst)
+    {
+        auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_CosmicDebris"));
+        const auto* Effects=Player->GetPawn()->FindComponentByClass<UMiningToolEffectsComponent>();
+        Burst->Initialize(EndingDebrisMeshes,Material,-Camera->GetActorForwardVector(),100,Effects?Effects->DebrisChunkCount:36,Effects?Effects->DebrisLifetime:2);
+        EndingDebris.Add(Burst);++EndingDebrisBursts;
+    }
+}
+
+void AEndingEmergence::ClearEndingEffects()
+{
+    for(auto Shard:UniverseShards)if(IsValid(Shard))Shard->DestroyComponent();UniverseShards.Empty();
+    ShardOrigins.Empty();ShardVelocities.Empty();ShardSpins.Empty();
+    if(UniverseSurround){UniverseSurround->DestroyComponent();UniverseSurround=nullptr;}
+    for(auto Jet:WaterJets)if(IsValid(Jet))Jet->DestroyComponent();WaterJets.Empty();
+    for(auto Burst:EndingDebris)if(IsValid(Burst))Burst->Destroy();EndingDebris.Empty();
+    if(ToolLight)ToolLight->SetVisibility(false);
+    for(auto Shell:NeuralWaveShells)if(IsValid(Shell))Shell->SetVisibility(false);
+    for(auto Drop:WaterDrops)if(IsValid(Drop))Drop->DestroyComponent();WaterDrops.Empty();WaterOrigins.Empty();WaterVelocities.Empty();
+    for(auto Paper:EndingPapers)if(IsValid(Paper))Paper->DestroyComponent();EndingPapers.Empty();PaperCenters.Empty();PaperSizes.Empty();PaperRolls.Empty();PaperMotion.Empty();
+    WetLens=0;PapersLanded=0;PapersArrived=0;bFinalPaperVisible=false;
+    if(WetLensMaterial)WetLensMaterial->SetScalarParameterValue(TEXT("Wet"),0);
+    NeuralWaveCenters.Empty();NeuralWaveTimes.Empty();Exhaustion=0;ImpactAt=-100;RetreatSpeed=0;EndingDebrisBursts=0;
+    if(ExhaustionMaterial){ExhaustionMaterial->SetScalarParameterValue(TEXT("Gray"),0);ExhaustionMaterial->SetScalarParameterValue(TEXT("RippleAge"),100);}
+}
+
+void AEndingEmergence::BuildUniverseShards()
+{
+    using namespace UE::Geometry;
+    auto* ImageMaterial=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_UniverseShard")),this);
+    ImageMaterial->SetTextureParameterValue(TEXT("UniverseImage"),UniverseSnapshot);
+    auto* EdgeMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_CosmicDebris"));
+    int32 Width=1280,Height=720;Player->GetViewportSize(Width,Height);
+    const float Depth=35,HalfWidth=Depth*FMath::Tan(FMath::DegreesToRadians(31.f)),HalfHeight=HalfWidth*Height/FMath::Max(1,Width);
+    // Keep the live universe outside the aperture. Re-projecting a full-screen HDR
+    // snapshot changes exposure and creates a flash; only detached faces use it.
+    FRandomStream Random(917);constexpr int Count=24;
+    TArray<FVector> Rim;const float Radius=HalfHeight*.56f;
+    for(int I=0;I<Count;++I)
+    {
+        const float A=2*PI*I/Count;
+        const FVector Direction(0,FMath::Cos(A),FMath::Sin(A));
+        Rim.Add(FVector(Depth,0,0)+Direction*Radius*Random.FRandRange(.84f,1.12f));
+    }
+    auto ViewUV=[&](FVector P){return FVector2f(.5f+P.Y/(2*HalfWidth),.5f-P.Z/(2*HalfHeight));};
+    FDynamicMesh3 Surround;Surround.EnableAttributes();Surround.Attributes()->EnableMaterialID();
+    for(int I=0;I<Count;++I){Surround.AppendVertex(Rim[I]);Surround.AppendVertex(Rim[I]+FVector(2,0,0));}
+    const int BackCenter=Surround.AppendVertex(FVector(Depth+2,0,0));
+    auto AddFace=[&](int A,int B,int C,int Material)
+    {
+        const int Tri=Surround.AppendTriangle(A,B,C);Surround.Attributes()->GetMaterialID()->SetValue(Tri,Material);
+        const int U=Surround.Attributes()->PrimaryUV()->AppendElement(ViewUV(Surround.GetVertex(A)));
+        const int V=Surround.Attributes()->PrimaryUV()->AppendElement(ViewUV(Surround.GetVertex(B)));
+        const int W=Surround.Attributes()->PrimaryUV()->AppendElement(ViewUV(Surround.GetVertex(C)));
+        Surround.Attributes()->PrimaryUV()->SetTriangle(Tri,FIndex3i(U,V,W));
+    };
+    for(int I=0;I<Count;++I)
+    {
+        const int A=I*2,B=((I+1)%Count)*2;
+        AddFace(A,B,B+1,1);AddFace(A,B+1,A+1,1);AddFace(BackCenter,A+1,B+1,0);
+    }
+    FMeshNormals::InitializeOverlayToPerTriangleNormals(Surround.Attributes()->PrimaryNormals());
+    UniverseSurround=NewObject<UDynamicMeshComponent>(this,NAME_None,RF_Transient);
+    UniverseSurround->SetupAttachment(Camera->GetCameraComponent());UniverseSurround->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    UniverseSurround->SetCastShadow(false);UniverseSurround->SetEnableRaytracing(false);
+    UniverseSurround->SetMaterial(0,LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_ApertureVoid")));
+    UniverseSurround->SetMaterial(1,EdgeMaterial);UniverseSurround->SetMesh(MoveTemp(Surround));UniverseSurround->RegisterComponent();
+    for(int Piece=0;Piece<Count;++Piece)
+    {
+        const FVector Front[]={FVector(Depth,0,0),Rim[Piece],Rim[(Piece+1)%Count]};
+        const FVector2f UVs[]={ViewUV(Front[0]),ViewUV(Front[1]),ViewUV(Front[2])};
+        const FVector Center=(Front[0]+Front[1]+Front[2])/3;
+        const float Thickness=Random.FRandRange(1.2f,3.f);
+        FDynamicMesh3 Mesh;Mesh.EnableAttributes();Mesh.Attributes()->EnableMaterialID();
+        for(int I=0;I<6;++I)Mesh.AppendVertex(Front[I%3]-Center+FVector(I<3?0:Thickness,0,0));
+        auto Triangle=[&](int A,int B,int C,int Material)
+        {
+            const int Tri=Mesh.AppendTriangle(A,B,C);Mesh.Attributes()->GetMaterialID()->SetValue(Tri,Material);
+            const int U=Mesh.Attributes()->PrimaryUV()->AppendElement(UVs[A%3]),V=Mesh.Attributes()->PrimaryUV()->AppendElement(UVs[B%3]),W=Mesh.Attributes()->PrimaryUV()->AppendElement(UVs[C%3]);
+            Mesh.Attributes()->PrimaryUV()->SetTriangle(Tri,FIndex3i(U,V,W));
+        };
+        Triangle(0,1,2,0);Triangle(5,4,3,1);
+        for(int I=0;I<3;++I){const int J=(I+1)%3;Triangle(I,I+3,J,1);Triangle(J,I+3,J+3,1);}
+        FMeshNormals::InitializeOverlayToPerTriangleNormals(Mesh.Attributes()->PrimaryNormals());
+        auto* Shard=NewObject<UDynamicMeshComponent>(this,NAME_None,RF_Transient);
+        Shard->SetupAttachment(Camera->GetCameraComponent());Shard->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        Shard->SetCastShadow(false);Shard->SetEnableRaytracing(false);Shard->SetMaterial(0,ImageMaterial);Shard->SetMaterial(1,EdgeMaterial);
+        Shard->SetMesh(MoveTemp(Mesh));Shard->RegisterComponent();Shard->SetRelativeLocation(Center);
+        UniverseShards.Add(Shard);ShardOrigins.Add(Center);
+        ShardVelocities.Add(FVector(Random.FRandRange(-24,32),Center.Y*3.7f+Random.FRandRange(-7,7),Center.Z*2+Random.FRandRange(8,22)));
+        ShardSpins.Add(FVector(Random.FRandRange(-170,170),Random.FRandRange(-210,210),Random.FRandRange(-120,120)));
+    }
+}
+
+void AEndingEmergence::UpdateUniverseShards()
+{
+    for(int I=0;I<UniverseShards.Num();++I)
+    {
+        const float T=FMath::Max(0.f,ShotTime-(I%5)*.025f);
+        UniverseShards[I]->SetRelativeLocation(ShardOrigins[I]+ShardVelocities[I]*T+FVector(0,0,-25*T*T));
+        UniverseShards[I]->SetRelativeRotation(FRotator(ShardSpins[I].X*T,ShardSpins[I].Y*T,ShardSpins[I].Z*T));
+        // All three dimensions persist while tumbling; only fade out after leaving view.
+        UniverseShards[I]->SetVisibility(T<2.35f);
+    }
+}
+
+void AEndingEmergence::UpdateEndingHand()
+{
+    const bool Cosmic=Shot<=8;
+    const float Reveal=Shot==7?Ending::Ease((ShotTime-7)/3):1;
+    const float Swing=Shot==8?FMath::Clamp((Age-LastStrike)/.75f,0.f,1.f):1;
+    const float Windup=Swing<.32f?Ending::Ease(Swing/.32f):1-Ending::Ease((Swing-.32f)/.68f);
+    const float Snap=0;
+    EndingHand->SetRelativeLocation(Cosmic?FVector(82,12,-8-75*(1-Reveal))+FVector(-7,-7,-9)*Windup:
+        FVector(48,16,-17)+FVector(-3,0,-2)*Snap);
+    EndingHand->SetRelativeRotation(Cosmic?FRotator(0,-4,-3+Windup*42):FRotator(0,-18,-12+Snap*9));
+    // Finger endpoints are in palm space. Middle finger presses against the thumb,
+    // then slips sharply down into the palm while the thumb springs outward.
+    for(int Finger=0;Finger<5;++Finger)
+    {
+        FVector Points[4];
+        if(Finger==0)
+        {
+            Points[0]=FVector(0,-6,0);Points[1]=FVector(-2,-8,4);
+            Points[2]=FVector(-4,-5+Snap* -3,8);Points[3]=FVector(-5,-1-Snap*8,9+Snap*2);
+            if(Cosmic){Points[2]=FVector(-4,-3,5);Points[3]=FVector(-3,1,5);}
+        }
+        else
+        {
+            const float Y=-5+(Finger-1)*3.3f,Length=Finger==4?6:Finger==1?9:10;
+            Points[0]=FVector(0,Y,7);Points[1]=FVector(-.8,Y,7+Length*.46f);
+            const float Fold=Cosmic?1:Finger==2?Snap:Finger>=3?.85f:0;
+            Points[2]=FVector(-2.5-Fold*2,Y,7+Length*.82f-Fold*6);
+            Points[3]=FVector(-3-Fold*3,Y,7+Length-Fold*12);
+            if(!Cosmic&&Finger==2){Points[2]=FMath::Lerp(FVector(-4,-.8,13),Points[2],Snap);Points[3]=FMath::Lerp(FVector(-5,-1,9),Points[3],Snap);}
+        }
+        for(int J=0;J<3;++J)
+        {
+            auto* C=Fingers[Finger*3+J].Get();const FVector Delta=Points[J+1]-Points[J];
+            C->SetRelativeLocation((Points[J]+Points[J+1])*.5f);
+            C->SetRelativeRotation(FRotationMatrix::MakeFromZ(Delta).Rotator());
+            C->SetRelativeScale3D(FVector(2.6f-J*.35f,2.6f-J*.35f,Delta.Size()+1.4f)/100);
+        }
     }
 }
 
@@ -821,7 +1253,8 @@ void AEndingEmergence::EnterBrain()
     TransitEnd=NeuronWorldPosition(0)+GetActorUpVector()*110;TransitLook=Camera->GetActorRotation();
     Player->SetIgnoreLookInput(true);
     if(Ambience){Ambience->bAutoDestroy=true;Ambience->FadeOut(2,0);Ambience=nullptr;}
-    SetAmbience(TEXT("Brain"),.4f);if(Ambience)Ambience->FadeIn(2,.4f);
+    SetAmbience(TEXT("Brain"),.4f);if(Ambience)Ambience->FadeIn(1.2f,.4f);
+    Sound(TEXT("PulseFlight"),.8f,.95f);
     if(DroppedPickaxe)DroppedPickaxe->SetVisibility(false);
 }
 
@@ -832,7 +1265,7 @@ void AEndingEmergence::PossessNeuron(int32 I)
     TransitStart=Camera->GetActorLocation();TransitEnd=NeuronWorldPosition(I)+GetActorUpVector()*(I==NeuronPositions.Num()-1?220:110);
     TransitLook=Camera->GetActorRotation();
     TransitDuration=FMath::Clamp(float(FVector::Dist(TransitStart,TransitEnd))/2100.f+.35f,.95f,1.35f);
-    Player->SetIgnoreLookInput(true);Sound(TEXT("PulseFlight"),.6f,1.15f/TransitDuration);
+    Player->ResetIgnoreLookInput();Sound(TEXT("PulseFlight"),.6f,1.15f/TransitDuration);
 }
 
 FVector AEndingEmergence::VesselPoint(float Distance) const
@@ -894,16 +1327,19 @@ void AEndingEmergence::UpdatePulse(float Dt)
     }
     if(bEnteringBrain)
     {
-        const float T=FMath::Clamp((Age-BrainEntryAt)/3.6f,0.f,1.f);
+        const float T=FMath::Clamp((Age-BrainEntryAt)/1.45f,0.f,1.f);
         // Hermite tangent starts at the final blood speed and ends at rest.
-        const FVector StartVelocity=GetActorTransform().TransformVectorNoScale(VesselRotation(VesselDistances.Last()).Vector())*BloodSpeed*3.6f;
+        const FVector StartVelocity=GetActorTransform().TransformVectorNoScale(VesselRotation(VesselDistances.Last()).Vector())*BloodSpeed*1.45f;
         Camera->SetActorLocation(FMath::CubicInterp(TransitStart,StartVelocity,TransitEnd,FVector::ZeroVector,T));
         const FRotator ArriveLook=(NeuronWorldPosition(3)-TransitEnd).Rotation();
-        Camera->SetActorRotation(FQuat::Slerp(TransitLook.Quaternion(),ArriveLook.Quaternion(),Ending::Ease(T)));
-        Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(FMath::Lerp(90.f,100.f,(BloodSpeed-480)/470),94.f,Ending::Ease(T)));
+        FRotator EntryLook=FQuat::Slerp(TransitLook.Quaternion(),ArriveLook.Quaternion(),Ending::Ease(T)).Rotator();
+        const float EntryEnvelope=FMath::Square(FMath::Sin(PI*T));
+        EntryLook.Roll=bComfortMode?0:3.8f*FMath::Sin(T*2*PI)*EntryEnvelope;Camera->SetActorRotation(EntryLook);
+        TransitEffects(EntryEnvelope*1.35f);
+        Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(FMath::Lerp(90.f,100.f,(BloodSpeed-480)/470),94.f,Ending::Ease(T))+(bComfortMode?4:26)*EntryEnvelope);
         if(T>=1)
         {
-            bEnteringBrain=false;GateIndex=2;CurrentNeuron=0;VisitedNeurons.Add(0);BeatAt=Age+4;
+            bEnteringBrain=false;TransitEffects(0);GateIndex=2;CurrentNeuron=0;VisitedNeurons.Add(0);BeatAt=Age+4;NeuralWave();
             Player->SetControlRotation(ArriveLook);Player->ResetIgnoreLookInput();Sound(TEXT("Connect"),.3f,1.3f);
         }
     }
@@ -912,7 +1348,8 @@ void AEndingEmergence::UpdatePulse(float Dt)
         const float T=FMath::Clamp((Age-PulseAt)/TransitDuration,0.f,1.f),Travel=Ending::Ease(T),Envelope=FMath::Square(FMath::Sin(PI*T));
         const FVector Position=FMath::Lerp(TransitStart,TransitEnd,Travel)+GetActorUpVector()*(110*FMath::Sin(PI*Travel));
         Camera->SetActorLocation(Position);
-        FRotator Look=FQuat::Slerp(TransitLook.Quaternion(),(TransitEnd-TransitStart).Rotation().Quaternion(),Ending::Ease(T/.3f)).Rotator();
+        // Position follows the pulse; aim remains entirely under mouse control.
+        FRotator Look=Player->GetControlRotation();
         Look.Roll=bComfortMode?0:2.5f*FMath::Sin(T*2*PI)*Envelope;Camera->SetActorRotation(Look);
         Camera->GetCameraComponent()->SetFieldOfView(94+(bComfortMode?4:22)*Envelope);TransitEffects(Envelope);
         // A short wake trails behind the moving viewpoint, never a full-screen flash.
@@ -922,12 +1359,12 @@ void AEndingEmergence::UpdatePulse(float Dt)
         if(T>=1)
         {
             CurrentNeuron=TravellingToNeuron;TravellingToNeuron=INDEX_NONE;++PossessionCount;VisitedNeurons.Add(CurrentNeuron);
-            Look.Roll=0;Player->SetControlRotation(Look);Player->ResetIgnoreLookInput();TransitEffects(0);
-            Sound(TEXT("Connect"),.28f,1+CurrentNeuron*.018f);
+            Look.Roll=0;Camera->SetActorRotation(Look);TransitEffects(0);
+            NeuralWave();Sound(TEXT("Connect"),.28f,1+CurrentNeuron*.018f);
             if(CurrentNeuron==NeuronPositions.Num()-1)BeginThought();
         }
     }
-    else if(GateIndex==2)
+    if(GateIndex==2&&TravellingToNeuron==INDEX_NONE)
     {
         Camera->SetActorLocation(NeuronWorldPosition(CurrentNeuron)+GetActorUpVector()*110);
         Camera->SetActorRotation(Player->GetControlRotation());
@@ -945,8 +1382,28 @@ void AEndingEmergence::UpdatePulse(float Dt)
     {
         NeuronCores[I]->SetVisibility(I!=CurrentNeuron||GateIndex==5||TravellingToNeuron!=INDEX_NONE);
         if(auto* M=Cast<UMaterialInstanceDynamic>(NeuronCores[I]->GetMaterial(0)))
-            M->SetVectorParameterValue(TEXT("Tint"),I==TargetNeuron||I==TravellingToNeuron?Ending::Gold*1.5f:I==NeuronPositions.Num()-1?Ending::Gold*.85f:VisitedNeurons.Contains(I)?Ending::Teal:Ending::Teal*.45f);
+            {
+                const FLinearColor Base=I==TargetNeuron||I==TravellingToNeuron?Ending::Gold*1.5f:I==NeuronPositions.Num()-1?Ending::Gold*.85f:VisitedNeurons.Contains(I)?Ending::Teal:Ending::Teal*.45f;
+                M->SetVectorParameterValue(TEXT("Tint"),FMath::Lerp(Base,FLinearColor(.65f,.98f,1.f)*9,NeuralFlash(I)));
+            }
     }
+    for(auto Core:AmbientNeuronCores)if(auto* M=Cast<UMaterialInstanceDynamic>(Core->GetMaterial(0)))
+        M->SetVectorParameterValue(TEXT("Tint"),FMath::Lerp(Ending::Teal*.7f,FLinearColor(.65f,.98f,1.f)*6,NeuralFlashAt(Core->GetRelativeLocation())));
+    for(int I=0;I<NeuralWaveShells.Num();++I)
+    {
+        const int Wave=NeuralWaveTimes.Num()-1-I;
+        const float Elapsed=Wave>=0?Age-NeuralWaveTimes[Wave]:100;
+        const bool Active=Shot<0&&Elapsed>0&&Elapsed<.44f;
+        auto* Shell=NeuralWaveShells[I].Get();Shell->SetVisibility(Active);
+        if(Active)
+        {
+            Shell->SetRelativeLocation(NeuralWaveCenters[Wave]);Shell->SetRelativeScale3D(FVector(FMath::Max(30.f,Elapsed*14000)/50));
+            if(auto* M=Cast<UMaterialInstanceDynamic>(Shell->GetMaterial(0)))M->SetVectorParameterValue(TEXT("Tint"),Ending::Teal*(bComfortMode?.08f:1.4f)*FMath::Square(1-Elapsed/.44f));
+        }
+    }
+    if(GateIndex>=2)for(auto Nerve:Nerves)if(auto* M=Cast<UMaterialInstanceDynamic>(Nerve->GetMaterial(0)))
+        M->SetVectorParameterValue(TEXT("Tint"),FMath::Lerp(GateIndex>=5?Ending::Gold*.8f:Ending::Teal*.16f,Ending::Teal*8,NeuralFlashAt(Nerve->GetRelativeLocation())));
+
 }
 
 void AEndingEmergence::Tick(float Dt)
@@ -986,6 +1443,7 @@ void AEndingEmergence::Tick(float Dt)
     else
     {
         const float PreviousShotTime=ShotTime;
+        const FVector PreviousFilmPosition=Camera->GetActorLocation();
         const bool Pulling=Shot>=1&&Shot<=6;
         // W is intentionally absent: the sequence always moves outward. S boosts
         // the rail clock, increasingly at larger scales, with a short inertial release.
@@ -994,11 +1452,23 @@ void AEndingEmergence::Tick(float Dt)
         const float ScalePhase=Pulling?FMath::Clamp((Shot-1+ShotTime/Duration(Shot))/6,0.f,1.f):0;
         PullbackRate=Pulling?1+PullbackBoost*(1.4f+2.6f*ScalePhase*ScalePhase):1;
         ShotTime+=Dt*FMath::Clamp(FilmSpeed,.25f,4.f)*PullbackRate;
-        // Blackout and the eye beat retain real time even in accelerated preview.
-        if(Shot==7||Shot==8)ShotTime-=Dt*(FMath::Clamp(FilmSpeed,.25f,4.f)-1);
-        if(Shot<10&&ShotTime>=Duration(Shot))SetShot(Shot+1);
-        if(Shot==9&&PreviousShotTime<4&&ShotTime>=4)Sound(TEXT("IdeaLine"),.95f,1.03f);
+        // Interactive ending and speech always use real time, including preview.
+        if(Shot>=7)ShotTime-=Dt*(FMath::Clamp(FilmSpeed,.25f,4.f)-1);
+        if(Shot==7&&PreviousShotTime<5&&ShotTime>=5)Speak(TEXT("ClearMyHead"));
+        if(Shot==8)
+        {
+            if(Player->WasInputKeyJustPressed(EKeys::LeftMouseButton))StrikeUniverse();
+            if(bImpactPending&&Age-LastStrike>=.24f)
+            {
+                bImpactPending=false;++RealityHits;EndingImpact();Sound(TEXT("Crack"),.45f+RealityHits*.07f,1.15f-RealityHits*.05f);
+
+            }
+            if(RealityHits==3&&Age-ImpactAt>.16f){CaptureUniverse();SetShot(9);}
+        }
+        else if(Shot<11&&ShotTime>=Duration(Shot))SetShot(Shot+1);
+
         UpdateFilm(Dt);
+        if(Shot==6)RetreatSpeed=FVector::Dist(Camera->GetActorLocation(),PreviousFilmPosition)/FMath::Max(.001f,Dt)/FMath::Clamp(FilmSpeed,.25f,4.f);
     }
     if(Shot<0)
     {
@@ -1041,8 +1511,8 @@ FVector AEndingEmergence::GetGateApproach(int32 I) const
 FString AEndingEmergence::Title() const
 {
     if(Shot<0)return GateIndex<1?TEXT("01 / 最后一矿"):GateIndex<2?TEXT("02 / 顺着光流"):TEXT("03 / 一个念头正在连接");
-    const TCHAR* Names[]={TEXT("04 / 念头，飘起"),TEXT("05 / 我们之中"),TEXT("06 / 万家灯火"),TEXT("07 / 薄薄的大气层"),TEXT("08 / 无重力的远方"),TEXT("09 / 宇宙，细胞质"),TEXT("10 / 每一个，都有宇宙"),TEXT(""),TEXT(""),TEXT("11 / 那个下午"),TEXT("涌现 / 结尾 Demo")};
-    return Names[FMath::Clamp(Shot,0,10)];
+    const TCHAR* Names[]={TEXT("04 / 念头，飘起"),TEXT("05 / 我们之中"),TEXT("06 / 万家灯火"),TEXT("07 / 薄薄的大气层"),TEXT("08 / 无重力的远方"),TEXT("09 / 宇宙，细胞质"),TEXT("10 / 每一个，都有宇宙"),TEXT("11 / 现实的声音"),TEXT("12 / 再挖一下"),TEXT("13 / 敲开这片宇宙"),TEXT("14 / 那个下午"),TEXT("涌现 / 结尾 Demo")};
+    return Names[FMath::Clamp(Shot,0,11)];
 }
 
 FString AEndingEmergence::Hint() const
@@ -1054,7 +1524,8 @@ FString AEndingEmergence::Hint() const
         TargetNeuron>=0?(TargetNeuron==NeuronPositions.Num()-1?TEXT("空格 · 汇入最大的神经元"):TEXT("空格 · 穿梭到这个神经元")):
         TEXT("瞄准有标记的神经元，再按空格。不同的路径，都通向那束最大的光。");
     if(Shot>=1&&Shot<=6)return TEXT("S 加速拉远 · A / D 微调方向 · W 无效 · C 平稳镜头");
-    if(Shot==10)return TEXT("R 再经历一次");
+    if(Shot==8)return TEXT("左键 · 一下一下挥镐。等光条蓄满，再敲一次。");
+    if(Shot==11)return TEXT("R 再经历一次");
     return TEXT("");
 }
 
@@ -1071,7 +1542,8 @@ FString AEndingEmergence::Subtitle() const
     }
     if(Shot==0&&ShotTime>2)return TEXT("一个念头，飘了出来。");
     if(Shot==1&&ShotTime>9&&ShotTime<16)return TEXT("然后，是我们。");
-    if((Shot==9&&ShotTime>4)||Shot==10)return TEXT("“欸，要不，我们就做挖！”");
+    if(Shot==7&&ShotTime<4.7f)return TEXT("“唉，脑子堵住了，涌现不出来了。”");
+    if(Shot==7&&ShotTime>=5&&ShotTime<10.5f)return TEXT("“好希望能有东西把我脑子疏通一下啊。”");
     return TEXT("");
 }
 
@@ -1084,15 +1556,16 @@ float AEndingEmergence::OverlayAlpha() const
     if(Shot==2)return FMath::Max(1-Ending::Ease(ShotTime/1.2f),Ending::Ease((ShotTime-(Duration(Shot)-.9f))/.9f));
     if(Shot==3)return FMath::Max(1-Ending::Ease(ShotTime/1.1f),Ending::Ease((ShotTime-(Duration(Shot)-.9f))/.9f));
     if(Shot==4)return 1-Ending::Ease(ShotTime/1.1f);
-    if(Shot==7)return 1;
     return 0;
 }
 
 void AEndingEmergence::EndPlay(const EEndPlayReason::Type Reason)
 {
+    ClearEndingEffects();
     if(Mining)Mining->OnFieldReset.RemoveDynamic(this,&AEndingEmergence::RestartDemo);
     if(Ambience){Ambience->Stop();Ambience->DestroyComponent();}
     if(View&&GEngine&&GEngine->GameViewport)GEngine->GameViewport->RemoveViewportWidgetContent(View.ToSharedRef());
+    if(Voice){Voice->Stop();Voice->DestroyComponent();}
     View.Reset();if(Camera)Camera->Destroy();
     Super::EndPlay(Reason);
 }

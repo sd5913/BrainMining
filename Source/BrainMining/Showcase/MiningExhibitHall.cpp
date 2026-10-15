@@ -1,4 +1,5 @@
 #include "Showcase/MiningExhibitHall.h"
+#include "MiningAudioComponent.h"
 #include "Showcase/SMiningCampaignMap.h"
 #include "MiningProgressionComponent.h"
 #include "Showcase/MiningTreasure.h"
@@ -393,7 +394,9 @@ bool AMiningExhibitHall::PurchaseUpgrade(int32 ItemIndex, int32 RequestedLevel)
 {
     if(!bReady || !Controller.IsValid() || !Controller->GetPawn()) return false;
     auto* Progression=Controller->GetPawn()->FindComponentByClass<UMiningProgressionComponent>();
-    if(!Progression || !Progression->Purchase(ItemIndex,RequestedLevel)) { Notice=TEXT("无法升级：检查金币余额、等级顺序和配置。"); return false; }
+    const bool bPurchased = Progression && Progression->Purchase(ItemIndex,RequestedLevel);
+    if(auto* Audio=Controller->GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPurchase(bPurchased);
+    if(!bPurchased) { Notice=TEXT("无法升级：检查金币余额、等级顺序和配置。"); return false; }
     Notice=TEXT("升级完成，能力与金币在所有体验区共用。");
     return true;
 }

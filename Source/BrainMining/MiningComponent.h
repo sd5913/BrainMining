@@ -3,6 +3,8 @@
 #include "CoreMinimal.h"
 #include "Engine/HitResult.h"
 #include "Components/ActorComponent.h"
+#include "MiningPickaxeState.h"
+#include "MiningPickaxeSettings.h"
 #include "MiningComponent.generated.h"
 
 class ADiggableRock;
@@ -22,6 +24,19 @@ class BRAINMINING_API UMiningComponent : public UActorComponent
 	GENERATED_BODY()
 public:
 	UMiningComponent();
+	bool ApplyPickaxeBalance(const FMiningPickaxeLevel& Level);
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
+	FMiningPickaxeLevel PickaxeBalance;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
+	bool bUsePickaxeBalance = false;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
+	float PickaxeSizeScale = 1;
+	bool ApplyPickaxeHit(const FHitResult& Hit);
+	float GetPickaxeImpactDelay() const;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
+	int32 TargetPickaxeHits = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
+	bool bLastPickaxeBreak = false;
 	UPROPERTY(BlueprintAssignable, Category="Mining|Effects")
 	FMiningAttemptEvent OnMiningAttempt;
 	UPROPERTY(BlueprintAssignable, Category="Mining|Effects")
@@ -37,6 +52,7 @@ public:
     void SetInputContextEnabled(bool bEnabled);
     bool IsInputContextEnabled() const { return bInputContextEnabled; }
     void BeginMiningInput() { StartMining(); }
+    void EndMiningInput() { StopMining(); }
     UPROPERTY(BlueprintAssignable, Category="Mining") FMiningResetEvent OnFieldReset;
     void PushEncounterBlock();
     void PopEncounterBlock();
@@ -116,12 +132,22 @@ public:
 
 	// Used by modal interfaces to prevent a held dig from resuming after closing.
 	UFUNCTION(BlueprintCallable, Category="Mining")
-	void CancelMining() { StopMining(); }
+	void CancelMining();
 
 	UFUNCTION(BlueprintCallable, Category="Mining")
 	void ResetField();
 
 private:
+	TArray<FMiningPickaxePatch> PickaxePatches;
+	TMap<TWeakObjectPtr<ADiggableRock>, FDelegateHandle> PickaxeObservers;
+	int32 NextPickaxePatchId = 0;
+	FTimerHandle PickaxeImpactTimer;
+	void ResolvePickaxeStrike();
+	void ClearPickaxeDamage();
+	void InvalidatePickaxePatches(TWeakObjectPtr<ADiggableRock> Rock, const FBox& Bounds);
+	void RefreshPickaxePatches();
+	int32 FindPickaxePatch(const FHitResult& Hit) const;
+	void BuildPickaxeCut(const FHitResult& Hit, FTransform& Frame, FVector& HalfSize) const;
     int32 EncounterBlockCount=0;
     bool bInputContextEnabled = true;
 	UPROPERTY(Transient)

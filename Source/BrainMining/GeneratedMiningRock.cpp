@@ -1,4 +1,5 @@
 #include "GeneratedMiningRock.h"
+#include "MiningPickaxeGeometry.h"
 #include "MiningTerrainSource.h"
 #include "MiningBlastGeometry.h"
 #include "Components/DynamicMeshComponent.h"
@@ -400,6 +401,19 @@ bool AGeneratedMiningRock::MineSphere(FVector WorldCenter, float WorldRadius)
 void AGeneratedMiningRock::SetSegmentState(EMiningSegmentState State)
 {
 	SegmentState = State;
+}
+
+bool AGeneratedMiningRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed, float Roughness)
+{
+	if (SegmentIndex != INDEX_NONE && SegmentState != EMiningSegmentState::Active)
+	{
+		LastStatus = TEXT("This segment is not available for mining");
+		return false;
+	}
+	if (!WorldFrame.IsValid() || HalfSize.ContainsNaN() || HalfSize.GetMin() <= 0) return false;
+	if (!bChunked) return Super::MinePickaxe(WorldFrame, HalfSize, Seed, Roughness);
+	const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(WorldFrame, HalfSize, Seed, Roughness);
+	return MineChunks(WorldFrame.GetLocation(), HalfSize.Size() * 1.12, &Cutter);
 }
 
 void AGeneratedMiningRock::RecycleGeometry()

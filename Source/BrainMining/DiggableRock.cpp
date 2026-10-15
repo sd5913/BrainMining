@@ -1,5 +1,7 @@
 #include "DiggableRock.h"
 #include "MiningBlastGeometry.h"
+#include "MiningPickaxeGeometry.h"
+#include "Engine/World.h"
 #include "FogChamberComponent.h"
 #include "BrainMining.h"
 #include "Components/DynamicMeshComponent.h"
@@ -88,6 +90,13 @@ bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
 	return MineCutter(WorldCenter, WorldRadius, nullptr);
 }
 
+bool ADiggableRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed, float Roughness)
+{
+	if (!WorldFrame.IsValid() || HalfSize.ContainsNaN() || HalfSize.GetMin() <= 0) return false;
+	const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(WorldFrame, HalfSize, Seed, Roughness);
+	return MineCutter(WorldFrame.GetLocation(), HalfSize.Size() * 1.12, &Cutter);
+}
+
 bool ADiggableRock::MineBlast(FVector WorldCenter, float WorldRadius, float Roughness, int32 Seed)
 {
 	if (WorldCenter.ContainsNaN() || !FMath::IsFinite(WorldRadius) || WorldRadius <= 0 || !FMath::IsFinite(Roughness)) return false;
@@ -169,7 +178,7 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 		Operation.CreatedBoundaryEdges.Reset();
 		bSucceeded = Operation.Compute() && IsValidResult();
 	}
-	if (!bSucceeded && bUseProceduralCutFallback && !Progress.Cancelled())
+	if (!bSucceeded && (bUseProceduralCutFallback || WorldCutter) && !Progress.Cancelled())
 	{
 		SourceMesh.DiscardAttributes();
 		Cutter.DiscardAttributes();
@@ -190,7 +199,7 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 		}
 	}
 	LastBooleanMilliseconds = (FPlatformTime::Seconds() - BooleanStart) * 1000.0;
-	if (!bSucceeded && bUseProceduralCutFallback && !Progress.Cancelled())
+	if (!bSucceeded && (bUseProceduralCutFallback || WorldCutter) && !Progress.Cancelled())
 	{
 		// Faceted terrain can put a cutter vertex exactly on an existing edge.
 		// A sub-millimetre translation resolves that coincidence without changing

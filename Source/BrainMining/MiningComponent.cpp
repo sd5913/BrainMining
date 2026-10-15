@@ -13,6 +13,7 @@
 #include "GameFramework/PlayerController.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
+#include "TimerManager.h"
 
 UMiningComponent::UMiningComponent()
 {
@@ -22,12 +23,15 @@ UMiningComponent::UMiningComponent()
 void UMiningComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	if (!bUsePickaxeBalance) ApplyPickaxeBalance(UMiningPickaxeSettings::ResolveLevel(0));
 	InitialTransform = GetOwner()->GetActorTransform();
 	bHasInitialTransform = true;
 }
 
 void UMiningComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	CancelMining();
+	ClearPickaxeDamage();
 	if (InputSubsystem.IsValid() && MiningContext)
 	{
 		InputSubsystem->RemoveMappingContext(MiningContext);
@@ -73,6 +77,7 @@ void UMiningComponent::BindInput(UEnhancedInputComponent* Input)
 
 float UMiningComponent::GetMiningInterval() const
 {
+	if (!bDrillMode && bUsePickaxeBalance) return PickaxeBalance.Interval;
 	const float Base = FMath::IsFinite(Interval) ? FMath::Max(0.1f, Interval) : 0.3f;
 	const float Multiplier = FMath::IsFinite(DrillIntervalMultiplier) ? FMath::Clamp(DrillIntervalMultiplier, 0.1f, 1.f) : 0.4f;
 	return bDrillMode ? FMath::Max(0.04f, Base * Multiplier) : Base;
@@ -80,6 +85,7 @@ float UMiningComponent::GetMiningInterval() const
 
 float UMiningComponent::GetMiningRadius() const
 {
+	if (!bDrillMode && bUsePickaxeBalance) return PickaxeBalance.Width * .5f * PickaxeSizeScale;
 	const float Base = FMath::IsFinite(Radius) ? FMath::Max(1.f, Radius) : 160.f;
 	const float Multiplier = FMath::IsFinite(DrillRadiusMultiplier) ? FMath::Clamp(DrillRadiusMultiplier, 1.f, 2.f) : 1.2f;
 	return bDrillMode ? Base * Multiplier : Base;
@@ -90,7 +96,7 @@ void UMiningComponent::SetDrillMode(bool bNewDrillMode)
 	if (bDrillMode == bNewDrillMode) return;
 	// Require a fresh left click after switching: selecting a tool never drills
 	// automatically or carries a held mining click across the handoff.
-	StopMining();
+	CancelMining();
 	bDrillMode = bNewDrillMode;
 	OnToolModeChanged.Broadcast(bDrillMode);
 }
@@ -121,7 +127,7 @@ bool UMiningComponent::ActivateDrill()
 
 void UMiningComponent::SelectPickaxe()
 {
-	StopMining();
+	CancelMining();
 	SetDrillMode(false);
 }
 
@@ -181,11 +187,26 @@ void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	UpdateDrillSession();
     if(IsEncounterBlocked())return;
 	UpdateDrillEnergy(DeltaTime);
+	RefreshPickaxePatches();
 	RefreshTarget();
+	const int32 PatchIndex = FindPickaxePatch(TargetHit);
+	TargetPickaxeHits = !bDrillMode && IsValid(TargetRock) && PatchIndex != INDEX_NONE ? PickaxePatches[PatchIndex].Strikes : 0;
 	if (bShowPreview && IsValid(TargetRock))
 	{
 		const FVector Center = GetCutCenter();
-		DrawDebugSphere(GetWorld(), Center, GetMiningRadius(), 16, FColor(60, 220, 210), false, -1.0f, 0, 0.6f);
+		if (bDrillMode) DrawDebugSphere(GetWorld(), Center, GetMiningRadius(), 16, FColor(60, 220, 210), false, -1.0f, 0, 0.6f);
+		else
+		{
+			FTransform Frame;
+			FVector HalfSize;
+			BuildPickaxeCut(TargetHit, Frame, HalfSize);
+			if (PatchIndex != INDEX_NONE)
+			{
+				Frame = PickaxePatches[PatchIndex].LocalFrame * TargetRock->GetActorTransform();
+				HalfSize = PickaxePatches[PatchIndex].HalfSize;
+			}
+			DrawDebugBox(GetWorld(), Frame.GetLocation(), HalfSize, Frame.GetRotation(), FColor(60, 220, 210), false, -1.f, 0, .6f);
+		}
 	}
 	if (bMiningHeld && GetWorld()->GetTimeSeconds() >= NextMineTime)
 	{
@@ -205,6 +226,7 @@ bool UMiningComponent::TryMine()
 	{
 		return false;
 	}
+	if (!bDrillMode && GetWorld()->GetTimerManager().IsTimerActive(PickaxeImpactTimer)) return false;
 	const float MiningInterval = GetMiningInterval();
 	NextMineTime = GetWorld()->GetTimeSeconds() + MiningInterval;
 	OnMiningAttempt.Broadcast(MiningInterval);
@@ -213,6 +235,11 @@ bool UMiningComponent::TryMine()
 	{
 		Status = TEXT("Aim at rock within reach");
 		return false;
+	}
+	if (!bDrillMode)
+	{
+		GetWorld()->GetTimerManager().SetTimer(PickaxeImpactTimer, this, &UMiningComponent::ResolvePickaxeStrike, GetPickaxeImpactDelay(), false);
+		return true;
 	}
 	LastMinedRock = TargetRock;
 	const FVector Center = GetCutCenter();
@@ -252,10 +279,16 @@ void UMiningComponent::StopMining()
 	bMiningHeld = false;
 }
 
+void UMiningComponent::CancelMining()
+{
+	StopMining();
+	if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(PickaxeImpactTimer);
+}
+
 void UMiningComponent::SetInputSuspended(bool bSuspended)
 {
 	bInputSuspended = bSuspended;
-	if (bSuspended) StopMining();
+	if (bSuspended) CancelMining();
 }
 
 void UMiningComponent::TogglePreview()
@@ -267,7 +300,8 @@ void UMiningComponent::TogglePreview()
 void UMiningComponent::ResetField()
 {
     if(IsEncounterBlocked())return;
-	StopMining();
+	CancelMining();
+	ClearPickaxeDamage();
 	DrillUseEnds = DrillCooldownEnds = 0;
 	SetDrillMode(false);
 	if (bHasInitialTransform && !bScopedReset)

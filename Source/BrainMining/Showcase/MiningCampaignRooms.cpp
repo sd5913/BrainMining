@@ -2,6 +2,7 @@
 #include "Engine/LevelStreaming.h"
 #include "Engine/Level.h"
 #include "Engine/World.h"
+#include "Engine/PostProcessVolume.h"
 #include "GameFramework/PlayerStart.h"
 #include "PopupClose/PopupCloseOffice.h"
 #include "PopupClose/PopupCloseStage.h"
@@ -36,7 +37,10 @@ void AMiningExhibitGameMode::InitGame(const FString& MapName, const FString& Opt
             Actor->Tags.AddUnique(Area.Tag);
             if(Actor->IsA<APlayerStart>()) {Actor->Destroy();continue;}
             if(Area.SuppressedSourceActors.Contains(Actor->GetFName()))
-            {Actor->SetActorHiddenInGame(true);Actor->SetActorEnableCollision(false);Actor->SetActorTickEnabled(false);}
+            {
+                Actor->SetActorHiddenInGame(true);Actor->SetActorEnableCollision(false);Actor->SetActorTickEnabled(false);
+                if(auto* Volume=Cast<APostProcessVolume>(Actor)) Volume->bEnabled=false;
+            }
             if(auto* Office=Cast<APopupCloseOffice>(Actor)) Office->bWalkThroughConnections=true;
             if(auto* Stage=Cast<APopupCloseStage>(Actor)) {Stage->bAreaManaged=true;Stage->bStartOnAreaEntry=true;}
             if(auto* Echo=Cast<AEchoPassageStage>(Actor))

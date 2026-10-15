@@ -184,6 +184,7 @@ void ABrainMiningCharacter::InitializePlayerScale()
 	Movement->JumpZVelocity *= Scale * FMath::Sqrt(SafeValue(Settings.JumpHeightMultiplier, 0.25f, 3.0f));
 	Movement->GravityScale *= Scale;
 	MiningComponent->Radius *= Scale * SafeValue(Settings.MiningRadiusMultiplier, 0.25f, 3.0f);
+	MiningComponent->PickaxeSizeScale *= Scale * SafeValue(Settings.MiningRadiusMultiplier, 0.25f, 3.0f);
 	MiningComponent->Reach *= Scale * SafeValue(Settings.MiningReachMultiplier, 0.25f, 3.0f);
 	MiningComponent->DownwardOffset *= Scale * SafeValue(Settings.MiningDownwardOffsetMultiplier, 0.0f, 3.0f);
 	AppliedPlayerScale = Scale;

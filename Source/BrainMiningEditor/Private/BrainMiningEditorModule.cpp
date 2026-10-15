@@ -1,6 +1,8 @@
 #include "Modules/ModuleManager.h"
+#include "ScopedTransaction.h"
 #include "MiningDesignerLibrary.h"
 #include "SMiningDesignerPanel.h"
+#include "SMiningPickaxeBalancePanel.h"
 #include "SMiningManualEditor.h"
 #include "SMiningSpatialEditor.h"
 #include "MiningSpatialVisualizer.h"
@@ -66,6 +68,10 @@ public:
 			return SNew(SDockTab).TabRole(ETabRole::NomadTab)[SNew(SSubtitleToolPanel)];
 		})).SetDisplayName(FText::FromString(TEXT("字幕工具"))).SetTooltipText(FText::FromString(TEXT("创建字幕段、填写文本和音频，并在关卡里放置触发盒")));
 		UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FBrainMiningEditorModule::RegisterMenus));
+		FGlobalTabmanager::Get()->RegisterNomadTabSpawner("MiningPickaxeBalance", FOnSpawnTab::CreateLambda([](const FSpawnTabArgs&)
+		{
+			return SNew(SDockTab).TabRole(ETabRole::NomadTab)[SNew(SMiningPickaxeBalancePanel)];
+		})).SetDisplayName(FText::FromString(TEXT("矿镐养成数值"))).SetTooltipText(FText::FromString(TEXT("配置矿镐各级价格、宽深、速度和逐击形状")));
 	}
 	virtual void ShutdownModule() override
 	{
@@ -79,6 +85,7 @@ public:
 		UToolMenus::UnRegisterStartupCallback(this);
 		UToolMenus::UnregisterOwner(this);
 		FGlobalTabmanager::Get()->UnregisterNomadTabSpawner("MiningDesigner");
+		FGlobalTabmanager::Get()->UnregisterNomadTabSpawner("MiningPickaxeBalance");
 		FGlobalTabmanager::Get()->UnregisterNomadTabSpawner("MiningManualEditor");
 		FGlobalTabmanager::Get()->UnregisterNomadTabSpawner("SubtitleTool");
 		FGlobalTabmanager::Get()->UnregisterNomadTabSpawner("ExternalMiningGenerator");
@@ -95,6 +102,10 @@ private:
 		Menu->FindOrAddSection("BrainMining").AddMenuEntry("MiningManualEditor", FText::FromString(TEXT("矿道钢笔编辑器")), FText::FromString(TEXT("手绘通道两侧、独立空洞和支线房间")), FSlateIcon(), FUIAction(FExecuteAction::CreateStatic(&SMiningManualEditor::Open)));
 		Menu->FindOrAddSection("BrainMining").AddMenuEntry("MiningDesigner", FText::FromString(TEXT("矿业策划台")), FText::FromString(TEXT("统一调整角色、挖掘、场景和调试参数")), FSlateIcon(), FUIAction(FExecuteAction::CreateStatic(&UMiningDesignerLibrary::OpenDesigner)));
 		FToolMenuSection& Section = Menu->FindOrAddSection("BrainMining");
+		Section.AddMenuEntry("MiningPickaxeBalance", FText::FromString(TEXT("矿镐养成数值")), FText::FromString(TEXT("调节各级矿镐数值并在试玩中验证")), FSlateIcon(), FUIAction(FExecuteAction::CreateLambda([]()
+		{
+			FGlobalTabmanager::Get()->TryInvokeTab(FName(TEXT("MiningPickaxeBalance")));
+		})));
 		Section.AddMenuEntry("ExternalMiningGenerator", FText::FromString(TEXT("外部通路矿区生成器")), FText::FromString(TEXT("独立生成可挖岩层、基岩外壳和外部模型通路")), FSlateIcon(), FUIAction(FExecuteAction::CreateLambda([]()
 		{
 			FGlobalTabmanager::Get()->TryInvokeTab(FName(TEXT("ExternalMiningGenerator")));

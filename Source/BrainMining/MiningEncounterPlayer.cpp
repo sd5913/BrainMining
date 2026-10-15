@@ -123,5 +123,5 @@ void AMiningEncounterPlayerController::MinePressed()
 }
 void AMiningEncounterPlayerController::MineReleased()
 {
-    if(GetPawn())if(auto* Mining=GetPawn()->FindComponentByClass<UMiningComponent>())Mining->CancelMining();
+    if(GetPawn())if(auto* Mining=GetPawn()->FindComponentByClass<UMiningComponent>())Mining->EndMiningInput();
 }

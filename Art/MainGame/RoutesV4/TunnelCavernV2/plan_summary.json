@@ -1,0 +1,46 @@
+{
+  "style": "ascending-caverns",
+  "main_length_m": 203.5214998544466,
+  "total_length_m": 272.4189326813851,
+  "main_drop_m": -45.0,
+  "start": [
+    -65.0,
+    0.0,
+    65.0
+  ],
+  "end": [
+    65.0,
+    0.0,
+    110.0
+  ],
+  "ascent_m": 51.40978187002585,
+  "descent_m": 6.409781870025853,
+  "ascending_vertical_fraction": 0.8891416424578488,
+  "backtracking_x_m": 10.079162602450133,
+  "spiral_turns": 0,
+  "spiral_drop_m": 0,
+  "spiral_length_m": 0,
+  "spiral_main_fraction": 0.0,
+  "width_min_m": 5.800002879370716,
+  "width_max_m": 20.0,
+  "narrow_main_fraction": 0.0,
+  "cavern_centers_arc_m": [
+    65.04295356173036,
+    134.28222670808847
+  ],
+  "branch_count": 4,
+  "branch_clearances_m": [
+    13.269686969806774,
+    6.609390709656896,
+    9.902082599138097,
+    15.48166387497799
+  ],
+  "landscape_count": 12,
+  "mouth_collars_preserved_m": [
+    9,
+    12
+  ],
+  "end_shift_m": 100.0,
+  "surface_style": "angular-lowpoly",
+  "geometry_retained": false
+}

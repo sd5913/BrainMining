@@ -71,7 +71,8 @@ def tick(delta):
             key('LeftMouseButton',False)
             check(s['rock'].successful_cuts==1 and e.swing_count>0,'Original pickaxe still mines and swings')
             s['pickaxe_removed']=s['volume']-volume()
-            check(not actors(unreal.MiningDrillDustBurst),'Pickaxe effect unchanged')
+            pickaxe_dust=actors(unreal.MiningDrillDustBurst)
+            check(bool(pickaxe_dust) and all(a.actor_has_tag('BM_PickaxeImpact') and a.sprites.get_instance_count()>0 and a.smoke_sprites.get_instance_count()==0 and a.spark_sprites.get_instance_count()==0 for a in pickaxe_dust),'Pickaxe emits short soil dust without drill smoke or sparks')
             m.reset_field();aim();key('V',True);s.update(phase='equipped',next=now+.35)
         elif phase=='equipped':
             key('V',False);check(m.get_editor_property('bDrillMode'),'V equips drill through actual input')

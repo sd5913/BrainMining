@@ -19,6 +19,8 @@ public:
     UPROPERTY(EditAnywhere, Category="Integration") bool bAreaManaged = false;
     UPROPERTY(EditAnywhere, Category="Integration") bool bWalkThroughConnections = false;
     bool bAreaActive = true;
+    // Authored escape coordinates belong to the source map, before streaming translation.
+    FVector SourceLevelOffset = FVector::ZeroVector;
     void SetAreaActive(bool bActive);
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;

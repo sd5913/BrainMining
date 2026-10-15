@@ -6,10 +6,10 @@ bool FMiningPickaxeLevel::Validate(FString& Error) const
     {
         return FMath::IsFinite(Value) && Value >= Minimum && Value <= Maximum;
     };
-    if (Price < 0 || Price > 1000000000 || !InRange(Width, 20, 2000) || !InRange(Depth, 10, 2000) ||
-        !InRange(Interval, .1f, 5) || !InRange(Roughness, 0, 1))
+    if (DestructionLevel<0 || DestructionLevel>4 || Price < 0 || Price > 1000000000 || !InRange(Width, 20, 2000) || !InRange(Depth, 10, 2000) ||
+        !InRange(Interval, .01f, 5) || !InRange(Roughness, 0, 1))
     {
-        Error = TEXT("价格须为 0～10 亿；边长 20～2000 cm；深度 10～2000 cm；间隔 0.1～5 秒；随机强度 0～1。");
+        Error = TEXT("破坏等级须为 0～4；价格须为 0～10 亿；边长 20～2000 cm；深度 10～2000 cm；最终间隔 0.01～5 秒；随机强度 0～1。");
         return false;
     }
     if (Stages.Num() < 1 || Stages.Num() > 6)
@@ -43,6 +43,8 @@ bool FMiningPickaxeLevel::Validate(FString& Error) const
 FText FMiningPickaxeLevel::GetDescription() const
 {
     if (!Description.IsEmpty()) return FText::FromString(Description);
+    if (bUseHardness) return FText::FromString(FString::Printf(TEXT("破坏等级 %d · 范围边长 %.0f cm · 每击基础深度 %.0f cm（按岩层硬度修正）· 间隔 %.3f 秒"),
+        DestructionLevel, Width, Depth, Interval));
     return FText::FromString(FString::Printf(TEXT("%d 击挖开 · 基础边长 %.0f cm · 基础深度 %.0f cm · 间隔 %.3f 秒"),
         Stages.Num(), Width, Depth, Interval));
 }
@@ -61,9 +63,11 @@ TArray<FMiningPickaxeLevel> UMiningPickaxeSettings::MakeRecommendedLevels()
         auto& Level = Result.AddDefaulted_GetRef();
         Level.Name = FString::Printf(TEXT("等级 %d%s"), Index, Index == 0 ? TEXT(" · 初始") : TEXT(""));
         Level.Price = Prices[Index];
-        Level.Width = Index >= 2 ? 384.f : 320.f;
-        Level.Depth = Index >= 1 ? 280.8f : 208.f;
-        Level.Interval = Index >= 3 ? .255f : .3f;
+        Level.DestructionLevel = Index;
+        Level.bUseHardness = true;
+        Level.Width = Index >= 2 ? 400.f : 320.f;
+        Level.Depth = 208.f;
+        Level.Interval = Index >= 3 ? .225f : .3f;
         const float Depths[] = {25, 60, 100};
         const float Widths[] = {80, 95, 100};
         for (int32 Strike = 0; Strike < (Index == 4 ? 2 : 3); ++Strike)
@@ -81,12 +85,15 @@ FMiningPickaxeLevel UMiningPickaxeSettings::ResolveLevel(int32 Level)
     const int32 Index = FMath::Clamp(Level, 0, 4);
     const auto* Settings = GetDefault<UMiningPickaxeSettings>();
     FString Error;
-    if (Settings->Validate(Error)) return Settings->Levels[Index];
+    if (Settings->Validate(Error)) return Settings->GetLevel(Index);
     return MakeRecommendedLevels()[Index];
 }
 
 bool UMiningPickaxeSettings::Validate(FString& Error) const
 {
+    if (!FMath::IsFinite(RangeUpgradeMultiplier) || RangeUpgradeMultiplier<1 || RangeUpgradeMultiplier>4 ||
+        !FMath::IsFinite(IntervalUpgradeMultiplier) || IntervalUpgradeMultiplier<.1f || IntervalUpgradeMultiplier>1)
+    {Error=TEXT("范围升级倍率须为 1～4，间隔升级倍率须为 0.1～1。");return false;}
     if (Levels.Num() != 5)
     {
         Error = TEXT("必须保留等级 0～4，共五档配置。");
@@ -99,6 +106,7 @@ bool UMiningPickaxeSettings::Validate(FString& Error) const
             Error = FString::Printf(TEXT("等级 %d：%s"), Index, *Error);
             return false;
         }
+        if (!GetLevel(Index).Validate(Error)) return false;
         if ((Index == 0 && Levels[Index].Price != 0) || (Index > 0 && Levels[Index].Price <= 0))
         {
             Error = TEXT("等级 0 价格须为 0，等级 1～4 价格须大于 0。");
@@ -108,3 +116,34 @@ bool UMiningPickaxeSettings::Validate(FString& Error) const
     Error.Reset();
     return true;
 }
+
+FMiningPickaxeLevel UMiningPickaxeSettings::GetLevel(int32 Level) const
+{
+    const int32 Index=FMath::Clamp(Level,0,4);
+    FMiningPickaxeLevel Result=Levels.IsValidIndex(Index)?Levels[Index]:MakeRecommendedLevels()[Index];
+    const auto Base=Levels.IsEmpty()?MakeRecommendedLevels()[0]:Levels[0];
+    Result.DestructionLevel=Index;Result.bUseHardness=true;
+    Result.Width=Base.Width*(Index>=2?RangeUpgradeMultiplier:1);
+    Result.Depth=Base.Depth;Result.Interval=Base.Interval*(Index>=3?IntervalUpgradeMultiplier:1);
+    Result.Stages.SetNum(1);Result.Stages[0]=FMiningPickaxeStage();
+    return Result;
+}
+
+void UMiningPickaxeSettings::RefreshDerivedLevels()
+{
+    for(int32 Index=0;Index<Levels.Num() && Index<5;++Index)Levels[Index]=GetLevel(Index);
+}
+
+float UMiningPickaxeSettings::DepthFactor(int32 DestructionLevel,int32 HardnessLevel)
+{
+    static const float Factors[]={0,.25f,.5f,.75f,1,1.5f,2,2.5f,3};
+    const int64 Difference=static_cast<int64>(DestructionLevel)-HardnessLevel;
+    return Factors[static_cast<int32>(FMath::Clamp<int64>(Difference,-4,4))+4];
+}
+
+#if WITH_EDITOR
+void UMiningPickaxeSettings::PostEditChangeProperty(FPropertyChangedEvent& Event)
+{
+    RefreshDerivedLevels();Super::PostEditChangeProperty(Event);
+}
+#endif

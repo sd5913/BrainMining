@@ -309,7 +309,8 @@ bool AMiningExhibitHall::CanAdvanceCampaign() const
     switch(AreaKind(ActiveArea))
     {
     case EMiningExperienceKind::Mining:
-        return bContinuousCampaign || FBox(Areas[ActiveArea].Exit-Areas[ActiveArea].ExitExtent,Areas[ActiveArea].Exit+Areas[ActiveArea].ExitExtent).IsInsideOrOn(Controller->GetPawn()->GetActorLocation());
+        return (bContinuousCampaign && !(ActorHasTag(TEXT("BM_MainGame_RoomsLinked")) && ActiveArea==Areas.Num()-1)) ||
+            FBox(Areas[ActiveArea].Exit-Areas[ActiveArea].ExitExtent,Areas[ActiveArea].Exit+Areas[ActiveArea].ExitExtent).IsInsideOrOn(Controller->GetPawn()->GetActorLocation());
     case EMiningExperienceKind::Office: return Office && (bContinuousCampaign ? Office->GetCompletedSessions()>0 : Office->IsOfficeEscaped()) && !Office->IsSessionActive();
     case EMiningExperienceKind::Journey: return Journey && Journey->Phase==EMiningEscapePhase::Escaped;
     case EMiningExperienceKind::Museum: return (MirrorMuseum && MirrorMuseum->bComplete) || (Museum && Museum->bComplete);

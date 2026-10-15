@@ -5,8 +5,12 @@ Starts from saved MainGame. Changes only the PIE copy and restores editor thrott
 import json,time,traceback,math
 from pathlib import Path
 import unreal
+import sys
+sys.path.insert(0,str(Path(unreal.Paths.project_dir()).resolve()/'Scripts'))
+from main_game_route_sources import tuning
 
 ROOT=Path(unreal.Paths.project_dir()).resolve()
+EXPECTED=tuning(ROOT)['expected_deposits']
 OUT=ROOT/'Saved/Validation/MainGameStartRoom';OUT.mkdir(parents=True,exist_ok=True)
 manifest=json.loads((OUT/'integration.json').read_text(encoding='utf-8'))
 editor=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
@@ -24,6 +28,7 @@ def key(name,down):helper.send_preview_key(state['pc'],name,down)
 def press(name):key(name,True);key(name,False)
 
 def trace(a,b,capsule=False):
+    offset=V(manifest.get('junction_world_offset',[0,0,0]));a=list((V(a)+offset).to_tuple());b=list((V(b)+offset).to_tuple())
     if capsule:
         c=state['pawn'].get_component_by_class(unreal.CapsuleComponent)
         hit=unreal.SystemLibrary.capsule_trace_single(state['world'],V(a),V(b),c.get_scaled_capsule_radius(),c.get_scaled_capsule_half_height(),unreal.TraceTypeQuery.ECC_VISIBILITY,False,[state['pawn']],unreal.DrawDebugTrace.NONE,True)
@@ -37,14 +42,15 @@ def trace(a,b,capsule=False):
 def check_junction_shell():
     state['checking_shell']=True
     samples=0
-    for y in [-2800,-1500,-300,0,300,1500,1900]:
-        for z in [0,3500,5950,6150,6380,7200,7400]:
-            if y==0 and z==6150:continue
+    width=manifest.get('junction_half_width',150);floor=manifest.get('junction_floor_z',6000);roof=manifest.get('junction_roof_z',6330);mid=(floor+roof)/2
+    for y in [-2800,-1500,-width-150,0,width+150,1500,1900]:
+        for z in [0,3500,floor-50,mid,roof+100,7200,7400]:
+            if y==0 and z==mid:continue
             h=trace((-6520,y,z),(-6300,y,z))
             assert h and h[0] and h[9] and not isinstance(h[9],unreal.DiggableRock),('Junction shell gap',y,z)
             samples+=1
-    for end in [(-6410,350,6150),(-6410,-350,6150),(-6410,0,6500),(-6410,0,5800)]:
-        h=trace((-6410,0,6150),end)
+    for end in [(-6410,width+100,mid),(-6410,-width-100,mid),(-6410,0,roof+100),(-6410,0,floor-100)]:
+        h=trace((-6410,0,mid),end)
         assert h and h[0] and not isinstance(h[9],unreal.DiggableRock),('Open inner edge',end)
     report['junction_shell_samples']=samples+4
     state['checking_shell']=False
@@ -111,7 +117,7 @@ def tick(delta):
             check(not state['room'].pickaxe_unlocked and not state['room'].jetpack_unlocked,'Both starter tools begin locked')
             check(not state['mining'].try_mine(),'Mining API respects the introductory lock')
             check(state['effects'].pickaxe_mesh and not state['effects'].pickaxe_mesh.is_visible(),'Tool presentation initializes but remains hidden before acquisition')
-            check(len(halls[0].treasure.items)==125,'Existing 125 mineral deposits remain loaded')
+            check(len(halls[0].treasure.items)==EXPECTED,'All %d mineral deposits remain loaded'%EXPECTED)
             check(rock.actor_has_tag('BM_Campaign_MainGame01'),'Inherited diggable door belongs to region one reset scope')
             cap=next(a for a in unreal.GameplayStatics.get_all_actors_of_class(world,unreal.Actor) if a.get_name().split('_')[:1]==['StaticMeshActor'] and a.get_actor_label()=='FutureConnectionCap')
             check(not cap.get_actor_enable_collision() and cap.get_editor_property('hidden'),'Source end cap is disabled only in MainGame')
@@ -195,7 +201,7 @@ def tick(delta):
             elif unreal.GameplayStatics.get_time_seconds(world)-state['ascent_game_start']>4.95:raise AssertionError('Cannot leave shaft onto the upper landing')
         elif phase=='upper_walk':
             p=state['pawn'].get_actor_location()
-            if not state.get('junction_opened') and p.x>-6550:
+            if not state.get('junction_opened') and p.x>-6550+manifest.get('junction_world_offset',[0,0,0])[0]:
                 key('W',False);state['flight'].stop_movement_immediately()
                 state['plug_cuts']=state['plug'].successful_cuts
                 shot('05_junction_blocked')
@@ -215,16 +221,24 @@ def tick(delta):
             elif now-state['ascent_start']>55:raise AssertionError('Upper passage fails to connect to the existing mining entrance')
         elif phase=='blocked_walk':
             key('W',False)
-            check(state['pawn'].get_actor_location().x<-6460,'Walking alone cannot cross the mine connection blockage')
+            check(state['pawn'].get_actor_location().x<-6460+manifest.get('junction_world_offset',[0,0,0])[0],'Walking alone cannot cross the mine connection blockage')
             key('LeftMouseButton',True);state.update(phase='mine_junction',next=now+4)
         elif phase=='mine_junction':
             key('LeftMouseButton',False)
             check(state['plug'].successful_cuts>state['plug_cuts'],'Real pickaxe input excavates the new mine-connection blockage')
-            state['plug'].mine_blast(state['plug'].get_actor_location(),300,.05,7401)
+            state['plug'].mine_blast(state['plug'].get_actor_location(),480 if 'junction_half_width' in manifest else 300,.05,7401)
             state.update(phase='clear_junction',next=now+.25)
         elif phase=='clear_junction':
             h=trace((-6620,0,6100),(-6190,0,6100),True)
             check(not h or not h[0],'Excavating the blockage opens the complete player capsule path')
+            if 'junction_half_width' in manifest:
+                for y in [-240,-120,0,120,240]:
+                    h=trace((-6800,y,6110),(-6270,y,6110),True)
+                    if h and h[0]:
+                        check(isinstance(h[9],unreal.DiggableRock) and state.get('wide_lip_cuts',0)<16,'Any remaining natural rock lip is diggable, not fixed pipe or bedrock')
+                        check(h[9].mine_blast(h[5],135,.05,7600+state.get('wide_lip_cuts',0)),'Pickaxe-scale excavation widens the ordinary rock lip at '+str(y)+'cm')
+                        state['wide_lip_cuts']=state.get('wide_lip_cuts',0)+1;state['next']=now+.25;return
+                    check(not h or not h[0],'Wide mouth capsule passage remains clear at lateral offset '+str(y)+'cm'+(' hit '+h[9].get_actor_label()+' '+str(h[5]) if h and h[0] and h[9] else ''))
             check_junction_shell()
             shot('06_junction_opened')
             state['junction_opened']=True;key('W',True)
@@ -250,11 +264,15 @@ def tick(delta):
             check(state['plug'].successful_cuts==0 and state['plug'].triangle_count>0,'R restores the new junction blockage')
             h=trace((-6620,0,6100),(-6200,0,6100),True)
             check(h and h[0] and h[9]==state['plug'],'Restored junction blockage blocks the capsule again')
-            check(len(state['hall'].treasure.items)==125,'Integration keeps all existing mineral deposits after play')
+            if 'junction_half_width' in manifest:
+                for y in [-240,-120,0,120,240]:
+                    h=trace((-6620,y,6110),(-6200,y,6110),True)
+                    check(h and h[0] and h[9]==state['plug'],'R reseals the wide soil mouth at lateral offset '+str(y)+'cm')
+            check(len(state['hall'].treasure.items)==EXPECTED,'Integration keeps all mineral deposits after play')
             move(state['hall'].areas[1].entry.translation)
             state.update(phase='next_region',next=now+1.2)
         elif phase=='next_region':
-            check(state['hall'].active_area==1,'Original continuous transition into region two still works')
+            check(state['hall'].active_area==1,'Continuous transition into the next section still works')
             check(state['room'].pickaxe_unlocked and state['room'].jetpack_unlocked,'Leaving the bedroom region keeps starter tools unlocked')
             check(state['wallet'].balance==state['balance'] and all(state['progression'].get_level(i)==1 for i in [1,2,3]),'MainGame coins and upgrades persist after leaving the starter region')
             move(state['hall'].areas[0].exit-unreal.Vector(300,0,0))

@@ -1,0 +1,17 @@
+{
+  "vertices": 17001,
+  "edges": 50997,
+  "faces": 33998,
+  "connected_components": 1,
+  "boundary_edges": 0,
+  "nonmanifold_edges": 0,
+  "inconsistent_winding_edges": 0,
+  "degenerate_faces": 0,
+  "duplicate_faces": 0,
+  "euler_characteristic": 2,
+  "signed_volume_m3": 3840.770812002549,
+  "nonadjacent_bbox_pairs": 0,
+  "self_intersection_pairs": 0,
+  "examples": [],
+  "passed": true
+}

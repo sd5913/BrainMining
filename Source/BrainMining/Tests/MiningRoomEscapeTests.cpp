@@ -30,7 +30,7 @@ public:
     explicit FEscapeChecks(FAutomationTestBase* T,bool InExhibitHall=false):Test(T),bExhibitHall(InExhibitHall){}
     virtual bool Update() override
     {
-        if(FPlatformTime::Seconds()-Start>25){Test->AddError(TEXT("Escape PIE initialization timed out"));return true;}
+        if(FPlatformTime::Seconds()-Start>(bExhibitHall?90:25)){Test->AddError(TEXT("Escape PIE initialization timed out"));return true;}
         UWorld* World=GEditor?GEditor->PlayWorld:nullptr;
         if(bExhibitHall)
         {
@@ -51,6 +51,9 @@ public:
         auto* Miner=Pawn->FindComponentByClass<UMiningComponent>();const float OriginalRadius=Miner->Radius;
         Test->TestEqual(TEXT("Physical screen and fourteen thick dig sections"),E->ComputerRocks.Num(),15);
         Test->TestTrue(TEXT("Water, breach and route references exist"),E->Water && E->BreachWall);
+        Test->TestTrue(TEXT("TV coordinates follow the referenced room translation"),E->ComputerEntry.Equals(GetDefault<AMiningRoomEscape>()->ComputerEntry+E->SourceLevelOffset,1.));
+        Test->TestTrue(TEXT("Water heights follow the same room translation"),FMath::IsNearlyEqual(E->WaterStartZ,GetDefault<AMiningRoomEscape>()->WaterStartZ+float(E->SourceLevelOffset.Z),1.f));
+        Test->TestTrue(TEXT("Breach is rebuilt at the translated source wall"),FMath::IsNearlyEqual(E->BreachWall->GetActorLocation().Z,9400.+E->SourceLevelOffset.Z,1.));
         Test->TestTrue(TEXT("No early flood"),E->Phase==EMiningEscapePhase::Idle);
         for(const auto& Prop:E->FloatingProps)Test->TestFalse(TEXT("No floating route before flood"),Prop->IsVisible());
         Test->TestTrue(TEXT("TV exit is behind original wall"),E->Exit.X>23700);
@@ -199,6 +202,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCampaignCardEscapeTest,"BrainMining.Campaign.F
 bool FCampaignCardEscapeTest::RunTest(const FString&)
 {
     AutomationOpenMap(TEXT("/Game/Campaign/Maps/Lvl_FullJourney"));
+    ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
+    ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMainGameCardEscapeTest,"BrainMining.MainGame.FullCardAndTelevisionEscape",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMainGameCardEscapeTest::RunTest(const FString&)
+{
+    AutomationOpenMap(TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;

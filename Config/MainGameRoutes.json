@@ -1,10 +1,66 @@
 {
-  "revision": 2,
-  "source_root": "Art/MainGame/RoutesV2",
+  "revision": 4,
+  "source_root": "Art/MainGame/RoutesV4",
   "stages": [
     "TunnelV1",
     "TunnelCavernV2",
     "TunnelStalagmiteV3",
     "TunnelNeuralV4"
-  ]
+  ],
+  "styles": [
+    "narrow-branches",
+    "ascending-caverns",
+    "descending-spiral",
+    "mixed-expedition"
+  ],
+  "guide_slots": [
+    8,
+    8,
+    8,
+    8
+  ],
+  "active_guide_indices": [
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ]
+  ],
+  "downstream_rise_cm": 10000,
+  "surface_style": "angular-lowpoly"
 }

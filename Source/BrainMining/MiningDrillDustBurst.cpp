@@ -8,6 +8,9 @@
 AMiningDrillDustBurst::AMiningDrillDustBurst()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	// Impact effects follow the player, even where the nearest area origin
+	// belongs to a neighbouring room or another winding route.
+	Tags.AddUnique(TEXT("BM_PlayerEffect"));
 	Sprites = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("DustSprites"));
 	RootComponent = Sprites;
 	Sprites->SetCollisionProfileName(TEXT("NoCollision"));

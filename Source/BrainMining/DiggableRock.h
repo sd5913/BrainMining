@@ -38,6 +38,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining")
 	TObjectPtr<UMaterialInterface> RockMaterial;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Hardness", meta=(DisplayName="岩层硬度等级", ClampMin="0", ClampMax="4", ToolTip="仅影响镐子的每击深度。破坏等级减硬度等级小于等于 -4 时镐子无法破坏；炸弹和钻机沿用各自规则。"))
+	int32 HardnessLevel = 0;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining", meta=(ClampMin="1000", ClampMax="100000"))
 	int32 MaxTriangles = 30000;
 

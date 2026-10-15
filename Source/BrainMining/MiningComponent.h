@@ -32,6 +32,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
 	float PickaxeSizeScale = 1;
 	bool ApplyPickaxeHit(const FHitResult& Hit);
+
+	UFUNCTION(BlueprintPure, Category="Mining|Pickaxe")
+	float GetPickaxeDepthMultiplier(const ADiggableRock* Rock) const;
+	UFUNCTION(BlueprintPure, Category="Mining|Pickaxe")
+	float GetPickaxeDepth(const ADiggableRock* Rock) const;
 	float GetPickaxeImpactDelay() const;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
 	int32 TargetPickaxeHits = 0;

@@ -1,0 +1,22 @@
+{
+  "revision": "2026-10-15-organic-moss",
+  "active_blocker_indices": [0, 2, 4, 6, 8, 10, 12, 14],
+  "keep_entrance_blockage": true,
+  "bonus_wall_deposits_per_area": 10,
+  "expected_deposits": 165,
+  "fixed_corridor_lights": false,
+  "material": {
+    "stone_dark": [0.095, 0.080, 0.065],
+    "stone_light": [0.190, 0.165, 0.135],
+    "soil_dark": [0.023, 0.016, 0.010],
+    "soil_light": [0.070, 0.050, 0.027],
+    "moss_dark": [0.028, 0.038, 0.014],
+    "moss_light": [0.060, 0.078, 0.026],
+    "moss_amount": 0.34,
+    "moss_scale": 0.012,
+    "roughness": 1,
+    "specular": 0,
+    "metallic": 0,
+    "emission": 0
+  }
+}

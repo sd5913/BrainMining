@@ -42,6 +42,7 @@ class BRAINMINING_API AMiningExternalRegion : public AActor
 public:
 	AMiningExternalRegion();
 	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void BeginPlay() override;
 	virtual void Destroyed() override;
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& Event) override;
@@ -57,6 +58,12 @@ public:
 	bool bShowCutterPreview = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="材质", meta=(DisplayName="可挖岩石材质"))
 	TObjectPtr<UMaterialInterface> RockMaterial;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="矿区", meta=(DisplayName="普通可挖层硬度", ClampMin="0", ClampMax="4"))
+	int32 RockHardness = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="引导可挖层", meta=(DisplayName="堵塞层硬度", ClampMin="0", ClampMax="4"))
+	int32 GuideHardness = 1;
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="矿区操作", meta=(DisplayName="应用岩层硬度（无需重新生成）"))
+	void ApplyHardnessSettings();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="材质", meta=(DisplayName="不可挖基岩材质"))
 	TObjectPtr<UMaterialInterface> ShellMaterial;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="分块", meta=(DisplayName="分块边长", Units="cm", ClampMin="400", ClampMax="3000"))

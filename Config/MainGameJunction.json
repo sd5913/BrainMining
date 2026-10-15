@@ -1,0 +1,10 @@
+{
+  "revision": "wide-diggable-mouth-v1",
+  "zone_start_x": -6900,
+  "zone_end_x": -6170,
+  "half_width": 320,
+  "floor_z": 6000,
+  "roof_z": 6480,
+  "plug_position": [-6350, 0, 6240],
+  "plug_size": [240, 680, 520]
+}

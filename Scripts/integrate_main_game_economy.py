@@ -2,6 +2,9 @@
 import unreal,json,sys,copy,shutil,hashlib,traceback,time,bisect
 from pathlib import Path
 ROOT=Path(unreal.Paths.project_dir()).resolve();OUT=ROOT/'Saved/Validation/main_game_system_integration.json'
+sys.path.insert(0,str(ROOT/'Scripts'))
+from main_game_route_sources import route_root
+ROUTES=route_root(ROOT)
 actors=unreal.get_editor_subsystem(unreal.EditorActorSubsystem);levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 world=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world();assert world.get_path_name()=='/Game/MainGame/Maps/Lvl_MainGame.Lvl_MainGame'
 state={'passed':False,'phase':'starting'};started=time.monotonic()
@@ -66,7 +69,7 @@ try:
         region=next(r for r in regions if old_tag in [str(t) for t in r.tags]);tag='BM_Campaign_'+name
         for obj in [region,region.generated_rock,region.generated_shell]+list(region.generated_guide_layers):append_tag(obj,tag)
         origin=region.get_actor_location()+region.cutters[0].local_transform.translation
-        path=json.loads((ROOT/'Art/MainGame'/folder/'centerlines.json').read_text())[0]
+        path=json.loads((ROUTES/folder/'centerlines.json').read_text())[0]
         route=[origin+unreal.Vector(p[0]*100,-p[1]*100,p[2]*100) for p in path['points']]
         # The MainGame path itself, rather than FullJourney's edited cavity, is the bake route.
         area=unreal.MiningExperienceArea();area.set_editor_property('tag',tag);area.set_editor_property('kind',unreal.MiningExperienceKind.MINING)

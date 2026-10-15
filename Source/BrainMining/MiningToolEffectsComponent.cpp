@@ -40,7 +40,9 @@ UMiningToolEffectsComponent::UMiningToolEffectsComponent()
 void UMiningToolEffectsComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	if (GetNetMode() == NM_DedicatedServer || !bEnabled) return;
+	// Introductory pickups can enable this component after BeginPlay. Initialize
+	// its meshes and delegates even while presentation is temporarily locked.
+	if (GetNetMode() == NM_DedicatedServer) return;
 	Mining = GetOwner()->FindComponentByClass<UMiningComponent>();
 	const ABrainMiningCharacter* Character = Cast<ABrainMiningCharacter>(GetOwner());
 	UCameraComponent* Camera = Character ? Character->GetFirstPersonCameraComponent() : GetOwner()->FindComponentByClass<UCameraComponent>();

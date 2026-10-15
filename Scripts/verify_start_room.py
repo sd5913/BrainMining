@@ -118,10 +118,17 @@ def tick(dt):
             # Continue with the actual mining API across the doorway's capsule clearance.
             state.update(phase='clear',next=now+.1,n=0)
         elif phase=='clear':
-            samples=[(0,-22),(0,24),(0,-36),(-35,-22),(35,-22),(0,6)]
-            if state['n']<len(samples)*3:
-                yaw,pitch=samples[state['n']%len(samples)]
-                state['pc'].set_control_rotation(unreal.Rotator(pitch=pitch,yaw=yaw))
+            # The shared pickaxe now breaks each patch in three strikes. Mine the
+            # actual remaining capsule obstruction instead of assuming 18 cuts suffice.
+            obstacle=unreal.SystemLibrary.capsule_trace_single(world,unreal.Vector(350,0,102),unreal.Vector(660,0,102),
+                35,88,unreal.TraceTypeQuery.ECC_VISIBILITY,False,[state['pawn']],unreal.DrawDebugTrace.NONE,True)
+            if obstacle and obstacle.to_tuple()[0]:
+                assert state['n']<100,'Pickaxe did not clear the doorway capsule path'
+                hit=obstacle.to_tuple()
+                assert hit[9]==state['rock'],'Doorway blocked by a non-diggable actor: '+str(hit[9])
+                eye=state['pawn'].get_component_by_class(unreal.CameraComponent).get_world_location()
+                target=hit[5]+unreal.Vector(0,0,30)
+                state['pc'].set_control_rotation(unreal.MathLibrary.find_look_at_rotation(eye,target))
                 state['mining'].try_mine();state['n']+=1;state['next']=now+.65
             else:
                 state['pc'].set_control_rotation(unreal.Rotator(yaw=0))

@@ -12,6 +12,7 @@
 #include "MiningGiantRoomEntrance.h"
 #include "MiningGUIWidgets.h"
 #include "MiningWalletSubsystem.h"
+#include "StartRoom/MiningStartRoom.h"
 #include "PopupClose/PopupCloseStage.h"
 #include "WenSi/WenSiPuzzle.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
@@ -52,10 +53,25 @@ void AMiningExhibitController::BeginPlay()
     EchoInteraction->SetExplorationActive(false);
     CardInteraction->SetRoomActive(false);
     SetMiningGUIEnabled(true);
+    if (auto* Room = AMiningStartRoom::Find(GetWorld())) Room->InitializePlayer(GetPawn());
+}
+
+void AMiningExhibitController::OnPossess(APawn* InPawn)
+{
+    Super::OnPossess(InPawn);
+    if (auto* Room = AMiningStartRoom::Find(GetWorld())) Room->InitializePlayer(InPawn);
 }
 
 bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
 {
+    if (auto* Room = AMiningStartRoom::Find(GetWorld()))
+    {
+        if (Params.Key == EKeys::E && Params.Event == IE_Pressed && !bUpgradeMenuHeld)
+            if (Room->Interact(this)) return true;
+        // Preserve the introductory pickups; the main game's tools/UI resume once both are acquired.
+        if ((!Room->bPickaxeUnlocked || !Room->bJetpackUnlocked) &&
+            (Params.Key == EKeys::G || Params.Key == EKeys::V || Params.Key == EKeys::Tab)) return true;
+    }
     auto* Hall=AMiningExhibitHall::Find(GetWorld());
     if (Hall && Hall->bReady)
     {

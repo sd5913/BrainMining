@@ -172,7 +172,9 @@ void AEndingEmergence::UpdateCellTitle(float Alpha)
         for(int I=0;I<Poses.Num();++I)
         {
             const int OwnerCell=I/PerCell;if(!TitleCenters.IsValidIndex(OwnerCell))continue;
-            const FVector Center=FMath::Lerp(TitleCenters[OwnerCell],TitleTargets[OwnerCell],Alpha);
+            const float Phase=OwnerCell*2.39996f;
+            const FVector Float=FVector(FMath::Sin(Age*.21f+Phase),FMath::Sin(Age*.17f+Phase*1.3f),FMath::Cos(Age*.19f+Phase))*6500*FMath::Lerp(.1f,1.f,FMath::Square(1-Alpha));
+            const FVector Center=FMath::Lerp(TitleCenters[OwnerCell],TitleTargets[OwnerCell],Alpha)+Float;
             Poses[I].SetLocation(Center+(Poses[I].GetLocation()-TitleCenters[OwnerCell])*Scale);
             Poses[I].SetScale3D(Poses[I].GetScale3D()*Scale);
         }
@@ -343,7 +345,7 @@ void AEndingEmergence::UpdateFinale(float Dt)
     {
         for(auto Mat:FinalePreviewMaterials)Mat->SetScalarParameterValue(TEXT("Reveal"),0);
         const float T=Finale::Ease(ShotTime/10);
-        if(TitleUpdateAt<999&&(ShotTime-TitleUpdateAt>1.f/30||T>=1)){UpdateCellTitle(T);TitleUpdateAt=T>=1?1000:ShotTime;}
+        if(Age-TitleUpdateAt>1.f/30){UpdateCellTitle(T);TitleUpdateAt=Age;}
         Pose(Finale::Cosmos+FMath::Lerp(TitleCameraStart,Finale::TitleEye,Finale::Ease(ShotTime/12)),Finale::Cosmos+FVector(0,0,30000),62);
         Camera->SetActorRotation(FQuat::Slerp(TitleLookStart.Quaternion(),Camera->GetActorQuat(),Finale::Ease(ShotTime/2)));
     }

@@ -94,6 +94,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") int32 FinaleDrillCuts=0;
 private:
     friend class FEndingTitleDrillPreview;
+    friend class FEndingOrganicPreview;
     void BuildFinale();
     void UpdateFinale(float DeltaSeconds);
     void ResetFinale();
@@ -231,6 +232,7 @@ private:
     UInstancedStaticMeshComponent* Instances(const TCHAR* Name,const TCHAR* Mesh,FLinearColor Tint,USceneComponent* Parent,const TCHAR* Material=TEXT("Surface"));
     void Person(FVector Position,float Scale,FLinearColor Tint,USceneComponent* Parent);
     void BuildJourney();
+    void BuildBrainSurface();
     void EnterBlood();
     void EnterBrain();
     void PossessNeuron(int32 Index);

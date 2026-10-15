@@ -52,7 +52,7 @@ namespace Ending
     int Layer(int I) { return I==0?0:I==NeuronCount-1?10:1+(I-1)/5; }
     float Ground(float X,float Y=0)
     {
-        if(X<1600)return 850-1140*FMath::Sqrt(FMath::Max(0.f,1-X*X/(2400*2400.f)-Y*Y/(1300*1300.f)));
+        if(X<1600)return 425-570*FMath::Sqrt(FMath::Max(0.f,1-FMath::Square(X-800)/(1200*1200.f)-Y*Y/(650*650.f)));
         if(X<=12000)return 850-FMath::Sqrt(FMath::Max(0.f,850*850.f-Y*Y));
         return BrainCenter.Z+FMath::Sqrt(FMath::Max(0.f,BrainRadius*BrainRadius-FMath::Square(X-BrainCenter.X)-Y*Y));
     }
@@ -239,9 +239,9 @@ void AEndingEmergence::BuildJourney()
     // A hollow ellipsoid with a real curved floor and an open neck at the exit.
     for(int Row=0;Row<=96;++Row)
     {
-        const float X=FMath::Lerp(-2399.f,1600.f,Row/96.f);
-        const float Cross=FMath::Sqrt(FMath::Max(.0001f,1-X*X/(2400*2400.f)));
-        Centers.Add(FVector(X,0,850));Radii.Add(FVector2D(1300*Cross,1140*Cross));
+        const float X=FMath::Lerp(-399.f,1600.f,Row/96.f);
+        const float Cross=FMath::Sqrt(FMath::Max(.0001f,1-FMath::Square(X-800)/(1200*1200.f)));
+        Centers.Add(FVector(X,0,425));Radii.Add(FVector2D(650*Cross,570*Cross));
     }
     Shell(TEXT("EllipsoidalCellInterior"),Centers,Radii,Ending::Teal*.28f,TEXT("CellInterior"));
     for(int I=0;I<27;++I)
@@ -260,12 +260,12 @@ void AEndingEmergence::BuildJourney()
     for(int Row=0;Row<=240;++Row)
     {
         const float T=Row/240.f,A=T*2*PI;
-        const FVector P(1600+10400*T,2100*FMath::Sin(A)*FMath::Square(FMath::Sin(PI*T)),850+1100*(1-FMath::Cos(A)));
+        const FVector P(1600+10400*T,2100*FMath::Sin(A)*FMath::Square(FMath::Sin(PI*T)),FMath::Lerp(425.f,850.f,Ending::Ease(T/.06f))+1100*(1-FMath::Cos(A)));
         VesselDistances.Add(Row?VesselDistances.Last()+FVector::Dist(P,VesselPath.Last()):0);VesselPath.Add(P);
         if(T<=.9f)
         {
             const float Flare=Ending::Ease((T-.77f)/.23f);
-            Centers.Add(P);Radii.Add(FVector2D(FMath::Lerp(969.f,850.f,Ending::Ease(T/.025f))+Flare*400,850+Flare*400));
+            Centers.Add(P);Radii.Add(FVector2D(FMath::Lerp(484.5f,850.f,Ending::Ease(T/.06f))+Flare*400,FMath::Lerp(425.f,850.f,Ending::Ease(T/.06f))+Flare*400));
         }
     }
     Shell(TEXT("RedSpirallingVessel"),Centers,Radii,FLinearColor(.38f,.018f,.026f),TEXT("Vessel"),true);
@@ -274,7 +274,7 @@ void AEndingEmergence::BuildJourney()
     {
         const float D=150+I*(Length-150)/38,Open=Ending::Ease((D/Length-.77f)/.23f);
         auto* Rib=Group(TEXT("CurvedVesselRib"),VesselPoint(D),Set);Rib->SetRelativeRotation(VesselRotation(D));
-        Ring(FVector::ZeroVector,843+Open*400,FMath::Lerp(Ending::Rose*.44f,Ending::Teal*.18f,Open),Rib,0,10-Open*6);
+        Ring(FVector::ZeroVector,FMath::Lerp(420.f,843.f,Ending::Ease(D/Length/.06f))+Open*400,FMath::Lerp(Ending::Rose*.44f,Ending::Teal*.18f,Open),Rib,0,10-Open*6);
     }
     // The final skin opens into a sparse lattice: the brain becomes visible
     // through it before the camera leaves the blood stream.
@@ -291,7 +291,9 @@ void AEndingEmergence::BuildJourney()
         auto* B=Shape(TEXT("BloodCell"),P,FVector(220,210,62),FLinearColor(.66f,.045f,.035f),TEXT("Sphere"),Set,TEXT("Blood"));
         B->SetRelativeRotation(FRotator(I*31,I*43,22));Blood.Add(B);BloodOrigins.Add(Origin);
     }
-    Shape(TEXT("WalkableBrainPlanet"),Ending::BrainCenter,FVector(Ending::BrainRadius*2),FLinearColor(.10f,.04f,.15f),TEXT("Sphere"),Set,TEXT("BrainGround"),true);
+    auto* BrainCollision=Shape(TEXT("WalkableBrainPlanet"),Ending::BrainCenter,FVector(Ending::BrainRadius*2),FLinearColor(.10f,.04f,.15f),TEXT("Sphere"),Set,TEXT("BrainGround"),true);
+    BrainCollision->SetHiddenInGame(true);BrainCollision->SetVisibility(false);
+    BuildBrainSurface();
     // Ambient neural filaments follow the small planet's surface.
     for(int I=0;I<330;++I)
     {
@@ -308,25 +310,33 @@ void AEndingEmergence::BuildJourney()
         }
     }
     // Nine branching layers: twice the original forward distance and ten hops to the goal.
-    NeuronPositions.Add(FVector(13200,0,Ending::Ground(13200)+480));
+    NeuronPositions.Add(FVector(13200,0,Ending::Ground(13200)+260));
     for(int Row=0;Row<9;++Row)for(int Lane=-2;Lane<=2;++Lane)
     {
         const float X=14500+Row*1300,Y=Lane*800;
-        NeuronPositions.Add(FVector(X,Y,Ending::Ground(X,Y)+480));
+        NeuronPositions.Add(FVector(X,Y,Ending::Ground(X,Y)+260));
     }
-    NeuronPositions.Add(FVector(26200,0,Ending::Ground(26200)+600));
+    NeuronPositions.Add(FVector(26200,0,Ending::Ground(26200)+400));
     for(int I=0;I<NeuronPositions.Num();++I)
     {
         const FVector P=NeuronPositions[I];const bool Goal=I==NeuronPositions.Num()-1;
         const float Size=Goal?360:140;
-        NeuronCores.Add(Shape(Goal?TEXT("LargestNeuron"):TEXT("PossessableNeuron"),P,FVector(Size),Goal?Ending::Gold*.85f:Ending::Teal*.65f,TEXT("Sphere"),Set,TEXT("Glow")));
-        Ring(P,Goal?190:75,Goal?Ending::Gold*.55f:Ending::Teal*.28f,Set,1,Goal?7:3);
-        for(int J=0;J<6;++J)
+        NeuronCores.Add(Shape(Goal?TEXT("LargestNeuron"):TEXT("PossessableNeuron"),P,FVector(Size,Size*.88f,Size*.78f),Goal?Ending::Gold*.85f:Ending::Teal*.65f,TEXT("Sphere"),Set,TEXT("NeuronGlass")));
+        Shape(TEXT("NeuronNucleus"),P,FVector(Size*.29f),Goal?Ending::Gold:Ending::Teal*.55f,TEXT("Sphere"),Set,TEXT("NeuronGlass"));
+        for(int J=0;J<7;++J)
         {
-            const float A=J*2*PI/6;
-            const FVector Branch=P+FVector(FMath::Cos(A)*Size,FMath::Sin(A)*Size,-Size*.4f);
-            Rod(P,Branch,Goal?13:6,Ending::Teal*.35f,Set);
-            Rod(Branch,Branch+FVector(FMath::Cos(A+.6f)*Size*.65f,FMath::Sin(A+.6f)*Size*.65f,Size*.35f),Goal?8:4,Ending::Teal*.25f,Set);
+            const float A=J*2*PI/7+I*.37f,BranchReach=Size*(1.3f+.24f*(J%3));
+            const FVector Root=P+FVector(FMath::Cos(A)*Size*.2f,FMath::Sin(A)*Size*.2f,0);
+            const FVector Elbow=P+FVector(FMath::Cos(A+.15f)*BranchReach*.55f,FMath::Sin(A+.15f)*BranchReach*.55f,Size*.08f);
+            const FVector Branch=P+FVector(FMath::Cos(A)*BranchReach,FMath::Sin(A)*BranchReach,-Size*.25f);
+            Nerves.Add(Rod(Root,Elbow,Goal?20:11,Ending::Teal*.35f,Set,TEXT("NeuronGlass")));
+            Nerves.Add(Rod(Elbow,Branch,Goal?13:7,Ending::Teal*.35f,Set,TEXT("NeuronGlass")));
+            for(int Side:{-1,1})
+            {
+                const FVector Tip=Branch+FVector(FMath::Cos(A+Side*.65f)*Size*.60f,FMath::Sin(A+Side*.65f)*Size*.60f,Size*(.12f+.08f*(J%2)));
+                Nerves.Add(Rod(Branch,Tip,Goal?8:4,Ending::Teal*.35f,Set,TEXT("NeuronGlass")));
+                Shape(TEXT("SynapticBouton"),Tip,FVector(Goal?28:15),Ending::Teal*.5f,TEXT("Sphere"),Set,TEXT("NeuronGlass"));
+            }
         }
     }
     for(int A=0;A<NeuronPositions.Num();++A)for(int B=A+1;B<NeuronPositions.Num();++B)
@@ -339,19 +349,13 @@ void AEndingEmergence::BuildJourney()
     {
         const float X=Ending::GateX[I],Y=Ending::GateY[I],Z=Ending::Ground(X,Y);
         if(I<2)
-            Shell(TEXT("RoundMembraneFrame"),{FVector(X,0,850),FVector(X,Y,Z+250)},{FVector2D(I==0?969:850,850),FVector2D(240,250)},I==0?Ending::Teal*.35f:Ending::Rose*.6f,I==0?TEXT("CellInterior"):TEXT("Vessel"));
+            Shell(TEXT("RoundMembraneFrame"),{FVector(X,0,425),FVector(X,Y,Z+250)},{FVector2D(484.5f,425),FVector2D(240,250)},Ending::Teal*.35f,TEXT("CellInterior"));
         else
             Shell(TEXT("NeuralConnectionFrame"),{FVector(X,0,Z+700),FVector(X,Y,Z+250)},{FVector2D(1750,2200),FVector2D(240,250)},Ending::Blue*.35f,TEXT("Haze"));
         auto* Gate=GetWorld()->SpawnActor<ADiggableRock>(ADiggableRock::StaticClass(),GetActorTransform().TransformPosition(FVector(X,Y,Z+250)),GetActorRotation());
         Gate->AttachToActor(this,FAttachmentTransformRules::KeepWorldTransform);Gate->Tags.Add(Ending::Tag);
         Gate->RockSize=FVector(100,480,500);Gate->RockMaterial=LoadObject<UMaterialInterface>(nullptr,I==1?TEXT("/Game/EndingEmergence/Materials/M_EE_RedMembrane"):TEXT("/Game/EndingEmergence/Materials/M_EE_Membrane"));Gate->ResetRock();Gates.Add(Gate);
         Ring(FVector(X-90,Y,Z+250),252,Ending::Gold*.5f,Set,0,6);
-        const float Start=I?Ending::GateX[I-1]+180:100,StartY=I?Ending::GateY[I-1]:0;
-        for(int J=0;J<30;++J)
-        {
-            const float A=J/30.f,PX=FMath::Lerp(Start,X-170,A),PY=FMath::Lerp(StartY,Y,A);
-            Shape(TEXT("FollowLight"),FVector(PX,PY,Ending::Ground(PX,PY)+8),FVector(25,7,4),Ending::Gold,TEXT("Cube"),Set,TEXT("Glow"));
-        }
     }
 }
 
@@ -499,14 +503,26 @@ void AEndingEmergence::BuildSpace()
         LandLights->AddInstance(FTransform(FRotator::ZeroRotator,P*4004,FVector(R.FRandRange(.022f,.06f))));
     }
     Universe=Group(TEXT("UniverseThatBecomesCytoplasm"),FVector::ZeroVector,Sets[3]);
+    // Actual free star/nebula artwork is spread across depth layers. These
+    // remain inside the enclosing cell and shrink with the same universe.
+    for(int Layer=0;Layer<4;++Layer)
+    {
+        auto* Field=Shape(TEXT("DeepStarField"),FVector(18000-Layer*6000,(Layer%2?1:-1)*5000,Layer*2200-3300),FVector(55000,55000,1),FLinearColor::White,TEXT("Plane"),Universe,TEXT("SpaceField"));
+        Field->SetRelativeRotation(FRotator(90,Layer*37,Layer*21));
+    }
+    for(int Layer=0;Layer<3;++Layer)
+    {
+        auto* Field=Shape(TEXT("ParallaxNebula"),FVector(7000-Layer*5200,Layer*5500-6000,Layer*1800-2400),FVector(33000,29000,1),FLinearColor::White,TEXT("Plane"),Universe,TEXT("NebulaField"));
+        Field->SetRelativeRotation(FRotator(90,Layer*56,Layer*13));
+    }
     auto* Stars=Instances(TEXT("Galaxies"),TEXT("Sphere"),FLinearColor(.32f,.5f,.85f),Universe,TEXT("Glow"));
     auto* GoldStars=Instances(TEXT("WarmStars"),TEXT("Sphere"),Ending::Gold,Universe,TEXT("Glow"));
     for(int Cluster=0;Cluster<13;++Cluster)
     {
         const FVector Center=Cluster?R.VRand()*R.FRandRange(7000,21000):FVector::ZeroVector;
         const float Radius=Cluster?R.FRandRange(1100,2800):6200;
-        auto* Haze=Shape(TEXT("GalaxyHaze"),Center,FVector(Radius*2,Radius*2,Radius*.25),FLinearColor(.09f,.03f,.18f),TEXT("Sphere"),Universe,TEXT("Haze"));
-        Haze->SetRelativeRotation(FRotator(Cluster*19,Cluster*47,0));
+        auto* Haze=Shape(TEXT("GalaxyHaze"),Center,FVector(Radius*3,Radius*3,1),FLinearColor::White,TEXT("Plane"),Universe,TEXT("NebulaField"));
+        Haze->SetRelativeRotation(FRotator(65+Cluster%4*12,Cluster*47,0));
         for(int I=0;I<240;++I)
         {
             const float D=R.FRandRange(.03,1)*Radius,A=D/Radius*7+(I%3)*2*PI/3+R.FRandRange(-.18,.18);
@@ -531,8 +547,7 @@ void AEndingEmergence::BuildAbstractCells()
     }
     FRandomStream R(823);
     Cell=Group(TEXT("RevealedCellMembrane"),FVector::ZeroVector,Sets[3]);
-    Shape(TEXT("TransparentCell"),FVector::ZeroVector,FVector(3500,4200,3300),Ending::Teal*.28f,TEXT("Sphere"),Cell,TEXT("Atmosphere"));
-    Ring(FVector::ZeroVector,1750,Ending::Teal*.6f,Cell,0,13);
+    Shape(TEXT("TransparentCell"),FVector::ZeroVector,FVector(3500,4200,3300),FLinearColor(.13f,.30f,.45f),TEXT("Sphere"),Cell,TEXT("LivingMembrane"));
     Shape(TEXT("GiantNucleus"),FVector(150,1130,340),FVector(630,570,600),FLinearColor(.20f,.05f,.32f),TEXT("Sphere"),Cell,TEXT("Organic"));
     Shape(TEXT("GiantNucleolus"),FVector(-105,1030,390),FVector(140),Ending::Gold,TEXT("Sphere"),Cell,TEXT("Glow"));
     for(int I=0;I<19;++I)
@@ -547,7 +562,7 @@ void AEndingEmergence::BuildAbstractCells()
     OtherCells=Group(TEXT("ManyUniversesInsideCells"),FVector::ZeroVector,Sets[3]);
     auto* SmallStars=Instances(TEXT("UniversesInOtherCells"),TEXT("Sphere"),FLinearColor(.32f,.43f,.70f),OtherCells,TEXT("Glow"));
     auto* WarmStars=Instances(TEXT("WarmUniversesInOtherCells"),TEXT("Sphere"),Ending::Gold*.55f,OtherCells,TEXT("Glow"));
-    auto* Membranes=Instances(TEXT("DenseCellMembranes"),TEXT("Sphere"),Ending::Teal*.29f,OtherCells,TEXT("Atmosphere"));
+    auto* Membranes=Instances(TEXT("DenseCellMembranes"),TEXT("Sphere"),FLinearColor(.13f,.30f,.45f),OtherCells,TEXT("LivingMembrane"));
     auto* Nuclei=Instances(TEXT("DenseCellNuclei"),TEXT("Sphere"),FLinearColor(.14f,.04f,.23f),OtherCells,TEXT("Organic"));
     auto* Galaxies=Instances(TEXT("DenseCellGalaxies"),TEXT("Sphere"),FLinearColor(.18f,.06f,.29f),OtherCells,TEXT("Haze"));
     UniverseCellCount=1;
@@ -555,9 +570,9 @@ void AEndingEmergence::BuildAbstractCells()
     {
         if(Row==0&&Col==0)continue;
         ++UniverseCellCount;
-        const FVector Center(R.FRandRange(-32000,32000),Col*145000+(FMath::Abs(Row)%2)*72500+R.FRandRange(-6000,6000),Row*128000+R.FRandRange(-5000,5000));
-        const float Radius=R.FRandRange(66000,74000);
-        Membranes->AddInstance(FTransform(FRotator::ZeroRotator,Center,FVector(Radius*2,Radius*2.05,Radius*1.96)/100));
+        const FVector Center(R.FRandRange(-58000,58000),Col*145000+(FMath::Abs(Row)%2)*72500+R.FRandRange(-21000,21000),Row*128000+R.FRandRange(-18000,18000));
+        const float Radius=R.FRandRange(58000,76000);
+        Membranes->AddInstance(FTransform(FRotator(R.FRandRange(-12,12),0,R.FRandRange(-18,18)),Center,FVector(Radius*2,Radius*R.FRandRange(1.85f,2.15f),Radius*R.FRandRange(1.85f,2.1f))/100));
         Nuclei->AddInstance(FTransform(FRotator::ZeroRotator,Center+FVector(0,Radius*.60,Radius*.18),FVector(Radius*.30/100)));
         Galaxies->AddInstance(FTransform(FRotator(0,0,R.FRandRange(-25,25)),Center,FVector(Radius*1.05,Radius*.9,Radius*.13)/100));
         for(int I=0;I<64;++I)
@@ -571,45 +586,46 @@ void AEndingEmergence::BuildAbstractCells()
 
 void AEndingEmergence::ApplyCellVisuals()
 {
-    if(CellVisualMeshes.Num()!=5||CellVisualMeshes.Contains(nullptr)||!Cell||!OtherCells)return;
-    auto Diameter=[](UStaticMesh* M){return M->GetBounds().BoxExtent.GetMax()*2;};
-    // Ground the anatomy around the player's eye line and preserve the central path.
-    TArray<UStaticMeshComponent*> Parts;GetComponents(Parts);
-    for(auto* Part:Parts)
+    if(Sets.IsEmpty()||!Cell||!OtherCells)return;
+    TArray<USceneComponent*> Parts;Sets[0]->GetChildrenComponents(true,Parts);
+    for(int I=Parts.Num()-1;I>=0;--I)
     {
-        const FString Name=Part->GetName();
-        if(Part->GetAttachParent()==Sets[0]&&(Name.StartsWith(TEXT("Organelle"))||Name.StartsWith(TEXT("CellNucleus"))||Name.StartsWith(TEXT("Nucleolus"))||Name.StartsWith(TEXT("CellDress"))))
+        auto* Part=Parts[I];const FString Name=Part->GetName();
+        if(Name.StartsWith(TEXT("Organelle"))||Name.StartsWith(TEXT("CellNucleus"))||Name.StartsWith(TEXT("Nucleolus"))||Name.StartsWith(TEXT("CellDress")))
         {RemoveInstanceComponent(Part);Part->DestroyComponent();}
     }
-    auto Anatomy=[&](int Index,FVector Position,float Size,FRotator Rotation)
+    // Closed, smooth silhouettes replace cutaway anatomy whose open surfaces
+    // were exposed at player height. Keep a walkable central aisle without marks.
+    Shape(TEXT("CellDressNucleusEnvelope"),FVector(950,-330,190),FVector(430,360,400),FLinearColor(.18f,.13f,.40f),TEXT("Sphere"),Sets[0],TEXT("LivingMembrane"));
+    Shape(TEXT("CellDressNucleus"),FVector(950,-330,190),FVector(320,280,310),FLinearColor(.11f,.07f,.25f),TEXT("Sphere"),Sets[0],TEXT("Organic"));
+    Shape(TEXT("CellDressNucleolus"),FVector(795,-305,215),FVector(85),FLinearColor(.30f,.20f,.55f),TEXT("Sphere"),Sets[0],TEXT("Organic"));
+    for(int Side:{-1,1})for(int Row=0;Row<5;++Row)
     {
-        auto* Part=Shape(TEXT("CellDressAnatomy"),Position,FVector(1),FLinearColor::White,TEXT("Sphere"),Sets[0]);
-        Part->SetStaticMesh(CellVisualMeshes[Index]);Part->EmptyOverrideMaterials();
-        Part->SetRelativeScale3D(FVector(Size/Diameter(CellVisualMeshes[Index])));Part->SetRelativeRotation(Rotation);
-        Part->SetCastShadow(false);Part->SetVisibleInRayTracing(false);
-    };
+        const float X=180+Row*250,Y=Side*(280+35*(Row%2));
+        if(Side==-1&&Row>1&&Row<4)continue;
+        const FVector Center(X,Y,Ending::Ground(X,Y)+90);
+        auto* Org=Group(TEXT("CellDressMitochondrion"),Center,Sets[0]);
+        Org->SetRelativeRotation(FRotator(8+Row*5,Row*47+Side*23,Side*12));
+        Shape(TEXT("CellDressMitoBody"),FVector::ZeroVector,FVector(250,118,100),FLinearColor(.31f,.13f,.13f),TEXT("Sphere"),Org,TEXT("Organic"));
+        for(int Fold=0;Fold<6;++Fold)
+        {
+            auto* Crista=Shape(TEXT("CellDressCrista"),FVector(-80+Fold*31,0,36),FVector(18,75,25),FLinearColor(.66f,.32f,.16f),TEXT("Sphere"),Org,TEXT("Organic"));
+            Crista->SetRelativeRotation(FRotator(0,Fold%2?18:-18,0));
+        }
+    }
+    // Layered Golgi sacs remain intact rather than showing an anatomy cut plane.
+    for(int Layer=0;Layer<5;++Layer)
+    {
+        auto* Sac=Shape(TEXT("CellDressGolgi"),FVector(640,360,80+Layer*27),FVector(240-Layer*18,115,22),FLinearColor(.14f,.28f,.32f),TEXT("Sphere"),Sets[0],TEXT("Organic"));
+        Sac->SetRelativeRotation(FRotator(0,-25+Layer*4,8));
+    }
+    auto* Vesicles=Instances(TEXT("CellDressVesicles"),TEXT("Sphere"),FLinearColor(.14f,.30f,.32f),Sets[0],TEXT("LivingMembrane"));
+    auto* Ribosomes=Instances(TEXT("CellDressRibosomes"),TEXT("Sphere"),Ending::Gold*.18f,Sets[0],TEXT("Glow"));
     FRandomStream R(903);
-    // A clear landmark on the left, visible from the spawn point rather than overhead.
-    Anatomy(4,FVector(850,-730,Ending::Ground(850,-730)+50),820,FRotator(0,18,8));
-    for(int Side:{-1,1})for(int Row=0;Row<11;++Row)
+    for(int I=0;I<95;++I)
     {
-        const float X=-1500+Row*265.f,Y=Side*(Row%3==0?760.f:570.f);
-        if(Side==-1&&X>250&&X<1150)continue;
-        const float Size=R.FRandRange(330,530);
-        Anatomy(Row%3?2:3,FVector(X,Y,Ending::Ground(X,Y)+Size*.06f),Size,FRotator(R.FRandRange(-20,20),R.FRandRange(-180,180),R.FRandRange(-22,22)));
-    }
-    // Reticulum folds and a second tier of vesicles make the walls feel occupied.
-    for(int I=0;I<6;++I)
-    {
-        const float X=-1250+I*420.f,Y=(I%2?1:-1)*850.f;
-        Anatomy(3,FVector(X,Y,Ending::Ground(X,Y)+35),R.FRandRange(350,450),FRotator(15,I*37,30));
-    }
-    auto* Vesicles=Instances(TEXT("CellDressVesicles"),TEXT("Sphere"),Ending::Teal*.55f,Sets[0],TEXT("Organic"));
-    auto* Ribosomes=Instances(TEXT("CellDressRibosomes"),TEXT("Sphere"),Ending::Gold*.35f,Sets[0],TEXT("Glow"));
-    for(int I=0;I<170;++I)
-    {
-        const float X=R.FRandRange(-1600,1350),Y=(I%2?1:-1)*R.FRandRange(340,920);
-        const float Size=R.FRandRange(14,45),Z=Ending::Ground(X,Y)+R.FRandRange(25,170);
+        const float X=R.FRandRange(80,1400),Y=(I%2?1:-1)*R.FRandRange(220,440);
+        const float Size=R.FRandRange(8,26),Z=Ending::Ground(X,Y)+R.FRandRange(35,180);
         (I%4?Ribosomes:Vesicles)->AddInstance(FTransform(FRotator::ZeroRotator,FVector(X,Y,Z),FVector(Size/100)));
     }
     BuildAbstractCells();
@@ -969,6 +985,7 @@ void AEndingEmergence::UpdateFilm(float Dt)
     case 7: case 8: case 9: case 10: case 11: UpdateFinale(Dt);break;
     }
     Exhaustion=0;
+    if((Shot==5||Shot==6)&&Age-TitleUpdateAt>.05f){UpdateCellTitle(0);TitleUpdateAt=Age;}
     if(ExhaustionMaterial)
     {
         ExhaustionMaterial->SetScalarParameterValue(TEXT("Gray"),Exhaustion);
@@ -1348,7 +1365,7 @@ void AEndingEmergence::EnterBlood()
     GateIndex=1;BloodAt=Age;BeatAt=Age+3;BloodSpeed=480;BloodY=0;
     const FVector Eye=Player->PlayerCameraManager->GetCameraLocation();
     const FVector LocalEye=GetActorTransform().InverseTransformPosition(Eye);
-    VesselDistance=FMath::Max(150.f,float(LocalEye.X)-1600);BloodStartZ=LocalEye.Z;
+    VesselDistance=FMath::Max(150.f,float(LocalEye.X)-1600);BloodStartZ=LocalEye.Z-VesselPoint(VesselDistance).Z;
     VesselLook=VesselRotation(VesselDistance);
     // A visible copy leaves the hand before the hidden pawn becomes a pulse.
     TArray<UStaticMeshComponent*> Parts;Player->GetPawn()->GetComponents(Parts);
@@ -1460,7 +1477,7 @@ void AEndingEmergence::UpdatePulse(float Dt)
         BloodSpeed=FMath::FInterpTo(BloodSpeed,Player->IsInputKeyDown(EKeys::W)?950.f:480.f,Dt,3);
         VesselDistance=FMath::Min(VesselDistance+BloodSpeed*Dt,VesselDistances.Last());
         BloodY=FMath::Clamp(BloodY+Dt*150*(float(Player->IsInputKeyDown(EKeys::D))-float(Player->IsInputKeyDown(EKeys::A))),-240.f,240.f);
-        const float Z=(BloodStartZ-850)*(1-Ending::Ease(T/1.8f))+(bComfortMode?0:18*FMath::Sin(T*1.6f)*Ending::Ease(T));
+        const float Z=BloodStartZ*(1-Ending::Ease(T/1.8f))+(bComfortMode?0:18*FMath::Sin(T*1.6f)*Ending::Ease(T));
         const FRotator Frame=VesselRotation(VesselDistance);
         Camera->SetActorLocation(GetActorTransform().TransformPosition(VesselPoint(VesselDistance)+Frame.RotateVector(FVector(0,BloodY,Z))));
         // Carry the free-look offset around bends without fighting mouse input.
@@ -1606,7 +1623,8 @@ void AEndingEmergence::Tick(float Dt)
         {
             const FVector Origin=BloodOrigins[I];const float D=FMath::Fmod(Origin.X+BloodTravel*(.88f+(I%7)*.04f),VesselDistances.Last());
             const FRotator Frame=VesselRotation(D);
-            const FVector Offset(0,Origin.Y+FMath::Sin(Age*1.4f+I)*18,Origin.Z+FMath::Cos(Age*1.8f+I)*22);
+            const float NeckScale=FMath::Lerp(.48f,1.f,Ending::Ease(D/VesselDistances.Last()/.06f));
+            const FVector Offset=FVector(0,Origin.Y+FMath::Sin(Age*1.4f+I)*18,Origin.Z+FMath::Cos(Age*1.8f+I)*22)*NeckScale;
             Blood[I]->SetRelativeLocation(VesselPoint(D)+Frame.RotateVector(Offset));
             Blood[I]->SetRelativeRotation(Frame.Quaternion()*FRotator(I*31+FMath::Sin(Age+I)*14,I*43+Age*8,22).Quaternion());
             Blood[I]->SetRelativeScale3D(FVector(2.2,2.1,.62)*Ending::Ease(D/180)*Ending::Ease((VesselDistances.Last()-D)/450));
@@ -1648,7 +1666,7 @@ FString AEndingEmergence::Title() const
 FString AEndingEmergence::Hint() const
 {
     if(Shot<0)return GateIndex>=5?TEXT("所有微光，汇成一个念头。"):
-        GateIndex==0?TEXT("沿金色痕迹前进，靠近发光薄膜，按住左键挖开，再穿过去。"):
+        GateIndex==0?TEXT("靠近前方发光薄膜，按住左键挖开，再穿过去。"):
         GateIndex==1?(bEnteringBrain?TEXT("血流散开，一道脉冲正接住你。"):TEXT("让血流托住你。按住 W 加速，松手继续漂浮。")):
         TravellingToNeuron!=INDEX_NONE?TEXT("穿过连接，成为下一束光。"):
         TargetNeuron>=0?(TargetNeuron==NeuronPositions.Num()-1?TEXT("空格 · 汇入最大的神经元"):TEXT("空格 · 穿梭到这个神经元")):

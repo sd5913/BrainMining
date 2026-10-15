@@ -17,7 +17,7 @@ bool FEncounterFlightScopeTest::RunTest(const FString&)
     Move->PushFlightBlock();Move->PopFlightBlock();TestFalse(TEXT("Nested scope stays blocked"),Move->IsFlightAvailable());
     Move->PopFlightBlock();TestTrue(TEXT("Exit restores flight availability"),Move->IsFlightAvailable());
     TestFalse(TEXT("Exit does not resume stale held input"),Move->bFlightInputHeld);
-    Move->SetFlightInputHeld(true);TestTrue(TEXT("A fresh press flies again"),Move->NewFallVelocity(FVector::ZeroVector,FVector(0,0,-980),.1f).Z>0);
+    Move->SetFlightInputHeld(true);Move->UpdateFlightState(.3f);TestTrue(TEXT("A fresh hold ignites again"),Move->NewFallVelocity(FVector::ZeroVector,FVector(0,0,-980),.1f).Z>0);
     Move->FlightSettings.bEnabled=false;Move->PushFlightBlock();Move->PopFlightBlock();TestFalse(TEXT("Originally disabled flight stays disabled"),Move->IsFlightAvailable());
     return true;
 }

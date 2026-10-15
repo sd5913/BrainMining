@@ -341,4 +341,14 @@ unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).set_level_viewport_cam
 assert len(demo.gates)==1
 assert len(demo.neuron_positions)==47
 assert levels.save_current_level()
+# Reapply the acquired Earth imagery after rebuilding the procedural demo.
+if unreal.EditorAssetLibrary.does_asset_exist('/Game/Planet_Project/Assets/Textures/Earth/T_8k_earth_daymap'):
+    import runpy
+    runpy.run_path(str(Path(__file__).with_name('apply_ending_planet_project.py')))
 unreal.log('ENDING_EMERGENCE_CREATED '+MAP)
+if unreal.EditorAssetLibrary.does_asset_exist('/Game/EndingEmergence/Crowd/Lite/DA_EndingCrowdLite'):
+    demo.set_editor_property('crowd_assets',unreal.load_asset('/Game/EndingEmergence/Crowd/Lite/DA_EndingCrowdLite'))
+    assert levels.save_current_level()
+elif unreal.EditorAssetLibrary.does_asset_exist('/Game/EndingEmergence/Crowd/DA_EndingCrowd'):
+    import runpy
+    runpy.run_path(str(Path(__file__).with_name('apply_ending_crowd.py')))

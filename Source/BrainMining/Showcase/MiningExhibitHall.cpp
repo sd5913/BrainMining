@@ -211,7 +211,7 @@ void AMiningExhibitHall::CloseInteraction()
     {
         Pawn->EnableInput(Controller.Get()); Pawn->SetActorEnableCollision(true);
         if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()) { Mining->CancelMining(); Mining->SetInputSuspended(false); Mining->SetComponentTickEnabled(true); Mining->SetInputContextEnabled(true); }
-        if(auto* Move=Pawn->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->SetFlightInputHeld(false); Move->StopMovementImmediately(); Move->SetMovementMode(MOVE_Falling); }
+        if(auto* Move=Pawn->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->ResetFlightInput(); Move->StopMovementImmediately(); Move->SetMovementMode(MOVE_Falling); }
     }
 }
 
@@ -462,7 +462,7 @@ bool AMiningExhibitHall::ToggleMenu()
                 +SVerticalBox::Slot().AutoHeight().Padding(10)[SNew(SButton).ContentPadding(12).Text(FText::FromString(TEXT("继续当前体验 · F4 / Esc"))).OnClicked_Lambda([this](){CloseMenu();return FReply::Handled();})]]];
     Controller->SetIgnoreLookInput(true); Controller->SetIgnoreMoveInput(true); Controller->SetPause(true);
     Controller->GetPawn()->FindComponentByClass<UMiningComponent>()->SetInputSuspended(true);
-    if(auto* Move=Controller->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) Move->SetFlightInputHeld(false);
+    if(auto* Move=Controller->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) Move->ResetFlightInput();
     GetGameInstance()->GetGameViewportClient()->AddViewportWidgetContent(Menu.ToSharedRef(),1100);
     FInputModeUIOnly Mode; Mode.SetWidgetToFocus(Choices->GetChildren()->GetChildAt(0)); Controller->SetInputMode(Mode); Controller->bShowMouseCursor=true;
     return true;

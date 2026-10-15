@@ -19,6 +19,9 @@ class UStaticMesh;
 class UDynamicMeshComponent;
 class AMiningDebrisBurst;
 class UPointLightComponent;
+class UEndingCrowdAssets;
+class UEndingCrowdComponent;
+class UCurveFloat;
 
 /** Standalone playable ending study; never changes the campaign or shared pawn defaults. */
 UCLASS()
@@ -27,6 +30,14 @@ class BRAINMINING_API AEndingEmergence : public AActor
     GENERATED_BODY()
 public:
     AEndingEmergence();
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending") TObjectPtr<UEndingCrowdAssets> CrowdAssets;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending") TArray<TObjectPtr<UStaticMesh>> CityBuildingMeshes;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending") TArray<TObjectPtr<UStaticMesh>> CityPropMeshes;
+    UFUNCTION(CallInEditor, BlueprintCallable, Category="Ending") void ApplyCityBuildings();
+    // Hero cutaway, distant cutaway, mitochondria, reticulum and nucleus.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending") TArray<TObjectPtr<UStaticMesh>> CellVisualMeshes;
+    UFUNCTION(CallInEditor, BlueprintCallable, Category="Ending") void ApplyCellVisuals();
+    UPROPERTY(VisibleAnywhere, Transient, Category="Ending") TObjectPtr<UEndingCrowdComponent> StreetCrowd;
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
@@ -38,7 +49,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending", meta=(ClampMin="0.25",ClampMax="4")) float FilmSpeed = 1;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ending") TArray<TObjectPtr<ADiggableRock>> Gates;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") int32 GateIndex = 0;
-    // -1: gameplay, 0..6: scale journey, 7: voices/tool, 8: strikes, 9: water/fracture, 10: flying paper, 11: title hold.
+    // -1: gameplay, 0..6: scale journey, 7: cell title, 8: dive into o, 9: drill, 10: light, 11: reality.
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") int32 Shot = -1;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") float ShotTime = 0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") int32 RealityHits = 0;
@@ -55,7 +66,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") int32 EndingDebrisBursts = 0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") TArray<TObjectPtr<UDynamicMeshComponent>> UniverseShards;
     UPROPERTY(VisibleAnywhere, Transient, Category="Ending") TObjectPtr<UDynamicMeshComponent> UniverseSurround;
-    UPROPERTY(VisibleAnywhere, Transient, Category="Ending") TArray<TObjectPtr<UDynamicMeshComponent>> WaterJets;
+    UPROPERTY(VisibleAnywhere, Transient, Category="Ending") TArray<TObjectPtr<UDynamicMeshComponent>> StarlightRibbons;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") bool bComplete = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") FVector DriftVelocity = FVector::ZeroVector;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") FVector DriftOffset = FVector::ZeroVector;
@@ -78,17 +89,63 @@ public:
     float OverlayAlpha() const;
     float BrainLens() const;
     static float Duration(int32 Index);
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") float DrillDistance=0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") float FinaleDrillSpeed=0;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") int32 FinaleDrillCuts=0;
 private:
+    friend class FEndingTitleDrillPreview;
+    void BuildFinale();
+    void UpdateFinale(float DeltaSeconds);
+    void ResetFinale();
+    void BeginFinaleDrill();
+    void PrepareFinaleRocks();
+    void EndFinaleDrill();
+    void UpdateFinaleDrillEffects(float DeltaSeconds, float Boost);
+    void UpdateCellTitle(float Alpha);
+    UFUNCTION() void FinaleDrillHit(const FHitResult& Hit);
+    UPROPERTY(Transient) TObjectPtr<USceneComponent> FinaleTunnel;
+    UPROPERTY(Transient) TObjectPtr<USceneComponent> FinaleEntrancePreview;
+    UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> FinalePreviewMaterials;
+    UPROPERTY(Transient) TObjectPtr<UInstancedStaticMeshComponent> FinaleCellSpecks;
+    float FinaleSide=0,FinaleSideSpeed=0;
+    FVector FinaleSideVector=FVector::ZeroVector;
+    UPROPERTY(Transient) TObjectPtr<USceneComponent> FinaleReality;
+    UPROPERTY(Transient) TArray<TObjectPtr<UInstancedStaticMeshComponent>> TitleBatches;
+    TArray<TArray<FTransform>> TitleOriginals;
+    TArray<FVector> TitleTargets,TitleCenters;
+    FVector TitleCameraStart=FVector::ZeroVector;
+    FRotator TitleLookStart=FRotator::ZeroRotator;
+    bool bTitleRestored=true,bFinaleDrilling=false;
+    float TitleUpdateAt=-1,FinaleSpin=0;
+    UPROPERTY(Transient) TArray<TObjectPtr<ADiggableRock>> FinaleRocks;
+    UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> FinaleDrills;
+    UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> FinaleDrillPivots;
+    UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> FinaleBulbMaterials;
+    UPROPERTY(Transient) TArray<TObjectPtr<UPointLightComponent>> FinaleBulbLights;
+    UPROPERTY(Transient) TObjectPtr<UCurveFloat> FinaleSpinCurve;
+    UPROPERTY(Transient) TObjectPtr<UStaticMeshComponent> FinaleLight;
+    UPROPERTY(Transient) TObjectPtr<UInstancedStaticMeshComponent> FinaleImpactShards;
+    UPROPERTY(Transient) TObjectPtr<UInstancedStaticMeshComponent> FinaleImpactLines;
+    UPROPERTY(Transient) TObjectPtr<UInstancedStaticMeshComponent> FinaleSpeedLines;
+    TArray<FVector> FinaleImpactOrigins;
+    TArray<float> FinaleImpactAges;
+    int32 FinaleImpactSlot=0;
+    float FinaleKick=0;
+    bool SavedEffectsEnabled=true;
+    float SavedDrillSmoke=0,SavedDrillDust=0,SavedDrillSparks=0;
+    bool SavedInfiniteEnergy=false,SavedUseEnergy=true,SavedPreview=false;
+    float SavedRadius=0,SavedReach=0,SavedInterval=0,SavedDrillMultiplier=0,SavedDepth=0,SavedDownward=0,SavedInset=0,SavedEnergy=0;
+    friend class FEndingOptimizationPreview;
     friend class SEmergenceEndingView;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> NeuralWaveShells;
-    UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> WaterDrops;
+    UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> StarlightSparks;
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> WetLensMaterial;
-    TArray<FVector> WaterOrigins, WaterVelocities;
+    TArray<FVector> SparkOrigins, SparkVelocities;
     TArray<FVector2D> PaperCenters, PaperSizes;
     TArray<float> PaperRolls;
     TArray<FVector4> PaperMotion;
-    void BuildWaterAndPaper();
-    void UpdateWaterAndPaper();
+    void BuildStarlightAndPaper();
+    void UpdateStarlightAndPaper();
     UPROPERTY() TObjectPtr<USceneComponent> EndingHand;
     UPROPERTY() TObjectPtr<USceneComponent> EndingTool;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Fingers;
@@ -145,6 +202,7 @@ private:
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> TransitMaterial;
     TSharedPtr<SEmergenceEndingView> View;
     bool bReady = false;
+    void WarmStreetRendering();
     bool bRestoring = false;
     float Age = 0;
     float BeatAt = 0;
@@ -153,6 +211,8 @@ private:
     float BloodY = 0;
     float BloodStartZ = 160;
     float PulseAt = -100;
+    float BufferedJumpAt = -100;
+    int32 FindNeuronTarget(int32 Host, const FVector& Origin, const FVector& Direction) const;
     float TransitDuration = 1;
     float BrainEntryAt = 0;
     FVector TransitStart = FVector::ZeroVector;
@@ -182,6 +242,7 @@ private:
     void Shell(const TCHAR* Name,const TArray<FVector>& Centers,const TArray<FVector2D>& Radii,FLinearColor Tint,const TCHAR* Material,bool FollowCurve=false);
     void BuildCity();
     void BuildSpace();
+    void BuildAbstractCells();
     void BuildAfternoon();
     bool Initialize();
     void SetShot(int32 Index);

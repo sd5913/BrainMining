@@ -266,7 +266,7 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
     {
         if(IsValid(Target)) Target->SetHighlighted(false); Target=nullptr;
         Player->SetIgnoreLookInput(true); Player->SetIgnoreMoveInput(true);
-        if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->SetFlightInputHeld(false); Move->StopMovementImmediately(); }
+        if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->ResetFlightInput(); Move->StopMovementImmediately(); }
         Player->GetPawn()->DisableInput(Player);
         Player->SetPause(true);
         if(View) { View->SetVisibility(EVisibility::Visible); FInputModeUIOnly Mode; Mode.SetWidgetToFocus(View); Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); Player->SetInputMode(Mode); }

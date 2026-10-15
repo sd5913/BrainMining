@@ -113,7 +113,7 @@ void AMiningShowcaseDirector::SwitchContinuousRegion(int32 Index)
         MiningController->SetMiningGUIEnabled(bHasRegion && (Kind == EMiningShowcaseKind::Mining || Kind == EMiningShowcaseKind::Treasure || Kind == EMiningShowcaseKind::Popup));
     if (auto* Movement = Controller->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())
     {
-        Movement->SetFlightInputHeld(false);
+        Movement->ResetFlightInput();
         Movement->FlightSettings.bEnabled = bHasRegion && (Kind == EMiningShowcaseKind::Collection || Kind == EMiningShowcaseKind::Mining || Kind == EMiningShowcaseKind::Treasure);
         Movement->FlightSettings.bEnableHeat = Kind == EMiningShowcaseKind::Mining || Kind == EMiningShowcaseKind::Treasure;
         Movement->MaxWalkSpeed = bHasRegion && Kind == EMiningShowcaseKind::WenSi ? 260 : 600;

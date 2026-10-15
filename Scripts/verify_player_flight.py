@@ -94,16 +94,16 @@ def tick(delta):
         elif phase == 1 and elapsed > 1.0:
             sample("held_one_second")
             check("Held jump action produces sustained ascent", position.z > spawn.z + 200 and movement.velocity.z > 300)
-            check("Ascent speed follows player scale", movement.velocity.z <= 316)
+            check("Boost ascent speed follows player scale", movement.velocity.z <= movement.flight_settings.ascent_speed * movement.flight_settings.boost_speed_multiplier * movement.flight_size_scale + 1)
             state["release_z"] = position.z
             state["held"] = False
             advance()
-        elif phase == 2 and elapsed > 0.18:
+        elif phase == 2 and elapsed > 0.95:
             sample("released")
-            check("Release generates Completed and starts falling", not movement.flight_input_held and movement.velocity.z < 0 and position.z < state["release_z"])
+            check("Release generates Completed and falls after coasting", not movement.flight_input_held and movement.velocity.z < 0 and position.z < state["release_z"])
             state["held"] = True
             advance()
-        elif phase == 3 and elapsed > 0.45:
+        elif phase == 3 and elapsed > 0.9:
             sample("caught_fall")
             check("Repress arrests descent and resumes ascent", movement.velocity.z > 100)
             state["held"] = False
@@ -118,7 +118,7 @@ def tick(delta):
             check("Sustained thrust is blocked by the ceiling", position.z + half_height <= ceiling + 3 and position.z > ceiling - half_height - 10 and abs(movement.velocity.z) < 1)
             state["held"] = False
             advance()
-        elif phase == 6 and elapsed > 0.25:
+        elif phase == 6 and elapsed > 0.8:
             check("Release detaches from ceiling instead of sticking", position.z < ceiling - half_height - 10 and movement.velocity.z < 0)
             mining.reset_field()
             state["held"] = True

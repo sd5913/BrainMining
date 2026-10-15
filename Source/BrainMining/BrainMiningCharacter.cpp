@@ -230,6 +230,7 @@ void ABrainMiningCharacter::InitializePlayerFlight()
 void ABrainMiningCharacter::UnPossessed()
 {
 	DoJumpEnd();
+	if (auto* Movement = Cast<UMiningCharacterMovementComponent>(GetCharacterMovement())) Movement->ResetFlightInput();
 	Super::UnPossessed();
 }
 
@@ -324,8 +325,8 @@ void ABrainMiningCharacter::DoJumpStart()
     if(IsMoveInputIgnored())return;
 	if (UMiningCharacterMovementComponent* Movement = Cast<UMiningCharacterMovementComponent>(GetCharacterMovement()); Movement && Movement->IsFlightAvailable())
 	{
-		StopJumping();
 		Movement->SetFlightInputHeld(true);
+		if (!Movement->IsFlightThrustActive()) Jump();
 		return;
 	}
 	// pass Jump to the character

@@ -62,7 +62,9 @@ public:
 	void BindInput(UEnhancedInputComponent* Input);
     void SetInputContextEnabled(bool bEnabled);
     bool IsInputContextEnabled() const { return bInputContextEnabled; }
+    UFUNCTION(BlueprintCallable, Category="Mining|Touch")
     void BeginMiningInput() { StartMining(); }
+    UFUNCTION(BlueprintCallable, Category="Mining|Touch")
     void EndMiningInput() { StopMining(); }
     UPROPERTY(BlueprintAssignable, Category="Mining") FMiningResetEvent OnFieldReset;
     void PushEncounterBlock();

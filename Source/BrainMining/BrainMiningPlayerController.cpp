@@ -10,6 +10,10 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Input/SSlider.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Styling/CoreStyle.h"
 #include "EnhancedInputSubsystems.h"
@@ -24,6 +28,7 @@
 #include "Engine/GameViewportClient.h"
 #include "Components/InputComponent.h"
 #include "MiningComponent.h"
+#include "MobileRuntimeSettings.h"
 #include "MiningProgressionComponent.h"
 #include "MiningBombToolComponent.h"
 #include "Framework/Application/SlateApplication.h"
@@ -77,13 +82,32 @@ void ABrainMiningPlayerController::BeginPlay()
 
 		if (MobileControlsWidget)
 		{
-			// add the controls to the player screen
 			MobileControlsWidget->AddToPlayerScreen(0);
-
-		} else {
-
-			UE_LOG(LogBrainMining, Error, TEXT("Could not spawn mobile controls widget."));
-
+		}
+		else if (GetWorld() && GetWorld()->GetGameViewport())
+		{
+			TWeakObjectPtr<ABrainMiningPlayerController> WeakController(this);
+			MobileFallbackControls = SNew(SOverlay)
+				+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Bottom).Padding(FMargin(24.f, 24.f, 42.f, 42.f))
+				[
+					SNew(SButton)
+					.ContentPadding(FMargin(28.f, 20.f))
+					.OnPressed_Lambda([WeakController]()
+					{
+						if (WeakController.IsValid() && WeakController->GetPawn())
+							if (UMiningComponent* Mining = WeakController->GetPawn()->FindComponentByClass<UMiningComponent>()) Mining->BeginMiningInput();
+					})
+					.OnReleased_Lambda([WeakController]()
+					{
+						if (WeakController.IsValid() && WeakController->GetPawn())
+							if (UMiningComponent* Mining = WeakController->GetPawn()->FindComponentByClass<UMiningComponent>()) Mining->EndMiningInput();
+					})
+					[
+						SNew(STextBlock).Text(FText::FromString(TEXT("MINE"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 24))
+					]
+				];
+			GetWorld()->GetGameViewport()->AddViewportWidgetContent(MobileFallbackControls.ToSharedRef(), 200);
+			UE_LOG(LogBrainMining, Warning, TEXT("MobileControlsWidgetClass is not assigned; using the runtime fallback mining button."));
 		}
 
 	}
@@ -124,8 +148,8 @@ void ABrainMiningPlayerController::SetupInputComponent()
 
 bool ABrainMiningPlayerController::ShouldUseTouchControls() const
 {
-	// are we on a mobile platform? Should we force touch?
-	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
+	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls ||
+		UMobileRuntimeSettings::IsMobileVerticalSliceEnabled();
 }
 
 void ABrainMiningPlayerController::UseInputDefaultsFrom(const ABrainMiningPlayerController* Defaults)
@@ -249,6 +273,11 @@ void ABrainMiningPlayerController::EndPlay(const EEndPlayReason::Type Reason)
 	SetUpgradeMenuHeld(false);
 	if (MiningGUI) MiningGUI->RemoveFromParent();
 	if (InteractionHUD) InteractionHUD->RemoveFromParent();
+	if (MobileFallbackControls.IsValid() && GetWorld() && GetWorld()->GetGameViewport())
+	{
+		GetWorld()->GetGameViewport()->RemoveViewportWidgetContent(MobileFallbackControls.ToSharedRef());
+		MobileFallbackControls.Reset();
+	}
 	if (bOwnsDesktopGUIInput && IsLocalPlayerController())
 	{
 		bShowMouseCursor = false;

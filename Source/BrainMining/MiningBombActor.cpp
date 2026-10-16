@@ -48,6 +48,15 @@ AMiningBombActor::AMiningBombActor()
 	Model->SetCollisionProfileName(TEXT("NoCollision"));
 }
 
+void AMiningBombActor::BeginPlay()
+{
+	Super::BeginPlay();
+	if (Collision && BounceMaterial)
+	{
+		Collision->SetPhysMaterialOverride(BounceMaterial);
+	}
+}
+
 void AMiningBombActor::Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMiningBombToolComponent* Tool,
 	const FMiningBombSettings& InSettings, const FVector& Velocity)
 {

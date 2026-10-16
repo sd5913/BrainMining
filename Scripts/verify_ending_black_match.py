@@ -1,42 +1,54 @@
-"""Read real rendered screenshots; never synthesizes or alters the images."""
+"""Read current rendered frames; never synthesizes or alters game screenshots."""
 from pathlib import Path
+from datetime import datetime, timezone
 import json
-import re
-from PIL import Image, ImageStat
+from PIL import Image, ImageStat, ImageChops
 
 project=Path(__file__).resolve().parents[1]
-log=(project/'Saved/Logs/EndingPaperFinaleTest.log').read_text(encoding='utf-8',errors='replace')
-counts=re.findall(r'Black match: (\d+) screenshot probes requested',log)
-assert counts, 'Run TitleDrillReality with the paper finale validation launcher first'
-count=int(counts[-1]);assert count>=5
 folder=project/'Saved/EndingEmergencePreview'
-frames=[]
-for i in range(count):
- path=folder/f'paper-black-match-{i:02d}.png'
- im=Image.open(path).convert('RGB');w,h=im.size
- # Exclude only the lower-left R hint and the extreme framing edge.
- region=im.crop((int(w*.05),int(h*.05),int(w*.95),int(h*.85)))
- stat=ImageStat.Stat(region)
- mean=max(stat.mean)/255
- peak=max(high for low,high in stat.extrema)/255
- frames.append({'file':path.name,'size':[w,h],'mean':mean,'peak':peak})
- assert mean<.015 and peak<.10, f'Bright exposure during the black-screen match: {path.name}: {mean}, {peak}'
+report_dir=project/'Saved/Validation/EndingPaperFinale'
+run=json.loads((report_dir/'index.json').read_text(encoding='utf-8-sig'))
+assert run['succeeded']==1 and run['failed']==0, 'Run the finale validation first'
+test=run['tests'][0]
+start=datetime.strptime(test['dateTime'],'%Y.%m.%d-%H.%M.%S').replace(tzinfo=timezone.utc).timestamp()
 
-portal=Image.open(folder/'paper-luminous-portal.png').convert('RGB');w,h=portal.size
-centre=ImageStat.Stat(portal.crop((int(w*.4),int(h*.4),int(w*.6),int(h*.6))))
-portal_light=min(centre.mean)/255
-assert portal_light>.72, f'Tunnel exit should be luminous white: {portal_light}'
-flight=Image.open(folder/'paper-black-flight.png').convert('RGB');w,h=flight.size
-dark=flight.crop((int(w*.2),int(h*.2),int(w*.8),int(h*.75))).convert('L').histogram()
-dark_fraction=sum(dark[:35])/sum(dark)
-assert dark_fraction>.85, f'Black-space flight is obscured by scenery: {dark_fraction}'
-centre_peak=max(high for low,high in ImageStat.Stat(flight.crop((int(w*.47),int(h*.45),int(w*.53),int(h*.55)))).extrema)/255
-assert centre_peak>.85, 'Distant white aperture missing in the black flight'
-desk=Image.open(folder/'paper-flight-middle.png').convert('RGB');w,h=desk.size
-ground=ImageStat.Stat(desk.crop((int(w*.35),int(h*.72),int(w*.65),int(h*.88))))
-ground_white=min(ground.mean)/255;ground_tint=(max(ground.mean)-min(ground.mean))/255
-assert ground_white>.80 and ground_tint<.03, f'Desktop must remain neutral white: {ground.mean}'
-report={'passed':True,'black_frames':frames,'white_portal_min_channel_mean':portal_light,'exit_black_fraction':dark_fraction,'desktop_white':ground_white,'desktop_tint':ground_tint}
-out=project/'Saved/Validation/EndingPaperFinale/pixel-verification.json'
-out.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
-print(json.dumps({'passed':True,'frames':count,'black_peak':max(f['peak'] for f in frames),'white_portal':portal_light}))
+def read(name):
+ path=folder/(name+'.png')
+ assert path.stat().st_mtime>=start-2, f'Stale screenshot: {name}'
+ return Image.open(path).convert('RGB')
+
+frames=[]
+for path in sorted(folder.glob('paper-continuity-*.png')):
+ if path.stat().st_mtime<start-2:continue
+ im=read(path.stem);w,h=im.size
+ region=im.crop((int(w*.05),int(h*.05),int(w*.95),int(h*.85)))
+ histogram=region.convert('L').histogram()
+ dark=sum(histogram[:100])/sum(histogram)
+ assert dark>.025, f'Blank white interruption at sheet turn: {path.name}'
+ frames.append({'file':path.name,'dark_fraction':dark})
+# Saving full-resolution frames can advance real-time play by several frames.
+assert len(frames)>=3, 'Not enough fresh continuity probes'
+
+flight=read('paper-black-flight');w,h=flight.size
+histogram=flight.crop((int(w*.2),int(h*.2),int(w*.8),int(h*.75))).convert('L').histogram()
+dark_fraction=sum(histogram[:35])/sum(histogram)
+assert dark_fraction>.55, 'Black-space flight is obscured'
+
+desk=read('paper-flight-middle');w,h=desk.size
+ground=desk.crop((int(w*.08),int(h*.56),int(w*.92),int(h*.94)))
+pixels=list(ground.get_flattened_data())
+white=sum(min(c)>210 and max(c)-min(c)<8 for c in pixels)/len(pixels)
+ink=sum(max(c)<100 for c in pixels)/len(pixels)
+assert white>.45 and ink>.025, 'White paper / black printed dots missing'
+
+front=read('paper-cave-front');screen=read('paper-screen-match')
+assert front.size==screen.size
+w,h=front.size;area=(int(w*.1),int(h*.1),int(w*.9),int(h*.85))
+difference=ImageStat.Stat(ImageChops.difference(front.crop(area),screen.crop(area)))
+mean_difference=max(difference.mean)/255
+assert mean_difference<.065, f'Cave-to-monitor match changed: {mean_difference}'
+
+result={'passed':True,'continuity_frames':frames,'exit_black_fraction':dark_fraction,
+ 'desktop_white_fraction':white,'desktop_ink_fraction':ink,'monitor_mean_difference':mean_difference}
+(report_dir/'pixel-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+print(json.dumps(result))

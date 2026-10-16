@@ -487,12 +487,12 @@ void APopupCloseStage::BeginBurst()
 void APopupCloseStage::TickSpray(float Dt)
 {
  SprayTime+=Dt;if(Flood)Flood->Tick(Dt);
- if(Exit && !Exit->HasOfferedBomb() && SprayTime>=FMath::Max(18.f,EruptionBeforeBombSeconds))
+ if(Exit && !Exit->HasOfferedBomb() && SprayTime>=15.f)
  {
   if(Flood)Flood->Stop();Exit->OfferBomb();
  }
  if(SprayTime>.5f)for(auto Device:Devices)Device->CleanupOnePopup();
- if(Phase==EPhase::Spraying && Flood && Flood->IsFloorCovered())
+ if(Phase==EPhase::Spraying && SprayTime>=15.f && Flood)
  {
   Phase=EPhase::Complete;for(auto Device:Devices)Device->HideWarning();
   WriteSessionReport();

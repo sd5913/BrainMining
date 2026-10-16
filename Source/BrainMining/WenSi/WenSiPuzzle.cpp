@@ -1,4 +1,5 @@
 #include "WenSi/WenSiPuzzle.h"
+#include "MiningInteractionTrace.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -284,7 +285,12 @@ void AWenSiPuzzle::Tick(float Dt)
  {
   FVector P; FRotator R; PC->GetPlayerViewPoint(P,R);
   FHitResult Hit; FCollisionQueryParams Q; Q.AddIgnoredActor(PC->GetPawn());
-  if (GetWorld()->LineTraceSingleByChannel(Hit,P,P+R.Vector()*310.f,ECC_Visibility,Q))
+  if (MiningInteraction::Trace(GetWorld(),Hit,P,R,310.f,Q,[this,PC](const FHitResult& Candidate)
+  {
+   auto* Obj=Cast<AWenSiObject>(Candidate.GetActor());
+   return PC->GetPawn() && FVector::Dist(PC->GetPawn()->GetActorLocation(),Candidate.ImpactPoint)<280.f
+    && (Cast<AWenSiResetButton>(Candidate.GetActor()) || (!bComplete && Obj && CanThinkAbout(Obj)));
+  }))
   {
    auto Obj=Cast<AWenSiObject>(Hit.GetActor());
    const bool bNearby=PC->GetPawn() && FVector::Dist(PC->GetPawn()->GetActorLocation(),Hit.ImpactPoint)<280.f;

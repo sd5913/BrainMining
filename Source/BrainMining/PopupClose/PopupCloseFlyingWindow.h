@@ -19,6 +19,7 @@ public:
 	void PrepareForPool(int32 Variant, bool bPaper=false, float SizeScale=1.f);
  void RetireToPool();
  void SetDenseRendering();
+ void LaunchGenerated();
 
 private:
 	UPROPERTY(VisibleAnywhere)

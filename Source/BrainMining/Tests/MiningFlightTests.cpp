@@ -281,7 +281,7 @@ bool FMiningFlightSettingsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Ascent lower bound"), Safe.AscentSpeed, 50.f);
 	TestEqual(TEXT("Fall upper bound"), Safe.MaxFallSpeed, 3000.f);
 	TestEqual(TEXT("Invalid air speed defaults"), Safe.AirMoveSpeed, 500.f);
-	TestEqual(TEXT("Invalid acceleration defaults"), Safe.LiftAcceleration, 1800.f);
+	TestEqual(TEXT("Invalid acceleration defaults"), Safe.LiftAcceleration, 1500.f);
 	TestEqual(TEXT("Gravity cannot be accidentally disabled"), Safe.FallGravityMultiplier, 0.1f);
 	TestEqual(TEXT("Spool cannot divide by zero"), Safe.SpoolUpSeconds, .05f);
 	TestEqual(TEXT("Invalid hover duration defaults"), Safe.ReleaseHangSeconds, .5f);

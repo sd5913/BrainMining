@@ -185,6 +185,7 @@ public:
         }
         Pawn->SetActorLocation(E->Exit);E->Tick(.01f);
         Test->TestTrue(TEXT("Upper exit completes escape"),E->Phase==EMiningEscapePhase::Escaped);
+        Test->TestTrue(TEXT("Mining input is restored after the card/TV escape"),PC->EncounterPolicy && PC->EncounterPolicy->IsMiningAllowed() && !Miner->IsEncounterBlocked());
         if(RoomAudio)
         {
             for(FName Cue:{FName(TEXT("S_CardDraw")),FName(TEXT("S_CardReward")),FName(TEXT("S_FloodStart")),FName(TEXT("S_Drown")),FName(TEXT("S_Retry")),FName(TEXT("S_Checkpoint")),FName(TEXT("S_ShortCircuit")),FName(TEXT("S_Escape"))})

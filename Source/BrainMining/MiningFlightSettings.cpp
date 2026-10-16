@@ -10,7 +10,7 @@ FMiningFlightSettings FMiningFlightSettings::Sanitized() const
 	Result.AscentSpeed = Safe(AscentSpeed, 50, 2000, 450);
 	Result.MaxFallSpeed = Safe(MaxFallSpeed, 50, 3000, 650);
 	Result.AirMoveSpeed = Safe(AirMoveSpeed, 50, 2000, 500);
-	Result.LiftAcceleration = Safe(LiftAcceleration, 100, 10000, 1800);
+	Result.LiftAcceleration = Safe(LiftAcceleration, 100, 10000, 1500);
 	Result.FallGravityMultiplier = Safe(FallGravityMultiplier, 0.1f, 4, 1);
 	Result.HoldToIgniteSeconds = Safe(HoldToIgniteSeconds, .05f, 1, .22f);
 	Result.DoubleTapWindowSeconds = Safe(DoubleTapWindowSeconds, .05f, 1, .30f);

@@ -134,7 +134,7 @@ for definition in definitions:
     hint = unreal.LinearColor(color.r/strongest,color.g/strongest,color.b/strongest,1) if number != 1 else unreal.LinearColor(.38,.3,.2,1)
     definition.set_editor_property('hint_color', hint)
     definition.set_editor_property('buried_hint', True)
-    definition.set_editor_property('hint_radius', 120)
+    definition.set_editor_property('hint_radius', 180)
     definition.set_editor_property('hint_strength', .8)
     definition.set_editor_property('emissive_strength', .12 if number < 5 else .7 if number == 9 else .45)
     definition.set_editor_property('roughness', .65 if number == 1 else .38 if number < 5 else .28)

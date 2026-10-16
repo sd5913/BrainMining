@@ -88,9 +88,13 @@ void APopupCloseFlyingWindow::SetDenseRendering()
 void APopupCloseFlyingWindow::RetireToPool()
 {
  auto Collision=CastChecked<UBoxComponent>(GetRootComponent());
- Collision->SetPhysicsLinearVelocity(FVector::ZeroVector);Collision->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+ if(Collision->IsSimulatingPhysics())
+ {
+  Collision->SetPhysicsLinearVelocity(FVector::ZeroVector);Collision->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+  Collision->PutAllRigidBodiesToSleep();
+ }
  Collision->SetCollisionResponseToAllChannels(ECR_Ignore);Collision->SetEnableGravity(false);
- Collision->PutAllRigidBodiesToSleep();SetActorHiddenInGame(true);
+ SetActorHiddenInGame(true);
 }
 
 void APopupCloseFlyingWindow::Launch(const FLinearColor& Color,const FVector& Velocity)
@@ -98,8 +102,18 @@ void APopupCloseFlyingWindow::Launch(const FLinearColor& Color,const FVector& Ve
  SetActorHiddenInGame(false);
  // Windows collide with the room, but not each other or the player: avoid quadratic pile collisions.
  auto Collision=CastChecked<UBoxComponent>(GetRootComponent());
+ Collision->SetSimulatePhysics(true);
  Collision->SetCollisionResponseToChannel(ECC_WorldStatic,ECR_Block);
  Collision->SetEnableGravity(true);Collision->WakeAllRigidBodies();
  Collision->SetPhysicsLinearVelocity(Velocity);
  Collision->SetPhysicsAngularVelocityInDegrees(FVector(FMath::FRandRange(-80.f,80.f),FMath::FRandRange(-40.f,40.f),FMath::FRandRange(-120.f,120.f)));
+}
+
+void APopupCloseFlyingWindow::LaunchGenerated()
+{
+ auto Collision=CastChecked<UBoxComponent>(GetRootComponent());
+ Collision->SetSimulatePhysics(false);
+ Collision->SetCollisionResponseToAllChannels(ECR_Ignore);
+ Collision->SetEnableGravity(false);
+ SetActorHiddenInGame(false);
 }

@@ -10,8 +10,8 @@ def rebuild(hall,actors):
     world=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world();field=api.get_field(hall);recipe=json.loads((ROOT/'Config/MainGameMinerals.json').read_text())
     definitions=list(field.definitions)
     iron=next(d for d in definitions if str(d.id)=='4')
-    iron.set_editor_property('color',unreal.LinearColor(.025,.033,.042,1));iron.set_editor_property('hint_color',unreal.LinearColor(.09,.11,.14,1))
-    iron.set_editor_property('roughness',.65);iron.set_editor_property('metallic',.3);iron.set_editor_property('emissive_strength',.03)
+    iron.set_editor_property('color',unreal.LinearColor(.60,.045,.028,1));iron.set_editor_property('hint_color',unreal.LinearColor(.82,.08,.035,1))
+    iron.set_editor_property('roughness',.58);iron.set_editor_property('metallic',.18);iron.set_editor_property('emissive_strength',.08)
     by_id={str(d.id):d for d in definitions};selected=[];rewards=[];distribution=[]
     all_actors=actors.get_all_level_actors();candidates=list(unreal.MiningDesignerLibrary.find_campaign_mineral_sites(hall))
     for i,stage in enumerate(STAGES):

@@ -49,7 +49,8 @@ void AMiningRoomEscape::SetAreaActive(bool bActive)
     if (View) View->SetVisibility(bActive ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
     if (bActive && Phase != EMiningEscapePhase::Idle) ApplyExploration();
     if (!bActive) SetTelevisionMining(false);
-    else if (bEnteredComputer) SetTelevisionMining(true);
+    else if (bEnteredComputer && Phase!=EMiningEscapePhase::Escaped) SetTelevisionMining(true);
+    if (bActive && Phase==EMiningEscapePhase::Escaped && Player.IsValid())Player->EncounterPolicy->SetMiningAllowed(true);
     if (!bActive && bFailureLock && Player.IsValid()) { Player->SetIgnoreMoveInput(false); bFailureLock=false; }
 }
 void AMiningRoomEscape::OnWallImpact(FName RoomId)
@@ -245,7 +246,7 @@ void AMiningRoomEscape::Tick(float DeltaSeconds)
         else if(P.Z+Head<WaterZ || P.Z<SourceLevelOffset.Z)Fail(TEXT("被上涨的水淹没了！"));
         else if(!bComputerCheckpoint && Elapsed>=FMath::Max(1.f,FloodSeconds))Fail(TEXT("房间被灌满，未能及时逃出！"));
         else if(bEnteredComputer && !ComputerRocks.IsEmpty() && ClearedNodes==ComputerRocks.Num() && FVector::Dist(P,Exit)<ExitRadius)
-        {Phase=EMiningEscapePhase::Escaped;PhaseTime=0;Player->EncounterPolicy->SetMiningAllowed(false);SetTelevisionMining(false);UMiningRoomAudioSubsystem::StopSource(this);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Escape"),.65f);}
+        {Phase=EMiningEscapePhase::Escaped;PhaseTime=0;Player->EncounterPolicy->SetMiningAllowed(true);SetTelevisionMining(false);UMiningRoomAudioSubsystem::StopSource(this);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Escape"),.65f);}
         UpdateWater();
     }
 }

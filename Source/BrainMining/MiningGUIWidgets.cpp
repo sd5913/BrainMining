@@ -3,6 +3,7 @@
 #include "MiningComponent.h"
 #include "MiningAudioComponent.h"
 #include "MiningProgressionComponent.h"
+#include "MiningPickaxeSettings.h"
 #include "MiningWalletSubsystem.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
@@ -488,7 +489,7 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
             return Label;
         };
         AddLabel(TEXT("矿石背包"), FVector2D(0,0), FVector2D(280,28), 20);
-        const FLinearColor Colors[] = {FLinearColor(.9f,.43f,.19f), FLinearColor(.25f,.29f,.34f), FLinearColor(.16f,.78f,.43f), FLinearColor(.4f,.88f,1)};
+        const FLinearColor Colors[] = {FLinearColor(.9f,.43f,.19f), FLinearColor(.72f,.09f,.045f), FLinearColor(.16f,.78f,.43f), FLinearColor(.4f,.88f,1)};
         for (int32 I = 0; I < 4; ++I)
         {
             // A small faceted crystal glyph, independent of platform emoji fonts.
@@ -514,16 +515,36 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
         PickaxeLevelLabel->SetJustification(ETextJustify::Center);
         PickaxeUpgradeHint = AddLabel(TEXT(""), FVector2D(0,391), FVector2D(280,30), 18);
         PickaxeUpgradeHint->SetJustification(ETextJustify::Center);
-        PickaxeRequirements = AddLabel(TEXT(""), FVector2D(20,427), FVector2D(250,130), 18);
+        PickaxeRequirements = AddLabel(TEXT("升级材料"), FVector2D(20,427), FVector2D(250,24), 17);
         PickaxeRequirements->SetJustification(ETextJustify::Center);
+        for (int32 Row=0; Row<4; ++Row)
+        {
+            auto* Requirement=AddLabel(TEXT(""), FVector2D(20,451+Row*25), FVector2D(250,24), 17);
+            Requirement->SetJustification(ETextJustify::Center);
+            PickaxeRequirementRows.Add(Requirement);
+        }
     }
     const auto SetText = [](UTextBlock* Label, const FText& Text)
     { if (Label && !Label->GetText().EqualTo(Text)) Label->SetText(Text); };
     for (int32 I = 0; I < 4; ++I) SetText(MineralCounts[I], FText::AsNumber(Wallet->GetMineralCount(Types[I])));
     const int32 Level = FMath::Max(0, Progression->GetLevel(0));
     PickaxeUpgrade->SetUpgradeLevel(Level, true);
-    SetText(PickaxeLevelLabel, FText::FromString(FString::Printf(TEXT("矿镐  %d / 4"), Level)));
-    SetText(PickaxeRequirements, Progression->GetNextMaterialRequirements());
+    SetText(PickaxeLevelLabel, FText::FromString(FString::Printf(TEXT("等级 %d"), Level)));
+    PickaxeRequirements->SetVisibility(Level<4 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+    const auto Costs=UMiningPickaxeSettings::ResolveLevel(Level+1).MaterialCosts;
+    for (int32 Row=0; Row<PickaxeRequirementRows.Num(); ++Row)
+    {
+        UTextBlock* Label=PickaxeRequirementRows[Row].Get();
+        if (!Label) continue;
+        if (Level<4 && Costs.IsValidIndex(Row))
+        {
+            const auto& Cost=Costs[Row];
+            const int32 Owned=Wallet->GetMineralCount(Cost.Mineral);
+            SetText(Label,FText::FromString(FString::Printf(TEXT("%s  %d / %d"),*FMiningMineralCost::Name(Cost.Mineral),Owned,Cost.Count)));
+            Label->SetColorAndOpacity(Owned>=Cost.Count ? FLinearColor(.25f,1.f,.45f) : FLinearColor(.82f,.85f,.9f));
+        }
+        else SetText(Label,FText::GetEmpty());
+    }
     const bool bReady = Progression->CanUpgradePickaxe();
     SetText(PickaxeUpgradeHint, FText::FromString(Level >= 4 ? TEXT("矿镐已满级") : bReady ? TEXT("[ Tab ] 升级矿镐") : TEXT("[ Tab ] 升级 · 材料不足")));
     PickaxeUpgradeHint->SetColorAndOpacity(bReady ? FLinearColor(.35f,1,.65f) : FLinearColor(.85f,.87f,.9f));

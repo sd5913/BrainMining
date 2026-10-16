@@ -1,5 +1,7 @@
 #if WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS
 #include "MiningRoomEscape.h"
+#include "MiningRoomAudioSubsystem.h"
+#include "MiningAudioComponent.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningEncounterPlayer.h"
 #include "MiningCharacterMovementComponent.h"
@@ -47,6 +49,8 @@ public:
         for(TActorIterator<AMiningRoomEscape> It(World);It;++It){E=*It;break;}
         if(!Test->TestNotNull(TEXT("Study automatically assembles escape"),E))return true;
         auto* Stage=PC->CardInteraction->Stage.Get();
+        auto* RoomAudio=UMiningAudioComponent::IsMainGameWorld(World)?World->GetSubsystem<UMiningRoomAudioSubsystem>():nullptr;
+        if(RoomAudio)RoomAudio->Tick(.01f);
         auto* Move=Cast<UMiningCharacterMovementComponent>(Pawn->GetCharacterMovement());
         auto* Miner=Pawn->FindComponentByClass<UMiningComponent>();const float OriginalRadius=Miner->Radius;
         Test->TestEqual(TEXT("Physical screen and fourteen thick dig sections"),E->ComputerRocks.Num(),15);
@@ -174,6 +178,11 @@ public:
         }
         Pawn->SetActorLocation(E->Exit);E->Tick(.01f);
         Test->TestTrue(TEXT("Upper exit completes escape"),E->Phase==EMiningEscapePhase::Escaped);
+        if(RoomAudio)
+        {
+            for(FName Cue:{FName(TEXT("S_CardDraw")),FName(TEXT("S_CardReward")),FName(TEXT("S_FloodStart")),FName(TEXT("S_Drown")),FName(TEXT("S_Retry")),FName(TEXT("S_Checkpoint")),FName(TEXT("S_ShortCircuit")),FName(TEXT("S_Escape"))})
+                Test->TestTrue(*FString::Printf(TEXT("Encounter triggers %s"),*Cue.ToString()),RoomAudio->EventCount(Cue)>0);
+        }
         Test->TestEqual(TEXT("TV mining adjustment is restored on exit"),Miner->Radius,OriginalRadius);
         Test->TestTrue(TEXT("Reward still retained after completion"),Stage->Run.Phase==ECardRoomPhase::Collected);
         PC->EchoInteraction->Restart();

@@ -2,6 +2,8 @@
 #include "Showcase/MiningExhibitHall.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
 #include "MiningComponent.h"
+#include "MiningRoomAudioSubsystem.h"
+#include "MiningAudioComponent.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -31,10 +33,17 @@ public:
   Test->TestFalse(TEXT("Museum input is inactive in the mine"),Museum->bAreaActive);
   Hall->UnlockedArea=6;Hall->EnterArea(5);
   Test->TestTrue(TEXT("Shared pawn can solve every translated mirror mechanism"),Museum->ValidateMirrorPuzzle().StartsWith(TEXT("PASS")));
+  if(UMiningAudioComponent::IsMainGameWorld(World))
+  {
+   auto* RoomAudio=World->GetSubsystem<UMiningRoomAudioSubsystem>();
+   if(Test->TestNotNull(TEXT("MainGame museum has room audio"),RoomAudio))
+    for(FName Cue:{FName(TEXT("S_Swap")),FName(TEXT("S_Pottery")),FName(TEXT("S_Pressure")),FName(TEXT("S_Power")),FName(TEXT("S_RewardDoor")),FName(TEXT("S_Complete")),FName(TEXT("S_Reset"))})
+     Test->TestTrue(*FString::Printf(TEXT("Physical museum solution triggers %s"),*Cue.ToString()),RoomAudio->EventCount(Cue)>0);
+  }
   Pawn->SetActorLocation(Museum->RoomPoint(FVector(1150,80,89)));
   Test->TestTrue(TEXT("Shared miner can become small"),Museum->SetPlayerWord(EWenSiMirrorWord::Small));
-  Hall->SkipCurrentRoom();
-  Test->TestTrue(TEXT("Skipping restores player scale and the same pawn"),PC->GetPawn()==Pawn && Pawn->GetActorScale3D().Equals(Scale));
+  if(UMiningAudioComponent::IsMainGameWorld(World))Hall->EnterArea(0);else Hall->SkipCurrentRoom();
+  Test->TestTrue(TEXT("Leaving museum restores player scale and the same pawn"),PC->GetPawn()==Pawn && Pawn->GetActorScale3D().Equals(Scale));
   Test->TestFalse(TEXT("Museum stops accepting input after exit"),Museum->bAreaActive);
   Hall->EnterArea(5);
   Test->TestTrue(TEXT("Revisiting preserves the player word without losing a puzzle token"),Museum->GetPlayerWord()==EWenSiMirrorWord::Small && Pawn->GetActorScale3D().X<Scale.X);
@@ -53,6 +62,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMirrorCampaignTest,"BrainMining.Campaign.Mirro
 bool FMirrorCampaignTest::RunTest(const FString&)
 {
  AutomationOpenMap(TEXT("/Game/Campaign/Maps/Lvl_FullJourney"));
+ ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
+ ADD_LATENT_AUTOMATION_COMMAND(MirrorCampaignTests::FCheck(this));
+ ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
+ return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMainGameMirrorAudioTest,"BrainMining.MainGame.MirrorMuseumAudio",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMainGameMirrorAudioTest::RunTest(const FString&)
+{
+ AutomationOpenMap(TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
  ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
  ADD_LATENT_AUTOMATION_COMMAND(MirrorCampaignTests::FCheck(this));
  ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());

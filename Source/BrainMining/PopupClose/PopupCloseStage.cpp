@@ -1,4 +1,5 @@
 #include "PopupClose/PopupCloseStage.h"
+#include "MiningRoomAudioSubsystem.h"
 #include "HAL/IConsoleManager.h"
 #include "PopupClose/PopupCloseContent.h"
 #include "PopupClose/PopupOfficeDevice.h"
@@ -228,7 +229,7 @@ void APopupCloseStage::ConfigureArtRendering(bool bActive)
 void APopupCloseStage::SetAreaActive(bool bActive)
 {
  const bool bEntering=bActive && !bAreaActive;
- if (!bActive){CancelSession();if(Flood)Flood->Pause();}
+ if (!bActive){CancelSession();if(Flood)Flood->Pause();UMiningRoomAudioSubsystem::StopSource(this);}
  bAreaActive = bActive;
  ConfigureArtRendering(bActive);
  if (bEntering && bStartOnAreaEntry) StartOfficeRound();
@@ -257,6 +258,7 @@ void APopupCloseStage::ResetCompletedSessions()
  if(Flood)Flood->Reset();
  if(Exit)Exit->Reset();
  Phase = EPhase::Idle;
+ UMiningRoomAudioSubsystem::StopSource(this);
  RoundTime = ViewTime = SprayTime = SprayDebt = SlowPhaseScheduledIssues = FirstBurstPeakFrame = 0;
  LastTickTime = 0;
  bPanic = bForcedExit = false;
@@ -344,6 +346,7 @@ void APopupCloseStage::BeginScreenSession(APlayerController* PC,APopupOfficeDevi
 {
  if(!PC || !PC->GetPawn() || !Device || Device->IsPrinter() || Device->IsLocked() || View!=EView::Free)return;
  ActiveComputer=Device;LockedController=PC;LockedPawn=PC->GetPawn();View=EView::Entering;ViewTime=0;
+ UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Open"),.25f);
  if(auto Character=Cast<ACharacter>(PC->GetPawn()))
  {
   SavedMovementMode=Character->GetCharacterMovement()->MovementMode;
@@ -358,6 +361,7 @@ void APopupCloseStage::ExitScreen()
  if(View==EView::Free || View==EView::Exiting)return;
  if(ActiveComputer)ActiveComputer->SetScreenInteractive(false);
  View=EView::Exiting;ViewTime=0;
+ UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Close"),.25f);
  if(auto PC=LockedController.Get())
  {
   PC->SetShowMouseCursor(false);PC->SetInputMode(FInputModeGameOnly());
@@ -401,6 +405,9 @@ void APopupCloseStage::Tick(float Dt)
  const double Now=FPlatformTime::Seconds();const float Wall=LastTickTime>0?float(Now-LastTickTime):Dt;LastTickTime=Now;
  Super::Tick(Dt);
  if (bAreaManaged && !bAreaActive) return;
+ if(!IsOfficeEscaped()) UMiningRoomAudioSubsystem::Loop(this,TEXT("A_Office_Loop"),.18f);
+ if((Phase==EPhase::Spraying || Phase==EPhase::Complete) && Exit && !Exit->HasOfferedBomb())
+  UMiningRoomAudioSubsystem::Loop(this,TEXT("S_OfficeBurst_Loop"),.32f);
  if(auto GameInstance=GetGameInstance())if(auto Wallet=GameInstance->GetSubsystem<UMiningWalletSubsystem>())
   if(auto Controller=Cast<ABrainMiningPlayerController>(GetWorld()->GetFirstPlayerController());Controller && Controller->MiningGUI && Controller->MiningGUI->CoinText)
   {
@@ -436,6 +443,7 @@ void APopupCloseStage::TickIssues(float Dt)
  if(RoundTime>=PanicSeconds && !bPanic)
  {
   bPanic=true;
+  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Warning"),.35f);
   UE_LOG(LogPopupClose,Display,TEXT("Rapid acceleration begins at %.2f s; independent schedules preserved, slow-phase issues=%.0f"),RoundTime,SlowPhaseScheduledIssues);
  }
  for(int32 I=0;I<4;++I)
@@ -467,6 +475,7 @@ void APopupCloseStage::BeginBurst()
 {
  if(Phase!=EPhase::Running)return;
  Phase=EPhase::Spraying;SprayTime=0;SprayDebt=0;
+ UMiningRoomAudioSubsystem::Emit(this,TEXT("S_OfficePanic"),.65f);
  bForcedExit=View==EView::Entering || View==EView::InScreen;
  // Disable every reply before releasing any shared Slate pointer capture.
  for(auto Device:Devices)if(auto UI=Device->GetDesktop())UI->SetRepliesEnabled(false);

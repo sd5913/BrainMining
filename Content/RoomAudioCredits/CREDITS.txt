@@ -1,0 +1,29 @@
+MainGame room audio — 2026-10-16
+Selected packs: CC0-1.0. Pack-level evidence and original downloads are retained in SourceAssets/RoomAudio.
+Adaptations: selection, mono conversion, resampling, gain changes, layering, pitch/time changes, fades and loop crossfades.
+Printer and machinery sounds are designed composites, not recordings of the depicted devices.
+
+Interface Sounds · Kenney — Kenney
+https://kenney.nl/assets/interface-sounds
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Casino Audio · Kenney — Kenney
+https://kenney.nl/assets/casino-audio
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Impact Sounds · Kenney — Kenney
+https://kenney.nl/assets/impact-sounds
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Sci-fi Sounds · Kenney — Kenney
+https://kenney.nl/assets/sci-fi-sounds
+https://creativecommons.org/publicdomain/zero/1.0/
+
+30 CC0 SFX loops | OpenGameArt.org — rubberduck
+https://opengameart.org/content/30-cc0-sfx-loops
+https://creativecommons.org/publicdomain/zero/1.0/
+
+40 CC0 water / splash / slime SFX | OpenGameArt.org — rubberduck
+https://opengameart.org/content/40-cc0-water-splash-slime-sfx
+https://creativecommons.org/publicdomain/zero/1.0/
+

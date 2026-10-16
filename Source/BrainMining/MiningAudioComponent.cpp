@@ -1,4 +1,7 @@
 #include "MiningAudioComponent.h"
+#include "MiningRoomAudioSubsystem.h"
+#include "MiningRoomEscape.h"
+#include "DiggableRock.h"
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningBombToolComponent.h"
@@ -118,6 +121,12 @@ void UMiningAudioComponent::OnContact(const FHitResult& Hit, int32 Stage)
 {
 	++ContactCount;
 	LastContactSurface = ResolveSurface(Hit);
+	if (bMainGameAudio)
+		if (auto* ExhibitHall = AMiningExhibitHall::Find(GetWorld()); ExhibitHall && ExhibitHall->Journey && Hit.GetActor() == ExhibitHall->Journey->TelevisionScreen.Get())
+		{
+			UMiningRoomAudioSubsystem::Emit(Hit.GetActor(), TEXT("S_Glass"), .5f, true);
+			return;
+		}
 	if (bMainGameAudio && LastContactSurface == EMiningAudioSurface::Dirt)
 	{
 		Play(TEXT("S_DirtDig"), Stage <= 1 ? .5f : .65f, FMath::FRandRange(.94f, 1.06f));

@@ -108,8 +108,8 @@ public:
             Test->TestTrue(TEXT("Holding space rises"),P->GetActorLocation().Z>FlightHeight+100);
             FlightHeight=P->GetActorLocation().Z; Key(PC,EKeys::SpaceBar,false); Next(); break;
         case 4:
-            if(Age<.25) return false;
-            Test->TestTrue(TEXT("Releasing space falls"),Move->Velocity.Z<0 && P->GetActorLocation().Z<FlightHeight);
+            if(Age<1.0) return false;
+            Test->TestTrue(TEXT("Releasing space coasts then falls"),Move->Velocity.Z<0 && P->GetActorLocation().Z<FlightHeight);
             Key(PC,EKeys::W,true); Next(); break;
         case 5:
             if(Age<7) return false;

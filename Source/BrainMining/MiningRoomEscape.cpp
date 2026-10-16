@@ -94,7 +94,7 @@ void AMiningRoomEscape::RetryEscape()
     Pawn->SetActorRotation(FRotator(0,Aim.Yaw,0));Player->SetControlRotation(Aim);
     if(auto* Character=Cast<ACharacter>(Pawn))Character->StopJumping();
     if(auto* Move=Pawn->FindComponentByClass<UMiningCharacterMovementComponent>())
-    {Move->SetFlightInputHeld(false);Move->StopMovementImmediately();Move->SetMovementMode(MOVE_Falling);}
+    {Move->ResetFlightInput();Move->StopMovementImmediately();Move->SetMovementMode(MOVE_Falling);}
     FailureReason.Empty();StartFlood();
     bComputerCheckpoint=FromComputer;bExitGuidance=FromComputer;
     if(FromComputer){WaterZ=ComputerStartWaterZ=CheckpointWaterZ;Elapsed=CheckpointElapsed;SetTelevisionMining(true);}
@@ -126,7 +126,7 @@ void AMiningRoomEscape::Fail(const FString& Reason)
         Player->EncounterPolicy->SetMiningAllowed(false);
         if(!bFailureLock){Player->SetIgnoreMoveInput(true);bFailureLock=true;}
         if(Player->GetPawn())if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())
-        {Move->SetFlightInputHeld(false);Move->StopMovementImmediately();Move->SetMovementMode(MOVE_None);}
+        {Move->ResetFlightInput();Move->StopMovementImmediately();Move->SetMovementMode(MOVE_None);}
     }
 }
 void AMiningRoomEscape::SetTelevisionMining(bool Enabled)

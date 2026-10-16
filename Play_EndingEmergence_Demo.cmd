@@ -6,4 +6,4 @@ if not exist "%UE_EDITOR%" (
   pause
   exit /b 1
 )
-start "" "%UE_EDITOR%" "%~dp0BrainMining.uproject" /Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo -game -windowed -ResX=1600 -ResY=900 -nosplash -DisablePlugins=AllToolsets,ModelContextProtocol
+start "" "%UE_EDITOR%" "%~dp0BrainMining.uproject" /Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo -game -windowed -ResX=1600 -ResY=900 -nosplash -ForceTextureEncodeSpeed=FinalIfAvailable -asynctexturecompilationmaxconcurrency=1 -DisablePlugins=AllToolsets,ModelContextProtocol

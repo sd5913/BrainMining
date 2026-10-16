@@ -53,7 +53,7 @@ void UMiningEncounterPlayerPolicy::Release()
         Mining->SetInputContextEnabled(bOldInputContextEnabled);
     }
     bMiningBlocked=false;bFallResetOverridden=false;
-    if(Movement.IsValid()) Movement->SetFlightInputHeld(false);
+    if(Movement.IsValid()) Movement->ResetFlightInput();
     for(auto& Light:Lights)if(Light.Key.IsValid())Light.Key->SetVisibility(Light.Value);
     Lights.Reset();Movement.Reset();Mining.Reset();AppliedPawn.Reset();
 }

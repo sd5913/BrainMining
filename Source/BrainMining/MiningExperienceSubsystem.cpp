@@ -98,7 +98,7 @@ bool UMiningExperienceSubsystem::ToggleMenu()
             bPreviousMiningSuspended = MenuMining->IsInputSuspended();
             MenuMining->SetInputSuspended(true);
         }
-        if (auto* Movement = Pawn->FindComponentByClass<UMiningCharacterMovementComponent>()) Movement->SetFlightInputHeld(false);
+        if (auto* Movement = Pawn->FindComponentByClass<UMiningCharacterMovementComponent>()) Movement->ResetFlightInput();
     }
     auto Choices = SNew(SVerticalBox);
     for (int32 Index = 0; Index < UE_ARRAY_COUNT(MiningExperiences::Entries); ++Index)

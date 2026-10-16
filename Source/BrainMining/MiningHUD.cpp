@@ -86,7 +86,7 @@ void AMiningHUD::DrawHUD()
 	const bool bFlightEnabled = Movement && Movement->FlightSettings.bEnabled;
 	if (bFlightEnabled)
 	{
-		const TCHAR* FlightState = Movement->bFlightInputHeld ? TEXT("LIFT") : Movement->IsFalling() ? TEXT("FALL") : TEXT("GROUND");
+		const TCHAR* FlightState = Movement->IsFlightThrustActive() ? TEXT("LIFT") : Movement->JetpackHangRemaining > 0.f ? TEXT("COAST") : Movement->IsFalling() ? TEXT("FALL") : TEXT("GROUND");
 		DrawText(FString::Printf(TEXT("Flight: %s | Vertical %.1f m/s"), FlightState, Movement->Velocity.Z / 100), Accent, 28, Canvas->ClipY - 64, GEngine->GetSmallFont());
 	}
 	DrawText(bFlightEnabled ? TEXT("WASD Move   Hold SPACE Rise / Release Fall   Hold LMB Mine   R Reset")

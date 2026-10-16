@@ -278,6 +278,18 @@ public:
             if(D->Shot==2&&BoostStep==2){D->FilmSpeed=1;Key(PC,EKeys::S,true);BoostGameAt=W->GetTimeSeconds();BoostStep=3;}
             if(D->Shot==2&&BoostStep==3&&W->GetTimeSeconds()-BoostGameAt>1)
             {EarlyRate=D->PullbackRate;Test->TestTrue(TEXT("S accelerates the continental pullback"),EarlyRate>2);Key(PC,EKeys::S,false);D->FilmSpeed=4;BoostStep=4;}
+            if(D->Shot==3)
+            {
+                auto* View=PC->GetViewTarget();
+                const FVector ToEarth=D->GetActorTransform().TransformPosition(FVector(50000,0,0))-View->GetActorLocation();
+                const float Radius=ToEarth.Size();
+                Test->TestTrue(TEXT("Orbital camera remains outside Earth and its thin atmosphere"),Radius>4100.f);
+                if(LastRadius>0)Test->TestTrue(TEXT("Orbital climb continuously gains altitude"),Radius>=LastRadius-.1f);
+                LastRadius=Radius;
+                const float Alignment=FVector::DotProduct(View->GetActorForwardVector(),ToEarth.GetSafeNormal());
+                if(D->ShotTime<AEndingEmergence::Duration(3)*.15f)Test->TestTrue(TEXT("Earth starts facing the globe"),Alignment>.995f);
+                if(D->ShotTime>AEndingEmergence::Duration(3)*.9f)Test->TestTrue(TEXT("Earth remains facing its centre throughout pullback"),Alignment>.995f);
+            }
             if(D->Shot>=4&&D->Shot<=6)
             {
                 const float Radius=(PC->GetViewTarget()->GetActorLocation()-D->GetActorTransform().TransformPosition(FVector(95000,0,0))).Size();
@@ -309,176 +321,22 @@ public:
             }
             if(D->Shot==7)
             {
-                Key(PC,EKeys::D,true);Key(PC,EKeys::S,true);
-                Test->TestEqual(TEXT("Retreat is no longer controlled by WASD"),D->PullbackRate,1.f);
-                Test->TestTrue(TEXT("Retreat decelerates continuously"),D->RetreatSpeed<=PreviousRetreat+1);PreviousRetreat=D->RetreatSpeed;
-                VoiceSeen=true;Test->TestEqual(TEXT("Cells continue into voices without blackout"),D->OverlayAlpha(),0.f);
-                const float Radius=(PC->GetViewTarget()->GetActorLocation()-FVector(95000,0,0)).Size();
-                if(LastRadius>0)Test->TestTrue(TEXT("Voice scene keeps pulling out"),Radius>=LastRadius-.1f);
-                LastRadius=Radius;
-            }
-            if(D->Shot==8)
-            {
-                BreakPosition=PC->GetViewTarget()->GetActorLocation();BreakRotation=PC->GetViewTarget()->GetActorRotation();
-            }
-            if((D->Shot==8||D->Shot==9)&&D->RealityHits>0&&!(RippleHits&(1<<D->RealityHits)))
-            {
-                auto* FilmCamera=Cast<ACameraActor>(PC->GetViewTarget());
-                for(const auto& Blend:FilmCamera->GetCameraComponent()->PostProcessSettings.WeightedBlendables.Array)
-                {
-                    auto* MID=Cast<UMaterialInstanceDynamic>(Blend.Object);
-                    if(!MID||!MID->GetMaterial()->GetName().Contains(TEXT("Exhaustion")))continue;
-                    float RippleAge=100,Shake=0;
-                    MID->GetScalarParameterValue(FMaterialParameterInfo(TEXT("RippleAge")),RippleAge);
-                    MID->GetScalarParameterValue(FMaterialParameterInfo(TEXT("ShakeStrength")),Shake);
-                    if(RippleAge>=.10f&&RippleAge<.35f)
-                    {
-                        Test->TestTrue(TEXT("Every impact starts a fresh ripple with bounded shake"),Shake>0&&Shake<.012f);
-                        Test->TestEqual(TEXT("No impact uses a full-screen flash overlay"),D->OverlayAlpha(),0.f);
-                        int CosmicBursts=0;
-                        for(TActorIterator<AMiningDebrisBurst> It(W);It;++It)if(It->GetOwner()==D&&It->SourceMaterial)
-                        {Test->TestTrue(TEXT("Mining chips use the starfield material"),It->SourceMaterial->GetName().Contains(TEXT("CosmicDebris")));++CosmicBursts;}
-                        Test->TestTrue(TEXT("Impact has visible cosmic mining chips"),CosmicBursts>0);
-                        Capture(FString::Printf(TEXT("ending-ripple-hit-%d"),D->RealityHits));RippleHits|=1<<D->RealityHits;
-                    }
-                }
-            }
-            if(D->Shot==8)
-            {
-                if(StrikeStep==0)
-                {
-                    Test->TestTrue(TEXT("Camera still retreats after tool control returns"),D->RetreatSpeed>1000);
-                    Test->TestTrue(TEXT("Exhaustion desaturates the cell view"),D->Exhaustion>.8f);
-                    Test->TestTrue(TEXT("Cell universe extends across the final field of view"),D->UniverseCellCount>=600);
-                    Key(PC,EKeys::D,false);Key(PC,EKeys::S,false);
-                    TArray<UStaticMeshComponent*> Parts;D->GetComponents(Parts);
-                    for(auto* Part:Parts)if(Part->GetName().StartsWith(TEXT("MainGamePickaxe")))Test->TestEqual(TEXT("Ending uses the main game's pickaxe mesh"),Part->GetStaticMesh()->GetPathName(),FString(TEXT("/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe")));
-                    StrikeAt=Now;StrikeStep=1;
-                }
-                else if(StrikeStep==1&&Now-StrikeAt>2)
-                {
-                    Test->TestEqual(TEXT("Ending waits for player instead of auto-breaking"),D->RealityHits,0);
-                    Test->TestFalse(TEXT("Ending cannot finish without strikes"),D->bComplete);
-                    Key(PC,EKeys::LeftMouseButton,true);StrikeAt=Now;StrikeStep=2;
-                }
-                else if(StrikeStep==2&&Now-StrikeAt>1.5)
-                {
-                    Test->TestEqual(TEXT("Holding mouse produces exactly one strike"),D->RealityHits,1);
-                    Test->TestTrue(TEXT("First strike restores some colour"),D->Exhaustion<.65f);
-                    Test->TestEqual(TEXT("First strike emits main mining debris"),D->EndingDebrisBursts,1);
-                    Key(PC,EKeys::LeftMouseButton,false);StrikeAt=Now;StrikeStep=3;
-                }
-                else if(StrikeStep==3&&Now-StrikeAt>.15)
-                {Key(PC,EKeys::LeftMouseButton,true);StrikeAt=Now;StrikeStep=4;}
-                else if(StrikeStep==4&&Now-StrikeAt>.32)
-                {
-                    Test->TestEqual(TEXT("Second deliberate strike grows cracks"),D->RealityHits,2);
-                    Key(PC,EKeys::LeftMouseButton,false);StrikeAt=Now;StrikeStep=5;
-                }
-                else if(StrikeStep==5&&Now-StrikeAt>.08)
-                {Key(PC,EKeys::LeftMouseButton,true);StrikeAt=Now;StrikeStep=6;}
-                else if(StrikeStep==6&&Now-StrikeAt>.2)
-                {
-                    Test->TestEqual(TEXT("Rapid clicking cannot skip the recovery beat"),D->RealityHits,2);
-                    Test->TestTrue(TEXT("Second strike restores more colour"),D->Exhaustion<.44f);
-                    Key(PC,EKeys::LeftMouseButton,false);StrikeAt=Now;StrikeStep=7;
-                }
-                else if(StrikeStep==7&&D->StrikeReadiness()>=1&&D->ShotTime>4.1f&&Now-StrikeAt>.08)
-                {
-                    // Retreat uses game time; shader compilation can stall wall time.
-                    Test->TestEqual(TEXT("Retreat eventually settles to rest"),D->RetreatSpeed,0.f);
-                    Key(PC,EKeys::LeftMouseButton,true);StrikeAt=Now;StrikeStep=8;
-                }
-                else if(StrikeStep==8&&Now-StrikeAt>.4)
-                {Key(PC,EKeys::LeftMouseButton,false);StrikeAt=Now;StrikeStep=7;}
-                if(D->RealityHits==2&&StrikeStep==7&&!CrackCaptured){Capture(TEXT("ending-two-cracks-ripple"));CrackCaptured=true;}
+                Test->TestEqual(TEXT("Title formation ignores WASD boost"),D->PullbackRate,1.f);
+                Test->TestEqual(TEXT("Cell title remains continuous"),D->OverlayAlpha(),0.f);
             }
             if(D->Shot==9)
             {
-                if(!ImmediateWaterSeen&&D->ShotTime>.055f)
-                {
-                    for(auto Jet:D->WaterJets)Test->TestTrue(TEXT("Water begins immediately when the hole opens"),Jet->IsVisible()&&Jet->GetMesh()->TriangleCount()>0);
-                    ImmediateWaterSeen=true;
-                }
-                if(!FractureFaceCaptured&&D->ShotTime>.10f){Capture(TEXT("ending-fracture-universe-faces"));FractureFaceCaptured=true;}
-                Test->TestEqual(TEXT("Three deliberate impacts shatter the view"),D->RealityHits,3);
-                Test->TestTrue(TEXT("Reality follows voice and interactive cracks"),VoiceSeen&&CrackCaptured);
-                Test->TestEqual(TEXT("Fracture is visible rather than a flash cut"),D->OverlayAlpha(),0.f);
-                Test->TestTrue(TEXT("Opening the hole never cuts to another camera location"),PC->GetViewTarget()->GetActorLocation().Equals(BreakPosition,.1f)&&PC->GetViewTarget()->GetActorRotation().Equals(BreakRotation,.1f));
-                if(!FractureSeen&&D->ShotTime>.45f)
-                {
-                    Test->TestEqual(TEXT("Each impact produces main mining debris"),D->EndingDebrisBursts,3);
-                    Test->TestEqual(TEXT("Only the central hole breaks into solid pieces"),D->UniverseShards.Num(),24);
-                    Test->TestNotNull(TEXT("Universe outside the hole remains intact"),D->UniverseSurround.Get());
-                    if(D->UniverseSurround)
-                    {
-                        Test->TestTrue(TEXT("Surround remains visible during the burst"),D->UniverseSurround->IsVisible());
-                        float Nearest=1.e9f;
-                        for(int V:D->UniverseSurround->GetMesh()->VertexIndicesItr())
-                        {const auto P=D->UniverseSurround->GetMesh()->GetVertex(V);if(P.X<36)Nearest=FMath::Min(Nearest,float(FMath::Sqrt(P.Y*P.Y+P.Z*P.Z)));}
-                        Test->TestTrue(TEXT("Surround mesh has a genuine open central aperture"),Nearest>4);
-                        Test->TestTrue(TEXT("The aperture never replaces the outside universe with an HDR screenshot"),D->UniverseSurround->GetMaterial(0)->GetName().Contains(TEXT("ApertureVoid")));
-                    }
-                    float Near=1.e9f,Far=-1.e9f;
-                    for(auto Shard:D->UniverseShards)
-                    {
-                        Test->TestEqual(TEXT("Each fragment is a closed triangular prism"),Shard->GetMesh()->TriangleCount(),8);
-                        Test->TestTrue(TEXT("Fragments have geometric thickness"),Shard->GetMesh()->GetBounds().Width()>1);
-                        Near=FMath::Min(Near,float(Shard->GetRelativeLocation().X));Far=FMath::Max(Far,float(Shard->GetRelativeLocation().X));
-                    }
-                    Test->TestTrue(TEXT("Fragments separate along camera depth, not only screen XY"),Far-Near>10);
-                    Capture(TEXT("ending-universe-shattering-3d"));FractureSeen=true;
-                }
-                Key(PC,EKeys::LeftMouseButton,false);
+                Test->TestTrue(TEXT("Finale automatically drills with unlimited energy"),Mining->bDrillMode&&Mining->bInfiniteDrillEnergy&&Mining->IsMiningActive());
             }
-            if(D->Shot==9&&D->ShotTime>1.1f&&!WaterCaptured)
+            if(D->bComplete&&D->ShotTime>1.5f)
             {
-                Test->TestTrue(TEXT("Water wets and refracts the lens before paper covers it"),D->WetLens>.8f);
-                Test->TestEqual(TEXT("Sheets have not landed before the water splash"),D->PapersLanded,0);
-                Test->TestEqual(TEXT("Water has twelve continuous volumetric sheets"),D->WaterJets.Num(),12);
-                for(auto Jet:D->WaterJets)Test->TestTrue(TEXT("Pressure jet is still spraying after one second"),Jet->IsVisible()&&Jet->GetMesh()->TriangleCount()>200);
-                Capture(TEXT("ending-water-wet-lens"));WaterCaptured=true;
-            }
-            if(D->Shot==10)
-            {
-                Test->TestTrue(TEXT("Photographs arrive progressively"),D->PapersArrived>=PreviousPapers);PreviousPapers=D->PapersArrived;
-                if(D->ShotTime>2&&!PaperFallSeen)
-                {
-                    Test->TestFalse(TEXT("The first photograph has slipped out of view"),D->EndingPapers[0]->IsVisible());
-                    Test->TestTrue(TEXT("Loose photographs travel down after reaching the lens"),D->EndingPapers[1]->GetRelativeLocation().Z<-10);
-                    PaperFallSeen=true;Capture(TEXT("ending-paper-sliding"));
-                }
-                if(D->PapersArrived>=4&&D->PapersArrived<10&&!PaperCaptured)
-                {
-                    Test->TestEqual(TEXT("Photographs fly as fifteen individual deforming sheets"),D->EndingPapers.Num(),15);
-                    Test->TestFalse(TEXT("The final photograph arrives last"),D->bFinalPaperVisible);
-                    for(int I=0;I<D->EndingPapers.Num();++I)
-                    {
-                        auto* M=Cast<UMaterialInstanceDynamic>(D->EndingPapers[I]->GetMaterial(0));UTexture* Photo=nullptr;
-                        Test->TestTrue(TEXT("Every paper uses a supplied photograph"),M&&M->GetTextureParameterValue(FMaterialParameterInfo(TEXT("Idea")),Photo)&&Photo);
-                        if(Photo)Test->TestEqual(TEXT("Idea10 is reserved for the last sheet"),Photo->GetName(),FString::Printf(TEXT("T_EE_Idea%d"),I==14?10:1+I%9));
-                    }
-                    Capture(TEXT("ending-paper-arrivals"));PaperCaptured=true;
-                }
-            }
-            if(D->bComplete)
-            {
-                Test->TestEqual(TEXT("Ending reaches the real-world first-person hold"),D->Shot,11);
-                Test->TestTrue(TEXT("Fracture, immediate spray, sliding photographs and final hold completed"),FractureSeen&&WaterCaptured&&ImmediateWaterSeen&&PaperCaptured&&PaperFallSeen&&D->bFinalPaperVisible);
-                Test->TestEqual(TEXT("Only the last photograph sticks to the lens"),D->PapersLanded,1);
-                for(int I=0;I<D->EndingPapers.Num();++I)Test->TestEqual(TEXT("Every earlier photograph leaves the view"),D->EndingPapers[I]->IsVisible(),I==D->EndingPapers.Num()-1);
-                Test->TestTrue(TEXT("Idea10 rests in the centre"),FMath::Abs(D->EndingPapers.Last()->GetRelativeLocation().Y)<.5f&&FMath::Abs(D->EndingPapers.Last()->GetRelativeLocation().Z)<.5f);
-                const auto PaperBounds=D->EndingPapers.Last()->GetMesh()->GetBounds();
-                const auto PaperExtent=PaperBounds.Max-PaperBounds.Min;
-                Test->TestTrue(TEXT("The left-rotated final photograph retains landscape proportions"),PaperExtent.Y/PaperExtent.Z>1.70&&PaperExtent.Y/PaperExtent.Z<1.85);
-                auto* FinalMaterial=Cast<UMaterialInstanceDynamic>(D->EndingPapers.Last()->GetMaterial(0));UTexture* OldTitle=nullptr;
-                Test->TestFalse(TEXT("No generated title ink is added to the photograph"),FinalMaterial->GetTextureParameterValue(FMaterialParameterInfo(TEXT("Ink")),OldTitle));
-                Test->TestEqual(TEXT("All three strikes displayed their own ripple"),RippleHits,14);
+                Test->TestEqual(TEXT("Ending reaches the real-world computer"),D->Shot,11);
+                Test->TestTrue(TEXT("Finale excavated actual rock"),D->FinaleDrillCuts>20);
+                Test->TestFalse(TEXT("Drill is put away in reality"),Mining->bDrillMode);
                 Test->TestTrue(TEXT("Mid-flight mouse look and pre-aim checks completed"),FlightLookVerified&&ArrivalAimSet);
-                Test->TestEqual(TEXT("Old spoken ending removed"),D->Subtitle(),FString());
                 Test->TestEqual(TEXT("Scale-dependent input checks completed"),BoostStep,4);
                 Test->TestEqual(TEXT("Space steering and release checks completed"),DriftStep,5);
-                Capture(TEXT("ending-idea10-final-paper"));Key(PC,EKeys::LeftMouseButton,false);Next();
+                Capture(TEXT("ending-reality-computer"));Next();
             }
             break;
         case 4:
@@ -492,7 +350,7 @@ public:
             Test->TestEqual(TEXT("R repairs the broken universe"),D->RealityHits,0);
             Test->TestEqual(TEXT("R destroys all 3D fragments"),D->UniverseShards.Num(),0);
             Test->TestNull(TEXT("R removes the universe aperture"),D->UniverseSurround.Get());
-            Test->TestEqual(TEXT("R clears sustained water jets"),D->WaterJets.Num(),0);
+            Test->TestEqual(TEXT("R clears star streams"),D->StarlightRibbons.Num(),0);
             Test->TestEqual(TEXT("R clears exhaustion filter"),D->Exhaustion,0.f);
             Test->TestEqual(TEXT("R resets impact effects"),D->EndingDebrisBursts,0);
             Test->TestFalse(TEXT("R clears final paper title"),D->bFinalPaperVisible);

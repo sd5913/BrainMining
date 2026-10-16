@@ -16,6 +16,7 @@
 #include "GameFramework/PlayerStart.h"
 #include "Framework/Application/SlateApplication.h"
 #include "InputCoreTypes.h"
+#include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -388,7 +389,18 @@ void AWenSiMirrorPuzzle::Tick(float Dt)
  if(auto Hall=AMiningExhibitHall::Find(GetWorld());Hall && !bEditing && Hall->IsInteractionOpen())return;
  if(bAreaManaged && GetPlayerWord()==EWenSiMirrorWord::Floating && !bEditing)
   if(auto Character=Cast<ACharacter>(PC->GetPawn())){auto Move=Character->GetCharacterMovement();if(Move->IsMovingOnGround())Move->SetMovementMode(MOVE_Falling);Move->Velocity.Z=FMath::Min(350.f,Move->Velocity.Z+(1700.f+FMath::Abs(GetWorld()->GetGravityZ()))*Dt);}
+ const bool WasComplete=bComplete;
  RefreshSelfThoughts();UpdateMechanism();Aim.Reset();bAimReset=false;
+ // Only the campaign museum leads into the finale. Standalone puzzle maps
+ // keep their completion/reset flow, including the mechanism validation tool.
+ if(!WasComplete && bComplete && bAreaManaged)
+  if(auto Hall=AMiningExhibitHall::Find(GetWorld());Hall && Hall->Areas.IsValidIndex(Hall->ActiveArea)
+   && Hall->Areas[Hall->ActiveArea].Tag==TEXT("BM_Campaign_MainGameMuseum"))
+  {
+   UE_LOG(LogWenSiMirror,Display,TEXT("MainGame golden reward collected; travelling to Lvl_EndingEmergence_Demo"));
+   UGameplayStatics::OpenLevel(this,TEXT("/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo"),true);
+   return;
+  }
  if(!bEditing)
  {
   FVector P;FRotator R;PC->GetPlayerViewPoint(P,R);FHitResult Hit;FCollisionQueryParams Q;Q.AddIgnoredActor(PC->GetPawn());

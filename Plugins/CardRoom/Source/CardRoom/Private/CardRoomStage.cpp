@@ -128,6 +128,8 @@ void ACardRoomStage::BeginPlay()
 }
 void ACardRoomStage::Sound(const TCHAR* Name,float Volume)
 {
+    if(AudioOverride.IsBound()) {AudioOverride.Execute(FName(Name),Volume);return;}
+    if(FCString::Strcmp(Name,TEXT("S_Victory"))==0) Name=TEXT("S_Reward");
     const FString Path=FString::Printf(TEXT("/Game/Rooms/CardDuel/Audio/%s.%s"),Name,Name);
     if(USoundBase* Cue=LoadObject<USoundBase>(nullptr,*Path)) UGameplayStatics::PlaySound2D(this,Cue,Volume);
 }
@@ -148,15 +150,21 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     const auto Phase=Run.Phase;
     if(Phase!=LastPhase)
     {
+        PreviousAudioTime=0;
         if(Phase==ECardRoomPhase::Arrival) Sound(TEXT("S_Arrival"));
         if(Phase==ECardRoomPhase::Choosing) Sound(TEXT("S_Draw"),.3f);
-        if(Phase==ECardRoomPhase::Resolving) { Sound(Run.Round==2?TEXT("S_Poison"):Run.Round==4?TEXT("S_Finale"):TEXT("S_Laser")); bReplySound=false; }
-        if(Phase==ECardRoomPhase::Victory && !bWinSent) { bWinSent=true; Sound(TEXT("S_Reward")); OnRoomCompleted.Broadcast(RoomId); }
+        if(Phase==ECardRoomPhase::Seated && AudioOverride.IsBound()) Sound(TEXT("S_Seat"),.4f);
+        if(Phase==ECardRoomPhase::Matching && AudioOverride.IsBound()) Sound(TEXT("S_Confirm"),.35f);
+        if(Phase==ECardRoomPhase::Resolving) { Sound(Run.Round==2?TEXT("S_Poison"):Run.Round==4?TEXT("S_Finale"):TEXT("S_Laser")); if(AudioOverride.IsBound())Sound(TEXT("S_CardPlace"),.35f); bReplySound=false; }
+        if(Phase==ECardRoomPhase::Victory && !bWinSent) { bWinSent=true; Sound(TEXT("S_Victory")); OnRoomCompleted.Broadcast(RoomId); }
         LastPhase=Phase;
     }
     const float T=Run.PhaseTime;
     const bool bBattle=Phase==ECardRoomPhase::Choosing || Phase==ECardRoomPhase::Resolving;
     const bool bResolve=Phase==ECardRoomPhase::Resolving;
+    if(AudioOverride.IsBound() && bResolve && PreviousAudioTime<1.f && T>=1.f)
+        Sound(Run.Round==3?TEXT("S_CardFire"):Run.Round==2?TEXT("S_CardPoison"):TEXT("S_Impact"),Run.Round==3?.7f:.3f);
+    PreviousAudioTime=T;
     const bool bGhost=Phase==ECardRoomPhase::Seated || Phase==ECardRoomPhase::Matching || Phase==ECardRoomPhase::Victory || Phase==ECardRoomPhase::Collected;
     for(const auto& Dot:GhostDots) Dot->SetVisibility(bGhost);
     ToyRoot->SetVisibility(bBattle || Phase==ECardRoomPhase::Arrival,true);

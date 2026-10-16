@@ -64,6 +64,7 @@ void AMiningExhibitController::OnPossess(APawn* InPawn)
 
 bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
 {
+    if (IsAudioSettingsOpen() || Params.Key == EKeys::F8) return Super::InputKey(Params);
     if (auto* Room = AMiningStartRoom::Find(GetWorld()))
     {
         if (Params.Key == EKeys::E && Params.Event == IE_Pressed && !bUpgradeMenuHeld)
@@ -266,6 +267,64 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
     if(Index!=INDEX_NONE) Visited.Add(Index);
     Notice.Empty();
     return true;
+}
+
+bool AMiningExhibitHall::EnterDeveloperArea(int32 Index, FString& Error)
+{
+#if UE_BUILD_SHIPPING
+    Error = TEXT("发行版本不提供开发者跳转。");
+    return false;
+#else
+    if (!bReady || !Controller.IsValid() || !Controller->GetPawn() || !Areas.IsValidIndex(Index))
+    {
+        Error = TEXT("房间尚未就绪，或目标区域不存在。");
+        return false;
+    }
+    if (AreaKind(Index) == EMiningExperienceKind::Office && Office && Office->IsOfficeEscaped())
+    {
+        Error = TEXT("办公室已完成撤离，请选择下方的独立办公室重新测试。");
+        return false;
+    }
+    FVector Destination = Areas[Index].Entry.GetLocation();
+    const FRotator Rotation = Areas[Index].Entry.Rotator();
+    AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), Destination);
+    bool bFoundDestination = false;
+    for (const float HeightOffset : {0.f, 25.f, 50.f, 100.f, 150.f, 225.f, 300.f})
+    {
+        FVector Candidate = Areas[Index].Entry.GetLocation() + FVector(0, 0, HeightOffset);
+        if (GetWorld()->FindTeleportSpot(Controller->GetPawn(), Candidate, Rotation))
+        {
+            Destination = Candidate;
+            bFoundDestination = true;
+            break;
+        }
+    }
+    if (!bFoundDestination)
+    {
+        Error = TEXT("房间入口被碰撞阻挡，未移动角色。可以使用下方的独立关卡。");
+        return false;
+    }
+    const int32 PreviousUnlockedArea = UnlockedArea;
+    UnlockedArea = FMath::Max(UnlockedArea, Index);
+    if (!EnterArea(Index, false))
+    {
+        UnlockedArea = PreviousUnlockedArea;
+        Error = TEXT("房间激活失败，未移动角色。");
+        return false;
+    }
+    Controller->GetPawn()->SetActorLocationAndRotation(Destination, Rotation, false, nullptr, ETeleportType::TeleportPhysics);
+    Controller->SetControlRotation(Rotation);
+    if (auto* Movement = Controller->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())
+    {
+        Movement->ResetFlightInput();
+        Movement->StopMovementImmediately();
+        Movement->SetMovementMode(MOVE_Falling);
+    }
+    if (auto* StartRoom = AMiningStartRoom::Find(GetWorld())) StartRoom->UnlockDeveloperEquipment();
+    Error.Empty();
+    Notice = TEXT("开发者跳转：保留房间进度，已准备镐子和喷气背包。");
+    return true;
+#endif
 }
 
 void AMiningExhibitHall::ReturnToLobby()

@@ -1,4 +1,5 @@
 #include "Showcase/MiningTreasure.h"
+#include "MiningAudioComponent.h"
 #include "MiningWalletSubsystem.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningInteractionHUDWidget.h"
@@ -732,6 +733,8 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
     auto* Inventory = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>() : nullptr;
     const bool bMaterials = Inventory && Inventory->UsesMineralInventory();
     if (bMaterials && !Inventory->AddMineral(Item->TreasureId)) return false;
+    if (Controller && Controller->GetPawn())
+        if (auto* Audio = Controller->GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayCollect();
     Item->bCollected = true;
     Item->SetDropActive(false);
     Item->SetHighlighted(false);

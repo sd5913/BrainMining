@@ -165,6 +165,7 @@ void UMiningComponent::UpdateDrillEnergy(float DeltaSeconds)
 void UMiningComponent::RefreshTarget()
 {
 	TargetRock = nullptr;
+	TargetHit = FHitResult();
 	APawn* Pawn = Cast<APawn>(GetOwner());
 	APlayerController* Controller = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
 	if (!Controller || !Controller->IsLocalController())
@@ -233,6 +234,7 @@ bool UMiningComponent::TryMine()
 	RefreshTarget();
 	if (!IsValid(TargetRock))
 	{
+		if (TargetHit.bBlockingHit) OnMiningBlocked.Broadcast(TargetHit);
 		Status = TEXT("Aim at rock within reach");
 		return false;
 	}

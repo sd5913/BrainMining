@@ -1,4 +1,5 @@
 #include "PopupClose/PopupOfficeExit.h"
+#include "MiningRoomAudioSubsystem.h"
 #include "PopupClose/PopupCloseStage.h"
 #include "PopupClose/PopupCloseOffice.h"
 #include "PopupClose/PopupOfficeDevice.h"
@@ -193,12 +194,14 @@ bool FPopupOfficeExit::Collect(APlayerController* PC)
 {
  if(!CanCollect(PC))return false;BindPlayer();auto Tool=BoundTool.Get();if(!Tool || !Tool->UnlockSkill())return false;
  Phase=3;Pickup->SetVisibility(false);Pickup->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ UMiningRoomAudioSubsystem::Emit(&Owner,TEXT("S_BombPickup"),.6f);
  if(auto Body=Cast<USphereComponent>(Pickup->GetAttachParent())){Body->SetSimulatePhysics(false);Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);}
  Owner.ShowPrompt(PC,TEXT(""));UE_LOG(LogOfficeExit,Display,TEXT("Bomb skill acquired through approach/aim/E; shared unlock=%d inventory=%d"),Tool->IsSkillUnlocked(),Tool->BombCount);return true;
 }
 void FPopupOfficeExit::OfferBomb()
 {
  if(Phase!=0)return;Phase=1;Age=0;Pickup->SetVisibility(true);
+ UMiningRoomAudioSubsystem::Emit(&Owner,TEXT("S_BombOffer"),.65f);
  if(auto Body=Cast<USphereComponent>(Pickup->GetAttachParent()))
  {
   Body->SetWorldLocationAndRotation(Owner.GetActorTransform().TransformPosition(FVector(-4,0,150)),Owner.GetActorQuat(),false,nullptr,ETeleportType::TeleportPhysics);
@@ -219,6 +222,7 @@ void FPopupOfficeExit::HandleExplosion(const FVector& WorldPosition)
  FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(OfficeBlastDoor),false,Tool->GetOwner());
  if(Owner.GetWorld()->LineTraceSingleByChannel(Hit,WorldPosition,Owner.GetActorTransform().TransformPosition(FVector(1000,Closest.Y,Closest.Z)),ECC_Visibility,Query) && Hit.GetComponent()!=Door.Get())return;
  Phase=4;Age=0;Door->SetVisibility(false);Door->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ UMiningRoomAudioSubsystem::Emit(Door.Get(),TEXT("S_DoorBreak"),.65f,true);
  for(int32 I=0;I<8;++I)DoorFragments->AddInstance(FTransform(FRotator(0,I*31.f,15),FVector(935-I*6,-85+I*24,7),FVector(.5f,.35f,.08f)));
  UE_LOG(LogOfficeExit,Display,TEXT("Exit door breached by a real player bomb explosion; blast=%s"),*P.ToString());
 }
@@ -288,6 +292,8 @@ void FPopupOfficeExit::Tick()
 void FPopupOfficeExit::SealRoom()
 {
  Phase=5;Age=EmissionDebt=0;Shutter->SetVisibility(true);Shutter->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);ReturnGrille->SetVisibility(true);
+ UMiningRoomAudioSubsystem::Emit(Shutter.Get(),TEXT("S_Seal"),.7f,true);
+ UMiningRoomAudioSubsystem::StopSource(&Owner);
  Bombs->SetVisibility(true);CSV_EVENT(OfficeFinale,TEXT("BombEruptionStart"));
  // Full-room collision prevents a flying player from returning through a different opening.
  RuinBlocker->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -307,6 +313,7 @@ void FPopupOfficeExit::EmitBomb(int32 I)
 }
 void FPopupOfficeExit::SpawnExplosion(FVector P,float Scale)
 {
+ UMiningRoomAudioSubsystem::Emit(&Owner,TEXT("S_CardFire"),.5f,true,.7f);
  auto Effect=Owner.GetWorld()->SpawnActor<AMiningBombExplosion>(Owner.GetActorTransform().TransformPosition(P),FRotator::ZeroRotator);
  if(Effect){FMiningBombSettings Settings;Settings.ExplosionScale=Scale;Settings.FireStrength=.64f;Settings.SmokeStrength=.49f;Effect->Initialize(nullptr,Settings);Effects.Add(Effect);}
 }
@@ -322,6 +329,7 @@ void FPopupOfficeExit::SetInteriorVisible(bool Visible)
 void FPopupOfficeExit::Collapse()
 {
  Phase=6;Age=0;Bombs->ClearInstances();BombVisuals.Reset();if(Owner.Flood)Owner.Flood->ClearVisuals();
+ UMiningRoomAudioSubsystem::Emit(&Owner,TEXT("S_Collapse"),.85f,true);
  Bombs->SetVisibility(false);CSV_EVENT(OfficeFinale,TEXT("BombEruptionEnd"));
  SetInteriorVisible(false);Shutter->SetVisibility(false);ReturnGrille->SetVisibility(false);
  Rubble->SetVisibility(true);

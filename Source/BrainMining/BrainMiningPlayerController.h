@@ -10,6 +10,7 @@ class UInputMappingContext;
 class UUserWidget;
 class UMiningGUIHUDWidget;
 class UMiningInteractionHUDWidget;
+class SWidget;
 
 /**
  *  Simple first person Player Controller
@@ -41,6 +42,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Mining GUI")
 	void SetUpgradeMenuHeld(bool bHeld);
 	virtual bool InputKey(const FInputKeyEventArgs& Params) override;
+	bool IsAudioSettingsOpen() const { return AudioSettingsPanel.IsValid(); }
+	void ToggleAudioSettings();
 
 protected:
 
@@ -76,6 +79,9 @@ protected:
 	bool bOwnsDesktopGUIInput = false;
  bool bMiningGUIEnabled = true;
 	FDelegateHandle ApplicationActivationHandle;
+	TSharedPtr<SWidget> AudioSettingsPanel;
+	bool bAudioPausedWorld = false;
+	bool bAudioPreviousMiningSuspended = false;
 	EMouseCaptureMode PreviousMouseCaptureMode = EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown;
 	EMouseLockMode PreviousMouseLockMode = EMouseLockMode::LockOnCapture;
 

@@ -1,0 +1,2174 @@
+[
+  {
+    "asset": "S_Confirm",
+    "file": "Wav/S_Confirm.wav",
+    "sha256": "3734a5b66f2eb143accc1a9baa698fbf3df93bb9a3a716baefd690ede87e3bf8",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.28983333333333333,
+    "peak": 0.55,
+    "rms": 0.1726113920767507,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_001.ogg",
+        "sha256": "063564703b6094d70718a3e787a55cc9141611e4ecd6b6637f8828f79b4a8c3a",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Reject",
+    "file": "Wav/S_Reject.wav",
+    "sha256": "99ae3e2949ddfeb0526b92fd6a24a65f79e7ffe42f003245fd4f108de9a85b95",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.10270833333333333,
+    "peak": 0.55,
+    "rms": 0.09665811502932636,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/error_004.ogg",
+        "sha256": "0b574cea597d96507e782ae9764f88482ce49f46e931e57054bf7150047f2d69",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Open",
+    "file": "Wav/S_Open.wav",
+    "sha256": "3fa482c18a5b164596a3604c1185147065c7174208809e0d7bbdcb81ff9f5e4a",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.3137916666666667,
+    "peak": 0.55,
+    "rms": 0.13350200790485522,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/open_002.ogg",
+        "sha256": "24ff224fe2c09c6aed1b41249825382dc74cf324b887ff279d8494912ce2beee",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Close",
+    "file": "Wav/S_Close.wav",
+    "sha256": "7e79b64cdd923b0524ace305a37e9991ae850dcbffce88f07bd3bc8f1b47f2b2",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.3137916666666667,
+    "peak": 0.55,
+    "rms": 0.13055200656869706,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/close_002.ogg",
+        "sha256": "bc4279d2bb2bf86592473eab6a8eab55e51b54a8619315000dbd780a83b102d8",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Reply",
+    "file": "Wav/S_Reply.wav",
+    "sha256": "1eafad3b5636a90ced2efa5936751de0b4d2953cdf161d1561b044e36e10ec51",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.10002083333333334,
+    "peak": 0.55,
+    "rms": 0.044282446480141034,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/click_001.ogg",
+        "sha256": "ccfb7fa0cccdd9faec0eb16033c732b1e308d139d80f799161495d58f7adcdb9",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_BombOffer",
+    "file": "Wav/S_BombOffer.wav",
+    "sha256": "57fc3fa5dc3a82709cb253f8e642d8f838bed51e2cffb6a02af301175a58b2d9",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.3220208333333333,
+    "peak": 0.55,
+    "rms": 0.11004504155767603,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_003.ogg",
+        "sha256": "3091bf0be0497f825769ee0733ca7bdc3bcd59bd6c6e8f2ba8f93d580ff38022",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Warning",
+    "file": "Wav/S_Warning.wav",
+    "sha256": "7d8569b58857495334def91fc0fa9d5bb712090cedcbf63654e984411e47f160",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.5000416666666667,
+    "peak": 0.55,
+    "rms": 0.07661339933809007,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/error_006.ogg",
+        "sha256": "a97513d7fd2b12b1210c423be943b4c1ab0e899b11db95855e9b74836e646ae0",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Checkpoint",
+    "file": "Wav/S_Checkpoint.wav",
+    "sha256": "d51c85595fd3feb99e7164034005f657a72006d7afe801276a49677f408abb5c",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.539,
+    "peak": 0.55,
+    "rms": 0.11709056557460436,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_002.ogg",
+        "sha256": "33b17a9a9a2397c62b285c52c33a907fdffb476909c99e42dde603f6a7a8b12c",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_ElectricalWarning",
+    "file": "Wav/S_ElectricalWarning.wav",
+    "sha256": "9a052372ad2e7a5d618af4fb4ea1b5db8db9658ab87f38a51d908090bd6272a6",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.1,
+    "peak": 0.55,
+    "rms": 0.09770106325397088,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/glitch_002.ogg",
+        "sha256": "1da06a2e63ce131f5e0316ca27c75fc0d672db7a8f9b986c70693f2bd992eabc",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Retry",
+    "file": "Wav/S_Retry.wav",
+    "sha256": "8503b3e327a0f78fa9dbdef089927aa82c8b654123e790cf72cf1f2ac2ec8cc3",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.1,
+    "peak": 0.55,
+    "rms": 0.06699260765054571,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/back_002.ogg",
+        "sha256": "61581c58194e3f19f531072edabbc344204c7e0a2887b8ededce4357bcf09195",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Thought",
+    "file": "Wav/S_Thought.wav",
+    "sha256": "d7ff1a5322255814b8d898bc05345ff31c47d2228eb2a770d9abc057ad54ad17",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.21185416666666668,
+    "peak": 0.55,
+    "rms": 0.11817724037048857,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/maximize_003.ogg",
+        "sha256": "df16f25d45189f5d44d6a482ab20d5067350ca8525a9affa1f8ce599e31a20a5",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Swap",
+    "file": "Wav/S_Swap.wav",
+    "sha256": "3ab72d49ce47f80e4d65ef758789ae9c8cc311458d27486e54e7fd61b5818ba0",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.5,
+    "peak": 0.55,
+    "rms": 0.036685069101379676,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/switch_004.ogg",
+        "sha256": "541c19cc1ab712a9efc5765df602e7d0da09d9cafdd297ce1e19b092289fd62f",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Transform",
+    "file": "Wav/S_Transform.wav",
+    "sha256": "34066b752fa10f3fbf5bdbc9dce844cfcab4ad907af124faac1a4b471bd188bf",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.2583958333333333,
+    "peak": 0.55,
+    "rms": 0.14785810805439897,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/maximize_001.ogg",
+        "sha256": "fd3e75e1de2f2fda90aceeacaeb0427ac8bddd3b07a6ce2a8f9ba923df3771f9",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Shrink",
+    "file": "Wav/S_Shrink.wav",
+    "sha256": "92830a6eaeaecf429600ebf76f93ecb4491ae4d93fc853520ab3fd1dbfd1ccc3",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.21185416666666668,
+    "peak": 0.55,
+    "rms": 0.12235290556072159,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/minimize_003.ogg",
+        "sha256": "400e1041499de85ec8b5529a35ff36787288175c4696cf2018ecff24a3a3fd29",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Grow",
+    "file": "Wav/S_Grow.wav",
+    "sha256": "dccf19e3c117a309e1a82e2e841fe5bcc9fd603ae5bc442eb7630ba34b8cdbcb",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.4179583333333333,
+    "peak": 0.55,
+    "rms": 0.0960783059270748,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/maximize_004.ogg",
+        "sha256": "59c7a24b204be24d2a44a86d1e4d18c2cf51fa0446967a14b2590e8fb3afaf34",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Reset",
+    "file": "Wav/S_Reset.wav",
+    "sha256": "3092006a71f604c4423dda880fa96ba662db59369bca8868b4dd83bb8a68c7e2",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.1,
+    "peak": 0.55,
+    "rms": 0.05785810943311225,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/back_004.ogg",
+        "sha256": "c22e3c49f42c2a5ba6748e91283efe124f32822469c1258c3e5d7b3d7ab9361c",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardVictory",
+    "file": "Wav/S_CardVictory.wav",
+    "sha256": "91c53c5312caf24edd7ec107b6f865ca8abaeb4070245af48499e71acc6d3475",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.49041666666666667,
+    "peak": 0.55,
+    "rms": 0.15714824586028223,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_004.ogg",
+        "sha256": "568967a3d9f8a8f6af54ea01729c4882284308f2a27d78c07ffd7ee0d6951661",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardReward",
+    "file": "Wav/S_CardReward.wav",
+    "sha256": "d51c85595fd3feb99e7164034005f657a72006d7afe801276a49677f408abb5c",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.539,
+    "peak": 0.55,
+    "rms": 0.11709056557460436,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_002.ogg",
+        "sha256": "33b17a9a9a2397c62b285c52c33a907fdffb476909c99e42dde603f6a7a8b12c",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_EchoExit",
+    "file": "Wav/S_EchoExit.wav",
+    "sha256": "3734a5b66f2eb143accc1a9baa698fbf3df93bb9a3a716baefd690ede87e3bf8",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.28983333333333333,
+    "peak": 0.55,
+    "rms": 0.1726113920767507,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_001.ogg",
+        "sha256": "063564703b6094d70718a3e787a55cc9141611e4ecd6b6637f8828f79b4a8c3a",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_OfficeNotify_00",
+    "file": "Wav/S_OfficeNotify_00.wav",
+    "sha256": "864e9e7c6b2a585385fc8a8846f3447b5bec911e1333960b200ce987d51cd514",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.1,
+    "peak": 0.55,
+    "rms": 0.07836514114537184,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/select_001.ogg",
+        "sha256": "aec0c31ea934a35936ae0d2ab8fac8123c93aa5647f935853a58dbaf90278b7a",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Paper_00",
+    "file": "Wav/S_Paper_00.wav",
+    "sha256": "6e5811655962cea8d4b5f70b186c28b1fec88c79f00acdc8614acab6367ca79e",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.6007708333333334,
+    "peak": 0.55,
+    "rms": 0.029669203690741924,
+    "sources": [
+      {
+        "pack": "casino",
+        "member": "Audio/card-slide-1.ogg",
+        "sha256": "006cf9822d15d7063f8899e56041f41646df30adb6fbd8b974ee5d5420012690",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardSelect_00",
+    "file": "Wav/S_CardSelect_00.wav",
+    "sha256": "14e351973133f8d9fdc27e9be9ad80d08f8fcd4f775dcd3966fe5f02fb5a022e",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.689125,
+    "peak": 0.55,
+    "rms": 0.02806043524626363,
+    "sources": [
+      {
+        "pack": "casino",
+        "member": "Audio/card-place-1.ogg",
+        "sha256": "d8f26c33a665dcbdcc6f632f6050bc9dd548feb0d4942d4547615926d3926810",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Glass_00",
+    "file": "Wav/S_Glass_00.wav",
+    "sha256": "237672929907512ddc1eb8dc44a8d97a5b26be99e6fb692ea10751b6bc0a85a7",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.20958333333333334,
+    "peak": 0.55,
+    "rms": 0.06581110712021275,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactGlass_light_000.ogg",
+        "sha256": "d750cf88097d0c3e69920e6e14496e1444e1a9da01aa4cca8f5ec8cb44c57b4f",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_EchoKnock_00",
+    "file": "Wav/S_EchoKnock_00.wav",
+    "sha256": "2e96c184df62d265c24802a160f590664cc2cff9c1f416f1d326f840b4668684",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 1.8874375,
+    "peak": 0.55,
+    "rms": 0.041705856722080395,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactMining_000.ogg",
+        "sha256": "36b4ea107222d073c67ca64dde26944975609202d5090b2f2021213c1a7e35cd",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": true,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_OfficeNotify_01",
+    "file": "Wav/S_OfficeNotify_01.wav",
+    "sha256": "c36d0eb4bde00eb00a7fee8cad046c036fc6aeae8cbfa5c0a2de1544031bde96",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.1,
+    "peak": 0.55,
+    "rms": 0.08852149691973915,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/select_002.ogg",
+        "sha256": "4cc6ac5341b9b2c86fef80c347de028e9ab9f2e037586ac7d9fa59a403a1c012",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Paper_01",
+    "file": "Wav/S_Paper_01.wav",
+    "sha256": "11dfe980cebcdde1a9d1ea012a2d3cc0b362e8350379fa77555bfa0b73e866d7",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.5840833333333333,
+    "peak": 0.55,
+    "rms": 0.036968644413240374,
+    "sources": [
+      {
+        "pack": "casino",
+        "member": "Audio/card-slide-2.ogg",
+        "sha256": "e674a1679ec87b507047fe012d068ad2c412125f56186f0e732684705c2a6888",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardSelect_01",
+    "file": "Wav/S_CardSelect_01.wav",
+    "sha256": "3128165fd40e564940e14a7ec8c64cef8fc06a789b46eb6cf1c6b25c6735329f",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.45939583333333334,
+    "peak": 0.55,
+    "rms": 0.01736881998431489,
+    "sources": [
+      {
+        "pack": "casino",
+        "member": "Audio/card-place-2.ogg",
+        "sha256": "903d5050718595e87864dd755643b476ab1a5533080dcc2dddc72570d33ba9f8",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Glass_01",
+    "file": "Wav/S_Glass_01.wav",
+    "sha256": "24097767ce4151fe5de8266f65adead7714104c555ac3738f7de19f5d7d0c959",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.20958333333333334,
+    "peak": 0.55,
+    "rms": 0.06402577081767899,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactGlass_light_001.ogg",
+        "sha256": "05e513fbd42829060eb37855f8c3866722ec5c39a8937c9bfde518cc609effa2",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_EchoKnock_01",
+    "file": "Wav/S_EchoKnock_01.wav",
+    "sha256": "1accfb6d6db70e5061e32c27a161818d39f40adff6d98045411f9ae7ca812a2d",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 1.8194166666666667,
+    "peak": 0.55,
+    "rms": 0.039235985730977335,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactMining_001.ogg",
+        "sha256": "61235a18de3f3d92118235398222dbf51d448f1be70b1c8bc962b10b86f2d9c6",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": true,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_OfficeNotify_02",
+    "file": "Wav/S_OfficeNotify_02.wav",
+    "sha256": "5ba4c2137a6f7dfef7240192def10a50d596ae0129d5c834dacdceb5baf16222",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.38277083333333334,
+    "peak": 0.55,
+    "rms": 0.06857573868102938,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/select_003.ogg",
+        "sha256": "9a612fd2f513d52a296906b41071c990f75defe56be3bee60d2d4e2423b51b8b",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Paper_02",
+    "file": "Wav/S_Paper_02.wav",
+    "sha256": "107d80b73dbe61df372a7b32b31da15ac81775a0ef98b9b6f3de35f42a6ee5a4",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.598125,
+    "peak": 0.55,
+    "rms": 0.03193385128015263,
+    "sources": [
+      {
+        "pack": "casino",
+        "member": "Audio/card-slide-3.ogg",
+        "sha256": "af2ab62656cb3df73316ce5771b8ee1111a840962b21607e3202151e7413c52c",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardSelect_02",
+    "file": "Wav/S_CardSelect_02.wav",
+    "sha256": "b6fb5617f9e39f5cd180ca2fe84a0a199e5ff1c7abdd7b636fad08e73702e69c",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.8835,
+    "peak": 0.55,
+    "rms": 0.014005064806950187,
+    "sources": [
+      {
+        "pack": "casino",
+        "member": "Audio/card-place-3.ogg",
+        "sha256": "1d988631a6e5201ed1bb0d728f2e43a3ec79401258426858793598044ac95841",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Glass_02",
+    "file": "Wav/S_Glass_02.wav",
+    "sha256": "c8a2f571ab1e43c1c36423a9e9b1ec808b1b8384b0acc8462a80eae99af36eb6",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.20958333333333334,
+    "peak": 0.55,
+    "rms": 0.06961746791953698,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactGlass_light_002.ogg",
+        "sha256": "710db7451bb7857b9140dfe6afe4621ea2188ad65eda3919c569d1bb285b933d",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_EchoKnock_02",
+    "file": "Wav/S_EchoKnock_02.wav",
+    "sha256": "093c9c304c316ecb0b59fce78ce7e41ef7ab04fdb85a037798cb296f1794cdc8",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 1.7546666666666666,
+    "peak": 0.55,
+    "rms": 0.03263873176259856,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactMining_002.ogg",
+        "sha256": "059558ec751115ca6b1441e00f0adc837c1a3eeb0a066b109e0fd879fc5d0b0c",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": true,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardDraw",
+    "file": "Wav/S_CardDraw.wav",
+    "sha256": "2db7614b429cb4ed9732bca397159d19c9c5f5818fae3901d9b3081a39b9a62b",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.7208125,
+    "peak": 0.55,
+    "rms": 0.0519890886170266,
+    "sources": [
+      {
+        "pack": "casino",
+        "member": "Audio/card-fan-1.ogg",
+        "sha256": "7a9758ccad8899baef1b9f60b4064e4baa724a548293832fdaea07e6e07e638d",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardPlace",
+    "file": "Wav/S_CardPlace.wav",
+    "sha256": "4b532b4f750ebfcfe59740cd10af517a499778061ac9f1ed14c571c434e062d9",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 3.0635,
+    "peak": 0.55,
+    "rms": 0.01835799628139852,
+    "sources": [
+      {
+        "pack": "casino",
+        "member": "Audio/card-shuffle.ogg",
+        "sha256": "96c84883a30845ede723a4cf2e8369e9837e7dd4e0d4eb0212b0a7ed21b0f544",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Seat",
+    "file": "Wav/S_Seat.wav",
+    "sha256": "3432ca26948eb0af44572544542abd696035c7fc30480ee190e6551870b6993f",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.33266666666666667,
+    "peak": 0.55,
+    "rms": 0.06169923853055669,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactWood_medium_000.ogg",
+        "sha256": "1723a9fd25103ed41af06054814e84e65f4a772bac86ab2dc927da93d9592ff5",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardLaser",
+    "file": "Wav/S_CardLaser.wav",
+    "sha256": "c552bda15c840a305683ccd9d2020df023afe8cc98e51e2d6f548c586d830709",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.6766458333333333,
+    "peak": 0.55,
+    "rms": 0.08340891161798569,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/laserLarge_000.ogg",
+        "sha256": "a56d95794cd732d6c2d66ce488c14cf557fe526c282897c9a77675c2bd9b77e6",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardPoison",
+    "file": "Wav/S_CardPoison.wav",
+    "sha256": "881d3526c6573b9e91bbb206cfd3f6dcdd11d1664c6798460ad53baa45e78c3f",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.5,
+    "peak": 0.55,
+    "rms": 0.028920504928088512,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/slime_000.ogg",
+        "sha256": "480ee82b690136ea9db6966a3c3033356b8274752795c4e37afd6b6defcfacff",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardImpact",
+    "file": "Wav/S_CardImpact.wav",
+    "sha256": "b6b3de82cff1993729ec6e1b8761d837a97da4ba215d57406915f0ee2f0b69b3",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.6490208333333334,
+    "peak": 0.55,
+    "rms": 0.07755520635193544,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactPunch_heavy_000.ogg",
+        "sha256": "b33a8f14068aec24ec69ba85e5e87fdc41228975f6a1a3e44a6e7d6fc3d9f8d8",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Seal",
+    "file": "Wav/S_Seal.wav",
+    "sha256": "18fbb0d5a97fe3c2987b228f54f98b529daf7fd8a2cdeb4b9092d9ebe0e22a4a",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.5286041666666667,
+    "peak": 0.55,
+    "rms": 0.08663211544512993,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/doorClose_001.ogg",
+        "sha256": "2153e83ff9880c78f9539aa5dcce80fc9e3b39c6fa0f8dec9325ec6d7ea2c9d5",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_RewardDoor",
+    "file": "Wav/S_RewardDoor.wav",
+    "sha256": "82442c1d07f59f41b4d50046efcc453bddd17c942f0c7943f1f97bc08f32952d",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.5286041666666667,
+    "peak": 0.55,
+    "rms": 0.08466431735950794,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/doorOpen_001.ogg",
+        "sha256": "8c204ca94eb722d3af95f29221f4551938ca3c217fda32c14dabe2cf6a9c782b",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Phase",
+    "file": "Wav/S_Phase.wav",
+    "sha256": "985b8c5765df92333aa9fe07e1016d0ac99305d94bffa16981fc19ac9435d763",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.9540208333333333,
+    "peak": 0.55,
+    "rms": 0.16151049103978926,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/forceField_000.ogg",
+        "sha256": "c2916f2a062c8ddd1aca2826d134fe90847037db31342726ffb0f9097afe339c",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Float",
+    "file": "Wav/S_Float.wav",
+    "sha256": "ea21c6ea6ddc181f4de3811b09e092b60e843c3822497db2bd58af10ae7a66ed",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.9550833333333333,
+    "peak": 0.55,
+    "rms": 0.1612562324551033,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/forceField_002.ogg",
+        "sha256": "051b0eafc479695af4ca3607d41fd4be41bae7c21f4f9508d004722b09f1bd63",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Pottery",
+    "file": "Wav/S_Pottery.wav",
+    "sha256": "20d9d8ac790045387c2e1fd8565585f44bbf0277300d7c344f258411d3a9348c",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.5433541666666667,
+    "peak": 0.55,
+    "rms": 0.06654757719651806,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactGlass_medium_000.ogg",
+        "sha256": "9252d50bfb85edb17d6073c4a7806e10cdb9de56d3dbfc93a4b9727146d2df6d",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Printer",
+    "file": "Wav/S_Printer.wav",
+    "sha256": "099cfd51712504f9eda155328a3b76eaa60e28e1a520ff14c6f8b038d052f61a",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.85,
+    "peak": 0.55,
+    "rms": 0.07660446410143933,
+    "sources": [
+      {
+        "pack": "loops",
+        "member": "machine_03.ogg",
+        "sha256": "761022102cd41c7dded743f1ee144024fd4e0591dbb6cf994cf41e8d35782843",
+        "gain": 0.55,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "casino",
+        "member": "Audio/card-shove-1.ogg",
+        "sha256": "1ea667aa6795d5f14239192116ebcbd8f3f47eb1c7faaf2ec56844b9067b8b06",
+        "gain": 1.0,
+        "offset": 0.15,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_OfficePanic",
+    "file": "Wav/S_OfficePanic.wav",
+    "sha256": "370d62ffd812e32583f730ffefea90b38cc1f8da9ad755d705be7658dcef5104",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 1.4,
+    "peak": 0.55,
+    "rms": 0.07007474349300026,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/glitch_003.ogg",
+        "sha256": "d55e0c64aee9f1ab2ba9523d0e256ca76639c3ec2f230405e2ff25aff36020b3",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "loops",
+        "member": "alarm_01.ogg",
+        "sha256": "c610a2e85119e9637680a2a48cc0d74e330c52cf7dee9a88362fbb53df11598f",
+        "gain": 0.25,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_BombPickup",
+    "file": "Wav/S_BombPickup.wav",
+    "sha256": "6bc68faffc44343c9bfe93bcb06453c5b155f7fc7dd845316757b64685b8a5ab",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.4955833333333333,
+    "peak": 0.55,
+    "rms": 0.08325646669914116,
+    "sources": [
+      {
+        "pack": "casino",
+        "member": "Audio/cards-pack-take-out-1.ogg",
+        "sha256": "6d38b979f64d20e4153173187ed67b04c6c004767c0a43eddb65c75fa925a1c4",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_001.ogg",
+        "sha256": "063564703b6094d70718a3e787a55cc9141611e4ecd6b6637f8828f79b4a8c3a",
+        "gain": 0.55,
+        "offset": 0.1,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_DoorBreak",
+    "file": "Wav/S_DoorBreak.wav",
+    "sha256": "299e7fc744e6bbeb4e134867d45ecd0e74d85fd9df97bc80d76c55c5ec4b8df5",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 1.0,
+    "peak": 0.55,
+    "rms": 0.043779726583288055,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactWood_heavy_000.ogg",
+        "sha256": "15ff82332f342c30e469215539e1cc57e11b221aa2cf7e11e811d313a9927f3d",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "scifi",
+        "member": "Audio/impactMetal_000.ogg",
+        "sha256": "956c6612a256aa1a67a2327fffe2454f6b1d82e4c1c2be28fd66916335d5b1d6",
+        "gain": 0.6,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Collapse",
+    "file": "Wav/S_Collapse.wav",
+    "sha256": "f85ac7505096c331e592d0142b49c89a9d3c3390522e0bdb57d49c38f2f98a4f",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 4.027,
+    "peak": 0.55,
+    "rms": 0.09556455670506257,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/lowFrequency_explosion_000.ogg",
+        "sha256": "3cb48d86dab63140cfb9aaeea4d4a6846abaca5831d157d8adbec0490da26343",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 0.65
+      },
+      {
+        "pack": "scifi",
+        "member": "Audio/explosionCrunch_001.ogg",
+        "sha256": "fdd04d6f0032d4d57c134ad37f3587d2d00e58c9572715275bd8cf4f43593576",
+        "gain": 1.0,
+        "offset": 0.3,
+        "speed": 0.7
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": true,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardArrival",
+    "file": "Wav/S_CardArrival.wav",
+    "sha256": "56345e37e6a6e1196feeb41a3e209bb7745c4d49f88a2220c39c69e64b9134af",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 1.4,
+    "peak": 0.55,
+    "rms": 0.08785829819533063,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/minimize_009.ogg",
+        "sha256": "885c20fc8b5b52226288794842a403821cd16e9800ec1d76be7a2f1655542eb8",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "impact",
+        "member": "Audio/impactSoft_heavy_000.ogg",
+        "sha256": "49e7ca88743fca974bb8676ea138b751cfd8f9033b5e7af8736c2a215d6edbc1",
+        "gain": 1.0,
+        "offset": 0.7,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardFire",
+    "file": "Wav/S_CardFire.wav",
+    "sha256": "85df58e716d15d6fca068fd36575a8b5d7047c9e6e0ec93c635286f23406de10",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 1.25,
+    "peak": 0.55,
+    "rms": 0.10335533613448272,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/thrusterFire_000.ogg",
+        "sha256": "0fdc474d93f209debf1fc4ea77765a669dcb7676db31b4d8a0a509685bccf374",
+        "gain": 0.45,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "scifi",
+        "member": "Audio/explosionCrunch_002.ogg",
+        "sha256": "be2b8ddc62e4a24c91e2e77793de98549ce216faf2f323a917e7d6f34321ff97",
+        "gain": 0.8,
+        "offset": 0.12,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_CardFinale",
+    "file": "Wav/S_CardFinale.wav",
+    "sha256": "9b77d020b0547297f3cee7daa21a6f59d17e5de954c180615b1a3ce3527f7454",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 2.0,
+    "peak": 0.55,
+    "rms": 0.08953414903822947,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/forceField_001.ogg",
+        "sha256": "5574e69dd04e5f59322c5ddffde5978f077b09170ae5e29cec0bd9901828cd90",
+        "gain": 0.35,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "scifi",
+        "member": "Audio/laserLarge_004.ogg",
+        "sha256": "86c749483b40e1bba9bfea6a04e884d479e5481e52efb6f113341141de516b3b",
+        "gain": 0.8,
+        "offset": 0.35,
+        "speed": 1.0
+      },
+      {
+        "pack": "scifi",
+        "member": "Audio/lowFrequency_explosion_001.ogg",
+        "sha256": "cdda50600a4928f2f1b8371224d53c171ac799c1cf2c30b11999508985250b3b",
+        "gain": 1.0,
+        "offset": 0.95,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_LowHealth",
+    "file": "Wav/S_LowHealth.wav",
+    "sha256": "f489dbb0a80f947e2feb2ef754a59c579f4d51e975135e083f271a15f845ac54",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.7,
+    "peak": 0.55,
+    "rms": 0.04785007246910645,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/error_007.ogg",
+        "sha256": "f1ee4c1ac8bfe1a82eacb54b26f49e8974bab93bcf10c01800bc10dbf730f559",
+        "gain": 0.6,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "impact",
+        "member": "Audio/impactSoft_heavy_001.ogg",
+        "sha256": "4d0096364ba9e46119d2ff6df493fdc101bd2e1efae061da5e5f77a53b3fdcb6",
+        "gain": 0.8,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_EchoCrumble",
+    "file": "Wav/S_EchoCrumble.wav",
+    "sha256": "3b6d3a526b688d610663638449de129550425d2e1b97e52d086dd8d27ba90a20",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 2.5033958333333333,
+    "peak": 0.55,
+    "rms": 0.061017379721346444,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/explosionCrunch_003.ogg",
+        "sha256": "8c7197bb3a1c504690319c3abe0e62a5423ee246dd70caab57963d0b7aa8144f",
+        "gain": 0.45,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "impact",
+        "member": "Audio/impactMining_002.ogg",
+        "sha256": "059558ec751115ca6b1441e00f0adc837c1a3eeb0a066b109e0fd879fc5d0b0c",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 0.65
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": true,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_EchoLanding",
+    "file": "Wav/S_EchoLanding.wav",
+    "sha256": "509d8b15796a594f6c0cd39bf82b915c0c7ed1c4ce08b3175c3897707fdf5a59",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 1.8874375,
+    "peak": 0.55,
+    "rms": 0.0576449053706636,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactSoft_heavy_000.ogg",
+        "sha256": "49e7ca88743fca974bb8676ea138b751cfd8f9033b5e7af8736c2a215d6edbc1",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 0.8
+      },
+      {
+        "pack": "impact",
+        "member": "Audio/impactMining_000.ogg",
+        "sha256": "36b4ea107222d073c67ca64dde26944975609202d5090b2f2021213c1a7e35cd",
+        "gain": 0.25,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": true,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_FloodStart",
+    "file": "Wav/S_FloodStart.wav",
+    "sha256": "f8f2839ffa1b555457b3347dbc2794e2ab248c873bb3b58d4a19383617cabc4c",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 1.5,
+    "peak": 0.55,
+    "rms": 0.02659003566438208,
+    "sources": [
+      {
+        "pack": "water",
+        "member": "splash_06.ogg",
+        "sha256": "3581e5bee7307cbe6be17715714029259685ba283cb3423938378506b386afb4",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "water",
+        "member": "loop_water_02.ogg",
+        "sha256": "2a39d9c6d3069e94f15b092f15bcfac7de54ca1bdc7c0b9a02b151bda6f3a29d",
+        "gain": 0.7,
+        "offset": 0.15,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Drown",
+    "file": "Wav/S_Drown.wav",
+    "sha256": "025b3bafd67dea21e4624217857a8b0d5de68413d6e0866f31788a7bfbd42e71",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 1.4,
+    "peak": 0.55,
+    "rms": 0.05145548120533613,
+    "sources": [
+      {
+        "pack": "water",
+        "member": "bubble_02.ogg",
+        "sha256": "7992a1a4637ea727b177b3edbc086ec280167d67a8fad010bb8fb58893b2e2f2",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 0.75
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/error_004.ogg",
+        "sha256": "0b574cea597d96507e782ae9764f88482ce49f46e931e57054bf7150047f2d69",
+        "gain": 0.25,
+        "offset": 0.25,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_ShortCircuit",
+    "file": "Wav/S_ShortCircuit.wav",
+    "sha256": "2c6765cff6392c6b2a851759a658dca68ad26926e3aba1e3f7f5d96bd0dcf147",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.8,
+    "peak": 0.55,
+    "rms": 0.10388820405008152,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/glitch_004.ogg",
+        "sha256": "d0f4db4d12f88592bc328bd621d356d099eaa2dda37bab37a6cf17891c5026d1",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "scifi",
+        "member": "Audio/computerNoise_002.ogg",
+        "sha256": "6ae9bb261c6536d1699972da0cdbf6e0762cf7e9b925adb64a06ff375255cb71",
+        "gain": 0.6,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Escape",
+    "file": "Wav/S_Escape.wav",
+    "sha256": "395e223b9434165c3d492a2f9df812d46a37f3b27cc740ab8e604b965be62767",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 1.4,
+    "peak": 0.55,
+    "rms": 0.10039861087564447,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_004.ogg",
+        "sha256": "568967a3d9f8a8f6af54ea01729c4882284308f2a27d78c07ffd7ee0d6951661",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_001.ogg",
+        "sha256": "063564703b6094d70718a3e787a55cc9141611e4ecd6b6637f8828f79b4a8c3a",
+        "gain": 0.5,
+        "offset": 0.25,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Pressure",
+    "file": "Wav/S_Pressure.wav",
+    "sha256": "cdfe51bc1256d70ebb1596e800be5985b5b0f4793439b17f4bf86023dac0e9c1",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.8,
+    "peak": 0.55,
+    "rms": 0.040720804553534044,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/impactMetal_002.ogg",
+        "sha256": "0c1bb4db8a4d48b2b8c2e65a175d9056b845f1063837599995d81be1c5957d2c",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 0.8
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/switch_001.ogg",
+        "sha256": "3b74efad87f1e69dbd1d05c5ad952ab90859b5a3d11da6ec5bd79b4f03b42afa",
+        "gain": 1.0,
+        "offset": 0.15,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Power",
+    "file": "Wav/S_Power.wav",
+    "sha256": "89c25ba77eed1306741c7ea04a4716022bae9acf39d6527349270ee6e2cc21ad",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.8,
+    "peak": 0.55,
+    "rms": 0.10077516034607205,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/computerNoise_000.ogg",
+        "sha256": "1527944e16eb14b48ee03fe3e7ce6aae94262833a4e1f83928d451a7414fe4e1",
+        "gain": 0.3,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_002.ogg",
+        "sha256": "33b17a9a9a2397c62b285c52c33a907fdffb476909c99e42dde603f6a7a8b12c",
+        "gain": 1.0,
+        "offset": 0.08,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_PowerOff",
+    "file": "Wav/S_PowerOff.wav",
+    "sha256": "a5d004047ca8673311e0fa0f61e0086509498ecd7911375141bf1260a664e514",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.45,
+    "peak": 0.55,
+    "rms": 0.053222027087296925,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/glitch_001.ogg",
+        "sha256": "da78c642bbd95da2c364ed0e991ebbfc5a4c0d281165d932b5819e0dd31a39d2",
+        "gain": 0.3,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/close_001.ogg",
+        "sha256": "44af8249b933e0fd35ec957a638bb1a0b01f85b53fbe9674bf77bd3ca3168ef4",
+        "gain": 1.0,
+        "offset": 0.1,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_Complete",
+    "file": "Wav/S_Complete.wav",
+    "sha256": "0509fe90b9a739e23c1f20b6a95724eb867b8f534757663078244debad958eb1",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 3.0002291666666667,
+    "peak": 0.55,
+    "rms": 0.06469919878514496,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_004.ogg",
+        "sha256": "568967a3d9f8a8f6af54ea01729c4882284308f2a27d78c07ffd7ee0d6951661",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "impact",
+        "member": "Audio/impactBell_heavy_000.ogg",
+        "sha256": "94b8bb5f2d43ab65e4bcc32b28562416e9bc2c51d9fd4be1e333660ee52f977f",
+        "gain": 0.3,
+        "offset": 0.2,
+        "speed": 0.8
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": true,
+      "crossfade": false,
+      "peak_target": 0.55
+    }
+  },
+  {
+    "asset": "S_OfficeBurst_Loop",
+    "file": "Wav/S_OfficeBurst_Loop.wav",
+    "sha256": "217001401866e13b594778b5271d070b248e9834420304e7da10db0a13f157d5",
+    "loop": true,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 7.111833333333333,
+    "peak": 0.4,
+    "rms": 0.05070419534801135,
+    "sources": [
+      {
+        "pack": "loops",
+        "member": "machine_06.ogg",
+        "sha256": "ed60a902c2bb889d9a34c85651a6967e0a27d09c100b58ffacc9406f76ab92f2",
+        "gain": 0.4,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "loops",
+        "member": "noise_01.ogg",
+        "sha256": "1daaaaa63889d840e810ccb10bd32d0288e1b071a89878da97daf0ec97ffeccf",
+        "gain": 0.2,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": true,
+      "peak_target": 0.4
+    }
+  },
+  {
+    "asset": "S_Water_Loop",
+    "file": "Wav/S_Water_Loop.wav",
+    "sha256": "dc0fb4f1250293564f655bdfe5db388da4b9cef256947fbe788fba8b57bfa412",
+    "loop": true,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 6.894125,
+    "peak": 0.45,
+    "rms": 0.07227458698972312,
+    "sources": [
+      {
+        "pack": "loops",
+        "member": "water_flowing.ogg",
+        "sha256": "1a431f77d61661becdc87a5b1832d47f83a12a5c0b001077e41a202e739797a7",
+        "gain": 0.6,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "water",
+        "member": "loop_water_02.ogg",
+        "sha256": "2a39d9c6d3069e94f15b092f15bcfac7de54ca1bdc7c0b9a02b151bda6f3a29d",
+        "gain": 0.8,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": true,
+      "peak_target": 0.45
+    }
+  },
+  {
+    "asset": "S_Mechanism_Loop",
+    "file": "Wav/S_Mechanism_Loop.wav",
+    "sha256": "793ff0e8008496a60655702d6f5c9e5e4853e4eae3d9e2e676b53881e11bf7f4",
+    "loop": true,
+    "category": "Effects",
+    "channels": 1,
+    "seconds": 0.9356875,
+    "peak": 0.35,
+    "rms": 0.07540064852761731,
+    "sources": [
+      {
+        "pack": "loops",
+        "member": "rolling.ogg",
+        "sha256": "24b5fd290b2008de9b087687ae41db833068a86ef7c0f1b230ce8bf0859b7291",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": true,
+      "peak_target": 0.35
+    }
+  },
+  {
+    "asset": "A_Office_Loop",
+    "file": "Wav/A_Office_Loop.wav",
+    "sha256": "5c3e5e55a7b378244cb5b8cc9d4d7ef77ed222fbdca1be1f3450877234395517",
+    "loop": true,
+    "category": "Ambience",
+    "channels": 1,
+    "seconds": 3.0502291666666665,
+    "peak": 0.25,
+    "rms": 0.04748741355968722,
+    "sources": [
+      {
+        "pack": "loops",
+        "member": "ambient_02.ogg",
+        "sha256": "a04dc87827cc9b02d072ee1ebb8511a466564e643a30ec01d9ac977ac129f4af",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": true,
+      "peak_target": 0.25
+    }
+  },
+  {
+    "asset": "A_Giant_Loop",
+    "file": "Wav/A_Giant_Loop.wav",
+    "sha256": "1e545ab118eba34bfe718200052361157c4b252a1d67d7a4773d5e58bb78a143",
+    "loop": true,
+    "category": "Ambience",
+    "channels": 1,
+    "seconds": 8.1139375,
+    "peak": 0.2,
+    "rms": 0.048508593269387154,
+    "sources": [
+      {
+        "pack": "loops",
+        "member": "ambient_01.ogg",
+        "sha256": "4dca0e4890c0f7658b3e67c624416cdb8379f195ee68915cc076a0ed329b6c8f",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": true,
+      "peak_target": 0.2
+    }
+  },
+  {
+    "asset": "A_Museum_Loop",
+    "file": "Wav/A_Museum_Loop.wav",
+    "sha256": "108d1768f21622b49e47c77d40b901c5c68ee40a98edaded785f32de128d13a1",
+    "loop": true,
+    "category": "Ambience",
+    "channels": 1,
+    "seconds": 6.9215625,
+    "peak": 0.19999999999999998,
+    "rms": 0.037826676392533724,
+    "sources": [
+      {
+        "pack": "loops",
+        "member": "ambient_03.ogg",
+        "sha256": "f92568d52d3462454379fe8584155e816d3d44dc797ca055c97c6ee12f3abe8a",
+        "gain": 1.0,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": true,
+      "peak_target": 0.2
+    }
+  },
+  {
+    "asset": "A_TV_Loop",
+    "file": "Wav/A_TV_Loop.wav",
+    "sha256": "013ec00b9117562453234d37ab39fb9a219fb322ca61a46dd7a6caa964afcb8f",
+    "loop": true,
+    "category": "Ambience",
+    "channels": 1,
+    "seconds": 3.743375,
+    "peak": 0.25,
+    "rms": 0.034611289922013164,
+    "sources": [
+      {
+        "pack": "loops",
+        "member": "machine_02.ogg",
+        "sha256": "8cade134b4dc17b2037933f74a85c4e1fe25b56465dd472fece68ecb2509a78d",
+        "gain": 0.4,
+        "offset": 0.0,
+        "speed": 1.0
+      },
+      {
+        "pack": "loops",
+        "member": "noise_02.ogg",
+        "sha256": "b1cb867f85c2735023943686e8d4976f1c29c094c5951cf1f6ce91ce70cac5ba",
+        "gain": 0.2,
+        "offset": 0.0,
+        "speed": 1.0
+      }
+    ],
+    "processing": {
+      "mono": true,
+      "sample_rate": 48000,
+      "echo": false,
+      "crossfade": true,
+      "peak_target": 0.25
+    }
+  }
+]

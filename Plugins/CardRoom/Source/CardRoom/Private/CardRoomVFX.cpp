@@ -234,7 +234,7 @@ void ACardRoomStage::TickEffects()
             Puff(W,FVector2D(Size,Size*(1.1f+U*.7f)),Finale?(i%5?Blue:Gold):(i%5?Fire:Hot),(1-U)*.85f,Swirl*30);
         }
         Illuminate(P,Finale?Blue:Fire,Finale?8500:5000);
-        if(Reply&&!bReplySound){Sound(TEXT("S_Impact"));bReplySound=true;}
+        if(Reply&&!bReplySound){Sound(TEXT("S_Impact"));if(AudioOverride.IsBound()){if(Run.Round==1)Sound(TEXT("S_CardFire"),.3f);if(Run.Round==3)Sound(TEXT("S_LowHealth"),.45f);}bReplySound=true;}
     }
     if(Resolve&&Run.Round==1)Flash(Target,T-1,.65f,Blue,110);
     if(Resolve&&Run.Round==3)Flash(Target,T-1,.9f,Fire,170);

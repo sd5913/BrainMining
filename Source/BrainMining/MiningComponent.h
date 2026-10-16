@@ -51,6 +51,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Mining|Effects")
 	FMiningHitEvent OnMiningHit;
 	UPROPERTY(BlueprintAssignable, Category="Mining|Effects")
+	FMiningHitEvent OnMiningBlocked;
+	UPROPERTY(BlueprintAssignable, Category="Mining|Effects")
 	FMiningResetEvent OnMiningReset;
 	UPROPERTY(BlueprintAssignable, Category="Mining|Tool")
 	FMiningToolModeEvent OnToolModeChanged;

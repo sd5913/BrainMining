@@ -2,6 +2,16 @@
 
 
 #include "BrainMiningPlayerController.h"
+#include "MiningAudioSettings.h"
+#include "MiningAudioComponent.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/SOverlay.h"
+#include "Widgets/SBoxPanel.h"
+#include "Widgets/Input/SSlider.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Styling/CoreStyle.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
@@ -15,7 +25,6 @@
 #include "Components/InputComponent.h"
 #include "MiningComponent.h"
 #include "MiningProgressionComponent.h"
-#include "MiningAudioComponent.h"
 #include "MiningBombToolComponent.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GameFramework/Pawn.h"
@@ -153,6 +162,12 @@ void ABrainMiningPlayerController::UseAbilityV()
 
 bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 {
+	if (Params.Key == EKeys::F8 || (IsAudioSettingsOpen() && Params.Key == EKeys::Escape))
+	{
+		if (Params.Event == IE_Pressed) ToggleAudioSettings();
+		return true;
+	}
+	if (IsAudioSettingsOpen()) return true;
     auto* Progression = GetPawn() ? GetPawn()->FindComponentByClass<UMiningProgressionComponent>() : nullptr;
     if (Params.Key == EKeys::Tab && Progression && Progression->UsesMineralInventory())
     {
@@ -228,6 +243,7 @@ void ABrainMiningPlayerController::OnApplicationActivationChanged(bool bActive)
 
 void ABrainMiningPlayerController::EndPlay(const EEndPlayReason::Type Reason)
 {
+	if (IsAudioSettingsOpen()) ToggleAudioSettings();
 	if (ApplicationActivationHandle.IsValid() && FSlateApplication::IsInitialized())
 		FSlateApplication::Get().OnApplicationActivationStateChanged().Remove(ApplicationActivationHandle);
 	SetUpgradeMenuHeld(false);
@@ -244,4 +260,66 @@ void ABrainMiningPlayerController::EndPlay(const EEndPlayReason::Type Reason)
 		}
 	}
 	Super::EndPlay(Reason);
+}
+
+void ABrainMiningPlayerController::ToggleAudioSettings()
+{
+	auto* Viewport = GetWorld() ? GetWorld()->GetGameViewport() : nullptr;
+	auto* Settings = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMiningAudioSettings>() : nullptr;
+	if (!Viewport || !Settings) return;
+	auto* Mining = GetPawn() ? GetPawn()->FindComponentByClass<UMiningComponent>() : nullptr;
+	if (AudioSettingsPanel.IsValid())
+	{
+		Viewport->RemoveViewportWidgetContent(AudioSettingsPanel.ToSharedRef());
+		AudioSettingsPanel.Reset();
+		Settings->Save();
+		if (bAudioPausedWorld) SetPause(false);
+		bAudioPausedWorld = false;
+		SetIgnoreMoveInput(false);
+		SetIgnoreLookInput(false);
+		if (Mining) Mining->SetInputSuspended(bAudioPreviousMiningSuspended);
+		bShowMouseCursor = false;
+		FInputModeGameOnly Mode;
+		Mode.SetConsumeCaptureMouseDown(false);
+		SetInputMode(Mode);
+		return;
+	}
+	if (bShowMouseCursor || IsPaused()) return;
+	bAudioPreviousMiningSuspended = Mining && Mining->IsInputSuspended();
+	if (Mining) Mining->SetInputSuspended(true);
+	if (auto* Audio = GetPawn() ? GetPawn()->FindComponentByClass<UMiningAudioComponent>() : nullptr) Audio->StopTools();
+	SetIgnoreMoveInput(true);
+	SetIgnoreLookInput(true);
+	bAudioPausedWorld = SetPause(true);
+	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
+	Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 20)[SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold", 22)).Text(FText::FromString(TEXT("音量设置 · F8 / Esc 关闭")))];
+	const TCHAR* Labels[] = {TEXT("总音量"), TEXT("音乐"), TEXT("音效"), TEXT("环境声"), TEXT("语音")};
+	TWeakObjectPtr<UMiningAudioSettings> WeakSettings(Settings);
+	for (int32 Channel = 0; Channel < 5; ++Channel)
+	{
+		const FString Label(Labels[Channel]);
+		Rows->AddSlot().AutoHeight().Padding(0, 8)[SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 16)).Text_Lambda([WeakSettings, Channel, Label]()
+		{
+			return FText::FromString(FString::Printf(TEXT("%s   %d%%"), *Label, WeakSettings.IsValid() ? FMath::RoundToInt(100 * WeakSettings->GetVolume(Channel)) : 0));
+		})];
+		Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 8)[SNew(SSlider)
+			.Value_Lambda([WeakSettings, Channel]() { return WeakSettings.IsValid() ? WeakSettings->GetVolume(Channel) : 0.f; })
+			.OnValueChanged_Lambda([WeakSettings, Channel](float Value) { if (WeakSettings.IsValid()) WeakSettings->SetVolume(Channel, Value); })];
+	}
+	Rows->AddSlot().AutoHeight().Padding(0, 12)[SNew(SButton).HAlign(HAlign_Center).ContentPadding(FMargin(12, 8)).OnClicked_Lambda([WeakSettings]()
+	{
+		if (WeakSettings.IsValid()) WeakSettings->RestoreDefaults();
+		return FReply::Handled();
+	})[SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 16)).Text(FText::FromString(TEXT("恢复默认音量")))]];
+	Rows->AddSlot().AutoHeight()[SNew(SButton).HAlign(HAlign_Center).ContentPadding(FMargin(12, 8)).OnClicked_Lambda([this]() { ToggleAudioSettings(); return FReply::Handled(); })
+		[SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 16)).Text(FText::FromString(TEXT("保存并返回游戏")))]];
+	AudioSettingsPanel = SNew(SOverlay)
+		+ SOverlay::Slot()[SNew(SBorder).BorderBackgroundColor(FLinearColor(0, 0, 0, .85f))]
+		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(SBox).WidthOverride(540)[SNew(SBorder).Padding(28)[Rows]]];
+	Viewport->AddViewportWidgetContent(AudioSettingsPanel.ToSharedRef(), 1000);
+	bShowMouseCursor = true;
+	FInputModeGameAndUI Mode;
+	Mode.SetWidgetToFocus(AudioSettingsPanel).SetHideCursorDuringCapture(false).SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(Mode);
+	Viewport->SetMouseCaptureMode(EMouseCaptureMode::NoCapture);
 }

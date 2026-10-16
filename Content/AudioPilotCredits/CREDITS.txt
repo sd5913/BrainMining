@@ -17,3 +17,5 @@ CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
 Changes: selected rock fragments and breaks, resampling, mono downmix, trimming and mixing with mining impacts.
 
 Only the selected source recordings are included in Originals. Source filenames, edits and hashes are recorded in manifest.json.
+
+P1 tool audio: deterministic project-authored synthesis in Scripts/prepare_audio_tools.py; no external recordings for motor/thrust/fuse/warning/collect tones. Bomb throw/stick and explosion debris reuse the credited CC0 Kenney/rubberduck recordings. These are trial sound designs, pending subjective listening approval.

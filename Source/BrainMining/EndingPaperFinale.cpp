@@ -11,6 +11,9 @@
 #include "UDynamicMesh.h"
 #include "Engine/Texture2D.h"
 #include "Components/MeshComponent.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "RenderingThread.h"
 
 namespace PaperEnding
 {
@@ -41,8 +44,9 @@ void AEndingEmergence::BuildPaperFinale()
     // The portal is the FRONT of the future desktop. Camera approaches it from
     // positive local Z, looking DOWN, then lifts its gaze by ninety degrees.
     UE::Geometry::FDynamicMesh3 Sheet;Sheet.EnableAttributes();
-    PaperEnding::Quad(Sheet,FVector(-1400,-1800,0),FVector(9400,-1800,0),FVector(9400,1800,0),FVector(-1400,1800,0));
-    MeshPart(TEXT("WhitePortalBecomesDesktop"),MoveTemp(Sheet),PaperScene,TEXT("PaperFloor"),Cream);
+    PaperEnding::Quad(Sheet,FVector(-60000,-60000,0),FVector(60000,-60000,0),FVector(60000,60000,0),FVector(-60000,60000,0));
+    PaperSurfaceMaterial=MeshPart(TEXT("WhitePortalBecomesDesktop"),MoveTemp(Sheet),PaperScene,TEXT("PaperFloor"),Cream);
+    PaperSurface=CastChecked<USceneComponent>(PaperSurfaceMaterial->GetOuter());
     const TCHAR* DoodleNames[]={TEXT("toilet"),TEXT("warnings"),TEXT("glasses"),TEXT("cards"),TEXT("fountain"),TEXT("thought"),TEXT("computer"),TEXT("brain"),TEXT("solar"),TEXT("ants"),TEXT("roguelike"),TEXT("pickaxe")};
     // Measured alpha bounds of the original drawings, plus room for the cut edge.
     const FIntVector4 Bounds[]={ {255,29,1026,1225},{179,166,1045,1098},{88,358,1169,897},{104,199,1150,1054},{186,61,1067,1198},{141,145,1152,1122},{113,166,1144,1126},{198,160,1056,1097},{64,405,1210,869},{64,321,1206,940},{282,140,989,1150},{189,122,1145,1152} };
@@ -79,29 +83,96 @@ void AEndingEmergence::BuildPaperFinale()
     }
     Shape(TEXT("DeskPaperStack"),FVector(4800,-1400,100),FVector(880,600,190),FLinearColor(1,.55f,.04f),TEXT("Cube"),PaperScene,TEXT("PaperComic"));
     for(int I=0;I<15;++I)Shape(TEXT("PaperStackInkEdges"),FVector(4800,-1098,18+I*12),FVector(880,2,3),Ink,TEXT("Cube"),PaperScene,TEXT("PaperComic"));
-    for(int Side:{-1,1})
+    // A continuous open horizon, with no ceiling, side walls or ventilation shaft.
+    UE::Geometry::FDynamicMesh3 Horizon;Horizon.EnableAttributes();
+    for(int I=0;I<96;++I)
     {
-        Shape(TEXT("GraffitiRoomSide"),FVector(4000,Side*1810,1100),FVector(10800,20,2200),Side>0?FLinearColor(.09f,.025f,.35f):FLinearColor(.015f,.32f,.56f),TEXT("Cube"),PaperScene,TEXT("PaperComic"));
-        Shape(TEXT("InkSkirting"),FVector(4000,Side*1795,35),FVector(10800,12,70),Ink,TEXT("Cube"),PaperScene,TEXT("PaperComic"));
+        const float A=I*2*PI/96,B=(I+1)*2*PI/96;
+        FVector P(4000+55000*FMath::Cos(A),55000*FMath::Sin(A),-200);
+        FVector Q(4000+55000*FMath::Cos(B),55000*FMath::Sin(B),-200);
+        PaperEnding::Quad(Horizon,P,Q,Q+FVector(0,0,280000),P+FVector(0,0,280000),FVector4f(I/96.f,0,(I+1)/96.f,1));
     }
-    auto* FarWall=Shape(TEXT("GraffitiSunburstWall"),FVector(9410,0,1100),FVector(20,3640,2200),FLinearColor(1,.22f,.025f),TEXT("Cube"),PaperScene,TEXT("PaperComic"));
-    CastChecked<UMaterialInstanceDynamic>(FarWall->GetMaterial(0))->SetScalarParameterValue(TEXT("Sunburst"),1);
-    Shape(TEXT("PaperRoomBackWall"),FVector(-1410,0,1100),FVector(20,3640,2200),FLinearColor(.12f,.025f,.3f),TEXT("Cube"),PaperScene,TEXT("PaperComic"));
-    const FVector Vent(7500,0,2200);
-    for(int S:{-1,1})
+    MeshPart(TEXT("OpenOrangeSpeedRayHorizon"),MoveTemp(Horizon),PaperScene,TEXT("PaperHorizon"),Yellow);
+    auto* RockDrawing=LoadObject<UTexture2D>(nullptr,TEXT("/Game/EndingEmergence/PaperFinale/Hero/T_EE_Doodle_rock"));
+    // All faces sample the same original drawing. Removing the centre creates
+    // a real opening, while the surrounding ink and flying paper stay aligned.
+    auto RockUV=[](FVector P)
     {
-        Shape(TEXT("ComicCeilingSide"),Vent+FVector(0,S*1510,0),FVector(19000,2500,25),FLinearColor(.13f,.025f,.38f),TEXT("Cube"),PaperScene,TEXT("PaperComic"));
-        Shape(TEXT("ComicCeilingEnd"),Vent+FVector(S*5010,0,0),FVector(9500,520,25),FLinearColor(.13f,.025f,.38f),TEXT("Cube"),PaperScene,TEXT("PaperComic"));
-        Shape(TEXT("VentFrameLong"),Vent+FVector(S*265,0,-15),FVector(30,560,35),FLinearColor(.05f,.75f,.85f),TEXT("Cube"),PaperScene,TEXT("PaperComic"));
-        Shape(TEXT("VentFrameShort"),Vent+FVector(0,S*265,-15),FVector(520,30,35),FLinearColor(1,.18f,.35f),TEXT("Cube"),PaperScene,TEXT("PaperComic"));
-        Shape(TEXT("VentShaftWall"),Vent+FVector(S*270,0,400),FVector(20,560,800),FLinearColor::Black,TEXT("Cube"),PaperScene,TEXT("Glow"));
-        Shape(TEXT("VentShaftSide"),Vent+FVector(0,S*270,400),FVector(520,20,800),FLinearColor::Black,TEXT("Cube"),PaperScene,TEXT("Glow"));
-    }
-    for(int I=-5;I<=5;++I)if(FMath::Abs(I)>1)
+        return FVector2f(FMath::Lerp(20.f,1234.f,float((P.Y+1100)/2200))/1254.f,
+            FMath::Lerp(1117.f,138.f,float(P.Z/1774))/1254.f);
+    };
+    auto RockFacet=[&](const TCHAR* Name,const TArray<FVector>& Points,USceneComponent* Parent,FVector Offset=FVector::ZeroVector)
     {
-        auto* Slat=Shape(TEXT("AirConditionerLouvre"),Vent+FVector(I*43,0,0),FVector(14,500,30),I%2?FLinearColor(.2f,.65f,.85f):FLinearColor(.8f,.1f,.4f),TEXT("Cube"),PaperScene,TEXT("PaperComic"));Slat->SetRelativeRotation(FRotator(23,0,0));
+        UE::Geometry::FDynamicMesh3 M;M.EnableAttributes();auto* UV=M.Attributes()->PrimaryUV();
+        TArray<int> V,U;
+        for(FVector P:Points){V.Add(M.AppendVertex(P-Offset));U.Add(UV->AppendElement(RockUV(P)));}
+        for(int I=1;I+1<Points.Num();++I)
+        {
+            const int T=M.AppendTriangle(V[0],V[I+1],V[I]);
+            UV->SetTriangle(T,UE::Geometry::FIndex3i(U[0],U[I+1],U[I]));
+        }
+        auto* Mat=MeshPart(Name,MoveTemp(M),Parent,TEXT("PaperHeroDoodle"),FLinearColor::White);
+        Mat->SetTextureParameterValue(TEXT("Doodle"),RockDrawing);
+    };
+    PaperRock=Group(TEXT("GiantHingedRockCutout"),FVector(8000,0,0),PaperScene);
+    PaperRockCap=Group(TEXT("BreakablePaperRockCentre"),FVector::ZeroVector,PaperRock);
+    constexpr int Sides=20;
+    TArray<FVector> Outer,Inner;
+    for(int I=0;I<Sides;++I)
+    {
+        const float A=I*2*PI/Sides;
+        const float Y=FMath::Cos(A),Z=FMath::Sin(A);
+        const float Edge=FMath::Min(1100/FMath::Max(FMath::Abs(Y),.001f),(Z>=0?1074.f:700.f)/FMath::Max(FMath::Abs(Z),.001f));
+        Outer.Add(FVector(0,Y*Edge,700+Z*Edge));
+        Inner.Add(FVector(0,Y*440,700+Z*440));
     }
-    Shape(TEXT("VentBlackDepth"),Vent+FVector(0,0,800),FVector(560,560,20),FLinearColor::Black,TEXT("Cube"),PaperScene,TEXT("Glow"));
+    for(int I=0;I<Sides;++I)
+    {
+        const int J=(I+1)%Sides;
+        RockFacet(TEXT("DrawnRockPaperRim"),{Outer[I],Outer[J],Inner[J],Inner[I]},PaperRock);
+        RockFacet(TEXT("DrawnRockUnbrokenCentre"),{FVector(0,0,700),Inner[I],Inner[J]},PaperRockCap);
+        const FVector ShardCentre=(FVector(0,0,700)+Inner[I]+Inner[J])/3;
+        auto* Chip=Group(TEXT("FlyingPaperRockShard"),ShardCentre,PaperRock);
+        RockFacet(TEXT("DrawnPaperRockShard"),{FVector(0,0,700),Inner[I],Inner[J]},Chip,ShardCentre);
+        PaperRockChips.Add(Chip);
+    }
+    PaperPick=Group(TEXT("GiantHingedPickaxeCutout"),FVector(7940,1100,0),PaperScene);
+    PaperPickSwing=Group(TEXT("PickaxeStrikePivot"),FVector(0,0,1500),PaperPick);
+    // Existing doodle, hinged at its handle butt (240,1090). The measured sharp
+    // tip (1114,720) lands at Y=0,Z=700; texture alpha supplies the cut contour.
+    const float PickScale=FMath::Sqrt((1100.f*1100+800.f*800)/(874.f*874+370.f*370));
+    auto PickPoint=[&](float X,float Y){return FVector(0,(240-X)*PickScale,(1090-Y)*PickScale);};
+    UE::Geometry::FDynamicMesh3 PickDrawing;PickDrawing.EnableAttributes();
+    PaperEnding::Quad(PickDrawing,PickPoint(171,1170),PickPoint(1163,1170),PickPoint(1163,104),PickPoint(171,104),FVector4f(171/1254.f,104/1254.f,1163/1254.f,1170/1254.f));
+    auto* PickMat=MeshPart(TEXT("OriginalDoodleGiantPickaxe"),MoveTemp(PickDrawing),PaperPickSwing,TEXT("PaperHeroDoodle"),FLinearColor::White);
+    PickMat->SetTextureParameterValue(TEXT("Doodle"),LoadObject<UTexture2D>(nullptr,TEXT("/Game/EndingEmergence/PaperFinale/Doodles/T_EE_Doodle_pickaxe")));
+
+    // The model beyond the hole lives in the same world: no portal image swap.
+    PaperCaveScene=Group(TEXT("OrbitCaveStage"),PaperEnding::Origin+FVector(10500,0,0));
+    // Ending-only duplicate of the actual MainGame starting mine, sliced vertically.
+    auto* Mine=NewObject<UStaticMeshComponent>(this,TEXT("MainGameVerticalCutaway"),RF_Transient);
+    Mine->SetupAttachment(PaperCaveScene);Mine->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/EndingEmergence/PaperFinale/SM_EE_MainGameCutaway")));
+    Mine->SetCollisionEnabled(ECollisionEnabled::NoCollision);Mine->SetCastShadow(false);Mine->SetVisibleInRayTracing(false);
+    for(int Slot=0;Slot<FMath::Max(3,Mine->GetNumMaterials());++Slot)
+    {
+        auto* Mat=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_PaperCaveSurface")),Mine);
+        Mat->SetVectorParameterValue(TEXT("Tint"),Slot==2?FLinearColor(.65f,.39f,.17f):(Slot==1?FLinearColor(.18f,.10f,.065f):FLinearColor(.29f,.16f,.08f)));
+        Mat->SetScalarParameterValue(TEXT("Seed"),Slot==2?1.f:0.f);
+        Mine->SetMaterial(Slot,Mat);
+    }
+    Mine->RegisterComponent();AddInstanceComponent(Mine);
+    Shape(TEXT("CaveStageFloor"),FVector(0,0,-40),FVector(8000,8000,50),FLinearColor(.012f,.017f,.03f),TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
+    for(int Side:{-1,1})Shape(TEXT("CaveStageSide"),FVector(0,Side*3000,1500),FVector(6000,20,4000),Ink*.18f,TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
+    Shape(TEXT("CaveStageFar"),FVector(2800,0,1500),FVector(20,6000,4000),Ink*.18f,TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
+    Shape(TEXT("CaveStageTop"),FVector(0,0,3500),FVector(6000,6000,20),Ink*.18f,TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
+    PaperCaveSeal=Shape(TEXT("CaveStageEntrySeal"),FVector(-2300,0,1500),FVector(20,6000,4000),Ink*.18f,TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
+    PaperCaveTexture=NewObject<UTextureRenderTarget2D>(this);PaperCaveTexture->InitCustomFormat(1920,1080,PF_FloatRGBA,true);PaperCaveTexture->ClearColor=FLinearColor::Black;
+    PaperCaveCapture=NewObject<USceneCaptureComponent2D>(this,NAME_None,RF_Transient);PaperCaveCapture->SetupAttachment(PaperCaveScene);PaperCaveCapture->TextureTarget=PaperCaveTexture;
+    PaperCaveCapture->CaptureSource=ESceneCaptureSource::SCS_SceneColorHDR;PaperCaveCapture->bCaptureEveryFrame=false;PaperCaveCapture->bCaptureOnMovement=false;PaperCaveCapture->FOVAngle=55;
+    PaperCaveCapture->PrimitiveRenderMode=ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
+    TArray<USceneComponent*> CaveParts;PaperCaveScene->GetChildrenComponents(true,CaveParts);
+    for(auto* Part:CaveParts)if(auto* Primitive=Cast<UPrimitiveComponent>(Part))PaperCaveCapture->ShowOnlyComponent(Primitive);
+    PaperCaveCapture->RegisterComponent();AddInstanceComponent(PaperCaveCapture);
     TArray<USceneComponent*> PaperParts;PaperScene->GetChildrenComponents(true,PaperParts);
     for(auto* Part:PaperParts)if(auto* Mesh=Cast<UMeshComponent>(Part))for(int I=0;I<Mesh->GetNumMaterials();++I)
         if(auto* M=Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(I)))PaperArtMaterials.AddUnique(M);
@@ -115,8 +186,9 @@ void AEndingEmergence::BuildPaperFinale()
     Shape(TEXT("FinaleMonitorStem"),FVector(111,0,119),FVector(12,14,56),Dark,TEXT("Cube"),FinaleReality,TEXT("PaperStock"));
     Shape(TEXT("FinaleMonitor"),FVector(108,0,159),FVector(9,136,84),FLinearColor(.025f,.033f,.045f),TEXT("Cube"),FinaleReality,TEXT("PaperStock"));
     UE::Geometry::FDynamicMesh3 Screen;Screen.EnableAttributes();
-    PaperEnding::Quad(Screen,FVector(102,-62.5,122.5),FVector(102,62.5,122.5),FVector(102,62.5,195.5),FVector(102,-62.5,195.5));
+    PaperEnding::Quad(Screen,FVector(102,-62.5,123.84375),FVector(102,62.5,123.84375),FVector(102,62.5,194.15625),FVector(102,-62.5,194.15625));
     CreditsScreenMaterial=MeshPart(TEXT("DeveloperCreditsScreen"),MoveTemp(Screen),FinaleReality,TEXT("DeveloperCredits"),FLinearColor::White);
+    CreditsScreenMaterial->SetTextureParameterValue(TEXT("CaveImage"),PaperCaveTexture);
     Shape(TEXT("FinaleKeyboard"),FVector(32,-5,87),FVector(34,95,4),Dark,TEXT("Cube"),FinaleReality,TEXT("PaperStock"));
     auto* Keys=Instances(TEXT("FinaleKeyboardKeys"),TEXT("Cube"),FLinearColor(.16f,.18f,.20f),FinaleReality,TEXT("PaperStock"));
     for(int X=0;X<4;++X)for(int Y=0;Y<13;++Y)Keys->AddInstance(FTransform(FRotator::ZeroRotator,FVector(21+X*7,-46+Y*7,90),FVector(.05f,.05f,.02f)));
@@ -131,7 +203,15 @@ void AEndingEmergence::BuildPaperFinale()
 void AEndingEmergence::ResetPaperFinale()
 {
     if(PaperScene)PaperScene->SetRelativeRotation(FRotator(90,0,0));
-    for(auto M:PaperArtMaterials)M->SetScalarParameterValue(TEXT("WhiteBlend"),1);
+    for(auto M:PaperArtMaterials)M->SetScalarParameterValue(TEXT("WhiteBlend"),0);
+    if(PaperSurfaceMaterial){PaperSurfaceMaterial->SetScalarParameterValue(TEXT("DotsReveal"),0);PaperSurfaceMaterial->SetScalarParameterValue(TEXT("ApertureRadius"),35);}
+    bPaperRockBroken=false;
+    if(PaperRock)PaperRock->SetRelativeRotation(FRotator(-90,0,0));
+    if(PaperRockCap)PaperRockCap->SetVisibility(true,true);
+    if(PaperPick)PaperPick->SetRelativeRotation(FRotator(-90,0,0));
+    if(PaperPickSwing)PaperPickSwing->SetRelativeRotation(FQuat(FVector::ForwardVector,FMath::DegreesToRadians(-35.f)));
+    for(auto Chip:PaperRockChips)Chip->SetVisibility(false,true);
+    if(PaperCaveScene)PaperCaveScene->SetVisibility(false,true);
     for(int I=0;I<PaperCards.Num();++I)
     {
         PaperPopAges[I]=-1;FRotator Rot=PaperRestRotations[I];Rot.Pitch=-90;
@@ -165,6 +245,16 @@ void AEndingEmergence::UpdatePaperProps(float CameraX,float Dt)
     PaperPopStrokes->MarkRenderStateDirty();
 }
 
+void AEndingEmergence::CapturePaperCave()
+{
+    PaperCaveCapture->SetRelativeLocation(FVector(1343.5029,1343.5029,650));
+    PaperCaveCapture->SetRelativeRotation((FVector(0,0,350)-FVector(1343.5029,1343.5029,650)).Rotation());
+    PaperCaveCapture->PostProcessSettings=Camera->GetCameraComponent()->PostProcessSettings;
+    PaperCaveCapture->PostProcessSettings.WeightedBlendables.Array.Empty();
+    PaperCaveCapture->CaptureScene();
+    FlushRenderingCommands();
+}
+
 void AEndingEmergence::UpdatePaperFinale(float Dt)
 {
     auto PaperPose=[&](FVector P,FVector Direction,float Fov,float Roll=0.f)
@@ -173,56 +263,88 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
     };
     if(Shot==10)
     {
-        // First leave the rock into black space. Only the distant white aperture
-        // and the fading monochrome strokes are visible, not the whole desktop.
         constexpr float BlackFlight=2.6f;
         UpdateFinaleExit(Dt);
+        // One physical sheet stays visible throughout approach and the turn.
+        // A growing aperture reveals it against black; printed dots stay in its UVs.
+        const float Approach=PaperEnding::Ease((ShotTime-.7f)/1.9f);
+        PaperSurfaceMaterial->SetScalarParameterValue(TEXT("ApertureRadius"),FMath::Lerp(35.f,90000.f,FMath::Pow(Approach,5)));
+        PaperSurfaceMaterial->SetScalarParameterValue(TEXT("DotsReveal"),PaperEnding::Ease((ShotTime-1.25f)/1.1f));
         if(ShotTime<BlackFlight)
         {
             const float U=ShotTime/BlackFlight;
-            const float X=FMath::Lerp(7800.f,8450.f,U);
             const FVector Side=FinaleSideVector*(1-PaperEnding::Ease(U));
-            Pose(FVector(2200000+X,Side.Y,Side.Z),FVector(2201000+X,Side.Y,Side.Z),94);
-            const float RadiusScale=FMath::Lerp(.75f,70.f,FMath::Pow(PaperEnding::Ease((ShotTime-1.3f)/1.3f),3));
-            FinaleLight->SetRelativeScale3D(FVector(.04f,RadiusScale,RadiusScale));
-            TransitEffects(0);
-            return;
+            Pose(FVector(2207800+650*U,Side.Y,Side.Z),FVector(2208800+650*U,Side.Y,Side.Z),94);
+            TransitEffects(0);return;
         }
-        // Switch surfaces while the approaching aperture fills the frame white.
-        if(!PaperScene->IsVisible()){PaperScene->SetVisibility(true,true);FinaleLight->SetVisibility(false);}
-        const float PaperTime=ShotTime-BlackFlight;
-        const float T=FMath::Clamp(PaperTime/3.2f,0.f,1.f),Turn=PaperEnding::Ease((PaperTime-.15f)/2.6f);
+        if(!PaperScene->IsVisible())
+        {
+            PaperScene->SetVisibility(true,true);
+            for(auto Chip:PaperRockChips)Chip->SetVisibility(false,true);
+        }
+        const float PaperTime=ShotTime-BlackFlight,T=FMath::Clamp(PaperTime/3.2f,0.f,1.f),Turn=PaperEnding::Ease(PaperTime/2.6f);
         PaperScene->SetRelativeRotation(FRotator(90*(1-Turn),0,0));
-        const float X=480*FMath::Pow(T,6),Z=FMath::Lerp(700.f,24.f,PaperEnding::Ease(PaperTime/1.25f)),Pitch=-HALF_PI*(1-Turn);
+        const float X=480*FMath::Pow(T,6),Z=FMath::Lerp(700.f,24.f,PaperEnding::Ease(PaperTime/2.4f)),Pitch=-HALF_PI*(1-Turn);
         PaperPose(FVector(X,0,Z),FVector(FMath::Cos(Pitch),0,FMath::Sin(Pitch)),FMath::Lerp(94.f,108.f,Turn));
-        const float White=1-PaperEnding::Ease((PaperTime-.55f)/1.2f);
-        for(auto M:PaperArtMaterials)M->SetScalarParameterValue(TEXT("WhiteBlend"),White);
-        UpdatePaperProps(X,Dt);TransitEffects((1-Turn)*.08f);
+        UpdatePaperProps(X,Dt);TransitEffects(0);
     }
     else if(Shot==11)
     {
-        const float T=FMath::Clamp(ShotTime/6.6f,0.f,1.f),X=FMath::Lerp(480.f,6800.f,T),Y=FMath::Sin(T*2*PI)*65;
-        PaperPose(FVector(X,Y,24+FMath::Sin(T*PI)*6),FVector(1,FMath::Cos(T*2*PI)*.025f,.012f*(1-T)),108,bComfortMode?0:FMath::Sin(T*2*PI)*4.5f);
+        const float T=FMath::Clamp(ShotTime/6.6f,0.f,1.f),X=FMath::Lerp(480.f,6200.f,T),Y=FMath::Sin(T*2*PI)*65;
+        const float FrameRock=PaperEnding::Ease((ShotTime-4.8f)/1.8f);
+        FVector Eye(X,Y,24+FMath::Sin(T*PI)*6+196*FrameRock);
+        FVector Aim=FMath::Lerp(FVector(1,FMath::Cos(T*2*PI)*.025f,.012f*(1-T)).GetSafeNormal(),(FVector(8000,250,1100)-Eye).GetSafeNormal(),FrameRock);
+        PaperPose(Eye,Aim,108,bComfortMode?0:FMath::Sin(T*2*PI)*4.5f);
+        PaperRock->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.4f)/1.1f)),0,0));
+        PaperPick->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-5.35f)/1.15f)),0,0));
         UpdatePaperProps(X,Dt);
     }
     else if(Shot==12)
     {
-        const float T=FMath::Clamp(ShotTime/6.5f,0.f,1.f);
-        const float U=FMath::Clamp(ShotTime/1.6f,0.f,1.f);
-        const float X=6800+700*(3*U*U-2*U*U*U)+(6320.f/6.6f)*1.6f*(U*U*U-2*U*U+U);
-        const FVector P(X,0,24+2756*FMath::Pow(T,1.55f));
-        const float Tilt=PaperEnding::Ease(U)*HALF_PI;
-        PaperPose(P,FVector(FMath::Cos(Tilt),0,FMath::Sin(Tilt)),FMath::Lerp(108.f,68.f,PaperEnding::Ease(T)));
+        const float T=FMath::Clamp(ShotTime/4.4f,0.f,1.f),Swing=PaperEnding::Ease(ShotTime/.75f);
+        const float StrikeAngle=FMath::RadiansToDegrees(FMath::Atan2(800.f,1100.f)+FMath::Atan2(370.f,874.f));
+        const float Recoil=PaperEnding::Ease((ShotTime-.86f)/1.1f);
+        const float PickAngle=FMath::Lerp(FMath::Lerp(-35.f,StrikeAngle,Swing),-35.f,Recoil);
+        PaperPickSwing->SetRelativeRotation(FQuat(FVector::ForwardVector,FMath::DegreesToRadians(PickAngle)));
+        if(ShotTime>=.75f&&!bPaperRockBroken)
+        {
+            bPaperRockBroken=true;PaperRockCap->SetVisibility(false,true);
+            for(auto Chip:PaperRockChips)Chip->SetVisibility(true,true);
+            PaperCaveScene->SetVisibility(true,true);PaperCaveSeal->SetVisibility(false);
+            Sound(TEXT("Connect"),.8f,.55f);
+        }
+        const float ShardAge=FMath::Max(0.f,ShotTime-.75f);
+        for(int I=0;I<PaperRockChips.Num();++I)
+        {
+            const float A=I*2*PI/PaperRockChips.Num();
+            PaperRockChips[I]->SetRelativeLocation(FVector(-ShardAge*100,FMath::Cos(A)*(290+ShardAge*980),700+FMath::Sin(A)*(290+ShardAge*980)-ShardAge*ShardAge*350));
+            PaperRockChips[I]->SetRelativeRotation(FRotator(ShardAge*(55+I*11),ShardAge*(I%2?90:-75),ShardAge*60));
+            PaperRockChips[I]->SetRelativeScale3D(FVector(1-PaperEnding::Ease((ShardAge-1.2f)/.9f)));
+        }
+        const float X=FMath::CubicInterp(6200.f,(5720.f/6.6f)*4.4f,8600.f,0.f,T);
+        const float Z=220+330*PaperEnding::Ease(T/.72f);
+        FVector P(X,0,Z),Target=FMath::Lerp(FMath::Lerp(FVector(8000,250,1100),FVector(8000,0,700),PaperEnding::Ease(T/.4f)),FVector(10500,0,350),PaperEnding::Ease((T-.45f)/.55f));
+        const float Shake=bComfortMode?0:FMath::Exp(-ShardAge*8)*FMath::Sin(ShardAge*70)*(bPaperRockBroken?6:0);
+        P.Y+=Shake;P.Z+=Shake*.6f;
+        PaperPose(P,(Target-P).GetSafeNormal(),FMath::Lerp(108.f,65.f,PaperEnding::Ease(T)));
+        if(X>8300){PaperCaveSeal->SetVisibility(true);PaperScene->SetVisibility(false,true);}
         UpdatePaperProps(10000,Dt);
     }
     else if(Shot==13)
     {
-        const float Back=PaperEnding::Ease((ShotTime-.8f)/4.8f);
-        // Start beyond the 5 cm near plane. The off screen fills the entire view,
-        // including the first uncovered frames; no glimpse through the monitor.
-        Pose(PaperEnding::Desk+FVector(FMath::Lerp(92.f,-135.f,Back),0,159),PaperEnding::Desk+FVector(108,0,159),55);
-        const float Power=PaperEnding::Ease((ShotTime-6.2f)/1.6f);
-        CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),Power);CreditsScreenLight->SetIntensity(Power*140);
-        bComplete=ShotTime>=7.8f;
+        const float T=PaperEnding::Ease(ShotTime/6.f),Angle=FMath::Lerp(PI,PI*.25f,T);
+        const FVector P=FVector(1900*FMath::Cos(Angle),1900*FMath::Sin(Angle),550+100*T+120*FMath::Sin(T*PI));
+        const FVector Centre=PaperEnding::Origin+FVector(10500,0,0);
+        Pose(Centre+P,Centre+FVector(0,0,350),FMath::Lerp(65.f,55.f,T));
+    }
+    else if(Shot==14)
+    {
+        const float Back=PaperEnding::Ease(ShotTime/5.f);
+        // A 16:9 screen exactly fills the preceding 55 degree camera frustum.
+        const float MatchX=102-62.5f/FMath::Tan(FMath::DegreesToRadians(27.5f));
+        Pose(PaperEnding::Desk+FVector(FMath::Lerp(MatchX,-200.f,Back),0,159),PaperEnding::Desk+FVector(108,0,159),55);
+        CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),1);
+        CreditsScreenMaterial->SetScalarParameterValue(TEXT("CreditMix"),PaperEnding::Ease((ShotTime-5.8f)/1.6f));
+        CreditsScreenLight->SetIntensity(110);bComplete=ShotTime>=8;
     }
 }

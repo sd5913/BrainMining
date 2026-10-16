@@ -918,7 +918,7 @@ void AEndingEmergence::PreviewFilm()
 
 float AEndingEmergence::Duration(int32 Index)
 {
-    const float Seconds[]={5,20,14,18,35,20,18,12,4.5f,0,5.8f,6.6f,6.5f,0};
+    const float Seconds[]={5,20,14,18,35,20,18,12,4.5f,0,5.8f,6.6f,4.4f,6.f,0};
     return Index>=0&&Index<UE_ARRAY_COUNT(Seconds)?Seconds[Index]:0;
 }
 
@@ -956,7 +956,7 @@ void AEndingEmergence::SetShot(int32 Index)
     if(Shot==10)
     {
         EndFinaleDrill(true);PaperScene->SetRelativeRotation(FRotator(90,0,0));PaperScene->SetVisibility(false,true);
-        FinaleTunnel->SetVisibility(false,true);FinaleLight->SetVisibility(true);
+        FinaleTunnel->SetVisibility(false,true);FinaleLight->SetVisibility(false);PaperSurface->SetVisibility(true);
         for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(true);
         Sound(TEXT("Connect"),.45f,.7f);
     }
@@ -968,10 +968,11 @@ void AEndingEmergence::SetShot(int32 Index)
         for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(true);
         SetAmbience(TEXT("Cell"),.06f);
     }
-    if(Shot==13)
+    if(Shot==14)
     {
+        CapturePaperCave();PaperCaveScene->SetVisibility(false,true);
         PaperScene->SetVisibility(false,true);FinaleReality->SetVisibility(true,true);
-        CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),0);CreditsScreenLight->SetIntensity(0);
+        CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),1);CreditsScreenMaterial->SetScalarParameterValue(TEXT("CreditMix"),0);CreditsScreenLight->SetIntensity(110);
         TransitEffects(0);if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);
         Camera->GetCameraComponent()->NotifyCameraCut();
         if(Player&&Player->PlayerCameraManager)Player->PlayerCameraManager->SetGameCameraCutThisFrame();
@@ -1040,7 +1041,7 @@ void AEndingEmergence::UpdateFilm(float Dt)
     }
     case 6:
         Pose(Ending::Cosmos+FMath::Lerp(FVector(-5200,-250,900)*32,FVector(-760000,-135000,230000),Zoom),Ending::Cosmos,62,FMath::Sin(ShotTime*.13)*1.2*W);break;
-    case 7: case 8: case 9: case 10: case 11: case 12: case 13: UpdateFinale(Dt);break;
+    case 7: case 8: case 9: case 10: case 11: case 12: case 13: case 14: UpdateFinale(Dt);break;
     }
     UpdateScaleMotion(Dt);
     Exhaustion=0;
@@ -1738,7 +1739,7 @@ void AEndingEmergence::Tick(float Dt)
         ShotTime+=Dt*FMath::Clamp(FilmSpeed,.25f,4.f)*PullbackRate;
         // Interactive ending and speech always use real time, including preview.
         if(Shot>=7)ShotTime-=Dt*(FMath::Clamp(FilmSpeed,.25f,4.f)-1);
-        if(Shot!=9&&Shot<13&&ShotTime>=Duration(Shot))SetShot(Shot+1);
+        if(Shot!=9&&Shot<14&&ShotTime>=Duration(Shot))SetShot(Shot+1);
 
         UpdateFilm(Dt);
         if(Shot==6)RetreatSpeed=FVector::Dist(Camera->GetActorLocation(),PreviousFilmPosition)/FMath::Max(.001f,Dt)/FMath::Clamp(FilmSpeed,.25f,4.f);
@@ -1824,8 +1825,8 @@ FString AEndingEmergence::Subtitle() const
 float AEndingEmergence::OverlayAlpha() const
 {
     if(Shot<0)return 0;
-    if(Shot==12)return Ending::Ease((ShotTime-5.5f)/.8f);
-    if(Shot==13)return 1-Ending::Ease((ShotTime-.9f)/.65f);
+    if(Shot>=10)return 0;
+
     // Thought-to-street and the scale journey both use image motion, not white.
     return 0;
 }

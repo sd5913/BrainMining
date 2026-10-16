@@ -88,7 +88,9 @@ void AEndingEmergence::BuildFinale()
     for(int I=0;I<144;++I)FinaleImpactShards->AddInstance(Hidden);
     for(int I=0;I<120;++I)FinaleImpactLines->AddInstance(Hidden);
     for(int I=0;I<64;++I)FinaleSpeedLines->AddInstance(Hidden);
-    FinaleLight=Shape(TEXT("FinaleExitLight"),FVector(9150,0,0),FVector(4,75,75),FLinearColor(10,10,10),TEXT("Sphere"),FinaleTunnel,TEXT("Glow"));
+    FinaleLight=Shape(TEXT("FinaleExitLight"),FVector(9150,0,0),FVector(660,660,1),FLinearColor::White,TEXT("Plane"),FinaleTunnel,TEXT("Glow"));
+    // Plane XY becomes the standing paper's YZ, with the pupil on the flight axis.
+    FinaleLight->SetRelativeRotation(FRotator(0,90,90));
     FinaleTunnel->SetVisibility(false,true);
 
     BuildPaperFinale();
@@ -214,7 +216,7 @@ void AEndingEmergence::BeginFinaleDrill()
     FinaleEntrancePreview->SetVisibility(false,true);
     for(auto Pivot:FinaleDrillPivots)Pivot->SetVisibility(true,true);
     FinaleTunnel->SetVisibility(true,true);
-    FinaleLight->SetRelativeScale3D(FVector(.04f,.75f,.75f));
+    FinaleLight->SetRelativeScale3D(FVector(6.6f,6.6f,1));
     ResetPaperFinale();PaperScene->SetVisibility(false,true);
     ToolLight->SetVisibility(true);ToolLight->SetIntensity(1800);
     Pose(Finale::Tunnel,Finale::Tunnel+FVector(1000,0,0),86);
@@ -343,7 +345,7 @@ void AEndingEmergence::ResetFinale()
     for(auto Mat:FinalePreviewMaterials)Mat->SetScalarParameterValue(TEXT("Reveal"),0);
     if(FinaleCellSpecks)FinaleCellSpecks->SetVisibility(false);
     if(FinaleTunnel)FinaleTunnel->SetVisibility(false,true);if(FinaleReality)FinaleReality->SetVisibility(false,true);
-    if(FinaleLight){FinaleLight->SetRelativeScale3D(FVector(.24f));FinaleLight->SetVisibility(false);}
+    if(FinaleLight){FinaleLight->SetRelativeScale3D(FVector(6.6f,6.6f,1));FinaleLight->SetVisibility(false);}
     ResetPaperFinale();if(PaperScene)PaperScene->SetVisibility(false,true);
     if(CreditsScreenMaterial)CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),0);
     if(CreditsScreenLight)CreditsScreenLight->SetIntensity(0);

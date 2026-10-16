@@ -13,6 +13,7 @@
 #include "MiningGUIWidgets.h"
 #include "MiningWalletSubsystem.h"
 #include "StartRoom/MiningStartRoom.h"
+#include "StartRoom/MiningOpening.h"
 #include "PopupClose/PopupCloseStage.h"
 #include "WenSi/WenSiPuzzle.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
@@ -57,6 +58,7 @@ void AMiningExhibitController::OnPossess(APawn* InPawn)
 
 bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
 {
+    if(AMiningOpening::IsOpening(GetWorld()))return true;
     if (IsAudioSettingsOpen() || Params.Key == EKeys::F8) return Super::InputKey(Params);
     if (auto* Room = AMiningStartRoom::Find(GetWorld()))
     {
@@ -135,6 +137,7 @@ bool AMiningExhibitHall::InitializeAreas()
     PendingActors.Reset();
     bReady=true;
     if(bLinearCampaign) EnterArea(0); else ReturnToLobby();
+    AMiningOpening::EnsureMainGameOpening(this);
     return true;
 }
 

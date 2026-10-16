@@ -64,6 +64,7 @@ void AMiningExhibitController::OnPossess(APawn* InPawn)
 
 bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
 {
+    if (IsAudioSettingsOpen() || Params.Key == EKeys::F8) return Super::InputKey(Params);
     if (auto* Room = AMiningStartRoom::Find(GetWorld()))
     {
         if (Params.Key == EKeys::E && Params.Event == IE_Pressed && !bUpgradeMenuHeld)
@@ -268,6 +269,64 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
     return true;
 }
 
+bool AMiningExhibitHall::EnterDeveloperArea(int32 Index, FString& Error)
+{
+#if UE_BUILD_SHIPPING
+    Error = TEXT("发行版本不提供开发者跳转。");
+    return false;
+#else
+    if (!bReady || !Controller.IsValid() || !Controller->GetPawn() || !Areas.IsValidIndex(Index))
+    {
+        Error = TEXT("房间尚未就绪，或目标区域不存在。");
+        return false;
+    }
+    if (AreaKind(Index) == EMiningExperienceKind::Office && Office && Office->IsOfficeEscaped())
+    {
+        Error = TEXT("办公室已完成撤离，请选择下方的独立办公室重新测试。");
+        return false;
+    }
+    FVector Destination = Areas[Index].Entry.GetLocation();
+    const FRotator Rotation = Areas[Index].Entry.Rotator();
+    AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), Destination);
+    bool bFoundDestination = false;
+    for (const float HeightOffset : {0.f, 25.f, 50.f, 100.f, 150.f, 225.f, 300.f})
+    {
+        FVector Candidate = Areas[Index].Entry.GetLocation() + FVector(0, 0, HeightOffset);
+        if (GetWorld()->FindTeleportSpot(Controller->GetPawn(), Candidate, Rotation))
+        {
+            Destination = Candidate;
+            bFoundDestination = true;
+            break;
+        }
+    }
+    if (!bFoundDestination)
+    {
+        Error = TEXT("房间入口被碰撞阻挡，未移动角色。可以使用下方的独立关卡。");
+        return false;
+    }
+    const int32 PreviousUnlockedArea = UnlockedArea;
+    UnlockedArea = FMath::Max(UnlockedArea, Index);
+    if (!EnterArea(Index, false))
+    {
+        UnlockedArea = PreviousUnlockedArea;
+        Error = TEXT("房间激活失败，未移动角色。");
+        return false;
+    }
+    Controller->GetPawn()->SetActorLocationAndRotation(Destination, Rotation, false, nullptr, ETeleportType::TeleportPhysics);
+    Controller->SetControlRotation(Rotation);
+    if (auto* Movement = Controller->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())
+    {
+        Movement->ResetFlightInput();
+        Movement->StopMovementImmediately();
+        Movement->SetMovementMode(MOVE_Falling);
+    }
+    if (auto* StartRoom = AMiningStartRoom::Find(GetWorld())) StartRoom->UnlockDeveloperEquipment();
+    Error.Empty();
+    Notice = TEXT("开发者跳转：保留房间进度，已准备镐子和喷气背包。");
+    return true;
+#endif
+}
+
 void AMiningExhibitHall::ReturnToLobby()
 {
     if(!bLinearCampaign) { EnterArea(INDEX_NONE); return; }
@@ -310,7 +369,8 @@ bool AMiningExhibitHall::CanAdvanceCampaign() const
     switch(AreaKind(ActiveArea))
     {
     case EMiningExperienceKind::Mining:
-        return bContinuousCampaign || FBox(Areas[ActiveArea].Exit-Areas[ActiveArea].ExitExtent,Areas[ActiveArea].Exit+Areas[ActiveArea].ExitExtent).IsInsideOrOn(Controller->GetPawn()->GetActorLocation());
+        return (bContinuousCampaign && !(ActorHasTag(TEXT("BM_MainGame_RoomsLinked")) && ActiveArea==Areas.Num()-1)) ||
+            FBox(Areas[ActiveArea].Exit-Areas[ActiveArea].ExitExtent,Areas[ActiveArea].Exit+Areas[ActiveArea].ExitExtent).IsInsideOrOn(Controller->GetPawn()->GetActorLocation());
     case EMiningExperienceKind::Office: return Office && (bContinuousCampaign ? Office->GetCompletedSessions()>0 : Office->IsOfficeEscaped()) && !Office->IsSessionActive();
     case EMiningExperienceKind::Journey: return Journey && Journey->Phase==EMiningEscapePhase::Escaped;
     case EMiningExperienceKind::Museum: return (MirrorMuseum && MirrorMuseum->bComplete) || (Museum && Museum->bComplete);
@@ -340,7 +400,7 @@ void AMiningExhibitHall::Tick(float DeltaSeconds)
             ApplyUpgrades();
         }
         auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
-        GUI->SetCoinDisplay(FText::AsNumber(Wallet->Balance));
+        if (!Wallet->UsesMineralInventory()) GUI->SetCoinDisplay(FText::AsNumber(Wallet->Balance));
         if(auto* Progression=Controller->GetPawn()->FindComponentByClass<UMiningProgressionComponent>())
             for(int32 Index=0; Index<4 && Progression->Tracks.IsValidIndex(Index); ++Index)
             {
@@ -348,7 +408,7 @@ void AMiningExhibitHall::Tick(float DeltaSeconds)
                 GUI->SetUpgradeDetails(Index, Progression->Tracks[Index].Name, Progression->GetNextDescription(Index),
                     Progression->GetNextPrice(Index), Wallet->Balance>=Progression->GetNextPrice(Index));
             }
-        if(Treasure) Treasure->Coins=Wallet->Balance;
+        if(Treasure) Treasure->Coins=Wallet->UsesMineralInventory() ? 0 : Wallet->Balance;
     }
     if(bContinuousCampaign && Areas.IsValidIndex(ActiveArea) && !IsInteractionOpen())
     {
@@ -357,12 +417,16 @@ void AMiningExhibitHall::Tick(float DeltaSeconds)
         { Areas[I].ProgressGate->SetActorHiddenInGame(true); Areas[I].ProgressGate->SetActorEnableCollision(false); }
         const FVector P=Controller->GetPawn()->GetActorLocation();
         const auto NearThreshold=[&](int32 I){return FMath::Abs(P.Y-Areas[I].Exit.Y)<Areas[I].ExitExtent.Y && FMath::Abs(P.Z-Areas[I].Exit.Z)<Areas[I].ExitExtent.Z;};
-        if(ActiveArea>0 && P.X<Areas[ActiveArea-1].Exit.X-100 && NearThreshold(ActiveArea-1)) EnterArea(ActiveArea-1,false);
+        const bool bMuseumDrop = ActorHasTag(TEXT("BM_MuseumCeilingDrop"));
+        const auto IsDrop = [&](int32 I){return bMuseumDrop && Areas.IsValidIndex(I) && Areas[I].Tag==TEXT("BM_Campaign_MainGame03");};
+        if(ActiveArea>0 && !IsDrop(ActiveArea-1) && P.X<Areas[ActiveArea-1].Exit.X-100 && NearThreshold(ActiveArea-1)) EnterArea(ActiveArea-1,false);
         else if(CompletedAreas.Contains(ActiveArea))
         {
             if(ActiveArea==Areas.Num()-1) bCampaignComplete=true;
-            else if(P.X>Areas[ActiveArea].Exit.X && (NearThreshold(ActiveArea) ||
-                (Areas[ActiveArea+1].ActivationBounds.IsValid && Areas[ActiveArea+1].ActivationBounds.IsInsideOrOn(P))))
+            else if(IsDrop(ActiveArea)
+                ? (P.Z<Areas[ActiveArea].Exit.Z && FMath::Abs(P.X-Areas[ActiveArea].Exit.X)<Areas[ActiveArea].ExitExtent.X && FMath::Abs(P.Y-Areas[ActiveArea].Exit.Y)<Areas[ActiveArea].ExitExtent.Y)
+                : (P.X>Areas[ActiveArea].Exit.X && (NearThreshold(ActiveArea) ||
+                (Areas[ActiveArea+1].ActivationBounds.IsValid && Areas[ActiveArea+1].ActivationBounds.IsInsideOrOn(P)))))
             { UnlockedArea=FMath::Max(UnlockedArea,ActiveArea+1); EnterArea(ActiveArea+1,false); }
         }
     }
@@ -395,8 +459,8 @@ bool AMiningExhibitHall::PurchaseUpgrade(int32 ItemIndex, int32 RequestedLevel)
     auto* Progression=Controller->GetPawn()->FindComponentByClass<UMiningProgressionComponent>();
     const bool bPurchased = Progression && Progression->Purchase(ItemIndex,RequestedLevel);
     if(auto* Audio=Controller->GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPurchase(bPurchased);
-    if(!bPurchased) { Notice=TEXT("无法升级：检查金币余额、等级顺序和配置。"); return false; }
-    Notice=TEXT("升级完成，能力与金币在所有体验区共用。");
+    if(!bPurchased) { Notice=TEXT("无法升级：材料不足或已满级。"); return false; }
+    Notice=TEXT("矿镐升级完成。");
     return true;
 }
 void AMiningExhibitHall::OnUpgradeRequested(int32 ItemIndex, int32 RequestedLevel) { PurchaseUpgrade(ItemIndex,RequestedLevel); }
@@ -460,7 +524,7 @@ bool AMiningExhibitHall::ToggleMenu()
         [SNew(SBox).WidthOverride(800)
             [SNew(SVerticalBox)
                 +SVerticalBox::Slot().AutoHeight().Padding(10)[SNew(STextBlock).Text(FText::FromString(bLinearCampaign?TEXT("全流程试玩 · 已到达的区域"):TEXT("同一地图 · 六个体验区"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",28)).ColorAndOpacity(FLinearColor::White)]
-                +SVerticalBox::Slot().AutoHeight().Padding(10)[SNew(STextBlock).Text(FText::FromString(TEXT("只移动当前角色，不切换地图。金币、收藏与升级跨区保留。"))).AutoWrapText(true).ColorAndOpacity(FLinearColor(.7f,.85f,.85f))]
+                +SVerticalBox::Slot().AutoHeight().Padding(10)[SNew(STextBlock).Text(FText::FromString(TEXT("只移动当前角色，不切换地图。背包、收藏与升级跨区保留。"))).AutoWrapText(true).ColorAndOpacity(FLinearColor(.7f,.85f,.85f))]
                 +SVerticalBox::Slot().FillHeight(1)[SNew(SScrollBox)+SScrollBox::Slot()[Choices]]
                 +SVerticalBox::Slot().AutoHeight().Padding(10)[SNew(SButton).ContentPadding(12).Text(FText::FromString(TEXT("继续当前体验 · F4 / Esc"))).OnClicked_Lambda([this](){CloseMenu();return FReply::Handled();})]]];
     Controller->SetIgnoreLookInput(true); Controller->SetIgnoreMoveInput(true); Controller->SetPause(true);

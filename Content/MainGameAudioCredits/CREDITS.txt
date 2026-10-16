@@ -1,0 +1,42 @@
+MainGame additional audio — 2026-10-16
+Adaptations: excerpting, mono conversion for effects, 48kHz PCM, fades, loop crossfades, gain adjustment and texture mixing.
+These selected additional sources use CC0. Original page evidence is retained in SourceAssets/MainGameAudio/Licenses/Pages.
+
+Sci-fi Sounds — Kenney
+https://kenney.nl/assets/sci-fi-sounds
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Loopable Dungeon Ambience — JaggedStone
+https://opengameart.org/content/loopable-dungeon-ambience
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Different steps on wood, stone, leaves, gravel and mud — TinyWorlds
+https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Cave Theme — Brandon75689 (uploaded by HaelDB)
+https://opengameart.org/content/cave-theme
+https://creativecommons.org/publicdomain/zero/1.0/
+
+68 Workshop Sounds — bart
+https://opengameart.org/content/68-workshop-sounds
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Steam release sounds — bart
+https://opengameart.org/content/steam-release-sounds
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Dripping water loop — Independent.nu (uploaded by qubodup)
+https://opengameart.org/content/dripping-water-loop
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Wind1 — Luke.RUSTLTD
+https://opengameart.org/content/wind1
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Shovel Sound — RavenWolfProds; edited by themightyglider
+https://opengameart.org/content/shovel-sound
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Existing Kenney/rubberduck texture layers and Dreamy Flashback retain the credits in AudioPilotCredits/CREDITS.txt.
+Deep Haze, EmptyCity, Michel Baradari explosions and neural force-field alternatives are not used by this MainGame selection.

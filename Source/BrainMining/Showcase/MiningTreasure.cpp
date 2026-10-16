@@ -1,4 +1,5 @@
 #include "Showcase/MiningTreasure.h"
+#include "MiningAudioComponent.h"
 #include "MiningWalletSubsystem.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningInteractionHUDWidget.h"
@@ -723,13 +724,19 @@ void AMiningTreasureField::Tick(float DeltaSeconds)
 bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
 {
     RefreshTarget(Controller);
-    if (!IsValid(Target) || !AMiningTreasure::IsExposureEligible(Target->Exposure)) return false;
+    if (!IsValid(Target) || Target->bCollected || !AMiningTreasure::IsExposureEligible(Target->Exposure)) return false;
     auto* Item = Target.Get();
+    auto* Inventory = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>() : nullptr;
+    const bool bMaterials = Inventory && Inventory->UsesMineralInventory();
+    if (bMaterials && !Inventory->AddMineral(Item->TreasureId)) return false;
+    if (Controller && Controller->GetPawn())
+        if (auto* Audio = Controller->GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayCollect();
     Item->bCollected = true;
     Item->SetDropActive(false);
     Item->SetHighlighted(false);
     Item->CollectedValue = Item->Value;
-    if (bUseSharedWallet && GetGameInstance())
+    if (bMaterials) Item->CollectedValue = 1;
+    else if (bUseSharedWallet && GetGameInstance())
     {
         auto* Wallet = GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
         Item->CollectedValue = Wallet->CalculateMineralReward(Item->Value, RewardRandom.FRand());
@@ -746,6 +753,7 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
     Toast = FString::Printf(TEXT("%s  +%lld 金币%s"), *Item->TreasureName.ToString(), Item->CollectedValue,
         Item->CollectedValue > Item->Value ? TEXT(" · 养成奖励翻倍！") : TEXT(""));
     ToastRemaining = 3;
+    if (bMaterials) Toast = FString::Printf(TEXT("%s ×1  已收入背包"), *Item->TreasureName.ToString());
     Item->SetActorEnableCollision(false);
     // Hide only the reward. Terrain inclusions survive collection in every field.
     Item->Model->SetVisibility(false,false);
@@ -757,6 +765,12 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
 FString AMiningTreasureField::GetPrompt() const
 {
     if (ToastRemaining > 0) return Toast;
+    if (GetGameInstance() && GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>()->UsesMineralInventory())
+    {
+        if (IsValid(Target)) return FString::Printf(TEXT("%s ×1 · 暴露 %.0f%%\n%s"), *Target->TreasureName.ToString(), Target->Exposure * 100,
+            AMiningTreasure::IsExposureEligible(Target->Exposure) ? TEXT("[ E ] 收入背包") : TEXT("继续挖掘，暴露超过 50% 后可领取"));
+        return FString::Printf(TEXT("矿石收入背包 · 已领取 %d / %d · Tab 升级矿镐"), CollectedCount, Items.Num());
+    }
     if (IsValid(Target)) return FString::Printf(TEXT("%s · 大小 %d/4 · 基础 %d 金币 · 暴露 %.0f%%\n%s"), *Target->TreasureName.ToString(), Target->SizeTier+1, Target->Value, Target->Exposure * 100,
         AMiningTreasure::IsExposureEligible(Target->Exposure) ? TEXT("[ E ] 领取宝物") : TEXT("继续挖掘，暴露超过 50% 后可领取"));
     if (Items.IsEmpty()) return GenerationStatus;

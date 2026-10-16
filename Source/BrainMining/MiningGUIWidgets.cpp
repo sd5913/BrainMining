@@ -2,6 +2,8 @@
 #include "MiningBombToolComponent.h"
 #include "MiningComponent.h"
 #include "MiningAudioComponent.h"
+#include "MiningProgressionComponent.h"
+#include "MiningWalletSubsystem.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -248,6 +250,9 @@ void UMiningGUIHUDWidget::EnableProgressionPanel()
 		CountSlot->SetPosition(FVector2D(0, -32));
 		CountSlot->SetSize(FVector2D(100, 28));
 	}
+    if (const auto* Pawn = GetOwningPlayerPawn())
+        if (const auto* Progression = Pawn->FindComponentByClass<UMiningProgressionComponent>(); Progression && Progression->UsesMineralInventory())
+        { RefreshMineralProgression(); return; }
 	if (DrillUpgrade || !PickaxeUpgrade || !UpgradePanel) return;
 	DrillUpgrade = CreateWidget<UMiningGUIUpgradeWidget>(GetOwningPlayer(), PickaxeUpgrade->GetClass());
 	if (!DrillUpgrade) return;
@@ -256,16 +261,16 @@ void UMiningGUIHUDWidget::EnableProgressionPanel()
 	DrillUpgrade->OnUpgradeRequested.AddUniqueDynamic(this, &ThisClass::ForwardUpgrade);
 	DrillUpgrade->OnLevelChanged.AddUniqueDynamic(this, &ThisClass::ForwardLevel);
 	if (AbilityV && AbilityV->NormalTexture) DrillUpgrade->ItemIcon->SetBrushFromTexture(AbilityV->NormalTexture);
-	if (auto* PanelSlot = Cast<UCanvasPanelSlot>(UpgradePanel->Slot)) PanelSlot->SetSize(FVector2D(724, 510));
+	if (auto* PanelSlot = Cast<UCanvasPanelSlot>(UpgradePanel->Slot)) PanelSlot->SetSize(FVector2D(724, 540));
 	auto* Credits = WidgetTree->ConstructWidget<UTextBlock>();
-	Credits->SetText(FText::FromString(TEXT("Music: Dreamy Flashback — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — creativecommons.org/licenses/by/4.0/\nSource: incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532\nEdited: 48 kHz conversion, loop crossfade and volume adjustment.\nSound effects: Kenney / rubberduck — CC0")));
+	Credits->SetText(FText::FromString(TEXT("Music: Dreamy Flashback — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — creativecommons.org/licenses/by/4.0/\nSource: incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532\nEdited: 48 kHz conversion, loop crossfade and volume adjustment.\nSound effects: Kenney / rubberduck — CC0; project-synthesized tool sounds\n音量设置：松开 Tab 后按 F8；关闭时自动保存")));
 	Credits->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 12));
 	Credits->SetColorAndOpacity(FLinearColor(.8f,.84f,.87f));
 	Credits->SetAutoWrapText(true);
 	Credits->SetVisibility(ESlateVisibility::HitTestInvisible);
 	auto* CreditSlot = UpgradePanel->AddChildToCanvas(Credits);
 	CreditSlot->SetPosition(FVector2D(0, 390));
-	CreditSlot->SetSize(FVector2D(724, 120));
+	CreditSlot->SetSize(FVector2D(724, 150));
 	for (int32 Index = 0; Index < 4; ++Index)
 	{
 		auto* Card = Item(Index);
@@ -310,6 +315,7 @@ void UMiningGUIHUDWidget::EnableProgressionPanel()
 
 void UMiningGUIHUDWidget::SetUpgradeDetails(int32 Index, FText Name, FText Description, int64 Price, bool bAffordable)
 {
+    if (bMineralProgression) return;
 	if (auto* Card = Item(Index))
 	{
 		Card->SetPriceDisplay(Price > 0 ? FText::AsNumber(Price) : FText::FromString(TEXT("MAX")));
@@ -327,6 +333,7 @@ UMiningGUIAbilityWidget* UMiningGUIHUDWidget::AbilityWidget(FName Name) const
 void UMiningGUIHUDWidget::ToggleUpgradePanel() { SetUpgradePanelOpen(!bUpgradePanelOpen); }
 void UMiningGUIHUDWidget::SetUpgradePanelOpen(bool bOpen)
 {
+    if (bMineralProgression) return;
 	if (bUpgradePanelOpen == bOpen) return;
 	bUpgradePanelOpen = bOpen;
 	if (auto* Pawn = GetOwningPlayerPawn())
@@ -420,7 +427,8 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 	PlusSpring.Step(DeltaTime, 420.f, 19.f);
 	Scale(PlusContent, PlusSpring.Value);
 	PanelSpring.Step(DeltaTime, PanelSpringStiffness, PanelSpringDamping);
-	if (UpgradePanel)
+	if (bMineralProgression) RefreshMineralProgression();
+	if (UpgradePanel && !bMineralProgression)
 	{
 		const float Progress = PanelSpring.Value;
 		Scale(UpgradePanel, FMath::Max(0.01f, 0.58f + 0.42f * Progress));
@@ -428,4 +436,76 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 		UpgradePanel->SetRenderTranslation(FVector2D(0.f, -30.f * (1.f - Progress)));
 		if (!bUpgradePanelOpen && Progress == 0.f) UpgradePanel->SetVisibility(ESlateVisibility::Collapsed);
 	}
+}
+
+void UMiningGUIHUDWidget::RefreshMineralProgression()
+{
+    const auto* Pawn = GetOwningPlayerPawn();
+    const auto* Progression = Pawn ? Pawn->FindComponentByClass<UMiningProgressionComponent>() : nullptr;
+    const auto* Wallet = Progression ? Progression->GetWallet() : nullptr;
+    if (!Wallet || !Wallet->UsesMineralInventory()) return;
+    const EMiningMineral Types[] = {EMiningMineral::Copper, EMiningMineral::Iron, EMiningMineral::Malachite, EMiningMineral::Diamond};
+    if (!MineralPanel)
+    {
+        auto* Root = Cast<UCanvasPanel>(WidgetTree->RootWidget);
+        if (!Root || !PickaxeUpgrade) return;
+        bMineralProgression = true;
+        bUpgradePanelOpen = false;
+        if (auto* Currency = GetWidgetFromName(TEXT("CurrencyPanel"))) Currency->SetVisibility(ESlateVisibility::Collapsed);
+        UpgradePanel->SetVisibility(ESlateVisibility::Collapsed);
+        MineralPanel = WidgetTree->ConstructWidget<UCanvasPanel>();
+        MineralPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
+        auto* PanelSlot = Root->AddChildToCanvas(MineralPanel);
+        PanelSlot->SetAnchors(FAnchors(1,0)); PanelSlot->SetAlignment(FVector2D(1,0));
+        PanelSlot->SetPosition(FVector2D(-32,24)); PanelSlot->SetSize(FVector2D(280,570));
+        const auto AddLabel = [&](const FString& Text, FVector2D Position, FVector2D Size, int32 FontSize)
+        {
+            auto* Label = WidgetTree->ConstructWidget<UTextBlock>();
+            auto Font = CoinText->GetFont(); Font.Size = FontSize;
+            Label->SetFont(Font); Label->SetText(FText::FromString(Text));
+            Label->SetColorAndOpacity(FLinearColor(.94f,.97f,1));
+            Label->SetShadowOffset(FVector2D(1,2)); Label->SetShadowColorAndOpacity(FLinearColor(0,0,0,.9f));
+            auto* LabelSlot = MineralPanel->AddChildToCanvas(Label); LabelSlot->SetPosition(Position); LabelSlot->SetSize(Size);
+            return Label;
+        };
+        AddLabel(TEXT("矿石背包"), FVector2D(0,0), FVector2D(280,28), 20);
+        const FLinearColor Colors[] = {FLinearColor(.9f,.43f,.19f), FLinearColor(.65f,.73f,.82f), FLinearColor(.16f,.78f,.43f), FLinearColor(.4f,.88f,1)};
+        for (int32 I = 0; I < 4; ++I)
+        {
+            // A small faceted crystal glyph, independent of platform emoji fonts.
+            for (int32 Facet = 0; Facet < 2; ++Facet)
+            {
+                auto* Icon = WidgetTree->ConstructWidget<UImage>();
+                FSlateBrush Brush; Brush.TintColor = Facet == 0 ? Colors[I] : Colors[I] * 1.35f;
+                Icon->SetBrush(Brush); Icon->SetRenderTransformAngle(45);
+                auto* IconSlot = MineralPanel->AddChildToCanvas(Icon);
+                IconSlot->SetPosition(FVector2D(Facet == 0 ? 7 : 10, 42+I*34));
+                IconSlot->SetSize(Facet == 0 ? FVector2D(16,16) : FVector2D(6,6));
+            }
+            AddLabel(FMiningMineralCost::Name(Types[I]), FVector2D(36,36+I*34), FVector2D(150,30), 20);
+            auto* Count = AddLabel(TEXT("0"), FVector2D(198,36+I*34), FVector2D(75,30), 20);
+            Count->SetJustification(ETextJustify::Right); MineralCounts.Add(Count);
+        }
+        PickaxeUpgrade->RemoveFromParent();
+        auto* CardSlot = MineralPanel->AddChildToCanvas(PickaxeUpgrade);
+        CardSlot->SetPosition(FVector2D(66,190)); CardSlot->SetSize(FVector2D(148,160));
+        PickaxeUpgrade->bPreviewUpgrades = false; PickaxeUpgrade->SetInteractionAllowed(false);
+        PickaxeUpgrade->SetUnlocked(true); PickaxeUpgrade->CoinButton->SetVisibility(ESlateVisibility::Collapsed);
+        PickaxeLevelLabel = AddLabel(TEXT(""), FVector2D(0,355), FVector2D(280,32), 22);
+        PickaxeLevelLabel->SetJustification(ETextJustify::Center);
+        PickaxeUpgradeHint = AddLabel(TEXT(""), FVector2D(0,391), FVector2D(280,30), 18);
+        PickaxeUpgradeHint->SetJustification(ETextJustify::Center);
+        PickaxeRequirements = AddLabel(TEXT(""), FVector2D(20,427), FVector2D(250,130), 18);
+        PickaxeRequirements->SetJustification(ETextJustify::Center);
+    }
+    const auto SetText = [](UTextBlock* Label, const FText& Text)
+    { if (Label && !Label->GetText().EqualTo(Text)) Label->SetText(Text); };
+    for (int32 I = 0; I < 4; ++I) SetText(MineralCounts[I], FText::AsNumber(Wallet->GetMineralCount(Types[I])));
+    const int32 Level = FMath::Max(0, Progression->GetLevel(0));
+    PickaxeUpgrade->SetUpgradeLevel(Level, true);
+    SetText(PickaxeLevelLabel, FText::FromString(FString::Printf(TEXT("矿镐  %d / 4"), Level)));
+    SetText(PickaxeRequirements, Progression->GetNextMaterialRequirements());
+    const bool bReady = Progression->CanUpgradePickaxe();
+    SetText(PickaxeUpgradeHint, FText::FromString(Level >= 4 ? TEXT("矿镐已满级") : bReady ? TEXT("[ Tab ] 升级矿镐") : TEXT("[ Tab ] 升级 · 材料不足")));
+    PickaxeUpgradeHint->SetColorAndOpacity(bReady ? FLinearColor(.35f,1,.65f) : FLinearColor(.85f,.87f,.9f));
 }

@@ -1,0 +1,38 @@
+{
+  "main_length_m": 296.88736666032554,
+  "main_drop_m": 55.0,
+  "start": [
+    -65.0,
+    0.0,
+    65.0
+  ],
+  "end": [
+    65.0,
+    0.0,
+    10.0
+  ],
+  "ascent_m": 18.92162479323737,
+  "backtracking_x_m": 33.5287523940943,
+  "spiral_turns": 1,
+  "spiral_drop_m": 22.0,
+  "width_min_m": 3.3000109614526565,
+  "width_max_m": 20.0,
+  "cavern_centers_arc_m": [
+    40.56411605724118,
+    209.81439339952337
+  ],
+  "branch_count": 4,
+  "branch_clearances_m": [
+    5.480456034158955,
+    14.23716005126068,
+    12.44174654275612,
+    11.433584045675556
+  ],
+  "landscape_count": 8,
+  "mouth_collars_preserved_m": [
+    9,
+    12
+  ],
+  "style": "mixed-expedition",
+  "geometry_retained": true
+}

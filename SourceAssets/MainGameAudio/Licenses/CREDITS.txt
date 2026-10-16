@@ -1,0 +1,69 @@
+MainGame audio candidates — acquired 2026-10-16
+Candidate sources only. These sounds are not yet imported into Unreal or selected for release.
+Changes: excerpts, channel conversion, 48 kHz resampling, DC removal, fades/crossfades and gain adjustment.
+Full details and source hashes: manifest.json / sources.json.
+
+EmptyCity - background music — yd
+https://opengameart.org/content/emptycity-background-music
+CC0-1.0: https://creativecommons.org/publicdomain/zero/1.0/
+Dark/horror tagged; alternate only, not selected as default.
+
+Sci-fi Sounds — Kenney
+https://kenney.nl/assets/sci-fi-sounds
+CC0-1.0: https://creativecommons.org/publicdomain/zero/1.0/
+
+
+Loopable Dungeon Ambience — JaggedStone
+https://opengameart.org/content/loopable-dungeon-ambience
+CC0-1.0: https://creativecommons.org/publicdomain/zero/1.0/
+
+
+Different steps on wood, stone, leaves, gravel and mud — TinyWorlds
+https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud
+CC0-1.0: https://creativecommons.org/publicdomain/zero/1.0/
+
+
+Cave Theme — Brandon75689 (uploaded by HaelDB)
+https://opengameart.org/content/cave-theme
+CC0-1.0: https://creativecommons.org/publicdomain/zero/1.0/
+Page offers OGA-BY 3.0 and CC0; this selection uses the CC0 option.
+
+68 Workshop Sounds — bart
+https://opengameart.org/content/68-workshop-sounds
+CC0-1.0: https://creativecommons.org/publicdomain/zero/1.0/
+
+
+Steam release sounds — bart
+https://opengameart.org/content/steam-release-sounds
+CC0-1.0: https://creativecommons.org/publicdomain/zero/1.0/
+
+
+Dripping water loop — Independent.nu (uploaded by qubodup)
+https://opengameart.org/content/dripping-water-loop
+CC0-1.0: https://creativecommons.org/publicdomain/zero/1.0/
+
+
+2 High Quality Explosions — Michel Baradari (uploaded by qubodup)
+https://opengameart.org/content/2-high-quality-explosions
+CC-BY-3.0: https://creativecommons.org/licenses/by/3.0/
+
+
+Deep Haze — Kevin MacLeod
+https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100886
+CC-BY-4.0: https://creativecommons.org/licenses/by/4.0/
+
+
+Wind1 — Luke.RUSTLTD
+https://opengameart.org/content/wind1
+CC0-1.0: https://creativecommons.org/publicdomain/zero/1.0/
+
+
+Shovel Sound — RavenWolfProds; edited by themightyglider
+https://opengameart.org/content/shovel-sound
+CC0-1.0: https://creativecommons.org/publicdomain/zero/1.0/
+Original Freesound #503672 by RavenWolfProds, CC0; OGA version edited by themightyglider; both page snapshots retained.
+
+Existing AudioPilot sounds keep their original credits in ../AudioPilot/Licenses/CREDITS.txt.
+If Deep Haze is shipped, include: Deep Haze — Kevin MacLeod (incompetech.com), CC BY 4.0.
+If either Michel Baradari explosion is shipped, include author, source, CC BY 3.0 and modification notice.
+Do not publish this entire candidate credit list as the final shipped asset list without reconciling actual usage.

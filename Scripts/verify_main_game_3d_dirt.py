@@ -1,7 +1,9 @@
 """Verify saved geometry relief, excavation and reset, with oblique PIE images."""
 # Reuse the existing PIE fixture/input helpers; its tick callback is not loaded.
 from pathlib import Path
-import unreal,json,time,traceback
+import unreal,json,time,traceback,sys
+sys.path.insert(0,str(Path(unreal.Paths.project_dir()).resolve()/'Scripts'))
+from main_game_route_sources import tuning
 ROOT=Path(unreal.Paths.project_dir()).resolve()
 fixture=(ROOT/'Scripts/verify_main_game_dirt_transition.py').read_text(encoding='utf-8').split('\ndef tick(dt):')[0]
 exec(compile(fixture,'dirt_pie_fixture','exec'),globals())
@@ -39,7 +41,7 @@ def tick(dt):
                 pickups=list(unreal.GameplayStatics.get_all_actors_of_class(world,unreal.MiningStarterPickup)),regions=regions,
                 ignored_guides=[g for r in regions for g in r.generated_guide_layers])
             check(all(c.get_editor_property('hidden_in_game') for c in pawn.get_components_by_class(unreal.SkeletalMeshComponent)),'Player body remains hidden')
-            check(len(next(a for a in unreal.GameplayStatics.get_all_actors_of_class(world,unreal.MiningTreasureField)).items)==125,'All 125 mineral deposits remain present')
+            check(len(next(a for a in unreal.GameplayStatics.get_all_actors_of_class(world,unreal.MiningTreasureField)).items)==tuning(ROOT)['expected_deposits'],'All configured mineral deposits remain present')
             for item in bake['stages']:
                 r=next(r for r in regions if r.actor_has_tag(item['tag']))
                 check(r.generated_rock.triangle_count==item['after_triangles'],item['stage']+' reload preserves the baked 3D geometry')

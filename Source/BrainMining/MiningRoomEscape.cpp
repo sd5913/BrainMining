@@ -1,4 +1,5 @@
 #include "MiningRoomEscape.h"
+#include "MiningRoomAudioSubsystem.h"
 #include "MiningEncounterPlayer.h"
 #include "MiningGiantRoomEntrance.h"
 #include "MiningCharacterMovementComponent.h"
@@ -29,6 +30,9 @@ void AMiningRoomEscape::BeginPlay()
     Super::BeginPlay();
     Player=Cast<AMiningEncounterPlayerController>(GetWorld()->GetFirstPlayerController());
     if(!Player.IsValid() || !CardStage || !Entrance){SetActorTickEnabled(false);return;}
+    Checkpoint+=SourceLevelOffset;ComputerEntry+=SourceLevelOffset;
+    ComputerCheckpointPosition+=SourceLevelOffset;TunnelEnd+=SourceLevelOffset;Exit+=SourceLevelOffset;
+    WaterStartZ+=SourceLevelOffset.Z;WaterEndZ+=SourceLevelOffset.Z;TableWaterZ+=SourceLevelOffset.Z;
     if(bBuildStudyLayout)BuildStudyLayout();
     CardStage->OnOpponentWallImpact.AddDynamic(this,&AMiningRoomEscape::OnWallImpact);
     CardStage->OnCollectibleClaimed.AddDynamic(this,&AMiningRoomEscape::OnRewardClaimed);
@@ -41,6 +45,7 @@ void AMiningRoomEscape::BeginPlay()
 void AMiningRoomEscape::SetAreaActive(bool bActive)
 {
     bAreaActive = bActive;
+    if(!bActive)UMiningRoomAudioSubsystem::StopSource(this);
     if (View) View->SetVisibility(bActive ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
     if (bActive && Phase != EMiningEscapePhase::Idle) ApplyExploration();
     if (!bActive) SetTelevisionMining(false);
@@ -51,6 +56,7 @@ void AMiningRoomEscape::OnWallImpact(FName RoomId)
 {
     if(!CardStage || RoomId!=CardStage->RoomId || bWallBroken || !BreachWall)return;
     bWallBroken=BreachWall->MineSphere(BreachWall->GetActorLocation(),1150);
+    if(bWallBroken)UMiningRoomAudioSubsystem::Emit(BreachWall,TEXT("S_DoorBreak"),.8f,true);
     BreachBurstTime=0;
     UpdateWater();
     if(Player.IsValid() && Player->PlayerCameraManager)Player->PlayerCameraManager->StartCameraFade(.18f,0,.35f,FLinearColor(1,.72f,.35f),false,false);
@@ -75,6 +81,8 @@ void AMiningRoomEscape::StartFlood()
     SetTelevisionMining(false);
     Phase=EMiningEscapePhase::Flooding;PhaseTime=0;Elapsed=0;WaterZ=WaterStartZ;
     bEnteredComputer=false;bExitGuidance=false;bComputerCheckpoint=false;ComputerElapsed=0;ClearedNodes=0;++Attempts;
+    UMiningRoomAudioSubsystem::StopSource(this);
+    UMiningRoomAudioSubsystem::Emit(this,Attempts==1?TEXT("S_FloodStart"):TEXT("S_Retry"),.65f);
     ApplyExploration();UpdateWater();
 }
 void AMiningRoomEscape::RetryEscape()
@@ -99,6 +107,7 @@ void AMiningRoomEscape::RetryEscape()
 }
 bool AMiningRoomEscape::HandleRestart()
 {
+    if(bAreaManaged && !bAreaActive)return false;
     // Manual restart is unavailable in the card room. Death still calls RetryEscape directly.
     return bAreaActive && Player.IsValid() && Player->IsCardRoomContext();
 }
@@ -107,6 +116,7 @@ void AMiningRoomEscape::ResetJourney()
     SetTelevisionMining(false);
     if(bFailureLock && Player.IsValid())Player->SetIgnoreMoveInput(false);
     bFailureLock=false;Phase=EMiningEscapePhase::Idle;PhaseTime=Elapsed=ComputerElapsed=0;
+    UMiningRoomAudioSubsystem::StopSource(this);
     Attempts=ClearedNodes=0;WaterZ=WaterStartZ;bWallBroken=bEnteredComputer=bComputerCheckpoint=bExitGuidance=false;
     if(Entrance)Entrance->bExternalEncounterActive=false;
     if(BreachWall)BreachWall->ResetRock();
@@ -117,6 +127,8 @@ void AMiningRoomEscape::Fail(const FString& Reason)
 {
     if(Phase!=EMiningEscapePhase::Flooding)return;
     Phase=EMiningEscapePhase::Failed;PhaseTime=0;FailureReason=Reason;
+    UMiningRoomAudioSubsystem::StopSource(this);
+    UMiningRoomAudioSubsystem::Emit(this,Reason.Contains(TEXT("短路"))?TEXT("S_ShortCircuit"):TEXT("S_Drown"),.7f);
     if(Player.IsValid())
     {
         Player->EncounterPolicy->SetMiningAllowed(false);
@@ -182,7 +194,9 @@ void AMiningRoomEscape::UpdateWater()
 void AMiningRoomEscape::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);if((bAreaManaged && !bAreaActive) || !Player.IsValid() || !Player->GetPawn())return;
-    TickPresentation(DeltaSeconds);PhaseTime+=DeltaSeconds;
+    TickPresentation(DeltaSeconds);const float PreviousPhaseTime=PhaseTime;PhaseTime+=DeltaSeconds;
+    if(Phase==EMiningEscapePhase::Warning && PreviousPhaseTime<.45f && PhaseTime>=.45f)
+        UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Warning"),.5f);
     if(Phase==EMiningEscapePhase::Warning && PhaseTime>=FMath::Max(.1f,WarningSeconds))
     {
         StartFlood();
@@ -190,6 +204,12 @@ void AMiningRoomEscape::Tick(float DeltaSeconds)
     else if(Phase==EMiningEscapePhase::Failed && PhaseTime>=FMath::Max(.1f,RetrySeconds))RetryEscape();
     else if(Phase==EMiningEscapePhase::Flooding)
     {
+        const float WaterProgress=FMath::Clamp((WaterZ-WaterStartZ)/FMath::Max(1.f,WaterEndZ-WaterStartZ),0.f,1.f);
+        UMiningRoomAudioSubsystem::Loop(this,TEXT("S_Water_Loop"),.25f+.2f*WaterProgress);
+        if(bComputerCheckpoint)UMiningRoomAudioSubsystem::Loop(this,TEXT("A_TV_Loop"),.25f);
+        const float Remaining=bComputerCheckpoint?ElectricalSecondsLeft():SecondsLeft();
+        if(Remaining>0.f && Remaining<=15.f)
+            UMiningRoomAudioSubsystem::Emit(this,bComputerCheckpoint?TEXT("S_ElectricalWarning"):TEXT("S_Warning"),.5f,false,Remaining<5.f?.65f:1.5f);
         Elapsed+=DeltaSeconds;
         const FVector P=Player->GetPawn()->GetActorLocation();
         const bool InComputer=IsInsideComputer(P);
@@ -202,7 +222,7 @@ void AMiningRoomEscape::Tick(float DeltaSeconds)
         if(!bComputerCheckpoint && ReachedTelevision && WaterZ>=ComputerCheckpointPosition.Z-60)
         {Fail(TEXT("电视入口已经进水，没能及时赶到！"));UpdateWater();return;}
         if(!bComputerCheckpoint && ReachedTelevision)
-        {bComputerCheckpoint=true;ComputerElapsed=0;CheckpointElapsed=Elapsed-DeltaSeconds;CheckpointWaterZ=ComputerStartWaterZ=WaterZ;SetTelevisionMining(true);}
+        {bComputerCheckpoint=true;ComputerElapsed=0;CheckpointElapsed=Elapsed-DeltaSeconds;CheckpointWaterZ=ComputerStartWaterZ=WaterZ;SetTelevisionMining(true);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Checkpoint"),.55f);}
         bEnteredComputer|=InComputer && bComputerCheckpoint && TelevisionScreen && TelevisionScreen->SuccessfulCuts>0;
         if(bComputerCheckpoint)
         {
@@ -217,16 +237,16 @@ void AMiningRoomEscape::Tick(float DeltaSeconds)
             auto* Rock=ComputerRocks[ClearedNodes].Get();
             const FVector Local=Rock->GetActorRotation().UnrotateVector(P-Rock->GetActorLocation());
             if(Rock->SuccessfulCuts>0 && Local.X>Rock->RockSize.X*.5f && Local.X<Rock->RockSize.X*.5f+600 &&
-                FMath::Abs(Local.Y)<TunnelHalfWidth && FMath::Abs(Local.Z)<TunnelHalfHeight)++ClearedNodes;
+                FMath::Abs(Local.Y)<TunnelHalfWidth && FMath::Abs(Local.Z)<TunnelHalfHeight){++ClearedNodes;UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Confirm"),.2f);}
         }
         const auto* Character=Cast<ACharacter>(Player->GetPawn());
         const float Head=Character?Character->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()*.75f:50.f;
         // Hazards win a same-frame race with the exit.
         if(bComputerCheckpoint && ComputerElapsed>=FMath::Max(1.f,ComputerSeconds))Fail(TEXT("水涌入电视，电路短路！"));
-        else if(P.Z+Head<WaterZ || P.Z<0)Fail(TEXT("被上涨的水淹没了！"));
+        else if(P.Z+Head<WaterZ || P.Z<SourceLevelOffset.Z)Fail(TEXT("被上涨的水淹没了！"));
         else if(!bComputerCheckpoint && Elapsed>=FMath::Max(1.f,FloodSeconds))Fail(TEXT("房间被灌满，未能及时逃出！"));
         else if(bEnteredComputer && !ComputerRocks.IsEmpty() && ClearedNodes==ComputerRocks.Num() && FVector::Dist(P,Exit)<ExitRadius)
-        {Phase=EMiningEscapePhase::Escaped;PhaseTime=0;Player->EncounterPolicy->SetMiningAllowed(false);SetTelevisionMining(false);}
+        {Phase=EMiningEscapePhase::Escaped;PhaseTime=0;Player->EncounterPolicy->SetMiningAllowed(false);SetTelevisionMining(false);UMiningRoomAudioSubsystem::StopSource(this);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Escape"),.65f);}
         UpdateWater();
     }
 }

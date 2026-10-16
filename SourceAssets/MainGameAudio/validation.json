@@ -1,0 +1,13 @@
+{
+  "downloads": 12,
+  "downloaded_bytes": 49915255,
+  "candidates": 37,
+  "sample_rate": 48000,
+  "clipped_samples": 0,
+  "checksum_validation": "passed",
+  "decoding_validation": "passed",
+  "output_validation": "passed",
+  "listening_review": "not performed",
+  "main_game_runtime_test": "not performed",
+  "unreal_import": "not performed"
+}

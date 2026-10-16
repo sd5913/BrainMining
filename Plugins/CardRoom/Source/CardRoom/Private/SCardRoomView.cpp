@@ -153,15 +153,17 @@ FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& 
     if(R.Phase==ECardRoomPhase::Victory&&In(Mouse,Collect)) { Owner->Interact();return FReply::Handled(); }
     if(R.Phase==ECardRoomPhase::Choosing)
     {
-        if(In(Mouse,Confirm)) R.Confirm();
+        if(In(Mouse,Confirm)) Owner->ConfirmCards();
         else if(R.Round==4&&In(Mouse,All))
         {
             const bool Clear=R.CanConfirm();
             for(int32 i=0;i<R.Hand.Num();++i) { if(Clear) R.Unstage(i); else R.Stage(i); }
+            if(Owner->Stage->AudioOverride.IsBound())Owner->Stage->Sound(TEXT("S_CardSelect"),.3f);
         }
         else for(int32 i=R.Hand.Num()-1;i>=0;--i) if(In(Mouse,CardRect(i,R)))
         {
             if(R.Staged.Contains(i)) R.Unstage(i); else R.Stage(i);
+            if(Owner->Stage->AudioOverride.IsBound())Owner->Stage->Sound(TEXT("S_CardSelect"),.3f);
             break;
         }
     }

@@ -87,11 +87,13 @@ void ADiggableRock::ResetRock()
 
 bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
 {
+	if (ActorHasTag(TEXT("BM_BombOnly"))) { LastStatus = TEXT("坚硬岩层：只能用炸弹破坏"); return false; }
 	return MineCutter(WorldCenter, WorldRadius, nullptr);
 }
 
 bool ADiggableRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed, float Roughness)
 {
+	if (ActorHasTag(TEXT("BM_BombOnly"))) { LastStatus = TEXT("坚硬岩层：只能用炸弹破坏"); return false; }
 	if (!WorldFrame.IsValid() || HalfSize.ContainsNaN() || HalfSize.GetMin() <= 0) return false;
 	const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(WorldFrame, HalfSize, Seed, Roughness);
 	return MineCutter(WorldFrame.GetLocation(), HalfSize.Size() * 1.12, &Cutter);

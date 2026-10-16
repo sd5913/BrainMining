@@ -1,38 +1,50 @@
-# MainGame 金币、能力升级与结晶
+# MainGame 矿石背包与矿镐养成
 
-关卡 `/Game/MainGame/Maps/Lvl_MainGame` 已复用 FullJourney 的现有系统：共享钱包 `MiningWalletSubsystem`、玩家 `MiningProgressionComponent`、升级 HUD、`MiningExhibitController` 和 `MiningTreasureField`。
+当前关卡：`/Game/MainGame/Maps/Lvl_MainGame`。MainGame 使用矿石背包，无金币收入、金币余额 UI 或金币消费。电脑弹窗回复与打印机工作继续推进房间玩法，但不发放金币或矿石。
 
-仍使用 `BP_MainGameCharacter` 和 `BP_MainGameGameMode`；后者以 FullJourney 的 `MiningExhibitGameMode` 为父类，并保留 MainGame 的角色。四段通路、普通岩层材质、泥土引导层、不可挖外壳和未来房间连接区保留。四条升级轨道为镐子、喷气背包、炸弹和钻机，各四级；价格与 FullJourney 一致。炸弹不依赖电脑房剧情解锁，初始装备教学完成后即可使用。
+## 玩家操作
 
-StartRoom 接入后，首次出生改在第一区之前的卧室：先按 E 拾取镐子和喷气背包，拿齐后开放炸弹、钻机和升级界面。现有金币、能力升级与 125 处固定矿物布局继续使用；卧室出口、8 米上升竖井和连接第一区的可挖堵塞层归第一区管理。连接处由不可挖基岩封口，挖开堵塞层后仍保持封闭边界。详情见 `Docs/StartRoom.md`。
+- 左键挖掘；矿石暴露超过 50% 后，瞄准按 E 收入背包。每颗矿石计 1 个，大小只影响外观，不影响入包数量。
+- 右上角常驻四种矿石的图标、名称、数量，以及矿镐等级环。矿镐下面显示下一次升级的材料种类与“持有 / 需要”数量。
+- 按一次 Tab 尝试升一级矿镐。材料足够才整体扣除；不足、已满级、长按和松开 Tab 都不会重复扣料。Tab 不打开界面、不释放鼠标、不暂停挖掘。
+- 矿镐维持原本的破坏等级、硬度深度倍率、2 级范围倍率、3 级挥镐间隔倍率。喷气背包、炸弹、钻机仍可使用，取消三者的升级路线。
+- 卧室拾取镐子与喷气背包的教学保留。背包和矿镐等级在同一游戏会话跨区保留；R 恢复岩层不返还已拾取矿石。未新增退出游戏后的存档功能。
 
-MainGame 人物身体在游戏中隐藏，第一人称工具保留。四区 64 个堵塞块及卧室新连接处增加向周围岩壁散开的不规则泥土过渡，挖掘与重置沿用现有系统。参数与实现见 `Docs/MainGameDirtTransition.md`。
+## 默认升级配方
 
-## 操作
+1. 铜矿 4、铁矿 2。
+2. 铜矿 6、铁矿 4。
+3. 铜矿 8、铁矿 6、孔雀石 2。
+4. 铜矿 10、铁矿 8、孔雀石 4、钻石 2。
 
-- 左键挖掘；矿物暴露超过 50% 后瞄准按 E 拾取，所得金币进入共享钱包。
-- 按住 Tab 打开升级面板，点击金币按钮按顺序购买；松开 Tab 返回挖掘。
-- G 装备炸弹，左键投掷；V 装备／收起钻机；空格使用喷气背包。最高喷气等级可悬停，左 Ctrl 下降。
-- R 使用既有岩层恢复规则；已经收取的矿物不会再次发放奖励。
+在 **工具 → 矿镐养成数值** 中展开对应等级的“升级材料”，添加种类与数量。等级 0 留空，等级 1～4 至少一种材料，同种矿石不得重复。保存后写入 `Config/DefaultGame.ini`，HUD 与实际扣料共同读取该配置；原有基础挖掘参数和倍率保持不变。
 
-## 结晶布局与经济配方
+## 三矿区与矿石分布
 
-`Config/MainGameMinerals.json` 复用 `Config/CampaignMinerals.json` 的九种矿物、四档价值、类型权重和总经济预算。原末端储备分配到第四段，前三段各分前后两个阶段；按 MainGame 的实际路线重新选点。RoutesV2 固定布局为 125 处矿物、141,692 枚表面和内部碎晶；其中普通可挖层 105 处（84%），洞顶 44 处。玩家每次进入关卡读取保存布局，当前区域的矿物与碎晶按现有系统延迟初始化。新路线与景观见 `Docs/MainGameRoutesV2.md`。
+流程：卧室 → 第一矿区 → 电脑房 → 第二矿区 → 回声／牌局／电视逃生 → 第三矿区 → 镜像博物馆。
 
-四个区域 Tag 是 `BM_Campaign_MainGame01` 至 `BM_Campaign_MainGame04`，添加在对应普通岩层、引导层和外壳上。既有 `BM_MainGame_*` 标签保留。三个连接预留区归前一段，以适配既有的区域恢复规则。金币与升级在步行跨区时保留。
+第四矿区的生成器、岩层、引导层、外壳、矿物、连接段和区域索引从 MainGame 移除。博物馆保留，并以不可挖墙封闭原东侧出口；完成博物馆谜题即完成流程。源房间地图和旧 FullJourney 地图不改写。
 
-通用生成工具见 `Docs/MineralAuthoring.md` 和 `Scripts/campaign_minerals_api.py`。修改通路或重建引导层后，应确认生成的可挖 Actor 保留矿区 Tag，再更新管理器各 Area 的世界坐标 `MapRoute`，通过通用 API 重新布置并校验矿物。不要直接搬运 FullJourney 的矿物坐标或 Host 引用。
+矿石权重在 `Config/MainGameMinerals.json` 中配置：
 
-当前 MainGame 选点使用 `Scripts/rebuild_main_game_route_minerals.py`，在普通岩壁候选点以外增加真实洞顶射线采样，并保持每阶段奖励计划不变。统计及埋藏验收在 `Saved/Validation/MainGameRoutesV2/minerals.json`；通用 API 的默认选点仍适用于原 Campaign。
+- 一区：铜矿 70、铁矿 30。
+- 二区：铜矿 50、铁矿 35、孔雀石 15。
+- 三区：铜矿 40、铁矿 30、孔雀石 22、钻石 8。
 
-初次集成／更新脚本：`Scripts/integrate_main_game_economy.py`，在打开 MainGame 的 UE 编辑器中执行，禁止 PIE 时执行。它仅改 MainGame 资产，不修改 FullJourney 源关卡。布局通过埋藏、支撑点和内部密度校验后保存。
+使用最大余数法把权重转成该区固定矿点数量，再以固定种子打散。保留前三矿区已有的 139 个埋藏点，重新检查矿物埋藏和碎晶支撑。矿石 ID 沿用原资产的 2、4、6、9，避免模型引用和素材身份错位。
 
-## 验证和恢复
+## 更新与验证
 
-- 完整 Editor Development 编译通过。
-- 集成结果：`Saved/Validation/main_game_system_integration.json`。
-- FullJourney 只读参照：`Saved/Validation/main_game_fulljourney_reference.json`。
-- 真实游戏内检查：`Scripts/verify_main_game_systems_runtime.py`；报告和截图在 `Saved/Validation/MainGameSystems`。测试中的挖掘、测试金币与升级只作用于 PIE，不保存到关卡。
-- 集成前备份：`Saved/Backups/MainGame_BeforeSystemIntegration`，包含地图和 MainGame 蓝图。
+当前更新入口为 `Scripts/apply_main_game_material_progression.py`；旧金币预算的布局脚本不再适用于 MainGame 配方。更新前自动备份 MainGame 地图到 `Saved/Backups/MainGame_MaterialProgression_*`，仅在校验通过后保存。
 
-FullJourney 地图原 SHA-256：`70DD29A5840FDA1A082C17B56AF92280C33F72DB6574F4AE9C31F4C907A63340`，集成后核对相同。
+- `python Scripts/test_main_game_material_plan.py`：权重、可获得材料总量、配方可达性。
+- `Scripts/Run_MaterialProgressionChecks.ps1 -Mode Tests`：原生材料扣除、旧金币奖励屏蔽、矿镐效果、编辑配置持久化。
+- `-Mode Author`：更新并保存 MainGame 地图。
+- `-Mode Verify`：重新打开已保存地图，验证三矿区、四种矿物、埋藏、碎晶和博物馆出口碰撞。
+- `-Mode Runtime`：完整 MainGame 的无渲染 PIE 验证，覆盖实际 E/Tab 输入、扣料、效果和跨区保留。
+- `-Mode Runtime -Render`：完整场景的渲染验证和 HUD 截图；可加 `-LowMemoryRender` 临时降低画质。
+- `-Mode HUD -Render -LowMemoryRender`：在未保存的轻量场景中加载实际控制器和 HUD，检查键盘事件、空背包、可升级、四材料配方和满级显示。
+
+报告在 `Saved/Validation/MaterialProgression` 与 `Saved/Automation/MaterialProgression`。旧演示地图仍保留原钱包兼容路径；MainGame 的金币 API 会拒绝发放奖励，且只允许矿镐材料升级。
+
+2026-10-16 验证：编辑器编译成功；7 项原生测试、2 项分布测试、31 项完整 MainGame 无渲染运行检查通过。保存后地图复查通过，包括 139 个矿点、碎晶支撑和博物馆出口 9 个碰撞采样。HUD 轻量场景验证及完整 MainGame 带渲染验证均通过，后者包含 34 项检查（含 3 张截图）。带渲染检查使用临时低画质配置，原画质下的完整试玩未验证；运行前的两次场景渲染尝试因可用内存不足被资源保护停止。

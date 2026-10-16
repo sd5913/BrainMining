@@ -1,0 +1,142 @@
+{
+  "seed": 20261016,
+  "factor": 0.88,
+  "objects": [
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 59.54710980424894,
+      "allowed_end_m": 62.72892798606713,
+      "name": "SM_RoutesV5_TunnelCavernV2_Blocker_01",
+      "seed": 20261306,
+      "bomb_only": false,
+      "start_arc_m": 59.73801889515803,
+      "end_arc_m": 62.53801889515804,
+      "arc_length_m": 2.8000000000000114,
+      "center_m": [
+        -17.969684600830078,
+        -0.5143442153930664,
+        86.96903991699219
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 118.93832815954532,
+      "allowed_end_m": 122.12014634136351,
+      "name": "SM_RoutesV5_TunnelCavernV2_Blocker_02",
+      "seed": 20261497,
+      "bomb_only": false,
+      "start_arc_m": 119.12923725045441,
+      "end_arc_m": 121.92923725045442,
+      "arc_length_m": 2.8000000000000114,
+      "center_m": [
+        23.972070693969727,
+        0.39666882157325745,
+        108.7884750366211
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 126.22219801403156,
+      "allowed_end_m": 127.58583437766794,
+      "name": "SM_RoutesV5_TunnelCavernV2_Blocker_03",
+      "seed": 20261688,
+      "bomb_only": true,
+      "start_arc_m": 126.30401619584974,
+      "end_arc_m": 127.50401619584976,
+      "arc_length_m": 1.200000000000017,
+      "center_m": [
+        24.65289878845215,
+        -0.5144702792167664,
+        114.36917114257812
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 141.67699741629832,
+      "allowed_end_m": 144.8588155981165,
+      "name": "SM_RoutesV5_TunnelCavernV2_Blocker_04",
+      "seed": 20261879,
+      "bomb_only": false,
+      "start_arc_m": 141.8679065072074,
+      "end_arc_m": 144.66790650720742,
+      "arc_length_m": 2.8000000000000114,
+      "center_m": [
+        38.5345344543457,
+        -6.403005123138428,
+        112.02349090576172
+      ]
+    },
+    {
+      "path_index": 1,
+      "path_name": "Branch_01",
+      "allowed_start_m": 9.562570606949016,
+      "allowed_end_m": 12.062570606949016,
+      "name": "SM_RoutesV5_TunnelCavernV2_Blocker_05",
+      "seed": 20262070,
+      "bomb_only": false,
+      "start_arc_m": 9.712570606949017,
+      "end_arc_m": 11.912570606949016,
+      "arc_length_m": 2.1999999999999993,
+      "center_m": [
+        -50.195655822753906,
+        2.16760516166687,
+        63.72362518310547
+      ]
+    },
+    {
+      "path_index": 2,
+      "path_name": "Branch_02",
+      "allowed_start_m": 7.500892584345234,
+      "allowed_end_m": 10.000892584345234,
+      "name": "SM_RoutesV5_TunnelCavernV2_Blocker_06",
+      "seed": 20262261,
+      "bomb_only": false,
+      "start_arc_m": 7.650892584345234,
+      "end_arc_m": 9.850892584345234,
+      "arc_length_m": 2.1999999999999993,
+      "center_m": [
+        -21.383790969848633,
+        3.6232502460479736,
+        89.56888580322266
+      ]
+    },
+    {
+      "path_index": 3,
+      "path_name": "Branch_03",
+      "allowed_start_m": 10.233271280718075,
+      "allowed_end_m": 11.596907644354438,
+      "name": "SM_RoutesV5_TunnelCavernV2_Blocker_07",
+      "seed": 20262452,
+      "bomb_only": true,
+      "start_arc_m": 10.315089462536257,
+      "end_arc_m": 11.515089462536256,
+      "arc_length_m": 1.1999999999999993,
+      "center_m": [
+        45.30942916870117,
+        -9.261192321777344,
+        110.6470947265625
+      ]
+    },
+    {
+      "path_index": 4,
+      "path_name": "Branch_04",
+      "allowed_start_m": 11.788325376224337,
+      "allowed_end_m": 14.288325376224337,
+      "name": "SM_RoutesV5_TunnelCavernV2_Blocker_08",
+      "seed": 20262643,
+      "bomb_only": false,
+      "start_arc_m": 11.938325376224338,
+      "end_arc_m": 14.138325376224337,
+      "arc_length_m": 2.1999999999999993,
+      "center_m": [
+        24.886077880859375,
+        -10.562664031982422,
+        114.33619689941406
+      ]
+    }
+  ]
+}

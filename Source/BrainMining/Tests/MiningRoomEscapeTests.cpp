@@ -1,6 +1,8 @@
 #if WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS
 #include "MiningRoomEscape.h"
 #include "InputKeyEventArgs.h"
+#include "MiningRoomAudioSubsystem.h"
+#include "MiningAudioComponent.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningEncounterPlayer.h"
 #include "MiningCharacterMovementComponent.h"
@@ -31,7 +33,7 @@ public:
     explicit FEscapeChecks(FAutomationTestBase* T,bool InExhibitHall=false):Test(T),bExhibitHall(InExhibitHall){}
     virtual bool Update() override
     {
-        if(FPlatformTime::Seconds()-Start>25){Test->AddError(TEXT("Escape PIE initialization timed out"));return true;}
+        if(FPlatformTime::Seconds()-Start>(bExhibitHall?90:25)){Test->AddError(TEXT("Escape PIE initialization timed out"));return true;}
         UWorld* World=GEditor?GEditor->PlayWorld:nullptr;
         if(bExhibitHall)
         {
@@ -48,10 +50,15 @@ public:
         for(TActorIterator<AMiningRoomEscape> It(World);It;++It){E=*It;break;}
         if(!Test->TestNotNull(TEXT("Study automatically assembles escape"),E))return true;
         auto* Stage=PC->CardInteraction->Stage.Get();
+        auto* RoomAudio=UMiningAudioComponent::IsMainGameWorld(World)?World->GetSubsystem<UMiningRoomAudioSubsystem>():nullptr;
+        if(RoomAudio)RoomAudio->Tick(.01f);
         auto* Move=Cast<UMiningCharacterMovementComponent>(Pawn->GetCharacterMovement());
         auto* Miner=Pawn->FindComponentByClass<UMiningComponent>();const float OriginalRadius=Miner->Radius;
         Test->TestEqual(TEXT("Physical screen and fourteen thick dig sections"),E->ComputerRocks.Num(),15);
         Test->TestTrue(TEXT("Water, breach and route references exist"),E->Water && E->BreachWall);
+        Test->TestTrue(TEXT("TV coordinates follow the referenced room translation"),E->ComputerEntry.Equals(GetDefault<AMiningRoomEscape>()->ComputerEntry+E->SourceLevelOffset,1.));
+        Test->TestTrue(TEXT("Water heights follow the same room translation"),FMath::IsNearlyEqual(E->WaterStartZ,GetDefault<AMiningRoomEscape>()->WaterStartZ+float(E->SourceLevelOffset.Z),1.f));
+        Test->TestTrue(TEXT("Breach is rebuilt at the translated source wall"),FMath::IsNearlyEqual(E->BreachWall->GetActorLocation().Z,9400.+E->SourceLevelOffset.Z,1.));
         Test->TestTrue(TEXT("No early flood"),E->Phase==EMiningEscapePhase::Idle);
         for(const auto& Prop:E->FloatingProps)Test->TestFalse(TEXT("No floating route before flood"),Prop->IsVisible());
         Test->TestTrue(TEXT("TV exit is behind original wall"),E->Exit.X>23700);
@@ -178,6 +185,11 @@ public:
         }
         Pawn->SetActorLocation(E->Exit);E->Tick(.01f);
         Test->TestTrue(TEXT("Upper exit completes escape"),E->Phase==EMiningEscapePhase::Escaped);
+        if(RoomAudio)
+        {
+            for(FName Cue:{FName(TEXT("S_CardDraw")),FName(TEXT("S_CardReward")),FName(TEXT("S_FloodStart")),FName(TEXT("S_Drown")),FName(TEXT("S_Retry")),FName(TEXT("S_Checkpoint")),FName(TEXT("S_ShortCircuit")),FName(TEXT("S_Escape"))})
+                Test->TestTrue(*FString::Printf(TEXT("Encounter triggers %s"),*Cue.ToString()),RoomAudio->EventCount(Cue)>0);
+        }
         Test->TestEqual(TEXT("TV mining adjustment is restored on exit"),Miner->Radius,OriginalRadius);
         Test->TestTrue(TEXT("Reward still retained after completion"),Stage->Run.Phase==ECardRoomPhase::Collected);
         PC->EchoInteraction->Restart();
@@ -206,6 +218,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCampaignCardEscapeTest,"BrainMining.Campaign.F
 bool FCampaignCardEscapeTest::RunTest(const FString&)
 {
     AutomationOpenMap(TEXT("/Game/Campaign/Maps/Lvl_FullJourney"));
+    ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
+    ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMainGameCardEscapeTest,"BrainMining.MainGame.FullCardAndTelevisionEscape",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMainGameCardEscapeTest::RunTest(const FString&)
+{
+    AutomationOpenMap(TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;

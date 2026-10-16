@@ -93,7 +93,11 @@ void UCardRoomInteractionComponent::LeaveSeat()
     Player()->bShowMouseCursor=false;Player()->SetInputMode(FInputModeGameOnly());
     if(FSlateApplication::IsInitialized())FSlateApplication::Get().SetAllUserFocusToGameViewport();
 }
-void UCardRoomInteractionComponent::ConfirmCards() { if(bRoomActive && Stage) Stage->Run.Confirm(); }
+void UCardRoomInteractionComponent::ConfirmCards()
+{
+    if(bRoomActive && Stage && Stage->Run.Phase==ECardRoomPhase::Choosing)
+        if(!Stage->Run.Confirm() && Stage->AudioOverride.IsBound())Stage->Sound(TEXT("S_Reject"),.3f);
+}
 void UCardRoomInteractionComponent::RestoreSeat()
 {
     if(!bSeated)return;

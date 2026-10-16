@@ -67,12 +67,37 @@ UMiningWalletSubsystem* UMiningProgressionComponent::GetWallet() const
 
 int32 UMiningProgressionComponent::GetLevel(int32 TrackIndex) const
 {
+    if (UsesMineralInventory() && TrackIndex != 0) return 0;
     const auto* Wallet = GetWallet();
     return Wallet ? Wallet->GetUpgradeLevel(TrackIndex) : INDEX_NONE;
 }
 
+bool UMiningProgressionComponent::UsesMineralInventory() const
+{
+    const auto* Wallet = GetWallet();
+    return Wallet && Wallet->UsesMineralInventory();
+}
+
+bool UMiningProgressionComponent::CanUpgradePickaxe() const
+{
+    const int32 Level = GetLevel(0);
+    return bInitialized && UsesMineralInventory() && Level >= 0 && Level < 4 &&
+        GetWallet()->CanSpendMinerals(UMiningPickaxeSettings::ResolveLevel(Level + 1).MaterialCosts);
+}
+
+FText UMiningProgressionComponent::GetNextMaterialRequirements() const
+{
+    const int32 Level = GetLevel(0);
+    if (Level < 0 || Level >= 4) return FText::FromString(TEXT("已满级"));
+    TArray<FString> Lines;
+    for (const auto& Cost : UMiningPickaxeSettings::ResolveLevel(Level + 1).MaterialCosts)
+        Lines.Add(FString::Printf(TEXT("%s  %d / %d"), *FMiningMineralCost::Name(Cost.Mineral), GetWallet()->GetMineralCount(Cost.Mineral), Cost.Count));
+    return FText::FromString(FString::Join(Lines, TEXT("\n")));
+}
+
 int64 UMiningProgressionComponent::GetNextPrice(int32 TrackIndex) const
 {
+    if (UsesMineralInventory()) return 0;
     const int32 Level = GetLevel(TrackIndex);
     if (TrackIndex == 0) return Level >= 0 && Level < 4 ? UMiningPickaxeSettings::ResolveLevel(Level + 1).Price : 0;
     return Tracks.IsValidIndex(TrackIndex) && Tracks[TrackIndex].Steps.IsValidIndex(Level) && Level < 4 ? Tracks[TrackIndex].Steps[Level].Price : 0;
@@ -89,6 +114,15 @@ FText UMiningProgressionComponent::GetNextDescription(int32 TrackIndex) const
 bool UMiningProgressionComponent::Purchase(int32 TrackIndex, int32 RequestedLevel)
 {
     if (!bInitialized || !Tracks.IsValidIndex(TrackIndex)) return false;
+    if (UsesMineralInventory())
+    {
+        if (TrackIndex != 0 || RequestedLevel != GetLevel(0) + 1 || !CanUpgradePickaxe()) return false;
+        auto* Wallet = GetWallet();
+        if (!Wallet->SpendMinerals(UMiningPickaxeSettings::ResolveLevel(RequestedLevel).MaterialCosts)) return false;
+        Wallet->UpgradeLevels[0] = RequestedLevel;
+        ApplyUpgrades();
+        return true;
+    }
     if (TrackIndex == 2)
         if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); !Bomb || !Bomb->IsSkillUnlocked()) return false;
     auto* Wallet = GetOwner()->GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
@@ -111,6 +145,7 @@ bool UMiningProgressionComponent::Purchase(int32 TrackIndex, int32 RequestedLeve
 
 void UMiningProgressionComponent::RefreshPickaxeTrack()
 {
+    if (UsesMineralInventory()) Tracks.SetNum(1);
     if (Tracks.IsEmpty()) Tracks.AddDefaulted();
     Tracks[0].Name = FText::FromString(TEXT("矿镐"));
     Tracks[0].Steps.Reset();

@@ -8,6 +8,7 @@ class USceneComponent;
 class UStaticMesh;
 class UPointLightComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCardRoomCompleted, FName, RoomId);
+DECLARE_DELEGATE_TwoParams(FCardRoomAudioOverride, FName, float);
 
 UCLASS()
 class CARDROOM_API ACardRoomStage : public AActor
@@ -19,6 +20,8 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     virtual void BeginPlay() override;
     FCardRoomRun Run;
+    FCardRoomAudioOverride AudioOverride;
+    void Sound(const TCHAR* Name, float Volume=0.65f);
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Card Room") FName RoomId = TEXT("CardDuel_P1");
     // Integration hooks only: listeners decide what a win or collectible means in the main game.
     UPROPERTY(BlueprintAssignable, Category="Card Room") FCardRoomCompleted OnRoomCompleted;
@@ -65,9 +68,9 @@ private:
     void TickEffects();
     ECardRoomPhase LastPhase = ECardRoomPhase::Exploring;
     bool bReplySound = false;
+    float PreviousAudioTime = 0;
     bool bWinSent = false;
     bool bImpactSent = false;
     UStaticMeshComponent* Shape(FName Name, USceneComponent* Parent, const TCHAR* MeshPath, FVector Position, FVector Scale);
     void Tint(UStaticMeshComponent* Part, FLinearColor Color, bool bGlow=false);
-    void Sound(const TCHAR* Name, float Volume=0.65f);
 };

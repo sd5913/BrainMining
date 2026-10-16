@@ -37,15 +37,37 @@ void AMiningExternalRegion::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 	BoundsPreview->SetBoxExtent(RockSize.ComponentMax(FVector(100)) * 0.5);
+	ApplyHardnessSettings();
 #if WITH_EDITOR
 	if (GetWorld() && !GetWorld()->IsGameWorld()) RefreshPreview();
 #endif
+}
+
+void AMiningExternalRegion::BeginPlay()
+{
+	Super::BeginPlay();ApplyHardnessSettings();
+}
+
+void AMiningExternalRegion::ApplyHardnessSettings()
+{
+	const auto Apply=[](AGeneratedMiningRock* Rock,int32 Hardness)
+	{
+		if(!IsValid(Rock) || Rock->HardnessLevel==Hardness)return;
+#if WITH_EDITOR
+		if(Rock->GetWorld() && !Rock->GetWorld()->IsGameWorld())Rock->Modify();
+#endif
+		Rock->HardnessLevel=FMath::Clamp(Hardness,0,4);
+	};
+	Apply(GeneratedRock,RockHardness);
+	for(AGeneratedMiningRock* Guide:GeneratedGuideLayers)Apply(Guide,GuideHardness);
 }
 
 #if WITH_EDITOR
 void AMiningExternalRegion::PostEditChangeProperty(FPropertyChangedEvent& Event)
 {
 	const FName Property = Event.MemberProperty ? Event.MemberProperty->GetFName() : NAME_None;
+	if(Property==GET_MEMBER_NAME_CHECKED(AMiningExternalRegion,RockHardness) || Property==GET_MEMBER_NAME_CHECKED(AMiningExternalRegion,GuideHardness))
+	{ApplyHardnessSettings();Super::PostEditChangeProperty(Event);return;}
 	const bool bGuideProperty = Property == GET_MEMBER_NAME_CHECKED(AMiningExternalRegion, GuideLayers) ||
 		Property == GET_MEMBER_NAME_CHECKED(AMiningExternalRegion, bGuideFollowCutterTransform) ||
 		Property == GET_MEMBER_NAME_CHECKED(AMiningExternalRegion, GuideCutterIndex) ||
@@ -136,6 +158,7 @@ bool AMiningExternalRegion::GenerateRegion()
 	AGeneratedMiningRock* NewRock = GetWorld()->SpawnActor<AGeneratedMiningRock>(GetActorLocation(), GetActorRotation(), Spawn);
 	if (!NewRock) return Fail(TEXT("创建可挖岩层失败。"));
 	NewRock->RockMaterial = RockMaterial;
+	NewRock->HardnessLevel = FMath::Clamp(RockHardness,0,4);
 	NewRock->MaxTriangles = FMath::Clamp(ChunkTriangleBudget, 1000, MiningChunks::MaxChunkTriangles);
 	NewRock->bSimplifyChunks = bSimplifyChunks;
 	if (!NewRock->SetChunkedMesh(Rock, ChunkLength, true, true))
@@ -267,6 +290,7 @@ bool AMiningExternalRegion::GenerateGuideLayers()
 		Guide->bSimplifyChunks = bSimplifyChunks;
 		UStaticMesh* Model = GuideLayers[Indices[Index]].Mesh;
 		Guide->RockMaterial = GuideMaterial ? GuideMaterial.Get() : (Model->GetMaterial(0) ? Model->GetMaterial(0) : RockMaterial.Get());
+		Guide->HardnessLevel = FMath::Clamp(GuideHardness,0,4);
 		if (!Guide->SetChunkedMesh(Geometry[Index], ChunkLength, true, true))
 			return Rollback(FString::Printf(TEXT("阻塞块 %d 分块失败，请检查分块边长或模型。"), Indices[Index] + 1));
 		if (Guide->LargestChunkTriangles > Guide->MaxTriangles)

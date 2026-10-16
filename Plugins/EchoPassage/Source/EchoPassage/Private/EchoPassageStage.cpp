@@ -179,7 +179,8 @@ void AEchoPassageStage::Collapse()
 {
     if(bCollapsed) return;
     bCollapsed=true; TrapFloor->SetVisibility(false);TrapFloor->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    if(auto* S=LoadObject<USoundBase>(nullptr,TEXT("/Game/Passages/Echo/Audio/S_Crumble.S_Crumble"))) UGameplayStatics::PlaySound2D(this,S,.65f);
+    if(AudioOverride.IsBound()) AudioOverride.Execute(TEXT("S_Crumble"),GetActorLocation(),.65f);
+    else if(auto* S=LoadObject<USoundBase>(nullptr,TEXT("/Game/Passages/Echo/Audio/S_Crumble.S_Crumble"))) UGameplayStatics::PlaySound2D(this,S,.65f);
 }
 void AEchoPassageStage::EmitEcho(FVector Location,bool Landing)
 {
@@ -195,13 +196,15 @@ void AEchoPassageStage::EmitEcho(FVector Location,bool Landing)
     }
     PulseIndex=(PulseIndex+1)%4;
     const TCHAR* Path=Landing?TEXT("/Game/Passages/Echo/Audio/S_Landing.S_Landing"):TEXT("/Game/Passages/Echo/Audio/S_Knock.S_Knock");
-    if(auto* S=LoadObject<USoundBase>(nullptr,Path)) UGameplayStatics::PlaySoundAtLocation(this,S,Location,Landing?.85f:.65f);
+    if(AudioOverride.IsBound())AudioOverride.Execute(Landing?TEXT("S_Landing"):TEXT("S_Knock"),Location,Landing?.7f:.65f);
+    else if(auto* S=LoadObject<USoundBase>(nullptr,Path)) UGameplayStatics::PlaySoundAtLocation(this,S,Location,Landing?.85f:.65f);
 }
 void AEchoPassageStage::Complete()
 {
     if(bCompleted) return;
     bCompleted=true; OnPassageCompleted.Broadcast(PassageId);
-    if(auto* S=LoadObject<USoundBase>(nullptr,TEXT("/Game/Passages/Echo/Audio/S_Exit.S_Exit"))) UGameplayStatics::PlaySound2D(this,S,.55f);
+    if(AudioOverride.IsBound())AudioOverride.Execute(TEXT("S_Exit"),GetActorLocation(),.55f);
+    else if(auto* S=LoadObject<USoundBase>(nullptr,TEXT("/Game/Passages/Echo/Audio/S_Exit.S_Exit"))) UGameplayStatics::PlaySound2D(this,S,.55f);
 }
 void AEchoPassageStage::Tick(float DeltaSeconds)
 {

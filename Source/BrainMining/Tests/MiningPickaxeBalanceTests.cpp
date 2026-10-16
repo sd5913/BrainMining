@@ -58,7 +58,7 @@ bool FMiningPickaxeBalancePurchaseTest::RunTest(const FString&)
     const auto Original = Settings->Levels;
     Settings->Levels = UMiningPickaxeSettings::MakeRecommendedLevels();
     Settings->Levels[1].Price = 123;
-    Settings->Levels[1].Depth = 333;
+    Settings->Levels[0].Depth = 333;
     Settings->Levels[1].Description = TEXT("测试价格与深度");
     UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
     auto* Instance = NewObject<UGameInstance>(GEngine);
@@ -95,7 +95,7 @@ bool FMiningPickaxeBalancePurchaseTest::RunTest(const FString&)
     TestFalse(TEXT("Duplicate upgrade rejected"), Progression->Purchase(0, 1));
     TestFalse(TEXT("Skipping upgrade rejected"), Progression->Purchase(0, 3));
     for (int32 Level = 2; Level <= 4; ++Level) TestTrue(TEXT("Next level buys"), Progression->Purchase(0, Level));
-    TestEqual(TEXT("Max level has two stages"), Mining->PickaxeBalance.Stages.Num(), 2);
+    TestEqual(TEXT("Every strength-based swing is an independent cut"), Mining->PickaxeBalance.Stages.Num(), 1);
     TestEqual(TEXT("Old global coin bonus is removed"), Wallet->MineralDoubleChance, 0.f);
     TestEqual(TEXT("Full price sum charged"), Wallet->Balance, int64(43877));
     TestEqual(TEXT("Full level has no next price"), Progression->GetNextPrice(0), int64(0));

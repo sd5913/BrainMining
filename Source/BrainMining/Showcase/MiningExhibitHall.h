@@ -84,6 +84,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<AMiningRoomEscape> Journey;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<AMiningCellUniverse> Ending;
     UFUNCTION(BlueprintCallable) bool EnterArea(int32 Index, bool bMovePlayer = true);
+    bool EnterDeveloperArea(int32 Index, FString& Error);
     UFUNCTION(BlueprintCallable) void ReturnToLobby();
     UFUNCTION(BlueprintCallable) bool SkipCurrentRoom();
     UFUNCTION(BlueprintCallable) bool PurchaseUpgrade(int32 ItemIndex, int32 RequestedLevel);

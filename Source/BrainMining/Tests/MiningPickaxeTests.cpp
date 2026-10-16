@@ -216,6 +216,7 @@ bool FMiningPickaxeConfiguredStagesTest::RunTest(const FString&)
     Rock->ResetRock();
     auto* Mining = CreatePickaxe(World);
     auto Three = UMiningPickaxeSettings::MakeRecommendedLevels()[0];
+    Three.bUseHardness=false; // Explicit coverage of the retained legacy stage API.
     Three.Width = 200; Three.Depth = 130;
     auto Two = Three;
     Two.Stages = UMiningPickaxeSettings::MakeRecommendedLevels()[4].Stages;
@@ -252,6 +253,7 @@ bool FMiningPickaxeIndependentDimensionsTest::RunTest(const FString&)
     Rock->RockSize = FVector(1000, 1000, 1000);
     auto* Mining = CreatePickaxe(World);
     auto Profile = UMiningPickaxeSettings::MakeRecommendedLevels()[0];
+    Profile.bUseHardness=false;
     Profile.Width = 200; Profile.Depth = 130; Profile.Stages.RemoveAt(0, 2);
     const auto CutDepth = [&]()
     {
@@ -292,6 +294,7 @@ bool FMiningPickaxeConfiguredChunkTest::RunTest(const FString&)
     Rock->InteractiveCutBudgetMilliseconds = .01f;
     auto* Mining = CreatePickaxe(World);
     auto Profile = UMiningPickaxeSettings::MakeRecommendedLevels()[4];
+    Profile.bUseHardness=false;
     Profile.Width = 500; Profile.Depth = 130; Profile.Roughness = .5f;
     Mining->ApplyPickaxeBalance(Profile);
     for (int32 Strike = 1; Strike <= 2; ++Strike)

@@ -41,6 +41,7 @@ namespace
 		double StartAudioTime = 0;
 		TArray<float> Volumes;
 		TArray<FString> Events;
+		TArray<int32> MineAreas;
 		TWeakObjectPtr<AMiningStarterPickup> Pickaxe;
 		TWeakObjectPtr<AMiningStarterPickup> Jetpack;
 
@@ -84,9 +85,12 @@ namespace
 			auto* Bomb = Pawn->FindComponentByClass<UMiningBombToolComponent>();
 			auto* Settings = World->GetGameInstance()->GetSubsystem<UMiningAudioSettings>();
 			auto* Camera = Pawn->FindComponentByClass<UCameraComponent>();
-			if (!Mining || !Flight || !Bomb || !Settings || !Camera || Hall->Areas.Num() != 4 || !Hall->Areas[0].SourceLevel || Hall->Areas[0].MapRoute.Num() < 5)
+			if (MineAreas.IsEmpty())
+				for (int32 Index = 0; Index < Hall->Areas.Num(); ++Index)
+					if (Hall->Areas[Index].Kind == EMiningExperienceKind::Mining) MineAreas.Add(Index);
+			if (!Mining || !Flight || !Bomb || !Settings || !Camera || MineAreas.Num() != 3 || MineAreas[0] != 0 || !Hall->Areas[0].SourceLevel || Hall->Areas[0].MapRoute.Num() < 5)
 			{
-				Check(false, TEXT("MainGame components or four areas missing")); Finish(); return;
+				Check(false, TEXT("MainGame components or three mining areas missing")); Finish(); return;
 			}
 			if (Step == -1)
 			{
@@ -119,6 +123,7 @@ namespace
 			switch (Step)
 			{
 			case 0:
+				Check(Hall->Areas.Num() > MineAreas.Num(), TEXT("Current MainGame includes interleaved minigames"));
 				Check(Pawn->GetClass()->GetName() == TEXT("BP_MainGameCharacter_C") && Audio->UsesMainGameAudio(), TEXT("Actual MainGame character uses profile"));
 				Check(Audio->GetAudioRegion() == 0, TEXT("Actual bedroom identified"));
 				break;
@@ -188,10 +193,10 @@ namespace
 				Check(Bomb->ExplosionCount > BeforeExplosions, TEXT("Actual bomb explodes"));
 				Bomb->Stow();
 				break;
-			case 12: Hall->UnlockedArea = 3; Check(Hall->EnterArea(1), TEXT("Travel to cavern")); break;
-			case 13: Check(Audio->GetAudioRegion() == 2, TEXT("Cavern profile")); Check(Hall->EnterArea(2), TEXT("Travel to stalagmites")); break;
-			case 14: Check(Audio->GetAudioRegion() == 3, TEXT("Stalagmite profile")); Check(Hall->EnterArea(3), TEXT("Travel to neural rock")); break;
-			case 15: Check(Audio->GetAudioRegion() == 4, TEXT("Neural rock profile")); Settings->SetVolume(0, 0); break;
+			case 12: Hall->UnlockedArea = Hall->Areas.Num() - 1; Check(Hall->EnterArea(MineAreas[1]), TEXT("Travel to second mine")); break;
+			case 13: Check(Audio->GetAudioRegion() == 2, TEXT("Second mine profile")); Check(Hall->EnterArea(MineAreas[2]), TEXT("Travel to third mine")); break;
+			case 14: Check(Audio->GetAudioRegion() == 3, TEXT("Third mine profile")); break;
+			case 15: Check(Audio->GetAudioRegion() == 3, TEXT("Third mine profile remains stable")); Settings->SetVolume(0, 0); break;
 			case 16: Settings->SetVolume(0, 1); break;
 			case 17:
 				Audio->Deactivate();
@@ -203,7 +208,10 @@ namespace
 				Settings->SetVolume(2, 0);
 				Settings->SetVolume(3, 0);
 				Settings->SetVolume(4, 0);
-				Check(Hall->EnterArea(1), TEXT("Travel to cavern for isolated music recording"));
+				Check(Hall->EnterArea(MineAreas[0]), TEXT("Travel to first mine for isolated music recording"));
+				Pawn->SetActorLocation(Hall->Areas[MineAreas[0]].MapRoute[4] + FVector(0, 0, 100), false, nullptr, ETeleportType::TeleportPhysics);
+				Flight->StopMovementImmediately();
+				Flight->SetMovementMode(MOVE_Flying);
 				break;
 			case 20:
 			case 22:
@@ -215,8 +223,8 @@ namespace
 				for (const auto* Player : Players)
 					if (Player->Sound && Player->Sound->GetFName() == FName(TEXT("M_DreamyFlashback_Loop")))
 						bMusicAudible |= Player->IsPlaying() && FMath::IsNearlyEqual(Player->VolumeMultiplier, .12f);
-				Check(bMusicAudible && Audio->GetAudioRegion() == (Step - 16) / 2, TEXT("Later area uses first mine music and gain"));
-				if (Step < 24) Check(Hall->EnterArea((Step - 16) / 2), TEXT("Travel to next isolated music area"));
+				Check(bMusicAudible && Audio->GetAudioRegion() == (Step - 18) / 2, TEXT("Each mine uses first mine music and gain"));
+				if (Step < 24) Check(Hall->EnterArea(MineAreas[(Step - 18) / 2]), TEXT("Travel to next isolated music area"));
 				else Settings->SetVolume(1, 0);
 				break;
 			}

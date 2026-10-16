@@ -230,7 +230,7 @@ void AWenSiPuzzle::ResetPuzzle()
   {
    if(auto Character=Cast<ACharacter>(Pawn))
    {
-    if(auto Movement=Cast<UMiningCharacterMovementComponent>(Character->GetCharacterMovement())) Movement->SetFlightInputHeld(false);
+    if(auto Movement=Cast<UMiningCharacterMovementComponent>(Character->GetCharacterMovement())) Movement->ResetFlightInput();
     Character->GetCharacterMovement()->SetMovementMode(MOVE_Walking);Character->GetCharacterMovement()->StopMovementImmediately();
    }
    Pawn->SetActorTransform(PlayerResetTransform,false,nullptr,ETeleportType::TeleportPhysics);

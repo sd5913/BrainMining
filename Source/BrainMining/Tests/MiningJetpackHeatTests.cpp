@@ -8,6 +8,7 @@ bool FMiningJetpackHeatTest::RunTest(const FString& Parameters)
 	auto* Movement = NewObject<UMiningCharacterMovementComponent>();
 	Movement->FlightSettings.bEnabled = true;
 	Movement->SetFlightInputHeld(true);
+	Movement->UpdateFlightState(.3f);
 	Movement->UpdateJetpackHeat(2.5f, true);
 	TestEqual(TEXT("Half the continuous flight budget fills half the bar"), Movement->JetpackHeat, .5f);
 	Movement->UpdateJetpackHeat(.5f, false);
@@ -19,6 +20,7 @@ bool FMiningJetpackHeatTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Holding or repressing cannot thrust through lockout"), Movement->IsFlightThrustActive());
 	Movement->SetFlightInputHeld(false);
 	Movement->SetFlightInputHeld(true);
+	Movement->UpdateFlightState(.3f);
 	TestTrue(TEXT("Overheated character falls using existing gravity"), Movement->NewFallVelocity(FVector::ZeroVector, FVector(0, 0, -980), .1f).Z < 0);
 	Movement->UpdateJetpackHeat(1.f, false);
 	TestTrue(TEXT("Cooling reduces heat to two thirds while flight stays locked"), FMath::IsNearlyEqual(Movement->JetpackHeat, 2.f / 3.f));

@@ -314,7 +314,7 @@ void UMiningComponent::ResetField()
 			Character->StopJumping();
 			if (UMiningCharacterMovementComponent* Movement = Cast<UMiningCharacterMovementComponent>(Character->GetCharacterMovement()))
 			{
-				Movement->SetFlightInputHeld(false);
+				Movement->ResetFlightInput();
 			}
 			Character->GetCharacterMovement()->StopMovementImmediately();
 			if (AController* Controller = Character->GetController())

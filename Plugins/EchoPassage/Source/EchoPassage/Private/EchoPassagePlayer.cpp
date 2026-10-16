@@ -146,6 +146,9 @@ void UEchoPassageInteractionComponent::Knock()
 void UEchoPassageInteractionComponent::Restart()
 {
     if(RestartOverride.IsBound() && RestartOverride.Execute())return;
+    // An always-loaded passage must not steal the shared miner's R key while
+    // the player is in another room or excavation area.
+    if(!bExplorationActive)return;
     if(!Stage || !GetPawn() || bChangingLevel)return;
     bPendingStrike=false;FeedbackUntil=0;Stage->ResetPassage();LockMovement(false);SwingTime=10;
     auto* P=Cast<ACharacter>(GetPawn());

@@ -17,3 +17,9 @@
 *.psd filter=lfs diff=lfs merge=lfs -text
 *.wav filter=lfs diff=lfs merge=lfs -text
 *.mp4 filter=lfs diff=lfs merge=lfs -text
+Art/Ending/CellModels/*.max filter=lfs diff=lfs merge=lfs -text
+Art/Ending/CellModels/*.c4d filter=lfs diff=lfs merge=lfs -text
+Art/Ending/CellModels/*.obj filter=lfs diff=lfs merge=lfs -text
+Art/Ending/CellModels/*.mb filter=lfs diff=lfs merge=lfs -text
+Art/Ending/CellModels/*.stl filter=lfs diff=lfs merge=lfs -text
+Art/Ending/CellModels/tex/*.png filter=lfs diff=lfs merge=lfs -text

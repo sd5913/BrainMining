@@ -114,6 +114,7 @@ bool FMiningAudioRoutingTest::RunTest(const FString&)
     auto* Flight = CastChecked<UMiningCharacterMovementComponent>(Pawn->GetCharacterMovement());
     Flight->FlightSettings.bEnabled = true;
     Flight->SetFlightInputHeld(true);
+    Flight->UpdateFlightState(Flight->FlightSettings.Sanitized().HoldToIgniteSeconds + .01f);
     Audio->TickComponent(.01f, LEVELTICK_All, nullptr);
     TestEqual(TEXT("Thrust and drill have independent loops"), Audio->GetToolLoopCount(), 2);
     Flight->JetpackOverheatRemaining = 1.f;

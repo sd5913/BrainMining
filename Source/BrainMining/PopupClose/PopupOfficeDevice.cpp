@@ -23,7 +23,7 @@ namespace
  void AwardOfficeCoins(APopupOfficeDevice& Device,int64 Amount)
  {
   if(auto GameInstance=Device.GetGameInstance())
-   if(auto Wallet=GameInstance->GetSubsystem<UMiningWalletSubsystem>())Wallet->AddCoins(Amount);
+   if(auto Wallet=GameInstance->GetSubsystem<UMiningWalletSubsystem>(); Wallet && !Wallet->UsesMineralInventory())Wallet->AddCoins(Amount);
  }
 }
 

@@ -26,7 +26,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogOfficeExit,Log,All);
 CSV_DEFINE_CATEGORY(OfficeFinale,true);
 namespace
 {
- constexpr int32 BombBudget=384;
+ constexpr int32 BombBudget=256;
+ constexpr float PickupBombScale=1.6f;
  constexpr float ExitPlane=1090.f;
  constexpr float VisualUpdateHz=30.f;
  void WarmBombRenderPool(UInstancedStaticMeshComponent* Mesh)
@@ -40,7 +41,7 @@ namespace
 FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
 {
  auto Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
- auto BombMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/Bomb/SM_Bomb.SM_Bomb"));
+ auto BombMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/Bomb/SM_StickyBomb.SM_StickyBomb"));
  auto Parent=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
  auto Make=[&](const TCHAR* Name,UStaticMesh* Asset,FLinearColor Color)
  {
@@ -77,14 +78,16 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
  PickupActor->Tags.Add(TEXT("BM_PlayerEffect"));PickupActor->SetActorTickEnabled(false);
  auto PickupBody=NewObject<USphereComponent>(PickupActor,TEXT("OfficeBombPickupPhysics"));PickupActor->AddInstanceComponent(PickupBody);
  PickupActor->SetRootComponent(PickupBody);PickupBody->SetWorldLocationAndRotation(Owner.GetActorTransform().TransformPosition(FVector(-4,0,150)),Owner.GetActorQuat());
- PickupBody->SetMobility(EComponentMobility::Movable);PickupBody->InitSphereRadius(12.f);
+ PickupBody->SetMobility(EComponentMobility::Movable);
+ PickupBody->InitSphereRadius(BombMesh?FMath::Clamp(BombMesh->GetBounds().BoxExtent.GetMax()*PickupBombScale,12.f,28.f):12.f);
  PickupBody->SetCollisionProfileName(TEXT("PhysicsActor"));PickupBody->SetCollisionEnabled(ECollisionEnabled::NoCollision);
  PickupBody->SetCollisionResponseToChannel(ECC_Pawn,ECR_Ignore);PickupBody->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);
  PickupBody->SetEnableGravity(true);PickupBody->BodyInstance.bUseCCD=true;
  PickupBody->SetLinearDamping(.25f);PickupBody->SetAngularDamping(1.5f);PickupBody->SetCanEverAffectNavigation(false);
  auto Bounce=NewObject<UPhysicalMaterial>(PickupBody);Bounce->Friction=.7f;Bounce->Restitution=.2f;PickupBody->SetPhysMaterialOverride(Bounce);
  PickupBody->RegisterComponent();Pickup->AttachToComponent(PickupBody,FAttachmentTransformRules::KeepRelativeTransform);
- Pickup->SetRelativeLocation(-BombMeshOrigin);
+ // The single collectible keeps the full C4 detail and a larger, centered body.
+ Pickup->SetRelativeScale3D(FVector(PickupBombScale));Pickup->SetRelativeLocation(-BombMeshOrigin*PickupBombScale);
  Pickup->SetCollisionEnabled(ECollisionEnabled::NoCollision);Pickup->SetVisibility(false);
  Pickup->SetRenderCustomDepth(true);Pickup->SetCustomDepthStencilValue(2);
  auto Instances=[&](const TCHAR* Name,UStaticMesh* Asset,FLinearColor Color)
@@ -96,9 +99,9 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
   Mesh->RegisterComponent();return Mesh;
  };
  Bombs=Instances(TEXT("OfficeFinaleBombs"),BombMesh,FLinearColor::White);
- // Only the office's cinematic copy is reduced. The pickup and player ability
- // continue to use the original mesh and materials.
- if(auto FinaleMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/PopupClose/FX/SM_OfficeFinaleBomb.SM_OfficeFinaleBomb")))
+ // The crowd shares one reduced C4 asset and its materials. No per-bomb actors,
+ // rigid bodies, countdown components or dynamic material instances are needed.
+ if(auto FinaleMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/PopupClose/FX/SM_OfficeFinaleC4.SM_OfficeFinaleC4")))
  {
   Bombs->SetStaticMesh(FinaleMesh);Bombs->SetForcedLodModel(2);
  }
@@ -244,7 +247,7 @@ void FPopupOfficeExit::Tick()
  if(Phase==5)
  {
   const float Duration=FMath::Max(2.f,Owner.EvacuationBombSeconds);
-  EmissionDebt+=Dt*FMath::Lerp(3.f,10.f,FMath::Clamp(Age/Duration,0.f,1.f));
+  EmissionDebt+=Dt*FMath::Lerp(2.f,7.f,FMath::Clamp(Age/Duration,0.f,1.f));
   int32 Rounds=0;while(EmissionDebt>=1.f && Rounds++<2){EmissionDebt-=1.f;for(int32 I=0;I<Sources.Num();++I)EmitBomb(I);}
   // Interaction still ticks at 60 Hz; only the distant cinematic meshes are
   // sampled at 30 Hz. Submit one incremental instance update, not a new proxy.

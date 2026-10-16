@@ -383,6 +383,7 @@ void AGeneratedMiningRock::ResetRock()
 
 bool AGeneratedMiningRock::MineSphere(FVector WorldCenter, float WorldRadius)
 {
+	if (ActorHasTag(TEXT("BM_BombOnly"))) { LastStatus = TEXT("坚硬岩层：只能用炸弹破坏"); return false; }
 	if (SegmentIndex != INDEX_NONE && SegmentState != EMiningSegmentState::Active)
 	{
 		LastStatus = SegmentState == EMiningSegmentState::Waiting
@@ -405,6 +406,7 @@ void AGeneratedMiningRock::SetSegmentState(EMiningSegmentState State)
 
 bool AGeneratedMiningRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed, float Roughness)
 {
+	if (ActorHasTag(TEXT("BM_BombOnly"))) { LastStatus = TEXT("坚硬岩层：只能用炸弹破坏"); return false; }
 	if (SegmentIndex != INDEX_NONE && SegmentState != EMiningSegmentState::Active)
 	{
 		LastStatus = TEXT("This segment is not available for mining");

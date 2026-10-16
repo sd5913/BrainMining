@@ -79,14 +79,14 @@ def tick(delta):
             key(True); state.update(phase='fade-in', start=unreal.GameplayStatics.get_time_seconds(world)); return
         now = unreal.GameplayStatics.get_time_seconds(state['world'])
         ui = state['ui']; m = state['m']
-        if phase == 'fade-in' and now-state['start'] >= .06:
+        if phase == 'fade-in' and now-state['start'] >= m.flight_settings.hold_to_ignite_seconds + .06:
             check(0 < ui.gauge_opacity < 1, 'Flight reveals gauge through a short fade instead of a pop')
             state['phase'] = 'yellow'
         elif phase == 'yellow' and now-state['start'] >= 2.5:
             check(m.is_flight_thrust_active() and .45 < ui.displayed_heat < .65, 'Yellow fill follows actual sustained thrust')
             check(ui.gauge_opacity > .99 and ui.warning_opacity == 0, 'Normal heat shows gauge without the screen warning')
             shot('yellow-zone'); state['phase'] = 'danger'
-        elif phase == 'danger' and now-state['start'] >= 4.1:
+        elif phase == 'danger' and now-state['start'] >= m.flight_settings.hold_to_ignite_seconds + 4.1:
             check(.78 < ui.displayed_heat < .92 and ui.warning_opacity > 0, 'Entering last quarter reveals the red screen warning')
             check(ui.warning_opacity <= ui.warning_max_opacity, 'Warning stays below its editable opacity limit')
             check(abs(state['gui'].jetpack_heat_warning.get_render_opacity()-ui.warning_opacity)<.001, 'Screen overlay tracks the heat warning fade')

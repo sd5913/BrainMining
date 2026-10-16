@@ -2,6 +2,8 @@
 
 核对日期：2026-10-16。目标地图：`/Game/MainGame/Maps/Lvl_MainGame`。
 
+后续推送前合并远端后，当前主流程已变为三个矿区穿插小游戏，第四矿区已移除，详见 `MainGameSystems.md`。本文件保留最初资源采购与复核基线；当前播放策略与合并验证见 [MainGame 音频接入记录](MainGameAudioImplementation.md)。
+
 本次已下载 12 个音源包／单曲，共 49,915,255 字节（约 49.9 MB），来自 Kenney、OpenGameArt、Incompetech 三个下载站点；另核对了一项 Freesound 上游录音。整理为 37 个 48 kHz / PCM16 WAV 候选，保留完整源文件、网页快照、授权文本、SHA-256 与加工记录。试听页同时列出此前版本的 47 个声音，便于比较。
 
 **这份清单是接入前的资源复核基线。后续已生成并导入 19 个正式派生音源；最新代码与验证状态见 [MainGame 音频接入记录](MainGameAudioImplementation.md)。** 下文“已有”指复核时的代码／资产，不代表新版本已在 MainGame 运行验收。对声音风格的选择依据源站描述、录音类别和玩法用途，最终听感待确认。

@@ -104,14 +104,17 @@ int32 UMiningAudioComponent::FindAudioRegion() const
 	if (!Hall.IsValid() || !Hall->bReady || !Hall->Areas.IsValidIndex(Hall->ActiveArea) || !Character.IsValid()) return INDEX_NONE;
 	const auto& Area = Hall->Areas[Hall->ActiveArea];
 	if (Area.Kind != EMiningExperienceKind::Mining) return INDEX_NONE;
-	if (Hall->ActiveArea == 0 && Area.SourceLevel)
+	int32 MiningRegion = 0;
+	for (int32 Index = 0; Index <= Hall->ActiveArea; ++Index)
+		if (Hall->Areas[Index].Kind == EMiningExperienceKind::Mining) ++MiningRegion;
+	if (MiningRegion == 1 && Area.SourceLevel)
 	{
 		const FVector Local = Area.SourceLevel->LevelTransform.InverseTransformPosition(Character->GetActorLocation());
 		const float Margin = AudioRegion == 0 ? 70.f : 0.f;
 		if (FMath::Abs(Local.X) < 500 + Margin && FMath::Abs(Local.Y) < 400 + Margin && Local.Z > -100 && Local.Z < 450)
 			return 0;
 	}
-	return Hall->ActiveArea + 1;
+	return MiningRegion;
 }
 
 void UMiningAudioComponent::SetSoundscapeLayer(FName Name, float Target, float DeltaTime)

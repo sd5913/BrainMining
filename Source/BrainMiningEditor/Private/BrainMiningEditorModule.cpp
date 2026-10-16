@@ -71,7 +71,7 @@ public:
 		FGlobalTabmanager::Get()->RegisterNomadTabSpawner("MiningPickaxeBalance", FOnSpawnTab::CreateLambda([](const FSpawnTabArgs&)
 		{
 			return SNew(SDockTab).TabRole(ETabRole::NomadTab)[SNew(SMiningPickaxeBalancePanel)];
-		})).SetDisplayName(FText::FromString(TEXT("矿镐养成数值"))).SetTooltipText(FText::FromString(TEXT("配置矿镐各级价格、宽深、速度和逐击形状")));
+		})).SetDisplayName(FText::FromString(TEXT("矿镐养成数值"))).SetTooltipText(FText::FromString(TEXT("配置矿镐各级矿石材料、宽深、速度和逐击形状")));
 	}
 	virtual void ShutdownModule() override
 	{

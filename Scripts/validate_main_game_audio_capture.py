@@ -38,7 +38,7 @@ def validate(saved):
     before_mute = window(events[14] + 0.4, events[15] - 0.2)
     isolated_music = {
         name: window(events[step] + 0.4, events[step + 1] - 0.2)
-        for name, step in [("cavern", 19), ("stalagmites", 21), ("neural_rock", 23)]
+        for name, step in [("mine_1", 19), ("mine_2", 21), ("mine_3", 23)]
     }
     music_mute = window(events[24] + 0.4, events[25] - 0.2)
     music_recovery = window(events[25] + 0.4, events[26] - 0.2)

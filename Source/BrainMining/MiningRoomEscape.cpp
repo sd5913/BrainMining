@@ -29,6 +29,9 @@ void AMiningRoomEscape::BeginPlay()
     Super::BeginPlay();
     Player=Cast<AMiningEncounterPlayerController>(GetWorld()->GetFirstPlayerController());
     if(!Player.IsValid() || !CardStage || !Entrance){SetActorTickEnabled(false);return;}
+    Checkpoint+=SourceLevelOffset;ComputerEntry+=SourceLevelOffset;
+    ComputerCheckpointPosition+=SourceLevelOffset;TunnelEnd+=SourceLevelOffset;Exit+=SourceLevelOffset;
+    WaterStartZ+=SourceLevelOffset.Z;WaterEndZ+=SourceLevelOffset.Z;TableWaterZ+=SourceLevelOffset.Z;
     if(bBuildStudyLayout)BuildStudyLayout();
     CardStage->OnOpponentWallImpact.AddDynamic(this,&AMiningRoomEscape::OnWallImpact);
     CardStage->OnCollectibleClaimed.AddDynamic(this,&AMiningRoomEscape::OnRewardClaimed);
@@ -91,7 +94,7 @@ void AMiningRoomEscape::RetryEscape()
     Pawn->SetActorRotation(FRotator(0,Aim.Yaw,0));Player->SetControlRotation(Aim);
     if(auto* Character=Cast<ACharacter>(Pawn))Character->StopJumping();
     if(auto* Move=Pawn->FindComponentByClass<UMiningCharacterMovementComponent>())
-    {Move->SetFlightInputHeld(false);Move->StopMovementImmediately();Move->SetMovementMode(MOVE_Falling);}
+    {Move->ResetFlightInput();Move->StopMovementImmediately();Move->SetMovementMode(MOVE_Falling);}
     FailureReason.Empty();StartFlood();
     bComputerCheckpoint=FromComputer;bExitGuidance=FromComputer;
     if(FromComputer){WaterZ=ComputerStartWaterZ=CheckpointWaterZ;Elapsed=CheckpointElapsed;SetTelevisionMining(true);}
@@ -99,6 +102,7 @@ void AMiningRoomEscape::RetryEscape()
 }
 bool AMiningRoomEscape::HandleRestart()
 {
+    if(bAreaManaged && !bAreaActive)return false;
     if(Phase==EMiningEscapePhase::Idle)return false;
     RetryEscape();return true;
 }
@@ -122,7 +126,7 @@ void AMiningRoomEscape::Fail(const FString& Reason)
         Player->EncounterPolicy->SetMiningAllowed(false);
         if(!bFailureLock){Player->SetIgnoreMoveInput(true);bFailureLock=true;}
         if(Player->GetPawn())if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())
-        {Move->SetFlightInputHeld(false);Move->StopMovementImmediately();Move->SetMovementMode(MOVE_None);}
+        {Move->ResetFlightInput();Move->StopMovementImmediately();Move->SetMovementMode(MOVE_None);}
     }
 }
 void AMiningRoomEscape::SetTelevisionMining(bool Enabled)
@@ -223,7 +227,7 @@ void AMiningRoomEscape::Tick(float DeltaSeconds)
         const float Head=Character?Character->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()*.75f:50.f;
         // Hazards win a same-frame race with the exit.
         if(bComputerCheckpoint && ComputerElapsed>=FMath::Max(1.f,ComputerSeconds))Fail(TEXT("水涌入电视，电路短路！"));
-        else if(P.Z+Head<WaterZ || P.Z<0)Fail(TEXT("被上涨的水淹没了！"));
+        else if(P.Z+Head<WaterZ || P.Z<SourceLevelOffset.Z)Fail(TEXT("被上涨的水淹没了！"));
         else if(!bComputerCheckpoint && Elapsed>=FMath::Max(1.f,FloodSeconds))Fail(TEXT("房间被灌满，未能及时逃出！"));
         else if(bEnteredComputer && !ComputerRocks.IsEmpty() && ClearedNodes==ComputerRocks.Num() && FVector::Dist(P,Exit)<ExitRadius)
         {Phase=EMiningEscapePhase::Escaped;PhaseTime=0;Player->EncounterPolicy->SetMiningAllowed(false);SetTelevisionMining(false);}

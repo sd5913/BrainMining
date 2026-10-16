@@ -30,7 +30,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Player Flight")
 	void SetFlightInputHeld(bool bHeld);
-    void PushFlightBlock() {++FlightBlockCount;SetFlightInputHeld(false);}
+	/** Clear gesture history and coast state on reset, loss of control or scripted travel. */
+	void ResetFlightInput();
+	/** Advances gesture and flight phase clocks once per movement tick, never per physics query. */
+	void UpdateFlightState(float DeltaSeconds);
+    void PushFlightBlock() {++FlightBlockCount;ResetFlightInput();}
     void PopFlightBlock() {FlightBlockCount=FMath::Max(0,FlightBlockCount-1);}
     bool IsFlightAvailable() const {return FlightSettings.bEnabled && FlightBlockCount==0;}
 private:
@@ -39,7 +43,18 @@ private:
     int32 FlightBlockCount=0;
 	// Capture the duration at overheat start so runtime settings edits cannot jump the bar.
 	float JetpackOverheatDuration = 0.f;
+	float FlightHoldSeconds = 0.f;
+	float DoubleTapRemaining = 0.f;
+	float ThrustSeconds = 0.f;
+	float ReleaseHangDuration = 0.f;
+	// Frame-averaged coast weight is reused by every physics query/substep in this tick.
+	float ReleaseCoastWeight = 0.f;
+	bool bJetpackEngaged = false;
+	bool bJetpackUsedInAir = false;
+	void IgniteJetpack();
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Player Flight")
+	float JetpackHangRemaining = 0.f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Player Flight|Jetpack Heat")
 	float JetpackHeat = 0.f;
@@ -48,7 +63,7 @@ public:
 	UFUNCTION(BlueprintPure, Category="Player Flight|Jetpack Heat")
 	bool IsJetpackOverheated() const { return JetpackOverheatRemaining > 0.f; }
 	UFUNCTION(BlueprintPure, Category="Player Flight")
-	bool IsFlightThrustActive() const { return FlightSettings.bEnabled && bFlightInputHeld && !IsJetpackOverheated(); }
+	bool IsFlightThrustActive() const { return IsFlightAvailable() && bFlightInputHeld && (bCreativeFlight || bJetpackEngaged) && !IsJetpackOverheated(); }
 	/** Advances gameplay heat once per movement tick, independently of UI visibility. */
 	void UpdateJetpackHeat(float DeltaSeconds, bool bThrustRequested);
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -57,4 +72,5 @@ public:
 	virtual float GetMaxSpeed() const override;
 	virtual FVector GetAirControl(float DeltaTime, float TickAirControl, const FVector& FallAcceleration) override;
 	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
+	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 };

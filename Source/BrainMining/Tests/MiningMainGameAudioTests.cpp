@@ -146,6 +146,26 @@ bool FMainGameAudioLifecycleTest::RunTest(const FString&)
 		for (const auto* Player : Players)
 			TestFalse(TEXT("Cave Theme is not layered over the shared music"), Player->Sound && Player->Sound->GetFName() == FName(TEXT("M_CaveTheme_Loop")));
 	}
+	Hall->Areas.InsertDefaulted(1);
+	Hall->Areas[1].Kind = EMiningExperienceKind::Office;
+	Hall->Areas.InsertDefaulted(3);
+	Hall->Areas[3].Kind = EMiningExperienceKind::Journey;
+	for (const int32 AreaIndex : {2, 4, 5})
+	{
+		Hall->ActiveArea = AreaIndex;
+		Audio->TickComponent(.1f, LEVELTICK_All, nullptr);
+		Audio->TickComponent(.6f, LEVELTICK_All, nullptr);
+		TestEqual(TEXT("Minigames do not shift mining audio profiles"), Audio->GetAudioRegion(), AreaIndex == 2 ? 2 : AreaIndex - 1);
+		if (const auto* SharedMusic = FindSharedMusic())
+			TestTrue(TEXT("Interleaved mines retain first mine music gain"), FMath::IsNearlyEqual(SharedMusic->VolumeMultiplier, FirstMineGain));
+	}
+	Hall->ActiveArea = 1;
+	Audio->TickComponent(.1f, LEVELTICK_All, nullptr);
+	Audio->TickComponent(1.f, LEVELTICK_All, nullptr);
+	TestEqual(TEXT("Office retains its own audio instead of a mining profile"), Audio->GetAudioRegion(), INDEX_NONE);
+	Hall->ActiveArea = 4;
+	Audio->TickComponent(1.f, LEVELTICK_All, nullptr);
+	TestEqual(TEXT("Returning to the third mine restores its profile"), Audio->GetAudioRegion(), 3);
 	MusicTrim->SetWithCurrentPriority(0.f);
 	Audio->TickComponent(2.f, LEVELTICK_All, nullptr);
 	if (const auto* SharedMusic = FindSharedMusic()) TestEqual(TEXT("Shared music respects zero trim"), SharedMusic->VolumeMultiplier, 0.f);

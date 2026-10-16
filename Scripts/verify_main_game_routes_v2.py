@@ -1,7 +1,12 @@
 """Saved-map corridor, landmark, excavation and PIE presentation acceptance."""
-import unreal,json,time,traceback,math
+import unreal,json,time,traceback,math,sys
 from pathlib import Path
+sys.path.insert(0,str(Path(unreal.Paths.project_dir()).resolve()/'Scripts'))
+from main_game_route_sources import tuning
 ROOT=Path(unreal.Paths.project_dir()).resolve();OUT=ROOT/'Saved/Validation/MainGameRoutesV2';ART=ROOT/'Art/MainGame/RoutesV2'
+TUNING=tuning(ROOT);EXPECTED=TUNING['expected_deposits'];GUIDES=len(TUNING['active_blocker_indices'])
+ROOMS=json.loads((ROOT/'Config/MainGameRooms.json').read_text()) if (ROOT/'Config/MainGameRooms.json').exists() else {}
+LINKED=ROOMS.get('installed',False)
 editor=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem);levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 helper=unreal.MiningGUIEditorLibrary
 previous_lazy=unreal.SystemLibrary.get_console_variable_int_value('bm.Mining.LazyRuntimeChunks')
@@ -38,10 +43,10 @@ def tick(dt):
             if not pawn or not halls or not halls[0].get_editor_property('bReady') or not pc.mining_gui:return
             state.update(world=world,pawn=pawn,pc=pc,hall=halls[0],movement=pawn.get_component_by_class(unreal.MiningCharacterMovementComponent),regions=list(unreal.GameplayStatics.get_all_actors_of_class(world,unreal.MiningExternalRegion)))
             check(all(c.get_editor_property('hidden_in_game') for c in pawn.get_components_by_class(unreal.SkeletalMeshComponent)),'Player bodies remain hidden')
-            check(len(halls[0].treasure.items)==125,'All 125 economy deposits load after the saved route rebuild')
+            check(len(halls[0].treasure.items)==EXPECTED,'All %d mineral deposits load from the saved map'%EXPECTED)
             state['interaction_targets']=list(unreal.GameplayStatics.get_all_actors_of_class(world,unreal.MiningTreasure))
             ignored=[pawn]+state['interaction_targets']+[g for r in state['regions'] for g in r.generated_guide_layers]
-            for n in range(3):
+            for n in range(0 if LINKED else 3):
                 floors=[]
                 for k in range(61):
                     x=6110+(8750-6110)*k/60;z=900-(x-6500)*.10
@@ -56,10 +61,15 @@ def tick(dt):
             i=state['index'];stage=STAGES[i];r=next(r for r in state['regions'] if r.actor_has_tag(TAGS[i]));origin=r.get_actor_location()+r.cutters[0].local_transform.translation
             paths=json.loads((ART/stage/'centerlines.json').read_text());plan=json.loads((ART/stage/'plan_summary.json').read_text());before=json.loads((OUT/'before.json').read_text())['areas'][i]
             area=next(a for a in state['hall'].areas if str(a.tag)=='BM_Campaign_MainGame%02d'%(i+1))
-            check(area.map_route[0].distance(V(before['start']))<.01 and area.map_route[-1].distance(V(before['end']))<.01,stage+' exact route endpoints preserved')
-            check(area.entry.translation.distance(V(before['entry']))<.01 and area.exit.distance(V(before['exit']))<.01,stage+' campaign entry and exit unchanged')
+            delta=V(ROOMS['mine_deltas'][i]) if LINKED else unreal.Vector()
+            check(area.map_route[0].distance(V(before['start'])+delta)<.01 and min(p.distance(V(before['end'])+delta) for p in area.map_route)<.01,stage+' local route endpoints preserved after translation')
+            entry=V(ROOMS['mine_origins'][i])+unreal.Vector(-6600,0,6096) if LINKED and i else V(before['entry'])+delta
+            if LINKED and 'mine_entry_positions' in ROOMS:entry=V(ROOMS['mine_entry_positions'][i])
+            exit=(V(ROOMS['connections'][2*i]['b'])+unreal.Vector(-150,0,96) if i<3 else V(ROOMS['mine_origins'][i])+unreal.Vector(6500,0,800)) if LINKED else V(before['exit'])
+            if LINKED and i<3 and 'room_activation_x' in ROOMS:exit.x=ROOMS['room_activation_x'][i]
+            check(area.entry.translation.distance(entry)<.01 and area.exit.distance(exit)<.01,stage+' campaign entry and exit match current connection plan')
             check(plan['ascent_m']>15 and plan['spiral_turns']==1 and plan['backtracking_x_m']>25,stage+' ascending, helical and returning route segments exist')
-            check(len(r.generated_guide_layers)==16,stage+' keeps sixteen mineable blockages')
+            check(len(r.generated_guide_layers)==GUIDES,stage+' keeps %d mineable blockages'%GUIDES)
             ignored=[state['pawn']]+state['interaction_targets']+[g for x in state['regions'] for g in x.generated_guide_layers]
             samples=0;headroom=[]
             for path in paths:

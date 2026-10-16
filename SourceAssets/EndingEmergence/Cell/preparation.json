@@ -1,0 +1,22 @@
+{
+  "SM_CellHero": {
+    "triangles": 64999,
+    "materials": 1
+  },
+  "SM_CellDistant": {
+    "triangles": 6460,
+    "materials": 1
+  },
+  "SM_CellMitochondria": {
+    "triangles": 2500,
+    "materials": 1
+  },
+  "SM_CellReticulum": {
+    "triangles": 6499,
+    "materials": 1
+  },
+  "SM_CellNucleus": {
+    "triangles": 6999,
+    "materials": 1
+  }
+}

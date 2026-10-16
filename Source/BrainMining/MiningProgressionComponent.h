@@ -51,6 +51,9 @@ public:
     UFUNCTION(BlueprintPure, Category="Progression") int64 GetNextPrice(int32 TrackIndex) const;
     UFUNCTION(BlueprintPure, Category="Progression") FText GetNextDescription(int32 TrackIndex) const;
     UFUNCTION(BlueprintPure, Category="Progression") UMiningWalletSubsystem* GetWallet() const;
+    UFUNCTION(BlueprintPure, Category="Progression") bool UsesMineralInventory() const;
+    UFUNCTION(BlueprintPure, Category="Progression") bool CanUpgradePickaxe() const;
+    UFUNCTION(BlueprintPure, Category="Progression") FText GetNextMaterialRequirements() const;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Progression") bool bInitialized = false;
 private:
     void RefreshPickaxeTrack();

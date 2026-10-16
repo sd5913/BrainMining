@@ -24,6 +24,7 @@
 #include "Engine/GameViewportClient.h"
 #include "Components/InputComponent.h"
 #include "MiningComponent.h"
+#include "MiningProgressionComponent.h"
 #include "MiningBombToolComponent.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GameFramework/Pawn.h"
@@ -167,6 +168,16 @@ bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 		return true;
 	}
 	if (IsAudioSettingsOpen()) return true;
+    auto* Progression = GetPawn() ? GetPawn()->FindComponentByClass<UMiningProgressionComponent>() : nullptr;
+    if (Params.Key == EKeys::Tab && Progression && Progression->UsesMineralInventory())
+    {
+        if (Params.Event == IE_Pressed && bMiningGUIEnabled && !IsMoveInputIgnored() && !IsLookInputIgnored() && !IsPaused() && !bShowMouseCursor)
+        {
+            const bool bUpgraded = Progression->Purchase(0, Progression->GetLevel(0) + 1);
+            if (auto* Audio = GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPurchase(bUpgraded);
+        }
+        return true; // Repeat/release never purchase, show a cursor, or suspend mining.
+    }
 	// Consume the throw before Enhanced Input sees a mining press. A held throw
 	// therefore cannot turn into a pickaxe swing after the bomb leaves the hand.
 	if (Params.Key == EKeys::LeftMouseButton && Params.Event == IE_Pressed)
@@ -194,6 +205,7 @@ bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 
 void ABrainMiningPlayerController::SetUpgradeMenuHeld(bool bHeld)
 {
+    if (GetPawn()) if (auto* Progression = GetPawn()->FindComponentByClass<UMiningProgressionComponent>(); Progression && Progression->UsesMineralInventory()) return;
 	if (!bOwnsDesktopGUIInput || !MiningGUI || bUpgradeMenuHeld == bHeld) return;
  if (bHeld && (!bMiningGUIEnabled || IsMoveInputIgnored() || IsLookInputIgnored() || IsPaused())) return;
 	bUpgradeMenuHeld = bHeld;

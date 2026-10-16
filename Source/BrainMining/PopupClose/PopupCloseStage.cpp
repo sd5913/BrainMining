@@ -529,6 +529,8 @@ FString APopupCloseStage::ValidateOffice()
  auto PC=LockedController.Get();auto Pawn=LockedPawn.Get();
  auto Wallet=GetGameInstance()?GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>():nullptr;
  auto Balance=[Wallet]()->int64{return Wallet?Wallet->Balance:0;};
+ const int64 ReplyReward=Wallet && Wallet->UsesMineralInventory()?0:20;
+ const int64 PaperReward=Wallet && Wallet->UsesMineralInventory()?0:10;
  Check(Wallet!=nullptr,TEXT("office uses the shared game wallet"));
  Check(Devices.Num()==4 && !Devices[0]->IsPrinter() && !Devices[1]->IsPrinter() && Devices[2]->IsPrinter() && Devices[3]->IsPrinter(),TEXT("two computers and two printers"));
  float MinDistance=FLT_MAX;for(int32 I=0;I<4;++I)for(int32 J=I+1;J<4;++J)MinDistance=FMath::Min(MinDistance,float(FVector::Dist(Devices[I]->GetActorLocation(),Devices[J]->GetActorLocation())));
@@ -538,15 +540,15 @@ FString APopupCloseStage::ValidateOffice()
  if(ActiveComputer->Pending()==0)ActiveComputer->AddProblem();
  const int64 BeforeReply=Balance();
  Check(ActiveComputer->ClickReplyForValidation(),TEXT("actual reply button removes exactly one message"));
- Check(Wallet && Balance()-BeforeReply==20,TEXT("one real popup reply awards exactly 20 shared coins"));
+ Check(Wallet && Balance()-BeforeReply==ReplyReward,TEXT("popup reply follows the active economy; MainGame awards no coins"));
  ActiveComputer->AddProblem();ActiveComputer->AddProblem();const int32 PendingBefore=ActiveComputer->Pending();
- Check(Balance()==BeforeReply+20,TEXT("new pending messages award no coins"));
+ Check(Balance()==BeforeReply+ReplyReward,TEXT("new pending messages award no coins"));
  auto First=ActiveComputer.Get();ExitScreen();
  // Finish the same exit path immediately for deterministic checks in this one-frame validation.
  if(PC->PlayerCameraManager)PC->PlayerCameraManager->UpdateCamera(ScreenExitSeconds+.01f);
  RestorePlayerControl();PC->SetViewTarget(Pawn);View=EView::Free;ActiveComputer=nullptr;
  Check(First->Pending()==PendingBefore && !PC->IsMoveInputIgnored() && !PC->IsLookInputIgnored() && !PC->bShowMouseCursor,TEXT("exiting preserves unresolved messages and restores controls"));
- Check(Balance()==BeforeReply+20,TEXT("exiting a computer awards no coins"));
+ Check(Balance()==BeforeReply+ReplyReward,TEXT("exiting a computer awards no coins"));
  auto AimAt=[&](APopupOfficeDevice* Device)
  {
   const FVector P=Device->GetActorLocation()-Device->GetActorForwardVector()*215+FVector(0,0,98);
@@ -560,10 +562,10 @@ FString APopupCloseStage::ValidateOffice()
   AimAt(Printer);Check(Printer->CanInteract(PC),TEXT("printer requires approaching and aiming"));
   const int32 Before=Printer->Pending();const int64 BeforePaper=Balance();HandleInteraction(PC,Printer);
   Check(Printer->Pending()==Before-1 && Printer->WarningVisible(),TEXT("one interaction processes one sheet; warning remains for backlog"));
-  Check(Wallet && Balance()-BeforePaper==10,TEXT("one processed sheet awards exactly 10 shared coins"));
+  Check(Wallet && Balance()-BeforePaper==PaperReward,TEXT("printer follows the active economy; MainGame awards no coins"));
   for(int32 Remaining=Printer->Pending();Remaining>0 && Printer->CanInteract(PC);--Remaining)HandleInteraction(PC,Printer);
   Check(Printer->Pending()==0 && !Printer->WarningVisible() && Printer->AccountingValid(),TEXT("paper stack and warning clear only after every sheet is processed"));
-  Check(Balance()-BeforePaper==Before*10,TEXT("all sheets are rewarded individually without a bulk bonus"));
+  Check(Balance()-BeforePaper==Before*PaperReward,TEXT("processing all sheets follows the active economy"));
   const int64 BeforeEmpty=Balance();
   Check(!Printer->ProcessPaper() && Balance()==BeforeEmpty,TEXT("empty printer interaction awards no coins"));
  }

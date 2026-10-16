@@ -1,4 +1,6 @@
 #include "StartRoom/MiningStartRoom.h"
+#include "MiningInteractionTrace.h"
+#include "MiningAudioComponent.h"
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningToolEffectsComponent.h"
@@ -76,7 +78,12 @@ AMiningStarterPickup* AMiningStartRoom::GetTarget(APlayerController* Controller)
     Controller->GetPlayerViewPoint(Location, Rotation);
     FHitResult Hit;
     FCollisionQueryParams Params(SCENE_QUERY_STAT(StartRoomPickup), false, Controller->GetPawn());
-    if (!GetWorld()->LineTraceSingleByChannel(Hit, Location, Location + Rotation.Vector() * InteractionReach, ECC_Visibility, Params)) return nullptr;
+    if (!MiningInteraction::Trace(GetWorld(),Hit,Location,Rotation,InteractionReach,Params,[](const FHitResult& Candidate)
+        {
+            for (AActor* Actor=Candidate.GetActor(); Actor; Actor=Actor->GetAttachParentActor())
+                if (auto* Pickup=Cast<AMiningStarterPickup>(Actor)) return !Pickup->bCollected;
+            return false;
+        })) return nullptr;
     for (AActor* Actor = Hit.GetActor(); Actor; Actor = Actor->GetAttachParentActor())
         if (auto* Pickup = Cast<AMiningStarterPickup>(Actor)) return Pickup->bCollected ? nullptr : Pickup;
     return nullptr;
@@ -108,7 +115,21 @@ bool AMiningStartRoom::Interact(APlayerController* Controller)
         if (bOwnFlightBlock) { Flight->PopFlightBlock(); bOwnFlightBlock = false; }
     }
     Pickup->Collect();
+    if (auto* Audio = Controller->GetPawn()->FindComponentByClass<UMiningAudioComponent>())
+        Audio->PlayStarterPickup(Pickup->Equipment == EMiningStarterEquipment::Jetpack);
     return true;
+}
+
+void AMiningStartRoom::UnlockDeveloperEquipment()
+{
+#if !UE_BUILD_SHIPPING
+    if (bOwnMiningBlock && Mining.IsValid()) { Mining->PopEncounterBlock(); bOwnMiningBlock = false; }
+    if (bOwnFlightBlock && Flight.IsValid()) { Flight->PopFlightBlock(); bOwnFlightBlock = false; }
+    if (Effects.IsValid()) Effects->bEnabled = bPreviousEffectsEnabled;
+    bPickaxeUnlocked = bJetpackUnlocked = true;
+    for (TActorIterator<AMiningStarterPickup> Pickup(GetWorld()); Pickup; ++Pickup)
+        if (!Pickup->bCollected) Pickup->Collect();
+#endif
 }
 
 void AMiningStartRoom::EndPlay(const EEndPlayReason::Type Reason)

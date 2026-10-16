@@ -18,8 +18,10 @@ namespace
  constexpr int32 PaperBudget=48;
  constexpr int32 PaperFloorBudget=384;
  constexpr float WindowScale=1.4f;
- constexpr float AdditionalComputerDelay=3.f;
- constexpr float EmissionRampSeconds=12.f;
+ constexpr float AdditionalComputerDelay=2.f;
+ constexpr float SlowEmissionSeconds=5.f;
+ constexpr float RapidEmissionSeconds=10.f;
+ constexpr float TotalEmissionSeconds=SlowEmissionSeconds+RapidEmissionSeconds;
  constexpr float WindowLayerSpacing=3.2f;
  constexpr int32 MaxWindowLayers=20;
  constexpr float PaperStackLayerSpacing=.6f;
@@ -39,9 +41,11 @@ namespace
  }
  float EmissionRate(float Seconds,bool bAdditionalComputer)
  {
-  const float Start=bAdditionalComputer?AdditionalComputerDelay:0.f;
-  const float Alpha=FMath::Clamp((Seconds-Start)/EmissionRampSeconds,0.f,1.f);
-  return FMath::Lerp(bAdditionalComputer?0.f:1.f,10.f,Alpha);
+  // The first five seconds are deliberately sparse and physically simulated;
+  // the remaining ten seconds ramp sharply and land as pooled instances.
+  if(Seconds>=TotalEmissionSeconds)return 0.f;
+  const float SlowRate=bAdditionalComputer?.5f:1.25f;
+  return Seconds<SlowEmissionSeconds ? SlowRate : FMath::Lerp(24.f,36.f,FMath::Clamp((Seconds-SlowEmissionSeconds)/RapidEmissionSeconds,0.f,1.f));
  }
 }
 
@@ -127,28 +131,43 @@ void FPopupOfficeFlood::Warm(float Dt)
 void FPopupOfficeFlood::Start()
 {
  bStarted=true;Time=0;
- for(int32 I=0;I<4;++I){Sources[I].Debt=FMath::FRandRange(0.f,.5f);Emit(I);}
+ for(int32 I=0;I<4;++I){Sources[I].Debt=FMath::FRandRange(0.f,.5f);Emit(I,true);}
 }
 void FPopupOfficeFlood::Tick(float Dt)
 {
  if(!bStarted && !Slots.ContainsByPredicate([](const FSlot& Slot){return Slot.bActive;}))return;
  Time+=Dt;PeakFrame=FMath::Max(PeakFrame,Dt);
- for(auto& Slot:Slots)if(Slot.bActive && Time>=Slot.RetireTime)Retire(Slot,true);
+ for(auto& Slot:Slots)if(Slot.bActive && !Slot.bPhysical)
+ {
+  if(Time>=Slot.RetireTime)Retire(Slot,true);
+  else if(auto Actor=Slot.Actor.Get())
+  {
+   const float Age=Time-Slot.Born;
+   Actor->SetActorLocationAndRotation(Slot.Origin+Slot.Velocity*Age+FVector(0,0,.5f*Owner.GetWorld()->GetGravityZ()*Age*Age),
+       Slot.Rotation+FRotator(25*Age,50*Age,40*Age),false,nullptr,ETeleportType::TeleportPhysics);
+  }
+ }
  // Stopping emission does not cancel the last batch's flight or floor deposits.
  if(!bStarted)return;
  if(Time>=AdditionalComputerDelay && !bAllSources)
  {
   bAllSources=true;
   for(int32 I=4;I<Sources.Num();++I)Sources[I].Debt=FMath::FRandRange(0.f,.75f);
-  UE_LOG(LogOfficeFlood,Display,TEXT("%d additional office monitors joined at %.2f s; their emission rate starts at zero and ramps over 12 seconds"),Sources.Num()-4,Time);
+  UE_LOG(LogOfficeFlood,Display,TEXT("%d additional office monitors joined at %.2f s; physical phase ends at %.1f s"),Sources.Num()-4,Time,SlowEmissionSeconds);
  }
  const int32 SourceCount=bAllSources?Sources.Num():4;
  for(int32 I=0;I<SourceCount;++I)
  {
   // Fractional emission credits preserve each source's phase as the rate changes.
-  Sources[I].Debt=FMath::Min(Sources[I].Debt+Dt*EmissionRate(Time,I>=4),2.f);
+  Sources[I].Debt=FMath::Min(Sources[I].Debt+Dt*EmissionRate(Time,I>=4),4.f);
   int32 Count=0;
-  while(Sources[I].Debt>=1.f && Count++<2){Sources[I].Debt-=1.f;Emit(I);}
+  while(Sources[I].Debt>=1.f && Count++<4){Sources[I].Debt-=1.f;Emit(I,Time<SlowEmissionSeconds);}
+ }
+ if(Time>=TotalEmissionSeconds)
+ {
+  bStarted=false;
+  int32 Active=0;for(const auto& Slot:Slots)Active+=Slot.bActive?1:0;
+  UE_LOG(LogOfficeFlood,Display,TEXT("Popup eruption reached %.1f s; rapid instance phase complete, %d physical objects still airborne"),TotalEmissionSeconds,Active);
  }
  if(Time<=18.5f && FMath::FloorToInt(Time/3.f)>FMath::FloorToInt((Time-Dt)/3.f))
  {
@@ -168,16 +187,23 @@ int32 FPopupOfficeFlood::SelectCell(const FSource& Source,bool bPaper)
  }
  return FMath::RandRange(0,Cells.Num()-1);
 }
-void FPopupOfficeFlood::Emit(int32 SourceIndex)
+void FPopupOfficeFlood::Emit(int32 SourceIndex,bool bPhysical)
 {
  const bool bPaper=SourceIndex==2 || SourceIndex==3;
  const int32 Start=bPaper?WindowBudget:0;
  const int32 Count=bPaper?FMath::Max(0,Slots.Num()-WindowBudget):FMath::Min(Slots.Num(),WindowBudget);
  if(Count==0)return;
  int32& Cursor=bPaper?PaperCursor:WindowCursor;
- FSlot& Slot=Slots[Start+Cursor++%Count];
- if(Slot.bActive)Retire(Slot,true);
- auto Actor=Slot.Actor.Get();if(!Actor)return;
+ int32 Selected=INDEX_NONE;
+ for(int32 Attempt=0;Attempt<Count;++Attempt)
+ {
+  const int32 Candidate=Start+Cursor++%Count;
+  // Early bodies remain exactly where Chaos leaves them, including after 5 s.
+  if(!Slots[Candidate].bActive){Selected=Candidate;break;}
+ }
+ // Never recycle a persistent physical body or interrupt a visible flight.
+ if(Selected==INDEX_NONE)return;
+ FSlot& Slot=Slots[Selected];
  const auto& Source=Sources[SourceIndex];Slot.Cell=SelectCell(Source,bPaper);Slot.Target=Cells[Slot.Cell];
  if(bPaper && Source.Count%4!=0)
  {
@@ -188,25 +214,28 @@ void FPopupOfficeFlood::Emit(int32 SourceIndex)
   const int32 Layer=(Source.Count/8)*3+Source.Count%4-1;
   Slot.Target=Centers[Stack]+FVector(FMath::FRandRange(-5.f,5.f),FMath::FRandRange(-6.f,6.f),7.f+PaperStackLayerSpacing*Layer);
  }
+ auto Actor=Slot.Actor.Get();if(!Actor)return;
  const FTransform Room=Owner.GetActorTransform();
  const FVector Origin=Room.TransformPosition(Source.Origin);
  const FVector Target=Room.TransformPosition(Slot.Target);
- const float FlightSeconds=FMath::FRandRange(1.15f,1.40f);
+ const float FlightSeconds=bPhysical?FMath::FRandRange(1.15f,1.40f):FMath::FRandRange(.45f,.65f);
  FVector Velocity=(Target-Origin)/FlightSeconds;Velocity.Z-=.5f*Owner.GetWorld()->GetGravityZ()*FlightSeconds;
  Actor->SetActorLocationAndRotation(Origin,FRotator(FMath::FRandRange(-20.f,20.f),Room.Rotator().Yaw+Source.Direction.Rotation().Yaw+180.f,FMath::FRandRange(-15.f,15.f)),false,nullptr,ETeleportType::TeleportPhysics);
- Actor->Launch(PopupCloseContent::Get(Slot.Variant).Color,Velocity);
- Slot.bActive=true;Slot.RetireTime=Time+FlightSeconds+.25f;++Sources[SourceIndex].Count;
+ Slot.Rotation=Actor->GetActorRotation();Slot.Born=Time;Slot.Origin=Origin;Slot.Velocity=Velocity;Slot.bPhysical=bPhysical;
+ if(bPhysical)Actor->Launch(PopupCloseContent::Get(Slot.Variant).Color,Velocity);
+ else Actor->LaunchGenerated();
+ Slot.bActive=true;Slot.RetireTime=Time+FlightSeconds;++Sources[SourceIndex].Count;
 }
 void FPopupOfficeFlood::Retire(FSlot& Slot,bool bDeposit)
 {
  if(auto Actor=Slot.Actor.Get())
  {
-  if(Slot.bPaper)if(auto Body=Actor->FindComponentByClass<UStaticMeshComponent>())
+  if(Slot.bPaper && Slot.bPhysical)if(auto Body=Actor->FindComponentByClass<UStaticMeshComponent>())
    if(Body->CalcBounds(Body->GetComponentTransform()).GetBox().Min.Z<Owner.GetActorLocation().Z-.25f)++BelowFloorPapers;
   Actor->RetireToPool();
  }
  if(bDeposit)Deposit(Slot);
- Slot.bActive=false;++Recycled;
+ Slot.bActive=false;Slot.bPhysical=false;++Recycled;
 }
 void FPopupOfficeFlood::AddGround(int32 Group,FVector P,FVector Size,FRotator Rotation)
 {
@@ -259,7 +288,7 @@ void FPopupOfficeFlood::Deposit(const FSlot& Slot)
 }
 void FPopupOfficeFlood::Pause()
 {
- for(auto& Slot:Slots)if(Slot.bActive)Retire(Slot,true);
+ for(auto& Slot:Slots)if(Slot.bActive && !Slot.bPhysical)Retire(Slot,true);
 }
 void FPopupOfficeFlood::Stop()
 {
@@ -270,7 +299,7 @@ void FPopupOfficeFlood::Stop()
 }
 void FPopupOfficeFlood::ClearVisuals()
 {
- Stop();Pause();for(auto Mesh:Ground)if(Mesh.IsValid())Mesh->ClearInstances();
+ Stop();for(auto& Slot:Slots)if(Slot.bActive)Retire(Slot,false);for(auto Mesh:Ground)if(Mesh.IsValid())Mesh->ClearInstances();
 }
 void FPopupOfficeFlood::Reset()
 {

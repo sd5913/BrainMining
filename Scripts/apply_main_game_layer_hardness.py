@@ -1,0 +1,15 @@
+"""Apply region hardness without rebuilding terrain, inclusions or source maps."""
+import unreal,json,hashlib,sys
+from pathlib import Path
+ROOT=Path(unreal.Paths.project_dir()).resolve();sys.path.insert(0,str(ROOT/'Scripts'));import campaign_minerals_api as minerals
+OUT=ROOT/'Saved/Validation/PickaxeHardness';OUT.mkdir(exist_ok=True);levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem);ed=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem);assert not ed.get_game_world();assert levels.load_level('/Game/MainGame/Maps/Lvl_MainGame');assert levels.set_current_level_by_name('Lvl_MainGame')
+actors=list(unreal.get_editor_subsystem(unreal.EditorActorSubsystem).get_all_level_actors());hall=next(a for a in actors if isinstance(a,unreal.MiningExhibitHall));cfg=json.loads((ROOT/'Config/MainGameRooms.json').read_text());sources={s['source']:hashlib.sha256((ROOT/'Content'/(s['source'][6:]+'.umap')).read_bytes()).hexdigest() for s in cfg['rooms']};before=minerals.validate(minerals.get_field(hall),hall);assert before['ok'];report={'passed':False,'regions':[],'rocks':[],'source_hashes':sources};counts=[]
+for i in range(4):
+ tag='BM_Campaign_MainGame%02d'%(i+1);region=next(a for a in actors if isinstance(a,unreal.MiningExternalRegion) and a.actor_has_tag(tag));counts.append((region.generated_rock.get_path_name(),region.generated_rock.triangle_count));region.set_editor_property('rock_hardness',i,notify_mode=unreal.PropertyAccessChangeNotifyMode.NEVER);region.set_editor_property('guide_hardness',i+1,notify_mode=unreal.PropertyAccessChangeNotifyMode.NEVER);region.apply_hardness_settings();guides=list(region.generated_guide_layers)
+ for a in actors:
+  if not isinstance(a,unreal.DiggableRock) or a.get_level()!=hall.get_level() or not a.actor_has_tag(tag):continue
+  material=a.rock_material.get_path_name().lower() if a.rock_material else '';name=a.get_actor_label().lower();soil=a in guides or 'clayblockage' in material or any(p in name for p in ['diggablesoil','堵塞','引导层']);hardness=i+1 if soil else i;a.set_editor_property('hardness_level',hardness,notify_mode=unreal.PropertyAccessChangeNotifyMode.NEVER);report['rocks'].append({'actor':a.get_path_name(),'label':a.get_actor_label(),'region':i+1,'soil':soil,'hardness':hardness})
+ report['regions'].append({'region':i+1,'actor':region.get_path_name(),'normal':i,'soil':i+1,'guides':len(guides)})
+after=minerals.validate(minerals.get_field(hall),hall);assert after['ok'] and after['layout_sha256']==before['layout_sha256'] and after['fragments']==before['fragments'];assert all(unreal.load_object(None,p).triangle_count==n for p,n in counts);assert levels.save_current_level()
+for path,digest in sources.items():assert hashlib.sha256((ROOT/'Content'/(path[6:]+'.umap')).read_bytes()).hexdigest()==digest
+report.update(passed=True,terrain_counts=counts,mineral_layout_sha256=after['layout_sha256'],deposits=after['deposits'],fragments=after['fragments']);(OUT/'authoring.json').write_text(json.dumps(report,ensure_ascii=False,indent=2));unreal.log('MAIN_GAME_LAYER_HARDNESS_SAVED')

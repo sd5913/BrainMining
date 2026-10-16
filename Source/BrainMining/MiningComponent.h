@@ -17,6 +17,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMiningAttemptEvent, float, MiningIn
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMiningHitEvent, const FHitResult&, Hit);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMiningResetEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMiningToolModeEvent, bool, bDrillMode);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FMiningPickaxeContactEvent, const FHitResult&, int32);
+DECLARE_MULTICAST_DELEGATE_OneParam(FMiningPickaxeBreakEvent, const FVector&);
 
 UCLASS(ClassGroup=(Mining), meta=(BlueprintSpawnableComponent))
 class BRAINMINING_API UMiningComponent : public UActorComponent
@@ -24,6 +26,8 @@ class BRAINMINING_API UMiningComponent : public UActorComponent
 	GENERATED_BODY()
 public:
 	UMiningComponent();
+	FMiningPickaxeContactEvent OnPickaxeContact;
+	FMiningPickaxeBreakEvent OnPickaxeBreak;
 	bool ApplyPickaxeBalance(const FMiningPickaxeLevel& Level);
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
 	FMiningPickaxeLevel PickaxeBalance;
@@ -32,6 +36,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
 	float PickaxeSizeScale = 1;
 	bool ApplyPickaxeHit(const FHitResult& Hit);
+
+	UFUNCTION(BlueprintPure, Category="Mining|Pickaxe")
+	float GetPickaxeDepthMultiplier(const ADiggableRock* Rock) const;
+	UFUNCTION(BlueprintPure, Category="Mining|Pickaxe")
+	float GetPickaxeDepth(const ADiggableRock* Rock) const;
 	float GetPickaxeImpactDelay() const;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Pickaxe")
 	int32 TargetPickaxeHits = 0;
@@ -42,6 +51,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Mining|Effects")
 	FMiningHitEvent OnMiningHit;
 	UPROPERTY(BlueprintAssignable, Category="Mining|Effects")
+	FMiningHitEvent OnMiningBlocked;
+	UPROPERTY(BlueprintAssignable, Category="Mining|Effects")
 	FMiningResetEvent OnMiningReset;
 	UPROPERTY(BlueprintAssignable, Category="Mining|Tool")
 	FMiningToolModeEvent OnToolModeChanged;
@@ -51,7 +62,9 @@ public:
 	void BindInput(UEnhancedInputComponent* Input);
     void SetInputContextEnabled(bool bEnabled);
     bool IsInputContextEnabled() const { return bInputContextEnabled; }
+    UFUNCTION(BlueprintCallable, Category="Mining|Touch")
     void BeginMiningInput() { StartMining(); }
+    UFUNCTION(BlueprintCallable, Category="Mining|Touch")
     void EndMiningInput() { StopMining(); }
     UPROPERTY(BlueprintAssignable, Category="Mining") FMiningResetEvent OnFieldReset;
     void PushEncounterBlock();

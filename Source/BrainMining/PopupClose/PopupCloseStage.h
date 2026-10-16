@@ -49,7 +49,7 @@ public:
  void CancelSession();
  void ResetCompletedSessions();
  int32 GetCompletedSessions() const { return Exit && Exit->DoorIsOpen() ? 1 : 0; }
- UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PopupClose|Exit", meta=(ClampMin="18", Units="s")) float EruptionBeforeBombSeconds=32.f;
+ UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PopupClose|Exit", meta=(ClampMin="15", ClampMax="15", Units="s")) float EruptionBeforeBombSeconds=15.f;
  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PopupClose|Exit", meta=(ClampMin="2", Units="s")) float EvacuationBombSeconds=5.f;
  UPROPERTY(BlueprintAssignable, Category="PopupClose|Exit") FPopupOfficeExitEvent OnOfficeEscaped;
  UPROPERTY(BlueprintAssignable, Category="PopupClose|Exit") FPopupOfficeExitEvent OnOfficeDestroyed;

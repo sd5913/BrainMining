@@ -1,4 +1,9 @@
 #include "MiningBombActor.h"
+#include "MiningAudioComponent.h"
+#include "Components/AudioComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
+#include "Sound/SoundAttenuation.h"
 #include "MiningBombPresentationComponent.h"
 #include "DiggableRock.h"
 #include "GeneratedMiningRock.h"
@@ -38,16 +43,27 @@ AMiningBombActor::AMiningBombActor()
 	BounceMaterial = CreateDefaultSubobject<UPhysicalMaterial>(TEXT("BombBounceMaterial"));
 	BounceMaterial->Friction = .45f;
 	BounceMaterial->Restitution = 0.f;
-	Collision->SetPhysMaterialOverride(BounceMaterial);
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BombModel"));
 	Model->SetupAttachment(Collision);
 	Model->SetCollisionProfileName(TEXT("NoCollision"));
+}
+
+void AMiningBombActor::BeginPlay()
+{
+	Super::BeginPlay();
+	if (Collision && BounceMaterial)
+	{
+		Collision->SetPhysMaterialOverride(BounceMaterial);
+	}
 }
 
 void AMiningBombActor::Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMiningBombToolComponent* Tool,
 	const FMiningBombSettings& InSettings, const FVector& Velocity)
 {
 	Settings = InSettings;
+	// Physical-material setters access GEngine; defer until a real bomb is launched,
+	// rather than invoking them during native CDO construction in the cooker.
+	Collision->SetPhysMaterialOverride(BounceMaterial);
 	AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), GetActorLocation(), 1000.f);
 	SetActorTickEnabled(true);
 	Explosion = Effect;
@@ -64,6 +80,17 @@ void AMiningBombActor::Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMining
 	Collision->SetPhysicsLinearVelocity(Velocity);
 	Collision->SetPhysicsAngularVelocityInDegrees(FVector(250, 180, 90));
 	LaunchedAt = GetWorld()->GetTimeSeconds();
+	if (GetNetMode() != NM_DedicatedServer)
+	{
+		AudioAttenuation = NewObject<USoundAttenuation>(this);
+		AudioAttenuation->Attenuation.bAttenuate = true;
+		AudioAttenuation->Attenuation.bSpatialize = true;
+		AudioAttenuation->Attenuation.AttenuationShapeExtents = FVector(180.f);
+		AudioAttenuation->Attenuation.FalloffDistance = 3200.f;
+		PlayBombSound(TEXT("S_BombThrow"), .4f);
+		if (auto* Sound = LoadObject<USoundBase>(nullptr, TEXT("/Game/Audio/Pilot/S_BombFuse_Loop.S_BombFuse_Loop")))
+			FuseAudio = UGameplayStatics::SpawnSoundAttached(Sound, Collision, NAME_None, FVector::ZeroVector, EAttachLocation::KeepRelativeOffset, true, .22f, 1.f, 0.f, AudioAttenuation, nullptr, false);
+	}
 	auto* Presentation = NewObject<UMiningBombPresentationComponent>(this, TEXT("BombCountdownPresentation"));
 	Presentation->RegisterComponent();
 	Presentation->Initialize(Model, LaunchedAt, Settings.FuseSeconds);
@@ -89,6 +116,7 @@ void AMiningBombActor::Contact(UPrimitiveComponent*, AActor* Other, UPrimitiveCo
 	// Latch before stopping physics because one physics step may report several
 	// contacts. Do not restart the fuse: it still counts from the throw.
 	bStuck = true;
+	PlayBombSound(TEXT("S_BombStick"), .55f);
 	SetActorTickEnabled(false);
 	StuckAt = GetWorld()->GetTimeSeconds();
 	GetWorldTimerManager().ClearTimer(PawnGraceTimer);
@@ -150,6 +178,8 @@ void AMiningBombActor::Explode()
 {
 	if (bExploded) return;
 	bExploded = true;
+	if (FuseAudio) FuseAudio->Stop();
+	PlayBombSound(TEXT("S_BombExplosion"), .85f);
 	const FVector Location = GetActorLocation();
 	Model->SetVisibility(false);
 	Collision->SetSimulatePhysics(false);
@@ -290,9 +320,18 @@ void AMiningBombActor::ExcavateTerrain(const FVector& Location)
 
 void AMiningBombActor::EndPlay(const EEndPlayReason::Type Reason)
 {
+	if (FuseAudio) { FuseAudio->Stop(); FuseAudio->DestroyComponent(); FuseAudio = nullptr; }
 	GetWorldTimerManager().ClearTimer(FuseTimer);
 	GetWorldTimerManager().ClearTimer(PawnGraceTimer);
 	Super::EndPlay(Reason);
+}
+
+void AMiningBombActor::PlayBombSound(const TCHAR* Name, float Gain)
+{
+	if (GetNetMode() == NM_DedicatedServer) return;
+	const TCHAR* Folder = UMiningAudioComponent::IsMainGameWorld(GetWorld()) && FCString::Strcmp(Name, TEXT("S_BombExplosion")) == 0 ? TEXT("MainGame") : TEXT("Pilot");
+	if (auto* Sound = LoadObject<USoundBase>(nullptr, *FString::Printf(TEXT("/Game/Audio/%s/%s.%s"), Folder, Name, Name)))
+		UGameplayStatics::PlaySoundAtLocation(this, Sound, GetActorLocation(), Gain, 1.f, 0.f, AudioAttenuation);
 }
 
 AMiningBombExplosion::AMiningBombExplosion()

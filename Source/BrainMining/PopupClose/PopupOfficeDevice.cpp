@@ -1,4 +1,6 @@
 #include "PopupClose/PopupOfficeDevice.h"
+#include "MiningInteractionTrace.h"
+#include "MiningRoomAudioSubsystem.h"
 #include "PopupClose/PopupCloseContent.h"
 #include "PopupClose/PopupCloseFlyingWindow.h"
 #include "PopupClose/PopupCloseWidgets.h"
@@ -23,7 +25,7 @@ namespace
  void AwardOfficeCoins(APopupOfficeDevice& Device,int64 Amount)
  {
   if(auto GameInstance=Device.GetGameInstance())
-   if(auto Wallet=GameInstance->GetSubsystem<UMiningWalletSubsystem>())Wallet->AddCoins(Amount);
+   if(auto Wallet=GameInstance->GetSubsystem<UMiningWalletSubsystem>(); Wallet && !Wallet->UsesMineralInventory())Wallet->AddCoins(Amount);
  }
 }
 
@@ -158,6 +160,7 @@ void APopupOfficeDevice::BeginPlay()
     if(auto Self=WeakThis.Get();Self && !Self->IsLocked())
     {
      AwardOfficeCoins(*Self,20);Self->RefreshWarning();
+     UMiningRoomAudioSubsystem::Emit(Self,TEXT("S_Reply"),.4f);
     }
    };
   }
@@ -203,7 +206,7 @@ bool APopupOfficeDevice::CanInteract(APlayerController* PC) const
  if(bLocked || !PC || !PC->GetPawn() || FVector::Dist(PC->GetPawn()->GetActorLocation(),InteractionPoint())>320)return false;
  FVector P;FRotator R;PC->GetPlayerViewPoint(P,R);
  FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(OfficeDeviceAim),false,PC->GetPawn());
- return GetWorld()->LineTraceSingleByChannel(Hit,P,P+R.Vector()*450,ECC_Visibility,Query) && Hit.GetActor()==this;
+ return MiningInteraction::Trace(GetWorld(),Hit,P,R,450,Query,[this](const FHitResult& Candidate){return Candidate.GetActor()==this;});
 }
 void APopupOfficeDevice::AddProblem()
 {
@@ -215,12 +218,13 @@ void APopupOfficeDevice::AddProblem()
  }
  else if(Desktop)Desktop->SpawnPopup();else return;
  ++ProblemsCreated;RefreshWarning();
+ UMiningRoomAudioSubsystem::Emit(this,IsPrinter()?TEXT("S_Printer"):TEXT("S_OfficeNotify"),IsPrinter()?.35f:.3f,true,IsPrinter()?.7f:.35f);
 }
 bool APopupOfficeDevice::ProcessPaper()
 {
  if(bLocked || !IsPrinter() || Pending()==0)return false;
  if(!PaperStack->RemoveInstance(Pending()-1))return false;
- ++PapersHandled;AwardOfficeCoins(*this,10);RefreshWarning();return true;
+ ++PapersHandled;AwardOfficeCoins(*this,10);RefreshWarning();UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Paper"),.55f,true);return true;
 }
 void APopupOfficeDevice::RefreshWarning()
 {

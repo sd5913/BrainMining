@@ -13,16 +13,9 @@ def museum_tick(dt):
   mirror=bool(unreal.GameplayStatics.get_all_actors_of_class(world,unreal.WenSiMirrorPuzzle));puzzle=unreal.GameplayStatics.get_all_actors_of_class(world,unreal.WenSiMirrorPuzzle if mirror else unreal.WenSiPuzzle)[0]
   variant='mirror' if mirror else 'screen';age=time.monotonic()-museum_test['start'];phase=museum_test['phase']
   if phase==0 and age>3:
-   art_actors=[a for a in unreal.GameplayStatics.get_all_actors_of_class(world,unreal.WenSiMirrorExhibit if mirror else unreal.WenSiObject) if a.get_editor_property('art_model')]
-   for actor in art_actors:
-    visual=actor.get_editor_property('art_visual');model=actor.get_editor_property('art_model')
-    proxies=[c for c in actor.get_components_by_class(unreal.StaticMeshComponent) if c!=visual and c.static_mesh and c.is_visible()]
-    museum_test['checks'].append({'label':actor.get_name()+': assigned art survives BeginPlay and has no collision','pass':visual.static_mesh==model and visual.is_visible() and visual.get_collision_enabled()==unreal.CollisionEnabled.NO_COLLISION})
-    museum_test['checks'].append({'label':actor.get_name()+': original gameplay proxies remain active but do not render','pass':bool(proxies) and all(not c.get_editor_property('render_in_main_pass') and not c.get_editor_property('render_in_depth_pass') and not c.get_editor_property('cast_shadow') for c in proxies)})
    unreal.MiningGUIEditorLibrary.capture_preview(pc,str(museum_out/(variant+'_entrance.png')))
    result=puzzle.validate_mirror_puzzle() if mirror else puzzle.validate_circuit_puzzle()
    museum_test['checks'].append({'label':'all original puzzle mechanics','pass':result.startswith('PASS'),'result':result})
-   museum_test['checks'].append({'label':'art bindings survive complete puzzle validation and reset','pass':bool(art_actors) and all(a.get_editor_property('art_visual').static_mesh==a.get_editor_property('art_model') for a in art_actors)})
    pawn.get_component_by_class(unreal.CharacterMovementComponent).set_movement_mode(unreal.MovementMode.MOVE_FLYING)
    pawn.set_actor_location(unreal.Vector(-670,0,95),False,True);pc.set_control_rotation(unreal.Rotator(pitch=0,yaw=-38,roll=0));museum_test['phase']=1;museum_test['at']=age
   elif phase==1 and age>museum_test['at']+1:
@@ -36,7 +29,7 @@ def museum_tick(dt):
    unreal.MiningGUIEditorLibrary.send_preview_key(pc,'E',True);museum_test['release']='E';museum_test['phase']=phase+1;museum_test['at']=age
    if phase==5:museum_test['phase']=6;museum_test['capture_index']=0
   elif phase==6:
-   elapsed=age-museum_test['at'];index=museum_test['capture_index'];thresholds=[.06,.20,.50]
+   elapsed=age-museum_test['at'];index=museum_test['capture_index'];thresholds=[.13,.35,.9]
    if index<3 and elapsed>thresholds[index]:
     unreal.MiningGUIEditorLibrary.capture_preview(pc,str(museum_out/(variant+'_thought_'+str(index)+'.png')));museum_test['capture_index']+=1
    if elapsed>1.2:

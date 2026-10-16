@@ -1,0 +1,162 @@
+#include "StartRoom/MiningOpening.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
+#include "Components/Button.h"
+#include "Components/TextBlock.h"
+#include "Components/Image.h"
+#include "Components/SizeBox.h"
+#include "Components/WidgetComponent.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/HUD.h"
+#include "Engine/Texture2D.h"
+#include "EngineUtils.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Showcase/MiningExhibitHall.h"
+#include "StartRoom/MiningStartRoom.h"
+
+AMiningOpening* AMiningOpening::EnsureMainGameOpening(AMiningExhibitHall* Hall)
+{
+    if(!Hall || !Hall->bReady || Hall->Areas.IsEmpty())return nullptr;
+    UWorld* World=Hall->GetWorld();
+    if(!World || !World->GetMapName().EndsWith(TEXT("Lvl_MainGame")))return nullptr;
+    // Keep any explicitly authored opening. This also makes repeated calls safe.
+    for(TActorIterator<AMiningOpening> It(World);It;++It)return *It;
+    auto* Room=AMiningStartRoom::Find(World);if(!Room)return nullptr;
+    auto* Title=LoadObject<UTexture2D>(nullptr,TEXT("/Game/StartRoom/UI/T_OpeningTitle.T_OpeningTitle"));
+    if(!Title)return nullptr;
+    const FTransform RoomTransform=Room->GetActorTransform();
+    const FTransform SpawnTransform(RoomTransform.GetRotation(),RoomTransform.GetLocation());
+    auto* Opening=World->SpawnActorDeferred<AMiningOpening>(StaticClass(),SpawnTransform,Room,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+    if(!Opening)return nullptr;
+    Opening->Tags.Add(Hall->Areas[0].Tag);
+    Opening->TitleTexture=Title;
+    Opening->SeatEye=RoomTransform.TransformPosition(FVector(-260,-160,127));
+    Opening->StandingLocation=RoomTransform.TransformPosition(FVector(-260,-70,98));
+    Opening->Facing=(RoomTransform.GetRotation()*FRotator(0,13,0).Quaternion()).Rotator();
+    Opening->DoorTitleLocation=RoomTransform.TransformPosition(FVector(466,0,168));
+    Opening->DoorTitleRotation=(RoomTransform.GetRotation()*FRotator(0,180,0).Quaternion()).Rotator();
+    Opening->FinishSpawning(SpawnTransform);
+    return Opening;
+}
+
+TSharedRef<SWidget> UMiningOpeningTitle::RebuildWidget()
+{
+    auto* Picture=WidgetTree->ConstructWidget<UImage>();WidgetTree->RootWidget=Picture;
+    Picture->SetBrushFromTexture(Texture);
+    return Super::RebuildWidget();
+}
+
+TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
+{
+    auto* Canvas=WidgetTree->ConstructWidget<UCanvasPanel>();WidgetTree->RootWidget=Canvas;
+    auto* Column=WidgetTree->ConstructWidget<UVerticalBox>();
+    auto* CanvasSlot=Canvas->AddChildToCanvas(Column);
+    CanvasSlot->SetAnchors(FAnchors(.5f,.72f));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
+    auto AddButton=[&](const TCHAR* Label,bool Start)
+    {
+        auto* Box=WidgetTree->ConstructWidget<USizeBox>();Box->SetWidthOverride(280);Box->SetHeightOverride(56);
+        auto* Row=Column->AddChildToVerticalBox(Box);Row->SetPadding(FMargin(0,6));
+        auto* Button=WidgetTree->ConstructWidget<UButton>();Box->AddChild(Button);
+        FButtonStyle Style=Button->GetStyle();
+        Style.Normal.TintColor=FSlateColor(FLinearColor(.025f,.035f,.035f,.92f));
+        Style.Hovered.TintColor=FSlateColor(FLinearColor(.32f,.23f,.09f,1));
+        Style.Pressed.TintColor=FSlateColor(FLinearColor(.5f,.35f,.1f,1));Button->SetStyle(Style);
+        auto* Text=WidgetTree->ConstructWidget<UTextBlock>();Text->SetText(FText::FromString(Label));
+        auto Font=Text->GetFont();Font.Size=24;Text->SetFont(Font);Text->SetColorAndOpacity(FSlateColor(FLinearColor(1,.79f,.4f)));
+        Button->AddChild(Text);
+        if(Start)Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);
+        else Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);
+    };
+    AddButton(TEXT("开始游戏"),true);AddButton(TEXT("退出游戏"),false);
+    return Super::RebuildWidget();
+}
+void UMiningOpeningMenu::StartGame(){if(Opening.IsValid())Opening->StartGame();}
+void UMiningOpeningMenu::QuitGame(){UKismetSystemLibrary::QuitGame(this,GetOwningPlayer(),EQuitPreference::Quit,false);}
+
+AMiningOpening::AMiningOpening()
+{
+    PrimaryActorTick.bCanEverTick=true;
+    SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
+    WorldTitle=CreateDefaultSubobject<UWidgetComponent>(TEXT("TitleInRoom"));WorldTitle->SetupAttachment(RootComponent);
+    WorldTitle->SetWidgetSpace(EWidgetSpace::World);WorldTitle->SetDrawSize(FVector2D(1024,600));
+    WorldTitle->SetTwoSided(true);WorldTitle->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    WorldTitle->SetCastShadow(false);WorldTitle->SetVisibility(false);
+}
+bool AMiningOpening::IsOpening(UWorld* World)
+{
+    if(World)for(TActorIterator<AMiningOpening> It(World);It;++It)if(!It->bFinished)return true;
+    return false;
+}
+void AMiningOpening::Prepare(APlayerController* Controller)
+{
+    Player=Controller;bPrepared=true;
+    APawn* Pawn=Controller->GetPawn();bOldCollision=Pawn->GetActorEnableCollision();Pawn->SetActorEnableCollision(false);
+    if(auto* Character=Cast<ACharacter>(Pawn)){Character->GetCharacterMovement()->StopMovementImmediately();Character->GetCharacterMovement()->DisableMovement();}
+    const FVector EyeOffset=Pawn->GetPawnViewLocation()-Pawn->GetActorLocation();
+    StandingEye=StandingLocation+EyeOffset;SeatPawnLocation=SeatEye-EyeOffset;
+    Pawn->SetActorLocation(SeatPawnLocation);Controller->SetControlRotation(Facing);
+    Controller->SetIgnoreMoveInput(true);Controller->SetIgnoreLookInput(true);bInputLocked=true;
+    if(auto* HUD=Controller->GetHUD()){bOldHUD=HUD->bShowHUD;HUD->bShowHUD=false;}
+    if(auto* MiningPC=Cast<AMiningExhibitController>(Controller))MiningPC->SetMiningGUIEnabled(false);
+    Camera=GetWorld()->SpawnActor<ACameraActor>(SeatEye,Facing);
+    Camera->GetCameraComponent()->SetFieldOfView(80);Camera->GetCameraComponent()->bConstrainAspectRatio=false;Controller->SetViewTarget(Camera);
+    auto* Title=CreateWidget<UMiningOpeningTitle>(Controller);Title->Texture=TitleTexture;WorldTitle->SetWidget(Title);
+    InitialTitle=SeatEye+Facing.Vector()*240+Facing.RotateVector(FVector(0,0,40));
+    InitialRotation=(Facing+FRotator(0,180,0)).Quaternion();
+    WorldTitle->SetWorldLocationAndRotation(InitialTitle,InitialRotation);WorldTitle->SetWorldScale3D(FVector(.19f));WorldTitle->SetVisibility(true);
+    Menu=CreateWidget<UMiningOpeningMenu>(Controller);Menu->Opening=this;Menu->SetIsFocusable(true);Menu->AddToViewport(500);
+    Controller->bShowMouseCursor=true;FInputModeUIOnly Mode;Mode.SetWidgetToFocus(Menu->TakeWidget());Controller->SetInputMode(Mode);
+}
+void AMiningOpening::StartGame()
+{
+    if(!bPrepared || bStarted || bFinished)return;
+    bStarted=true;Elapsed=0;if(Menu)Menu->RemoveFromParent();
+    if(Player.IsValid()){Player->bShowMouseCursor=false;Player->SetInputMode(FInputModeGameOnly());}
+}
+void AMiningOpening::Tick(float Dt)
+{
+    Super::Tick(Dt);if(bFinished)return;
+    if(!bPrepared)
+    {
+        auto* PC=GetWorld()->GetFirstPlayerController();auto* Hall=AMiningExhibitHall::Find(GetWorld());
+        if(PC && PC->GetPawn() && GetWorld()->GetTimeSeconds()>.6f && (!Hall || Hall->bReady))Prepare(PC);
+        return;
+    }
+    if(!bStarted || !Player.IsValid() || !Camera)return;
+    Elapsed+=Dt;const float T=FMath::Clamp(Elapsed/Duration,0.f,1.f);const float A=FMath::SmoothStep(0.f,1.f,T);
+    const FVector Eye=StandingEye;
+    if(APawn* Pawn=Player->GetPawn())Pawn->SetActorLocation(FMath::Lerp(SeatPawnLocation,StandingLocation,A));
+    // Lean forward, lift from the mattress, then settle beside the bed.
+    FVector P=FMath::Lerp(SeatEye,Eye,A);P.Z-=FMath::Sin(FMath::Min(T*2.f,1.f)*PI)*9.f;
+    Camera->SetActorLocation(P);
+    const FRotator FinalAim=Player->GetControlRotation();
+    Camera->SetActorRotation(FQuat::Slerp(Facing.Quaternion(),FinalAim.Quaternion(),A));
+    FVector Logo=FMath::Lerp(InitialTitle,DoorTitleLocation,A)+FVector(0,0,FMath::Sin(A*PI)*55);
+    WorldTitle->SetWorldLocationAndRotation(Logo,FQuat::Slerp(InitialRotation,DoorTitleRotation.Quaternion(),A));
+    WorldTitle->SetWorldScale3D(FVector(FMath::Lerp(.19f,.205f,A)));
+    if(T>=1.f){bFinished=true;Release();SetActorTickEnabled(false);}
+}
+void AMiningOpening::Release()
+{
+    if(Menu)Menu->RemoveFromParent();
+    if(Player.IsValid())
+    {
+        if(APawn* Pawn=Player->GetPawn())
+        {
+            Pawn->SetActorEnableCollision(bOldCollision);Player->SetViewTarget(Pawn);
+            if(auto* C=Cast<ACharacter>(Pawn))C->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+        }
+        if(bInputLocked){Player->SetIgnoreMoveInput(false);Player->SetIgnoreLookInput(false);bInputLocked=false;}
+        Player->bShowMouseCursor=false;Player->SetInputMode(FInputModeGameOnly());
+        if(auto* HUD=Player->GetHUD())HUD->bShowHUD=bOldHUD;
+        if(auto* PC=Cast<AMiningExhibitController>(Player.Get()))PC->SetMiningGUIEnabled(true);
+    }
+    if(Camera){Camera->Destroy();Camera=nullptr;}
+}
+void AMiningOpening::EndPlay(const EEndPlayReason::Type Reason){if(bPrepared&&!bFinished)Release();Super::EndPlay(Reason);}

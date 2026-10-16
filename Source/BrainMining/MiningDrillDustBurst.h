@@ -12,6 +12,7 @@ class UStaticMesh;
 /** Per-impact appearance, copied from the editable character effects component. */
 struct FMiningDrillContactSettings
 {
+	bool bUseCoolPalette = false;
 	int32 DustCount = 24, SmokeCount = 10, SparkCount = 12;
 	float DustStrength = 1, SmokeStrength = 1.3f, SparkStrength = 1;
 	float DustSize = 1.2f, SmokeSize = 1.25f, SparkSize = 2;

@@ -111,9 +111,11 @@ void AMiningDebrisBurst::SpawnChunks(const TArray<TObjectPtr<UStaticMesh>>& Mesh
 			Chunk->SetStaticMesh(Mesh);
 		}
 		Chunk->SetVisibility(true);
-		Chunk->SetRelativeScale3D(FVector(Scale, Scale * FMath::FRandRange(0.8f, 1.2f), Scale));
-		Chunk->SetWorldLocation(GetActorLocation() + Normal * FMath::FRandRange(8.f, 20.f) + Radial * Distance);
-		Chunk->SetWorldRotation(FRotator(FMath::FRandRange(-180.f, 180.f), FMath::FRandRange(-180.f, 180.f), FMath::FRandRange(-180.f, 180.f)));
+		const FTransform SpawnTransform(
+			FRotator(FMath::FRandRange(-180.f, 180.f), FMath::FRandRange(-180.f, 180.f), FMath::FRandRange(-180.f, 180.f)),
+			GetActorLocation() + Normal * FMath::FRandRange(8.f, 20.f) + Radial * Distance,
+			FVector(Scale, Scale * FMath::FRandRange(0.8f, 1.2f), Scale));
+		Chunk->SetWorldTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
 		for (int32 Slot = 0; Slot < FMath::Max(1, Mesh->GetStaticMaterials().Num()); ++Slot) Chunk->SetMaterial(Slot, SourceMaterial);
 		Chunk->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Chunk->SetCollisionObjectType(ECC_PhysicsBody);
@@ -125,6 +127,11 @@ void AMiningDebrisBurst::SpawnChunks(const TArray<TObjectPtr<UStaticMesh>>& Mesh
 		Chunk->SetAngularDamping(1.4f);
 		if (!Chunk->IsRegistered()) Chunk->RegisterComponent();
 		Chunk->SetSimulatePhysics(true);
+		// Reused Chaos bodies retain their previous simulated pose. Teleport after
+		// enabling simulation as well, so the next physics sync cannot put this
+		// strike's fragments back at the preceding strike's world position.
+		Chunk->SetWorldTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
+		Chunk->WakeAllRigidBodies();
 		Chunk->SetPhysicsLinearVelocity(Normal * FMath::FRandRange(170.f, 300.f) + Radial * FMath::FRandRange(90.f, 210.f) + FVector::UpVector * FMath::FRandRange(110.f, 240.f));
 		if (bBlast) Chunk->SetPhysicsLinearVelocity(Normal * FMath::FRandRange(450.f, 850.f) + Radial * FMath::FRandRange(100.f, 250.f) + FVector::UpVector * FMath::FRandRange(130.f, 350.f));
 		Chunk->SetPhysicsAngularVelocityInDegrees(FVector(FMath::FRandRange(-420.f, 420.f), FMath::FRandRange(-420.f, 420.f), FMath::FRandRange(-420.f, 420.f)));

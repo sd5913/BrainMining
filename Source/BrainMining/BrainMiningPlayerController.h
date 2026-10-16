@@ -10,6 +10,7 @@ class UInputMappingContext;
 class UUserWidget;
 class UMiningGUIHUDWidget;
 class UMiningInteractionHUDWidget;
+class SWidget;
 
 /**
  *  Simple first person Player Controller
@@ -26,6 +27,7 @@ public:
 	/** Constructor */
 	ABrainMiningPlayerController();
 	void UseInputDefaultsFrom(const ABrainMiningPlayerController* Defaults);
+ UFUNCTION(BlueprintCallable, Category="Mining GUI")
  void SetMiningGUIEnabled(bool bEnabled);
  bool IsMiningGUIEnabled() const { return bMiningGUIEnabled; }
 
@@ -41,6 +43,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Mining GUI")
 	void SetUpgradeMenuHeld(bool bHeld);
 	virtual bool InputKey(const FInputKeyEventArgs& Params) override;
+	bool IsAudioSettingsOpen() const { return AudioSettingsPanel.IsValid(); }
+	void ToggleAudioSettings();
 
 protected:
 
@@ -59,6 +63,7 @@ protected:
 	/** Pointer to the mobile controls widget */
 	UPROPERTY()
 	TObjectPtr<UUserWidget> MobileControlsWidget;
+	TSharedPtr<SWidget> MobileFallbackControls;
 
 	/** If true, the player will use UMG touch controls even if not playing on mobile platforms */
 	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")
@@ -76,6 +81,9 @@ protected:
 	bool bOwnsDesktopGUIInput = false;
  bool bMiningGUIEnabled = true;
 	FDelegateHandle ApplicationActivationHandle;
+	TSharedPtr<SWidget> AudioSettingsPanel;
+	bool bAudioPausedWorld = false;
+	bool bAudioPreviousMiningSuspended = false;
 	EMouseCaptureMode PreviousMouseCaptureMode = EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown;
 	EMouseLockMode PreviousMouseLockMode = EMouseLockMode::LockOnCapture;
 

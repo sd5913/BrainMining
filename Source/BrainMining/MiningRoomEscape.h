@@ -19,6 +19,8 @@ public:
     UPROPERTY(EditAnywhere, Category="Integration") bool bAreaManaged = false;
     UPROPERTY(EditAnywhere, Category="Integration") bool bWalkThroughConnections = false;
     bool bAreaActive = true;
+    // Authored escape coordinates belong to the source map, before streaming translation.
+    FVector SourceLevelOffset = FVector::ZeroVector;
     void SetAreaActive(bool bActive);
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
@@ -91,7 +93,6 @@ private:
     UPROPERTY(Transient) TArray<TObjectPtr<class UPointLightComponent>> InteriorLights;
     UPROPERTY(Transient) TArray<TObjectPtr<AActor>> GeneratedActors;
     TWeakObjectPtr<AActor> ReplacedWall;
-    UPROPERTY(Transient) TObjectPtr<class UTextRenderComponent> ScreenLabel;
     UPROPERTY(Transient) TObjectPtr<class UStaticMeshComponent> ComputerWater;
     float BreachBurstTime=0;
     float JetUpdateTime=0;

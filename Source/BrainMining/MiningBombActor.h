@@ -11,6 +11,8 @@ class UPhysicalMaterial;
 class UNiagaraComponent;
 class UPointLightComponent;
 class UInstancedStaticMeshComponent;
+class UAudioComponent;
+class USoundAttenuation;
 
 /** Physical flight until first contact, then attached until the throw-started fuse expires. */
 UCLASS()
@@ -19,6 +21,7 @@ class BRAINMINING_API AMiningBombActor : public AActor
 	GENERATED_BODY()
 public:
 	AMiningBombActor();
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 	void Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMiningBombToolComponent* Tool,
@@ -32,6 +35,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category="Bomb") double StuckAt = -1;
 	UFUNCTION(BlueprintCallable, Category="Bomb") void Explode();
 private:
+	void PlayBombSound(const TCHAR* Name, float Gain);
+	UPROPERTY(Transient) TObjectPtr<UAudioComponent> FuseAudio;
+	UPROPERTY(Transient) TObjectPtr<USoundAttenuation> AudioAttenuation;
 	UPROPERTY() TObjectPtr<UPhysicalMaterial> BounceMaterial;
 	UPROPERTY() TObjectPtr<UNiagaraSystem> Explosion;
 	TWeakObjectPtr<UMiningBombToolComponent> SourceTool;

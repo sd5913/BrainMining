@@ -9,6 +9,7 @@ class UCanvasPanel;
 class UImage;
 class UButton;
 class UTextBlock;
+class UProgressBar;
 class UTexture2D;
 class UMaterialInstanceDynamic;
 
@@ -66,6 +67,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void SetAvailable(bool bNewAvailable);
 	/** Gameplay owns the timer; this widget only displays it over the red icon. */
 	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void SetCooldownRemaining(float Seconds);
+	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void SetRechargeState(bool bRecharging, float Progress);
+	UPROPERTY(BlueprintReadOnly, Transient, Category="GUI|Ability") TObjectPtr<UProgressBar> RechargeBar;
 	UPROPERTY(BlueprintReadOnly, Category="GUI|Ability") float CooldownRemaining = 0;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidgetOptional)) TObjectPtr<UTextBlock> CooldownText;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UImage> AbilityIcon;
@@ -142,6 +145,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="GUI|Display") void SetItemLevel(int32 ItemIndex, int32 Level, bool bAnimate = true);
 	UFUNCTION(BlueprintCallable, Category="GUI|Display") void SetItemUnlocked(int32 ItemIndex, bool bUnlocked);
 	void EnableProgressionPanel();
+	void RefreshMineralProgression();
+	UPROPERTY(BlueprintReadOnly, Category="GUI|State") bool bMineralProgression = false;
 	UMiningGUIUpgradeWidget* GetUpgradeCard(int32 Index) const { return Item(Index); }
 	void SetUpgradeDetails(int32 Index, FText Name, FText Description, int64 Price, bool bAffordable);
 	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void TriggerAbility(FName Ability);
@@ -176,4 +181,10 @@ protected:
 	float DrillEnergyFade = 0.f;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> UpgradeNames;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> UpgradeDescriptions;
+	UPROPERTY(Transient) TObjectPtr<UCanvasPanel> MineralPanel;
+	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> MineralCounts;
+	UPROPERTY(Transient) TObjectPtr<UTextBlock> PickaxeLevelLabel;
+	UPROPERTY(Transient) TObjectPtr<UTextBlock> PickaxeRequirements;
+    UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> PickaxeRequirementRows;
+	UPROPERTY(Transient) TObjectPtr<UTextBlock> PickaxeUpgradeHint;
 };

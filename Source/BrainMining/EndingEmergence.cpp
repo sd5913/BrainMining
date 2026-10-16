@@ -1,4 +1,6 @@
 #include "EndingEmergence.h"
+#include "MiningAudioSettings.h"
+#include "EndingCrowd.h"
 #include "DiggableRock.h"
 #include "MiningComponent.h"
 #include "MiningDebrisBurst.h"
@@ -10,6 +12,7 @@
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SplineMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/PointLightComponent.h"
@@ -41,6 +44,7 @@ namespace Ending
 {
     const FName Tag(TEXT("EmergenceEndingGenerated"));
     const FLinearColor Gold(.95f,.47f,.09f), Teal(.035f,.62f,.58f), Blue(.065f,.18f,.42f), Rose(.48f,.035f,.085f);
+    const FLinearColor Neural(.065f,.32f,.72f);
     const FVector City(22000,0,0), Earth(50000,0,0), Cosmos(95000,0,0), Desk(155000,0,0);
     const float GateX[]={1600,5800,7300,8650,10000};
     const float GateY[]={0,0,-170,170,0};
@@ -51,7 +55,7 @@ namespace Ending
     int Layer(int I) { return I==0?0:I==NeuronCount-1?10:1+(I-1)/5; }
     float Ground(float X,float Y=0)
     {
-        if(X<1600)return 850-1140*FMath::Sqrt(FMath::Max(0.f,1-X*X/(2400*2400.f)-Y*Y/(1300*1300.f)));
+        if(X<1600)return 425-570*FMath::Sqrt(FMath::Max(0.f,1-FMath::Square(X-800)/(1200*1200.f)-Y*Y/(650*650.f)));
         if(X<=12000)return 850-FMath::Sqrt(FMath::Max(0.f,850*850.f-Y*Y));
         return BrainCenter.Z+FMath::Sqrt(FMath::Max(0.f,BrainRadius*BrainRadius-FMath::Square(X-BrainCenter.X)-Y*Y));
     }
@@ -64,101 +68,40 @@ public:
     void Construct(const FArguments& A) { Owner=A._Owner; }
     virtual int32 OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRect&,FSlateWindowElementList& Out,int32 L,const FWidgetStyle&,bool) const override
     {
-        if(!Owner.IsValid()) return L;
-        const auto* D=Owner.Get(); const FVector2D Size=G.GetLocalSize();
-        const float S=FMath::Min(Size.X/1600,Size.Y/900); const FVector2D O=(Size-FVector2D(1600,900)*S)*.5;
-        auto Geo=[&](float X,float Y,float W,float H){return G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(O+FVector2D(X,Y)*S)));};
-        auto Box=[&](float X,float Y,float W,float H,FLinearColor C){FSlateDrawElement::MakeBox(Out,++L,Geo(X,Y,W,H),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,C);};
-        auto Text=[&](const FString& T,float X,float Y,int F,FLinearColor C){FSlateDrawElement::MakeText(Out,++L,Geo(X,Y,1500,70),T,FCoreStyle::GetDefaultFontStyle("Regular",FMath::Max(9,FMath::RoundToInt(F*S))),ESlateDrawEffect::None,C);};
-        if(D->Shot>=9)
-        {
-            if(D->bComplete)Text(TEXT("R 重玩"),1460,855,14,FLinearColor(.14f,.19f,.17f));
-            return L;
-        }
-        if(D->Shot==8&&D->RealityHits>0)
-        {
-            auto Line=[&](FVector2D A,FVector2D B,float Width,FLinearColor C)
-            {TArray<FVector2D> P{O+A*S,O+B*S};FSlateDrawElement::MakeLines(Out,++L,G.ToPaintGeometry(),P,ESlateDrawEffect::None,C,true,Width*S);};
-            const FVector2D Center(800,450);
-            for(int Branch=0;Branch<16;++Branch)
-            {
-                FRandomStream R(510+Branch*17);
-                const float Angle=Branch*2*PI/16+R.FRandRange(-.15f,.15f);
-                FVector2D Previous=Center;
-                for(int Segment=0;Segment<2+D->RealityHits;++Segment)
-                {
-                    const float Distance=(Segment+1)*42;
-                    FVector2D Next=Center+FVector2D(FMath::Cos(Angle),FMath::Sin(Angle))*Distance+FVector2D(R.FRandRange(-20,20),R.FRandRange(-20,20));
-                    Line(Previous,Next,3+D->RealityHits*2,FLinearColor(.001f,.003f,.008f,.9f));
-                    Line(Previous+FVector2D(2,1),Next+FVector2D(2,1),1.2f,FLinearColor(.55f,.8f,.83f,.9f));
-                    if(Segment>0)
-                    {
-                        const FVector2D Fork=Previous+FVector2D(FMath::Cos(Angle+.5f),FMath::Sin(Angle+.5f))*(22+D->RealityHits*9);
-                        Line(Previous,Fork,2.2f,FLinearColor(.55f,.8f,.83f,.85f));
-                        if(D->RealityHits>=2)Line(Next,Center+FVector2D(FMath::Cos(Angle+.28f),FMath::Sin(Angle+.28f))*Distance,1.8f,FLinearColor(.55f,.8f,.83f,.7f));
-                    }
-                    Previous=Next;
-                }
-            }
-        }
-        const FLinearColor Ink(.007f,.012f,.022f,.78f), Paper(.94f,.9f,.8f), Muted(.55f,.64f,.65f);
-        const float Flash=D->OverlayAlpha();
-        if(Flash>0) Box(-O.X/S,-O.Y/S,Size.X/S,Size.Y/S,FLinearColor(.86f,.96f,.95f,Flash));
-        if(D->Shot>=0) {Box(0,0,1600,48,FLinearColor::Black);Box(0,852,1600,48,FLinearColor::Black);}
-        if(D->Shot<0 || D->ShotTime<4 || D->Shot>=7)
-        {
-            Box(40,74,3,53,Ending::Gold);
-            Text(TEXT("涌  现"),60,72,23,Paper);
-            Text(D->Title(),61,108,12,Muted);
-        }
+        if(!Owner.IsValid())return L;
+        const auto* D=Owner.Get();const FVector2D Size=G.GetLocalSize();
+        const float S=FMath::Min(Size.X/1600,Size.Y/900);
+        // Retain controls, aim and target markers, without narrative or target labels.
+        const float Fade=D->OverlayAlpha();
+        if(Fade>0)FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,FLinearColor(0,0,0,Fade));
+        if(Fade>.995f)return L;
         if(D->Shot<0&&D->GateIndex<5)
         {
+            auto Rect=[&](float X,float Y,float W,float H,FLinearColor C){FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(X,Y))),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,C);};
             const auto* P=D->GetWorld()->GetFirstPlayerController();
-            const auto* M=P&&P->GetPawn()?P->GetPawn()->FindComponentByClass<UMiningComponent>():nullptr;
-            const FLinearColor C=D->GateIndex==2?(D->TargetNeuron>=0?Ending::Gold:Paper):M&&M->TargetRock?Ending::Teal:Paper;
-            Box(795,449,10,2,C); Box(799,445,2,10,C);
-            if(D->GateIndex==2)
+            const auto* Mining=P&&P->GetPawn()?P->GetPawn()->FindComponentByClass<UMiningComponent>():nullptr;
+            const FLinearColor Aim=D->GateIndex==2&&D->TargetNeuron>=0?Ending::Gold:Mining&&Mining->TargetRock?Ending::Teal:FLinearColor(.9f,.92f,.9f);
+            Rect(Size.X*.5f-5*S,Size.Y*.5f-S,10,2,Aim);Rect(Size.X*.5f-S,Size.Y*.5f-5*S,2,10,Aim);
+            if(D->GateIndex==2&&P)for(int I=0;I<D->NeuronPositions.Num();++I)if(D->CanPossess(I)||I==D->NeuronPositions.Num()-1)
             {
-                Text(FString::Printf(TEXT("脉冲跃迁 %d 次  ·  汇向最大的金色神经元"),D->PossessionCount),61,143,13,Muted);
-                for(int I=0;I<D->NeuronPositions.Num();++I)if(D->CanPossess(I))
-                {
-                    FVector2D Screen;
-                    if(P&&P->ProjectWorldLocationToScreen(D->NeuronWorldPosition(I),Screen,false))
-                    {
-                        // Projection returns viewport pixels; Slate's geometry
-                        // can have a different DPI/render scale (including PIE).
-                        int32 Width=0,Height=0;P->GetViewportSize(Width,Height);
-                        if(Width<=0||Height<=0)continue;
-                        Screen*=FVector2D(Size.X/Width,Size.Y/Height);
-                        const float X=(Screen.X-O.X)/S,Y=(Screen.Y-O.Y)/S;
-                        if(X>45&&X<1555&&Y>160&&Y<710)
-                        {
-                            const FLinearColor Mark=I==D->TargetNeuron?Ending::Gold:Ending::Teal;
-                            const float R=I==D->TargetNeuron?26:18;
-                            Box(X-R,Y-R,10,2,Mark);Box(X-R,Y-R,2,10,Mark);
-                            Box(X+R-10,Y+R,10,2,Mark);Box(X+R,Y+R-8,2,10,Mark);
-                        }
-                    }
-                }
+                FVector2D Screen;int Width=0,Height=0;P->GetViewportSize(Width,Height);
+                if(Width<=0||Height<=0||!P->ProjectWorldLocationToScreen(D->NeuronWorldPosition(I),Screen,false))continue;
+                Screen*=FVector2D(Size.X/Width,Size.Y/Height);
+                if(Screen.X<45*S||Screen.X>Size.X-45*S||Screen.Y<45*S||Screen.Y>Size.Y-100*S)continue;
+                const bool Goal=I==D->NeuronPositions.Num()-1;
+                const FLinearColor C=Goal||I==D->TargetNeuron?Ending::Gold:Ending::Teal;
+                const float R=(Goal?38:I==D->TargetNeuron?26:18)*S;
+                Rect(Screen.X-R,Screen.Y-R,10,2,C);Rect(Screen.X-R,Screen.Y-R,2,10,C);
+                Rect(Screen.X+R-10*S,Screen.Y+R,10,2,C);Rect(Screen.X+R,Screen.Y+R-8*S,2,10,C);
             }
         }
-        if(D->Shot==8)
+        const FString Controls=D->Hint();
+        if(!Controls.IsEmpty())
         {
-            const float Ready=D->StrikeReadiness();
-            Box(650,667,300,4,FLinearColor(.08f,.14f,.15f,.8f));
-            Box(650,667,300*Ready,4,Ready>=1?Ending::Gold:Ending::Teal);
-            Text(FString::Printf(TEXT("%d / 3    %s"),D->RealityHits,Ready>=1?TEXT("挥镐"):TEXT("收镐…")),710,683,15,Paper);
-        }
-        const FString Sub=D->Subtitle();
-        if(!Sub.IsEmpty()) {Box(220,722,1160,66,Ink);Text(Sub,248,739,23,Paper);}
-        Text(D->Hint(),61,811,14,Paper);
-        if(D->Shot<0) Text(D->GateIndex==0?TEXT("WASD 移动   鼠标 观察   左键 挖掘   R 重玩   P 镜头预览"):
-            D->GateIndex==1?TEXT("自动漂浮前进   W 加速   S 无效   A / D 微调   鼠标 观察   C 平稳   R 重玩"):
-            D->GateIndex==2?TEXT("鼠标 瞄准神经元   空格 穿梭附身   C 平稳   R 重玩   P 镜头预览"):TEXT("R 重玩"),61,865,12,Muted);
-        else Text(D->bComfortMode?TEXT("C 恢复漂移   ·   R 重玩"):TEXT("C 平稳镜头   ·   R 重玩"),1210,866,11,Muted);
-        if(D->bComplete)
-        {
-            Text(TEXT("一个点子诞生的下午"),61,162,20,Paper);
+            const auto Font=FCoreStyle::GetDefaultFontStyle("Regular",FMath::Max(10,FMath::RoundToInt(13*S)));
+            const FVector2f Position(48*S,Size.Y-40*S);
+            FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(Size.X-96*S,30*S),FSlateLayoutTransform(Position+FVector2f(1,1))),Controls,Font,ESlateDrawEffect::None,FLinearColor(0,0,0,.7f));
+            FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(Size.X-96*S,30*S),FSlateLayoutTransform(Position)),Controls,Font,ESlateDrawEffect::None,FLinearColor(.8f,.86f,.89f,.9f));
         }
         return L;
     }
@@ -184,7 +127,7 @@ UStaticMeshComponent* AEndingEmergence::Shape(const TCHAR* Name,FVector Position
 {
     auto* C=NewObject<UStaticMeshComponent>(this,MakeUniqueObjectName(this,UStaticMeshComponent::StaticClass(),Name),RF_Transactional);
     AddInstanceComponent(C); C->ComponentTags.Add(Ending::Tag); C->SetupAttachment(Parent?Parent:RootComponent.Get());
-    C->SetMobility(EComponentMobility::Movable); C->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,*(FString(TEXT("/Engine/BasicShapes/"))+Mesh)));
+    C->SetMobility(EComponentMobility::Movable); C->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,*(FString(Mesh).StartsWith(TEXT("Facet"))?FString(TEXT("/Game/EndingEmergence/Meshes/SM_EE_"))+Mesh:FString(TEXT("/Engine/BasicShapes/"))+Mesh)));
     C->SetRelativeLocation(Position); C->SetRelativeScale3D(Size/100); C->SetCollisionProfileName(Collision?TEXT("BlockAll"):TEXT("NoCollision"));
     C->SetGenerateOverlapEvents(false); C->SetCanEverAffectNavigation(false); C->SetCastShadow(false);
     if(auto* Base=LoadObject<UMaterialInterface>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Materials/M_EE_"))+Material)))
@@ -194,7 +137,8 @@ UStaticMeshComponent* AEndingEmergence::Shape(const TCHAR* Name,FVector Position
 
 UStaticMeshComponent* AEndingEmergence::Rod(FVector A,FVector B,float Width,FLinearColor Tint,USceneComponent* Parent,const TCHAR* Material)
 {
-    auto* C=Shape(TEXT("Connection"),(A+B)*.5,FVector(Width,Width,(B-A).Size()),Tint,TEXT("Cylinder"),Parent,Material);
+    const bool Neural=FCString::Strcmp(Material,TEXT("NeuralFilament"))==0;
+    auto* C=Shape(Neural?TEXT("TaperedNeuralBranch"):TEXT("Connection"),(A+B)*.5,FVector(Width,Width,(B-A).Size()),Tint,Neural?TEXT("FacetNeuronBranch"):TEXT("Cylinder"),Parent,Material);
     C->SetRelativeRotation(FRotationMatrix::MakeFromZ(B-A).Rotator());return C;
 }
 
@@ -211,7 +155,7 @@ UInstancedStaticMeshComponent* AEndingEmergence::Instances(const TCHAR* Name,con
 {
     auto* C=NewObject<UInstancedStaticMeshComponent>(this,MakeUniqueObjectName(this,UInstancedStaticMeshComponent::StaticClass(),Name),RF_Transactional);
     AddInstanceComponent(C);C->ComponentTags.Add(Ending::Tag);C->SetupAttachment(Parent);C->SetMobility(EComponentMobility::Movable);
-    C->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,*(FString(TEXT("/Engine/BasicShapes/"))+Mesh)));
+    C->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,*(FString(Mesh).StartsWith(TEXT("Facet"))?FString(TEXT("/Game/EndingEmergence/Meshes/SM_EE_"))+Mesh:FString(TEXT("/Engine/BasicShapes/"))+Mesh)));
     C->SetCollisionProfileName(TEXT("NoCollision"));C->SetCastShadow(false);C->SetCanEverAffectNavigation(false);
     if(auto* Base=LoadObject<UMaterialInterface>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Materials/M_EE_"))+Material)))
     {auto* M=UMaterialInstanceDynamic::Create(Base,C);M->SetVectorParameterValue(TEXT("Tint"),Tint);C->SetMaterial(0,M);}
@@ -252,6 +196,7 @@ void AEndingEmergence::Shell(const TCHAR* Name,const TArray<FVector>& Centers,co
     FMeshNormals::InitializeOverlayToPerVertexNormals(Mesh.Attributes()->PrimaryNormals());
     auto* C=NewObject<UDynamicMeshComponent>(this,MakeUniqueObjectName(this,UDynamicMeshComponent::StaticClass(),Name),RF_Transactional);
     AddInstanceComponent(C);C->ComponentTags.Add(Ending::Tag);C->SetupAttachment(Sets[0]);
+    if(FCString::Strcmp(Name,TEXT("RedSpirallingVessel"))==0)C->ComponentTags.Add(TEXT("EndingBloodVisual"));
     C->SetEnableRaytracing(false);C->SetVisibleInRayTracing(false);C->SetCastShadow(false);
     C->SetCollisionProfileName(TEXT("BlockAll"));C->SetGenerateOverlapEvents(false);C->SetCanEverAffectNavigation(false);
     C->SetComplexAsSimpleCollisionEnabled(true,false);C->bUseAsyncCooking=false;
@@ -268,11 +213,11 @@ void AEndingEmergence::BuildJourney()
     // A hollow ellipsoid with a real curved floor and an open neck at the exit.
     for(int Row=0;Row<=96;++Row)
     {
-        const float X=FMath::Lerp(-2399.f,1600.f,Row/96.f);
-        const float Cross=FMath::Sqrt(FMath::Max(.0001f,1-X*X/(2400*2400.f)));
-        Centers.Add(FVector(X,0,850));Radii.Add(FVector2D(1300*Cross,1140*Cross));
+        const float X=FMath::Lerp(-399.f,1600.f,Row/96.f);
+        const float Cross=FMath::Sqrt(FMath::Max(.0001f,1-FMath::Square(X-800)/(1200*1200.f)));
+        Centers.Add(FVector(X,0,425));Radii.Add(FVector2D(650*Cross,570*Cross));
     }
-    Shell(TEXT("EllipsoidalCellInterior"),Centers,Radii,Ending::Teal*.28f,TEXT("CellInterior"));
+    Shell(TEXT("EllipsoidalCellInterior"),Centers,Radii,FLinearColor(.26f,.062f,.085f),TEXT("CellInterior"));
     for(int I=0;I<27;++I)
     {
         const float X=R.FRandRange(-1300,1300),A=R.FRandRange(-.25f,PI+ .25f);
@@ -288,99 +233,121 @@ void AEndingEmergence::BuildJourney()
     VesselPath.Empty();VesselDistances.Empty();Centers.Empty();Radii.Empty();
     for(int Row=0;Row<=240;++Row)
     {
-        const float T=Row/240.f,A=T*2*PI;
-        const FVector P(1600+10400*T,2100*FMath::Sin(A)*FMath::Square(FMath::Sin(PI*T)),850+1100*(1-FMath::Cos(A)));
+        // Restore the previous uniformly distributed bend. Only the entrance
+        // blends out of its straight neck; do not squeeze the turn into mid-route.
+        const float T=Row/240.f,A=T*2*PI,Neck=Ending::Ease((T-.04f)/.16f);
+        const FVector P(1600+10400*T,Neck*2100*FMath::Sin(A)*FMath::Square(FMath::Sin(PI*T)),425+Neck*(425+1100*(1-FMath::Cos(A))));
         VesselDistances.Add(Row?VesselDistances.Last()+FVector::Dist(P,VesselPath.Last()):0);VesselPath.Add(P);
         if(T<=.9f)
         {
             const float Flare=Ending::Ease((T-.77f)/.23f);
-            Centers.Add(P);Radii.Add(FVector2D(FMath::Lerp(969.f,850.f,Ending::Ease(T/.025f))+Flare*400,850+Flare*400));
+            Centers.Add(P);Radii.Add(FVector2D(FMath::Lerp(484.5f,850.f,Ending::Ease((T-.10f)/.12f))+Flare*400,FMath::Lerp(425.f,850.f,Ending::Ease((T-.10f)/.12f))+Flare*400));
         }
     }
     Shell(TEXT("RedSpirallingVessel"),Centers,Radii,FLinearColor(.38f,.018f,.026f),TEXT("Vessel"),true);
     const float Length=VesselDistances.Last();
     for(int I=0;I<38;++I)
     {
-        const float D=150+I*(Length-150)/38,Open=Ending::Ease((D/Length-.77f)/.23f);
+        const float D=350+I*(Length-350)/38,Open=Ending::Ease((D/Length-.77f)/.23f);
         auto* Rib=Group(TEXT("CurvedVesselRib"),VesselPoint(D),Set);Rib->SetRelativeRotation(VesselRotation(D));
-        Ring(FVector::ZeroVector,843+Open*400,FMath::Lerp(Ending::Rose*.44f,Ending::Teal*.18f,Open),Rib,0,10-Open*6);
+        Rib->ComponentTags.Add(TEXT("EndingBloodVisual"));
+        Ring(FVector::ZeroVector,FMath::Lerp(420.f,843.f,Ending::Ease((D/Length-.10f)/.12f))+Open*400,FMath::Lerp(Ending::Rose*.44f,Ending::Teal*.18f,Open),Rib,0,10-Open*6);
     }
     // The final skin opens into a sparse lattice: the brain becomes visible
     // through it before the camera leaves the blood stream.
     for(int Strand=0;Strand<12;++Strand)for(int J=0;J<16;++J)
     {
         auto P=[&](int K){const float T=.86f+.14f*K/16,A=Strand*2*PI/12+K*.012f;return VesselPoint(Length*T)+VesselRotation(Length*T).RotateVector(FVector(0,FMath::Cos(A),FMath::Sin(A))*(850+Ending::Ease((T-.77f)/.23f)*400));};
-        Rod(P(J),P(J+1),7,FMath::Lerp(Ending::Rose*.3f,Ending::Teal*.28f,J/16.f),Set);
+        Rod(P(J),P(J+1),7,FMath::Lerp(Ending::Rose*.3f,Ending::Teal*.28f,J/16.f),Set)->ComponentTags.Add(TEXT("EndingBloodVisual"));
     }
     for(int I=0;I<130;++I)
     {
         const float A=R.FRandRange(-PI,PI),Rad=R.FRandRange(440,650);
         const FVector Origin(R.FRandRange(100,Length-100),FMath::Cos(A)*Rad,FMath::Sin(A)*Rad);
-        const FVector P=VesselPoint(Origin.X)+VesselRotation(Origin.X).RotateVector(FVector(0,Origin.Y,Origin.Z));
+        const FVector P=VesselPoint(Origin.X)+VesselRotation(Origin.X).RotateVector(FVector(0,Origin.Y,Origin.Z)*FMath::Lerp(.48f,1.f,Ending::Ease((Origin.X/Length-.10f)/.12f)));
         auto* B=Shape(TEXT("BloodCell"),P,FVector(220,210,62),FLinearColor(.66f,.045f,.035f),TEXT("Sphere"),Set,TEXT("Blood"));
-        B->SetRelativeRotation(FRotator(I*31,I*43,22));Blood.Add(B);BloodOrigins.Add(Origin);
+        B->SetRelativeRotation(FRotator(I*31,I*43,22));B->ComponentTags.Add(TEXT("EndingBloodVisual"));Blood.Add(B);BloodOrigins.Add(Origin);
     }
-    Shape(TEXT("WalkableBrainPlanet"),Ending::BrainCenter,FVector(Ending::BrainRadius*2),FLinearColor(.10f,.04f,.15f),TEXT("Sphere"),Set,TEXT("BrainGround"),true);
+    TArray<USceneComponent*> BeforeBrain;Set->GetChildrenComponents(false,BeforeBrain);
+    auto* BrainCollision=Shape(TEXT("WalkableBrainPlanet"),Ending::BrainCenter,FVector(Ending::BrainRadius*2),FLinearColor(.10f,.04f,.15f),TEXT("Sphere"),Set,TEXT("BrainGround"),true);
+    BrainCollision->SetHiddenInGame(true);BrainCollision->SetVisibility(false);
+    BuildBrainSurface();
     // Ambient neural filaments follow the small planet's surface.
     for(int I=0;I<330;++I)
     {
         const float X=R.FRandRange(13000,26700),Y=R.FRandRange(-2400,2400);
         const FVector P(X,Y,Ending::Ground(X,Y)+18);
         const FVector Q(X+110,Y+40,Ending::Ground(X+110,Y+40)+18);
-        Nerves.Add(Rod(P,Q,8,Ending::Teal*.07f,Set));
-        AmbientNeuronCores.Add(Shape(TEXT("Neuron"),P,FVector(24),Ending::Teal*.7f,TEXT("Sphere"),Set,TEXT("Glow")));
+        Nerves.Add(Rod(P,Q,8,Ending::Neural*.07f,Set,TEXT("NeuralFilament")));
+        AmbientNeuronCores.Add(Shape(TEXT("Neuron"),P,FVector(32),Ending::Neural*.7f,TEXT("FacetNeuronSoma"),Set,TEXT("NeuronGlass")));
         if(I%6==0&&FMath::Abs(Y)>380)
         {
-            Rod(P,P+FVector(20,0,260),9,Ending::Teal*.3f,Set);
-            Nerves.Add(Rod(P+FVector(20,0,180),P+FVector(70,90,330),6,Ending::Teal*.07f,Set));
-            Shape(TEXT("NeuralSpark"),P+FVector(70,90,330),FVector(37),Ending::Gold*.55f,TEXT("Sphere"),Set,TEXT("Glow"));
+            // Low branching fibres replace the old upright bead-on-a-stick props.
+            const FVector Fork=P+FVector(65,45,65);
+            Nerves.Add(Rod(P,Fork,10,Ending::Neural*.3f,Set,TEXT("NeuralFilament")));
+            for(int Side:{-1,1})Nerves.Add(Rod(Fork,Fork+FVector(80,Side*85,35),5,Ending::Neural*.18f,Set,TEXT("NeuralFilament")));
         }
     }
     // Nine branching layers: twice the original forward distance and ten hops to the goal.
-    NeuronPositions.Add(FVector(13200,0,Ending::Ground(13200)+480));
+    NeuronPositions.Add(FVector(13200,0,Ending::Ground(13200)+260));
     for(int Row=0;Row<9;++Row)for(int Lane=-2;Lane<=2;++Lane)
     {
-        const float X=14500+Row*1300,Y=Lane*800;
-        NeuronPositions.Add(FVector(X,Y,Ending::Ground(X,Y)+480));
+        const float X=14500+Row*1300+R.FRandRange(-180,180),Y=Lane*800+R.FRandRange(-260,260);
+        NeuronPositions.Add(FVector(X,Y,Ending::Ground(X,Y)+260));
     }
-    NeuronPositions.Add(FVector(26200,0,Ending::Ground(26200)+600));
+    NeuronPositions.Add(FVector(26200,0,Ending::Ground(26200)+400));
     for(int I=0;I<NeuronPositions.Num();++I)
     {
         const FVector P=NeuronPositions[I];const bool Goal=I==NeuronPositions.Num()-1;
-        const float Size=Goal?360:140;
-        NeuronCores.Add(Shape(Goal?TEXT("LargestNeuron"):TEXT("PossessableNeuron"),P,FVector(Size),Goal?Ending::Gold*.85f:Ending::Teal*.65f,TEXT("Sphere"),Set,TEXT("Glow")));
-        Ring(P,Goal?190:75,Goal?Ending::Gold*.55f:Ending::Teal*.28f,Set,1,Goal?7:3);
-        for(int J=0;J<6;++J)
-        {
-            const float A=J*2*PI/6;
-            const FVector Branch=P+FVector(FMath::Cos(A)*Size,FMath::Sin(A)*Size,-Size*.4f);
-            Rod(P,Branch,Goal?13:6,Ending::Teal*.35f,Set);
-            Rod(Branch,Branch+FVector(FMath::Cos(A+.6f)*Size*.65f,FMath::Sin(A+.6f)*Size*.65f,Size*.35f),Goal?8:4,Ending::Teal*.25f,Set);
-        }
+        const float Size=Goal?1000:I==0?210:R.FRandRange(170,245);
+        const FVector Normal=FVector(-(Ending::Ground(P.X+30,P.Y)-Ending::Ground(P.X-30,P.Y))/60,-(Ending::Ground(P.X,P.Y+30)-Ending::Ground(P.X,P.Y-30))/60,1).GetSafeNormal();
+        const FQuat Surface=FRotationMatrix::MakeFromZX(Normal,FVector::ForwardVector).ToQuat();
+        const FQuat Orientation=Surface*FQuat(FVector::UpVector,R.FRandRange(-PI,PI));
+        NeuronCores.Add(Shape(Goal?TEXT("LargestNeuron"):TEXT("PossessableNeuron"),P,FVector(Size,Size*R.FRandRange(.80f,1.08f),Size*R.FRandRange(.82f,1.06f)),Goal?Ending::Gold*2:FLinearColor(.15f,.65f,1.1f),TEXT("FacetNeuronSoma"),Set,TEXT("NeuronHero")));
+        NeuronCores.Last()->SetRelativeRotation(Orientation);
+        Shape(TEXT("NeuronNucleus"),FVector::ZeroVector,FVector(28),FLinearColor(.12f,.38f,.85f),TEXT("Sphere"),NeuronCores.Last(),TEXT("NeuronCore"));
+        const FString ArborMesh=I%4?FString::Printf(TEXT("FacetNeuronArbor%d"),I%4):TEXT("FacetNeuronArbor");
+        auto* Arbor=Shape(TEXT("NeuronDendriticArbor"),P,FVector(Goal?Size*.7f:Size)*FVector(1,R.FRandRange(.8f,1.25f),1),Goal?Ending::Gold*2:FLinearColor(.15f,.65f,1.1f),*ArborMesh,Set,TEXT("NeuralFilament"));
+        Arbor->SetRelativeRotation(Orientation);Nerves.Add(Arbor);
+        if(auto* Mat=Cast<UMaterialInstanceDynamic>(Arbor->GetMaterial(0)))Mat->SetScalarParameterValue(TEXT("Variant"),I*.731f);
     }
+    // Fine curved axons lie along the brain surface and physically join the hosts.
     for(int A=0;A<NeuronPositions.Num();++A)for(int B=A+1;B<NeuronPositions.Num();++B)
-        if(Ending::Layer(B)-Ending::Layer(A)==1&&FVector::Dist(NeuronPositions[A],NeuronPositions[B])<2050)
-            Nerves.Add(Rod(NeuronPositions[A],NeuronPositions[B],4,Ending::Teal*.16f,Set));
-    PulseTrail=Rod(NeuronPositions[0],NeuronPositions[1],12,Ending::Gold,Set);
-    PulseTrail->SetVisibility(false);
+    {
+        const FVector Delta=NeuronPositions[B]-NeuronPositions[A];
+        if(FMath::Abs(Ending::Layer(A)-Ending::Layer(B))>1||Delta.Size()>1750)continue;
+        auto* Link=NewObject<USplineMeshComponent>(this,MakeUniqueObjectName(this,USplineMeshComponent::StaticClass(),TEXT("NeuralAxonLink")),RF_Transactional);
+        AddInstanceComponent(Link);Link->ComponentTags.Add(Ending::Tag);Link->SetupAttachment(Set);
+        Link->SetMobility(EComponentMobility::Movable);Link->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/EndingEmergence/Meshes/SM_EE_FacetNeuronBranch")));
+        Link->SetForwardAxis(ESplineMeshAxis::Z,false);
+        const FVector Mid=(NeuronPositions[A]+NeuronPositions[B])*.5;
+        const FVector Bend(0,R.FRandRange(-180,180),R.FRandRange(-100,100));
+        Link->SetRelativeLocation(Mid);Link->SetStartAndEnd(-Delta*.5,Delta+Bend,Delta*.5,Delta-Bend,false);
+        Link->SetStartScale(FVector2D(.045f),false);Link->SetEndScale(FVector2D(.025f),false);
+        Link->SetCollisionEnabled(ECollisionEnabled::NoCollision);Link->SetCastShadow(false);Link->SetCanEverAffectNavigation(false);
+        auto* Mat=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_NeuralFilament")),Link);
+        Mat->SetVectorParameterValue(TEXT("Tint"),Ending::Neural*.35f);Mat->SetScalarParameterValue(TEXT("Variant"),A*.71f+B*.13f);Link->SetMaterial(0,Mat);
+        Link->RegisterComponent();Link->UpdateMesh();Nerves.Add(Link);
+    }
+    PulseTrail=nullptr;
+    BuildBackgroundNeurons();
+    // Leave a clear viewing gap outside the vessel. Translate the entire brain,
+    // including collision, hosts and fine links, as one spatial layout.
+    TArray<USceneComponent*> BrainParts;Set->GetChildrenComponents(false,BrainParts);
+    for(auto* Part:BrainParts)if(!BeforeBrain.Contains(Part))Part->SetRelativeLocation(Part->GetRelativeLocation()+FVector(3200,0,0));
+    for(FVector& Host:NeuronPositions)Host+=FVector(3200,0,0);
     // Only the final cell membrane is excavatable. Blood and brain need no tool.
     for(int I=0;I<1;++I)
     {
         const float X=Ending::GateX[I],Y=Ending::GateY[I],Z=Ending::Ground(X,Y);
         if(I<2)
-            Shell(TEXT("RoundMembraneFrame"),{FVector(X,0,850),FVector(X,Y,Z+250)},{FVector2D(I==0?969:850,850),FVector2D(240,250)},I==0?Ending::Teal*.35f:Ending::Rose*.6f,I==0?TEXT("CellInterior"):TEXT("Vessel"));
+            Shell(TEXT("RoundMembraneFrame"),{FVector(X,0,425),FVector(X,Y,Z+250)},{FVector2D(484.5f,425),FVector2D(240,250)},FLinearColor(.30f,.068f,.085f),TEXT("CellInterior"));
         else
             Shell(TEXT("NeuralConnectionFrame"),{FVector(X,0,Z+700),FVector(X,Y,Z+250)},{FVector2D(1750,2200),FVector2D(240,250)},Ending::Blue*.35f,TEXT("Haze"));
         auto* Gate=GetWorld()->SpawnActor<ADiggableRock>(ADiggableRock::StaticClass(),GetActorTransform().TransformPosition(FVector(X,Y,Z+250)),GetActorRotation());
         Gate->AttachToActor(this,FAttachmentTransformRules::KeepWorldTransform);Gate->Tags.Add(Ending::Tag);
         Gate->RockSize=FVector(100,480,500);Gate->RockMaterial=LoadObject<UMaterialInterface>(nullptr,I==1?TEXT("/Game/EndingEmergence/Materials/M_EE_RedMembrane"):TEXT("/Game/EndingEmergence/Materials/M_EE_Membrane"));Gate->ResetRock();Gates.Add(Gate);
         Ring(FVector(X-90,Y,Z+250),252,Ending::Gold*.5f,Set,0,6);
-        const float Start=I?Ending::GateX[I-1]+180:100,StartY=I?Ending::GateY[I-1]:0;
-        for(int J=0;J<30;++J)
-        {
-            const float A=J/30.f,PX=FMath::Lerp(Start,X-170,A),PY=FMath::Lerp(StartY,Y,A);
-            Shape(TEXT("FollowLight"),FVector(PX,PY,Ending::Ground(PX,PY)+8),FVector(25,7,4),Ending::Gold,TEXT("Cube"),Set,TEXT("Glow"));
-        }
     }
 }
 
@@ -437,11 +404,94 @@ void AEndingEmergence::BuildCity()
     }
 }
 
+void AEndingEmergence::ApplyCityBuildings()
+{
+    if(CityBuildingMeshes.Num()!=4||CityBuildingMeshes.Contains(nullptr)||!Sets.IsValidIndex(1))return;
+    TArray<UInstancedStaticMeshComponent*> Existing;GetComponents(Existing);
+    for(auto* C:Existing)
+    {
+        if(C->GetName().StartsWith(TEXT("Buildings"))||C->GetName().StartsWith(TEXT("CityWindows")))C->ClearInstances();
+        if(C->GetName().StartsWith(TEXT("CityAssetBuildings"))){RemoveInstanceComponent(C);C->DestroyComponent();}
+    }
+    TArray<UInstancedStaticMeshComponent*> Groups;
+    for(int32 I=0;I<4;++I)
+    {
+        auto* C=Instances(*FString::Printf(TEXT("CityAssetBuildings%d"),I),TEXT("Cube"),FLinearColor::White,Sets[1]);
+        C->SetStaticMesh(CityBuildingMeshes[I]);C->EmptyOverrideMaterials();C->SetCastShadow(false);C->SetVisibleInRayTracing(false);Groups.Add(C);
+    }
+    FRandomStream R(75);
+    for(int X=-7;X<=7;++X)for(int Y=-7;Y<=7;++Y)
+    {
+        if(X==0||Y==0)continue;
+        const int32 Index=(FMath::Abs(X)==1&&FMath::Abs(Y)==1)?(X==Y?1:3):FMath::Abs(X*11+Y*7)%4;
+        const auto Bounds=CityBuildingMeshes[Index]->GetBounds();
+        const FVector Size=Bounds.BoxExtent*2;
+        const float XY=FMath::Min(870.f/Size.X,870.f/Size.Y)*R.FRandRange(.95f,1.f);
+        const float Height=Index==3?R.FRandRange(2800,4200):R.FRandRange(1500,2600);
+        const FVector Scale(XY,XY,Height/Size.Z);
+        const FRotator Rotation(0,R.RandRange(0,3)*90.f,0);
+        const FVector Offset=Bounds.Origin*Scale-FVector(0,0,Bounds.BoxExtent.Z*Scale.Z);
+        Groups[Index]->AddInstance(FTransform(Rotation,FVector(X*1050,Y*1050,0)-Rotation.RotateVector(Offset),Scale));
+    }
+    // Lightweight street dressing uses the same acquired pack and instancing.
+    TArray<UStaticMeshComponent*> OldDress;GetComponents(OldDress);
+    for(auto* C:OldDress)if(C->GetName().StartsWith(TEXT("CityDress"))){RemoveInstanceComponent(C);C->DestroyComponent();}
+    if(CityPropMeshes.Num()==5&&!CityPropMeshes.Contains(nullptr))
+    {
+        TArray<UInstancedStaticMeshComponent*> Props;
+        for(int I=0;I<5;++I)
+        {
+            auto* C=Instances(*FString::Printf(TEXT("CityDressProp%d"),I),TEXT("Cube"),FLinearColor::White,Sets[1]);
+            C->SetStaticMesh(CityPropMeshes[I]);C->EmptyOverrideMaterials();C->SetVisibleInRayTracing(false);Props.Add(C);
+        }
+        auto Place=[&](int Index,FVector P,float Height,float Yaw)
+        {
+            const auto B=CityPropMeshes[Index]->GetBounds();const float Scale=Height/(B.BoxExtent.Z*2);
+            const FRotator Rot(0,Yaw,0);
+            const FVector Offset=(B.Origin-FVector(0,0,B.BoxExtent.Z))*Scale;
+            Props[Index]->AddInstance(FTransform(Rot,P-Rot.RotateVector(Offset),FVector(Scale)));
+        };
+        for(int Side:{-1,1})for(int K=-6;K<=6;++K)
+        {
+            if(K==0)continue;
+            const float Along=K*1050.f;
+            Place(1,FVector(Along,Side*575.f,0),450,0);
+            Place(1,FVector(Side*575.f,Along,0),450,90);
+            Place(2,FVector(Along+240,Side*580.f,0),90,0);
+            Place(2,FVector(Side*580.f,Along+240,0),90,90);
+            Place(4,FVector(Along-180,Side*580.f,0),90,Side*90.f);
+            if(K%3==0)Place(0,FVector(Along,Side*570.f,0),260,Side>0?180:0);
+        }
+        for(int X:{-1,1})for(int Y:{-1,1})Place(3,FVector(X*540,Y*540,0),340,X>0?180:0);
+    }
+    auto* Curbs=Instances(TEXT("CityDressCurbs"),TEXT("Cube"),FLinearColor(.16f,.21f,.28f),Sets[1]);
+    auto* Lights=Instances(TEXT("CityDressLightStrips"),TEXT("Cube"),FLinearColor(.22f,.45f,.65f),Sets[1],TEXT("Glow"));
+    for(int Side:{-1,1})for(int K=-7;K<=7;++K)
+    {
+        if(K==0)continue;
+        for(int Axis=0;Axis<2;++Axis)
+        {
+            const FVector P=Axis?FVector(Side*560,K*1050,4):FVector(K*1050,Side*560,4);
+            const FRotator Rot(0,Axis?90:0,0);
+            Curbs->AddInstance(FTransform(Rot,P,FVector(9.2f,1.4f,.08f)));
+            Lights->AddInstance(FTransform(Rot,P+FVector(0,0,5),FVector(8.8f,.035f,.02f)));
+        }
+    }
+    MarkPackageDirty();
+}
+
 void AEndingEmergence::BuildSpace()
 {
     auto* Planet=Sets[2].Get();
-    Shape(TEXT("Earth"),FVector::ZeroVector,FVector(8000),FLinearColor(.015f,.10f,.28f),TEXT("Sphere"),Planet,TEXT("Planet"));
-    Shape(TEXT("Atmosphere"),FVector::ZeroVector,FVector(8250),FLinearColor(.035f,.24f,.5f),TEXT("Sphere"),Planet,TEXT("Atmosphere"));
+    auto* EarthSurface=Shape(TEXT("Earth"),FVector::ZeroVector,FVector(8000),FLinearColor(.015f,.10f,.28f),TEXT("Sphere"),Planet,TEXT("Planet"));
+    auto* EarthShell=Shape(TEXT("Atmosphere"),FVector::ZeroVector,FVector(8200),FLinearColor(.08f,.42f,.95f),TEXT("Sphere"),Planet,TEXT("EarthHalo"));
+    auto* EarthClouds=Shape(TEXT("EarthCloudShell"),FVector::ZeroVector,FVector(8075),FLinearColor::White,TEXT("Sphere"),Planet,TEXT("EarthClouds"));
+    // A world-space sunrise behind the upper limb: the globe occludes both
+    // the source and its rays, unlike a screen overlay or a complete bright ring.
+    auto* Dawn=Group(TEXT("EarthDawnSource"),FVector(2200,-650,3850),Planet);
+    Shape(TEXT("DawnPhotosphere"),FVector::ZeroVector,FVector(220),FLinearColor(12,7,2.5f),TEXT("Sphere"),Dawn,TEXT("Glow"));
+    auto* Rays=Shape(TEXT("DawnScattering"),FVector::ZeroVector,FVector(5400,5400,1),FLinearColor::White,TEXT("Plane"),Dawn,TEXT("EarthDawn"));
+    Rays->SetRelativeRotation(FRotator(90,0,0));
     auto* LandLights=Instances(TEXT("EarthLights"),TEXT("Sphere"),Ending::Gold,Planet,TEXT("Glow"));
     FRandomStream R(823);
     for(int I=0;I<1500;++I)
@@ -451,34 +501,86 @@ void AEndingEmergence::BuildSpace()
         const FVector P(FMath::Cos(Lat)*FMath::Cos(A),FMath::Cos(Lat)*FMath::Sin(A),FMath::Sin(Lat));
         LandLights->AddInstance(FTransform(FRotator::ZeroRotator,P*4004,FVector(R.FRandRange(.022f,.06f))));
     }
+    LandLights->ClearInstances();
+    // A restrained, world-space backdrop becomes visible as the globe recedes.
+    // Tiny instanced cubes are subpixel stars; they need no sphere tessellation.
+    auto* OrbitStars=Instances(TEXT("EarthDistantStars"),TEXT("Cube"),FLinearColor(.24f,.35f,.52f),Planet,TEXT("Glow"));
+    FRandomStream OrbitRandom(20162016);
+    for(int I=0;I<1100;++I)
+    {
+        const FVector P(OrbitRandom.FRandRange(18000,34000),OrbitRandom.FRandRange(-38000,38000),OrbitRandom.FRandRange(-26000,26000));
+        const float Size=OrbitRandom.FRandRange(.035f,.13f)*(I%31==0?1.8f:1.f);
+        OrbitStars->AddInstance(FTransform(FRotator::ZeroRotator,P,FVector(.015f,Size,Size)));
+    }
+    if(auto* Mesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/Planet_Project/Assets/Static_Meshes/SM_Earth_Planet")))
+    {
+        const FVector Diameter=Mesh->GetBoundingBox().GetSize();
+        for(auto* Surface:{EarthSurface,EarthShell,EarthClouds})
+        {
+            auto* Mat=Surface->GetMaterial(0);Surface->SetStaticMesh(Mesh);
+            Surface->SetRelativeScale3D(FVector(Surface==EarthSurface?8000:Surface==EarthClouds?8075:8200)/Diameter);
+            for(int Slot=0;Slot<Surface->GetNumMaterials();++Slot)Surface->SetMaterial(Slot,Mat);
+        }
+    }
     Universe=Group(TEXT("UniverseThatBecomesCytoplasm"),FVector::ZeroVector,Sets[3]);
-    auto* Stars=Instances(TEXT("Galaxies"),TEXT("Sphere"),FLinearColor(.32f,.5f,.85f),Universe,TEXT("Glow"));
-    auto* GoldStars=Instances(TEXT("WarmStars"),TEXT("Sphere"),Ending::Gold,Universe,TEXT("Glow"));
+    SolarSystem=Group(TEXT("SolarSystem"),FVector::ZeroVector,Universe);BuildSolarSystem();
+    NebulaUniverse=Group(TEXT("NebulaUniverse"),FVector::ZeroVector,Universe);
+    // Actual free star/nebula artwork is spread across depth layers. These
+    // remain inside the enclosing cell and shrink with the same universe.
+    for(int Layer=0;Layer<4;++Layer)
+    {
+        auto* Field=Shape(TEXT("DeepStarField"),FVector(-19000-Layer*4300,(Layer%2?1:-1)*12500,Layer*1700-2600),FVector(19000,21000,1),FLinearColor::White,TEXT("Plane"),NebulaUniverse,TEXT("SpaceField"));
+        Field->SetRelativeRotation(FQuat(FVector::ForwardVector,Layer*.63f)*FRotator(90,0,0).Quaternion());
+    }
+    for(int Layer=0;Layer<3;++Layer)
+    {
+        auto* Field=Shape(TEXT("ParallaxNebula"),FVector(-12500-Layer*4300,(Layer%2?1:-1)*(6200+Layer*1400),Layer*2400-2400),FVector(16000,19000,1),FLinearColor::White,TEXT("Plane"),NebulaUniverse,TEXT("NebulaField"));
+        Field->SetRelativeRotation(FQuat(FVector::ForwardVector,Layer*.71f)*FRotator(90,0,0).Quaternion());
+    }
+    auto* Stars=Instances(TEXT("Galaxies"),TEXT("Sphere"),FLinearColor(.32f,.5f,.85f),NebulaUniverse,TEXT("CosmicStar"));
+    auto* GoldStars=Instances(TEXT("WarmStars"),TEXT("Sphere"),Ending::Gold,NebulaUniverse,TEXT("CosmicStar"));
     for(int Cluster=0;Cluster<13;++Cluster)
     {
-        const FVector Center=Cluster?R.VRand()*R.FRandRange(7000,21000):FVector::ZeroVector;
-        const float Radius=Cluster?R.FRandRange(1100,2800):6200;
-        auto* Haze=Shape(TEXT("GalaxyHaze"),Center,FVector(Radius*2,Radius*2,Radius*.25),FLinearColor(.09f,.03f,.18f),TEXT("Sphere"),Universe,TEXT("Haze"));
-        Haze->SetRelativeRotation(FRotator(Cluster*19,Cluster*47,0));
+        const FVector Center(-21000-Cluster*950,(Cluster%2?1:-1)*R.FRandRange(10500,19000),R.FRandRange(-7000,7000));
+        const float Radius=Cluster?R.FRandRange(1100,2600):4200;
+        auto* Haze=Shape(TEXT("GalaxyHaze"),Center,FVector(Radius*3,Radius*3,1),FLinearColor::White,TEXT("Plane"),NebulaUniverse,TEXT("NebulaField"));
+        Haze->SetRelativeRotation(FRotator(65+Cluster%4*12,Cluster*47,0));
         for(int I=0;I<240;++I)
         {
             const float D=R.FRandRange(.03,1)*Radius,A=D/Radius*7+(I%3)*2*PI/3+R.FRandRange(-.18,.18);
             const FVector P=Center+Haze->GetRelativeRotation().RotateVector(FVector(FMath::Cos(A)*D,FMath::Sin(A)*D,R.FRandRange(-.08,.08)*Radius));
             (I%3?Stars:GoldStars)->AddInstance(FTransform(FRotator::ZeroRotator,P,FVector(R.FRandRange(8,24)/100)));
         }
-        Shape(TEXT("GalaxyCore"),Center,FVector(Radius*.085),Ending::Gold,TEXT("Sphere"),Universe,TEXT("Glow"));
+        auto* Core=Shape(TEXT("GalaxyCore"),Center,FVector(Radius*.10),Cluster%3?FLinearColor(.95f,.36f,.10f):FLinearColor(.25f,.55f,1.f),TEXT("Sphere"),NebulaUniverse,TEXT("StellarSurface"));
+        Core->SetRelativeRotation(FRotator(Cluster*31,Cluster*67,23));
+        auto* Corona=Shape(TEXT("StellarCorona"),Center+FVector(-Radius*.06f,0,0),FVector(Radius*.48f,Radius*.48f,1),Cluster%3?FLinearColor(1,.48f,.17f):FLinearColor(.30f,.52f,1.f),TEXT("Plane"),NebulaUniverse,TEXT("StellarCorona"));
+        Corona->SetRelativeRotation(FQuat(FVector::ForwardVector,FMath::DegreesToRadians(Cluster*23.f))*FRotator(90,0,0).Quaternion());
+
     }
     auto* FarStars=Instances(TEXT("DistantStars"),TEXT("Sphere"),FLinearColor(.18f,.24f,.37f),Universe,TEXT("Glow"));
     for(int I=0;I<1400;++I)FarStars->AddInstance(FTransform(FRotator::ZeroRotator,R.VRand()*40000,FVector(R.FRandRange(.4,1.3))));
+    BuildAbstractCells();
+}
+
+void AEndingEmergence::BuildAbstractCells()
+{
+    // Keep the outer universe cells symbolic; detailed anatomy is interior-only.
+    for(auto* GroupRoot:{Cell.Get(),OtherCells.Get()})if(GroupRoot)
+    {
+        TArray<USceneComponent*> CellParts;GroupRoot->GetChildrenComponents(true,CellParts);
+        for(int I=CellParts.Num()-1;I>=0;--I){RemoveInstanceComponent(CellParts[I]);CellParts[I]->DestroyComponent();}
+        RemoveInstanceComponent(GroupRoot);GroupRoot->DestroyComponent();
+    }
+    FRandomStream R(823);
     Cell=Group(TEXT("RevealedCellMembrane"),FVector::ZeroVector,Sets[3]);
-    Shape(TEXT("TransparentCell"),FVector::ZeroVector,FVector(3500,4200,3300),Ending::Teal*.28f,TEXT("Sphere"),Cell,TEXT("Atmosphere"));
-    Ring(FVector::ZeroVector,1750,Ending::Teal*.6f,Cell,0,13);
-    Shape(TEXT("GiantNucleus"),FVector(150,1130,340),FVector(630,570,600),FLinearColor(.20f,.05f,.32f),TEXT("Sphere"),Cell,TEXT("Organic"));
-    Shape(TEXT("GiantNucleolus"),FVector(-105,1030,390),FVector(140),Ending::Gold,TEXT("Sphere"),Cell,TEXT("Glow"));
+    Shape(TEXT("TransparentCell"),FVector::ZeroVector,FVector(3500,4200,3300),FLinearColor(.52f,.085f,.15f),TEXT("Sphere"),Cell,TEXT("LivingMembrane"));
+    Shape(TEXT("GiantNucleus"),FVector(150,1130,340),FVector(560,510,540),FLinearColor(.19f,.045f,.24f),TEXT("FacetNucleus"),Cell,TEXT("CosmicOrganelle"));
+    Shape(TEXT("GiantNucleolus"),FVector(-105,1030,390),FVector(115),FLinearColor(.40f,.15f,.26f),TEXT("FacetOrganelle"),Cell,TEXT("CosmicOrganelle"));
     for(int I=0;I<19;++I)
     {
         const float A=I*2*PI/19;
-        auto* C=Shape(TEXT("GiantOrganelle"),FVector(FMath::Sin(A*3)*650,FMath::Cos(A)*1400,FMath::Sin(A)*1280),FVector(110,290,120),I%2?Ending::Rose:Ending::Teal*.35f,TEXT("Sphere"),Cell,TEXT("Organic"));
+        const float Azimuth=A+R.FRandRange(-.11f,.11f),Spread=R.FRandRange(.73f,1.12f);
+        auto* C=Shape(TEXT("GiantOrganelle"),FVector(R.FRandRange(-750,750),FMath::Cos(Azimuth)*1400*Spread,FMath::Sin(Azimuth)*1280*Spread),FVector(100,260,110)*R.FRandRange(.75f,1.15f),I%2?FLinearColor(.24f,.055f,.17f):FLinearColor(.14f,.055f,.25f),TEXT("FacetOrganelle"),Cell,TEXT("CosmicOrganelle"));
         C->SetRelativeRotation(FRotator(I*19,I*33,I*17));
     }
     // These structures exist at their final size from the beginning. The camera
@@ -487,19 +589,20 @@ void AEndingEmergence::BuildSpace()
     OtherCells=Group(TEXT("ManyUniversesInsideCells"),FVector::ZeroVector,Sets[3]);
     auto* SmallStars=Instances(TEXT("UniversesInOtherCells"),TEXT("Sphere"),FLinearColor(.32f,.43f,.70f),OtherCells,TEXT("Glow"));
     auto* WarmStars=Instances(TEXT("WarmUniversesInOtherCells"),TEXT("Sphere"),Ending::Gold*.55f,OtherCells,TEXT("Glow"));
-    auto* Membranes=Instances(TEXT("DenseCellMembranes"),TEXT("Sphere"),Ending::Teal*.29f,OtherCells,TEXT("Atmosphere"));
-    auto* Nuclei=Instances(TEXT("DenseCellNuclei"),TEXT("Sphere"),FLinearColor(.14f,.04f,.23f),OtherCells,TEXT("Organic"));
-    auto* Galaxies=Instances(TEXT("DenseCellGalaxies"),TEXT("Sphere"),FLinearColor(.18f,.06f,.29f),OtherCells,TEXT("Haze"));
+    auto* Membranes=Instances(TEXT("DenseCellMembranes"),TEXT("Sphere"),FLinearColor(.52f,.085f,.15f),OtherCells,TEXT("LivingMembrane"));
+    auto* Nuclei=Instances(TEXT("DenseCellNuclei"),TEXT("FacetNucleus"),FLinearColor(.19f,.045f,.24f),OtherCells,TEXT("CosmicOrganelle"));
+    auto* Galaxies=Instances(TEXT("DenseCellGalaxies"),TEXT("Plane"),FLinearColor(.18f,.06f,.29f),OtherCells,TEXT("CellNebula"));
     UniverseCellCount=1;
     for(int Row=-11;Row<=11;++Row)for(int Col=-14;Col<=14;++Col)
     {
         if(Row==0&&Col==0)continue;
         ++UniverseCellCount;
-        const FVector Center(R.FRandRange(-32000,32000),Col*145000+(FMath::Abs(Row)%2)*72500+R.FRandRange(-6000,6000),Row*128000+R.FRandRange(-5000,5000));
-        const float Radius=R.FRandRange(66000,74000);
-        Membranes->AddInstance(FTransform(FRotator::ZeroRotator,Center,FVector(Radius*2,Radius*2.05,Radius*1.96)/100));
+        const FVector Center(R.FRandRange(-58000,58000),Col*145000+(FMath::Abs(Row)%2)*72500+R.FRandRange(-21000,21000),Row*128000+R.FRandRange(-18000,18000));
+        const float Radius=R.FRandRange(58000,76000);
+        Membranes->AddInstance(FTransform(FRotator(R.FRandRange(-12,12),0,R.FRandRange(-18,18)),Center,FVector(Radius*2,Radius*R.FRandRange(1.85f,2.15f),Radius*R.FRandRange(1.85f,2.1f))/100));
         Nuclei->AddInstance(FTransform(FRotator::ZeroRotator,Center+FVector(0,Radius*.60,Radius*.18),FVector(Radius*.30/100)));
-        Galaxies->AddInstance(FTransform(FRotator(0,0,R.FRandRange(-25,25)),Center,FVector(Radius*1.05,Radius*.9,Radius*.13)/100));
+        const FQuat NebulaFacing=FQuat(FVector::ForwardVector,R.FRandRange(-PI,PI))*FRotator(90,0,0).Quaternion();
+        Galaxies->AddInstance(FTransform(NebulaFacing,Center,FVector(Radius*1.25,Radius*1.25,1)/100));
         for(int I=0;I<64;++I)
         {
             const float Dist=R.FRandRange(.015f,.7f)*Radius,A=Dist/Radius*11+(I%3)*2*PI/3;
@@ -507,6 +610,54 @@ void AEndingEmergence::BuildSpace()
             (I%3?SmallStars:WarmStars)->AddInstance(FTransform(FRotator::ZeroRotator,P,FVector(R.FRandRange(160,400)/100)));
         }
     }
+}
+
+void AEndingEmergence::ApplyCellVisuals()
+{
+    if(Sets.IsEmpty()||!Cell||!OtherCells)return;
+    TArray<USceneComponent*> Parts;Sets[0]->GetChildrenComponents(true,Parts);
+    for(int I=Parts.Num()-1;I>=0;--I)
+    {
+        auto* Part=Parts[I];const FString Name=Part->GetName();
+        if(Name.StartsWith(TEXT("Organelle"))||Name.StartsWith(TEXT("CellNucleus"))||Name.StartsWith(TEXT("Nucleolus"))||Name.StartsWith(TEXT("CellDress")))
+        {RemoveInstanceComponent(Part);Part->DestroyComponent();}
+    }
+    // Closed hard-faced silhouettes replace cutaway anatomy whose open surfaces
+    // were exposed at player height. Keep a walkable central aisle without marks.
+    Shape(TEXT("CellDressNucleusEnvelope"),FVector(950,-330,190),FVector(430,360,400),FLinearColor(.44f,.12f,.22f),TEXT("FacetNucleus"),Sets[0],TEXT("LivingMembrane"));
+    Shape(TEXT("CellDressNucleus"),FVector(950,-330,190),FVector(320,280,310),FLinearColor(.21f,.075f,.23f),TEXT("FacetNucleus"),Sets[0],TEXT("FacetSurface"));
+    Shape(TEXT("CellDressNucleolus"),FVector(795,-305,215),FVector(85),FLinearColor(.65f,.16f,.24f),TEXT("FacetOrganelle"),Sets[0],TEXT("FacetSurface"));
+    for(int Side:{-1,1})for(int Row=0;Row<5;++Row)
+    {
+        const float X=180+Row*250,Y=Side*(280+35*(Row%2));
+        if(Side==-1&&Row>1&&Row<4)continue;
+        const FVector Center(X,Y,Ending::Ground(X,Y)+90);
+        auto* Org=Group(TEXT("CellDressMitochondrion"),Center,Sets[0]);
+        Org->SetRelativeRotation(FRotator(8+Row*5,Row*47+Side*23,Side*12));
+        Shape(TEXT("CellDressMitoBody"),FVector::ZeroVector,FVector(250,118,100),FLinearColor(.42f,.075f,.09f),TEXT("FacetOrganelle"),Org,TEXT("FacetSurface"));
+        for(int Fold=0;Fold<6;++Fold)
+        {
+            auto* Crista=Shape(TEXT("CellDressCrista"),FVector(-80+Fold*31,0,36),FVector(18,75,25),FLinearColor(.72f,.21f,.10f),TEXT("FacetOrganelle"),Org,TEXT("FacetSurface"));
+            Crista->SetRelativeRotation(FRotator(0,Fold%2?18:-18,0));
+        }
+    }
+    // Layered Golgi sacs remain intact rather than showing an anatomy cut plane.
+    for(int Layer=0;Layer<5;++Layer)
+    {
+        auto* Sac=Shape(TEXT("CellDressGolgi"),FVector(640,360,80+Layer*27),FVector(240-Layer*18,115,22),FLinearColor(.55f,.12f,.21f),TEXT("FacetOrganelle"),Sets[0],TEXT("FacetSurface"));
+        Sac->SetRelativeRotation(FRotator(0,-25+Layer*4,8));
+    }
+    auto* Vesicles=Instances(TEXT("CellDressVesicles"),TEXT("FacetGranule"),FLinearColor(.58f,.24f,.20f),Sets[0],TEXT("LivingMembrane"));
+    auto* Ribosomes=Instances(TEXT("CellDressRibosomes"),TEXT("FacetGranule"),Ending::Gold*.18f,Sets[0],TEXT("FacetSurface"));
+    FRandomStream R(903);
+    for(int I=0;I<95;++I)
+    {
+        const float X=R.FRandRange(80,1400),Y=(I%2?1:-1)*R.FRandRange(220,440);
+        const float Size=R.FRandRange(8,26),Z=Ending::Ground(X,Y)+R.FRandRange(35,180);
+        (I%4?Ribosomes:Vesicles)->AddInstance(FTransform(FRotator::ZeroRotator,FVector(X,Y,Z),FVector(Size/100)));
+    }
+    BuildAbstractCells();
+    MarkPackageDirty();
 }
 
 void AEndingEmergence::BuildAfternoon()
@@ -585,7 +736,7 @@ void AEndingEmergence::BuildDemo()
     Sets.Add(Group(TEXT("03_Earth"),Ending::Earth));
     Sets.Add(Group(TEXT("04_UniverseInsideCell"),Ending::Cosmos));
     Sets.Add(Group(TEXT("05_ThatAfternoon"),Ending::Desk));
-    BuildJourney();BuildCity();BuildSpace();BuildAfternoon();
+    BuildJourney();BuildCity();ApplyCityBuildings();BuildSpace();ApplyCellVisuals();BuildAfternoon();
     for(int I=1;I<Sets.Num();++I)Sets[I]->SetVisibility(false,true);
     MarkPackageDirty();
 }
@@ -593,6 +744,20 @@ void AEndingEmergence::BuildDemo()
 void AEndingEmergence::BeginPlay()
 {
     Super::BeginPlay();
+    if(CrowdAssets&&Sets.IsValidIndex(1))
+    {
+        StreetCrowd=NewObject<UEndingCrowdComponent>(this,TEXT("CitySamplePedestrians"));
+        AddInstanceComponent(StreetCrowd);StreetCrowd->SetupAttachment(Sets[1]);StreetCrowd->RegisterComponent();
+        if(StreetCrowd->Build(CrowdAssets))
+        {
+            if(Crowd)Crowd->ClearInstances();
+            if(CrowdHeads)CrowdHeads->ClearInstances();
+            TArray<USceneComponent*> Placeholders;
+            if(EyePerson)EyePerson->GetChildrenComponents(true,Placeholders);
+            for(auto* C:Placeholders)if(auto* M=Cast<UStaticMeshComponent>(C))M->SetStaticMesh(nullptr);
+        }
+        else{StreetCrowd->DestroyComponent();StreetCrowd=nullptr;}
+    }
     // Generated shell geometry is saved, but its transient cooked body is not.
     // Recreate collision after loading/PIE duplication before the pawn can move.
     TArray<UDynamicMeshComponent*> Shells;GetComponents(Shells);
@@ -609,6 +774,13 @@ void AEndingEmergence::BeginPlay()
     Camera->GetCameraComponent()->PostProcessSettings.MotionBlurAmount=0;
     Camera->GetCameraComponent()->PostProcessSettings.bOverride_VignetteIntensity=true;
     Camera->GetCameraComponent()->PostProcessSettings.VignetteIntensity=.3;
+    // These shots use authored emissive shading. Avoid building a Lumen scene
+    // for the crowd/city on its first reveal; the campaign camera is unchanged.
+    auto& EndingPP=Camera->GetCameraComponent()->PostProcessSettings;
+    EndingPP.bOverride_DynamicGlobalIlluminationMethod=true;
+    EndingPP.DynamicGlobalIlluminationMethod=EDynamicGlobalIlluminationMethod::None;
+    EndingPP.bOverride_ReflectionMethod=true;
+    EndingPP.ReflectionMethod=EReflectionMethod::None;
 }
 
 bool AEndingEmergence::Initialize()
@@ -627,6 +799,7 @@ bool AEndingEmergence::Initialize()
     {TransitMaterial=UMaterialInstanceDynamic::Create(Base,this);Camera->GetCameraComponent()->AddOrUpdateBlendable(TransitMaterial,1);}
     // Local instance only: the authored route is a short, grounded finale.
     if(auto* M=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())M->FlightSettings.bEnabled=false;
+    CacheCellMotion();InitializeScaleMotion();
     Mining->OnFieldReset.AddDynamic(this,&AEndingEmergence::RestartDemo);
     if(GEngine&&GEngine->GameViewport)
     {
@@ -653,16 +826,33 @@ bool AEndingEmergence::Initialize()
     ToolLight=NewObject<UPointLightComponent>(this,NAME_None,RF_Transient);
     ToolLight->SetupAttachment(Camera->GetCameraComponent());ToolLight->SetRelativeLocation(FVector(10,-20,35));
     ToolLight->SetIntensity(900);ToolLight->SetAttenuationRadius(350);ToolLight->SetCastShadows(false);ToolLight->RegisterComponent();ToolLight->SetVisibility(false);
-    for(int I=0;I<4;++I)
-    {
-        auto* Shell=NewObject<UStaticMeshComponent>(this,NAME_None,RF_Transient);
-        Shell->SetupAttachment(RootComponent);Shell->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Sphere.Sphere")));
-        auto* M=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_Atmosphere")),this);
-        Shell->SetMaterial(0,M);Shell->SetCollisionEnabled(ECollisionEnabled::NoCollision);Shell->SetCastShadow(false);Shell->RegisterComponent();Shell->SetVisibility(false);NeuralWaveShells.Add(Shell);
-    }
-    if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_WetLens")))
-    {WetLensMaterial=UMaterialInstanceDynamic::Create(Base,this);Camera->GetCameraComponent()->AddOrUpdateBlendable(WetLensMaterial,1);}
+    // Arrival waves illuminate distant nodes and links only. A shell around the
+    // host crossed the camera near plane and caused a full-screen green flash.
+    BuildFinale();WarmStreetRendering();
     SetAmbience(TEXT("Cell"),.34f);return true;
+}
+
+void AEndingEmergence::WarmStreetRendering()
+{
+    if(!StreetCrowd||!Sets.IsValidIndex(1))return;
+    // Render the street once offscreen while the cell scene initializes. Its
+    // shaders and instance buffers are ready before the thought-to-street fade.
+    Sets[1]->SetVisibility(true,true);
+    if(NightContinent)NightContinent->SetVisibility(false,true);
+    StreetCrowd->UpdateCrowd(true,0);
+    auto* Target=NewObject<UTextureRenderTarget2D>(this);
+    Target->InitAutoFormat(256,144);Target->UpdateResourceImmediate(true);
+    auto* Capture=NewObject<USceneCaptureComponent2D>(this);
+    Capture->bCaptureEveryFrame=false;Capture->bCaptureOnMovement=false;
+    Capture->TextureTarget=Target;Capture->CaptureSource=ESceneCaptureSource::SCS_FinalColorHDR;
+    Capture->FOVAngle=75;Capture->RegisterComponent();
+    Capture->PostProcessSettings=Camera->GetCameraComponent()->PostProcessSettings;
+    const FVector Position=GetActorTransform().TransformPosition(Ending::City+FVector(-1700,-900,3200));
+    const FVector Look=GetActorTransform().TransformPosition(Ending::City+FVector(0,0,160));
+    Capture->SetWorldLocationAndRotation(Position,(Look-Position).Rotation());
+    Capture->CaptureScene();
+    Capture->DestroyComponent();
+    Sets[1]->SetVisibility(false,true);StreetCrowd->UpdateCrowd(false,0);
 }
 
 void AEndingEmergence::Sound(const TCHAR* Name,float Volume,float Pitch)
@@ -674,22 +864,30 @@ void AEndingEmergence::SetAmbience(const TCHAR* Name,float Volume)
 {
     if(Ambience){Ambience->Stop();Ambience->DestroyComponent();Ambience=nullptr;}
     if(auto* S=LoadObject<USoundBase>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Audio/S_EE_"))+Name)))
-        Ambience=UGameplayStatics::SpawnSound2D(this,S,Volume,1,0,nullptr,false,false);
+    {
+        Ambience=UGameplayStatics::CreateSound2D(this,S,Volume,1,0,nullptr,false,false);
+        if (Ambience && GetGameInstance())
+        {
+            Ambience->SoundClassOverride=GetGameInstance()->GetSubsystem<UMiningAudioSettings>()->GetClass(3);
+            Ambience->Play();
+        }
+    }
 }
 
 void AEndingEmergence::RestartDemo()
 {
     if(bRestoring||!Player||!Mining)return;
     TGuardValue<bool> Guard(bRestoring,true);
+    ResetFinale();ResetScaleMotion();
     GateIndex=0;Shot=-1;ShotTime=0;Age=0;BeatAt=0;LastCuts=0;bComplete=false;BloodTravel=0;
-    CurrentNeuron=TargetNeuron=TravellingToNeuron=INDEX_NONE;PossessionCount=0;VisitedNeurons.Empty();BloodSpeed=480;VesselDistance=150;BloodY=0;PulseAt=-100;bEnteringBrain=false;TransitEffects(0);
+    CurrentNeuron=TargetNeuron=TravellingToNeuron=INDEX_NONE;PossessionCount=0;VisitedNeurons.Empty();BloodSpeed=480;VesselDistance=150;BloodY=0;PulseAt=-100;BufferedJumpAt=-100;bEnteringBrain=false;TransitEffects(0);
     if(DroppedPickaxe){DroppedPickaxe->DestroyComponent();DroppedPickaxe=nullptr;}
     DriftOffset=DriftVelocity=FVector::ZeroVector;
     PullbackBoost=0;PullbackRate=1;
     for(ADiggableRock* G:Gates)if(IsValid(G)){G->ResetRock();G->SetActorHiddenInGame(false);}
     for(int I=0;I<Sets.Num();++I)Sets[I]->SetVisibility(I==0,true);
     if(PulseTrail)PulseTrail->SetVisibility(false);
-    for(int I=0;I<NeuronCores.Num();++I)if(auto* M=Cast<UMaterialInstanceDynamic>(NeuronCores[I]->GetMaterial(0)))M->SetVectorParameterValue(TEXT("Tint"),I==NeuronPositions.Num()-1?Ending::Gold*.85f:Ending::Teal*.65f);
+    for(int I=0;I<NeuronCores.Num();++I)if(auto* M=Cast<UMaterialInstanceDynamic>(NeuronCores[I]->GetMaterial(0)))M->SetVectorParameterValue(TEXT("Tint"),I==NeuronPositions.Num()-1?Ending::Gold*.85f:Ending::Neural*.65f);
     Universe->SetRelativeScale3D(FVector(1));Cell->SetRelativeScale3D(FVector(32));
     ClearEndingEffects();
     RealityHits=0;LastStrike=-100;bImpactPending=false;UniverseSnapshot=nullptr;
@@ -720,15 +918,17 @@ void AEndingEmergence::PreviewFilm()
 
 float AEndingEmergence::Duration(int32 Index)
 {
-    const float Seconds[]={5,20,14,18,27,20,18,12,0,2.4f,6.3f,0};
+    const float Seconds[]={5,20,14,18,35,20,18,12,4.5f,0,5.8f,6.6f,4.4f,6.f,0};
     return Index>=0&&Index<UE_ARRAY_COUNT(Seconds)?Seconds[Index]:0;
 }
 
 void AEndingEmergence::SetShot(int32 Index)
 {
+    if((Index>=2&&Index<=4&&Shot==Index-1)||(Index==0&&Shot<0&&GateIndex>=5))CaptureScaleBridge();
+    else bScaleBridgeReady=false;
     Shot=Index;ShotTime=0;
     const int SetIndex=Shot<=2?1:Shot==3?2:3;
-    for(int I=0;I<Sets.Num();++I)Sets[I]->SetVisibility(I==SetIndex,true);
+    for(int I=0;I<Sets.Num();++I)if(Sets[I]->IsVisible()!=(I==SetIndex))Sets[I]->SetVisibility(I==SetIndex,true);
     if(NightContinent)NightContinent->SetVisibility(Shot==2,true);
     if(Shot<=2)
     {
@@ -737,24 +937,46 @@ void AEndingEmergence::SetShot(int32 Index)
         EyePerson->SetVisibility(Shot<=1,true);
     }
     if(Shot==4){Universe->SetRelativeScale3D(FVector(1));Cell->SetRelativeScale3D(FVector(32));}
-    EndingHand->SetVisibility(Shot==7||Shot==8,true);
-    EndingTool->SetVisibility(Shot==7||Shot==8,true);
-    if(ToolLight)ToolLight->SetVisibility(Shot==7||Shot==8);
+    if(Shot>=4&&Shot<=8)UpdateCosmos(Shot==4?0:1);
+    EndingHand->SetVisibility(false,true);EndingTool->SetVisibility(false,true);
+    if(ToolLight)ToolLight->SetVisibility(false);
+    if(FinaleCellSpecks)FinaleCellSpecks->SetVisibility(Shot>=6&&Shot<=8);
+    if(FinaleEntrancePreview)FinaleEntrancePreview->SetVisibility(Shot==8,true);
     if(Shot==7)
     {
-        // Continue directly from the last cell-group view; the voice arrives before the tool.
-        RetreatStart=GetActorTransform().InverseTransformPosition(Camera->GetActorLocation())-Ending::Cosmos;
-        RetreatInitialSpeed=FMath::Max(45000.f,RetreatSpeed);DriftVelocity=FVector::ZeroVector;
-        RealityHits=0;LastStrike=-100;bImpactPending=false;
-        Speak(TEXT("BlockedThought"));
-        BuildWaterAndPaper();
-        if(Ambience)Ambience->AdjustVolume(2,.09f);
+        PrepareFinaleRocks();
+        TitleCameraStart=GetActorTransform().InverseTransformPosition(Camera->GetActorLocation())-Ending::Cosmos;
+        TitleLookStart=Camera->GetActorRotation();TitleUpdateAt=-1;
+        DriftVelocity=FVector::ZeroVector;Exhaustion=0;
+        if(Ambience)Ambience->AdjustVolume(2,.22f);
     }
-    if(Shot==8){LastStrike=Age-.95f;SetAmbience(TEXT("Brain"),.18f);}
-    if(Shot>=9)Sets[4]->SetVisibility(false,true);
-    if(Shot==9){Sound(TEXT("Shatter"),.85f);if(Ambience)Ambience->AdjustVolume(.4f,0);BuildUniverseShards();Sound(TEXT("WaterBurst"),1.35f,.86f);}
-    if(Shot==10){for(auto Shard:UniverseShards)Shard->SetVisibility(false);}
-    if(Shot==11)bComplete=true;
+    if(Shot==8){UpdateCellTitle(1);Sound(TEXT("PulseFlight"),.7f,.6f);}
+    if(Shot>=9)for(auto Set:Sets)Set->SetVisibility(false,true);
+    if(Shot==9)BeginFinaleDrill();
+    if(Shot==10)
+    {
+        EndFinaleDrill(true);PaperScene->SetRelativeRotation(FRotator(90,0,0));PaperScene->SetVisibility(false,true);
+        FinaleTunnel->SetVisibility(false,true);FinaleLight->SetVisibility(false);PaperSurface->SetVisibility(true);
+        for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(true);
+        Sound(TEXT("Connect"),.45f,.7f);
+    }
+    if(Shot==11)
+    {
+        EndFinaleDrill();
+        if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);
+        FinaleTunnel->SetVisibility(false,true);PaperScene->SetRelativeRotation(FRotator::ZeroRotator);TransitEffects(0);
+        for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(true);
+        SetAmbience(TEXT("Cell"),.06f);
+    }
+    if(Shot==14)
+    {
+        CapturePaperCave();PaperCaveScene->SetVisibility(false,true);
+        PaperScene->SetVisibility(false,true);FinaleReality->SetVisibility(true,true);
+        CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),1);CreditsScreenMaterial->SetScalarParameterValue(TEXT("CreditMix"),0);CreditsScreenLight->SetIntensity(110);
+        TransitEffects(0);if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);
+        Camera->GetCameraComponent()->NotifyCameraCut();
+        if(Player&&Player->PlayerCameraManager)Player->PlayerCameraManager->SetGameCameraCutThisFrame();
+    }
     if(Shot==0)SetAmbience(TEXT("Street"),.48f);
     if(Shot==3)SetAmbience(TEXT("Space"),.32f);
     UE_LOG(LogTemp,Display,TEXT("ENDING_SHOT %d"),Shot);
@@ -775,6 +997,8 @@ void AEndingEmergence::UpdateFilm(float Dt)
     // physical pullback speed as the represented scale grows.
     const float T=Shot>=1&&Shot<=6?Progress:Ending::Ease(Progress);
     const float Zoom=(FMath::Exp(T*FMath::Loge(4.f))-1)/3;
+    if(FinaleCellSpecks)if(auto* Mat=Cast<UMaterialInstanceDynamic>(FinaleCellSpecks->GetMaterial(0)))
+        Mat->SetScalarParameterValue(TEXT("Fade"),Shot==6?Ending::Ease((T-.30f)/.30f):Shot>=7?1.f:0.f);
     const float W=bComfortMode?0:FMath::Clamp(Weightlessness,0.f,1.f);
     if(Shot>=1&&Shot<=6)
     {
@@ -791,14 +1015,17 @@ void AEndingEmergence::UpdateFilm(float Dt)
     {
     case 0: Pose(Ending::City+FMath::Lerp(FVector(38,0,195),FVector(-160,-80,650),T),Ending::City+FVector(0,0,160),75);break;
     case 1:
-        EyePerson->SetVisibility(true,true);
+        if(!EyePerson->IsVisible())EyePerson->SetVisibility(true,true);
         Pose(Ending::City+FMath::Lerp(FVector(-160,-80,650),FVector(-1700,-900,3200),T),Ending::City+FMath::Lerp(FVector(0,0,160),FVector(100,0,75),T),FMath::Lerp(75.f,64.f,T));break;
     case 2:
         Pose(Ending::City+FMath::Lerp(FVector(-110000,-30000,130000),FVector(-260000,-70000,360000),Zoom),Ending::City+FVector(15000,0,-1000),60);break;
     case 3:
-        Pose(Ending::Earth+FMath::Lerp(FVector(-5200,-1100,1300),FVector(-15000,-3400,4500),Zoom),Ending::Earth, FMath::Lerp(68.f,58.f,T),FMath::Sin(ShotTime*.12)*1.3*W);break;
+        // Keep the front-facing rail, but leave room above the lit limb later on.
+        Pose(Ending::Earth+FMath::Lerp(FVector(-5200,-1100,1300),FVector(-15000,-3400,4500),Zoom),Ending::Earth+FVector(0,0,650*Ending::Ease((T-.18f)/.45f)),
+            FMath::Lerp(68.f,66.f,T),FMath::Sin(ShotTime*.12)*1.3*W);break;
     case 4:
     {
+        // The world-space nebula is already visible; no per-frame subtree rebuild.
         // Drift rotates the rail vector without changing its length. Switching
         // comfort mode can never kick the camera forward along the pullback.
         const FRotator Float(FMath::Sin(ShotTime*.13f)*.4f*W,FMath::Sin(ShotTime*.19f)*.6f*W,0);
@@ -808,37 +1035,21 @@ void AEndingEmergence::UpdateFilm(float Dt)
     {
         // Cell already surrounds the stars. Pull through the membrane to reveal it.
         const float Decay=1-T;
-        const FRotator LastFloat(FMath::Sin(27*.13f)*.4f*W*Decay,FMath::Sin(27*.19f)*.6f*W*Decay,0);
+        const FRotator LastFloat(FMath::Sin(Duration(4)*.13f)*.4f*W*Decay,FMath::Sin(Duration(4)*.19f)*.6f*W*Decay,0);
         Pose(Ending::Cosmos+LastFloat.RotateVector(FMath::Lerp(FVector(-42000,-4000,10500),FVector(-5200,-250,900)*32,Zoom)),
-            Ending::Cosmos,62,FMath::Sin(27*.16)*3.5*W*Decay);break;
+            Ending::Cosmos,62,FMath::Sin(Duration(4)*.16)*3.5*W*Decay);break;
     }
     case 6:
         Pose(Ending::Cosmos+FMath::Lerp(FVector(-5200,-250,900)*32,FVector(-760000,-135000,230000),Zoom),Ending::Cosmos,62,FMath::Sin(ShotTime*.13)*1.2*W);break;
-    case 7:
-    case 8:
-    {
-        const float Time=FMath::Min(16.f,Shot==7?ShotTime:Duration(7)+ShotTime);
-        const float Travel=RetreatInitialSpeed*(Time-Time*Time/16+Time*Time*Time/(3*16*16));
-        RetreatSpeed=RetreatInitialSpeed*FMath::Square(1-Time/16);
-        Pose(Ending::Cosmos+RetreatStart.GetSafeNormal()*(RetreatStart.Size()+Travel),Ending::Cosmos,62,FMath::Sin(18*.13f)*1.2f*W*(1-Ending::Ease(Time/4)));
-        break;
+    case 7: case 8: case 9: case 10: case 11: case 12: case 13: case 14: UpdateFinale(Dt);break;
     }
-    case 9:
-    case 10:
-    case 11:
-        // Keep the strike camera and its temporal history. The aperture, spray and
-        // papers unfold in this same view, without a cut to the old desk scene.
-        break;
-    }
-    if(Shot>=7)UpdateEndingHand();
-    if(Shot==9)UpdateUniverseShards();
-    if(Shot>=9)UpdateWaterAndPaper();
-    const float TargetGray=Shot==6?.88f*Ending::Ease((T-.6f)/.4f):Shot==7?.88f:Shot==8?.88f*(1-RealityHits/3.f):0;
-    Exhaustion=FMath::FInterpTo(Exhaustion,TargetGray,Dt,Shot==8?5.f:1.2f);
+    UpdateScaleMotion(Dt);
+    Exhaustion=0;
+    if((Shot==5||Shot==6)&&Age-TitleUpdateAt>.05f){UpdateCellTitle(0);TitleUpdateAt=Age;}
     if(ExhaustionMaterial)
     {
         ExhaustionMaterial->SetScalarParameterValue(TEXT("Gray"),Exhaustion);
-        ExhaustionMaterial->SetScalarParameterValue(TEXT("RippleAge"),(Shot==8||Shot==9)?Age-ImpactAt:100);
+        ExhaustionMaterial->SetScalarParameterValue(TEXT("RippleAge"),100);
         ExhaustionMaterial->SetScalarParameterValue(TEXT("ShakeStrength"),bComfortMode?.0006f:(RealityHits==3?.009f:.002f));
     }
 
@@ -853,7 +1064,14 @@ void AEndingEmergence::Speak(const TCHAR* Name)
 {
     if(Voice){Voice->Stop();Voice->DestroyComponent();Voice=nullptr;}
     if(auto* S=LoadObject<USoundBase>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Audio/S_EE_"))+Name)))
-        Voice=UGameplayStatics::SpawnSound2D(this,S,.95f,1,0,nullptr,false,false);
+    {
+        Voice=UGameplayStatics::CreateSound2D(this,S,.95f,1,0,nullptr,false,false);
+        if (Voice && GetGameInstance())
+        {
+            Voice->SoundClassOverride=GetGameInstance()->GetSubsystem<UMiningAudioSettings>()->GetClass(4);
+            Voice->Play();
+        }
+    }
 }
 
 void AEndingEmergence::StrikeUniverse()
@@ -863,27 +1081,29 @@ void AEndingEmergence::StrikeUniverse()
     LastStrike=Age;bImpactPending=true;Sound(TEXT("Swing"),.6f);
 }
 
-void AEndingEmergence::BuildWaterAndPaper()
+void AEndingEmergence::BuildStarlightAndPaper()
 {
     FRandomStream R(605);
-    // A sustained pressure jet, with many smaller droplets crossing the hole plane.
-    for(int I=0;I<360;++I)
+    // Dense bright sparks surge through the aperture, then arc down under gravity.
+    for(int I=0;I<540;++I)
     {
         auto* Drop=NewObject<UStaticMeshComponent>(this,NAME_None,RF_Transient);
         Drop->SetupAttachment(Camera->GetCameraComponent());Drop->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Sphere.Sphere")));
-        Drop->SetMaterial(0,LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_WaterSpray")));
-        Drop->SetCollisionEnabled(ECollisionEnabled::NoCollision);Drop->SetCastShadow(false);Drop->RegisterComponent();Drop->SetVisibility(false);
-        const float Size=R.FRandRange(.12f,.62f);Drop->SetRelativeScale3D(FVector(Size*R.FRandRange(2,5),Size,Size*.7f)/100);
-        WaterDrops.Add(Drop);WaterOrigins.Add(FVector(R.FRandRange(37,44),R.FRandRange(-3,3),R.FRandRange(-2,2)));
-        WaterVelocities.Add(FVector(R.FRandRange(-130,-75),R.FRandRange(-95,95),R.FRandRange(-60,80)));
+        auto* SparkMaterial=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_StarlightSpark")),this);
+        SparkMaterial->SetVectorParameterValue(TEXT("Tint"),I%4==0?FLinearColor(.22f,.65f,1.f):I%7==0?FLinearColor(.75f,.5f,1.f):FLinearColor(1.f,.62f,.19f));
+        SparkMaterial->SetScalarParameterValue(TEXT("Seed"),I*.173f);Drop->SetMaterial(0,SparkMaterial);
+        Drop->SetCollisionEnabled(ECollisionEnabled::NoCollision);Drop->SetCastShadow(false);Drop->SetVisibleInRayTracing(false);Drop->RegisterComponent();Drop->SetVisibility(false);
+        const float Size=R.FRandRange(.06f,.24f);Drop->SetRelativeScale3D(FVector(Size*R.FRandRange(3,8),Size,Size)/100);
+        StarlightSparks.Add(Drop);SparkOrigins.Add(FVector(R.FRandRange(37,44),R.FRandRange(-3,3),R.FRandRange(-2,2)));
+        SparkVelocities.Add(FVector(R.FRandRange(-29,-15),R.FRandRange(-26,26),R.FRandRange(8,35)));
     }
     for(int I=0;I<12;++I)
     {
         auto* Jet=NewObject<UDynamicMeshComponent>(this,NAME_None,RF_Transient);
         Jet->SetupAttachment(Camera->GetCameraComponent());Jet->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         Jet->SetCastShadow(false);Jet->SetEnableRaytracing(false);
-        auto* M=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_WaterJet")),this);
-        M->SetScalarParameterValue(TEXT("Seed"),I*.173f);Jet->SetMaterial(0,M);Jet->RegisterComponent();Jet->SetVisibility(false);WaterJets.Add(Jet);
+        auto* M=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_StarlightStream")),this);
+        M->SetScalarParameterValue(TEXT("Seed"),I*.173f);Jet->SetMaterial(0,M);Jet->RegisterComponent();Jet->SetVisibility(false);StarlightRibbons.Add(Jet);
     }
     for(int I=0;I<15;++I)
     {
@@ -917,25 +1137,26 @@ void AEndingEmergence::BuildWaterAndPaper()
     WetLens=0;PapersLanded=0;PapersArrived=0;bFinalPaperVisible=false;
 }
 
-void AEndingEmergence::UpdateWaterAndPaper()
+void AEndingEmergence::UpdateStarlightAndPaper()
 {
     using namespace UE::Geometry;
     const float T=Shot==9?ShotTime:Shot==10?Duration(9)+ShotTime:Duration(9)+Duration(10);
-    WetLens=Ending::Ease((T-.35f)/.7f)*(1-.7f*Ending::Ease((T-4)/4))*(1-Ending::Ease((T-5.3f)/2));
+    WetLens=0;
     if(WetLensMaterial){WetLensMaterial->SetScalarParameterValue(TEXT("Wet"),WetLens);WetLensMaterial->SetScalarParameterValue(TEXT("SplashTime"),T);}
-    for(int I=0;I<WaterDrops.Num();++I)
+    for(int I=0;I<StarlightSparks.Num();++I)
     {
-        const float Delay=.025f+(I%90)*.020f;
-        const float AgeOfDrop=FMath::Fmod(FMath::Max(0.f,T-Delay),.30f);
-        const FVector P=WaterOrigins[I]+WaterVelocities[I]*AgeOfDrop+FVector(0,0,-35*AgeOfDrop*AgeOfDrop);
-        WaterDrops[I]->SetVisibility(T>=Delay&&T<2.7f&&P.X>10);
-        WaterDrops[I]->SetRelativeLocation(P);WaterDrops[I]->SetRelativeRotation(WaterVelocities[I].Rotation());
+        const float Delay=.012f+(I%90)*.004f;
+        const float AgeOfDrop=FMath::Fmod(FMath::Max(0.f,T-Delay),1.05f);
+        const FVector P=SparkOrigins[I]+SparkVelocities[I]*AgeOfDrop+FVector(0,0,-54*AgeOfDrop*AgeOfDrop);
+        StarlightSparks[I]->SetVisibility(T>=Delay&&T<5.4f&&P.X>10);
+        StarlightSparks[I]->SetRelativeLocation(P);StarlightSparks[I]->SetRelativeRotation((SparkVelocities[I]+FVector(0,0,-108*AgeOfDrop)).Rotation());
+        if(auto* M=Cast<UMaterialInstanceDynamic>(StarlightSparks[I]->GetMaterial(0)))M->SetScalarParameterValue(TEXT("Flow"),(1-Ending::Ease((T-3.5f)/1.9f))*(1-Ending::Ease((AgeOfDrop-.75f)/.30f)));
     }
-    for(int I=0;I<WaterJets.Num();++I)
+    for(int I=0;I<StarlightRibbons.Num();++I)
     {
-        auto* Jet=WaterJets[I].Get();Jet->SetVisibility(T>0&&T<2.5f);
-        if(T<=0||T>=2.5f)continue;
-        const float Strength=Ending::Ease(T/.09f)*(1-Ending::Ease((T-1.65f)/.85f));
+        auto* Jet=StarlightRibbons[I].Get();Jet->SetVisibility(T>0&&T<4.6f);
+        if(T<=0||T>=4.6f)continue;
+        const float Strength=Ending::Ease(T/.08f)*(1-Ending::Ease((T-3.f)/1.6f));
         Cast<UMaterialInstanceDynamic>(Jet->GetMaterial(0))->SetScalarParameterValue(TEXT("Flow"),Strength);
         FDynamicMesh3 Mesh;Mesh.EnableAttributes();auto* UV=Mesh.Attributes()->PrimaryUV();
         const float Angle=I*2*PI/12+.19f*FMath::Sin(I*2.73f);
@@ -945,7 +1166,7 @@ void AEndingEmergence::UpdateWaterAndPaper()
             const float A=Angle+(U-.5f)*.72f+.13f*FMath::Sin(V*17-T*18+I);
             const float Radius=(1.3f+V*V*(15+I%4*3))*Strength;
             const float Ripple=1+.085f*FMath::Sin(V*25-T*24+U*8+I);
-            Mesh.AppendVertex(FVector(43-V*30+FMath::Sin(U*12+V*18-T*23)*.6f,Radius*FMath::Cos(A)*Ripple,Radius*FMath::Sin(A)*Ripple-2*V*V));
+            Mesh.AppendVertex(FVector(43-V*27+FMath::Sin(U*12+V*18-T*8)*.3f,Radius*FMath::Cos(A)*Ripple,Radius*FMath::Sin(A)*Ripple+8*FMath::Sin(V*PI)-28*V*V));
             UV->AppendElement(FVector2f(U,V));
         }
         for(int Y=0;Y<24;++Y)for(int X=0;X<6;++X)
@@ -1039,9 +1260,10 @@ float AEndingEmergence::NeuralFlashAt(FVector Position) const
     for(int I=0;I<NeuralWaveTimes.Num();++I)
     {
         const float Distance=FVector::Dist(Position,NeuralWaveCenters[I]);
-        const float T=Age-NeuralWaveTimes[I]-Distance/14000.f;
-        if(Distance<=5500&&T>=0&&T<.48f)
-            Brightness=FMath::Max(Brightness,FMath::Min(1.f,T/.025f)*FMath::Exp(-T*5.f)*(1-Distance/9000));
+        const bool Thought=GateIndex>=5;
+        const float T=Age-NeuralWaveTimes[I]-Distance/(Thought?11000.f:22000.f);
+        if(Distance<=(Thought?4200:7200)&&T>=0&&T<(Thought?.30f:.65f))
+            Brightness=FMath::Max(Brightness,FMath::Min(1.f,T/.012f)*FMath::Exp(-T*(Thought?14.f:4.f))*(1-Distance/(Thought?6000.f:14000.f)));
     }
     return Brightness;
 }
@@ -1065,11 +1287,11 @@ void AEndingEmergence::ClearEndingEffects()
     for(auto Shard:UniverseShards)if(IsValid(Shard))Shard->DestroyComponent();UniverseShards.Empty();
     ShardOrigins.Empty();ShardVelocities.Empty();ShardSpins.Empty();
     if(UniverseSurround){UniverseSurround->DestroyComponent();UniverseSurround=nullptr;}
-    for(auto Jet:WaterJets)if(IsValid(Jet))Jet->DestroyComponent();WaterJets.Empty();
+    for(auto Jet:StarlightRibbons)if(IsValid(Jet))Jet->DestroyComponent();StarlightRibbons.Empty();
     for(auto Burst:EndingDebris)if(IsValid(Burst))Burst->Destroy();EndingDebris.Empty();
     if(ToolLight)ToolLight->SetVisibility(false);
     for(auto Shell:NeuralWaveShells)if(IsValid(Shell))Shell->SetVisibility(false);
-    for(auto Drop:WaterDrops)if(IsValid(Drop))Drop->DestroyComponent();WaterDrops.Empty();WaterOrigins.Empty();WaterVelocities.Empty();
+    for(auto Drop:StarlightSparks)if(IsValid(Drop))Drop->DestroyComponent();StarlightSparks.Empty();SparkOrigins.Empty();SparkVelocities.Empty();
     for(auto Paper:EndingPapers)if(IsValid(Paper))Paper->DestroyComponent();EndingPapers.Empty();PaperCenters.Empty();PaperSizes.Empty();PaperRolls.Empty();PaperMotion.Empty();
     WetLens=0;PapersLanded=0;PapersArrived=0;bFinalPaperVisible=false;
     if(WetLensMaterial)WetLensMaterial->SetScalarParameterValue(TEXT("Wet"),0);
@@ -1211,8 +1433,10 @@ void AEndingEmergence::EnterBlood()
     GateIndex=1;BloodAt=Age;BeatAt=Age+3;BloodSpeed=480;BloodY=0;
     const FVector Eye=Player->PlayerCameraManager->GetCameraLocation();
     const FVector LocalEye=GetActorTransform().InverseTransformPosition(Eye);
-    VesselDistance=FMath::Max(150.f,float(LocalEye.X)-1600);BloodStartZ=LocalEye.Z;
-    VesselLook=VesselRotation(VesselDistance);
+    VesselDistance=FMath::Max(150.f,float(LocalEye.X)-1600);BloodStartZ=LocalEye.Z-VesselPoint(VesselDistance).Z;
+    VesselLook=Player->GetControlRotation();VesselLook.Roll=0;
+    VesselLookOffset=FRotator::ZeroRotator;VesselLookInputAt=Age-2;
+    Player->ResetIgnoreLookInput();
     // A visible copy leaves the hand before the hidden pawn becomes a pulse.
     TArray<UStaticMeshComponent*> Parts;Player->GetPawn()->GetComponents(Parts);
     for(auto* Part:Parts)if(Part->GetName()==TEXT("PickaxeModel")&&Part->GetStaticMesh())
@@ -1250,7 +1474,7 @@ void AEndingEmergence::EnterBrain()
 {
     // Leave the open vessel in the same shot; slow down and settle into host 0.
     bEnteringBrain=true;BrainEntryAt=Age;TransitStart=Camera->GetActorLocation();
-    TransitEnd=NeuronWorldPosition(0)+GetActorUpVector()*110;TransitLook=Camera->GetActorRotation();
+    TransitEnd=NeuronWorldPosition(0)+GetActorUpVector()*380;TransitLook=Camera->GetActorRotation();
     Player->SetIgnoreLookInput(true);
     if(Ambience){Ambience->bAutoDestroy=true;Ambience->FadeOut(2,0);Ambience=nullptr;}
     SetAmbience(TEXT("Brain"),.4f);if(Ambience)Ambience->FadeIn(1.2f,.4f);
@@ -1261,8 +1485,9 @@ void AEndingEmergence::EnterBrain()
 void AEndingEmergence::PossessNeuron(int32 I)
 {
     if(!CanPossess(I))return;
+    BufferedJumpAt=-100;
     TravellingToNeuron=I;TargetNeuron=INDEX_NONE;PulseAt=Age;
-    TransitStart=Camera->GetActorLocation();TransitEnd=NeuronWorldPosition(I)+GetActorUpVector()*(I==NeuronPositions.Num()-1?220:110);
+    TransitStart=Camera->GetActorLocation();TransitEnd=NeuronWorldPosition(I)+GetActorUpVector()*(I==NeuronPositions.Num()-1?600:380);
     TransitLook=Camera->GetActorRotation();
     TransitDuration=FMath::Clamp(float(FVector::Dist(TransitStart,TransitEnd))/2100.f+.35f,.95f,1.35f);
     Player->ResetIgnoreLookInput();Sound(TEXT("PulseFlight"),.6f,1.15f/TransitDuration);
@@ -1286,6 +1511,8 @@ FRotator AEndingEmergence::VesselRotation(float Distance) const
 void AEndingEmergence::TransitEffects(float Strength)
 {
     Strength*=bComfortMode?.12f:1.f;
+    Camera->GetCameraComponent()->PostProcessBlendWeight=1;
+    if(TransitMaterial)Camera->GetCameraComponent()->AddOrUpdateBlendable(TransitMaterial,Strength>0?1:0);
     if(TransitMaterial)TransitMaterial->SetScalarParameterValue(TEXT("Strength"),Strength);
     auto& PP=Camera->GetCameraComponent()->PostProcessSettings;
     PP.MotionBlurAmount=.25f*Strength;
@@ -1295,10 +1522,25 @@ void AEndingEmergence::TransitEffects(float Strength)
 
 void AEndingEmergence::BeginThought()
 {
-    GateIndex=5;BeatAt=Age+4;TargetNeuron=INDEX_NONE;UpdateNerves();
+    GateIndex=5;BeatAt=Age+3.8f;TargetNeuron=INDEX_NONE;UpdateNerves();
+    TArray<USceneComponent*> Parts;GetComponents(Parts);
+    for(auto* Part:Parts)if(Part->ComponentHasTag(TEXT("EndingBloodVisual")))Part->SetVisibility(false,true);
     TakeoffStart=GetActorTransform().InverseTransformPosition(Camera->GetActorLocation());
     TakeoffLook=TakeoffStart+GetActorTransform().InverseTransformVectorNoScale(Player->GetControlRotation().Vector())*850;
     Player->SetIgnoreLookInput(true);Sound(TEXT("Connect"),.65f,.85f);
+}
+
+int32 AEndingEmergence::FindNeuronTarget(int32 Host,const FVector& Origin,const FVector& Direction) const
+{
+    if(!NeuronPositions.IsValidIndex(Host))return INDEX_NONE;
+    int32 Target=INDEX_NONE;float Best=.990f;
+    for(int32 I=0;I<NeuronPositions.Num();++I)
+    {
+        if(I==Host||FMath::Abs(Ending::Layer(I)-Ending::Layer(Host))!=1||FVector::Dist(NeuronPositions[I],NeuronPositions[Host])>=2050)continue;
+        const float Alignment=FVector::DotProduct(Direction,(NeuronWorldPosition(I)-Origin).GetSafeNormal());
+        if(Alignment>Best){Best=Alignment;Target=I;}
+    }
+    return Target;
 }
 
 void AEndingEmergence::UpdatePulse(float Dt)
@@ -1309,14 +1551,44 @@ void AEndingEmergence::UpdatePulse(float Dt)
         BloodSpeed=FMath::FInterpTo(BloodSpeed,Player->IsInputKeyDown(EKeys::W)?950.f:480.f,Dt,3);
         VesselDistance=FMath::Min(VesselDistance+BloodSpeed*Dt,VesselDistances.Last());
         BloodY=FMath::Clamp(BloodY+Dt*150*(float(Player->IsInputKeyDown(EKeys::D))-float(Player->IsInputKeyDown(EKeys::A))),-240.f,240.f);
-        const float Z=(BloodStartZ-850)*(1-Ending::Ease(T/1.8f))+(bComfortMode?0:18*FMath::Sin(T*1.6f)*Ending::Ease(T));
+        const float Z=BloodStartZ*(1-Ending::Ease(T/1.8f));
         const FRotator Frame=VesselRotation(VesselDistance);
         Camera->SetActorLocation(GetActorTransform().TransformPosition(VesselPoint(VesselDistance)+Frame.RotateVector(FVector(0,BloodY,Z))));
-        // Carry the free-look offset around bends without fighting mouse input.
-        const FQuat Turn=GetActorQuat()*Frame.Quaternion()*VesselLook.Quaternion().Inverse()*GetActorQuat().Inverse();
-        FRotator Look=(Turn*Player->GetControlRotation().Quaternion()).Rotator();Look.Roll=0;Player->SetControlRotation(Look);
-        VesselLook=Frame;Look.Roll=bComfortMode?0:FMath::Sin(T*.55f)*2.2f;Camera->SetActorRotation(Look);
-        Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(90.f,100.f,(BloodSpeed-480)/470));
+        // Observe mouse rotation supplied by the normal player controller before
+        // writing the automatic heading. Keep the player's offset independent
+        // from bends, and only ease it home after a deliberate idle grace period.
+        const FRotator Input=(Player->GetControlRotation()-Camera->GetActorRotation()).GetNormalized();
+        if(FMath::Abs(Input.Yaw)+FMath::Abs(Input.Pitch)>.001f)
+        {
+            VesselLookOffset.Yaw=FRotator::NormalizeAxis(VesselLookOffset.Yaw+Input.Yaw);
+            VesselLookOffset.Pitch=FMath::Clamp(VesselLookOffset.Pitch+Input.Pitch,-80.f,80.f);
+            VesselLookInputAt=Age;
+        }
+        else if(Age-VesselLookInputAt>1.6f)VesselLookOffset=FMath::RInterpTo(VesselLookOffset,FRotator::ZeroRotator,Dt,2.f);
+        // Aim from the actual laterally shifted eye to the centre of the tunnel,
+        // farther ahead and with less lag than the old short tangent look.
+        float Ahead=FMath::Min(VesselDistance+1000.f,VesselDistances.Last());
+        const FVector LocalEye=GetActorTransform().InverseTransformPosition(Camera->GetActorLocation());
+        // Frame the farthest visible centre of the passage. On tight bends a
+        // fixed distant target would look through a wall; retain a safe chord.
+        for(float Reach=1300;Reach<=3400;Reach+=300)
+        {
+            const float Candidate=FMath::Min(VesselDistance+Reach,VesselDistances.Last());
+            const FVector End=VesselPoint(Candidate);bool Clear=true;
+            for(int S=1;S<8;++S)
+            {
+                const float U=S/8.f;
+                if(FVector::Dist(FMath::Lerp(LocalEye,End,U),VesselPoint(FMath::Lerp(VesselDistance,Candidate,U)))>600){Clear=false;break;}
+            }
+            if(!Clear)break;Ahead=Candidate;
+        }
+        FVector Target=GetActorTransform().TransformPosition(VesselPoint(Ahead));
+        if(Ahead-VesselDistance<100)Target+=GetActorTransform().TransformVectorNoScale(Frame.Vector()*500);
+        const FRotator Forward=(Target-Camera->GetActorLocation()).Rotation();
+        VesselLook=FMath::RInterpTo(VesselLook,Forward,Dt,6.f);VesselLook.Roll=0;
+        FRotator Look=(VesselLook+VesselLookOffset).GetNormalized();Look.Roll=0;Look.Pitch=FMath::Clamp(Look.Pitch,-85.f,85.f);
+        Player->SetControlRotation(Look);Camera->SetActorRotation(Look);
+        Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(90.f,95.f,(BloodSpeed-480)/470));
         if(DroppedPickaxe)
         {
             DroppedPickaxe->SetRelativeLocation(PickaxeStart+FVector(600*T,50*T,120*T-260*T*T));
@@ -1336,7 +1608,7 @@ void AEndingEmergence::UpdatePulse(float Dt)
         const float EntryEnvelope=FMath::Square(FMath::Sin(PI*T));
         EntryLook.Roll=bComfortMode?0:3.8f*FMath::Sin(T*2*PI)*EntryEnvelope;Camera->SetActorRotation(EntryLook);
         TransitEffects(EntryEnvelope*1.35f);
-        Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(FMath::Lerp(90.f,100.f,(BloodSpeed-480)/470),94.f,Ending::Ease(T))+(bComfortMode?4:26)*EntryEnvelope);
+        Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(FMath::Lerp(90.f,100.f,(BloodSpeed-480)/470),94.f,Ending::Ease(T))+(bComfortMode?4:44)*EntryEnvelope);
         if(T>=1)
         {
             bEnteringBrain=false;TransitEffects(0);GateIndex=2;CurrentNeuron=0;VisitedNeurons.Add(0);BeatAt=Age+4;NeuralWave();
@@ -1345,64 +1617,71 @@ void AEndingEmergence::UpdatePulse(float Dt)
     }
     if(GateIndex==2&&TravellingToNeuron!=INDEX_NONE)
     {
+        if(Player->WasInputKeyJustPressed(EKeys::SpaceBar))BufferedJumpAt=Age;
         const float T=FMath::Clamp((Age-PulseAt)/TransitDuration,0.f,1.f),Travel=Ending::Ease(T),Envelope=FMath::Square(FMath::Sin(PI*T));
         const FVector Position=FMath::Lerp(TransitStart,TransitEnd,Travel)+GetActorUpVector()*(110*FMath::Sin(PI*Travel));
         Camera->SetActorLocation(Position);
         // Position follows the pulse; aim remains entirely under mouse control.
         FRotator Look=Player->GetControlRotation();
         Look.Roll=bComfortMode?0:2.5f*FMath::Sin(T*2*PI)*Envelope;Camera->SetActorRotation(Look);
-        Camera->GetCameraComponent()->SetFieldOfView(94+(bComfortMode?4:22)*Envelope);TransitEffects(Envelope);
-        // A short wake trails behind the moving viewpoint, never a full-screen flash.
-        const FVector From=GetActorTransform().InverseTransformPosition(TransitStart),To=GetActorTransform().InverseTransformPosition(Position);
-        PulseTrail->SetRelativeLocation((From+To)*.5);PulseTrail->SetRelativeScale3D(FVector(.07,.07,(To-From).Size()/100));
-        PulseTrail->SetRelativeRotation(FRotationMatrix::MakeFromZ(To-From).Rotator());
-        if(T>=1)
+        Camera->GetCameraComponent()->SetFieldOfView(94+(bComfortMode?4:46)*Envelope);TransitEffects(Envelope*1.35f);
+        // A fresh press near arrival can cancel only the settling tail. The next
+        // pulse starts at this exact viewpoint, preserving position and free look.
+        const int32 ChainedTarget=(T>=.78f&&Age-BufferedJumpAt<=.3f&&TravellingToNeuron!=NeuronPositions.Num()-1)
+            ?FindNeuronTarget(TravellingToNeuron,Position,Player->GetControlRotation().Vector()):INDEX_NONE;
+        if(T>=1||ChainedTarget!=INDEX_NONE)
         {
             CurrentNeuron=TravellingToNeuron;TravellingToNeuron=INDEX_NONE;++PossessionCount;VisitedNeurons.Add(CurrentNeuron);
             Look.Roll=0;Camera->SetActorRotation(Look);TransitEffects(0);
             NeuralWave();Sound(TEXT("Connect"),.28f,1+CurrentNeuron*.018f);
             if(CurrentNeuron==NeuronPositions.Num()-1)BeginThought();
+            else if(ChainedTarget!=INDEX_NONE)PossessNeuron(ChainedTarget);
         }
     }
     if(GateIndex==2&&TravellingToNeuron==INDEX_NONE)
     {
-        Camera->SetActorLocation(NeuronWorldPosition(CurrentNeuron)+GetActorUpVector()*110);
+        Camera->SetActorLocation(NeuronWorldPosition(CurrentNeuron)+GetActorUpVector()*380);
         Camera->SetActorRotation(Player->GetControlRotation());
         Camera->GetCameraComponent()->SetFieldOfView(94);TransitEffects(0);
-        TargetNeuron=INDEX_NONE;float Best=.990f;
-        for(int I=0;I<NeuronPositions.Num();++I)if(CanPossess(I))
-        {
-            const float Alignment=FVector::DotProduct(Camera->GetActorForwardVector(),(NeuronWorldPosition(I)-Camera->GetActorLocation()).GetSafeNormal());
-            if(Alignment>Best){Best=Alignment;TargetNeuron=I;}
-        }
-        if(Player->WasInputKeyJustPressed(EKeys::SpaceBar)&&TargetNeuron!=INDEX_NONE)PossessNeuron(TargetNeuron);
+        TargetNeuron=FindNeuronTarget(CurrentNeuron,Camera->GetActorLocation(),Camera->GetActorForwardVector());
+        if((Player->WasInputKeyJustPressed(EKeys::SpaceBar)||Age-BufferedJumpAt<=.3f)&&TargetNeuron!=INDEX_NONE)PossessNeuron(TargetNeuron);
     }
     if(PulseTrail)PulseTrail->SetVisibility(TravellingToNeuron!=INDEX_NONE);
+    const float EntryReveal=GateIndex>=5?1.f:(GateIndex==2||bEnteringBrain)?Ending::Ease((Age-BrainEntryAt-.9f)/1.1f):0.f;
+    auto NeuronTint=[&](int I)
+    {
+        const bool Selected=GateIndex==2&&(I==TargetNeuron||I==TravellingToNeuron);
+        const bool Goal=I==NeuronPositions.Num()-1;
+        const FLinearColor Base=GateIndex>=5?FLinearColor(.20f,.65f,1.1f)*1.4f:Goal?Ending::Gold*(2.4f+.35f*FMath::Sin(Age*2)):Selected?Ending::Gold*1.5f:FLinearColor(.15f,.65f,1.1f)*(VisitedNeurons.Contains(I)?1.2f:1.f);
+        return FMath::Lerp(Base,FLinearColor(.65f,.98f,1.f)*5,NeuralFlash(I));
+    };
     for(int I=0;I<NeuronCores.Num();++I)
     {
-        NeuronCores[I]->SetVisibility(I!=CurrentNeuron||GateIndex==5||TravellingToNeuron!=INDEX_NONE);
+        const float CameraDistance=FVector::Dist(Camera->GetActorLocation(),NeuronCores[I]->GetComponentLocation());
+        const bool Visible=(I!=CurrentNeuron||GateIndex==5||TravellingToNeuron!=INDEX_NONE)&&CameraDistance>(I==NeuronPositions.Num()-1?700.f:280.f);
+        if(NeuronCores[I]->IsVisible()!=Visible)NeuronCores[I]->SetVisibility(Visible,true);
         if(auto* M=Cast<UMaterialInstanceDynamic>(NeuronCores[I]->GetMaterial(0)))
             {
-                const FLinearColor Base=I==TargetNeuron||I==TravellingToNeuron?Ending::Gold*1.5f:I==NeuronPositions.Num()-1?Ending::Gold*.85f:VisitedNeurons.Contains(I)?Ending::Teal:Ending::Teal*.45f;
-                M->SetVectorParameterValue(TEXT("Tint"),FMath::Lerp(Base,FLinearColor(.65f,.98f,1.f)*9,NeuralFlash(I)));
+                const FLinearColor Tint=NeuronTint(I);
+                M->SetVectorParameterValue(TEXT("Tint"),Tint);M->SetScalarParameterValue(TEXT("Reveal"),EntryReveal);
+                for(auto Child:NeuronCores[I]->GetAttachChildren())if(auto* Mesh=Cast<UStaticMeshComponent>(Child))
+                    if(auto* CoreMaterial=Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(0)))
+                    {CoreMaterial->SetVectorParameterValue(TEXT("Tint"),Tint*.65f);CoreMaterial->SetScalarParameterValue(TEXT("Reveal"),EntryReveal);}
             }
     }
     for(auto Core:AmbientNeuronCores)if(auto* M=Cast<UMaterialInstanceDynamic>(Core->GetMaterial(0)))
-        M->SetVectorParameterValue(TEXT("Tint"),FMath::Lerp(Ending::Teal*.7f,FLinearColor(.65f,.98f,1.f)*6,NeuralFlashAt(Core->GetRelativeLocation())));
-    for(int I=0;I<NeuralWaveShells.Num();++I)
+    {M->SetVectorParameterValue(TEXT("Tint"),FMath::Lerp(Ending::Neural*.45f,FLinearColor(.65f,.98f,1.f)*3,NeuralFlashAt(GetActorTransform().InverseTransformPosition(Core->GetComponentLocation()))));M->SetScalarParameterValue(TEXT("Reveal"),EntryReveal);}
+    for(auto Nerve:Nerves)if(auto* M=Cast<UMaterialInstanceDynamic>(Nerve->GetMaterial(0)))
     {
-        const int Wave=NeuralWaveTimes.Num()-1-I;
-        const float Elapsed=Wave>=0?Age-NeuralWaveTimes[Wave]:100;
-        const bool Active=Shot<0&&Elapsed>0&&Elapsed<.44f;
-        auto* Shell=NeuralWaveShells[I].Get();Shell->SetVisibility(Active);
-        if(Active)
-        {
-            Shell->SetRelativeLocation(NeuralWaveCenters[Wave]);Shell->SetRelativeScale3D(FVector(FMath::Max(30.f,Elapsed*14000)/50));
-            if(auto* M=Cast<UMaterialInstanceDynamic>(Shell->GetMaterial(0)))M->SetVectorParameterValue(TEXT("Tint"),Ending::Teal*(bComfortMode?.08f:1.4f)*FMath::Square(1-Elapsed/.44f));
-        }
+        const bool Arbor=Nerve->GetName().StartsWith(TEXT("NeuronDendriticArbor"));
+        const FVector LocalPosition=GetActorTransform().InverseTransformPosition(Nerve->GetComponentLocation());
+        const int32 Host=Arbor?NeuronPositions.IndexOfByPredicate([&](const FVector& P){return P.Equals(LocalPosition,.1f);}):INDEX_NONE;
+        const FLinearColor Base=GateIndex>=5?FLinearColor(.20f,.65f,1.1f)*1.4f:Nerve->GetName().StartsWith(TEXT("NeuralAxonLink"))?Ending::Neural*.45f:Ending::Neural*.12f;
+        M->SetVectorParameterValue(TEXT("Tint"),Host!=INDEX_NONE?NeuronTint(Host):FMath::Lerp(Base,FLinearColor(.65f,.98f,1.f)*5,NeuralFlashAt(LocalPosition)));
+        M->SetScalarParameterValue(TEXT("Reveal"),EntryReveal);M->SetScalarParameterValue(TEXT("Activity"),GateIndex>=5?1.f:0.f);
     }
-    if(GateIndex>=2)for(auto Nerve:Nerves)if(auto* M=Cast<UMaterialInstanceDynamic>(Nerve->GetMaterial(0)))
-        M->SetVectorParameterValue(TEXT("Tint"),FMath::Lerp(GateIndex>=5?Ending::Gold*.8f:Ending::Teal*.16f,Ending::Teal*8,NeuralFlashAt(Nerve->GetRelativeLocation())));
+    for(auto Part:BrainDecorationBatches)
+        if(auto* M=Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0))){M->SetScalarParameterValue(TEXT("Reveal"),EntryReveal);M->SetScalarParameterValue(TEXT("Activity"),GateIndex>=5?1.f:0.f);}
 
 }
 
@@ -1410,7 +1689,7 @@ void AEndingEmergence::Tick(float Dt)
 {
     Super::Tick(Dt);
     if(!bReady){bReady=Initialize();if(!bReady)return;RestartDemo();}
-    Age+=Dt;
+    Age+=Dt;UpdateCellMotion();
     if(Player->WasInputKeyJustPressed(EKeys::C))bComfortMode=!bComfortMode;
     if(Player->WasInputKeyJustPressed(EKeys::R)){RestartDemo();return;}
     if(Shot<0&&Player->WasInputKeyJustPressed(EKeys::P)){PreviewFilm();return;}
@@ -1434,15 +1713,21 @@ void AEndingEmergence::Tick(float Dt)
         UpdatePulse(Dt);
         if(GateIndex>=5)
         {
-            const float Lift=FMath::Clamp(4-(BeatAt-Age),0.f,4.f);
-            const FVector Look=FMath::Lerp(TakeoffLook,TakeoffStart+FVector(80,0,-220),Ending::Ease(Lift/2));
-            Pose(TakeoffStart+FVector(-Lift*35,0,Lift*230+Lift*Lift*25),Look,FMath::Lerp(96.f,75.f,Lift/4));
+            const float Lift=FMath::Clamp(3.8f-(BeatAt-Age),0.f,3.8f);
+            const float U=Lift/3.8f;
+            Pose(FMath::Lerp(TakeoffStart,FVector(24700,-5600,9200),U*U*(2-U)),FMath::Lerp(TakeoffLook,FVector(23100,0,1800),Ending::Ease(Lift/2)),FMath::Lerp(94.f,85.f,U));
+            if(ScaleZoomMaterial)ScaleZoomMaterial->SetScalarParameterValue(TEXT("Strength"),Ending::Ease((Lift-2.85f)/.95f)*(bComfortMode?.35f:1.f));
+            const int Burst=FMath::FloorToInt(Lift/.42f);
+            if(Burst>FMath::FloorToInt((Lift-Dt)/.42f))
+            {
+                for(int K=0;K<3;++K){NeuralWaveCenters.Add(NeuronPositions[(Burst*17+K*13)%NeuronPositions.Num()]);NeuralWaveTimes.Add(Age-K*.035f);}
+                while(NeuralWaveTimes.Num()>0&&Age-NeuralWaveTimes[0]>3){NeuralWaveTimes.RemoveAt(0);NeuralWaveCenters.RemoveAt(0);}
+            }
         }
         if(GateIndex>=5&&Age>=BeatAt)PreviewFilm();
     }
     else
     {
-        const float PreviousShotTime=ShotTime;
         const FVector PreviousFilmPosition=Camera->GetActorLocation();
         const bool Pulling=Shot>=1&&Shot<=6;
         // W is intentionally absent: the sequence always moves outward. S boosts
@@ -1454,36 +1739,27 @@ void AEndingEmergence::Tick(float Dt)
         ShotTime+=Dt*FMath::Clamp(FilmSpeed,.25f,4.f)*PullbackRate;
         // Interactive ending and speech always use real time, including preview.
         if(Shot>=7)ShotTime-=Dt*(FMath::Clamp(FilmSpeed,.25f,4.f)-1);
-        if(Shot==7&&PreviousShotTime<5&&ShotTime>=5)Speak(TEXT("ClearMyHead"));
-        if(Shot==8)
-        {
-            if(Player->WasInputKeyJustPressed(EKeys::LeftMouseButton))StrikeUniverse();
-            if(bImpactPending&&Age-LastStrike>=.24f)
-            {
-                bImpactPending=false;++RealityHits;EndingImpact();Sound(TEXT("Crack"),.45f+RealityHits*.07f,1.15f-RealityHits*.05f);
-
-            }
-            if(RealityHits==3&&Age-ImpactAt>.16f){CaptureUniverse();SetShot(9);}
-        }
-        else if(Shot<11&&ShotTime>=Duration(Shot))SetShot(Shot+1);
+        if(Shot!=9&&Shot<14&&ShotTime>=Duration(Shot))SetShot(Shot+1);
 
         UpdateFilm(Dt);
         if(Shot==6)RetreatSpeed=FVector::Dist(Camera->GetActorLocation(),PreviousFilmPosition)/FMath::Max(.001f,Dt)/FMath::Clamp(FilmSpeed,.25f,4.f);
     }
-    if(Shot<0)
+    if(Shot<0&&GateIndex<=1)
     {
         BloodTravel+=Dt*(510+120*FMath::Sin(Age*5.2f));
         for(int I=0;I<Blood.Num();++I)
         {
             const FVector Origin=BloodOrigins[I];const float D=FMath::Fmod(Origin.X+BloodTravel*(.88f+(I%7)*.04f),VesselDistances.Last());
             const FRotator Frame=VesselRotation(D);
-            const FVector Offset(0,Origin.Y+FMath::Sin(Age*1.4f+I)*18,Origin.Z+FMath::Cos(Age*1.8f+I)*22);
+            const float NeckScale=FMath::Lerp(.48f,1.f,Ending::Ease((D/VesselDistances.Last()-.10f)/.12f));
+            const FVector Offset=FVector(0,Origin.Y+FMath::Sin(Age*1.4f+I)*18,Origin.Z+FMath::Cos(Age*1.8f+I)*22)*NeckScale;
             Blood[I]->SetRelativeLocation(VesselPoint(D)+Frame.RotateVector(Offset));
             Blood[I]->SetRelativeRotation(Frame.Quaternion()*FRotator(I*31+FMath::Sin(Age+I)*14,I*43+Age*8,22).Quaternion());
             Blood[I]->SetRelativeScale3D(FVector(2.2,2.1,.62)*Ending::Ease(D/180)*Ending::Ease((VesselDistances.Last()-D)/450));
         }
     }
-    if(Shot>=0&&Shot<=2&&Crowd)
+    if(StreetCrowd)StreetCrowd->UpdateCrowd(Shot>=0&&Shot<=1,Dt);
+    if(!StreetCrowd&&Shot>=0&&Shot<=2&&Crowd)
     {
         for(int I=0;I<CrowdOrigins.Num();++I)
         {
@@ -1511,22 +1787,23 @@ FVector AEndingEmergence::GetGateApproach(int32 I) const
 FString AEndingEmergence::Title() const
 {
     if(Shot<0)return GateIndex<1?TEXT("01 / 最后一矿"):GateIndex<2?TEXT("02 / 顺着光流"):TEXT("03 / 一个念头正在连接");
-    const TCHAR* Names[]={TEXT("04 / 念头，飘起"),TEXT("05 / 我们之中"),TEXT("06 / 万家灯火"),TEXT("07 / 薄薄的大气层"),TEXT("08 / 无重力的远方"),TEXT("09 / 宇宙，细胞质"),TEXT("10 / 每一个，都有宇宙"),TEXT("11 / 现实的声音"),TEXT("12 / 再挖一下"),TEXT("13 / 敲开这片宇宙"),TEXT("14 / 那个下午"),TEXT("涌现 / 结尾 Demo")};
+    const TCHAR* Names[]={TEXT("04 / 念头，飘起"),TEXT("05 / 我们之中"),TEXT("06 / 万家灯火"),TEXT("07 / 薄薄的大气层"),TEXT("08 / 无重力的远方"),TEXT("09 / 宇宙，细胞质"),TEXT("10 / 每一个，都有宇宙"),TEXT("11 / WOoOW"),TEXT("12 / 坠入一个念头"),TEXT("13 / 向光钻掘"),TEXT("14 / 灵感的出口"),TEXT("WOoOW / 那个下午")};
     return Names[FMath::Clamp(Shot,0,11)];
 }
 
 FString AEndingEmergence::Hint() const
 {
-    if(Shot<0)return GateIndex>=5?TEXT("所有微光，汇成一个念头。"):
-        GateIndex==0?TEXT("沿金色痕迹前进，靠近发光薄膜，按住左键挖开，再穿过去。"):
-        GateIndex==1?(bEnteringBrain?TEXT("血流散开，一道脉冲正接住你。"):TEXT("让血流托住你。按住 W 加速，松手继续漂浮。")):
-        TravellingToNeuron!=INDEX_NONE?TEXT("穿过连接，成为下一束光。"):
-        TargetNeuron>=0?(TargetNeuron==NeuronPositions.Num()-1?TEXT("空格 · 汇入最大的神经元"):TEXT("空格 · 穿梭到这个神经元")):
-        TEXT("瞄准有标记的神经元，再按空格。不同的路径，都通向那束最大的光。");
-    if(Shot>=1&&Shot<=6)return TEXT("S 加速拉远 · A / D 微调方向 · W 无效 · C 平稳镜头");
-    if(Shot==8)return TEXT("左键 · 一下一下挥镐。等光条蓄满，再敲一次。");
-    if(Shot==11)return TEXT("R 再经历一次");
-    return TEXT("");
+    if(Shot<0)
+    {
+        if(GateIndex==0)return TEXT("WASD 移动   鼠标 观察   左键 挖掘   R 重玩");
+        if(bEnteringBrain)return TEXT("C 平稳镜头   R 重玩");
+        if(GateIndex==1)return TEXT("W 加速   A / D 微调   鼠标 转头   C 平稳镜头   R 重玩");
+        if(GateIndex==2)return TEXT("鼠标 瞄准神经元   空格 跃迁   C 平稳镜头   R 重玩");
+        return TEXT("R 重玩");
+    }
+    if(Shot>=1&&Shot<=6)return bComfortMode?TEXT("S 加速拉远   C 恢复漂移   R 重玩"):TEXT("S 加速拉远   A / D 微调   C 平稳镜头   R 重玩");
+    if(Shot==9)return bComfortMode?TEXT("W 加速挖掘   A / D 微调   C 恢复旋转   R 重玩"):TEXT("W 加速挖掘   A / D 微调   C 减少旋转   R 重玩");
+    return TEXT("R 重玩");
 }
 
 FString AEndingEmergence::Subtitle() const
@@ -1542,26 +1819,21 @@ FString AEndingEmergence::Subtitle() const
     }
     if(Shot==0&&ShotTime>2)return TEXT("一个念头，飘了出来。");
     if(Shot==1&&ShotTime>9&&ShotTime<16)return TEXT("然后，是我们。");
-    if(Shot==7&&ShotTime<4.7f)return TEXT("“唉，脑子堵住了，涌现不出来了。”");
-    if(Shot==7&&ShotTime>=5&&ShotTime<10.5f)return TEXT("“好希望能有东西把我脑子疏通一下啊。”");
     return TEXT("");
 }
 
 float AEndingEmergence::OverlayAlpha() const
 {
-    if(Shot<0)return GateIndex>=5?Ending::Ease((4-(BeatAt-Age)-1.4f)/2.6f):0;
-    // Blink out of the brain, cloud match cut to Earth, then matching stellar light.
-    if(Shot==0)return 1-Ending::Ease(ShotTime/1.3f);
-    if(Shot==1)return Ending::Ease((ShotTime-(Duration(Shot)-1.2f))/1.2f);
-    if(Shot==2)return FMath::Max(1-Ending::Ease(ShotTime/1.2f),Ending::Ease((ShotTime-(Duration(Shot)-.9f))/.9f));
-    if(Shot==3)return FMath::Max(1-Ending::Ease(ShotTime/1.1f),Ending::Ease((ShotTime-(Duration(Shot)-.9f))/.9f));
-    if(Shot==4)return 1-Ending::Ease(ShotTime/1.1f);
+    if(Shot<0)return 0;
+    if(Shot>=10)return 0;
+
+    // Thought-to-street and the scale journey both use image motion, not white.
     return 0;
 }
 
 void AEndingEmergence::EndPlay(const EEndPlayReason::Type Reason)
 {
-    ClearEndingEffects();
+    ResetFinale();ClearEndingEffects();
     if(Mining)Mining->OnFieldReset.RemoveDynamic(this,&AEndingEmergence::RestartDemo);
     if(Ambience){Ambience->Stop();Ambience->DestroyComponent();}
     if(View&&GEngine&&GEngine->GameViewport)GEngine->GameViewport->RemoveViewportWidgetContent(View.ToSharedRef());

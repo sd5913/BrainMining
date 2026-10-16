@@ -1,0 +1,90 @@
+{
+  "mode": "Built-in image generation",
+  "style": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin.",
+  "assets": [
+    {
+      "id": "toilet",
+      "subject": "喷水马桶",
+      "file": "T_EE_Doodle_toilet.png",
+      "prompt": "Edit the provided toilet doodle into a simpler BLACK AND WHITE line drawing. Remove every blue, cyan, yellow and cream colour completely: black ink outlines and pure white fill only. Water spray should be white shapes bounded by a few black curving pen lines. Keep playful toilet fountain concept but reduce tiny details. Keep transparent background, whole object and margin.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-85b43b90-fb4e-466a-b4ca-838960c3b7c9.png"
+    },
+    {
+      "id": "warnings",
+      "subject": "电脑警告弹窗",
+      "file": "T_EE_Doodle_warnings.png",
+      "prompt": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin. Subject: three overlapping desktop computer warning pop-up windows escaping outward, each with an exclamation warning triangle, close cross, small blank button. Draw windows only, no physical computer. Make the chaotic multiplying popups legible.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-072820a4-6d8c-4e05-8350-bb338513da0b.png"
+    },
+    {
+      "id": "glasses",
+      "subject": "盲人眼镜",
+      "file": "T_EE_Doodle_glasses.png",
+      "prompt": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin. Subject: a pair of opaque dark glasses associated with blindness, bold black lenses, recognizable bridge and partly opened curved temples, a simple elegant three-quarter perspective, glasses alone.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-84e46e5a-cc88-46d5-9af3-9ea47a86f43c.png"
+    },
+    {
+      "id": "cards",
+      "subject": "卡牌组",
+      "file": "T_EE_Doodle_cards.png",
+      "prompt": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin. Subject: a playful fanned deck of five playing cards, clear rectangular cards with rounded corners and simple heart, spade, diamond and club symbols, no letters or numbers. A small separate stack underneath suggests a deck.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-3206714b-9edb-4329-8531-f9ad47e5268f.png"
+    },
+    {
+      "id": "fountain",
+      "subject": "喷泉",
+      "file": "T_EE_Doodle_fountain.png",
+      "prompt": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin. Subject: a small public park fountain, two simple round basins one above the other, water spurting up then arching down, a few expressive droplets. Clearly different from a toilet.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-e542d797-b447-4ae2-904e-24712d61735e.png"
+    },
+    {
+      "id": "thought",
+      "subject": "思考气泡",
+      "file": "T_EE_Doodle_thought.png",
+      "prompt": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin. Subject: one large empty cloud-shaped thought bubble with three progressively smaller round bubbles trailing down-left. A few tiny radiating pen marks express a new thought. Leave the cloud interior empty.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-4e227e05-0c26-45de-9fd5-494510618431.png"
+    },
+    {
+      "id": "computer",
+      "subject": "电脑",
+      "file": "T_EE_Doodle_computer.png",
+      "prompt": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin. Subject: a desktop computer monitor with thick frame, stand, keyboard and small wired mouse, three-quarter perspective. Screen has a simple blank rectangle, no warning icons, text or letters. Simple pen sketch.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-29d7e9ca-585f-4202-8658-5023f1b1e296.png"
+    },
+    {
+      "id": "brain",
+      "subject": "大脑与神经元",
+      "file": "T_EE_Doodle_brain.png",
+      "prompt": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin. Subject: recognizable rounded brain with two hemispheres and a few curving folds, three small branching star-shaped neurons linked by thin synapses are visible inside the brain. Clear brain outline, sparse internal lines, avoid spaghetti complexity.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-c5d18da8-1d58-4809-9ce8-691f842da411.png"
+    },
+    {
+      "id": "solar",
+      "subject": "太阳系",
+      "file": "T_EE_Doodle_solar.png",
+      "prompt": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin. Subject: a simple solar system diagram doodle, one sun with short rays at one side, several curved elliptical orbital paths with eight tiny varied planets, one visibly ringed planet. Sparse elegant composition, no scientific labels.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-8914e597-92a6-41a9-9b62-2ebcb599d907.png"
+    },
+    {
+      "id": "ants",
+      "subject": "蚂蚁蚁群",
+      "file": "T_EE_Doodle_ants.png",
+      "prompt": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin. Subject: a small colony of seven recognizable ants, three body segments, six legs and antennae, cooperating in an irregular trail to carry a single leaf together. Simple playful pen marks, no realistic insect texture.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-62e8e350-b9d5-49e7-a2f2-2d0af7389878.png"
+    },
+    {
+      "id": "roguelike",
+      "subject": "肉鸽",
+      "file": "T_EE_Doodle_roguelike.png",
+      "prompt": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin. Subject: a funny plump pigeon with small beak, two feet and a folded wing, standing on a little branching dungeon-route sketch with three square rooms connected by arrows and one looping restart arrow. A visual pun on the Chinese term for roguelike (meat pigeon). Keep the bird and route very simple. No words.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-d114af2c-87b0-4929-babd-48c7ecdd726e.png"
+    },
+    {
+      "id": "pickaxe",
+      "subject": "矿镐",
+      "file": "T_EE_Doodle_pickaxe.png",
+      "prompt": "Use case: illustration-story. ONE individual texture for an upright paper cutout in a game about emergence. Simple black-and-white pen doodle, confident slightly wobbly hand-drawn outline, bold readable silhouette, sparse details, white interior fills and black lines ONLY. No colors or grey shading, no hatching, no text or labels, no logos, no page frame, no rendered paper or shadow. Truly transparent background outside the illustration. Single centered subject, square image with 15% clear margin. Subject: a single mining pickaxe tilted diagonally, long wooden handle and a curved pointed metal head with two ends. A couple of tiny chipped rock triangles near its tip suggest excavation. Very simple confident pen outline, no heavy shading.",
+      "generatedOriginal": "C:\\Users\\abao\\.codex\\generated_images\\01a13370-5daa-7eb0-bb59-ea7aca79237a\\exec-ccb91f69-954c-4d6f-a63f-5c55dd7fed2d.png"
+    }
+  ]
+}

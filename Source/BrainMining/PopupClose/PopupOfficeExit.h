@@ -9,6 +9,7 @@ class UMiningBombToolComponent;
 class APlayerController;
 class AMiningBombExplosion;
 class USceneComponent;
+class UPostProcessComponent;
 
 // A world timer keeps the evacuation finale alive after the campaign disables
 // the office actor's tick on entry to the next area.
@@ -45,6 +46,7 @@ private:
  struct FRubble {FVector Position,Size;FRotator Rotation;};
  APopupCloseStage& Owner;
  TWeakObjectPtr<UStaticMeshComponent> Door,Pickup,Shutter;
+ TWeakObjectPtr<UPostProcessComponent> PickupOutline;
  TWeakObjectPtr<UBoxComponent> RuinBlocker;
  TWeakObjectPtr<UInstancedStaticMeshComponent> Bombs,Rubble,DoorFragments,ReturnGrille;
  TWeakObjectPtr<UMiningBombToolComponent> BoundTool;

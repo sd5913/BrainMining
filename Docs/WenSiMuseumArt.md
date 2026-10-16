@@ -22,18 +22,6 @@ transforms and collider profiles were compared before and after dressing.
 Puzzle objects, lifts, hopper, reward shutter, reset buttons, area routing,
 game modes and camera/pawn logic are retained.
 
-Native WenSi objects now expose an optional `ArtModel`, `ArtRotation` and
-`bUniformArtScale`, plus the editor's `RefreshArtModel` button. The copied maps
-use `/Game/Fab/Stone/stone1` for the rock and pressure block, Museum `SM_Hebe`
-for the statue and `SM_Philosopher` for the small mirror-gallery exhibit.
-Models keep their original materials and fit the existing gameplay envelope;
-uniform sculptures stand on the envelope's bottom rather than hovering.
-The old proxy parts keep collision/visibility flags for existing rule and
-contact checks, but stop rendering into color, depth, shadows and ray tracing.
-`ArtVisual` itself has no collision. It follows its actor through floating,
-big/small changes and resets, and receives the existing highlight/ghost state.
-Unconfigured actors retain the original presentation, including original maps.
-
 The reproduction script `Scripts/dress_wensi_museum_copies.py` only accepts the
 two suffixed maps and refuses PIE or unsaved packages. It removes only actors
 with its own tag before regenerating the dressing. Backups of both originals
@@ -43,6 +31,6 @@ PIE checks: Mirror Museum passes 35 mechanism checks; Screen Bridge passes
 45 circuit/progression/contact/input checks. Both thought widgets were tested
 with actual Slate word dragging. Game-rendered captures and validation reports
 are under `Saved/MuseumArt`; the verification script exercises real E/G inputs
-and captures the thought flight at several times. The whole card recedes,
-turns and flies to its side together in 0.42 seconds. Arrival
+and captures the thought flight at several times. The whole card first recedes
+from a large tilted foreground plane, then turns and flies to its side. Arrival
 is fixed in screen space with no idle float or overshoot.

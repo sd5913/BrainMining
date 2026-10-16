@@ -39,7 +39,7 @@ void AMiningGiantRoomEntrance::ResetJourney()
         if(APawn* Pawn=Player->GetPawn())
         {
             if(auto* Mine=Pawn->FindComponentByClass<UMiningComponent>())Mine->CancelMining();
-            if(auto* Move=Pawn->FindComponentByClass<UMiningCharacterMovementComponent>())Move->SetFlightInputHeld(false);
+            if(auto* Move=Pawn->FindComponentByClass<UMiningCharacterMovementComponent>())Move->ResetFlightInput();
         }
     }
     ResetRock();

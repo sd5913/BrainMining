@@ -3,6 +3,7 @@
 #include "MiningBombToolComponent.h"
 #include "MiningTunnelGenerator.h"
 #include "DiggableRock.h"
+#include "MobileRuntimeSettings.h"
 #include "DrawDebugHelpers.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -77,10 +78,13 @@ void UMiningComponent::BindInput(UEnhancedInputComponent* Input)
 
 float UMiningComponent::GetMiningInterval() const
 {
-	if (!bDrillMode && bUsePickaxeBalance) return PickaxeBalance.Interval;
-	const float Base = FMath::IsFinite(Interval) ? FMath::Max(0.1f, Interval) : 0.3f;
+	const float Base = !bDrillMode && bUsePickaxeBalance
+		? PickaxeBalance.Interval
+		: (FMath::IsFinite(Interval) ? FMath::Max(0.1f, Interval) : 0.3f);
 	const float Multiplier = FMath::IsFinite(DrillIntervalMultiplier) ? FMath::Clamp(DrillIntervalMultiplier, 0.1f, 1.f) : 0.4f;
-	return bDrillMode ? FMath::Max(0.04f, Base * Multiplier) : Base;
+	const float ToolInterval = bDrillMode ? FMath::Max(0.04f, Base * Multiplier) : Base;
+	if (!UMobileRuntimeSettings::IsMobileVerticalSliceEnabled()) return ToolInterval;
+	return FMath::Max(0.12f, ToolInterval * UMobileRuntimeSettings::Get()->MobileMiningIntervalScale);
 }
 
 float UMiningComponent::GetMiningRadius() const
@@ -165,6 +169,7 @@ void UMiningComponent::UpdateDrillEnergy(float DeltaSeconds)
 void UMiningComponent::RefreshTarget()
 {
 	TargetRock = nullptr;
+	TargetHit = FHitResult();
 	APawn* Pawn = Cast<APawn>(GetOwner());
 	APlayerController* Controller = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
 	if (!Controller || !Controller->IsLocalController())
@@ -233,6 +238,7 @@ bool UMiningComponent::TryMine()
 	RefreshTarget();
 	if (!IsValid(TargetRock))
 	{
+		if (TargetHit.bBlockingHit) OnMiningBlocked.Broadcast(TargetHit);
 		Status = TEXT("Aim at rock within reach");
 		return false;
 	}
@@ -246,7 +252,9 @@ bool UMiningComponent::TryMine()
 	const FHitResult MiningHit = TargetHit;
 	bool bResult = TargetRock->MineSphere(Center, GetMiningRadius());
 	const float Depth = FMath::IsFinite(DepthMultiplier) ? FMath::Clamp(DepthMultiplier, 1.f, 4.f) : 1.f;
-	for (float Step = 1.f; Step < Depth; Step += 1.f)
+	const UMobileRuntimeSettings* MobileSettings = UMobileRuntimeSettings::Get();
+	const float EffectiveDepth = UMobileRuntimeSettings::IsMobileVerticalSliceEnabled() && MobileSettings->bUseSimplifiedMobileMining ? 1.f : Depth;
+	for (float Step = 1.f; Step < EffectiveDepth; Step += 1.f)
 	{
 		const float ExtraDepth = FMath::Min(Step, Depth - 1.f) * GetMiningRadius() * (1.f + InsetFraction);
 		bResult |= TargetRock->MineSphere(Center - MiningHit.ImpactNormal * ExtraDepth, GetMiningRadius());
@@ -312,7 +320,7 @@ void UMiningComponent::ResetField()
 			Character->StopJumping();
 			if (UMiningCharacterMovementComponent* Movement = Cast<UMiningCharacterMovementComponent>(Character->GetCharacterMovement()))
 			{
-				Movement->SetFlightInputHeld(false);
+				Movement->ResetFlightInput();
 			}
 			Character->GetCharacterMovement()->StopMovementImmediately();
 			if (AController* Controller = Character->GetController())

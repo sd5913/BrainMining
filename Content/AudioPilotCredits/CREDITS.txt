@@ -1,0 +1,21 @@
+BrainMining audio pilot — 2026-10-15
+
+Dreamy Flashback — Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons Attribution 4.0 International.
+https://creativecommons.org/licenses/by/4.0/
+https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532
+Changes: decoded to PCM, resampled to 48kHz, three-second loop crossfade, gain adjustment.
+
+Impact Sounds, RPG Audio, Interface Sounds — Kenney (https://kenney.nl)
+CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
+Original pack licenses are retained beside this file.
+Changes: selected excerpts, mono downmix, 48kHz PCM conversion, trimming, short fades, gain adjustment.
+
+75 CC0 breaking / falling / hit sfx — rubberduck
+https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx
+CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
+Changes: selected rock fragments and breaks, resampling, mono downmix, trimming and mixing with mining impacts.
+
+Only the selected source recordings are included in Originals. Source filenames, edits and hashes are recorded in manifest.json.
+
+P1 tool audio: deterministic project-authored synthesis in Scripts/prepare_audio_tools.py; no external recordings for motor/thrust/fuse/warning/collect tones. Bomb throw/stick and explosion debris reuse the credited CC0 Kenney/rubberduck recordings. These are trial sound designs, pending subjective listening approval.

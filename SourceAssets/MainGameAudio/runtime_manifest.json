@@ -1,0 +1,460 @@
+[
+  {
+    "asset": "S_PickaxePickup",
+    "file": "Runtime/S_PickaxePickup.wav",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.8,
+    "peak": 0.5999755859375,
+    "sha256": "a739614cb8000f529730c4c4591e4b07eb3fa67204ec42e306b20f40d2a6f27b",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_PickaxePickup.wav",
+        "sha256": "3a83ab1b0a3558058d7f1a2c6458223bea6ff55e1d52b0b86cf69fc66a939c50"
+      }
+    ],
+    "processing": {
+      "trim_seconds": 0.8,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_JetpackEquip",
+    "file": "Runtime/S_JetpackEquip.wav",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.65,
+    "peak": 0.5999755859375,
+    "sha256": "0f0ec48f550d8c2839099923106c019e994471ce59616d189f55f335847b9655",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_JetpackEquip.wav",
+        "sha256": "49150c4483132f36c6b408b1e23a2b14f7637ea5a5562d20c21f06c52e4d937a"
+      }
+    ],
+    "processing": {
+      "trim_seconds": 0.65,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_DirtDig",
+    "file": "Runtime/S_DirtDig.wav",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.55,
+    "peak": 0.600006103515625,
+    "sha256": "a6229d6485d16a87f14948ebc2e231b2e59e64c00a36e368620648d112ab97c4",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_DirtDig.wav",
+        "sha256": "9faed94e1494db270a801a8c33f541e6c16423c6ab0d5a60a9ba822cbb036f1a"
+      }
+    ],
+    "processing": {
+      "trim_seconds": 0.55,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_Foot_dirt_00",
+    "file": "Runtime/S_Foot_dirt_00.wav",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.2599,
+    "peak": 0.199554443359375,
+    "sha256": "852093289d06c53a7a9b571bc99f23fc5394ca204db12a5ff714d588380b93f1",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_Foot_mud02.wav",
+        "sha256": "e4be70df45d33e9b46197c98237352cfe0664e52c047fd415ccb38a94c022339"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_Foot_gravel_00",
+    "file": "Runtime/S_Foot_gravel_00.wav",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.5,
+    "peak": 0.5999755859375,
+    "sha256": "19be81d45e4e3dea2432176a5d811e34a38bbe4c8c36d6f0607ebdb9327d02a2",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_Foot_gravel.wav",
+        "sha256": "e2ac9111b20639f69796bb4fb786c8a6537d496a0557d8a507dc3c05882b319f"
+      }
+    ],
+    "processing": {
+      "trim_seconds": 0.5,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_DrillStart",
+    "file": "Runtime/S_DrillStart.wav",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.55,
+    "peak": 0.600006103515625,
+    "sha256": "7124eb43587a0cefdf0956e432ade72961657b12ec1317c2d15bd524af9d6681",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_DrillStart.wav",
+        "sha256": "ace88156250f8e7128d15a4a10dca9c31ffd0d313f729fe5806ce28be5c7d6b0"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_DrillIdle_Loop",
+    "file": "Runtime/S_DrillIdle_Loop.wav",
+    "loop": true,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 3.25,
+    "peak": 0.600006103515625,
+    "sha256": "9d6aaa06e8aebeec05916cdd9f732499ce4a839efb8e20589b0d5a352e93d4fc",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_DrillMotor_Loop.wav",
+        "sha256": "b0867441d5132708686df9d5af90cf70da9ba86b0b3e3df37c93950603016a9b"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_DrillStop",
+    "file": "Runtime/S_DrillStop.wav",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.7,
+    "peak": 0.24114990234375,
+    "sha256": "0dc573e4dcc8a9027909fd33bc5cb1e4fe9372d0924abf6a3639609abf0a11bf",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_DrillStop.wav",
+        "sha256": "791e25af048dc0f3736066c7d5cdcd1c0571042597f535bb392393468eb1b3f0"
+      }
+    ],
+    "processing": {
+      "trim_seconds": 0.7,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_JetStart",
+    "file": "Runtime/S_JetStart.wav",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.4,
+    "peak": 0.600006103515625,
+    "sha256": "204d738e7b378a92c1fd590029b9c9f5bb8d67d8f5d530911f8f382bbd54f528",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_JetStart.wav",
+        "sha256": "c338d2bf47ed5060eaa4b93237c59269e7a59bd7a4805a7d3d9264352b5a366a"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_Jet_Loop",
+    "file": "Runtime/S_Jet_Loop.wav",
+    "loop": true,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 4.75,
+    "peak": 0.5999755859375,
+    "sha256": "084232e8ed4f4ac7cc95c4ecff7912e24c1a73e96e02a67a21b83dcb0b8c0cc4",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_JetThrust_00_Loop.wav",
+        "sha256": "9ade7dfd0b53f2e8d3b93a1b2c78c84417e0e97019456c4bbd3570f3d26c2a04"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_JetStop",
+    "file": "Runtime/S_JetStop.wav",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.65,
+    "peak": 0.5999755859375,
+    "sha256": "c8f4bf624a0b6f33acf672842762e83768728c7a64814a99bd664f4fb49f9f5a",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_JetVent_01.wav",
+        "sha256": "d533740fe18568286f1b145e3d6503cd782222a83febb5c7a34283c47bc4f6b7"
+      }
+    ],
+    "processing": {
+      "trim_seconds": 0.65,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_BedrockContact",
+    "file": "Runtime/S_BedrockContact.wav",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.18,
+    "peak": 0.5999755859375,
+    "sha256": "b67d1ba20a9d6b395c2e15f5f737a69009f31265e4719ea7efda3058cbba1965",
+    "inputs": [
+      {
+        "file": "SourceAssets/AudioPilot/Wav/S_DigLight_00.wav",
+        "sha256": "651ff089b145dfe700dc6f54531f180af5cdffd608a82348cbe4fade72533548"
+      }
+    ],
+    "processing": {
+      "trim_seconds": 0.18,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_DrillContact_Loop",
+    "file": "Runtime/S_DrillContact_Loop.wav",
+    "loop": true,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 3.2,
+    "peak": 0.472381591796875,
+    "sha256": "000e740b224cbc849c423ec86e777f2bc48aa11ecf5a3a3f0d435da668c283aa",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_DrillTexture_Loop.wav",
+        "sha256": "f7734dfe770b40b4e8163c9041f0be835a0ea9732a5de99aa5f6c3ceb01a764a"
+      },
+      {
+        "file": "SourceAssets/AudioPilot/Wav/S_DigBreak_00.wav",
+        "sha256": "ff82a1f8c9b9023c41a19029a189769803127ec081d5b2c67c1cae79824753a7"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": [
+        0.75,
+        0.18
+      ],
+      "loop_crossfade": true,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_DrillDirt_Loop",
+    "file": "Runtime/S_DrillDirt_Loop.wav",
+    "loop": true,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 3.1,
+    "peak": 0.47210693359375,
+    "sha256": "e9116a9d06f95c215293158abbcbf9502b060a2dacec1d598bdd85654ba3362d",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_DrillMotor_Loop.wav",
+        "sha256": "b0867441d5132708686df9d5af90cf70da9ba86b0b3e3df37c93950603016a9b"
+      },
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_DirtDig.wav",
+        "sha256": "9faed94e1494db270a801a8c33f541e6c16423c6ab0d5a60a9ba822cbb036f1a"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": [
+        0.75,
+        0.18
+      ],
+      "loop_crossfade": true,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "S_BombExplosion",
+    "file": "Runtime/S_BombExplosion.wav",
+    "loop": false,
+    "category": "Effects",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 1.3568,
+    "peak": 0.4793701171875,
+    "sha256": "d3a3e9986eb04afbed40d12062364508444576887b4f78f5e98e4edd31ab93a4",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_BombCrunch_01.wav",
+        "sha256": "6107caf98b0fed44f7e32fc427657bfa0f0ae64c77da07ed6e1e3283b4c10d80"
+      },
+      {
+        "file": "SourceAssets/AudioPilot/Wav/S_DigBreak_01.wav",
+        "sha256": "9df2411e242db80d8d44097c9c07f7423622310405b9bf6d3d9786a234336c57"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": [
+        0.75,
+        0.18
+      ],
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "A_MineWind_Loop",
+    "file": "Runtime/A_MineWind_Loop.wav",
+    "loop": true,
+    "category": "Ambience",
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 24.75,
+    "peak": 0.30133056640625,
+    "sha256": "d3d8745226eac3260de650ee28c76bc41fc07e00b119a9529202675592c5172f",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_Amb_Wind_Loop.wav",
+        "sha256": "d3d8745226eac3260de650ee28c76bc41fc07e00b119a9529202675592c5172f"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "A_Cavern_Loop",
+    "file": "Runtime/A_Cavern_Loop.wav",
+    "loop": true,
+    "category": "Ambience",
+    "channels": 2,
+    "sample_rate": 48000,
+    "seconds": 29.75,
+    "peak": 0.399993896484375,
+    "sha256": "272a3671319f4657aacfdb8aedf376228a8d656d8d09f3c1f9dda4b8e6fb3755",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_Amb_Cavern_Loop.wav",
+        "sha256": "272a3671319f4657aacfdb8aedf376228a8d656d8d09f3c1f9dda4b8e6fb3755"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "A_Drips_Loop",
+    "file": "Runtime/A_Drips_Loop.wav",
+    "loop": true,
+    "category": "Ambience",
+    "channels": 2,
+    "sample_rate": 48000,
+    "seconds": 19.8131,
+    "peak": 0.399993896484375,
+    "sha256": "96ddb1d86b82937a2e750b0f2b2f5454588fae5bd0f87b2976e22781425f0a2f",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Candidates/C_Amb_Drips_Loop.wav",
+        "sha256": "96ddb1d86b82937a2e750b0f2b2f5454588fae5bd0f87b2976e22781425f0a2f"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": null,
+      "loop_crossfade": false,
+      "preserve_candidate_processing": true
+    }
+  },
+  {
+    "asset": "M_CaveTheme_Loop",
+    "file": "Runtime/M_CaveTheme_Loop.wav",
+    "loop": true,
+    "category": "Music",
+    "channels": 2,
+    "sample_rate": 48000,
+    "seconds": 277.0,
+    "peak": 0.4000244140625,
+    "sha256": "c2c14b8b9b16881e9ac27dd0ab5327aac30d82b330e5dd6f3b22481cf9e7612d",
+    "inputs": [
+      {
+        "file": "SourceAssets/MainGameAudio/Originals/cave_music/cave_music.ogg",
+        "sha256": "1ddf7a0845c808136edfda7ea829e48fa2b7c57793e008d706dadbb5917dff9c"
+      }
+    ],
+    "processing": {
+      "trim_seconds": null,
+      "texture_mix": null,
+      "loop_crossfade": true,
+      "preserve_candidate_processing": true
+    }
+  }
+]

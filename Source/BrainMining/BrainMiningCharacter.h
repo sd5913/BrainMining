@@ -12,6 +12,7 @@ class USkeletalMeshComponent;
 class UCameraComponent;
 class UInputAction;
 class UMiningComponent;
+class UMiningAudioComponent;
 class UMiningToolEffectsComponent;
 class UMiningBombToolComponent;
 class UMiningProgressionComponent;
@@ -42,6 +43,8 @@ class ABrainMiningCharacter : public ACharacter
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<UMiningComponent> MiningComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<UMiningAudioComponent> MiningAudio;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<UMiningToolEffectsComponent> MiningToolEffects;

@@ -1,8 +1,10 @@
 # MainGame 挖掘关卡
 
-当前四区通路已升级为含上升洞厅、螺旋下降和回折的新路线，见 [Docs/MainGameRoutesV2.md](Docs/MainGameRoutesV2.md)。下文保留原 V1 源模型的参数和历史验证记录；当前生成源由 `Config/MainGameRoutes.json` 指定。
+当前为三个矿区，保留电脑房、回声／牌局／电视逃生、镜像博物馆，移除第四矿区。流程在博物馆结束。矿石收入背包，按 Tab 消耗材料升级矿镐；右上角常驻背包与升级需求，电脑房工作不再发放金币。完整规则与编辑入口见 [Docs/MainGameSystems.md](Docs/MainGameSystems.md)。
 
-关卡：`/Game/MainGame/Maps/Lvl_MainGame`。已使用独立的 **外部通路矿区生成器** 生成并保存；现在包含四段通路，相邻两段之间各有一处 18 米房间预留连接区。第二段说明见 [README_MainGame_CavernV2.md](README_MainGame_CavernV2.md)，第三段说明见 [README_MainGame_StalagmiteV3.md](README_MainGame_StalagmiteV3.md)，第四段说明见 [README_MainGame_NeuralV4.md](README_MainGame_NeuralV4.md)，下文记录第一段参数。StartRoom 矿工卧室已接在第一区之前，经过需要喷气背包上升的 8 米竖井进入原矿道；入口接缝用不可挖基岩封口，通路内设置可挖堵塞层。见 [Docs/StartRoom.md](Docs/StartRoom.md)。
+本次通路改造使用 V5：一区为不规则窄路、自然分支与钟乳石；二区为蓝紫色上升平台空间；三区为暗红色紧凑下旋及溶洞/神经岩石，向下挖入博物馆。炸弹容量 1、范围减半，深灰蓝硬层仅能由炸弹破坏。生成和验证入口见 [Docs/MainGameRoutesV5.md](Docs/MainGameRoutesV5.md)。
+
+关卡：`/Game/MainGame/Maps/Lvl_MainGame`。当前生成源由 `Config/MainGameRoutes.json` 指定。StartRoom 矿工卧室接在第一区之前，经过需要喷气背包上升的竖井进入矿道；见 [Docs/StartRoom.md](Docs/StartRoom.md)。下面保留第一段原 V1 模型参数和历史验证记录。
 
 模型是重新设计的单段通路：主路约 171.25 米，下降 55 米，名义宽度约 3.3–9.8 米；4 条短支路长约 16.6–17.5 米。通路切割体为一个封闭连通实体，16 个独立堵塞块约占完整切割体空腔体积的 49.62%。主路最后约 10.2 米、各支路最后约 5 米保持空腔。
 

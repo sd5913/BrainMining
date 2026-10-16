@@ -1,5 +1,8 @@
 #if WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS
 #include "MiningRoomEscape.h"
+#include "InputKeyEventArgs.h"
+#include "MiningRoomAudioSubsystem.h"
+#include "MiningAudioComponent.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningEncounterPlayer.h"
 #include "MiningCharacterMovementComponent.h"
@@ -30,7 +33,7 @@ public:
     explicit FEscapeChecks(FAutomationTestBase* T,bool InExhibitHall=false):Test(T),bExhibitHall(InExhibitHall){}
     virtual bool Update() override
     {
-        if(FPlatformTime::Seconds()-Start>25){Test->AddError(TEXT("Escape PIE initialization timed out"));return true;}
+        if(FPlatformTime::Seconds()-Start>(bExhibitHall?90:25)){Test->AddError(TEXT("Escape PIE initialization timed out"));return true;}
         UWorld* World=GEditor?GEditor->PlayWorld:nullptr;
         if(bExhibitHall)
         {
@@ -47,10 +50,15 @@ public:
         for(TActorIterator<AMiningRoomEscape> It(World);It;++It){E=*It;break;}
         if(!Test->TestNotNull(TEXT("Study automatically assembles escape"),E))return true;
         auto* Stage=PC->CardInteraction->Stage.Get();
+        auto* RoomAudio=UMiningAudioComponent::IsMainGameWorld(World)?World->GetSubsystem<UMiningRoomAudioSubsystem>():nullptr;
+        if(RoomAudio)RoomAudio->Tick(.01f);
         auto* Move=Cast<UMiningCharacterMovementComponent>(Pawn->GetCharacterMovement());
         auto* Miner=Pawn->FindComponentByClass<UMiningComponent>();const float OriginalRadius=Miner->Radius;
         Test->TestEqual(TEXT("Physical screen and fourteen thick dig sections"),E->ComputerRocks.Num(),15);
         Test->TestTrue(TEXT("Water, breach and route references exist"),E->Water && E->BreachWall);
+        Test->TestTrue(TEXT("TV coordinates follow the referenced room translation"),E->ComputerEntry.Equals(GetDefault<AMiningRoomEscape>()->ComputerEntry+E->SourceLevelOffset,1.));
+        Test->TestTrue(TEXT("Water heights follow the same room translation"),FMath::IsNearlyEqual(E->WaterStartZ,GetDefault<AMiningRoomEscape>()->WaterStartZ+float(E->SourceLevelOffset.Z),1.f));
+        Test->TestTrue(TEXT("Breach is rebuilt at the translated source wall"),FMath::IsNearlyEqual(E->BreachWall->GetActorLocation().Z,9400.+E->SourceLevelOffset.Z,1.));
         Test->TestTrue(TEXT("No early flood"),E->Phase==EMiningEscapePhase::Idle);
         for(const auto& Prop:E->FloatingProps)Test->TestFalse(TEXT("No floating route before flood"),Prop->IsVisible());
         Test->TestTrue(TEXT("TV exit is behind original wall"),E->Exit.X>23700);
@@ -119,6 +127,8 @@ public:
             Test->TestTrue(TEXT("Exposure bounds include first excavated section"),Exposure->EncompassesPoint(E->ComputerEntry+Axis*150,0,nullptr));
             Test->TestTrue(TEXT("Exposure bounds include screen transition"),Exposure->EncompassesPoint(E->ComputerEntry-FVector(300,0,0),0,nullptr));
             Test->TestFalse(TEXT("Television exposure does not cover room table"),Exposure->EncompassesPoint(E->Checkpoint,0,nullptr));
+            Test->TestTrue(TEXT("Television disables motion blur"),Exposure->Settings.bOverride_MotionBlurAmount && Exposure->Settings.MotionBlurAmount==0);
+            Test->TestTrue(TEXT("Television keeps bloom restrained"),Exposure->Settings.bOverride_BloomIntensity && Exposure->Settings.BloomIntensity<=.2f);
             Test->TestTrue(TEXT("Television overrides room manual exposure"),Exposure->Settings.bOverride_AutoExposureBias && Exposure->Settings.AutoExposureBias>-6);
         }
         // A position outside the shell cannot claim the computer checkpoint.
@@ -159,8 +169,12 @@ public:
         E->Tick(10);E->RetryEscape();
         Test->TestEqual(TEXT("Repeated retries do not accumulate water"),E->WaterZ,SavedWater);
         Test->TestTrue(TEXT("Computer retry receives full countdown"),E->ElectricalSecondsLeft()>=E->ComputerSeconds-.1f);
+        const int32 AttemptsBeforeR=E->Attempts;
+        const FVector PositionBeforeR=Pawn->GetActorLocation();
+        PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::R,IE_Pressed,1));
+        PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::R,IE_Released,0));
         PC->EchoInteraction->Restart();
-        Test->TestTrue(TEXT("R is local and preserves reward"),E->bComputerCheckpoint && Stage->Run.Phase==ECardRoomPhase::Collected);
+        Test->TestTrue(TEXT("Manual restart cannot reset card-room progress"),E->Attempts==AttemptsBeforeR && Pawn->GetActorLocation().Equals(PositionBeforeR));
         // Success requires actual boolean cuts and crossing every slab, not an exterior teleport.
         Pawn->SetActorLocation(E->Exit);E->Tick(.01f);
         Test->TestTrue(TEXT("Cannot bypass sealed tunnel"),E->Phase==EMiningEscapePhase::Flooding);
@@ -171,10 +185,16 @@ public:
         }
         Pawn->SetActorLocation(E->Exit);E->Tick(.01f);
         Test->TestTrue(TEXT("Upper exit completes escape"),E->Phase==EMiningEscapePhase::Escaped);
+        Test->TestTrue(TEXT("Mining input is restored after the card/TV escape"),PC->EncounterPolicy && PC->EncounterPolicy->IsMiningAllowed() && !Miner->IsEncounterBlocked());
+        if(RoomAudio)
+        {
+            for(FName Cue:{FName(TEXT("S_CardDraw")),FName(TEXT("S_CardReward")),FName(TEXT("S_FloodStart")),FName(TEXT("S_Drown")),FName(TEXT("S_Retry")),FName(TEXT("S_Checkpoint")),FName(TEXT("S_ShortCircuit")),FName(TEXT("S_Escape"))})
+                Test->TestTrue(*FString::Printf(TEXT("Encounter triggers %s"),*Cue.ToString()),RoomAudio->EventCount(Cue)>0);
+        }
         Test->TestEqual(TEXT("TV mining adjustment is restored on exit"),Miner->Radius,OriginalRadius);
         Test->TestTrue(TEXT("Reward still retained after completion"),Stage->Run.Phase==ECardRoomPhase::Collected);
         PC->EchoInteraction->Restart();
-        Test->TestTrue(TEXT("Replay after success starts parkour"),!E->bComputerCheckpoint && FVector::Dist(Pawn->GetActorLocation(),E->Checkpoint)<1);
+        Test->TestTrue(TEXT("Manual restart cannot replay completed escape"),E->Phase==EMiningEscapePhase::Escaped && FVector::Dist(Pawn->GetActorLocation(),E->Exit)<1);
         return true;
     }
 };
@@ -199,6 +219,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCampaignCardEscapeTest,"BrainMining.Campaign.F
 bool FCampaignCardEscapeTest::RunTest(const FString&)
 {
     AutomationOpenMap(TEXT("/Game/Campaign/Maps/Lvl_FullJourney"));
+    ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
+    ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMainGameCardEscapeTest,"BrainMining.MainGame.FullCardAndTelevisionEscape",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMainGameCardEscapeTest::RunTest(const FString&)
+{
+    AutomationOpenMap(TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;

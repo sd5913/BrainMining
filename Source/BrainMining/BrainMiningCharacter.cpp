@@ -10,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BrainMining.h"
 #include "MiningComponent.h"
+#include "MiningAudioComponent.h"
 #include "MiningToolEffectsComponent.h"
 #include "MiningBombToolComponent.h"
 #include "MiningProgressionComponent.h"
@@ -48,6 +49,7 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 	FirstPersonCameraComponent->FirstPersonScale = 0.6f;
 
 	MiningComponent = CreateDefaultSubobject<UMiningComponent>(TEXT("MiningComponent"));
+	MiningAudio = CreateDefaultSubobject<UMiningAudioComponent>(TEXT("MiningAudio"));
 	MiningToolEffects = CreateDefaultSubobject<UMiningToolEffectsComponent>(TEXT("MiningToolEffects"));
 	BombTool = CreateDefaultSubobject<UMiningBombToolComponent>(TEXT("BombTool"));
 	Progression = CreateDefaultSubobject<UMiningProgressionComponent>(TEXT("Progression"));
@@ -230,6 +232,7 @@ void ABrainMiningCharacter::InitializePlayerFlight()
 void ABrainMiningCharacter::UnPossessed()
 {
 	DoJumpEnd();
+	if (auto* Movement = Cast<UMiningCharacterMovementComponent>(GetCharacterMovement())) Movement->ResetFlightInput();
 	Super::UnPossessed();
 }
 
@@ -324,8 +327,8 @@ void ABrainMiningCharacter::DoJumpStart()
     if(IsMoveInputIgnored())return;
 	if (UMiningCharacterMovementComponent* Movement = Cast<UMiningCharacterMovementComponent>(GetCharacterMovement()); Movement && Movement->IsFlightAvailable())
 	{
-		StopJumping();
 		Movement->SetFlightInputHeld(true);
+		if (!Movement->IsFlightThrustActive()) Jump();
 		return;
 	}
 	// pass Jump to the character

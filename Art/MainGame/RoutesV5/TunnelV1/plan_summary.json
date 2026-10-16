@@ -1,0 +1,45 @@
+{
+  "style": "narrow-branches",
+  "main_length_m": 161.4775562286548,
+  "total_length_m": 245.0469546849338,
+  "main_drop_m": 55.0,
+  "start": [
+    -65.0,
+    0.0,
+    65.0
+  ],
+  "end": [
+    65.0,
+    0.0,
+    10.0
+  ],
+  "ascent_m": 2.022280156299832,
+  "descent_m": 57.02228015629983,
+  "ascending_vertical_fraction": 0.034250067162720374,
+  "backtracking_x_m": 0.0,
+  "spiral_turns": 0,
+  "spiral_drop_m": 0,
+  "spiral_length_m": 0,
+  "spiral_main_fraction": 0.0,
+  "width_min_m": 3.300143817041062,
+  "width_max_m": 9.74420784989771,
+  "narrow_main_fraction": 0.6889848812095032,
+  "cavern_centers_arc_m": [
+    38.09751867732332,
+    117.43822271174895
+  ],
+  "branch_count": 4,
+  "branch_clearances_m": [
+    16.89670101615594,
+    17.581739626966197,
+    18.19568196967101,
+    15.055549890877755
+  ],
+  "landscape_count": 0,
+  "mouth_collars_preserved_m": [
+    9,
+    12
+  ],
+  "end_shift_m": 0,
+  "surface_style": "irregular-asymmetric-lowpoly"
+}

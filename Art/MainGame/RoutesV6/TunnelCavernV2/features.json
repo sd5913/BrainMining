@@ -1,0 +1,149 @@
+{
+  "platforms": [
+    {
+      "name": "Parkour_1_1",
+      "top_m": [
+        -34.0,
+        2.3,
+        67.5
+      ],
+      "base_z_m": 47.1,
+      "radius_m": 1.75,
+      "chamber": 0,
+      "stem_radius_m": 0.55,
+      "cap_depth_m": 1.2
+    },
+    {
+      "name": "Parkour_1_2",
+      "top_m": [
+        -30.5,
+        -2.3,
+        71.58000000000001
+      ],
+      "base_z_m": 47.1,
+      "radius_m": 1.75,
+      "chamber": 0,
+      "stem_radius_m": 0.55,
+      "cap_depth_m": 1.2
+    },
+    {
+      "name": "Parkour_1_3",
+      "top_m": [
+        -27.0,
+        2.3,
+        75.66
+      ],
+      "base_z_m": 47.1,
+      "radius_m": 1.75,
+      "chamber": 0,
+      "stem_radius_m": 0.55,
+      "cap_depth_m": 1.2
+    },
+    {
+      "name": "Parkour_1_4",
+      "top_m": [
+        -23.5,
+        -2.3,
+        79.74000000000001
+      ],
+      "base_z_m": 47.1,
+      "radius_m": 1.75,
+      "chamber": 0,
+      "stem_radius_m": 0.55,
+      "cap_depth_m": 1.2
+    },
+    {
+      "name": "Parkour_1_5",
+      "top_m": [
+        -21.0,
+        0,
+        83.82
+      ],
+      "base_z_m": 47.1,
+      "radius_m": 1.75,
+      "chamber": 0,
+      "stem_radius_m": 0.55,
+      "cap_depth_m": 1.2
+    },
+    {
+      "name": "Parkour_2_1",
+      "top_m": [
+        8.0,
+        2.3,
+        91.5
+      ],
+      "base_z_m": 71.1,
+      "radius_m": 1.75,
+      "chamber": 1,
+      "stem_radius_m": 0.55,
+      "cap_depth_m": 1.2
+    },
+    {
+      "name": "Parkour_2_2",
+      "top_m": [
+        11.5,
+        -2.3,
+        95.58000000000001
+      ],
+      "base_z_m": 71.1,
+      "radius_m": 1.75,
+      "chamber": 1,
+      "stem_radius_m": 0.55,
+      "cap_depth_m": 1.2
+    },
+    {
+      "name": "Parkour_2_3",
+      "top_m": [
+        15.0,
+        2.3,
+        99.66
+      ],
+      "base_z_m": 71.1,
+      "radius_m": 1.75,
+      "chamber": 1,
+      "stem_radius_m": 0.55,
+      "cap_depth_m": 1.2
+    },
+    {
+      "name": "Parkour_2_4",
+      "top_m": [
+        18.5,
+        -2.3,
+        103.74000000000001
+      ],
+      "base_z_m": 71.1,
+      "radius_m": 1.75,
+      "chamber": 1,
+      "stem_radius_m": 0.55,
+      "cap_depth_m": 1.2
+    },
+    {
+      "name": "Parkour_2_5",
+      "top_m": [
+        19.5,
+        2.3,
+        107.82
+      ],
+      "base_z_m": 71.1,
+      "radius_m": 1.75,
+      "chamber": 1,
+      "stem_radius_m": 0.55,
+      "cap_depth_m": 1.2
+    }
+  ],
+  "spires": [],
+  "neural": [],
+  "pillars": [],
+  "upward_gates": [
+    [
+      -18,
+      0,
+      94.7
+    ],
+    [
+      24,
+      0,
+      115.3
+    ]
+  ]
+}

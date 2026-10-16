@@ -152,9 +152,11 @@ public:
             Key(PC,EKeys::SpaceBar,false);Key(PC,EKeys::Q,true);Next();break;
         case 13:
             if(Age<.3)return false;
-            Test->TestTrue(TEXT("Q returns to exploration"),Card->Stage->Run.Phase==ECardRoomPhase::Exploring);
-            Test->TestFalse(TEXT("Q restores move input"),PC->IsMoveInputIgnored());Test->TestFalse(TEXT("Q restores look input"),PC->IsLookInputIgnored());
-            Test->TestTrue(TEXT("Q restores collision"),P->GetActorEnableCollision());Key(PC,EKeys::Q,false);
+            Test->TestTrue(TEXT("Q no longer leaves or resets the card game"),Card->Stage->Run.Phase==ECardRoomPhase::Resolving && PC->IsMoveInputIgnored());
+            Card->LeaveSeat(); // Internal teardown still restores the host pawn.
+            Test->TestTrue(TEXT("Internal teardown returns to exploration"),Card->Stage->Run.Phase==ECardRoomPhase::Exploring);
+            Test->TestFalse(TEXT("Internal teardown restores move input"),PC->IsMoveInputIgnored());Test->TestFalse(TEXT("Internal teardown restores look input"),PC->IsLookInputIgnored());
+            Test->TestTrue(TEXT("Internal teardown restores collision"),P->GetActorEnableCollision());Key(PC,EKeys::Q,false);
             Start=P->GetActorLocation();Key(PC,EKeys::S,true);Next();break;
         case 14:
             if(Age<.4)return false;

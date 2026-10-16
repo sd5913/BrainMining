@@ -84,19 +84,17 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<AMiningRoomEscape> Journey;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<AMiningCellUniverse> Ending;
     UFUNCTION(BlueprintCallable) bool EnterArea(int32 Index, bool bMovePlayer = true);
+    bool EnterDeveloperArea(int32 Index, FString& Error);
     UFUNCTION(BlueprintCallable) void ReturnToLobby();
     UFUNCTION(BlueprintCallable) bool SkipCurrentRoom();
     UFUNCTION(BlueprintCallable) bool PurchaseUpgrade(int32 ItemIndex, int32 RequestedLevel);
-    bool ToggleMenu();
     bool ToggleMap();
     void CloseMap();
     bool IsMapOpen() const { return Map.IsValid(); }
-    bool IsMenuOpen() const { return Menu.IsValid(); }
-    void CloseMenu();
     void ToggleCatalogue();
     void InteractPortal();
     bool IsInteractionOpen() const;
-    FString StatusText() const;
+    bool HandleMirrorInput(const FInputKeyEventArgs& Params);
     static AMiningExhibitHall* Find(UWorld* World);
 private:
     struct FAreaActor
@@ -121,11 +119,8 @@ private:
     UPROPERTY() TObjectPtr<AWenSiPuzzle> Museum;
     UPROPERTY() TObjectPtr<AWenSiMirrorPuzzle> MirrorMuseum;
     UPROPERTY() TObjectPtr<AMiningGiantRoomEntrance> Entrance;
-    TSharedPtr<SWidget> Menu;
     TSharedPtr<SWidget> Map;
-    TSharedPtr<SWidget> Guide;
     FDelegateHandle SpawnHandle;
-    FString Notice;
     float CompletionDelay = 0;
     bool InitializeAreas();
     void RegisterActor(AActor* Actor);

@@ -18,6 +18,17 @@ float UMiningComponent::GetPickaxeImpactDelay() const
 	return FMath::Min(13.f / 30.f, GetMiningInterval()) * (.19f / (13.f / 30.f));
 }
 
+float UMiningComponent::GetPickaxeDepthMultiplier(const ADiggableRock* Rock) const
+{
+	return bUsePickaxeBalance && PickaxeBalance.bUseHardness && Rock ?
+		UMiningPickaxeSettings::DepthFactor(PickaxeBalance.DestructionLevel,Rock->HardnessLevel):1.f;
+}
+
+float UMiningComponent::GetPickaxeDepth(const ADiggableRock* Rock) const
+{
+	return (bUsePickaxeBalance?PickaxeBalance.Depth*PickaxeSizeScale:Radius*(1+InsetFraction))*GetPickaxeDepthMultiplier(Rock);
+}
+
 void UMiningComponent::ResolvePickaxeStrike()
 {
 	if (!GetWorld() || !GetOwner() || bDrillMode || bInputSuspended || IsEncounterBlocked()) return;
@@ -67,7 +78,7 @@ void UMiningComponent::BuildPickaxeCut(const FHitResult& Hit, FTransform& Frame,
 	if (bUsePickaxeBalance)
 	{
 		const float FrontDepth = CutRadius * (1.f - Inset);
-		const float FinalDepth = PickaxeBalance.Depth * PickaxeSizeScale;
+		const float FinalDepth = GetPickaxeDepth(Cast<ADiggableRock>(Hit.GetActor()));
 		Frame = FTransform(Rotation, Hit.ImpactPoint + Direction * ((FinalDepth - FrontDepth) * .5f) + TangentOffset.GetClampedToMaxSize(CutRadius * .8));
 		HalfSize = FVector((FinalDepth + FrontDepth) * .5f, CutRadius, CutRadius);
 		return;
@@ -96,6 +107,16 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 			return false;
 		}
 	}
+	if (Rock->ActorHasTag(TEXT("BM_BombOnly")))
+	{
+		Status = TEXT("坚硬岩层：只能用炸弹破坏");
+		TargetPickaxeHits = 0; bLastPickaxeBreak = false; return false;
+	}
+	if (GetPickaxeDepthMultiplier(Rock)<=0)
+	{
+		Status=FString::Printf(TEXT("破坏等级不足：矿镐 %d / 岩层硬度 %d，无法破坏"),PickaxeBalance.DestructionLevel,Rock->HardnessLevel);
+		TargetPickaxeHits=0;bLastPickaxeBreak=false;return false;
+	}
 	RefreshPickaxePatches();
 	int32 Index = FindPickaxePatch(Hit);
 	if (Index == INDEX_NONE)
@@ -119,6 +140,7 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 		if (bUsePickaxeBalance)
 		{
 			Patch.Stages = PickaxeBalance.Stages;
+			if(PickaxeBalance.bUseHardness){Patch.Stages.SetNum(1);Patch.Stages[0]=FMiningPickaxeStage();}
 			Patch.Roughness = PickaxeBalance.Roughness;
 		}
 		else
@@ -177,6 +199,7 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 		HalfSize.Y *= Stage.WidthPercent * .01f;
 		HalfSize.Z *= Stage.WidthPercent * .01f;
 	}
+	OnPickaxeContact.Broadcast(Hit, Request.Strikes);
 	const bool bAccepted = Rock->MinePickaxe(Frame, HalfSize, Request.Seed, Request.Roughness);
 	Status = Rock->LastStatus;
 	bLastPickaxeBreak = bAccepted && Request.Strikes == RequiredStrikes;
@@ -204,6 +227,7 @@ void UMiningComponent::InvalidatePickaxePatches(TWeakObjectPtr<ADiggableRock> Ro
 		{
 			const FVector Anchor = Rock->GetActorTransform().TransformPosition(Patch.LocalPoint);
 			if (Bounds.ComputeSquaredDistanceToPoint(Anchor) > FMath::Square(Patch.HalfSize.Size() * 1.12)) continue;
+			if (Patch.bPending && Patch.Strikes >= Patch.Stages.Num()) OnPickaxeBreak.Broadcast(Anchor);
 			const FTransform Frame = Patch.LocalFrame * Rock->GetActorTransform();
 			const FVector Direction = Frame.GetUnitAxis(EAxis::X);
 			FHitResult Surface;

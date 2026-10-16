@@ -1,4 +1,5 @@
 #include "Subtitles/SubtitleSubsystem.h"
+#include "MiningAudioSettings.h"
 
 #include "Subtitles/SubtitleSegment.h"
 #include "Subtitles/SubtitleWidget.h"
@@ -155,7 +156,12 @@ void USubtitleSubsystem::ShowCurrentLine()
 	float Duration = FMath::Clamp(Line.Text.ToString().Len() * 0.16f, 1.6f, 8.f);
 	if (Line.Audio)
 	{
-		ActiveAudio = UGameplayStatics::SpawnSound2D(World, Line.Audio);
+		ActiveAudio = UGameplayStatics::CreateSound2D(World, Line.Audio);
+		if (ActiveAudio)
+		{
+			if (auto* Instance = World->GetGameInstance()) ActiveAudio->SoundClassOverride = Instance->GetSubsystem<UMiningAudioSettings>()->GetClass(4);
+			ActiveAudio->Play();
+		}
 		const float SoundDuration = Line.Audio->GetDuration();
 		if (SoundDuration > 0.05f)
 		{

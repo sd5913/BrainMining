@@ -1,5 +1,5 @@
 #include "WenSi/WenSiPuzzle.h"
-#include "WenSi/WenSiExhibitArt.h"
+#include "MiningInteractionTrace.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -39,10 +39,8 @@ AWenSiObject::AWenSiObject()
   Part->SetMobility(EComponentMobility::Movable);
   Parts.Add(Part);
  }
- ArtVisual=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArtVisual"));ArtVisual->SetupAttachment(Root);ArtVisual->SetMobility(EComponentMobility::Movable);ArtVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-void AWenSiObject::RefreshArtModel(){Configure(ObjectKind);}
 void AWenSiObject::Configure(int32 Kind)
 {
  ObjectKind=Kind;
@@ -150,7 +148,6 @@ void AWenSiObject::ApplyRule()
   if (HighlightMaterial && !Cast<UMaterialInstanceDynamic>(Part->GetOverlayMaterial()))
    Part->SetOverlayMaterial(UMaterialInstanceDynamic::Create(HighlightMaterial,this));
  }
- WenSiExhibitArt::Apply(ArtVisual,Parts,ArtModel,ArtRotation,bUniformArtScale,Rule==EWenSiRule::Intangible,GhostMaterial,HighlightMaterial);
  SetInteractionHighlight(false);
 }
 
@@ -158,7 +155,6 @@ void AWenSiObject::SetInteractionHighlight(bool bAimed,bool bEnabled)
 {
  if(!HighlightMaterial) return;
  const float Pulse=bAimed && GetWorld() ? .08f*FMath::Sin(GetWorld()->GetTimeSeconds()*4.f) : 0.f;
- WenSiExhibitArt::Highlight(ArtVisual,bEnabled ? (bAimed ? 1.8f+Pulse:1.f):0.f,bAimed ? 1.2f:.8f,FLinearColor(1.f,.88f,.68f));
  for(auto Part:Parts)
   if(Part->IsVisible())
    if(auto Glow=Cast<UMaterialInstanceDynamic>(Part->GetOverlayMaterial()))
@@ -289,7 +285,12 @@ void AWenSiPuzzle::Tick(float Dt)
  {
   FVector P; FRotator R; PC->GetPlayerViewPoint(P,R);
   FHitResult Hit; FCollisionQueryParams Q; Q.AddIgnoredActor(PC->GetPawn());
-  if (GetWorld()->LineTraceSingleByChannel(Hit,P,P+R.Vector()*310.f,ECC_Visibility,Q))
+  if (MiningInteraction::Trace(GetWorld(),Hit,P,R,310.f,Q,[this,PC](const FHitResult& Candidate)
+  {
+   auto* Obj=Cast<AWenSiObject>(Candidate.GetActor());
+   return PC->GetPawn() && FVector::Dist(PC->GetPawn()->GetActorLocation(),Candidate.ImpactPoint)<280.f
+    && (Cast<AWenSiResetButton>(Candidate.GetActor()) || (!bComplete && Obj && CanThinkAbout(Obj)));
+  }))
   {
    auto Obj=Cast<AWenSiObject>(Hit.GetActor());
    const bool bNearby=PC->GetPawn() && FVector::Dist(PC->GetPawn()->GetActorLocation(),Hit.ImpactPoint)<280.f;

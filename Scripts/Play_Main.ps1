@@ -1,6 +1,6 @@
 param(
     [string]$EngineRoot = '',
-    [ValidateSet('Campaign', 'Overview', 'Mine', 'Journey', 'WenSi', 'Office', 'Ending', 'Collection', 'Spatial', 'Manual', 'Chain')]
+    [ValidateSet('Campaign', 'MainGame', 'Overview', 'Mine', 'Journey', 'WenSi', 'Office', 'Ending', 'Collection', 'Spatial', 'Manual', 'Chain')]
     [string]$Experience = 'Campaign',
     [ValidateSet('Low', 'Balanced', 'Epic')]
     [string]$Quality = 'Balanced',
@@ -46,6 +46,7 @@ if ($PackagedRoot) {
 }
 $maps = @{
     Campaign = '/Game/Campaign/Maps/Lvl_FullJourney'
+    MainGame = '/Game/MainGame/Maps/Lvl_MainGame'
     Overview = '/Game/Showcase/Maps/Lvl_MainExperiences'
     Mine = '/Game/ExternalMining/Maps/Lvl_ExternalMining_Demo'
     Journey = '/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P1'

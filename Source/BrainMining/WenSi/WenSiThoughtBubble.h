@@ -20,12 +20,11 @@ namespace WenSiThoughtBubble
   if (!Card.IsValid() || Age<0.f || !Card->GetVisibility().IsVisible()) return;
   const FGeometry& CardGeometry=Card->GetCachedGeometry();
   if (CardGeometry.GetLocalSize().X<1.f) return;
-  Age=FMath::Min(Age+Dt,.42f);
-  const float T=Age/.42f;
-  // One continuous ease-out: receding and lateral travel start together.
-  // A delayed second phase made the foreground card appear to pause.
-  const float Travel=1.f-FMath::Pow(1.f-T,3.f);
-  const float Recede=Travel;
+  Age=FMath::Min(Age+Dt,.85f);
+  const float T=Age/.85f;
+  // First recede away from the camera, then move sideways into the HUD.
+  const float Recede=FMath::SmoothStep(0.f,.65f,T);
+  const float Travel=FMath::SmoothStep(.20f,1.f,T);
   const auto Layout=CardGeometry.GetAccumulatedLayoutTransform();
   const FVector2D Origin=Viewport.LocalToAbsolute(Viewport.GetLocalSize()*FVector2D(.5,.56));
   const FVector2D Delta=(Origin-Layout.GetTranslation())/Layout.GetScale()-CardGeometry.GetLocalSize()*.5;

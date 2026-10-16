@@ -1,0 +1,134 @@
+{
+  "seed": 20261017,
+  "factor": 0.88,
+  "objects": [
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 81.84159049521543,
+      "allowed_end_m": 85.02340867703361,
+      "name": "SM_RoutesV2_TunnelStalagmiteV3_Blocker_01",
+      "seed": 20261406,
+      "start_arc_m": 82.03249958612452,
+      "end_arc_m": 84.83249958612453,
+      "arc_length_m": 2.8000000000000114,
+      "center_m": [
+        -8.568843841552734,
+        -22.3132266998291,
+        48.87669372558594
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 216.1784564181238,
+      "allowed_end_m": 219.360274599942,
+      "name": "SM_RoutesV2_TunnelStalagmiteV3_Blocker_02",
+      "seed": 20261597,
+      "start_arc_m": 216.3693655090329,
+      "end_arc_m": 219.1693655090329,
+      "arc_length_m": 2.8000000000000114,
+      "center_m": [
+        -18.49876594543457,
+        -16.991008758544922,
+        30.880558013916016
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 349.81893939753223,
+      "allowed_end_m": 353.00075757935036,
+      "name": "SM_RoutesV2_TunnelStalagmiteV3_Blocker_03",
+      "seed": 20261788,
+      "start_arc_m": 350.0098484884413,
+      "end_arc_m": 352.8098484884413,
+      "arc_length_m": 2.7999999999999545,
+      "center_m": [
+        -24.927000045776367,
+        -6.936121463775635,
+        12.977710723876953
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 426.00554927513406,
+      "allowed_end_m": 429.1873674569522,
+      "name": "SM_RoutesV2_TunnelStalagmiteV3_Blocker_04",
+      "seed": 20261979,
+      "start_arc_m": 426.19645836604315,
+      "end_arc_m": 428.9964583660431,
+      "arc_length_m": 2.7999999999999545,
+      "center_m": [
+        36.721763610839844,
+        -16.021774291992188,
+        7.958208084106445
+      ]
+    },
+    {
+      "path_index": 1,
+      "path_name": "Branch_01",
+      "allowed_start_m": 4.385176185285299,
+      "allowed_end_m": 6.885176185285299,
+      "name": "SM_RoutesV2_TunnelStalagmiteV3_Blocker_05",
+      "seed": 20262170,
+      "start_arc_m": 4.535176185285298,
+      "end_arc_m": 6.735176185285299,
+      "arc_length_m": 2.200000000000001,
+      "center_m": [
+        -28.76500701904297,
+        1.1794370412826538,
+        54.09482192993164
+      ]
+    },
+    {
+      "path_index": 2,
+      "path_name": "Branch_02",
+      "allowed_start_m": 13.715954333672231,
+      "allowed_end_m": 16.21595433367223,
+      "name": "SM_RoutesV2_TunnelStalagmiteV3_Blocker_06",
+      "seed": 20262361,
+      "start_arc_m": 13.86595433367223,
+      "end_arc_m": 16.065954333672227,
+      "arc_length_m": 2.1999999999999975,
+      "center_m": [
+        -19.802881240844727,
+        31.796218872070312,
+        35.46340560913086
+      ]
+    },
+    {
+      "path_index": 3,
+      "path_name": "Branch_03",
+      "allowed_start_m": 7.918373317151058,
+      "allowed_end_m": 10.418373317151058,
+      "name": "SM_RoutesV2_TunnelStalagmiteV3_Blocker_07",
+      "seed": 20262552,
+      "start_arc_m": 8.068373317151059,
+      "end_arc_m": 10.268373317151058,
+      "arc_length_m": 2.1999999999999993,
+      "center_m": [
+        -1.3924124240875244,
+        29.981800079345703,
+        22.505361557006836
+      ]
+    },
+    {
+      "path_index": 4,
+      "path_name": "Branch_04",
+      "allowed_start_m": 7.941703715903186,
+      "allowed_end_m": 10.441703715903186,
+      "name": "SM_RoutesV2_TunnelStalagmiteV3_Blocker_08",
+      "seed": 20262743,
+      "start_arc_m": 8.091703715903186,
+      "end_arc_m": 10.291703715903186,
+      "arc_length_m": 2.1999999999999993,
+      "center_m": [
+        21.4476318359375,
+        -35.685089111328125,
+        6.572516918182373
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "style": "ascending-jetpack-chambers",
+  "cavern_centers_arc_m": [
+    44.36873371248612,
+    104.80803239169948
+  ],
+  "parkour_chambers": 2,
+  "spiral_turns": 0,
+  "start": [
+    -65.0,
+    0.0,
+    65.0
+  ],
+  "end": [
+    65.0,
+    0.0,
+    110.0
+  ],
+  "main_length_m": 171.53581301441483,
+  "total_length_m": 262.5695690745245,
+  "branch_count": 4,
+  "ascent_m": 54.49154266050543,
+  "descent_m": 9.49154266050543,
+  "width_min_m": 3.500003945138671,
+  "width_max_m": 20.0,
+  "surface_style": "irregular-asymmetric-lowpoly"
+}

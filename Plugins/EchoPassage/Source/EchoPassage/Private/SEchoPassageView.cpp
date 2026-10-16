@@ -13,7 +13,6 @@ int32 SEchoPassageView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const 
     auto Box=[&](float X,float Y,float W,float H,FLinearColor C){FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(O+FVector2D(X,Y)*S))),Brush,ESlateDrawEffect::None,C);};
     auto Text=[&](const FString& T,float X,float Y,int Font,FLinearColor C){FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(1500*S,60*S),FSlateLayoutTransform(FVector2f(O+FVector2D(X,Y)*S))),T,FCoreStyle::GetDefaultFontStyle("Regular",FMath::Max(10,FMath::RoundToInt(Font*S))),ESlateDrawEffect::None,C);};
     const FLinearColor White(.75f,.79f,.8f),Dim(.36f,.39f,.4f),Warm(.95f,.65f,.29f);
-    Text(TEXT("回声通路"),48,35,27,White);Text(Stage->bWalkThroughConnections?TEXT("连续地图 / 回声迷宫"):Stage->bUseMaze?TEXT("回声迷宫 → 余烬牌室   /   0.3"):TEXT("通路 1–2   /   原型 0.3"),48,76,13,Dim);
     if(Owner->bChangingLevel)
     {
         Box(0,0,1600,900,FLinearColor(0,0,0,.75f));
@@ -44,6 +43,5 @@ int32 SEchoPassageView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const 
         const float Ready=FMath::Clamp((Time-Stage->LastEcho)/Stage->KnockCooldown,0.f,1.f);
         Box(710,824,180,2,FLinearColor(.08f,.09f,.1f));Box(710,824,180*Ready,2,Dim);
     }
-    Text(TEXT("W A S D  移动     鼠标  环视     左键  敲地 / 敲墙     R  重来"),48,856,15,Dim);
     return L;
 }

@@ -2,7 +2,9 @@
 #include "MiningComponent.h"
 #include "MiningBombToolComponent.h"
 #include "MiningDebrisBurst.h"
+#include "DiggableRock.h"
 #include "MiningDrillDustBurst.h"
+#include "MiningEncounterPlayer.h"
 #include "BrainMiningCharacter.h"
 #include "EchoPassagePlayer.h"
 #include "GameFramework/Controller.h"
@@ -207,6 +209,10 @@ void UMiningToolEffectsComponent::QueueImpact(const FHitResult& Hit)
 	if (!CanShowEffects() || !Hit.bBlockingHit || Hit.ImpactPoint.ContainsNaN() || Hit.ImpactNormal.ContainsNaN()) return;
 	PendingHit = Hit;
 	PendingSurfaceMaterial = Hit.GetComponent() ? Hit.GetComponent()->GetMaterial(0) : nullptr;
+	// Lazily created terrain chunks can report their hit before an override slot
+	// is available. Keep using the existing debris system with the rock's material.
+	if (!PendingSurfaceMaterial)
+		if (const auto* Rock = Cast<ADiggableRock>(Hit.GetActor())) PendingSurfaceMaterial = Rock->RockMaterial;
 	bPendingDrillImpact = Mining->bDrillMode;
 	SpawnImpact();
 }
@@ -244,10 +250,12 @@ void UMiningToolEffectsComponent::SpawnImpact()
 	Params.Owner = GetOwner();
 	Params.Instigator = Cast<APawn>(GetOwner());
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	if (bPendingDrillImpact && DustPlane &&
-		((DrillDustStrength > 0 && DrillDustParticleCount > 0 && LoadedDustMaterial) ||
+	// Pickaxe impacts need a dust puff as well as solid fragments. In dark
+	// generated caves the fragments alone disappear against their matching wall.
+	if (DustPlane && ((!bPendingDrillImpact && LoadedDustMaterial) ||
+		(bPendingDrillImpact && ((DrillDustStrength > 0 && DrillDustParticleCount > 0 && LoadedDustMaterial) ||
 		 (DrillSmokeStrength > 0 && DrillSmokeParticleCount > 0 && LoadedSmokeMaterial) ||
-		 (DrillSparkStrength > 0 && DrillSparkParticleCount > 0 && LoadedSparkMaterial)))
+		 (DrillSparkStrength > 0 && DrillSparkParticleCount > 0 && LoadedSparkMaterial)))))
 	{
 		FActorSpawnParameters DustParams = Params;
 		DustParams.Owner = Cast<APawn>(GetOwner())->GetController();
@@ -266,6 +274,23 @@ void UMiningToolEffectsComponent::SpawnImpact()
 			Settings.LifetimeScale = DrillContactLifetimeScale;
 			Settings.SparkSpeed = DrillSparkSpeed;
 			Settings.SparkBrightness = DrillSparkBrightness;
+			if (!bPendingDrillImpact)
+			{
+				Settings.DustCount = 16;
+				Settings.DustStrength = 1.2f;
+				Settings.DustSize = .85f;
+				Settings.LifetimeScale = .6f;
+				Settings.SmokeCount = Settings.SparkCount = 0;
+				Settings.SmokeStrength = Settings.SparkStrength = 0;
+				Dust->Tags.AddUnique(TEXT("BM_PickaxeImpact"));
+			}
+            if(const auto* PC=Cast<AMiningEncounterPlayerController>(DustParams.Owner); PC && PC->IsCardRoomContext())
+            {
+                Settings.bUseCoolPalette=true;
+                Settings.DustCount=FMath::Min(Settings.DustCount,8);Settings.SmokeCount=FMath::Min(Settings.SmokeCount,3);
+                Settings.SparkCount=FMath::Min(Settings.SparkCount,4);Settings.SparkBrightness=FMath::Min(Settings.SparkBrightness,3.f);
+                Settings.DustStrength*=.35f;Settings.SmokeStrength*=.25f;Settings.SparkSize*=.6f;Settings.LifetimeScale*=.6f;
+            }
 			Dust->Initialize(DustPlane, LoadedDustMaterial, LoadedSmokeMaterial, LoadedSparkMaterial, PendingSurfaceMaterial, Normal, Mining->GetMiningRadius(), DrillDustColor, Settings);
 			DustActors.RemoveAll([](const TWeakObjectPtr<AActor>& Actor) { return !Actor.IsValid(); });
 			while (DustActors.Num() >= 12)
@@ -279,6 +304,7 @@ void UMiningToolEffectsComponent::SpawnImpact()
 	AActor* Burst = nullptr;
 	if (LoadedDebrisClass == AMiningDebrisBurst::StaticClass())
 	{
+		if (DebrisPool.IsEmpty()) WarmDebrisPool();
 		for (AMiningDebrisBurst* Candidate : DebrisPool)
 			if (IsValid(Candidate) && !Candidate->IsPoolActive() && Candidate->GetPreparedChunkCount() > 0) { Burst = Candidate; break; }
 		if (!Burst && !DebrisPool.IsEmpty()) Burst = DebrisPool[NextDebrisPoolIndex++ % DebrisPool.Num()];

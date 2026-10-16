@@ -1,6 +1,8 @@
 #include "MiningDesignerLibrary.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "GeneratedMiningRock.h"
+#include "UDynamicMesh.h"
+#include "MiningChunkGeometry.h"
 #include "EngineUtils.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/StaticMesh.h"
@@ -73,8 +75,11 @@ bool UMiningDesignerLibrary::ImportCampaignRock(AActor* Actor,const FString& Fil
 {
     using namespace UE::Geometry;
     auto* Rock=Cast<AGeneratedMiningRock>(Actor);if(!Rock)return false;
-    TArray<FString> Lines;if(!FFileHelper::LoadFileToStringArray(Lines,*Filename))return false;
-    FDynamicMesh3 Mesh;TArray<int> Vertices;
+    if (!Rock->GetWorld() || Rock->GetWorld()->IsGameWorld()) return false;
+    auto ReadMesh = [&](const FString& Path, FDynamicMesh3& Mesh) -> bool
+    {
+    TArray<FString> Lines;if(!FFileHelper::LoadFileToStringArray(Lines,*Path))return false;
+    TArray<int> Vertices;
     for(const FString& Line:Lines)
     {
         TArray<FString> Parts;Line.ParseIntoArrayWS(Parts);
@@ -95,7 +100,37 @@ bool UMiningDesignerLibrary::ImportCampaignRock(AActor* Actor,const FString& Fil
     // A terrain solid must remain closed for winding coverage and excavation booleans.
     if(!Mesh.TriangleCount() || !Mesh.IsClosed())return false;
     Mesh.EnableAttributes();FMeshNormals::InitializeOverlayToPerTriangleNormals(Mesh.Attributes()->PrimaryNormals());
+    return true;
+    };
+    FDynamicMesh3 Mesh;
+    if (!ReadMesh(Filename,Mesh)) return false;
+    // Optional offline cells avoid repeating ambiguous booleans at import time.
+    // Every cell is validated before mutating the actor.
+    const FString Manifest = Filename + TEXT(".chunks.json");
+    if (FPaths::FileExists(Manifest))
+    {
+        FString Json;
+        TSharedPtr<FJsonObject> Root;
+        if (!FFileHelper::LoadFileToString(Json,*Manifest) || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Json),Root) || !Root) return false;
+        const TArray<TSharedPtr<FJsonValue>>* Files = nullptr;
+        if (!Root->TryGetArrayField(TEXT("chunks"),Files) || !Files || Files->IsEmpty() || Files->Num()>8192) return false;
+        auto Grid=MakeShared<MiningChunks::FSpatialGrid,ESPMode::ThreadSafe>();
+        const auto SourceBounds=Mesh.GetBounds();
+        Grid->Bounds=FBox(FVector(SourceBounds.Min),FVector(SourceBounds.Max));
+        Grid->Length=1800.;
+        for (const auto& File : *Files)
+        {
+            auto Piece=MakeShared<FDynamicMesh3,ESPMode::ThreadSafe>();
+            if (!ReadMesh(FPaths::GetPath(Filename)/File->AsString(),*Piece) || Piece->TriangleCount()>MiningChunks::MaxChunkTriangles || !Piece->CheckValidity(FDynamicMesh3::FValidityOptions(),EValidityCheckFailMode::ReturnOnly)) return false;
+            const auto Bounds=Piece->GetBounds();
+            auto& Cell=Grid->Cells.AddDefaulted_GetRef();
+            Cell.Bounds=Cell.Cell=FBox(FVector(Bounds.Min),FVector(Bounds.Max));Cell.Mesh=Piece;
+        }
+        Grid->RebuiltCells=Grid->Cells.Num();
+        Rock->ApplySpatialGrid(Mesh,Grid);
+        return true;
+    }
     Rock->Modify();
-    if(Mesh.TriangleCount()>12000)return Rock->SetChunkedMesh(Mesh,700,true,true);
-    Rock->SetGeneratedMesh(MoveTemp(Mesh));return true;
+    UDynamicMesh* Source=NewObject<UDynamicMesh>();Source->SetMesh(MoveTemp(Mesh));
+    return SetCampaignRockSource(Rock,Source);
 }

@@ -29,13 +29,6 @@
 #include "GameFramework/HUD.h"
 #include "Camera/PlayerCameraManager.h"
 #include "InputKeyEventArgs.h"
-#include "Styling/CoreStyle.h"
-#include "Widgets/Input/SButton.h"
-#include "Widgets/Layout/SBorder.h"
-#include "Widgets/Layout/SBox.h"
-#include "Widgets/Layout/SScrollBox.h"
-#include "Widgets/SBoxPanel.h"
-#include "Widgets/Text/STextBlock.h"
 #include "UObject/ConstructorHelpers.h"
 
 AMiningExhibitGameMode::AMiningExhibitGameMode()
@@ -79,6 +72,7 @@ bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
         if (Params.Key==EKeys::M) { if(Params.Event==IE_Pressed) Hall->ToggleMap(); return true; }
         if (Hall->IsMapOpen()) { if(Params.Key==EKeys::Escape && Params.Event==IE_Pressed) Hall->CloseMap(); return true; }
         if (Params.Key==EKeys::I) { if(Params.Event==IE_Pressed) Hall->ToggleCatalogue(); return true; }
+        if (!IsPaused() && Hall->HandleMirrorInput(Params)) return true;
         if (Params.Key==EKeys::F6) { if(Params.Event==IE_Pressed) Hall->ReturnToLobby(); return true; }
         if (Params.Key==EKeys::F7) { if(Params.Event==IE_Pressed) Hall->SkipCurrentRoom(); return true; }
         if (Params.Key==EKeys::E && Params.Event==IE_Pressed && !Hall->IsInteractionOpen() && Hall->Treasure && Hall->Treasure->IsAreaActive() && Hall->Treasure->CollectTarget(this)) return true;
@@ -86,6 +80,18 @@ bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
         { if(Params.Event==IE_Pressed) Hall->InteractPortal(); return true; }
     }
     return Super::InputKey(Params);
+}
+
+bool AMiningExhibitHall::HandleMirrorInput(const FInputKeyEventArgs& Params)
+{
+    if (!MirrorMuseum || !MirrorMuseum->bAreaActive || IsInteractionOpen() ||
+        (Params.Key!=EKeys::R && Params.Key!=EKeys::Q)) return false;
+    if (Params.Event==IE_Pressed)
+    {
+        if (Params.Key==EKeys::R) MirrorMuseum->SwapThoughts();
+        else MirrorMuseum->CloseThoughts();
+    }
+    return true;
 }
 
 AMiningExhibitHall::AMiningExhibitHall()
@@ -127,16 +133,6 @@ bool AMiningExhibitHall::InitializeAreas()
     for(int32 Index=0; Index<Areas.Num(); ++Index) ResumePoints[Index]=Areas[Index].Entry;
     for(TActorIterator<AActor> Actor(GetWorld()); Actor; ++Actor) RegisterActor(*Actor);
     PendingActors.Reset();
-    Guide=SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.012f,.024f,.032f,.88f))
-        .Padding(12).HAlign(HAlign_Left).VAlign(VAlign_Bottom)
-        .Visibility_Lambda([this](){return IsInteractionOpen()?EVisibility::Collapsed:EVisibility::HitTestInvisible;})
-        [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular",16)).ColorAndOpacity(FLinearColor::White)
-            .Text_Lambda([this](){return FText::FromString(StatusText());}).WrapTextAt(690)];
-    auto Wrapper=SNew(SVerticalBox)
-        +SVerticalBox::Slot().FillHeight(1)[SNullWidget::NullWidget]
-        +SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(FMargin(18,0,18,220))[Guide.ToSharedRef()];
-    Guide=Wrapper;
-    GetGameInstance()->GetGameViewportClient()->AddViewportWidgetContent(Guide.ToSharedRef(),90);
     bReady=true;
     if(bLinearCampaign) EnterArea(0); else ReturnToLobby();
     return true;
@@ -195,7 +191,6 @@ void AMiningExhibitHall::UpdateActorVisibility()
 void AMiningExhibitHall::CloseInteraction()
 {
     CloseMap();
-    CloseMenu();
     if(!Controller.IsValid()) return;
     Controller->SetUpgradeMenuHeld(false);
     if(Collection && Collection->bCatalogueOpen) Collection->ToggleCatalogue();
@@ -222,7 +217,7 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
     if(!bReady || !Controller.IsValid() || !Controller->GetPawn() || (Index!=INDEX_NONE && !Areas.IsValidIndex(Index))) return false;
     if(bLinearCampaign && (Index<0 || Index>UnlockedArea)) return false;
     if(Areas.IsValidIndex(Index) && AreaKind(Index)==EMiningExperienceKind::Office && Office && Office->IsOfficeEscaped()) return false;
-    if(Areas.IsValidIndex(ActiveArea) && (!Controller->IsMoveInputIgnored() || Menu.IsValid() || Collection->bCatalogueOpen || Controller->bUpgradeMenuHeld)) ResumePoints[ActiveArea]=Controller->GetPawn()->GetActorTransform();
+    if(Areas.IsValidIndex(ActiveArea) && (!Controller->IsMoveInputIgnored() || Collection->bCatalogueOpen || Controller->bUpgradeMenuHeld)) ResumePoints[ActiveArea]=Controller->GetPawn()->GetActorTransform();
     auto* Movement=Controller->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>();
     const FVector Velocity=Movement?Movement->Velocity:FVector::ZeroVector;
     const EMovementMode Mode=Movement?Movement->MovementMode.GetValue():MOVE_Falling;
@@ -265,7 +260,6 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
     }
     Controller->SetMiningGUIEnabled(true);
     if(Index!=INDEX_NONE) Visited.Add(Index);
-    Notice.Empty();
     return true;
 }
 
@@ -322,7 +316,6 @@ bool AMiningExhibitHall::EnterDeveloperArea(int32 Index, FString& Error)
     }
     if (auto* StartRoom = AMiningStartRoom::Find(GetWorld())) StartRoom->UnlockDeveloperEquipment();
     Error.Empty();
-    Notice = TEXT("开发者跳转：保留房间进度，已准备镐子和喷气背包。");
     return true;
 #endif
 }
@@ -459,15 +452,14 @@ bool AMiningExhibitHall::PurchaseUpgrade(int32 ItemIndex, int32 RequestedLevel)
     auto* Progression=Controller->GetPawn()->FindComponentByClass<UMiningProgressionComponent>();
     const bool bPurchased = Progression && Progression->Purchase(ItemIndex,RequestedLevel);
     if(auto* Audio=Controller->GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPurchase(bPurchased);
-    if(!bPurchased) { Notice=TEXT("无法升级：材料不足或已满级。"); return false; }
-    Notice=TEXT("矿镐升级完成。");
+    if(!bPurchased) return false;
     return true;
 }
 void AMiningExhibitHall::OnUpgradeRequested(int32 ItemIndex, int32 RequestedLevel) { PurchaseUpgrade(ItemIndex,RequestedLevel); }
 
 bool AMiningExhibitHall::IsInteractionOpen() const
 {
-    return Map.IsValid() || Menu.IsValid() || !Controller.IsValid() || Controller->IsPaused() || Controller->bUpgradeMenuHeld || Controller->bShowMouseCursor || Controller->IsLookInputIgnored();
+    return Map.IsValid() || !Controller.IsValid() || Controller->IsPaused() || Controller->bUpgradeMenuHeld || Controller->bShowMouseCursor || Controller->IsLookInputIgnored();
 }
 
 void AMiningExhibitHall::ToggleCatalogue()
@@ -486,75 +478,10 @@ void AMiningExhibitHall::InteractPortal()
     }
 }
 
-FString AMiningExhibitHall::StatusText() const
-{
-    if(bLinearCampaign)
-    {
-        FString Hint=Areas.IsValidIndex(ActiveArea)?Areas[ActiveArea].Instructions.ToString():FString();
-        if(Collection && Collection->Target) Hint=AMiningCollectible::ItemName(Collection->Target->ItemId)+TEXT(" · E 收集");
-        else if(Collection && Collection->ToastRemaining>0 && Collection->IsAreaActive()) Hint=Collection->Toast;
-        if(bContinuousCampaign && CompletedAreas.Contains(ActiveArea) && AreaKind(ActiveArea)!=EMiningExperienceKind::Mining) Hint=TEXT("本段完成，出口已打开；沿通道步行前往下一段。");
-        else if(CompletionDelay>0 && AreaKind(ActiveArea)!=EMiningExperienceKind::Mining) Hint=TEXT("本段完成，正在前往下一段……");
-        if(AreaKind(ActiveArea)==EMiningExperienceKind::Ending && Ending) Hint=Ending->Hint();
-        if(Treasure && Treasure->IsAreaActive() && Treasure->Target) Hint=Treasure->GetPrompt();
-        if(bCampaignComplete) Hint=TEXT("全流程完成。可按 F4 回访已到达的区域，补齐藏品。");
-        return FString::Printf(TEXT("%d / %d · %s    藏品 %d / 4\n%s\nM 地图   I 图鉴   Tab 升级   F4 已到达区域   F6 本段入口\nF7 跳过当前小游戏（保留藏品）"),ActiveArea+1,Areas.Num(),Areas.IsValidIndex(ActiveArea)?*Areas[ActiveArea].Title.ToString():TEXT(""),Collection?Collection->UniqueCount():0,*Hint);
-    }
-    const FString Title=Areas.IsValidIndex(ActiveArea)?Areas[ActiveArea].Title.ToString():TEXT("六区体验大厅 · 靠近入口按 E，或按 F4 选择体验区");
-    FString Hint=Areas.IsValidIndex(ActiveArea)?Areas[ActiveArea].Instructions.ToString():TEXT("六个体验区共存于同一 Level；切区保留角色、金币和收藏。");
-    if(ActiveArea==1 && Treasure && Treasure->Target) Hint=Treasure->GetPrompt();
-    else if(ActiveArea==1 && Collection && Collection->ToastRemaining>0) Hint=Collection->Toast;
-    else if(ActiveArea==5 && Ending) Hint=Ending->Hint();
-    return Title+TEXT("\n")+Hint+TEXT("\nTab 升级   I 图鉴   F4 体验区   F6 返回大厅")+(Notice.IsEmpty()?FString():TEXT("\n")+Notice);
-}
-
-bool AMiningExhibitHall::ToggleMenu()
-{
-    if(Menu) { CloseMenu(); return true; }
-    if(!bReady || IsInteractionOpen()) return false;
-    auto Choices=SNew(SVerticalBox);
-    for(int32 Index=0; Index<Areas.Num(); ++Index)
-        Choices->AddSlot().AutoHeight().Padding(0,5)
-        [SNew(SButton).IsEnabled(!bLinearCampaign || Index<=UnlockedArea).ContentPadding(16).OnClicked_Lambda([this,Index](){EnterArea(Index);return FReply::Handled();})
-            [SNew(STextBlock).Text(Areas[Index].Title).Font(FCoreStyle::GetDefaultFontStyle("Bold",22)).ColorAndOpacity(FLinearColor::White)]];
-    Choices->AddSlot().AutoHeight().Padding(0,5)
-        [SNew(SButton).ContentPadding(16).Text(FText::FromString(bLinearCampaign?TEXT("返回本段入口"):TEXT("返回体验大厅"))).OnClicked_Lambda([this](){ReturnToLobby();return FReply::Handled();})];
-    Menu=SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.01f,.024f,.035f,.97f))
-        .Padding(24).HAlign(HAlign_Center)
-        [SNew(SBox).WidthOverride(800)
-            [SNew(SVerticalBox)
-                +SVerticalBox::Slot().AutoHeight().Padding(10)[SNew(STextBlock).Text(FText::FromString(bLinearCampaign?TEXT("全流程试玩 · 已到达的区域"):TEXT("同一地图 · 六个体验区"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",28)).ColorAndOpacity(FLinearColor::White)]
-                +SVerticalBox::Slot().AutoHeight().Padding(10)[SNew(STextBlock).Text(FText::FromString(TEXT("只移动当前角色，不切换地图。背包、收藏与升级跨区保留。"))).AutoWrapText(true).ColorAndOpacity(FLinearColor(.7f,.85f,.85f))]
-                +SVerticalBox::Slot().FillHeight(1)[SNew(SScrollBox)+SScrollBox::Slot()[Choices]]
-                +SVerticalBox::Slot().AutoHeight().Padding(10)[SNew(SButton).ContentPadding(12).Text(FText::FromString(TEXT("继续当前体验 · F4 / Esc"))).OnClicked_Lambda([this](){CloseMenu();return FReply::Handled();})]]];
-    Controller->SetIgnoreLookInput(true); Controller->SetIgnoreMoveInput(true); Controller->SetPause(true);
-    Controller->GetPawn()->FindComponentByClass<UMiningComponent>()->SetInputSuspended(true);
-    if(auto* Move=Controller->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) Move->ResetFlightInput();
-    GetGameInstance()->GetGameViewportClient()->AddViewportWidgetContent(Menu.ToSharedRef(),1100);
-    FInputModeUIOnly Mode; Mode.SetWidgetToFocus(Choices->GetChildren()->GetChildAt(0)); Controller->SetInputMode(Mode); Controller->bShowMouseCursor=true;
-    return true;
-}
-
-void AMiningExhibitHall::CloseMenu()
-{
-    if(!Menu) return;
-    if(auto* Viewport=GetGameInstance()->GetGameViewportClient()) Viewport->RemoveViewportWidgetContent(Menu.ToSharedRef());
-    Menu.Reset();
-    if(Controller.IsValid())
-    {
-        Controller->SetPause(false); Controller->SetIgnoreLookInput(false); Controller->SetIgnoreMoveInput(false);
-        Controller->SetInputMode(FInputModeGameOnly()); Controller->bShowMouseCursor=false;
-        if(Controller->GetPawn()) Controller->GetPawn()->FindComponentByClass<UMiningComponent>()->SetInputSuspended(false);
-    }
-}
-
 void AMiningExhibitHall::EndPlay(const EEndPlayReason::Type Reason)
 {
     CloseMap();
-    CloseMenu();
-    if(Guide && GetGameInstance()) if(auto* Viewport=GetGameInstance()->GetGameViewportClient()) Viewport->RemoveViewportWidgetContent(Guide.ToSharedRef());
     if(BoundGUI.IsValid()) BoundGUI->OnUpgradeRequested.RemoveAll(this);
     GetWorld()->RemoveOnActorSpawnedHandler(SpawnHandle);
-    Guide.Reset();
     Super::EndPlay(Reason);
 }

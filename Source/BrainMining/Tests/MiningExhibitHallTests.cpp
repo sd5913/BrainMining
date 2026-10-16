@@ -14,6 +14,7 @@
 #include "MiningRoomEscape.h"
 #include "MiningWalletSubsystem.h"
 #include "MiningProgressionComponent.h"
+#include "MiningExperienceSubsystem.h"
 #include "GeneratedMiningRock.h"
 #include "MiningGUIWidgets.h"
 #include "CardRoomStage.h"
@@ -291,12 +292,13 @@ namespace ExhibitHallTests
                 Hall->ReturnToLobby();
                 Test->TestFalse(TEXT("Returning from catalogue clears input"),Hall->Collection->bCatalogueOpen || Controller->IsMoveInputIgnored() || Controller->IsPaused());
                 FSlateApplication::Get().ProcessKeyDownEvent(FKeyEvent(EKeys::F4,FModifierKeysState(),0,false,0,0));
-                Test->TestTrue(TEXT("F4 opens six-area menu"),Hall->IsMenuOpen()); Shot(TEXT("06_AreaMenu"));
+                Test->TestFalse(TEXT("F4 no longer opens the removed area menu"),World->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->IsMenuOpen());
+                Test->TestFalse(TEXT("F4 preserves gameplay input"),Controller->IsPaused() || Controller->IsMoveInputIgnored() || Controller->IsLookInputIgnored() || Controller->bShowMouseCursor);
             }
             else if(Step==25)
             {
                 Hall->EnterArea(2);
-                Test->TestFalse(TEXT("Selection closes menu"),Hall->IsMenuOpen());
+                Test->TestFalse(TEXT("Direct area travel preserves gameplay input"),Controller->IsPaused() || Controller->IsMoveInputIgnored());
                 Hall->Journey->CardStage->OnCollectibleClaimed.Broadcast(Hall->Journey->CardStage->RoomId);
             }
             else if(Step==26)

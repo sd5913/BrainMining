@@ -10,6 +10,8 @@
 #include "Blueprint/WidgetTree.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Components/ProgressBar.h"
+#include "Brushes/SlateColorBrush.h"
 #include "Engine/Texture2D.h"
 #include "BrainMiningPlayerController.h"
 #include "GameFramework/Pawn.h"
@@ -107,6 +109,30 @@ void UMiningGUIAbilityWidget::SetAvailable(bool bNewAvailable)
 {
 	bAvailable = bNewAvailable;
 	SetVisibility(bAvailable ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+}
+void UMiningGUIAbilityWidget::SetRechargeState(bool bRecharging, float Progress)
+{
+	SetUsed(bRecharging);
+	SetCooldownRemaining(0.f);
+	if (AbilityIcon) AbilityIcon->SetColorAndOpacity(bRecharging ? FLinearColor(1.f,.16f,.12f,1.f) : FLinearColor::White);
+	if (!RechargeBar && AbilityContent && WidgetTree)
+	{
+		RechargeBar = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("BombRecharge"));
+		RechargeBar->SetBarFillType(EProgressBarFillType::BottomToTop);
+		FProgressBarStyle Style;
+		Style.SetBackgroundImage(FSlateColorBrush(FLinearColor(.08f,.012f,.012f,.9f)));
+		Style.SetFillImage(FSlateColorBrush(FLinearColor::White));
+		RechargeBar->SetWidgetStyle(Style);
+		RechargeBar->SetFillColorAndOpacity(FLinearColor(1.f,.12f,.07f,1.f));
+		auto* BarSlot = AbilityContent->AddChildToCanvas(RechargeBar);
+		BarSlot->SetPosition(FVector2D(104.f,0.f));
+		BarSlot->SetSize(FVector2D(9.f,100.f));
+	}
+	if (RechargeBar)
+	{
+		RechargeBar->SetPercent(FMath::IsFinite(Progress) ? FMath::Clamp(Progress,0.f,1.f) : 0.f);
+		RechargeBar->SetVisibility(bRecharging ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
 }
 void UMiningGUIAbilityWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 {
@@ -402,14 +428,7 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 		const auto* Bomb = Pawn ? Pawn->FindComponentByClass<UMiningBombToolComponent>() : nullptr;
 		AbilityG->SetAvailable(Bomb && Bomb->IsSkillUnlocked());
 		SetItemUnlocked(2, Bomb && Bomb->IsSkillUnlocked());
-		AbilityG->SetUsed(Bomb && Bomb->bEquipped);
-		AbilityG->SetCooldownRemaining(0.f);
-		if (Bomb && Bomb->bUseInventory && AbilityG->CooldownText)
-		{
-			AbilityG->CooldownText->SetVisibility(ESlateVisibility::HitTestInvisible);
-			AbilityG->CooldownText->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), Bomb->BombCount, Bomb->MaxBombs)));
-			AbilityG->SetUsed(Bomb->BombCount == 0);
-		}
+		AbilityG->SetRechargeState(Bomb && Bomb->bUseInventory && Bomb->BombCount == 0, Bomb ? Bomb->RechargeProgress : 0.f);
 	}
 	if (AbilityV)
 	{
@@ -469,7 +488,7 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
             return Label;
         };
         AddLabel(TEXT("矿石背包"), FVector2D(0,0), FVector2D(280,28), 20);
-        const FLinearColor Colors[] = {FLinearColor(.9f,.43f,.19f), FLinearColor(.65f,.73f,.82f), FLinearColor(.16f,.78f,.43f), FLinearColor(.4f,.88f,1)};
+        const FLinearColor Colors[] = {FLinearColor(.9f,.43f,.19f), FLinearColor(.25f,.29f,.34f), FLinearColor(.16f,.78f,.43f), FLinearColor(.4f,.88f,1)};
         for (int32 I = 0; I < 4; ++I)
         {
             // A small faceted crystal glyph, independent of platform emoji fonts.

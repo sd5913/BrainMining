@@ -68,13 +68,8 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
             Text(Staged?TEXT("已选中 · 点击取消"):FCardRoomRun::CardDescription(C),B.Left+12,B.Top+148,10,Ink);
         }
     };
-    Box(28,24,304,76,Dark); Box(28,24,4,76,Gold);
-    Text(TEXT("余 烬 牌 室"),50,36,24,Cream); Text(TEXT("EMBER PARLOUR     /     ROOM 02"),50,73,11,Gold);
     if(R.Phase==ECardRoomPhase::Exploring)
     {
-        const bool Near=Owner->GetPawn()&&Owner->Stage->IsPlayerNear(Owner->GetPawn()->GetActorLocation());
-        Box(486,740,628,89,Dark); Text(Near?(Owner->bUseSharedInteractionHUD?TEXT("入座，开始一场奇怪的牌局"):TEXT("[ E ]  入座，开始一场奇怪的牌局")):(Owner->ExplorationHint.IsEmpty()?TEXT("走近前方牌桌，寻找你的座位"):Owner->ExplorationHint),530,756,22,Cream);
-        Text(TEXT("WASD 移动   按住空格飞行   松开下落"),544,794,13,Gold);
         if (!Owner->bUseSharedInteractionHUD) Box(797,447,6,6,Cream);
         return L;
     }

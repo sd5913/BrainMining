@@ -1,0 +1,60 @@
+{
+  "style": "tight-descending-coils",
+  "cavern_centers_arc_m": [
+    83.57761989537784,
+    160.8606910120243
+  ],
+  "coils": [
+    {
+      "center": [
+        -37,
+        -2
+      ],
+      "radius_m": 5.5,
+      "turns": 1.1,
+      "drop_m": 11
+    },
+    {
+      "center": [
+        -4,
+        4
+      ],
+      "radius_m": 5.5,
+      "turns": 1.1,
+      "drop_m": 11
+    },
+    {
+      "center": [
+        29,
+        -3
+      ],
+      "radius_m": 5.5,
+      "turns": 1.1,
+      "drop_m": 11
+    }
+  ],
+  "spiral_turns": 3.3,
+  "museum_drop_m": [
+    74.5,
+    0,
+    7
+  ],
+  "start": [
+    -65.0,
+    0.0,
+    65.0
+  ],
+  "end": [
+    74.5,
+    0.0,
+    7.0
+  ],
+  "main_length_m": 278.3589348816768,
+  "total_length_m": 367.36090990467335,
+  "branch_count": 4,
+  "ascent_m": 8.607043399405999,
+  "descent_m": 66.607043399406,
+  "width_min_m": 3.3000060033696386,
+  "width_max_m": 16.0,
+  "surface_style": "irregular-asymmetric-lowpoly"
+}

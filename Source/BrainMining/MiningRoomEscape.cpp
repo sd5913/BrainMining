@@ -173,7 +173,6 @@ void AMiningRoomEscape::UpdateWater()
     const bool WaterVisible=Visible || bWallBroken;
     if(Water){Water->SetActorHiddenInGame(!WaterVisible);FVector P=Water->GetActorLocation();P.Z=WaterZ;Water->SetActorLocation(P);}
     const bool Signal=Visible && WaterZ>=TableWaterZ-100 && Phase!=EMiningEscapePhase::Escaped;
-    if(ScreenLabel)ScreenLabel->SetVisibility(TelevisionScreen && TelevisionScreen->SuccessfulCuts==0 && Signal);
     if(ScreenMaterial)ScreenMaterial->SetVectorParameterValue(TEXT("Color"),Signal?FLinearColor(.08f,.3f,.24f)*(1.8f+.6f*FMath::Sin(Elapsed*5)):FLinearColor(.001f,.001f,.001f));
     if(Beacon)Beacon->SetVisibility(Signal);
     for(const auto& Light:InteriorLights)if(Light)Light->SetVisibility(Signal || bEnteredComputer);

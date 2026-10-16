@@ -1,4 +1,5 @@
 #include "StartRoom/MiningStartRoom.h"
+#include "MiningAudioComponent.h"
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningToolEffectsComponent.h"
@@ -108,6 +109,8 @@ bool AMiningStartRoom::Interact(APlayerController* Controller)
         if (bOwnFlightBlock) { Flight->PopFlightBlock(); bOwnFlightBlock = false; }
     }
     Pickup->Collect();
+    if (auto* Audio = Controller->GetPawn()->FindComponentByClass<UMiningAudioComponent>())
+        Audio->PlayStarterPickup(Pickup->Equipment == EMiningStarterEquipment::Jetpack);
     return true;
 }
 

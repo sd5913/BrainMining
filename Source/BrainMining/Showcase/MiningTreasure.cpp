@@ -1,4 +1,5 @@
 #include "Showcase/MiningTreasure.h"
+#include "MiningAudioComponent.h"
 #include "MiningWalletSubsystem.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningInteractionHUDWidget.h"
@@ -725,6 +726,8 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
     RefreshTarget(Controller);
     if (!IsValid(Target) || !AMiningTreasure::IsExposureEligible(Target->Exposure)) return false;
     auto* Item = Target.Get();
+    if (Controller && Controller->GetPawn())
+        if (auto* Audio = Controller->GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayCollect();
     Item->bCollected = true;
     Item->SetDropActive(false);
     Item->SetHighlighted(false);

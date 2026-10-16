@@ -1,4 +1,5 @@
 #include "EndingEmergence.h"
+#include "MiningAudioSettings.h"
 #include "DiggableRock.h"
 #include "MiningComponent.h"
 #include "MiningDebrisBurst.h"
@@ -674,7 +675,14 @@ void AEndingEmergence::SetAmbience(const TCHAR* Name,float Volume)
 {
     if(Ambience){Ambience->Stop();Ambience->DestroyComponent();Ambience=nullptr;}
     if(auto* S=LoadObject<USoundBase>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Audio/S_EE_"))+Name)))
-        Ambience=UGameplayStatics::SpawnSound2D(this,S,Volume,1,0,nullptr,false,false);
+    {
+        Ambience=UGameplayStatics::CreateSound2D(this,S,Volume,1,0,nullptr,false,false);
+        if (Ambience && GetGameInstance())
+        {
+            Ambience->SoundClassOverride=GetGameInstance()->GetSubsystem<UMiningAudioSettings>()->GetClass(3);
+            Ambience->Play();
+        }
+    }
 }
 
 void AEndingEmergence::RestartDemo()
@@ -853,7 +861,14 @@ void AEndingEmergence::Speak(const TCHAR* Name)
 {
     if(Voice){Voice->Stop();Voice->DestroyComponent();Voice=nullptr;}
     if(auto* S=LoadObject<USoundBase>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Audio/S_EE_"))+Name)))
-        Voice=UGameplayStatics::SpawnSound2D(this,S,.95f,1,0,nullptr,false,false);
+    {
+        Voice=UGameplayStatics::CreateSound2D(this,S,.95f,1,0,nullptr,false,false);
+        if (Voice && GetGameInstance())
+        {
+            Voice->SoundClassOverride=GetGameInstance()->GetSubsystem<UMiningAudioSettings>()->GetClass(4);
+            Voice->Play();
+        }
+    }
 }
 
 void AEndingEmergence::StrikeUniverse()

@@ -1,9 +1,16 @@
 #include "MiningAudioComponent.h"
 #include "MiningComponent.h"
+#include "MiningAudioSettings.h"
+#include "MiningCharacterMovementComponent.h"
+#include "Misc/ConfigCacheIni.h"
+#include "Misc/Paths.h"
+#include "HAL/FileManager.h"
+#include "Sound/SoundClass.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "Components/AudioComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "Engine/GameInstance.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
@@ -16,14 +23,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAudioAssetsTest, "BrainMining.AudioPilot
 bool FMiningAudioAssetsTest::RunTest(const FString&)
 {
     const auto Names = UMiningAudioComponent::AssetNames();
-    TestEqual(TEXT("All selected sounds have runtime entries"), Names.Num(), 33);
+    TestEqual(TEXT("All selected sounds have runtime entries"), Names.Num(), 47);
     for (FName Name : Names)
     {
         const FString Path = FString::Printf(TEXT("/Game/Audio/Pilot/%s.%s"), *Name.ToString(), *Name.ToString());
         auto* Sound = LoadObject<USoundWave>(nullptr, *Path);
         if (!TestNotNull(*Path, Sound)) continue;
         const bool bMusic = Name.ToString().StartsWith(TEXT("M_"));
-        TestEqual(*FString::Printf(TEXT("%s loop setting"), *Name.ToString()), bool(Sound->bLooping), bMusic);
+        TestEqual(*FString::Printf(TEXT("%s loop setting"), *Name.ToString()), bool(Sound->bLooping), Name.ToString().EndsWith(TEXT("_Loop")));
+        TestNotNull(TEXT("Every sound has a mix category"), Sound->SoundClassObject.Get());
         TestEqual(*FString::Printf(TEXT("%s channel count"), *Name.ToString()), Sound->NumChannels, bMusic ? 2 : 1);
         TestTrue(*FString::Printf(TEXT("%s duration"), *Name.ToString()), Sound->Duration > 0 && Sound->Duration < (bMusic ? 130.f : 10.f));
     }
@@ -53,24 +61,25 @@ bool FMiningAudioRoutingTest::RunTest(const FString&)
         Enabled->SetWithCurrentPriority(PreviousEnabled);
         Volume->SetWithCurrentPriority(PreviousVolume);
     };
-    auto* Pawn = World->SpawnActor<ACharacter>();
-    auto* Controller = World->SpawnActor<APlayerController>();
+    auto* Pawn = World->SpawnActor<ACharacter>(PawnClass);
+    auto* Controller = World->SpawnActor<AMiningExhibitController>();
+    World->AddController(Controller);
     Controller->SetAsLocalPlayerController();
     Controller->Possess(Pawn);
-    auto* Mining = NewObject<UMiningComponent>(Pawn);
-    Pawn->AddInstanceComponent(Mining);
-    Mining->RegisterComponent();
-    Audio = NewObject<UMiningAudioComponent>(Pawn);
-    Pawn->AddInstanceComponent(Audio);
-    Audio->RegisterComponent();
+    Controller->EncounterPolicy->Release();
+    auto* Mining = Pawn->FindComponentByClass<UMiningComponent>();
+    Audio = Pawn->FindComponentByClass<UMiningAudioComponent>();
     auto* Hall = World->SpawnActor<AMiningExhibitHall>();
+    Hall->Tick(.01f);
     Hall->Areas.SetNum(3);
     Hall->Areas[0].Kind = EMiningExperienceKind::Mining;
     Hall->Areas[1].Kind = EMiningExperienceKind::Office;
     Hall->Areas[2].Kind = EMiningExperienceKind::Ending;
     Hall->ActiveArea = 1;
     Hall->bReady = true;
+    TestFalse(TEXT("Fixture controller is available to hall interactions"), Hall->IsInteractionOpen());
     Audio->BeginPlay();
+    Audio->Activate(true);
     TestTrue(TEXT("Contact listener attached"), Mining->OnPickaxeContact.IsBound());
     TestTrue(TEXT("Committed break listener attached"), Mining->OnPickaxeBreak.IsBound());
     Audio->TickComponent(1, LEVELTICK_All, nullptr);
@@ -92,9 +101,43 @@ bool FMiningAudioRoutingTest::RunTest(const FString&)
     Hall->ActiveArea = 0;
     Audio->TickComponent(1, LEVELTICK_All, nullptr);
     TestEqual(TEXT("Reentering mine restores music"), Music->VolumeMultiplier, .16f);
+    Mining->bDrillMode = true;
+    Audio->TickComponent(.1f, LEVELTICK_All, nullptr);
+    TestEqual(TEXT("Equipped drill owns one idle loop"), Audio->GetToolLoopCount(), 1);
+    Audio->TickComponent(.1f, LEVELTICK_All, nullptr);
+    TestEqual(TEXT("Repeated ticks do not duplicate motor"), Audio->GetToolLoopCount(), 1);
+    Mining->BeginMiningInput();
+    Mining->OnMiningHit.Broadcast(FHitResult());
+    Audio->TickComponent(.01f, LEVELTICK_All, nullptr);
+    TestEqual(TEXT("Confirmed drilling adds contact texture"), Audio->GetToolLoopCount(), 2);
+    Mining->EndMiningInput();
+    auto* Flight = CastChecked<UMiningCharacterMovementComponent>(Pawn->GetCharacterMovement());
+    Flight->FlightSettings.bEnabled = true;
+    Flight->SetFlightInputHeld(true);
+    Audio->TickComponent(.01f, LEVELTICK_All, nullptr);
+    TestEqual(TEXT("Thrust and drill have independent loops"), Audio->GetToolLoopCount(), 2);
+    Flight->JetpackOverheatRemaining = 1.f;
+    Audio->TickComponent(.01f, LEVELTICK_All, nullptr);
+    TestEqual(TEXT("Overheat stops thrust while retaining drill"), Audio->GetToolLoopCount(), 1);
+    Flight->SetFlightInputHeld(false);
+    Flight->JetpackOverheatRemaining = 0.f;
+    Mining->SetInputSuspended(true);
+    Audio->TickComponent(.1f, LEVELTICK_All, nullptr);
+    TestEqual(TEXT("Menu suspension destroys tool loops"), Audio->GetToolLoopCount(), 0);
+    Mining->SetInputSuspended(false);
+    Audio->TickComponent(.1f, LEVELTICK_All, nullptr);
+    TestEqual(TEXT("Closing menu restores equipped motor"), Audio->GetToolLoopCount(), 1);
+    Audio->Deactivate();
+    TestEqual(TEXT("Deactivation stops all tool loops"), Audio->GetToolLoopCount(), 0);
+    Audio->Activate(true);
+    Hall->ActiveArea = 2;
+    Audio->TickComponent(.1f, LEVELTICK_All, nullptr);
+    TestEqual(TEXT("Ending transition destroys motor"), Audio->GetToolLoopCount(), 0);
+    Hall->ActiveArea = 0;
     Enabled->SetWithCurrentPriority(0);
     Audio->TickComponent(1, LEVELTICK_All, nullptr);
     TestEqual(TEXT("Audio switch fades music out"), Music->VolumeMultiplier, 0.f);
+    TestEqual(TEXT("Audio switch destroys motor"), Audio->GetToolLoopCount(), 0);
     Enabled->SetWithCurrentPriority(1);
     Controller->UnPossess();
     Audio->TickComponent(1, LEVELTICK_All, nullptr);
@@ -103,6 +146,31 @@ bool FMiningAudioRoutingTest::RunTest(const FString&)
     TestFalse(TEXT("Contact listener detached"), Mining->OnPickaxeContact.IsBound());
     TestFalse(TEXT("Break listener detached"), Mining->OnPickaxeBreak.IsBound());
     TestFalse(TEXT("Music component unregistered on teardown"), Music->IsRegistered());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAudioSettingsTest, "BrainMining.AudioPilot.SettingsPersistence", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMiningAudioSettingsTest::RunTest(const FString&)
+{
+    auto* Instance = NewObject<UGameInstance>();
+    auto* Settings = NewObject<UMiningAudioSettings>(Instance);
+    Settings->SetVolume(0, .35f);
+    Settings->SetVolume(1, -2.f);
+    Settings->SetVolume(2, 2.f);
+    Settings->SetVolume(3, .42f);
+    Settings->SetVolume(4, .6f);
+    TestEqual(TEXT("Negative gain clamps to silence"), Settings->GetVolume(1), 0.f);
+    TestEqual(TEXT("Gain cannot exceed one"), Settings->GetVolume(2), 1.f);
+    const FString Filename = FPaths::CreateTempFilename(*FPaths::ProjectSavedDir(), TEXT("AudioSettingsTest"), TEXT(".ini"));
+    ON_SCOPE_EXIT { IFileManager::Get().Delete(*Filename); };
+    Settings->SaveVolumes(Filename);
+    auto* Restored = NewObject<UMiningAudioSettings>(Instance);
+    Restored->LoadVolumes(Filename);
+    for (int32 Channel = 0; Channel < 5; ++Channel)
+        TestEqual(TEXT("Each channel survives a disk round trip"), Restored->GetVolume(Channel), Settings->GetVolume(Channel));
+    Restored->RestoreDefaults();
+    TestEqual(TEXT("Default master restored"), Restored->GetVolume(0), 1.f);
+    TestEqual(TEXT("Default effects restored"), Restored->GetVolume(2), .85f);
     return true;
 }
 #endif

@@ -256,16 +256,16 @@ void UMiningGUIHUDWidget::EnableProgressionPanel()
 	DrillUpgrade->OnUpgradeRequested.AddUniqueDynamic(this, &ThisClass::ForwardUpgrade);
 	DrillUpgrade->OnLevelChanged.AddUniqueDynamic(this, &ThisClass::ForwardLevel);
 	if (AbilityV && AbilityV->NormalTexture) DrillUpgrade->ItemIcon->SetBrushFromTexture(AbilityV->NormalTexture);
-	if (auto* PanelSlot = Cast<UCanvasPanelSlot>(UpgradePanel->Slot)) PanelSlot->SetSize(FVector2D(724, 510));
+	if (auto* PanelSlot = Cast<UCanvasPanelSlot>(UpgradePanel->Slot)) PanelSlot->SetSize(FVector2D(724, 540));
 	auto* Credits = WidgetTree->ConstructWidget<UTextBlock>();
-	Credits->SetText(FText::FromString(TEXT("Music: Dreamy Flashback — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — creativecommons.org/licenses/by/4.0/\nSource: incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532\nEdited: 48 kHz conversion, loop crossfade and volume adjustment.\nSound effects: Kenney / rubberduck — CC0")));
+	Credits->SetText(FText::FromString(TEXT("Music: Dreamy Flashback — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — creativecommons.org/licenses/by/4.0/\nSource: incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532\nEdited: 48 kHz conversion, loop crossfade and volume adjustment.\nSound effects: Kenney / rubberduck — CC0; project-synthesized tool sounds\n音量设置：松开 Tab 后按 F8；关闭时自动保存")));
 	Credits->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 12));
 	Credits->SetColorAndOpacity(FLinearColor(.8f,.84f,.87f));
 	Credits->SetAutoWrapText(true);
 	Credits->SetVisibility(ESlateVisibility::HitTestInvisible);
 	auto* CreditSlot = UpgradePanel->AddChildToCanvas(Credits);
 	CreditSlot->SetPosition(FVector2D(0, 390));
-	CreditSlot->SetSize(FVector2D(724, 120));
+	CreditSlot->SetSize(FVector2D(724, 150));
 	for (int32 Index = 0; Index < 4; ++Index)
 	{
 		auto* Card = Item(Index);

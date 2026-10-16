@@ -64,6 +64,7 @@ void AMiningExhibitController::OnPossess(APawn* InPawn)
 
 bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
 {
+    if (IsAudioSettingsOpen() || Params.Key == EKeys::F8) return Super::InputKey(Params);
     if (auto* Room = AMiningStartRoom::Find(GetWorld()))
     {
         if (Params.Key == EKeys::E && Params.Event == IE_Pressed && !bUpgradeMenuHeld)

@@ -13,6 +13,8 @@ class UMiningWalletSubsystem;
 class USoundBase;
 class USoundConcurrency;
 
+enum class EMiningAudioSurface : uint8 { Stone, Wood, Dirt, Gravel };
+
 UCLASS(ClassGroup=(Mining), meta=(BlueprintSpawnableComponent))
 class BRAINMINING_API UMiningAudioComponent : public UActorComponent
 {
@@ -21,13 +23,29 @@ public:
 	UMiningAudioComponent();
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+	virtual void Deactivate() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* TickFunction) override;
 	void PlayPanel(bool bOpen);
 	void PlayPurchase(bool bSuccess);
+	void PlayCollect();
+	void PlayStarterPickup(bool bJetpack);
+	UFUNCTION() void StopTools();
+	int32 GetToolLoopCount() const { return ToolLoops.Num(); }
 	static TArray<FName> AssetNames();
+	static TArray<FName> MainGameAssetNames();
+	static bool IsMainGameWorld(const UWorld* World);
+	static EMiningAudioSurface ResolveSurface(const FHitResult& Hit);
+	int32 GetAudioRegion() const { return AudioRegion; }
+	bool UsesMainGameAudio() const { return bMainGameAudio; }
+	int32 GetSoundscapeCount() const { return Soundscape.Num(); }
+	FName GetLastPlayedSound() const { return LastPlayedSound; }
+	EMiningAudioSurface GetLastContactSurface() const { return LastContactSurface; }
+	int32 GetContactCount() const { return ContactCount; }
 
 private:
 	UFUNCTION() void OnSwing(float Interval);
+	UFUNCTION() void OnDrillContact(const FHitResult& Hit);
+	UFUNCTION() void OnBlockedContact(const FHitResult& Hit);
 	void OnContact(const FHitResult& Hit, int32 Stage);
 	void OnBreak(const FVector& Position);
 	void OnCoins(int64 Amount);
@@ -37,10 +55,19 @@ private:
 	bool IsMiningArea() const;
 	bool HasFootsteps() const;
 	void UpdateMusic(float DeltaTime);
+	void UpdateTools(float DeltaTime);
+	void SetToolLoop(FName Name, bool bActive, float Gain, float Pitch = 1.f);
+	void UpdateMainGameSoundscape(float DeltaTime);
+	void SetSoundscapeLayer(FName Name, float Target, float DeltaTime);
+	void StopSoundscape();
+	int32 FindAudioRegion() const;
+	void PlayFootstep(const FHitResult& Hit, float Gain);
 
 	UPROPERTY(Transient) TMap<FName, TObjectPtr<USoundBase>> Sounds;
 	UPROPERTY(Transient) TObjectPtr<USoundConcurrency> EffectsConcurrency;
 	UPROPERTY(Transient) TObjectPtr<UAudioComponent> Music;
+	UPROPERTY(Transient) TMap<FName, TObjectPtr<UAudioComponent>> ToolLoops;
+	UPROPERTY(Transient) TMap<FName, TObjectPtr<UAudioComponent>> Soundscape;
 	TWeakObjectPtr<ACharacter> Character;
 	TWeakObjectPtr<UMiningComponent> Mining;
 	TWeakObjectPtr<UMiningWalletSubsystem> Wallet;
@@ -52,6 +79,20 @@ private:
 	float MusicGain = 0;
 	double NextCoinTime = 0;
 	double NextHallSearch = 0;
+	double DrillContactUntil = 0;
+	double NextCollectTime = 0;
+	double NextBlockedTime = 0;
+	int32 AudioRegion = INDEX_NONE;
+	int32 PendingAudioRegion = INDEX_NONE;
+	float RegionStableSeconds = 0;
+	bool bMainGameAudio = false;
+	FName LastPlayedSound;
+	int32 ContactCount = 0;
+	EMiningAudioSurface LastContactSurface = EMiningAudioSurface::Stone;
+	bool bDrillRunning = false;
+	bool bJetRunning = false;
+	bool bLowDrill = false;
+	bool bOverheated = false;
 	bool bWasGrounded = false;
 	bool bTrackingMovement = false;
 };

@@ -660,5 +660,278 @@
     ],
     "processing": "Full track with 3s equal-gain tail/head overlap, stereo, peak -2.5dBFS; artistic loop transition needs in-game audition",
     "sha256": "dcecb574ba3bd66dfa2db48be8985827fabf1a4696d0f10a737c7fe2639d2a9b"
+  },
+  {
+    "asset": "S_DrillIdle_Loop",
+    "seconds": 2.0,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.4,
+    "loop": true,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "c48744eb89568850e1befcaa1c6a94fe5af4411f5662ecc53413e087ca399cd8"
+  },
+  {
+    "asset": "S_DrillContact_Loop",
+    "seconds": 2.0,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.5,
+    "loop": true,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "25d78b649baea53984c6d8132f3f8744ef2a7a7654105d8eed28a35ea17073b9"
+  },
+  {
+    "asset": "S_Jet_Loop",
+    "seconds": 2.0,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.48,
+    "loop": true,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "90934f5608827b5b331c8ef32eca731332e5d54e05e292ecdd85e340f706bc6c"
+  },
+  {
+    "asset": "S_DrillStart",
+    "seconds": 0.3,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.45,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "4496af928fda86b6260132e982a4291b4c47299500e2fa05aeb7a91cb0e4713b"
+  },
+  {
+    "asset": "S_DrillStop",
+    "seconds": 0.3,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.35,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "bc68fa8ffb3c89a129a575a6de99a98363c9661b743c92f04b95d720f18c1489"
+  },
+  {
+    "asset": "S_JetStart",
+    "seconds": 0.3,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.45,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "1821adf4d9e41a5c8247b95fe2a95ebd947065e1c30c0147e1d345fcc81c4e9d"
+  },
+  {
+    "asset": "S_JetStop",
+    "seconds": 0.3,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.35,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "2129749ef09f7219721610882d23c86cd39fd58af4be8df93720e9d4c2a9f5d2"
+  },
+  {
+    "asset": "S_DrillLow",
+    "seconds": 0.5,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.38,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "b0095a82ac48ff474f06c9f01e42d1ee38a0799ccb2c3f49920846ba515c3208"
+  },
+  {
+    "asset": "S_JetOverheat",
+    "seconds": 0.5,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.38,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "f9fbee4d87e8b26ce9efa0bf788d4ad57bb04f73ee6a3be61e44221fad297638"
+  },
+  {
+    "asset": "S_BombThrow",
+    "seconds": 0.5646,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.4,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "rpg",
+        "file": "Audio/cloth1.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/rpg-audio",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "ec0c13cf9d36cc855c6977bae848b6fed4a1fdb2cde75c5b0b0e04d2a6a6d989"
+  },
+  {
+    "asset": "S_BombStick",
+    "seconds": 0.5051,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.55,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "impact",
+        "file": "Audio/impactSoft_heavy_000.ogg",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "064ed717bee88c7e431a1265ee48c5196a0e1ef2b6967597d9ad3eb61a55fb73"
+  },
+  {
+    "asset": "S_BombFuse_Loop",
+    "seconds": 2.0,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.32,
+    "loop": true,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "90dfd0c39d66a13fc433298dc5451a5d222dd1d11274712e052e8e4b2e58af3e"
+  },
+  {
+    "asset": "S_BombExplosion",
+    "seconds": 3.0,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.7,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      },
+      {
+        "pack": "breaking",
+        "file": "bfh1_rock_falling_01.ogg",
+        "author": "rubberduck",
+        "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx",
+        "license": "CC0"
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "c5dd52dcb08be6947598ef44459844edb7bd30c96eff19a225e6f21a2a1f53ad"
+  },
+  {
+    "asset": "S_Collect",
+    "seconds": 0.42,
+    "channels": 1,
+    "sample_rate": 48000,
+    "peak": 0.4,
+    "loop": false,
+    "sources": [
+      {
+        "pack": "project_procedural",
+        "file": "Scripts/prepare_audio_tools.py",
+        "author": "BrainMining project",
+        "license": "Project-authored synthesis; no external recording",
+        "url": ""
+      }
+    ],
+    "processing": "Deterministic project synthesis, 48kHz mono PCM16; periodic loops or 5ms edge fades; audition mix",
+    "sha256": "4b1484775752c1e7c899364c3e961fd868968e858b47f0ad7d697b202281bb25"
   }
 ]

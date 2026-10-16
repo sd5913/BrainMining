@@ -12,6 +12,7 @@
 #include "Components/PointLightComponent.h"
 #include "EngineUtils.h"
 #include "Materials/MaterialInterface.h"
+#include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Editor.h"
 #include "InputKeyEventArgs.h"
@@ -26,7 +27,7 @@ class FEndingTitleDrillPreview : public IAutomationLatentCommand
 {
     FAutomationTestBase* Test;int Step=0;double Started=FPlatformTime::Seconds();
     int InputPhase=0,LastCuts=0,ColorCapture=0;
-    bool EntryCaptured=false,FadeCaptured=false,OriginalEnabled=true;
+    bool EntryCaptured=false,FadeCaptured=false,OriginalEnabled=true,ExitStartCaptured=false,WhiteCaptured=false;
     float LastContact=0,MaxContactGap=0;
     float Since=0,BaseSpeed=0,BulbIntensity=0,BulbMin=10000,BulbMax=0,OriginalRadius=0,OriginalSmoke=0,OriginalDust=0,OriginalSparks=0;bool InfiniteBefore=false;
     void Key(APlayerController* P,FKey K,bool Down){P->InputKey(FInputKeyEventArgs::CreateSimulated(K,Down?IE_Pressed:IE_Released,Down?1.f:0.f));}
@@ -47,7 +48,13 @@ public:
             Test->TestTrue(TEXT("Cave is partially revealed during descent, not instant"),Reveal>.1f&&Reveal<.8f);
             Capture(TEXT("wooow-o-partial-reveal"));FadeCaptured=true;
         }
-        if(D->Shot==9&&D->DrillDistance>220&&D->DrillDistance<6200)
+        if(D->Shot==9&&D->DrillDistance>7100&&!WhiteCaptured)
+        {
+            Test->TestTrue(TEXT("White line-art phase continues actual excavation"),M->IsMiningActive()&&D->FinaleRocks.Last()->SuccessfulCuts>0);
+            Test->TestEqual(TEXT("Drills become white line art before exiting"),D->FinaleDrillMaterials[0]->K2_GetScalarParameterValue(TEXT("WhiteInk")),1.f);
+            Capture(TEXT("wooow-cave-white-lineart"));WhiteCaptured=true;
+        }
+        if(D->Shot==9&&D->DrillDistance>220&&D->DrillDistance<7500)
         {
             if(!LastContact||D->FinaleDrillCuts!=LastCuts)
             {
@@ -57,6 +64,12 @@ public:
             const float Positions[]={1700,3100,4400,5700};
             const TCHAR* Names[]={TEXT("wooow-cave-purple"),TEXT("wooow-cave-red"),TEXT("wooow-cave-yellow"),TEXT("wooow-cave-ivory")};
             if(ColorCapture<4&&D->DrillDistance>Positions[ColorCapture])Capture(Names[ColorCapture++]);
+        }
+        if(D->Shot==10&&!ExitStartCaptured&&D->ShotTime>.3f)
+        {
+            Test->TestEqual(TEXT("Tool copies survive the initial exit transition"),D->FinaleDrills.Num(),2);
+            Test->TestTrue(TEXT("Speed strokes survive the initial exit transition"),D->FinaleSpeedLines->IsVisible());
+            Capture(TEXT("wooow-exit-fade-start"));ExitStartCaptured=true;
         }
         if(Step==0)
         {
@@ -82,7 +95,7 @@ public:
             }
             Test->TestEqual(TEXT("Title has no exhausted grey filter"),D->Exhaustion,0.f);++Step;
             Test->TestTrue(TEXT("Petri specks decorate the cell background"),D->FinaleCellSpecks->IsVisible()&&D->FinaleCellSpecks->GetInstanceCount()==1900);
-            Test->TestEqual(TEXT("All excavation volumes are prepared before the dive"),D->FinaleRocks.Num(),10);
+            Test->TestEqual(TEXT("All six stages are prepared before the dive"),D->FinaleRocks.Num(),12);
             Test->TestFalse(TEXT("Title reading keeps the cave hidden until descent"),D->FinaleEntrancePreview->IsVisible());
             Test->TestEqual(TEXT("Title never reveals the cave material"),D->FinalePreviewMaterials[0]->K2_GetScalarParameterValue(TEXT("Reveal")),0.f);
         }
@@ -92,7 +105,10 @@ public:
             Test->TestTrue(TEXT("No click is required to run the real mining component"),M->IsMiningActive()&&M->bDrillMode&&M->bInfiniteDrillEnergy);
             Test->TestEqual(TEXT("Energy remains full"),M->DrillEnergy,M->MaxDrillEnergy);
             Test->TestEqual(TEXT("Both stylized drill models are equipped"),D->FinaleDrills.Num(),2);
-            for(auto Drill:D->FinaleDrills)Test->TestTrue(TEXT("Drill uses the ending-only painted material"),Drill->GetMaterial(0)->GetName().Contains(TEXT("M_EE_ComicDrill")));
+            for(auto Drill:D->FinaleDrills)Test->TestTrue(TEXT("Drill uses the ending-only painted material"),Drill->GetMaterial(0)->GetMaterial()->GetName().Contains(TEXT("M_EE_ComicDrill")));
+            Test->TestEqual(TEXT("Original drill reach is restored for the half-length first-person model"),M->Reach,420.f);
+            // The spin transform translates the pivot around the bit axis. Its
+            // raw X is not the mount position; review framing in the screenshot.
             Test->TestTrue(TEXT("Starting pace is slower than the previous 260 cm/s"),D->FinaleDrillSpeed>150&&D->FinaleDrillSpeed<210);
             Test->TestTrue(TEXT("Early impact is restrained"),D->FinaleKick<.5f);
             Test->TestFalse(TEXT("Shared effects do not duplicate ending shards"),Effects->bEnabled);
@@ -146,6 +162,7 @@ public:
         }
         else if(Step==9&&D->Shot==10&&D->ShotTime>1)
         {
+            Test->TestTrue(TEXT("Sixth white excavation stage was reached"),WhiteCaptured);
             Test->TestFalse(TEXT("Drill shuts down at the exit"),M->bDrillMode);
             Test->TestEqual(TEXT("Unlimited energy is scoped to the finale"),M->bInfiniteDrillEnergy,InfiniteBefore);
             Test->TestEqual(TEXT("Original mining radius is restored"),M->Radius,OriginalRadius);Capture(TEXT("wooow-light-exit"));++Step;
@@ -153,13 +170,18 @@ public:
             Test->TestEqual(TEXT("Main-game dust restored after finale"),Effects->DrillDustStrength,OriginalDust);
             Test->TestEqual(TEXT("Main-game sparks restored after finale"),Effects->DrillSparkStrength,OriginalSparks);
             Test->TestEqual(TEXT("Main-game effects enabled state is restored"),Effects->bEnabled,OriginalEnabled);
-            Test->TestFalse(TEXT("Contact strokes disappear on reaching the light"),D->FinaleImpactLines->IsVisible());
+            Test->TestTrue(TEXT("Exit strokes fade rather than vanishing at the boundary"),D->FinaleSpeedLines->IsVisible());
+            const float Fade=D->FinaleDrillMaterials[0]->K2_GetScalarParameterValue(TEXT("Fade"));
+            Test->TestTrue(TEXT("Tool opacity is between visible and gone during exit"),Fade>.02f&&Fade<.8f);
+            Test->TestTrue(TEXT("Monochrome speed lines bridge the exit"),D->ExitInkMaterial&&D->ExitInkMaterial->K2_GetScalarParameterValue(TEXT("Strength"))>.1f);
             Test->AddInfo(FString::Printf(TEXT("Continuous excavation: %d contacts; maximum contact gap %.3fs"),D->FinaleDrillCuts,MaxContactGap));
             Test->TestTrue(TEXT("No empty travel intervals interrupt excavation"),MaxContactGap<1.2f);
+
         }
         else if(Step==10&&D->Shot==11&&D->ShotTime>1.5f)
         {
             Test->TestTrue(TEXT("Reality is visible and completes the ending"),D->FinaleReality->IsVisible()&&D->bComplete);
+            Test->TestEqual(TEXT("Faded tools are released before reality"),D->FinaleDrills.Num(),0);
             Test->TestEqual(TEXT("Four bulbs frame the computer"),D->FinaleBulbLights.Num(),4);
             Test->TestEqual(TEXT("Old photograph finale does not run"),D->EndingPapers.Num(),0);
             Test->TestEqual(TEXT("Old starlight finale does not run"),D->StarlightRibbons.Num(),0);

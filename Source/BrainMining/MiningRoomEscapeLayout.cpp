@@ -229,6 +229,12 @@ void AMiningRoomEscape::BuildStudyLayout()
 
     auto* Interior=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_EscapeTVInterior.M_EscapeTVInterior"));
     if(!Interior)Interior=Dark;
+    auto* TVInterior=UMaterialInstanceDynamic::Create(Interior,this);
+    const FVector TunnelUp=Rotation.RotateVector(FVector::UpVector);
+    TVInterior->SetVectorParameterValue(TEXT("TunnelOrigin"),FLinearColor(ComputerEntry));
+    TVInterior->SetVectorParameterValue(TEXT("TunnelAxis"),FLinearColor(Direction));
+    TVInterior->SetVectorParameterValue(TEXT("TunnelUp"),FLinearColor(TunnelUp));
+    Interior=TVInterior;
     const float ShellLength=7000;
     auto* ExposureBounds=NewObject<UBoxComponent>(this);AddInstanceComponent(ExposureBounds);ExposureBounds->SetupAttachment(RootComponent);
     ExposureBounds->SetBoxExtent(FVector(Length*.5f+500,W+100,H+150));ExposureBounds->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -242,6 +248,9 @@ void AMiningRoomEscape::BuildStudyLayout()
     Exposure->Settings.bOverride_AutoExposureBias=true;Exposure->Settings.AutoExposureBias=-1.5f;
     Exposure->Settings.bOverride_AutoExposureApplyPhysicalCameraExposure=true;
     Exposure->Settings.AutoExposureApplyPhysicalCameraExposure=false;
+    Exposure->Settings.bOverride_MotionBlurAmount=true;Exposure->Settings.MotionBlurAmount=0;
+    Exposure->Settings.bOverride_BloomIntensity=true;Exposure->Settings.BloomIntensity=.15f;
+    Exposure->Settings.bOverride_SceneFringeIntensity=true;Exposure->Settings.SceneFringeIntensity=0;
     Exposure->RegisterComponent();
     Shape(TunnelPoint(FVector(ShellLength*.5f,0,-H-30)),FVector(ShellLength+200,W*2+120,60),Interior,true,Rotation);
     Shape(TunnelPoint(FVector(ShellLength*.5f,0,H+30)),FVector(ShellLength+200,W*2+120,60),Interior,true,Rotation);
@@ -250,11 +259,23 @@ void AMiningRoomEscape::BuildStudyLayout()
     // Seventy metres of touching solid fill: no curtains, recesses or empty shortcuts.
     for(int32 i=0;i<14;++i)
         ComputerRocks.Add(Rock(TunnelPoint(FVector(250+i*500,0,0)),FVector(500,W*2,H*2),Interior,Rotation));
-    for(float Along:{120.f,600.f,1400.f,2800.f,4200.f,5600.f})
+    for(float Along:{120.f,800.f,1600.f,2400.f,3200.f,4000.f,4800.f,5600.f,6400.f})
     {
-        auto* CircuitLight=Light(TunnelPoint(FVector(Along,0,H-70)),Along<1000?400000:15000,900);
+        auto* CircuitLight=Light(TunnelPoint(FVector(Along,0,H-70)),55000,1250);
         InteriorLights.Add(CircuitLight);CircuitLight->SetVisibility(false);
-        CircuitLight->SetLightColor(FLinearColor(.08f,.45f,1.f));
+        CircuitLight->SetLightColor(FLinearColor(.35f,.65f,.8f));
+    }
+    // Fixed lower-edge guides and repeated forward chevrons give a stable frame of reference.
+    auto* GuideMaterial=Material(FLinearColor(.12f,.45f,.5f),true);
+    for(float Side:{-1.f,1.f})
+    {
+        Shape(TunnelPoint(FVector(3500,Side*(W-10),-H+75)),FVector(7000,12,18),GuideMaterial,false,Rotation);
+        for(float Along:{900.f,1900.f,2900.f,3900.f,4900.f,5900.f,6900.f})
+            for(float Tilt:{-1.f,1.f})
+            {
+                const FVector A(Along-75,Side*(W-12),-H+180+Tilt*50),B(Along,Side*(W-12),-H+180);
+                Shape(TunnelPoint((A+B)*.5f),FVector((B-A).Size(),10,10),GuideMaterial,false,Rotation.Quaternion().RotateVector(B-A).Rotation());
+            }
     }
     ComputerWater=Shape(TunnelPoint(FVector(-400,0,0)),FVector(35,W*2,H*2),WaterMat,false,Rotation);
     // The final face opens directly towards a bright doorway, never a closed luminous panel.

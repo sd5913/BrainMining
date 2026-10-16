@@ -1,4 +1,5 @@
 #include "MiningEncounterPlayer.h"
+#include "InputKeyEventArgs.h"
 #include "MiningComponent.h"
 #include "MiningToolEffectsComponent.h"
 #include "MiningRoomEscape.h"
@@ -115,6 +116,18 @@ void UMiningEncounterPlayerPolicy::SetMiningAllowed(bool bAllowed)
     Mining->CancelMining();
     if(bAllowed)Mining->PopEncounterBlock();else Mining->PushEncounterBlock();
     bMiningBlocked=!bAllowed;
+}
+bool AMiningEncounterPlayerController::IsCardRoomContext() const
+{
+    if(CardInteraction && CardInteraction->Stage && CardInteraction->bRoomActive)return true;
+    for(TActorIterator<AMiningRoomEscape> It(GetWorld());It;++It)
+        if(It->bAreaActive && It->Phase!=EMiningEscapePhase::Idle)return true;
+    return false;
+}
+bool AMiningEncounterPlayerController::InputKey(const FInputKeyEventArgs& Params)
+{
+    if(Params.Key==EKeys::R && IsCardRoomContext())return true;
+    return Super::InputKey(Params);
 }
 void AMiningEncounterPlayerController::MinePressed()
 {

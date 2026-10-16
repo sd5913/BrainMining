@@ -3,6 +3,7 @@
 #include "MiningBombToolComponent.h"
 #include "MiningDebrisBurst.h"
 #include "MiningDrillDustBurst.h"
+#include "MiningEncounterPlayer.h"
 #include "BrainMiningCharacter.h"
 #include "EchoPassagePlayer.h"
 #include "GameFramework/Controller.h"
@@ -266,6 +267,13 @@ void UMiningToolEffectsComponent::SpawnImpact()
 			Settings.LifetimeScale = DrillContactLifetimeScale;
 			Settings.SparkSpeed = DrillSparkSpeed;
 			Settings.SparkBrightness = DrillSparkBrightness;
+            if(const auto* PC=Cast<AMiningEncounterPlayerController>(DustParams.Owner); PC && PC->IsCardRoomContext())
+            {
+                Settings.bUseCoolPalette=true;
+                Settings.DustCount=FMath::Min(Settings.DustCount,8);Settings.SmokeCount=FMath::Min(Settings.SmokeCount,3);
+                Settings.SparkCount=FMath::Min(Settings.SparkCount,4);Settings.SparkBrightness=FMath::Min(Settings.SparkBrightness,3.f);
+                Settings.DustStrength*=.35f;Settings.SmokeStrength*=.25f;Settings.SparkSize*=.6f;Settings.LifetimeScale*=.6f;
+            }
 			Dust->Initialize(DustPlane, LoadedDustMaterial, LoadedSmokeMaterial, LoadedSparkMaterial, PendingSurfaceMaterial, Normal, Mining->GetMiningRadius(), DrillDustColor, Settings);
 			DustActors.RemoveAll([](const TWeakObjectPtr<AActor>& Actor) { return !Actor.IsValid(); });
 			while (DustActors.Num() >= 12)

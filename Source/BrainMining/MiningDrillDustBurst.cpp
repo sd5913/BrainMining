@@ -37,11 +37,16 @@ void AMiningDrillDustBurst::Initialize(UStaticMesh* Plane, UMaterialInterface* D
 	if (SoilMaterial)
 		for (const TCHAR* Name : {TEXT("BaseColor"), TEXT("SoilColor"), TEXT("Color"), TEXT("Tint")})
 			if (SoilMaterial->GetVectorParameterValue(FMaterialParameterInfo(Name), DustTint)) break;
+	if (Settings.bUseCoolPalette) DustTint=FLinearColor(.12f,.17f,.19f);
 	// Dust is slightly less saturated than a solid clod, but keeps the soil hue.
 	const float Luminance = DustTint.GetLuminance();
 	DustTint = FMath::Lerp(DustTint, FLinearColor(Luminance, Luminance, Luminance, 1), 0.15f);
 	Material = DustMaterial ? UMaterialInstanceDynamic::Create(DustMaterial, this) : nullptr;
-	if (Material) Material->SetVectorParameterValue(TEXT("SoilTint"), DustTint);
+	if (Material)
+    {
+        Material->SetVectorParameterValue(TEXT("SoilTint"), DustTint);
+        if(Settings.bUseCoolPalette)Material->SetVectorParameterValue(TEXT("AmbientDustFill"),FLinearColor(.025f,.035f,.04f));
+    }
 	Sprites->SetStaticMesh(Plane);
 	Sprites->SetMaterial(0, Material);
 	Sprites->SetNumCustomDataFloats(3);
@@ -91,6 +96,7 @@ void AMiningDrillDustBurst::Initialize(UStaticMesh* Plane, UMaterialInterface* D
 	if (SparkMaterial && Settings.SparkStrength > 0 && Settings.SparkCount > 0)
 	{
 		SparkMID = UMaterialInstanceDynamic::Create(SparkMaterial, this);
+		if(Settings.bUseCoolPalette)SparkMID->SetVectorParameterValue(TEXT("SparkTint"),FLinearColor(.32f,.65f,.8f));
 		SparkMID->SetScalarParameterValue(TEXT("Intensity"),FMath::Clamp(Settings.SparkBrightness,0.f,50.f));
 		SparkSprites->SetStaticMesh(Plane);
 		SparkSprites->SetMaterial(0,SparkMID);

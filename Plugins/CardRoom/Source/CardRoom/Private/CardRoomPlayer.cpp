@@ -28,6 +28,7 @@ void UCardRoomInteractionComponent::BeginPlay()
     {
         SAssignNew(View,SCardRoomView).Owner(this);
         GEngine->GameViewport->AddViewportWidgetContent(View.ToSharedRef(),20);
+        SetRoomActive(bRoomActive);
         Player()->SetInputMode(FInputModeGameOnly()); Player()->bShowMouseCursor=false;
     }
 }
@@ -39,7 +40,6 @@ void UCardRoomInteractionComponent::EndPlay(const EEndPlayReason::Type Reason)
 void UCardRoomInteractionComponent::BindInput(UInputComponent* InputComponent)
 {
     InputComponent->BindKey(EKeys::E,IE_Pressed,this,&UCardRoomInteractionComponent::Interact);
-    InputComponent->BindKey(EKeys::Q,IE_Pressed,this,&UCardRoomInteractionComponent::LeaveSeat);
     InputComponent->BindKey(EKeys::SpaceBar,IE_Pressed,this,&UCardRoomInteractionComponent::ConfirmCards).bConsumeInput=false;
 }
 void UCardRoomInteractionComponent::TickComponent(float DeltaSeconds,ELevelTick TickType,FActorComponentTickFunction* TickFunction)
@@ -65,10 +65,10 @@ void UCardRoomInteractionComponent::TickComponent(float DeltaSeconds,ELevelTick 
 void UCardRoomInteractionComponent::Interact()
 {
     if(!bRoomActive || !Stage || !GetPawn()) return;
-    if(Stage->Run.Phase==ECardRoomPhase::Victory) { Stage->CollectReward(); return; }
+    if(Stage->Run.Phase==ECardRoomPhase::Victory) { if(Stage->CollectReward())ReleaseForExploration(); return; }
     if(!Stage->IsPlayerNear(GetPawn()->GetActorLocation()) || !Stage->BeginEncounter()) return;
     EntryLocation=GetPawn()->GetActorLocation(); EntryRotation=Player()->GetControlRotation();
-    bSeated=true;SeatedPawn=GetPawn();bEntryCollision=GetPawn()->GetActorEnableCollision();
+    bSeated=true;SetRoomActive(true);SeatedPawn=GetPawn();bEntryCollision=GetPawn()->GetActorEnableCollision();
     Player()->SetIgnoreMoveInput(true);Player()->SetIgnoreLookInput(true);
     if(ACharacter* C=Cast<ACharacter>(GetPawn()))
     {
@@ -104,13 +104,13 @@ void UCardRoomInteractionComponent::RestoreSeat()
         if(auto* C=Cast<ACharacter>(SeatedPawn.Get()))C->GetCharacterMovement()->SetMovementMode(EMovementMode(EntryMovementMode),EntryCustomMode);
     }
     if(Player()) {Player()->SetControlRotation(EntryRotation);Player()->SetIgnoreMoveInput(false);Player()->SetIgnoreLookInput(false);}
-    bSeated=false;SeatedPawn.Reset();
+    bSeated=false;SeatedPawn.Reset();SetRoomActive(bRoomActive);
 }
 
 void UCardRoomInteractionComponent::SetRoomActive(bool bActive)
 {
     bRoomActive=bActive;
-    if(View)View->SetVisibility(bActive?EVisibility::Visible:EVisibility::Collapsed);
+    if(View)View->SetVisibility(!bActive?EVisibility::Collapsed:(bSeated?EVisibility::Visible:EVisibility::HitTestInvisible));
 }
 
 void UCardRoomInteractionComponent::ReleaseForExploration()

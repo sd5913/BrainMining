@@ -1,5 +1,6 @@
 #if WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS
 #include "MiningRoomEscape.h"
+#include "InputKeyEventArgs.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningEncounterPlayer.h"
 #include "MiningCharacterMovementComponent.h"
@@ -119,6 +120,8 @@ public:
             Test->TestTrue(TEXT("Exposure bounds include first excavated section"),Exposure->EncompassesPoint(E->ComputerEntry+Axis*150,0,nullptr));
             Test->TestTrue(TEXT("Exposure bounds include screen transition"),Exposure->EncompassesPoint(E->ComputerEntry-FVector(300,0,0),0,nullptr));
             Test->TestFalse(TEXT("Television exposure does not cover room table"),Exposure->EncompassesPoint(E->Checkpoint,0,nullptr));
+            Test->TestTrue(TEXT("Television disables motion blur"),Exposure->Settings.bOverride_MotionBlurAmount && Exposure->Settings.MotionBlurAmount==0);
+            Test->TestTrue(TEXT("Television keeps bloom restrained"),Exposure->Settings.bOverride_BloomIntensity && Exposure->Settings.BloomIntensity<=.2f);
             Test->TestTrue(TEXT("Television overrides room manual exposure"),Exposure->Settings.bOverride_AutoExposureBias && Exposure->Settings.AutoExposureBias>-6);
         }
         // A position outside the shell cannot claim the computer checkpoint.
@@ -159,8 +162,12 @@ public:
         E->Tick(10);E->RetryEscape();
         Test->TestEqual(TEXT("Repeated retries do not accumulate water"),E->WaterZ,SavedWater);
         Test->TestTrue(TEXT("Computer retry receives full countdown"),E->ElectricalSecondsLeft()>=E->ComputerSeconds-.1f);
+        const int32 AttemptsBeforeR=E->Attempts;
+        const FVector PositionBeforeR=Pawn->GetActorLocation();
+        PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::R,IE_Pressed,1));
+        PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::R,IE_Released,0));
         PC->EchoInteraction->Restart();
-        Test->TestTrue(TEXT("R is local and preserves reward"),E->bComputerCheckpoint && Stage->Run.Phase==ECardRoomPhase::Collected);
+        Test->TestTrue(TEXT("Manual restart cannot reset card-room progress"),E->Attempts==AttemptsBeforeR && Pawn->GetActorLocation().Equals(PositionBeforeR));
         // Success requires actual boolean cuts and crossing every slab, not an exterior teleport.
         Pawn->SetActorLocation(E->Exit);E->Tick(.01f);
         Test->TestTrue(TEXT("Cannot bypass sealed tunnel"),E->Phase==EMiningEscapePhase::Flooding);
@@ -174,7 +181,7 @@ public:
         Test->TestEqual(TEXT("TV mining adjustment is restored on exit"),Miner->Radius,OriginalRadius);
         Test->TestTrue(TEXT("Reward still retained after completion"),Stage->Run.Phase==ECardRoomPhase::Collected);
         PC->EchoInteraction->Restart();
-        Test->TestTrue(TEXT("Replay after success starts parkour"),!E->bComputerCheckpoint && FVector::Dist(Pawn->GetActorLocation(),E->Checkpoint)<1);
+        Test->TestTrue(TEXT("Manual restart cannot replay completed escape"),E->Phase==EMiningEscapePhase::Escaped && FVector::Dist(Pawn->GetActorLocation(),E->Exit)<1);
         return true;
     }
 };

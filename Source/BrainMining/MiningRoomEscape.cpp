@@ -99,8 +99,8 @@ void AMiningRoomEscape::RetryEscape()
 }
 bool AMiningRoomEscape::HandleRestart()
 {
-    if(Phase==EMiningEscapePhase::Idle)return false;
-    RetryEscape();return true;
+    // Manual restart is unavailable in the card room. Death still calls RetryEscape directly.
+    return bAreaActive && Player.IsValid() && Player->IsCardRoomContext();
 }
 void AMiningRoomEscape::ResetJourney()
 {

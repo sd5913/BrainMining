@@ -60,25 +60,11 @@ prop(m,scalar(m,.65),unreal.MaterialProperty.MP_SPECULAR)
 prop(m,scalar(m,.28),unreal.MaterialProperty.MP_OPACITY)
 prop(m,scalar(m,1.035),unreal.MaterialProperty.MP_REFRACTION)
 save(m)
-m=make('M_EscapeTVInterior',unreal.MaterialShadingModel.MSM_DEFAULT_LIT)
-prop(m,color(m,(.003,.006,.012)),unreal.MaterialProperty.MP_BASE_COLOR)
-# Stable circuit traces and panel seams stay legible on freshly excavated faces.
-# Preserve the dark level, waveform and speed; raise only the pulse peak (~10x).
-prop(m,custom(m,"""
-float2 q=float2(P.x*.012+P.y*.007,P.z*.014+P.y*.009);
-float2 tile=floor(q/4), u=frac(q/4);
-float id=frac(sin(dot(tile,float2(17.13,91.71)))*4375.23);
-float lane=.2+floor(id*4)*.14;
-float trace=(1-smoothstep(.009,.017,abs(u.y-lane)))*step(.12,u.x)*step(u.x,.82);
-trace=max(trace,(1-smoothstep(.009,.017,abs(u.x-.82)))*step(lane,u.y)*step(u.y,.92));
-float pad=1-smoothstep(.023,.036,length(u-float2(.12,lane)));
-float seam=1-smoothstep(.006,.012,min(min(u.x,1-u.x),min(u.y,1-u.y)));
-float pulse=pow(saturate(.5+.5*sin(q.x*1.7+q.y*.5-T*1.6)),12);
-return float3(.003,.008,.015)+seam*float3(.005,.014,.026)+(trace+pad)*float3(.025,.18,.32)*(.65+pulse*24.0);
-"""),unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-prop(m,scalar(m,.38),unreal.MaterialProperty.MP_ROUGHNESS)
-prop(m,scalar(m,.3),unreal.MaterialProperty.MP_METALLIC)
-save(m)
+import sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from card_tv_material import build_tv_material
+build_tv_material()
 # Retain the engine font atlas decoding, otherwise glyphs become solid rectangles.
 name='M_EscapeScreenText';path=base+name
 if unreal.EditorAssetLibrary.does_asset_exist(path):

@@ -26,6 +26,7 @@ public:
 	/** Constructor */
 	ABrainMiningPlayerController();
 	void UseInputDefaultsFrom(const ABrainMiningPlayerController* Defaults);
+ UFUNCTION(BlueprintCallable, Category="Mining GUI")
  void SetMiningGUIEnabled(bool bEnabled);
  bool IsMiningGUIEnabled() const { return bMiningGUIEnabled; }
 

@@ -10,7 +10,7 @@
 namespace CardRoomUI
 {
     const FLinearColor Cream(.94f,.86f,.69f,1),Gold(.9f,.61f,.25f,1),Ink(.10f,.07f,.055f,1),Dark(.035f,.044f,.043f,.95f);
-    const FSlateRect Match(640,740,960,800),Confirm(1100,590,1530,640),Collect(48,790,548,850),Replay(1280,825,1530,870),All(1100,538,1530,580);
+    const FSlateRect Match(640,740,960,800),Confirm(1100,590,1530,640),Collect(48,790,548,850),All(1100,538,1530,580);
     FLinearColor Color(ERoomCard C) { return C==ERoomCard::Laser?FLinearColor(.18f,.65f,.77f):C==ERoomCard::Poison?FLinearColor(.43f,.66f,.23f):FLinearColor(.91f,.34f,.15f); }
 }
 FVector2D SCardRoomView::ToVirtual(const FGeometry& G,const FVector2D& P) const
@@ -30,6 +30,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     using namespace CardRoomUI;
     if(!Owner.IsValid() || !Owner->Stage) return Layer;
     const FCardRoomRun& R=Owner->Stage->Run;
+    if(R.Phase==ECardRoomPhase::Collected)return Layer;
     const FVector2D Size=G.GetLocalSize(); const float S=FMath::Min(Size.X/1600,Size.Y/900); const FVector2D Origin=(Size-FVector2D(1600,900)*S)*.5;
     const FSlateBrush* Brush=FCoreStyle::Get().GetBrush("WhiteBrush"); int32 L=Layer;
     auto Box=[&](float X,float Y,float W,float H,FLinearColor C) { FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(Origin+FVector2D(X,Y)*S))),Brush,ESlateDrawEffect::None,C); };
@@ -69,16 +70,14 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     };
     Box(28,24,304,76,Dark); Box(28,24,4,76,Gold);
     Text(TEXT("余 烬 牌 室"),50,36,24,Cream); Text(TEXT("EMBER PARLOUR     /     ROOM 02"),50,73,11,Gold);
-    Box(1302,26,270,43,Dark); Text(Owner->Stage->bTabletopEntry?TEXT("巨人牌室 · 同一世界"):TEXT("独立房间试玩  ·  V0.3"),1318,37,15,Cream);
     if(R.Phase==ECardRoomPhase::Exploring)
     {
         const bool Near=Owner->GetPawn()&&Owner->Stage->IsPlayerNear(Owner->GetPawn()->GetActorLocation());
         Box(486,740,628,89,Dark); Text(Near?(Owner->bUseSharedInteractionHUD?TEXT("入座，开始一场奇怪的牌局"):TEXT("[ E ]  入座，开始一场奇怪的牌局")):(Owner->ExplorationHint.IsEmpty()?TEXT("走近前方牌桌，寻找你的座位"):Owner->ExplorationHint),530,756,22,Cream);
-        Text(TEXT("WASD 移动   按住空格飞行   松开下落   R 重来"),544,794,13,Gold);
+        Text(TEXT("WASD 移动   按住空格飞行   松开下落"),544,794,13,Gold);
         if (!Owner->bUseSharedInteractionHUD) Box(797,447,6,6,Cream);
         return L;
     }
-    Button(FSlateRect(1440,80,1572,118),TEXT("Q  离席"));
     if(R.Round>0)
     {
         Text(FString::Printf(TEXT("第 %02d / 04 回合"),R.Round),48,128,22,Cream);
@@ -140,9 +139,8 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
         Text(R.Phase==ECardRoomPhase::Victory?TEXT("恭喜你获得胜利！"):TEXT("彗尾法球 · 已收藏"),82,634,32,Cream);
         Text(R.Phase==ECardRoomPhase::Victory?TEXT("超级人机已退场。属于你的星光，留在桌上。"):TEXT("本版奖励为房间内占位，不改变挖掘数值。"),82,703,18,Gold);
         if(R.Phase==ECardRoomPhase::Victory) Button(Collect,TEXT("E   收集桌上的彗尾法球"));
-        Button(Replay,TEXT("再来一局"));
     }
-    Text(TEXT("点击选牌 / 再点取消     空格出牌     Q 离席"),48,866,12,Cream);
+    Text(TEXT("点击选牌 / 再点取消     空格出牌"),48,866,12,Cream);
     return L;
 }
 FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& E)
@@ -151,10 +149,8 @@ FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& 
     if(!Owner.IsValid()||!Owner->Stage||E.GetEffectingButton()!=EKeys::LeftMouseButton) return FReply::Unhandled();
     Mouse=ToVirtual(G,E.GetScreenSpacePosition()); auto& R=Owner->Stage->Run;
     if(R.Phase==ECardRoomPhase::Exploring) return FReply::Unhandled();
-    if(In(Mouse,FSlateRect(1440,80,1572,118))) { Owner->LeaveSeat(); return FReply::Handled(); }
     if(R.Phase==ECardRoomPhase::Seated&&In(Mouse,Match)) R.Match();
-    if(R.Phase==ECardRoomPhase::Victory&&In(Mouse,Collect)) Owner->Stage->CollectReward();
-    if((R.Phase==ECardRoomPhase::Victory||R.Phase==ECardRoomPhase::Collected)&&In(Mouse,Replay)) Owner->Stage->RestartEncounter();
+    if(R.Phase==ECardRoomPhase::Victory&&In(Mouse,Collect)) { Owner->Interact();return FReply::Handled(); }
     if(R.Phase==ECardRoomPhase::Choosing)
     {
         if(In(Mouse,Confirm)) R.Confirm();
@@ -178,7 +174,6 @@ FReply SCardRoomView::OnKeyDown(const FGeometry& G,const FKeyEvent& E)
 {
     if(!Owner.IsValid()) return FReply::Unhandled();
     if(E.GetKey()==EKeys::SpaceBar) { Owner->ConfirmCards(); return FReply::Handled(); }
-    if(E.GetKey()==EKeys::Q) { Owner->LeaveSeat(); return FReply::Handled().ReleaseMouseCapture(); }
     if(E.GetKey()==EKeys::E) { Owner->Interact(); return FReply::Handled(); }
     return FReply::Unhandled();
 }

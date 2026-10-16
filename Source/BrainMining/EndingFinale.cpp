@@ -1,4 +1,4 @@
-#include "EndingEmergence.h"
+﻿#include "EndingEmergence.h"
 #include "DiggableRock.h"
 #include "EndingComicRock.h"
 #include "MiningComponent.h"
@@ -21,12 +21,12 @@ namespace Finale
 {
     const FVector Cosmos(95000,0,0),Tunnel(2200000,0,0),Desk(155000,0,0);
     const FVector TitleEye(-2300000,0,100000),Hole(0,0,-85000);
-    constexpr float DrillEnd=6500;
-    const FLinearColor Palette[]={FLinearColor(.48f,.25f,.10f),FLinearColor(.25f,.16f,.65f),FLinearColor(.40f,.045f,.055f),FLinearColor(1.04f,.55f,.13f),FLinearColor(1.05f,.94f,.65f)};
-    int Stage(float Distance){return FMath::Clamp(FMath::FloorToInt(Distance/1300),0,4);}
+    constexpr float DrillEnd=7800;
+    const FLinearColor Palette[]={FLinearColor(.48f,.25f,.10f),FLinearColor(.25f,.16f,.65f),FLinearColor(.40f,.045f,.055f),FLinearColor(1.04f,.55f,.13f),FLinearColor(1.05f,.94f,.65f),FLinearColor::White};
+    int Stage(float Distance){return FMath::Clamp(FMath::FloorToInt(Distance/1300),0,5);}
     float Ease(float T){T=FMath::Clamp(T,0.f,1.f);return T*T*(3-2*T);}
-    float Pace(float Distance){return FMath::Lerp(175.f,370.f,Ease(Distance/DrillEnd));}
-    float Impact(float Distance){return FMath::Lerp(.32f,1.f,Ease(Distance/DrillEnd));}
+    float Pace(float Distance){return FMath::Lerp(175.f,370.f,Ease(Distance/6500.f));}
+    float Impact(float Distance){return FMath::Lerp(.32f,1.f,Ease(Distance/6500.f));}
 }
 
 void AEndingEmergence::BuildFinale()
@@ -61,29 +61,34 @@ void AEndingEmergence::BuildFinale()
         }
         P.X=FMath::Sin(I*2.399f)*3500;TitleTargets.Add(P);
     }
+    // Neighbours choose different letters instead of moving as orderly rows.
+    FRandomStream Gather(68237);
+    for(int I=TitleTargets.Num()-1;I>0;--I)TitleTargets.Swap(I,Gather.RandRange(0,I));
     // Actual faceted geometry carries the ink; the tunnel is not a tiled pattern.
+    if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_ExitInk")))
+    {ExitInkMaterial=UMaterialInstanceDynamic::Create(Base,this);Camera->GetCameraComponent()->AddOrUpdateBlendable(ExitInkMaterial,1);}
     FinaleTunnel=Group(TEXT("FinaleDrillTunnel"),Finale::Tunnel);FinaleTunnel->SetVisibility(false,true);
-    for(int Stage=0;Stage<5;++Stage)
+    for(int Stage=0;Stage<6;++Stage)
     {
         auto* Wall=NewObject<UDynamicMeshComponent>(this,NAME_None,RF_Transient);Wall->SetupAttachment(FinaleTunnel);
         Wall->SetCollisionEnabled(ECollisionEnabled::NoCollision);Wall->SetCastShadow(false);Wall->SetEnableRaytracing(false);Wall->SetVisibleInRayTracing(false);
         Wall->SetCanEverAffectNavigation(false);Wall->SetMesh(EndingComic::Tunnel(Stage));
         auto* Mat=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_ComicRock")),Wall);
-        Mat->SetVectorParameterValue(TEXT("Tint"),Finale::Palette[Stage]*.72f);Mat->SetScalarParameterValue(TEXT("MeshInk"),1);
+        Mat->SetVectorParameterValue(TEXT("Tint"),Finale::Palette[Stage]*.72f);Mat->SetScalarParameterValue(TEXT("MeshInk"),1);Mat->SetScalarParameterValue(TEXT("WhiteInk"),Stage==5?1.f:0.f);
         Wall->SetMaterial(0,Mat);Wall->RegisterComponent();AddInstanceComponent(Wall);
     }
     FinaleImpactShards=Instances(TEXT("FinaleComicShards"),TEXT("Cube"),Finale::Palette[0],FinaleTunnel,TEXT("ComicRock"));
     if(EndingDebrisMeshes.Num()>2)FinaleImpactShards->SetStaticMesh(EndingDebrisMeshes[2]);
     if(auto* Mat=Cast<UMaterialInstanceDynamic>(FinaleImpactShards->GetMaterial(0)))Mat->SetScalarParameterValue(TEXT("MeshInk"),0);
     FinaleSpinCurve=LoadObject<UCurveFloat>(nullptr,TEXT("/Game/Drill/CF_DrillSpin"));
-    FinaleImpactLines=Instances(TEXT("FinaleComicImpact"),TEXT("Cube"),FLinearColor(1,.83f,.48f),FinaleTunnel,TEXT("Surface"));
-    FinaleSpeedLines=Instances(TEXT("FinaleComicSpeed"),TEXT("Cube"),FLinearColor(.5f,.7f,.8f),FinaleTunnel,TEXT("Surface"));
+    FinaleImpactLines=Instances(TEXT("FinaleComicImpact"),TEXT("Cube"),FLinearColor(1,.83f,.48f),FinaleTunnel,TEXT("ExitStroke"));
+    FinaleSpeedLines=Instances(TEXT("FinaleComicSpeed"),TEXT("Cube"),FLinearColor(.5f,.7f,.8f),FinaleTunnel,TEXT("ExitStroke"));
     FinaleImpactAges.Init(10,6);FinaleImpactOrigins.Init(FVector::ZeroVector,6);
     const FTransform Hidden(FQuat::Identity,FVector::ZeroVector,FVector::ZeroVector);
     for(int I=0;I<144;++I)FinaleImpactShards->AddInstance(Hidden);
     for(int I=0;I<120;++I)FinaleImpactLines->AddInstance(Hidden);
     for(int I=0;I<64;++I)FinaleSpeedLines->AddInstance(Hidden);
-    FinaleLight=Shape(TEXT("FinaleExitLight"),FVector(7100,0,0),FVector(24),FLinearColor(3,2.5f,1.5f),TEXT("Sphere"),FinaleTunnel,TEXT("Glow"));
+    FinaleLight=Shape(TEXT("FinaleExitLight"),FVector(8400,0,0),FVector(24),FLinearColor(3,3,3),TEXT("Sphere"),FinaleTunnel,TEXT("Glow"));
     FinaleTunnel->SetVisibility(false,true);
 
     // The camera arrives at seated eye height. Four distinct bulbs frame the monitor.
@@ -150,12 +155,12 @@ void AEndingEmergence::BuildFinale()
     FinaleEntrancePreview->SetVisibility(false,true);
     // Quiet neutral specks, at several depths, like matter suspended in a dish.
     auto* SpeckRoot=Group(TEXT("FinaleCellSpeckField"),Finale::Cosmos);
-    FinaleCellSpecks=Instances(TEXT("FinaleCellSpecks"),TEXT("Sphere"),FLinearColor(.27f,.28f,.29f),SpeckRoot,TEXT("Surface"));
+    FinaleCellSpecks=Instances(TEXT("FinaleCellSpecks"),TEXT("Sphere"),FLinearColor(.34f,.35f,.38f),SpeckRoot,TEXT("CellSpeck"));
     FRandomStream Specks(66271);
     for(int I=0;I<1900;++I)
     {
-        const FVector P(Specks.FRandRange(550000,1500000),Specks.FRandRange(-2700000,2700000),Specks.FRandRange(-1700000,1700000));
-        const float Size=Specks.FRandRange(9,30);
+        const FVector P(Specks.FRandRange(-650000,900000),Specks.FRandRange(-2700000,2700000),Specks.FRandRange(-1700000,1700000));
+        const float Size=Specks.FRandRange(4,18);
         FinaleCellSpecks->AddInstance(FTransform(FQuat::Identity,P,FVector(Size,Size,Size*Specks.FRandRange(.7f,1.3f))));
     }
     FinaleCellSpecks->SetVisibility(false);
@@ -173,10 +178,18 @@ void AEndingEmergence::UpdateCellTitle(float Alpha)
         {
             const int OwnerCell=I/PerCell;if(!TitleCenters.IsValidIndex(OwnerCell))continue;
             const float Phase=OwnerCell*2.39996f;
-            const FVector Float=FVector(FMath::Sin(Age*.21f+Phase),FMath::Sin(Age*.17f+Phase*1.3f),FMath::Cos(Age*.19f+Phase))*6500*FMath::Lerp(.1f,1.f,FMath::Square(1-Alpha));
-            const FVector Center=FMath::Lerp(TitleCenters[OwnerCell],TitleTargets[OwnerCell],Alpha)+Float;
-            Poses[I].SetLocation(Center+(Poses[I].GetLocation()-TitleCenters[OwnerCell])*Scale);
-            Poses[I].SetScale3D(Poses[I].GetScale3D()*Scale);
+            const float Seed=.5f+.5f*FMath::Sin(Phase*7.13f),Delay=Seed*.23f;
+            const float Progress=Finale::Ease((Alpha-Delay)/(1-Delay));
+            const float CellScale=FMath::Lerp(1.f,.17f,Progress);
+            const float Rate=.12f+Seed*.18f;
+            const FVector Float=FVector(
+                .65f*FMath::Sin(Age*Rate+Phase)+.35f*FMath::Sin(Age*Rate*.43f+Phase*3),
+                .65f*FMath::Sin(Age*Rate*.71f+Phase*1.3f)+.35f*FMath::Cos(Age*Rate*1.21f+Phase),
+                .65f*FMath::Cos(Age*Rate*.87f+Phase)+.35f*FMath::Sin(Age*Rate*.57f+Phase*2))*6500*FMath::Lerp(.1f,1.f,FMath::Square(1-Alpha));
+            const FVector Bend=FVector(FMath::Sin(Phase*1.7f)*.5f,FMath::Cos(Phase*.87f),FMath::Sin(Phase*1.31f))*(45000+Seed*125000)*FMath::Sin(PI*Progress);
+            const FVector Center=FMath::Lerp(TitleCenters[OwnerCell],TitleTargets[OwnerCell],Progress)+Bend+Float;
+            Poses[I].SetLocation(Center+(Poses[I].GetLocation()-TitleCenters[OwnerCell])*CellScale);
+            Poses[I].SetScale3D(Poses[I].GetScale3D()*CellScale);
         }
         TitleBatches[Batch]->BatchUpdateInstancesTransforms(0,Poses,false,true,true);
     }
@@ -189,15 +202,15 @@ void AEndingEmergence::UpdateCellTitle(float Alpha)
 void AEndingEmergence::PrepareFinaleRocks()
 {
     if(!FinaleRocks.IsEmpty())return;
-    for(int I=0;I<10;++I)
+    for(int I=0;I<12;++I)
     {
-        const float X=610+I*620;
+        const float X=610+I*620+(I==11?30:0);
         const FTransform T(GetActorQuat(),GetActorTransform().TransformPosition(Finale::Tunnel+FVector(X,0,0)));
         auto* Rock=GetWorld()->SpawnActorDeferred<AEndingComicRock>(AEndingComicRock::StaticClass(),T,this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
         Rock->VisualSeed=I+137;Rock->bContinuousVolume=true;Rock->SetFlags(RF_Transient);
-        Rock->RockSize=FVector(620,700,700);Rock->MaxTriangles=12000;
+        Rock->RockSize=FVector(I==11?680:620,700,700);Rock->MaxTriangles=12000;
         auto* Mat=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_ComicRock")),Rock);
-        Mat->SetVectorParameterValue(TEXT("Tint"),Finale::Palette[Finale::Stage(X)]*.72f);Mat->SetScalarParameterValue(TEXT("MeshInk"),1);
+        Mat->SetVectorParameterValue(TEXT("Tint"),Finale::Palette[Finale::Stage(X)]*.72f);Mat->SetScalarParameterValue(TEXT("MeshInk"),1);Mat->SetScalarParameterValue(TEXT("WhiteInk"),Finale::Stage(X)==5?1.f:0.f);
         Rock->RockMaterial=Mat;Rock->FinishSpawning(T);FinaleRocks.Add(Rock);
         Rock->RockMesh->SetCastShadow(false);
         if(I){auto* Previous=Cast<AEndingComicRock>(FinaleRocks[I-1]);Previous->Next=Rock;Rock->Previous=Previous;}
@@ -213,7 +226,9 @@ void AEndingEmergence::PrepareFinaleRocks()
         Pivot->RegisterComponent();FinaleDrillPivots.Add(Pivot);
         auto* Mesh=NewObject<UStaticMeshComponent>(this,NAME_None,RF_Transient);Mesh->SetupAttachment(Pivot);Mesh->SetStaticMesh(Part->GetStaticMesh());
         Mesh->SetRelativeTransform(Part->GetRelativeTransform());Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);Mesh->SetCastShadow(false);Mesh->SetVisibleInRayTracing(false);
-        for(int M=0;M<Part->GetNumMaterials();++M)Mesh->SetMaterial(M,ComicDrill?ComicDrill:Part->GetMaterial(M));
+        auto* ToolMat=UMaterialInstanceDynamic::Create(ComicDrill?ComicDrill:Part->GetMaterial(0),Mesh);
+        ToolMat->SetScalarParameterValue(TEXT("Fade"),1);ToolMat->SetScalarParameterValue(TEXT("InkExit"),0);FinaleDrillMaterials.Add(ToolMat);
+        for(int M=0;M<Part->GetNumMaterials();++M)Mesh->SetMaterial(M,ToolMat);
         Mesh->RegisterComponent();FinaleDrills.Add(Mesh);Pivot->SetVisibility(false,true);
     }
 }
@@ -222,6 +237,7 @@ void AEndingEmergence::BeginFinaleDrill()
 {
     if(bFinaleDrilling||!Mining)return;
     bFinaleDrilling=true;DrillDistance=FinaleDrillSpeed=FinaleSpin=0;FinaleDrillCuts=0;FinaleSide=FinaleSideSpeed=0;FinaleSideVector=FVector::ZeroVector;
+    for(auto* Part:{FinaleImpactShards.Get(),FinaleImpactLines.Get(),FinaleSpeedLines.Get()})if(auto* Mat=Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0)))Mat->SetScalarParameterValue(TEXT("Fade"),1);
     FinaleKick=0;FinaleImpactSlot=0;FinaleImpactAges.Init(10,6);
     if(auto* Effects=Player->GetPawn()->FindComponentByClass<UMiningToolEffectsComponent>())
     {
@@ -263,7 +279,7 @@ void AEndingEmergence::UpdateFinaleDrillEffects(float Dt,float Boost)
     const float MeshScale=100.f/FMath::Max(1.f,static_cast<float>(FinaleImpactShards->GetStaticMesh()->GetBounds().BoxExtent.GetMax()*2));
     FinaleKick=FMath::Max(0.f,FinaleKick-Dt*7);
     auto* ShardMat=Cast<UMaterialInstanceDynamic>(FinaleImpactShards->GetMaterial(0));
-    if(ShardMat){ShardMat->SetVectorParameterValue(TEXT("Tint"),Finale::Palette[Finale::Stage(DrillDistance)]*.95f);ShardMat->SetScalarParameterValue(TEXT("Stage"),Finale::Stage(DrillDistance));}
+    if(ShardMat){ShardMat->SetVectorParameterValue(TEXT("Tint"),Finale::Palette[Finale::Stage(DrillDistance)]*.95f);ShardMat->SetScalarParameterValue(TEXT("Stage"),Finale::Stage(DrillDistance));ShardMat->SetScalarParameterValue(TEXT("WhiteInk"),Finale::Ease((DrillDistance-6200)/650));}
     // Fixed instance pools: no particle actors or mesh allocations per contact.
     for(int Burst=0;Burst<6;++Burst)
     {
@@ -298,7 +314,21 @@ void AEndingEmergence::UpdateFinaleDrillEffects(float Dt,float Boost)
     FinaleImpactShards->MarkRenderStateDirty();FinaleImpactLines->MarkRenderStateDirty();FinaleSpeedLines->MarkRenderStateDirty();
 }
 
-void AEndingEmergence::EndFinaleDrill()
+void AEndingEmergence::PoseFinaleTools()
+{
+    float Angle=FinaleSpin*720;
+    if(FinaleSpinCurve){float A,B;FinaleSpinCurve->GetTimeRange(A,B);Angle=FinaleSpinCurve->GetFloatValue(A+FMath::Fmod(FinaleSpin,FMath::Max(.001f,B-A)));}
+    for(int I=0;I<FinaleDrills.Num();++I)
+    {
+        auto* Mesh=FinaleDrills[I].Get();auto* Pivot=FinaleDrillPivots[I].Get();
+        const FTransform Spin=UMiningToolEffectsComponent::BuildDrillSpinTransform(Mesh->GetRelativeTransform(),FVector::ForwardVector,FVector::ZeroVector,I?-Angle:Angle);
+        const FQuat Base=FRotator(14,I?18:-18,0).Quaternion();
+        Pivot->SetRelativeRotation(Base*Spin.GetRotation());
+        Pivot->SetRelativeLocation(FVector((I?95:85)-FinaleKick*1.3f,I?-28:28,FMath::Lerp(-32.f,3.f,Shot==10?1.f:Finale::Ease(ShotTime/.8f)))+Base.RotateVector(Spin.GetTranslation()));
+    }
+}
+
+void AEndingEmergence::EndFinaleDrill(bool KeepVisuals)
 {
     if(bFinaleDrilling&&Mining)
     {
@@ -314,17 +344,35 @@ void AEndingEmergence::EndFinaleDrill()
         Mining->DepthMultiplier=SavedDepth;Mining->DownwardOffset=SavedDownward;Mining->InsetFraction=SavedInset;Mining->bShowPreview=SavedPreview;
     }
     bFinaleDrilling=false;
+    if(KeepVisuals)return;
     if(FinaleImpactShards)FinaleImpactShards->SetVisibility(false);
     if(FinaleImpactLines)FinaleImpactLines->SetVisibility(false);
     if(FinaleSpeedLines)FinaleSpeedLines->SetVisibility(false);
     for(auto C:FinaleDrills)if(C)C->DestroyComponent();FinaleDrills.Empty();
-    for(auto C:FinaleDrillPivots)if(C)C->DestroyComponent();FinaleDrillPivots.Empty();
+    for(auto C:FinaleDrillPivots)if(C)C->DestroyComponent();FinaleDrillPivots.Empty();FinaleDrillMaterials.Empty();
     if(ToolLight){ToolLight->SetVisibility(false);ToolLight->SetIntensity(900);}
+}
+
+void AEndingEmergence::UpdateFinaleExit(float Dt)
+{
+    const float Fade=1-Finale::Ease(ShotTime/1.65f);
+    FinaleSpin+=Dt*.65f;PoseFinaleTools();UpdateFinaleDrillEffects(Dt,1);
+    for(auto Mat:FinaleDrillMaterials){Mat->SetScalarParameterValue(TEXT("Fade"),Fade);Mat->SetScalarParameterValue(TEXT("InkExit"),1-Fade);}
+    for(auto* Part:{FinaleImpactShards.Get(),FinaleImpactLines.Get(),FinaleSpeedLines.Get()})
+    {
+        if(auto* Mat=Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0)))
+        {Mat->SetScalarParameterValue(TEXT("Fade"),Fade);Mat->SetVectorParameterValue(TEXT("Tint"),FLinearColor(.8f,.8f,.8f));}
+        Part->SetVisibility(Fade>0);
+    }
+    for(auto Pivot:FinaleDrillPivots)Pivot->SetVisibility(Fade>0,true);
+    if(ToolLight)ToolLight->SetIntensity(1800*Fade);
+    if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),FMath::Sin(PI*Finale::Ease(ShotTime/Duration(10)))*.9f);
 }
 
 void AEndingEmergence::ResetFinale()
 {
-    EndFinaleDrill();for(auto R:FinaleRocks)if(IsValid(R))R->Destroy();FinaleRocks.Empty();
+    EndFinaleDrill();if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);
+    for(auto R:FinaleRocks)if(IsValid(R))R->Destroy();FinaleRocks.Empty();
     if(!bTitleRestored)
     {
         for(int B=0;B<TitleBatches.Num();++B)TitleBatches[B]->BatchUpdateInstancesTransforms(0,TitleOriginals[B],false,true,true);
@@ -376,23 +424,18 @@ void AEndingEmergence::UpdateFinale(float Dt)
         const float Kick=bComfortMode?0:FinaleKick;
         Pose(Finale::Tunnel+FVector(DrillDistance,0,0)+FinaleSideVector,Finale::Tunnel+FVector(DrillDistance+1000,0,0)+FinaleSideVector,86+Progress*8+Kick*1.8f,Roll+FMath::Sin(Age*73)*Kick*.55f);
         FinaleSpin+=Dt*Boost*(.45f+Progress*.85f);
-        float Angle=FinaleSpin*720;
-        if(FinaleSpinCurve){float A,B;FinaleSpinCurve->GetTimeRange(A,B);Angle=FinaleSpinCurve->GetFloatValue(A+FMath::Fmod(FinaleSpin,FMath::Max(.001f,B-A)));}
-        for(int I=0;I<FinaleDrills.Num();++I)
-        {
-            auto* Pivot=FinaleDrillPivots[I].Get();auto* Mesh=FinaleDrills[I].Get();
-            const FTransform Spin=UMiningToolEffectsComponent::BuildDrillSpinTransform(Mesh->GetRelativeTransform(),FVector::ForwardVector,FVector::ZeroVector,I?-Angle:Angle);
-            const FQuat Base=FRotator(14,I?18:-18,0).Quaternion();
-            Pivot->SetRelativeRotation(Base*Spin.GetRotation());
-            Pivot->SetRelativeLocation(FVector((I?95:85)-FinaleKick*1.3f,I?-28:28,FMath::Lerp(-32.f,3.f,Finale::Ease(ShotTime/.8f)))+Base.RotateVector(Spin.GetTranslation()));
-        }
+        PoseFinaleTools();
+        for(auto Mat:FinaleDrillMaterials)Mat->SetScalarParameterValue(TEXT("WhiteInk"),Finale::Ease((DrillDistance-6200)/650));
+        for(auto* Part:{FinaleImpactLines.Get(),FinaleSpeedLines.Get()})if(auto* Mat=Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0)))
+            Mat->SetVectorParameterValue(TEXT("Tint"),FMath::Lerp(FLinearColor(.8f,.75f,.65f),FLinearColor(.015f,.015f,.02f),Finale::Ease((DrillDistance-6200)/650)));
         TransitEffects(bComfortMode?0:Progress*.2f);
         if(DrillDistance>=Finale::DrillEnd)SetShot(10);
     }
     else if(Shot==10)
     {
         const float T=FMath::Clamp(ShotTime/Duration(10),0.f,1.f);
-        Pose(Finale::Tunnel+FVector(FMath::Lerp(Finale::DrillEnd,7090.f,T*T),0,0)+FinaleSideVector*(1-Finale::Ease(T)),Finale::Tunnel+FVector(7200,0,0),FMath::Lerp(94.f,45.f,T),bComfortMode?0:1080+540*T*T);
+        Pose(Finale::Tunnel+FVector(FMath::Lerp(Finale::DrillEnd,8390.f,T*T),0,0)+FinaleSideVector*(1-Finale::Ease(T)),Finale::Tunnel+FVector(8500,0,0),FMath::Lerp(94.f,45.f,T),bComfortMode?0:1080+540*T*T);
+        UpdateFinaleExit(Dt);
         FinaleLight->SetRelativeScale3D(FVector(.24f+Finale::Ease(T)*.5f));TransitEffects(bComfortMode?0:.2f+.5f*T);
     }
     else if(Shot==11)

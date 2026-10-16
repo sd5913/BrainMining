@@ -38,6 +38,8 @@ class BRAINMINING_API AMiningEncounterPlayerController : public ABrainMiningPlay
 public:
     AMiningEncounterPlayerController();
     virtual void BeginPlay() override;
+    bool IsCardRoomContext() const;
+    virtual bool InputKey(const FInputKeyEventArgs& Params) override;
     void MinePressed();
     void MineReleased();
     virtual void SetupInputComponent() override;

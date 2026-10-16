@@ -77,4 +77,34 @@ bool FMiningBombFractureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Cave reset restores the chunk volume"),FMath::IsNearlyEqual(RockVolume(Chunked),ChunkInitial,1.));
 	return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningBombOnlyTest,"BrainMining.Bomb.BombOnlyLayers",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningBombOnlyTest::RunTest(const FString& Parameters)
+{
+	UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+	ON_SCOPE_EXIT{World->DestroyWorld(false);};
+	for (int32 Kind=0;Kind<3;++Kind)
+	{
+		ADiggableRock* Rock=Kind==0?World->SpawnActor<ADiggableRock>():World->SpawnActor<AGeneratedMiningRock>();
+		Rock->RockSize=FVector(1200,1200,200);Rock->ResetRock();
+		if (auto* Generated=Cast<AGeneratedMiningRock>(Rock))
+		{
+			FMinimalBoxMeshGenerator Box;Box.Box=FOrientedBox3d(FVector3d::Zero(),FVector3d(600,600,100));Box.Generate();
+			if (Kind==2) TestTrue(TEXT("Chunked fixture"),Generated->SetChunkedMesh(FDynamicMesh3(&Box),400,true));
+			else Generated->SetGeneratedMesh(FDynamicMesh3(&Box));
+		}
+		Rock->Tags.Add(TEXT("BM_BombOnly"));const double Before=RockVolume(Rock);
+		TestFalse(TEXT("Drill cannot cut bomb-only layer"),Rock->MineSphere(FVector(0,0,95),260));
+		TestFalse(TEXT("Any pickaxe size cannot cut bomb-only layer"),Rock->MinePickaxe(FTransform(FVector(0,0,95)),FVector(400),17,.3f));
+		TestEqual(TEXT("Rejected tools leave exact geometry intact"),RockVolume(Rock),Before);
+		TestTrue(TEXT("Reduced bomb cuts hard layer"),Rock->MineBlast(FVector(0,0,95),260,.35f,42));
+		if (auto* Generated=Cast<AGeneratedMiningRock>(Rock))
+		{
+			const double Deadline=FPlatformTime::Seconds()+3;
+			while(Generated->bCutPending && FPlatformTime::Seconds()<Deadline){FPlatformProcess::Sleep(.001f);Generated->Tick(.01f);}
+			TestFalse(TEXT("Blast queue completes"),Generated->bCutPending);
+		}
+		TestTrue(TEXT("Blast actually removes material"),RockVolume(Rock)<Before);
+	}
+	return true;
+}
 #endif

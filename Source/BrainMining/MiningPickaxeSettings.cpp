@@ -1,5 +1,13 @@
 #include "MiningPickaxeSettings.h"
 
+FString FMiningPickaxeLevel::GetMaterialCostText() const
+{
+    TArray<FString> Parts;
+    for (const auto& Cost : MaterialCosts)
+        Parts.Add(FString::Printf(TEXT("%s ×%d"), *FMiningMineralCost::Name(Cost.Mineral), Cost.Count));
+    return FString::Join(Parts, TEXT("  "));
+}
+
 bool FMiningPickaxeLevel::Validate(FString& Error) const
 {
     const auto InRange = [](float Value, float Minimum, float Maximum)
@@ -58,11 +66,18 @@ TArray<FMiningPickaxeLevel> UMiningPickaxeSettings::MakeRecommendedLevels()
 {
     TArray<FMiningPickaxeLevel> Result;
     const int64 Prices[] = {0, 50, 1000, 5000, 50000};
+    const int32 Costs[5][4] = {{0,0,0,0},{4,2,0,0},{6,4,0,0},{8,6,2,0},{10,8,4,2}};
+    const EMiningMineral Types[] = {EMiningMineral::Copper, EMiningMineral::Iron, EMiningMineral::Malachite, EMiningMineral::Diamond};
     for (int32 Index = 0; Index < 5; ++Index)
     {
         auto& Level = Result.AddDefaulted_GetRef();
         Level.Name = FString::Printf(TEXT("等级 %d%s"), Index, Index == 0 ? TEXT(" · 初始") : TEXT(""));
         Level.Price = Prices[Index];
+        for (int32 Kind = 0; Kind < 4; ++Kind) if (Costs[Index][Kind] > 0)
+        {
+            auto& Cost = Level.MaterialCosts.AddDefaulted_GetRef();
+            Cost.Mineral = Types[Kind]; Cost.Count = Costs[Index][Kind];
+        }
         Level.DestructionLevel = Index;
         Level.bUseHardness = true;
         Level.Width = Index >= 2 ? 400.f : 320.f;
@@ -101,6 +116,16 @@ bool UMiningPickaxeSettings::Validate(FString& Error) const
     }
     for (int32 Index = 0; Index < Levels.Num(); ++Index)
     {
+        const auto& Costs = Levels[Index].MaterialCosts;
+        if ((Index == 0 && !Costs.IsEmpty()) || (Index > 0 && Costs.IsEmpty()))
+        { Error = TEXT("等级 0 升级材料须留空；等级 1～4 须填写升级材料。"); return false; }
+        TSet<EMiningMineral> Seen;
+        for (const auto& Cost : Costs)
+        {
+            if (!FMiningMineralCost::IsSupported(Cost.Mineral) || Cost.Count < 1 || Cost.Count > 1000000 || Seen.Contains(Cost.Mineral))
+            { Error = TEXT("升级材料仅支持铜矿、铁矿、孔雀石、钻石；不可重复，数量须为 1～1000000。"); return false; }
+            Seen.Add(Cost.Mineral);
+        }
         if (!Levels[Index].Validate(Error))
         {
             Error = FString::Printf(TEXT("等级 %d：%s"), Index, *Error);

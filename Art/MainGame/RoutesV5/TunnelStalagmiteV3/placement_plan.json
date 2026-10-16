@@ -1,0 +1,142 @@
+{
+  "seed": 20261017,
+  "factor": 0.88,
+  "objects": [
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 48.197900856779825,
+      "allowed_end_m": 51.37971903859801,
+      "name": "SM_RoutesV5_TunnelStalagmiteV3_Blocker_01",
+      "seed": 20261406,
+      "bomb_only": false,
+      "start_arc_m": 48.38880994768891,
+      "end_arc_m": 51.188809947688924,
+      "arc_length_m": 2.8000000000000114,
+      "center_m": [
+        -35.16092300415039,
+        3.179152727127075,
+        48.04304122924805
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 126.74493027730418,
+      "allowed_end_m": 128.10856664094055,
+      "name": "SM_RoutesV5_TunnelStalagmiteV3_Blocker_02",
+      "seed": 20261597,
+      "bomb_only": true,
+      "start_arc_m": 126.82674845912236,
+      "end_arc_m": 128.02674845912236,
+      "arc_length_m": 1.2000000000000028,
+      "center_m": [
+        -1.9044908285140991,
+        9.080769538879395,
+        30.12258529663086
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 191.30609025164802,
+      "allowed_end_m": 194.4879084334662,
+      "name": "SM_RoutesV5_TunnelStalagmiteV3_Blocker_03",
+      "seed": 20261788,
+      "bomb_only": false,
+      "start_arc_m": 191.4969993425571,
+      "end_arc_m": 194.29699934255711,
+      "arc_length_m": 2.8000000000000114,
+      "center_m": [
+        34.228336334228516,
+        -4.695316314697266,
+        14.499040603637695
+      ]
+    },
+    {
+      "path_index": 0,
+      "path_name": "Main",
+      "allowed_start_m": 250.47558060695803,
+      "allowed_end_m": 251.8392169705944,
+      "name": "SM_RoutesV5_TunnelStalagmiteV3_Blocker_04",
+      "seed": 20261979,
+      "bomb_only": true,
+      "start_arc_m": 250.55739878877623,
+      "end_arc_m": 251.75739878877621,
+      "arc_length_m": 1.1999999999999886,
+      "center_m": [
+        56.81563949584961,
+        -3.5304055213928223,
+        13.37977123260498
+      ]
+    },
+    {
+      "path_index": 1,
+      "path_name": "Branch_01",
+      "allowed_start_m": 8.036623584450808,
+      "allowed_end_m": 10.536623584450808,
+      "name": "SM_RoutesV5_TunnelStalagmiteV3_Blocker_05",
+      "seed": 20262170,
+      "bomb_only": false,
+      "start_arc_m": 8.186623584450809,
+      "end_arc_m": 10.386623584450808,
+      "arc_length_m": 2.1999999999999993,
+      "center_m": [
+        -41.179954528808594,
+        -13.175106048583984,
+        52.34095001220703
+      ]
+    },
+    {
+      "path_index": 2,
+      "path_name": "Branch_02",
+      "allowed_start_m": 8.98654072048599,
+      "allowed_end_m": 10.350177084122354,
+      "name": "SM_RoutesV5_TunnelStalagmiteV3_Blocker_06",
+      "seed": 20262361,
+      "bomb_only": true,
+      "start_arc_m": 9.068358902304173,
+      "end_arc_m": 10.268358902304172,
+      "arc_length_m": 1.1999999999999993,
+      "center_m": [
+        -8.237885475158691,
+        -7.567159175872803,
+        34.65715789794922
+      ]
+    },
+    {
+      "path_index": 3,
+      "path_name": "Branch_03",
+      "allowed_start_m": 8.036616018831804,
+      "allowed_end_m": 10.536616018831804,
+      "name": "SM_RoutesV5_TunnelStalagmiteV3_Blocker_07",
+      "seed": 20262552,
+      "bomb_only": false,
+      "start_arc_m": 8.186616018831804,
+      "end_arc_m": 10.386616018831804,
+      "arc_length_m": 2.1999999999999993,
+      "center_m": [
+        17.066326141357422,
+        -2.915412187576294,
+        8.281722068786621
+      ]
+    },
+    {
+      "path_index": 4,
+      "path_name": "Branch_04",
+      "allowed_start_m": 13.009389005911478,
+      "allowed_end_m": 15.509389005911478,
+      "name": "SM_RoutesV5_TunnelStalagmiteV3_Blocker_08",
+      "seed": 20262743,
+      "bomb_only": false,
+      "start_arc_m": 13.159389005911478,
+      "end_arc_m": 15.359389005911478,
+      "arc_length_m": 2.1999999999999993,
+      "center_m": [
+        48.39008712768555,
+        -18.9735164642334,
+        9.961420059204102
+      ]
+    }
+  ]
+}

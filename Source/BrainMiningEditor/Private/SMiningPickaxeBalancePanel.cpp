@@ -60,7 +60,7 @@ void SMiningPickaxeBalancePanel::Construct(const FArguments& Arguments)
                 + SWrapBox::Slot()[Button(TEXT("恢复已购等级"), [this]() { return Restore(); })]
             ]
             + SVerticalBox::Slot().AutoHeight().Padding(0, 4)
-            [ SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(TEXT("试玩时按 Shift+F1 释放鼠标，再点试用。试用不扣金币、不改购买等级；每次挥镐独立按当前岩层硬度计算深度。保存到 Config/DefaultGame.ini，重启及打包后仍生效。矿镐成长不改变钻机，也不附加收矿金币翻倍。"))) ]
+            [ SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(TEXT("试玩时按 Shift+F1 释放鼠标，再点试用。试用不扣矿石、不改购买等级；每次挥镐独立按当前岩层硬度计算深度。保存到 Config/DefaultGame.ini，重启及打包后仍生效。矿镐成长不改变钻机。"))) ]
             + SVerticalBox::Slot().AutoHeight().Padding(0, 4)
             [ SNew(STextBlock).AutoWrapText(true).Text_Lambda([this]() { return FText::FromString(Message); }) ]
         ]
@@ -91,8 +91,8 @@ FText SMiningPickaxeBalancePanel::GetSummary() const
     for (int32 Index = 0; Index < Draft->Levels.Num(); ++Index)
     {
         const auto Level = Draft->GetLevel(Index);
-        Summary += FString::Printf(TEXT("\n等级 %d / 破坏 %d  |  %lld 金币  |  边长 %.0f cm  |  每击基础深度 %.1f cm  |  %.3f 秒"),
-            Index,Level.DestructionLevel, Level.Price, Level.Width, Level.Depth, Level.Interval);
+        Summary += FString::Printf(TEXT("\n等级 %d / 破坏 %d  |  %s  |  边长 %.0f cm  |  每击基础深度 %.1f cm  |  %.3f 秒"),
+            Index,Level.DestructionLevel, *Level.GetMaterialCostText(), Level.Width, Level.Depth, Level.Interval);
     }
     return FText::FromString(Summary);
 }
@@ -164,7 +164,7 @@ FReply SMiningPickaxeBalancePanel::Preview()
             if (auto* Mining = Actor->FindComponentByClass<UMiningComponent>())
                 Count += Mining->ApplyPickaxeBalance(Draft->GetLevel(PreviewLevel)) ? 1 : 0;
     }
-    Message = Count > 0 ? FString::Printf(TEXT("当前试玩的 %d 个采矿角色正在试用等级 %d 草稿，购买等级和金币未改变。"), Count, PreviewLevel)
+    Message = Count > 0 ? FString::Printf(TEXT("当前试玩的 %d 个采矿角色正在试用等级 %d 草稿，升级等级和背包未改变。"), Count, PreviewLevel)
         : TEXT("请先在编辑器内开始试玩，等待角色出现，再点试用草稿。");
     return FReply::Handled();
 }

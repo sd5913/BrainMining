@@ -107,6 +107,11 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 			return false;
 		}
 	}
+	if (Rock->ActorHasTag(TEXT("BM_BombOnly")))
+	{
+		Status = TEXT("坚硬岩层：只能用炸弹破坏");
+		TargetPickaxeHits = 0; bLastPickaxeBreak = false; return false;
+	}
 	if (GetPickaxeDepthMultiplier(Rock)<=0)
 	{
 		Status=FString::Printf(TEXT("破坏等级不足：矿镐 %d / 岩层硬度 %d，无法破坏"),PickaxeBalance.DestructionLevel,Rock->HardnessLevel);

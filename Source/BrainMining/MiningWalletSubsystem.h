@@ -1,6 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "MiningMineralInventory.h"
 #include "MiningWalletSubsystem.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FMiningCoinsAdded, int64);
@@ -10,6 +11,13 @@ class BRAINMINING_API UMiningWalletSubsystem : public UGameInstanceSubsystem
 {
     GENERATED_BODY()
 public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Inventory") bool bUseMineralInventory = false;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Inventory") TMap<EMiningMineral, int32> Minerals;
+    UFUNCTION(BlueprintPure, Category="Mining|Inventory") bool UsesMineralInventory() const;
+    UFUNCTION(BlueprintCallable, Category="Mining|Inventory") bool AddMineral(FName TreasureId, int32 Amount = 1);
+    UFUNCTION(BlueprintPure, Category="Mining|Inventory") int32 GetMineralCount(EMiningMineral Mineral) const { return Minerals.FindRef(Mineral); }
+    bool CanSpendMinerals(const TArray<FMiningMineralCost>& Costs) const;
+    bool SpendMinerals(const TArray<FMiningMineralCost>& Costs);
     FMiningCoinsAdded OnCoinsAdded;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int64 Balance = 0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TArray<int32> UpgradeLevels = {0, 0, 0, 0};
@@ -25,7 +33,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Mining|Wallet")
     void AddCoins(int64 Amount)
     {
-        if (Amount <= 0) return;
+        if (UsesMineralInventory() || Amount <= 0) return;
         const int64 Credited = FMath::Min(Amount, MAX_int64 - Balance);
         if (Credited <= 0) return;
         Balance += Credited;

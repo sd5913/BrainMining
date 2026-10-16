@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
+#include "MiningMineralInventory.h"
 #include "MiningPickaxeSettings.generated.h"
 
 USTRUCT(BlueprintType)
@@ -24,8 +25,14 @@ struct BRAINMINING_API FMiningPickaxeLevel
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Level", meta=(DisplayName="等级名称"))
     FString Name;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Level", meta=(DisplayName="购买此等级的价格", ClampMin="0", ClampMax="1000000000"))
+    // Retained for legacy demonstration maps; MainGame uses MaterialCosts exclusively.
+    UPROPERTY()
     int64 Price = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Level", meta=(DisplayName="升级材料", TitleProperty="Mineral", ToolTip="升级到此等级需要的矿石。每种矿石只填一次，数量为正整数；等级 0 留空。"))
+    TArray<FMiningMineralCost> MaterialCosts;
+
+    FString GetMaterialCostText() const;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Level", meta=(DisplayName="镐子破坏等级"))
     int32 DestructionLevel = 0;

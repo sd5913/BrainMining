@@ -1,0 +1,15 @@
+import unreal
+from pathlib import Path
+ROOT=Path(unreal.Paths.project_dir()).resolve()
+code=(ROOT/'Scripts/inspect_main_game_mining_fx_runtime.py').read_text(encoding='utf-8')
+code=code.replace("OUT=ROOT/'Saved/Validation/MainGameMiningFX'","OUT=ROOT/'Saved/Validation/MainGameRoutesV5/FX'")
+code=code.replace("s['pawn'].get_component_by_class(unreal.MiningProgressionComponent).get_wallet().add_coins(100000)","[s['pawn'].get_component_by_class(unreal.MiningProgressionComponent).get_wallet().add_mineral(m,100) for m in ['2','4','6','9']]")
+code=code.replace('assert now-s[\'start\']<180','assert now-s[\'start\']<300')
+code=code.replace("Art/MainGame/RoutesV3","Art/MainGame/RoutesV5")
+code=code.replace("'bm.Mining.LazyRuntimeChunks 0'","'bm.Mining.LazyRuntimeChunks 1'")
+code=code.replace("            ignored=[s['pawn']]", "            s.update(probe_start=p,probe_end=end,probe_region=region,probe_stage=stage,probe_guide=guide,phase='trace_loaded',next=now+.6);move(p)\n        elif phase=='trace_loaded':\n            p=s['probe_start'];end=s['probe_end'];region=s['probe_region'];stage=s['probe_stage'];guide=s['probe_guide']\n            ignored=[s['pawn']]")
+code=code.replace("helper.capture_preview(s['pc'],", "helper.capture_preview(s['pc'],")
+code=code.replace("check(len(bursts)<=4 and len(clouds)<=12", "check(any(b['visible']>0 and b['material']==str(s['rock'].rock_material) for b in bursts),'Debris uses the actual struck material '+str(cases[s['index']]))\n        check(len(bursts)<=4 and len(clouds)<=12")
+code=code.replace("unreal.unregister_slate_post_tick_callback(callback);levels.editor_request_end_play()","levels.editor_request_end_play()")
+code=code.replace("if s['busy'] or s['phase']=='done':return", "if s['phase']=='done':\n        if not ed.get_game_world():\n            unreal.unregister_slate_post_tick_callback(callback);unreal.SystemLibrary.execute_console_command(ed.get_editor_world(),'QUIT_EDITOR')\n        return\n    if s['busy']:return")
+exec(compile(code,'v5_fx_verification','exec'),dict(__name__='__main__',STRICT=True,cases=[(0,.23,False),(0,.8,False,'guide'),(1,.4,False),(1,.8,False,'guide'),(2,.8,False)]))

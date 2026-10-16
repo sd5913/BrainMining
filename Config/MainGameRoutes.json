@@ -1,20 +1,17 @@
 {
-  "revision": 4,
-  "source_root": "Art/MainGame/RoutesV4",
+  "revision": 5,
+  "source_root": "Art/MainGame/RoutesV5",
   "stages": [
     "TunnelV1",
     "TunnelCavernV2",
-    "TunnelStalagmiteV3",
-    "TunnelNeuralV4"
+    "TunnelStalagmiteV3"
   ],
   "styles": [
-    "narrow-branches",
-    "ascending-caverns",
-    "descending-spiral",
-    "mixed-expedition"
+    "narrow-spires",
+    "ascending-jetpack",
+    "tight-descending-coils"
   ],
   "guide_slots": [
-    8,
     8,
     8,
     8
@@ -49,18 +46,9 @@
       5,
       6,
       7
-    ],
-    [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7
     ]
   ],
   "downstream_rise_cm": 10000,
-  "surface_style": "angular-lowpoly"
+  "surface_style": "irregular-asymmetric-lowpoly",
+  "terminal_room": "Museum"
 }

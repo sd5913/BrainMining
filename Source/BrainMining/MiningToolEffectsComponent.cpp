@@ -2,6 +2,7 @@
 #include "MiningComponent.h"
 #include "MiningBombToolComponent.h"
 #include "MiningDebrisBurst.h"
+#include "DiggableRock.h"
 #include "MiningDrillDustBurst.h"
 #include "BrainMiningCharacter.h"
 #include "EchoPassagePlayer.h"
@@ -207,6 +208,10 @@ void UMiningToolEffectsComponent::QueueImpact(const FHitResult& Hit)
 	if (!CanShowEffects() || !Hit.bBlockingHit || Hit.ImpactPoint.ContainsNaN() || Hit.ImpactNormal.ContainsNaN()) return;
 	PendingHit = Hit;
 	PendingSurfaceMaterial = Hit.GetComponent() ? Hit.GetComponent()->GetMaterial(0) : nullptr;
+	// Lazily created terrain chunks can report their hit before an override slot
+	// is available. Keep using the existing debris system with the rock's material.
+	if (!PendingSurfaceMaterial)
+		if (const auto* Rock = Cast<ADiggableRock>(Hit.GetActor())) PendingSurfaceMaterial = Rock->RockMaterial;
 	bPendingDrillImpact = Mining->bDrillMode;
 	SpawnImpact();
 }
@@ -291,6 +296,7 @@ void UMiningToolEffectsComponent::SpawnImpact()
 	AActor* Burst = nullptr;
 	if (LoadedDebrisClass == AMiningDebrisBurst::StaticClass())
 	{
+		if (DebrisPool.IsEmpty()) WarmDebrisPool();
 		for (AMiningDebrisBurst* Candidate : DebrisPool)
 			if (IsValid(Candidate) && !Candidate->IsPoolActive() && Candidate->GetPreparedChunkCount() > 0) { Burst = Candidate; break; }
 		if (!Burst && !DebrisPool.IsEmpty()) Burst = DebrisPool[NextDebrisPoolIndex++ % DebrisPool.Num()];

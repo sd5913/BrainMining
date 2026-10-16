@@ -1,4 +1,4 @@
-﻿#include "EndingEmergence.h"
+#include "EndingEmergence.h"
 #include "DiggableRock.h"
 #include "EndingComicRock.h"
 #include "MiningComponent.h"
@@ -88,53 +88,10 @@ void AEndingEmergence::BuildFinale()
     for(int I=0;I<144;++I)FinaleImpactShards->AddInstance(Hidden);
     for(int I=0;I<120;++I)FinaleImpactLines->AddInstance(Hidden);
     for(int I=0;I<64;++I)FinaleSpeedLines->AddInstance(Hidden);
-    FinaleLight=Shape(TEXT("FinaleExitLight"),FVector(8400,0,0),FVector(24),FLinearColor(3,3,3),TEXT("Sphere"),FinaleTunnel,TEXT("Glow"));
+    FinaleLight=Shape(TEXT("FinaleExitLight"),FVector(9150,0,0),FVector(4,75,75),FLinearColor(10,10,10),TEXT("Sphere"),FinaleTunnel,TEXT("Glow"));
     FinaleTunnel->SetVisibility(false,true);
 
-    // The camera arrives at seated eye height. Four distinct bulbs frame the monitor.
-    FinaleReality=Group(TEXT("FinaleRealityDesk"),Finale::Desk);
-    const FLinearColor Wood(.24f,.12f,.058f),Cream(.42f,.38f,.30f),Dark(.018f,.025f,.035f);
-    Shape(TEXT("FinaleFloor"),FVector(0,0,-5),FVector(1400,1300,10),Wood*.38f,TEXT("Cube"),FinaleReality);
-    Shape(TEXT("FinaleRoomBack"),FVector(440,0,230),FVector(12,1100,470),Cream*.6f,TEXT("Cube"),FinaleReality);
-    Shape(TEXT("FinaleRoomSide"),FVector(0,550,230),FVector(880,12,470),Cream*.75f,TEXT("Cube"),FinaleReality);
-    Shape(TEXT("FinaleWindow"),FVector(160,540,240),FVector(310,5,250),FLinearColor(.65f,.44f,.22f),TEXT("Cube"),FinaleReality,TEXT("Glow"));
-    for(int I=-1;I<=1;++I)Shape(TEXT("FinaleWindowFrame"),FVector(160+I*105,532,240),FVector(6,8,255),Wood,TEXT("Cube"),FinaleReality);
-    Shape(TEXT("FinaleDesktop"),FVector(45,0,78),FVector(300,290,12),Wood,TEXT("Cube"),FinaleReality);
-    Shape(TEXT("FinaleMonitorBase"),FVector(100,0,86),FVector(36,62,5),Dark,TEXT("Cube"),FinaleReality);
-    Shape(TEXT("FinaleMonitorStem"),FVector(110,0,112),FVector(10,12,50),Dark,TEXT("Cube"),FinaleReality);
-    Shape(TEXT("FinaleMonitor"),FVector(108,0,159),FVector(9,136,84),Dark,TEXT("Cube"),FinaleReality);
-    Shape(TEXT("FinaleScreen"),FVector(102,0,159),FVector(1,125,73),FLinearColor(.02f,.065f,.09f),TEXT("Cube"),FinaleReality,TEXT("Glow"));
-    // A level viewport and side panels establish a development workstation.
-    Shape(TEXT("FinaleViewport"),FVector(101,-12,158),FVector(.5f,80,48),FLinearColor(.025f,.14f,.17f),TEXT("Cube"),FinaleReality,TEXT("Glow"));
-    for(int I=0;I<9;++I)Shape(TEXT("FinaleEditorLines"),FVector(100,47,183-I*6),FVector(.4f,22-(I%3)*4,1),FLinearColor(.13f,.24f,.25f),TEXT("Cube"),FinaleReality,TEXT("Glow"));
-    auto* Title=NewObject<UTextRenderComponent>(this,NAME_None,RF_Transient);Title->SetupAttachment(FinaleReality);
-    Title->SetRelativeLocationAndRotation(FVector(99,-12,161),FRotator(0,180,0));Title->SetHorizontalAlignment(EHTA_Center);
-    Title->SetText(FText::FromString(TEXT("WOoOW")));Title->SetWorldSize(13);Title->SetTextRenderColor(FColor(240,211,133));Title->RegisterComponent();
-    Shape(TEXT("FinaleKeyboard"),FVector(30,-5,87),FVector(34,95,4),Dark,TEXT("Cube"),FinaleReality);
-    auto* Keys=Instances(TEXT("FinaleKeyboardKeys"),TEXT("Cube"),Cream*.55f,FinaleReality);
-    for(int X=0;X<4;++X)for(int Y=0;Y<13;++Y)Keys->AddInstance(FTransform(FRotator::ZeroRotator,FVector(19+X*7,-46+Y*7,90),FVector(.05f,.05f,.02f)));
-    Shape(TEXT("FinaleMousePad"),FVector(25,84,86),FVector(44,43,1),Dark*.7f,TEXT("Cube"),FinaleReality);
-    Shape(TEXT("FinaleMouse"),FVector(25,84,89),FVector(14,9,6),Cream*.4f,TEXT("Sphere"),FinaleReality);
-    Shape(TEXT("FinaleCup"),FVector(65,-106,101),FVector(20,20,30),Cream,TEXT("Cylinder"),FinaleReality);
-    Shape(TEXT("FinaleCoffee"),FVector(65,-106,117),FVector(18,18,1),Wood*.1f,TEXT("Cylinder"),FinaleReality);
-    for(int I=0;I<5;++I){auto* Note=Shape(TEXT("FinaleDeskNote"),FVector(-5+I*15,-100,86+I*.3),FVector(22,26,.4),Cream*1.4f,TEXT("Cube"),FinaleReality);Note->SetRelativeRotation(FRotator(0,I*13,0));}
-    for(int Side:{-1,1})
-    {
-        Rod(FVector(-95,Side*45,98),FVector(-20,Side*34,92),15,FLinearColor(.04f,.11f,.14f),FinaleReality,TEXT("Surface"));
-        Shape(TEXT("FinaleRestingHand"),FVector(-10,Side*33,93),FVector(26,15,8),FLinearColor(.42f,.25f,.14f),TEXT("Sphere"),FinaleReality);
-    }
-    for(int I=0;I<4;++I)
-    {
-        const FVector P(88,I%2?102:-102,I<2?155:235);
-        Shape(TEXT("FinaleBulbGlass"),P,FVector(46,46,54),FLinearColor(.32f,.22f,.07f),TEXT("Sphere"),FinaleReality,TEXT("Atmosphere"));
-        Shape(TEXT("FinaleBulbNeck"),P-FVector(0,0,30),FVector(21,21,20),FLinearColor(.25f,.19f,.09f),TEXT("Cylinder"),FinaleReality);
-        for(int J=0;J<4;++J)Shape(TEXT("FinaleBulbScrew"),P-FVector(0,0,24+J*5),FVector(24,24,2),Dark*3,TEXT("Cylinder"),FinaleReality);
-        auto* Glow=Shape(TEXT("FinaleBulbFilament"),P,FVector(20,20,26),FLinearColor(2,1.1f,.25f),TEXT("Sphere"),FinaleReality,TEXT("Glow"));
-        FinaleBulbMaterials.Add(Cast<UMaterialInstanceDynamic>(Glow->GetMaterial(0)));
-        auto* Light=NewObject<UPointLightComponent>(this,NAME_None,RF_Transient);Light->SetupAttachment(FinaleReality);Light->SetRelativeLocation(P);
-        Light->SetLightColor(FLinearColor(1,.7f,.3f));Light->SetIntensity(250);Light->SetAttenuationRadius(320);Light->SetCastShadows(false);Light->RegisterComponent();FinaleBulbLights.Add(Light);
-    }
-    FinaleReality->SetVisibility(false,true);
+    BuildPaperFinale();
     // A scaled copy of the real entrance occupies the o opening. At the end of
     // the dive its projected geometry matches the full-size excavation camera.
     FinaleEntrancePreview=Group(TEXT("FinaleEntrancePreview"),Finale::Cosmos+Finale::Hole);
@@ -256,7 +213,10 @@ void AEndingEmergence::BeginFinaleDrill()
     PrepareFinaleRocks();
     FinaleEntrancePreview->SetVisibility(false,true);
     for(auto Pivot:FinaleDrillPivots)Pivot->SetVisibility(true,true);
-    FinaleTunnel->SetVisibility(true,true);ToolLight->SetVisibility(true);ToolLight->SetIntensity(1800);
+    FinaleTunnel->SetVisibility(true,true);
+    FinaleLight->SetRelativeScale3D(FVector(.04f,.75f,.75f));
+    ResetPaperFinale();PaperScene->SetVisibility(false,true);
+    ToolLight->SetVisibility(true);ToolLight->SetIntensity(1800);
     Pose(Finale::Tunnel,Finale::Tunnel+FVector(1000,0,0),86);
     Mining->BeginMiningInput();SetAmbience(TEXT("Brain"),.32f);
 }
@@ -366,7 +326,7 @@ void AEndingEmergence::UpdateFinaleExit(float Dt)
     }
     for(auto Pivot:FinaleDrillPivots)Pivot->SetVisibility(Fade>0,true);
     if(ToolLight)ToolLight->SetIntensity(1800*Fade);
-    if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),FMath::Sin(PI*Finale::Ease(ShotTime/Duration(10)))*.9f);
+    if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),FMath::Sin(PI*Finale::Ease(ShotTime/2.2f))*.6f);
 }
 
 void AEndingEmergence::ResetFinale()
@@ -383,7 +343,10 @@ void AEndingEmergence::ResetFinale()
     for(auto Mat:FinalePreviewMaterials)Mat->SetScalarParameterValue(TEXT("Reveal"),0);
     if(FinaleCellSpecks)FinaleCellSpecks->SetVisibility(false);
     if(FinaleTunnel)FinaleTunnel->SetVisibility(false,true);if(FinaleReality)FinaleReality->SetVisibility(false,true);
-    if(FinaleLight)FinaleLight->SetRelativeScale3D(FVector(.24f));
+    if(FinaleLight){FinaleLight->SetRelativeScale3D(FVector(.24f));FinaleLight->SetVisibility(false);}
+    ResetPaperFinale();if(PaperScene)PaperScene->SetVisibility(false,true);
+    if(CreditsScreenMaterial)CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),0);
+    if(CreditsScreenLight)CreditsScreenLight->SetIntensity(0);
     DrillDistance=FinaleDrillSpeed=FinaleDrillCuts=0;TitleUpdateAt=-1;
 }
 
@@ -431,21 +394,5 @@ void AEndingEmergence::UpdateFinale(float Dt)
         TransitEffects(bComfortMode?0:Progress*.2f);
         if(DrillDistance>=Finale::DrillEnd)SetShot(10);
     }
-    else if(Shot==10)
-    {
-        const float T=FMath::Clamp(ShotTime/Duration(10),0.f,1.f);
-        Pose(Finale::Tunnel+FVector(FMath::Lerp(Finale::DrillEnd,8390.f,T*T),0,0)+FinaleSideVector*(1-Finale::Ease(T)),Finale::Tunnel+FVector(8500,0,0),FMath::Lerp(94.f,45.f,T),bComfortMode?0:1080+540*T*T);
-        UpdateFinaleExit(Dt);
-        FinaleLight->SetRelativeScale3D(FVector(.24f+Finale::Ease(T)*.5f));TransitEffects(bComfortMode?0:.2f+.5f*T);
-    }
-    else if(Shot==11)
-    {
-        Pose(Finale::Desk+FVector(-225,0,180+FMath::Sin(ShotTime*.8f)*.35f),Finale::Desk+FVector(105,0,170),68);
-        for(int I=0;I<FinaleBulbMaterials.Num();++I)
-        {
-            const float Pulse=.15f+.85f*Finale::Ease((FMath::Sin(ShotTime*2.6f-I*1.3f)+.4f)/1.2f);
-            FinaleBulbMaterials[I]->SetVectorParameterValue(TEXT("Tint"),FLinearColor(2.8f,1.5f,.38f)*Pulse);
-            FinaleBulbLights[I]->SetIntensity(60+300*Pulse);
-        }
-    }
+    else if(Shot>=10)UpdatePaperFinale(Dt);
 }

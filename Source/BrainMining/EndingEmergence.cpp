@@ -73,7 +73,8 @@ public:
         const float S=FMath::Min(Size.X/1600,Size.Y/900);
         // Retain controls, aim and target markers, without narrative or target labels.
         const float Fade=D->OverlayAlpha();
-        if(Fade>0)FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,FLinearColor(1,.98f,.90f,Fade));
+        if(Fade>0)FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,FLinearColor(0,0,0,Fade));
+        if(Fade>.995f)return L;
         if(D->Shot<0&&D->GateIndex<5)
         {
             auto Rect=[&](float X,float Y,float W,float H,FLinearColor C){FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(X,Y))),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,C);};
@@ -917,7 +918,7 @@ void AEndingEmergence::PreviewFilm()
 
 float AEndingEmergence::Duration(int32 Index)
 {
-    const float Seconds[]={5,20,14,18,35,20,18,12,4.5f,0,2.6f,0};
+    const float Seconds[]={5,20,14,18,35,20,18,12,4.5f,0,5.8f,6.6f,6.5f,0};
     return Index>=0&&Index<UE_ARRAY_COUNT(Seconds)?Seconds[Index]:0;
 }
 
@@ -952,14 +953,28 @@ void AEndingEmergence::SetShot(int32 Index)
     if(Shot==8){UpdateCellTitle(1);Sound(TEXT("PulseFlight"),.7f,.6f);}
     if(Shot>=9)for(auto Set:Sets)Set->SetVisibility(false,true);
     if(Shot==9)BeginFinaleDrill();
-    if(Shot==10){EndFinaleDrill(true);Sound(TEXT("Connect"),.6f,.55f);}
+    if(Shot==10)
+    {
+        EndFinaleDrill(true);PaperScene->SetRelativeRotation(FRotator(90,0,0));PaperScene->SetVisibility(false,true);
+        FinaleTunnel->SetVisibility(false,true);FinaleLight->SetVisibility(true);
+        for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(true);
+        Sound(TEXT("Connect"),.45f,.7f);
+    }
     if(Shot==11)
     {
         EndFinaleDrill();
         if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);
-        FinaleTunnel->SetVisibility(false,true);FinaleReality->SetVisibility(true,true);TransitEffects(0);
+        FinaleTunnel->SetVisibility(false,true);PaperScene->SetRelativeRotation(FRotator::ZeroRotator);TransitEffects(0);
         for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(true);
-        bComplete=true;SetAmbience(TEXT("Cell"),.08f);
+        SetAmbience(TEXT("Cell"),.06f);
+    }
+    if(Shot==13)
+    {
+        PaperScene->SetVisibility(false,true);FinaleReality->SetVisibility(true,true);
+        CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),0);CreditsScreenLight->SetIntensity(0);
+        TransitEffects(0);if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);
+        Camera->GetCameraComponent()->NotifyCameraCut();
+        if(Player&&Player->PlayerCameraManager)Player->PlayerCameraManager->SetGameCameraCutThisFrame();
     }
     if(Shot==0)SetAmbience(TEXT("Street"),.48f);
     if(Shot==3)SetAmbience(TEXT("Space"),.32f);
@@ -1025,7 +1040,7 @@ void AEndingEmergence::UpdateFilm(float Dt)
     }
     case 6:
         Pose(Ending::Cosmos+FMath::Lerp(FVector(-5200,-250,900)*32,FVector(-760000,-135000,230000),Zoom),Ending::Cosmos,62,FMath::Sin(ShotTime*.13)*1.2*W);break;
-    case 7: case 8: case 9: case 10: case 11: UpdateFinale(Dt);break;
+    case 7: case 8: case 9: case 10: case 11: case 12: case 13: UpdateFinale(Dt);break;
     }
     UpdateScaleMotion(Dt);
     Exhaustion=0;
@@ -1723,7 +1738,7 @@ void AEndingEmergence::Tick(float Dt)
         ShotTime+=Dt*FMath::Clamp(FilmSpeed,.25f,4.f)*PullbackRate;
         // Interactive ending and speech always use real time, including preview.
         if(Shot>=7)ShotTime-=Dt*(FMath::Clamp(FilmSpeed,.25f,4.f)-1);
-        if(Shot!=9&&Shot<11&&ShotTime>=Duration(Shot))SetShot(Shot+1);
+        if(Shot!=9&&Shot<13&&ShotTime>=Duration(Shot))SetShot(Shot+1);
 
         UpdateFilm(Dt);
         if(Shot==6)RetreatSpeed=FVector::Dist(Camera->GetActorLocation(),PreviousFilmPosition)/FMath::Max(.001f,Dt)/FMath::Clamp(FilmSpeed,.25f,4.f);
@@ -1809,8 +1824,8 @@ FString AEndingEmergence::Subtitle() const
 float AEndingEmergence::OverlayAlpha() const
 {
     if(Shot<0)return 0;
-    if(Shot==10)return Ending::Ease((ShotTime/Duration(10)-.74f)/.26f);
-    if(Shot==11)return 1-Ending::Ease(ShotTime/1.3f);
+    if(Shot==12)return Ending::Ease((ShotTime-5.5f)/.8f);
+    if(Shot==13)return 1-Ending::Ease((ShotTime-.9f)/.65f);
     // Thought-to-street and the scale journey both use image motion, not white.
     return 0;
 }

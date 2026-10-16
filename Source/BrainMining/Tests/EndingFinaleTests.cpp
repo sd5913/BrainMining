@@ -22,6 +22,9 @@
 #include "UnrealClient.h"
 #include "ShaderCompiler.h"
 #include "TextureCompiler.h"
+#include "Engine/Texture2D.h"
+#include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
 
 class FEndingTitleDrillPreview : public IAutomationLatentCommand
 {
@@ -29,6 +32,8 @@ class FEndingTitleDrillPreview : public IAutomationLatentCommand
     int InputPhase=0,LastCuts=0,ColorCapture=0;
     bool EntryCaptured=false,FadeCaptured=false,OriginalEnabled=true,ExitStartCaptured=false,WhiteCaptured=false;
     float LastContact=0,MaxContactGap=0;
+    bool GroundTurnCaptured=false,PortalCaptured=false;
+    float LastBlackProbe=-1;int BlackMatchSamples=0;
     float Since=0,BaseSpeed=0,BulbIntensity=0,BulbMin=10000,BulbMax=0,OriginalRadius=0,OriginalSmoke=0,OriginalDust=0,OriginalSparks=0;bool InfiniteBefore=false;
     void Key(APlayerController* P,FKey K,bool Down){P->InputKey(FInputKeyEventArgs::CreateSimulated(K,Down?IE_Pressed:IE_Released,Down?1.f:0.f));}
     void Capture(const TCHAR* Name){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("EndingEmergencePreview")/(FString(Name)+TEXT(".png")),true,false);}
@@ -41,6 +46,24 @@ public:
         UWorld* W=GIsEditor?GEditor->PlayWorld.Get():AutomationCommon::GetAnyGameWorld();if(!W||W->GetTimeSeconds()<2)return false;
         AEndingEmergence* D=nullptr;for(TActorIterator<AEndingEmergence> I(W);I;++I){D=*I;break;}if(!D||!D->bReady)return false;
         auto* P=W->GetFirstPlayerController();auto* M=D->Mining.Get();auto* Effects=P->GetPawn()->FindComponentByClass<UMiningToolEffectsComponent>();
+        if(D->Shot==13&&D->ShotTime>.9f&&D->ShotTime<2.2f&&D->ShotTime-LastBlackProbe>.08f)
+        {
+            // Slate's normal screenshot path works with RenderOffscreen. Direct
+            // viewport ReadPixels has no swapchain texture in that mode.
+            Capture(*FString::Printf(TEXT("paper-black-match-%02d"),BlackMatchSamples++));
+            LastBlackProbe=D->ShotTime;
+        }
+        if(D->Shot==10&&D->ShotTime>3.65f&&!PortalCaptured)
+        {
+            Test->TestTrue(TEXT("White paper only appears after the black flight"),D->PaperScene->IsVisible()&&!D->FinaleLight->IsVisible());
+            Capture(TEXT("paper-luminous-portal"));PortalCaptured=true;
+        }
+        if(D->Shot==10&&D->ShotTime>5.35f&&!GroundTurnCaptured)
+        {
+            const FTransform Frame=D->PaperScene->GetComponentTransform();
+            Test->TestTrue(TEXT("Exit ends above the desktop with a horizontal forward gaze"),Frame.InverseTransformPosition(D->Camera->GetActorLocation()).Z>20&&Frame.InverseTransformVectorNoScale(D->Camera->GetActorForwardVector()).X>.98f);
+            Capture(TEXT("paper-white-to-ground"));GroundTurnCaptured=true;
+        }
         if(D->Shot==9&&!EntryCaptured){Capture(TEXT("wooow-cave-first-frame"));EntryCaptured=true;}
         if(D->Shot==8&&D->ShotTime>1.6f&&!FadeCaptured)
         {
@@ -67,9 +90,13 @@ public:
         }
         if(D->Shot==10&&!ExitStartCaptured&&D->ShotTime>.3f)
         {
+            Test->TestFalse(TEXT("Desktop cannot occlude the black-space exit"),D->PaperScene->IsVisible());
+            Test->TestTrue(TEXT("Distant luminous aperture remains visible in black space"),D->FinaleLight->IsVisible());
+            const FTransform Frame=D->PaperScene->GetComponentTransform();
+            Test->TestTrue(TEXT("Exit remains on the paper front, looking down or across it rather than at the ceiling"),Frame.InverseTransformPosition(D->Camera->GetActorLocation()).Z>0&&Frame.InverseTransformVectorNoScale(D->Camera->GetActorForwardVector()).Z<=.01f);
             Test->TestEqual(TEXT("Tool copies survive the initial exit transition"),D->FinaleDrills.Num(),2);
             Test->TestTrue(TEXT("Speed strokes survive the initial exit transition"),D->FinaleSpeedLines->IsVisible());
-            Capture(TEXT("wooow-exit-fade-start"));ExitStartCaptured=true;
+            ExitStartCaptured=true;
         }
         if(Step==0)
         {
@@ -165,7 +192,7 @@ public:
             Test->TestTrue(TEXT("Sixth white excavation stage was reached"),WhiteCaptured);
             Test->TestFalse(TEXT("Drill shuts down at the exit"),M->bDrillMode);
             Test->TestEqual(TEXT("Unlimited energy is scoped to the finale"),M->bInfiniteDrillEnergy,InfiniteBefore);
-            Test->TestEqual(TEXT("Original mining radius is restored"),M->Radius,OriginalRadius);Capture(TEXT("wooow-light-exit"));++Step;
+            Test->TestEqual(TEXT("Original mining radius is restored"),M->Radius,OriginalRadius);Capture(TEXT("paper-black-flight"));++Step;
             Test->TestEqual(TEXT("Main-game smoke restored after finale"),Effects->DrillSmokeStrength,OriginalSmoke);
             Test->TestEqual(TEXT("Main-game dust restored after finale"),Effects->DrillDustStrength,OriginalDust);
             Test->TestEqual(TEXT("Main-game sparks restored after finale"),Effects->DrillSparkStrength,OriginalSparks);
@@ -180,23 +207,50 @@ public:
         }
         else if(Step==10&&D->Shot==11&&D->ShotTime>1.5f)
         {
-            Test->TestTrue(TEXT("Reality is visible and completes the ending"),D->FinaleReality->IsVisible()&&D->bComplete);
+            Test->TestTrue(TEXT("Paper flight follows the tunnel before reality"),D->PaperScene->IsVisible()&&!D->FinaleReality->IsVisible()&&!D->bComplete);
+            Test->TestEqual(TEXT("Twenty-four contour cutouts line the route"),D->PaperCardCount,24);
+            int Popped=0;for(float Age:D->PaperPopAges)if(Age>=0)++Popped;
+            Test->TestTrue(TEXT("Nearby cutouts pop while later cutouts remain flat"),Popped>0&&Popped<24);
+            for(const TCHAR* Name:{TEXT("toilet"),TEXT("warnings"),TEXT("glasses"),TEXT("cards"),TEXT("fountain"),TEXT("thought"),TEXT("computer"),TEXT("brain"),TEXT("solar"),TEXT("ants"),TEXT("roguelike"),TEXT("pickaxe")})
+                Test->TestNotNull(TEXT("Individual doodle texture is available"),LoadObject<UTexture2D>(nullptr,*(FString(TEXT("/Game/EndingEmergence/PaperFinale/Doodles/T_EE_Doodle_"))+Name)));
             Test->TestEqual(TEXT("Faded tools are released before reality"),D->FinaleDrills.Num(),0);
-            Test->TestEqual(TEXT("Four bulbs frame the computer"),D->FinaleBulbLights.Num(),4);
+            Test->TestEqual(TEXT("Old bulb finale is removed"),D->FinaleBulbLights.Num(),0);
             Test->TestEqual(TEXT("Old photograph finale does not run"),D->EndingPapers.Num(),0);
             Test->TestEqual(TEXT("Old starlight finale does not run"),D->StarlightRibbons.Num(),0);
-            BulbIntensity=D->FinaleBulbLights[0]->Intensity;Since=D->Age;Capture(TEXT("wooow-reality-computer"));++Step;
+            InputPhase=0;Capture(TEXT("paper-flight-start"));++Step;
         }
         else if(Step==11)
         {
-            BulbMin=FMath::Min(BulbMin,D->FinaleBulbLights[0]->Intensity);BulbMax=FMath::Max(BulbMax,D->FinaleBulbLights[0]->Intensity);
-            if(D->Age-Since>2.5f){Test->TestTrue(TEXT("Bulbs actually pulse over a complete cycle"),BulbMax-BulbMin>100);Key(P,EKeys::R,true);++Step;}
+            if(InputPhase==0&&D->Shot==11&&D->ShotTime>3.2f){Capture(TEXT("paper-flight-middle"));++InputPhase;}
+            else if(InputPhase==1&&D->Shot==11&&D->ShotTime>5.8f)
+            {for(float Age:D->PaperPopAges)Test->TestTrue(TEXT("All cutouts rise as camera reaches the end"),Age>=0);Capture(TEXT("paper-flight-last"));++InputPhase;}
+            else if(InputPhase==2&&D->Shot==12&&D->ShotTime>3.8f){Capture(TEXT("paper-ceiling-vent"));++InputPhase;}
+            else if(InputPhase==3&&D->Shot==12&&D->ShotTime>6.35f)
+            {Test->TestTrue(TEXT("Entering the vent reaches full black"),D->OverlayAlpha()>.99f);Capture(TEXT("paper-vent-black"));++InputPhase;}
+            else if(InputPhase==4&&D->Shot==13&&D->ShotTime>5.6f)
+            {
+                Test->TestTrue(TEXT("Pullback reveals physical computer before power-on"),D->FinaleReality->IsVisible()&&!D->PaperScene->IsVisible()&&!D->bComplete);
+                Test->TestEqual(TEXT("Monitor is off while camera pulls back"),D->CreditsScreenMaterial->K2_GetScalarParameterValue(TEXT("Power")),0.f);
+                Test->TestTrue(TEXT("Multiple rendered frames verify the black screen match"),BlackMatchSamples>=5);
+                Test->AddInfo(FString::Printf(TEXT("Black match: %d screenshot probes requested for pixel verification"),BlackMatchSamples));
+                Capture(TEXT("paper-computer-off"));++InputPhase;
+            }
+            else if(InputPhase==5&&D->Shot==13&&D->ShotTime>8.5f)
+            {
+                Test->TestTrue(TEXT("Credits complete the new ending"),D->bComplete);
+                Test->TestEqual(TEXT("Monitor powers on after stopping"),D->CreditsScreenMaterial->K2_GetScalarParameterValue(TEXT("Power")),1.f);
+                Capture(TEXT("paper-developer-credits"));Since=D->Age;++InputPhase;
+            }
+            else if(InputPhase==6&&D->Age-Since>.5f){Key(P,EKeys::R,true);++Step;}
         }
         else if(Step==12)
         {
             Key(P,EKeys::R,false);Test->TestEqual(TEXT("Restart returns to the playable cell"),D->Shot,-1);
             Test->TestEqual(TEXT("Restart removes excavatable finale rocks"),D->FinaleRocks.Num(),0);
             Test->TestTrue(TEXT("Restart restores the cell cloud"),D->bTitleRestored);
+            Test->TestFalse(TEXT("Restart hides the paper route"),D->PaperScene->IsVisible());
+            Test->TestFalse(TEXT("Restart hides credits room"),D->FinaleReality->IsVisible());
+            for(float Age:D->PaperPopAges)Test->TestTrue(TEXT("Restart rearms every folded cutout"),Age<0);
             D->PreviewFilm();D->SetShot(9);Since=D->Age;++Step;
         }
         else if(Step==13&&D->Age-Since>.5f){Key(P,EKeys::R,true);++Step;}

@@ -150,8 +150,8 @@ void UMiningAudioComponent::UpdateMainGameSoundscape(float DeltaTime)
 	if (Region != PendingAudioRegion) { PendingAudioRegion = Region; RegionStableSeconds = 0; }
 	else RegionStableSeconds += DeltaTime;
 	if (AudioRegion == INDEX_NONE || RegionStableSeconds >= .5f) AudioRegion = PendingAudioRegion;
-	static const auto* MusicVolume = IConsoleManager::Get().FindConsoleVariable(TEXT("bm.Audio.MusicVolume"));
-	const float Trim = MusicVolume ? FMath::Clamp(MusicVolume->GetFloat(), 0.f, 1.f) : .12f;
+	static const auto* MainGameMusicVolume = IConsoleManager::Get().FindConsoleVariable(TEXT("bm.Audio.MusicVolume"));
+	const float Trim = MainGameMusicVolume ? FMath::Clamp(MainGameMusicVolume->GetFloat(), 0.f, 1.f) : .12f;
 	const bool bBusy = bJetRunning || (bDrillRunning && Mining.IsValid() && Mining->IsMiningActive());
 	const float MusicTarget = Trim * (bBusy ? .65f : 1.f);
 	const bool bMine = AudioRegion >= 1 && AudioRegion <= 4;

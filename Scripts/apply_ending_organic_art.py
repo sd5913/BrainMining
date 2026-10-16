@@ -305,6 +305,7 @@ exec(compile((project/'Scripts/apply_ending_night_earth.py').read_text(encoding=
 # Rebuild the cinematic lenses and finish materials, even if older assets exist.
 exec(compile((project/'Scripts/apply_ending_drill_comic.py').read_text(encoding='utf-8-sig'),'apply_ending_drill_comic.py','exec'))
 exec(compile((project/'Scripts/apply_ending_camera_finish.py').read_text(encoding='utf-8-sig'),'apply_ending_camera_finish.py','exec'))
+exec(compile((project/'Scripts/apply_ending_paper_finale.py').read_text(encoding='utf-8-sig'),'apply_ending_paper_finale.py','exec'))
 
 assert levels.load_level(root+'/Maps/Lvl_EndingEmergence_Demo')
 demo=next(a for a in unreal.get_editor_subsystem(unreal.EditorActorSubsystem).get_all_level_actors() if isinstance(a,unreal.EndingEmergence))

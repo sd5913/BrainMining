@@ -17,7 +17,7 @@ FString AWenSiMirrorPuzzle::ValidateMirrorPuzzle()
  auto Check=[&](bool OK,const TCHAR* Name){Results.Add(FString(OK?TEXT("PASS: "):TEXT("FAIL: "))+Name);if(!OK)++Failures;};
  auto Tagged=[&](const TCHAR* Tag)->AActor*{for(TActorIterator<AActor> It(GetWorld());It;++It)if(It->ActorHasTag(Tag))return *It;return nullptr;};
  auto Settle=[&](){for(int32 T=0;T<120;++T)for(auto Exhibit:Exhibits)if(Exhibit->Kind<10 || Exhibit->Kind==12)Exhibit->Tick(.05f);UpdateMechanism();};
- auto Exchange=[&](int32 A,int32 B){bEditing=true;Thoughts[0]=Find(A);Thoughts[1]=Find(B);SwapWords(0,1);bEditing=false;Settle();};
+ auto Exchange=[&](int32 A,int32 B){Thoughts[0]=Find(A);Thoughts[1]=Find(B);SwapThoughts();AdvanceSwap(SwapTotalSeconds);Settle();};
  auto Sweep=[&](FVector Start,FVector End,float Scale=1.f)
  {FHitResult Hit;FCollisionQueryParams Q;Q.AddIgnoredActor(Pawn);return GetWorld()->SweepSingleByChannel(Hit,Start,End,FQuat::Identity,ECC_Pawn,FCollisionShape::MakeCapsule(32.f*Scale,88.f*Scale),Q);};
  ResetPuzzle();Settle();
@@ -44,6 +44,7 @@ FString AWenSiMirrorPuzzle::ValidateMirrorPuzzle()
  // Growing inside the enclosed maintenance box must reject the entire swap.
  Pawn->SetActorLocation(RoomPoint(FVector(1340,270,25)));const auto OldBall=Find(9)->Word;Exchange(10,9);
  Check(GetPlayerWord()==EWenSiMirrorWord::Small && Find(9)->Word==OldBall,TEXT("blocked growth rejects both sides of a word exchange"));
+ Check(Thoughts[0]==Find(10) && Thoughts[1]==Find(9) && !bEditing,TEXT("rejected quick swap preserves both thoughts without opening mouse editing"));
  Pawn->SetActorLocation(RoomPoint(FVector(1650,40,25)));Exchange(5,7);Exchange(5,6);
  Check(bPressure && !bPower && !bRewardUnlocked,TEXT("heavy block tips balance; balance alone does not unlock prize"));
  auto Beam=Tagged(TEXT("WenSiBalanceBeam"));auto LeftTray=Tagged(TEXT("WenSiBalanceLeftTray"));auto Counterweight=Tagged(TEXT("WenSiBalanceCounterweight"));
@@ -91,6 +92,25 @@ FString AWenSiMirrorPuzzle::ValidateMirrorPuzzle()
   Check(Cover->Parts[0]->GetCollisionResponseToChannel(ECC_Pawn)==ECR_Ignore && Cover->Parts[0]->GetCollisionResponseToChannel(ECC_Visibility)==ECR_Block,TEXT("passable cover allows movement but still blocks thinking trace"));
  }
  ResetPuzzle();
+ auto* Cover=Find(1);auto* Statue=Find(2);
+ Pawn->SetActorLocation(Cover->GetActorLocation());
+ Thoughts[0]=Cover;Thoughts[1]=Statue;
+ SwapThoughts();AdvanceSwap(SwapTravelSeconds);
+ Check(HasSwapCommitted() && Cover->Word==EWenSiMirrorWord::Ordinary && Statue->Word==EWenSiMirrorWord::Heavy,TEXT("hollow cover interior does not falsely block an exchange"));
+ AdvanceSwap(SwapTotalSeconds);ResetPuzzle();
+ Pawn->SetActorLocation(Find(0)->GetActorLocation());
+ Thoughts[0]=Find(0);Thoughts[1]=Find(3);const auto StoneWord=Find(0)->Word;
+ SwapThoughts();AdvanceSwap(SwapTravelSeconds);
+ Check(!IsSwapping() && Find(0)->Word==StoneWord && Thoughts[0].IsValid() && Thoughts[1].IsValid(),TEXT("real solid overlap rejects atomically and restores both bubbles"));
+ ResetPuzzle();Pawn->SetActorLocation(RoomPoint(FVector(-550,0,89)));
+ Thoughts[0]=Find(3);Thoughts[1]=Find(2);
+ SwapThoughts();AdvanceSwap(.2f);CloseThoughts();AdvanceSwap(SwapTotalSeconds);
+ Check(!IsSwapping() && Find(3)->Word==EWenSiMirrorWord::Floating && Find(2)->Word==EWenSiMirrorWord::Ordinary,TEXT("closing during flight cancels the pending effect"));
+ Thoughts[0]=Find(3);Thoughts[1]=Find(2);SwapThoughts();ResetPuzzle();AdvanceSwap(SwapTotalSeconds);
+ Check(!IsSwapping() && Find(3)->Word==EWenSiMirrorWord::Floating && !Thoughts[0].IsValid(),TEXT("reset cancels pending exchange and bubbles"));
+ Thoughts[0]=Find(3);Thoughts[1]=Find(2);SwapThoughts();SetAreaActive(false);AdvanceSwap(SwapTotalSeconds);
+ Check(!IsSwapping() && Find(3)->Word==EWenSiMirrorWord::Floating,TEXT("leaving the room cancels pending exchange"));
+ SetAreaActive(true);ResetPuzzle();
  const FString Summary=FString::Printf(TEXT("%s: %d checks, %d failures"),Failures?TEXT("FAIL"):TEXT("PASS"),Results.Num(),Failures);Results.Insert(Summary,0);
  FFileHelper::SaveStringArrayToFile(Results,*(FPaths::ProjectSavedDir()/TEXT("Validation/WenSiMirror/runtime_checks.txt")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
  for(auto& Line:Results)UE_LOG(LogTemp,Display,TEXT("WenSiMirror %s"),*Line);return Summary;

@@ -225,7 +225,6 @@ void AMiningRoomEscape::BuildStudyLayout()
     ScreenMaterial=Material(FLinearColor::Black,true);
     TelevisionScreen=Rock(ComputerEntry+FVector(-308,0,0),FVector(100,1100,840),ScreenMaterial,FRotator::ZeroRotator);
     ComputerRocks.Add(TelevisionScreen);
-    ScreenLabel=Text(ComputerEntry+FVector(-365,0,100),TEXT("EXIT\nDIG HERE"),65,FRotator(0,180,0));
     Beacon=Light(ComputerEntry+FVector(-500,0,400),180000,2200);
 
     auto* Interior=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_EscapeTVInterior.M_EscapeTVInterior"));

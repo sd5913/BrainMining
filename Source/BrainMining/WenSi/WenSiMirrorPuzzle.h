@@ -79,6 +79,7 @@ private:
  FSlateBrush ThoughtBrushes[2];
  TSharedPtr<SHorizontalBox> Rows[2];
  TSharedPtr<SWidget> Cards[2];
+ TSharedPtr<SWidget> WordWidgets[2];
  TWeakObjectPtr<UObject> PresentedThoughts[2];
  float FlightAge[2]={-1.f,-1.f};
  TSharedPtr<STextBlock> Hint;
@@ -115,8 +116,19 @@ public:
  bool bSecondRoom=false;
  void Think();
  void CloseThought(int32 Index);
+ void CloseThoughts();
+ void SwapThoughts();
+ void AdvanceSwap(float DeltaTime);
+ bool IsSwapping() const { return SwapAge>=0.f; }
+ float GetSwapProgress() const { return FMath::Clamp(SwapAge/SwapTravelSeconds,0.f,1.f); }
+ float GetSwapOpacity() const { return 1.f-FMath::SmoothStep(SwapTravelSeconds+SwapHoldSeconds,SwapTotalSeconds,SwapAge); }
+ bool HasSwapCommitted() const { return bSwapCommitted; }
+ const FString& GetSwapWord(int32 Index) const { return SwapWordsBefore[Index]; }
+ static constexpr float SwapTravelSeconds=.7f;
+ static constexpr float SwapHoldSeconds=.3f;
+ static constexpr float SwapTotalSeconds=1.2f;
  void ToggleEdit();
- void SwapWords(int32 From,int32 To);
+ bool SwapWords(int32 From,int32 To);
  void RefreshSelfThoughts();
  AWenSiMirrorExhibit* Find(int32 Kind) const;
  UFUNCTION(BlueprintCallable, Category="WenSi") void ResetPuzzle();
@@ -139,4 +151,10 @@ private:
  UPROPERTY() TObjectPtr<AActor> RewardShutter;
  UPROPERTY() TObjectPtr<AActor> Reward;
  void UpdateMechanism();
+ void CancelSwap();
+ float SwapAge=-1.f;
+ bool bSwapCommitted=false;
+ TWeakObjectPtr<AWenSiMirrorExhibit> SwapTargets[2];
+ EWenSiMirrorWord SwapInitialWords[2]={EWenSiMirrorWord::Ordinary,EWenSiMirrorWord::Ordinary};
+ FString SwapWordsBefore[2];
 };

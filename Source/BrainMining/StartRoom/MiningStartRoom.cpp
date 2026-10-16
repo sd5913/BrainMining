@@ -114,6 +114,18 @@ bool AMiningStartRoom::Interact(APlayerController* Controller)
     return true;
 }
 
+void AMiningStartRoom::UnlockDeveloperEquipment()
+{
+#if !UE_BUILD_SHIPPING
+    if (bOwnMiningBlock && Mining.IsValid()) { Mining->PopEncounterBlock(); bOwnMiningBlock = false; }
+    if (bOwnFlightBlock && Flight.IsValid()) { Flight->PopFlightBlock(); bOwnFlightBlock = false; }
+    if (Effects.IsValid()) Effects->bEnabled = bPreviousEffectsEnabled;
+    bPickaxeUnlocked = bJetpackUnlocked = true;
+    for (TActorIterator<AMiningStarterPickup> Pickup(GetWorld()); Pickup; ++Pickup)
+        if (!Pickup->bCollected) Pickup->Collect();
+#endif
+}
+
 void AMiningStartRoom::EndPlay(const EEndPlayReason::Type Reason)
 {
     ReleasePlayer();

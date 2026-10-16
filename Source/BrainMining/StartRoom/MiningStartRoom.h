@@ -35,6 +35,7 @@ public:
     AMiningStartRoom();
     static AMiningStartRoom* Find(UWorld* World);
     void InitializePlayer(APawn* Pawn);
+    void UnlockDeveloperEquipment();
     UFUNCTION(BlueprintCallable, Category="Start Room") bool Interact(APlayerController* Controller);
     UFUNCTION(BlueprintPure, Category="Start Room") AMiningStarterPickup* GetTarget(APlayerController* Controller) const;
     FString GetInteractionAction(APlayerController* Controller) const;

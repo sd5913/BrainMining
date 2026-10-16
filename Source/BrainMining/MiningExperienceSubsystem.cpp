@@ -109,7 +109,7 @@ TArray<FString> UMiningExperienceSubsystem::MapPaths()
 bool UMiningExperienceSubsystem::ToggleMenu()
 {
     if (Menu) { CloseMenu(); return true; }
-    if (auto* Hall = AMiningExhibitHall::Find(GetWorld())) return Hall->ToggleMenu();
+    if (AMiningExhibitHall::Find(GetWorld())) return false;
     return BuildMenu(false);
 }
 
@@ -121,7 +121,6 @@ bool UMiningExperienceSubsystem::ToggleDeveloperMenu()
     if (Menu) { CloseMenu(); return true; }
     if (auto* Hall = AMiningExhibitHall::Find(GetWorld()))
     {
-        if (Hall->IsMenuOpen()) Hall->CloseMenu();
         if (Hall->IsMapOpen()) Hall->CloseMap();
         if (Hall->IsInteractionOpen()) return false;
     }
@@ -226,7 +225,6 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
 
 void UMiningExperienceSubsystem::CloseMenu()
 {
-    if (auto* Hall = AMiningExhibitHall::Find(GetWorld())) Hall->CloseMenu();
     if (!Menu) return;
     if (auto* Viewport = GetGameInstance()->GetGameViewportClient()) Viewport->RemoveViewportWidgetContent(Menu.ToSharedRef());
     if (auto* Controller = MenuController.Get())
@@ -305,7 +303,5 @@ bool UMiningExperienceSubsystem::OpenExperience(int32 Index)
 
 bool UMiningExperienceSubsystem::IsMenuOpen() const
 {
-    if (Menu.IsValid()) return true;
-    if (auto* Hall = AMiningExhibitHall::Find(GetWorld())) return Hall->IsMenuOpen();
     return Menu.IsValid();
 }

@@ -284,6 +284,7 @@ bool AWenSiMirrorPuzzle::SetPlayerWord(EWenSiMirrorWord NewWord)
 void AWenSiMirrorPuzzle::SetAreaActive(bool Active)
 {
  const bool WasActive=bAreaActive;bAreaActive=Active;
+ if(!Active)CancelSwap();
  if(!Active && bEditing)ToggleEdit();
  if(UI)UI->SetVisibility(Active?ESlateVisibility::SelfHitTestInvisible:ESlateVisibility::Collapsed);
  if(!Active){Aim.Reset();bAimReset=false;for(auto Exhibit:Exhibits)Exhibit->Highlight(false);}
@@ -327,11 +328,59 @@ void AWenSiMirrorPuzzle::RefreshSelfThoughts()
 }
 void AWenSiMirrorPuzzle::Think()
 {
- if(!Aim.IsValid() || bComplete)return;RefreshSelfThoughts();
+ if(!Aim.IsValid() || bComplete || IsSwapping())return;RefreshSelfThoughts();
  for(int32 I=0;I<2;++I)if(Thoughts[I]==Aim || (IsSelf(Thoughts[I].Get()) && IsSelf(Aim.Get())))return;
  for(int32 I=0;I<2;++I)if(!Thoughts[I].IsValid()){Thoughts[I]=Aim;UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Thought"),.45f);break;}
 }
-void AWenSiMirrorPuzzle::CloseThought(int32 Index){if(Index>=0&&Index<2 && Thoughts[Index].IsValid()){Thoughts[Index].Reset();UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Close"),.25f);}if(UI)UI->Refresh();}
+void AWenSiMirrorPuzzle::CloseThought(int32 Index){CancelSwap();if(Index>=0&&Index<2 && Thoughts[Index].IsValid()){Thoughts[Index].Reset();UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Close"),.25f);}if(UI)UI->Refresh();}
+void AWenSiMirrorPuzzle::CloseThoughts()
+{
+ CancelSwap();
+ const bool HadThoughts=Thoughts[0].IsValid() || Thoughts[1].IsValid();
+ if(bEditing)ToggleEdit();
+ Thoughts[0].Reset();Thoughts[1].Reset();
+ if(HadThoughts)UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Close"),.25f);
+ if(UI)UI->Refresh();
+}
+void AWenSiMirrorPuzzle::SwapThoughts()
+{
+ auto* Controller=GetWorld()->GetFirstPlayerController();
+ if(!bAreaActive || bComplete || IsSwapping() || !Controller || Controller->IsPaused())return;
+ if(auto* Hall=AMiningExhibitHall::Find(GetWorld());Hall && Hall->IsInteractionOpen())return;
+ if(!Thoughts[0].IsValid() || !Thoughts[1].IsValid())return;
+ RefreshSelfThoughts();
+ if(Thoughts[0]==Thoughts[1] || (IsSelf(Thoughts[0].Get()) && IsSelf(Thoughts[1].Get())))return;
+ for(int32 Index=0;Index<2;++Index)
+ {
+  SwapTargets[Index]=Thoughts[Index];SwapInitialWords[Index]=Thoughts[Index]->Word;
+  SwapWordsBefore[Index]=Thoughts[Index]->Adjective();
+ }
+ if(bEditing)ToggleEdit();
+ SwapAge=0.f;bSwapCommitted=false;
+ if(UI)UI->Refresh();
+}
+void AWenSiMirrorPuzzle::CancelSwap()
+{
+ SwapAge=-1.f;bSwapCommitted=false;
+ for(int32 Index=0;Index<2;++Index){SwapTargets[Index].Reset();SwapWordsBefore[Index].Empty();}
+}
+void AWenSiMirrorPuzzle::AdvanceSwap(float DeltaTime)
+{
+ if(!IsSwapping())return;
+ RefreshSelfThoughts();
+ for(int32 Index=0;Index<2;++Index)
+  if(!SwapTargets[Index].IsValid() || Thoughts[Index]!=SwapTargets[Index] ||
+     (!bSwapCommitted && SwapTargets[Index]->Word!=SwapInitialWords[Index]))
+  {CancelSwap();if(UI)UI->Refresh();return;}
+ SwapAge+=FMath::Max(0.f,DeltaTime);
+ if(!bSwapCommitted && SwapAge>=SwapTravelSeconds)
+ {
+  if(!SwapWords(0,1)){CancelSwap();if(UI)UI->Refresh();return;}
+  bSwapCommitted=true;
+ }
+ if(SwapAge>=SwapTotalSeconds)CloseThoughts();
+ else if(UI)UI->Refresh();
+}
 void AWenSiMirrorPuzzle::ToggleEdit()
 {
  auto PC=GetWorld()->GetFirstPlayerController();if(!PC || (!bEditing&&(bComplete||(!Thoughts[0].IsValid()&&!Thoughts[1].IsValid()))))return;
@@ -341,21 +390,28 @@ void AWenSiMirrorPuzzle::ToggleEdit()
  if(bEditing){FInputModeGameAndUI Mode;Mode.SetWidgetToFocus(UI->TakeWidget());Mode.SetHideCursorDuringCapture(false);Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);PC->SetInputMode(Mode);}
  else PC->SetInputMode(FInputModeGameOnly());if(UI)UI->Refresh();
 }
-void AWenSiMirrorPuzzle::SwapWords(int32 From,int32 To)
+bool AWenSiMirrorPuzzle::SwapWords(int32 From,int32 To)
 {
- if(!bEditing || bComplete || From==To || From<0 || From>1 || To<0 || To>1 || !Thoughts[From].IsValid() || !Thoughts[To].IsValid())return;
- RefreshSelfThoughts();auto A=Thoughts[From].Get();auto B=Thoughts[To].Get();if(IsSelf(A)&&IsSelf(B))return;
- auto PC=GetWorld()->GetFirstPlayerController();auto Pawn=PC?Cast<ACharacter>(PC->GetPawn()):nullptr;if(!Pawn)return;
+ if(bComplete || From==To || From<0 || From>1 || To<0 || To>1 || !Thoughts[From].IsValid() || !Thoughts[To].IsValid())return false;
+ RefreshSelfThoughts();auto A=Thoughts[From].Get();auto B=Thoughts[To].Get();if(IsSelf(A)&&IsSelf(B))return false;
+ auto PC=GetWorld()->GetFirstPlayerController();auto Pawn=PC?Cast<ACharacter>(PC->GetPawn()):nullptr;if(!Pawn)return false;
  // Validate solidification and growth before changing either word, preserving atomic swaps.
  for(auto Pair:{TPair<AWenSiMirrorExhibit*,EWenSiMirrorWord>(A,B->Word),TPair<AWenSiMirrorExhibit*,EWenSiMirrorWord>(B,A->Word)})
  {
   if(IsSelf(Pair.Key) || Pair.Value==EWenSiMirrorWord::Passable || Pair.Key->Kind==4)continue;
-  const FBox Current=ExhibitBounds(Pair.Key);const FVector Extent=Current.GetExtent()*WordScale(Pair.Value)/WordScale(Pair.Key->Word);
-  const FBox Next(Current.GetCenter()-Extent,Current.GetCenter()+Extent);
-  if(Next.Intersect(Pawn->GetCapsuleComponent()->Bounds.GetBox())){UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);return;}
+  const float ScaleRatio=WordScale(Pair.Value)/WordScale(Pair.Key->Word);
+  const FVector ProbePosition=Pair.Key->GetActorLocation()+(Pawn->GetCapsuleComponent()->GetComponentLocation()-Pair.Key->GetActorLocation())/ScaleRatio;
+  const FCollisionShape ProbeShape=FCollisionShape::MakeCapsule(Pawn->GetCapsuleComponent()->GetScaledCapsuleRadius()/ScaleRatio,Pawn->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()/ScaleRatio);
+  for(int32 PartIndex=0;PartIndex<Pair.Key->Parts.Num();++PartIndex)
+  {
+   auto* Part=Pair.Key->Parts[PartIndex].Get();
+   if(!Part->IsVisible() || !Part->GetStaticMesh() || (Pair.Key->Kind==3 && PartIndex>0))continue;
+   if(Part->OverlapComponent(ProbePosition,Pawn->GetActorQuat(),ProbeShape))
+   {UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);return false;}
+  }
  }
  const EWenSiMirrorWord OldA=A->Word,OldB=B->Word;
- if(IsSelf(A)&&!SetPlayerWord(OldB)){UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);return;}if(IsSelf(B)&&!SetPlayerWord(OldA)){UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);return;}
+ if(IsSelf(A)&&!SetPlayerWord(OldB)){UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);return false;}if(IsSelf(B)&&!SetPlayerWord(OldA)){UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);return false;}
  A->Word=OldB;B->Word=OldA;if(!IsSelf(A))A->Apply();if(!IsSelf(B))B->Apply();RefreshSelfThoughts();
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Swap"),.45f);
  for(auto Exhibit:{A,B})
@@ -364,6 +420,7 @@ void AWenSiMirrorPuzzle::SwapWords(int32 From,int32 To)
   UMiningRoomAudioSubsystem::Emit(Exhibit,Cue,.2f,!IsSelf(Exhibit));
  }
  UE_LOG(LogWenSiMirror,Display,TEXT("Swap: %s=%s; %s=%s"),*A->Noun(),*A->Adjective(),*B->Noun(),*B->Adjective());if(UI)UI->Refresh();
+ return true;
 }
 void AWenSiMirrorPuzzle::UpdateMechanism()
 {
@@ -386,6 +443,7 @@ void AWenSiMirrorPuzzle::Tick(float Dt)
 {
  Super::Tick(Dt);auto PC=GetWorld()->GetFirstPlayerController();if(!PC || !bAreaActive || PC->IsPaused())return;
  if(auto Hall=AMiningExhibitHall::Find(GetWorld());Hall && !bEditing && Hall->IsInteractionOpen())return;
+ AdvanceSwap(Dt);
  if(bAreaManaged && GetPlayerWord()==EWenSiMirrorWord::Floating && !bEditing)
   if(auto Character=Cast<ACharacter>(PC->GetPawn())){auto Move=Character->GetCharacterMovement();if(Move->IsMovingOnGround())Move->SetMovementMode(MOVE_Falling);Move->Velocity.Z=FMath::Min(350.f,Move->Velocity.Z+(1700.f+FMath::Abs(GetWorld()->GetGravityZ()))*Dt);}
  RefreshSelfThoughts();UpdateMechanism();Aim.Reset();bAimReset=false;
@@ -400,14 +458,15 @@ void AWenSiMirrorPuzzle::Tick(float Dt)
    if(Nearby){bAimReset=Cast<AWenSiResetButton>(Hit.GetActor())!=nullptr;if(Exhibit && Exhibit->bThinkingEnabled && !bComplete)Aim=Exhibit;}
   }
   if(PC->WasInputKeyJustPressed(EKeys::E)){if(bAimReset)ResetPuzzle();else Think();}
-  if(PC->WasInputKeyJustPressed(EKeys::Q))CloseThought(0);if(PC->WasInputKeyJustPressed(EKeys::R))CloseThought(1);
+  if(PC->WasInputKeyJustPressed(EKeys::Q))CloseThoughts();
  }
- if(PC->WasInputKeyJustPressed(EKeys::G))ToggleEdit();
+ if(PC->WasInputKeyJustPressed(EKeys::R))SwapThoughts();
  if(PC->GetPawn() && PC->GetPawn()->GetActorLocation().X>RoomPoint(FVector(1000,0,0)).X)bSecondRoom=true;
  for(auto Exhibit:Exhibits)Exhibit->Highlight(Exhibit==Aim.Get());if(UI)UI->Refresh();
 }
 void AWenSiMirrorPuzzle::ResetPuzzle()
 {
+ CancelSwap();
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reset"),.4f);
  for(auto Exhibit:Exhibits)UMiningRoomAudioSubsystem::StopSource(Exhibit);
  if(FSlateApplication::IsInitialized())FSlateApplication::Get().CancelDragDrop();if(bEditing)ToggleEdit();
@@ -420,7 +479,7 @@ void AWenSiMirrorPuzzle::ResetPuzzle()
  UpdateMechanism();
  UE_LOG(LogWenSiMirror,Display,TEXT("Reset: all words, transforms, miner size, mirrors, ball, balance, locks and reward restored"));
 }
-void AWenSiMirrorPuzzle::EndPlay(const EEndPlayReason::Type Reason){if(bEditing)ToggleEdit();if(UI)UI->RemoveFromParent();Super::EndPlay(Reason);}
+void AWenSiMirrorPuzzle::EndPlay(const EEndPlayReason::Type Reason){CancelSwap();if(bEditing)ToggleEdit();if(UI)UI->RemoveFromParent();Super::EndPlay(Reason);}
 FString AWenSiMirrorPuzzle::MirrorStatus()
 {
  auto PC=GetWorld()->GetFirstPlayerController();auto Pawn=PC?Cast<ACharacter>(PC->GetPawn()):nullptr;

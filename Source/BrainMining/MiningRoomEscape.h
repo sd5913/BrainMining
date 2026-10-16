@@ -93,7 +93,6 @@ private:
     UPROPERTY(Transient) TArray<TObjectPtr<class UPointLightComponent>> InteriorLights;
     UPROPERTY(Transient) TArray<TObjectPtr<AActor>> GeneratedActors;
     TWeakObjectPtr<AActor> ReplacedWall;
-    UPROPERTY(Transient) TObjectPtr<class UTextRenderComponent> ScreenLabel;
     UPROPERTY(Transient) TObjectPtr<class UStaticMeshComponent> ComputerWater;
     float BreachBurstTime=0;
     float JetUpdateTime=0;

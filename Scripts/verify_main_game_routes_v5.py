@@ -86,10 +86,15 @@ def tick(dt):
    for p in features['platforms']:
     top=origin+raw(p['top_m']);h=trace(top+unreal.Vector(0,0,50),top-unreal.Vector(0,0,50));check(h and h[0] and h[9] in s['platforms'] and abs(h[5].z-top.z)<3,'Collision on landing '+p['name'])
     check(p['base_z_m']<p['top_m'][2]-3,'Grounded column '+p['name'])
-   enter(2);top=origin+raw(features['platforms'][0]['top_m']);s['takeoff']=top+unreal.Vector(0,0,100);move(s['takeoff'],fall=True);s['movement'].set_flight_input_held(True);s.update(phase='jetpack_rise',next=now+1.1)
+   enter(2);top=origin+raw(features['platforms'][0]['top_m']);s['takeoff']=top+unreal.Vector(0,0,100);move(s['takeoff'],fall=True);s['movement'].set_flight_input_held(True);s.update(phase='jetpack_rise',next=now+.02,rise_deadline=now+8)
   elif phase=='jetpack_rise':
-   check(s['pawn'].get_actor_location().z>s['takeoff'].z+240,'Real jetpack thrust rises from a parkour platform');s['movement'].set_flight_input_held(False);s.update(phase='jetpack_land',next=now+2)
+   if s['pawn'].get_actor_location().z<=s['takeoff'].z+240 and now<s['rise_deadline']:
+    s['next']=now+.02;return
+   check(s['pawn'].get_actor_location().z>s['takeoff'].z+240,'Real jetpack thrust rises from a parkour platform');s['movement'].set_flight_input_held(False);s.update(phase='jetpack_land',next=now+.2,landing_deadline=now+8)
   elif phase=='jetpack_land':
+   if not s['movement'].is_moving_on_ground() and now<s['landing_deadline']:
+    s['next']=now+.2;return
+   pos=s['pawn'].get_actor_location();ground=trace(pos,pos-unreal.Vector(0,0,5000));report['jetpack_landing']=dict(takeoff=list(s['takeoff'].to_tuple()),position=list(pos.to_tuple()),mode=str(s['movement'].movement_mode),ground_actor=ground[9].get_actor_label() if ground and ground[0] else None,ground_point=list(ground[5].to_tuple()) if ground and ground[0] else None)
    check(abs(s['pawn'].get_actor_location().z-s['takeoff'].z)<40,'Release jetpack and land on the indestructible platform');s.update(phase='hard_gates')
   elif phase=='hard_gates':
    # Gate tools operate directly on the actual serialized actors, including chunk variants.

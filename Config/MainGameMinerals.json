@@ -31,7 +31,10 @@
       "weights": [
         70,
         30
-      ]
+      ],
+      "main_route_deposits": 26,
+      "dead_end_rewards": 4,
+      "dead_end_mineral": 4
     },
     {
       "tag": "BM_Campaign_MainGame02",
@@ -44,7 +47,10 @@
         50,
         35,
         15
-      ]
+      ],
+      "main_route_deposits": 30,
+      "dead_end_rewards": 4,
+      "dead_end_mineral": 6
     },
     {
       "tag": "BM_Campaign_MainGame03",
@@ -59,8 +65,11 @@
         30,
         22,
         8
-      ]
+      ],
+      "main_route_deposits": 33,
+      "dead_end_rewards": 4,
+      "dead_end_mineral": 9
     }
   ],
-  "note": "保留现有埋藏点，按最大余数法分配每种矿石数量并以固定种子打散。每颗矿石入包 1 个，大小仅影响外观。第四矿区已移除，流程终点为博物馆。"
+  "note": "常规通路 89 个矿点，12 条死路各配置 1 个本区最高级矿石，共 101 个。保留原区域权重与每颗矿石入包 1 个。"
 }

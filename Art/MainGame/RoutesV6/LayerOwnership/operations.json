@@ -1,0 +1,198 @@
+[
+  {
+    "target": "MAIN_GAME_ClayWallClods_1_0.obj",
+    "owners": [
+      "EDIT_MainGame_外部通路矿区_引导可挖层_01.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_1_1.obj",
+    "owners": [
+      "EDIT_MainGame_外部通路矿区_引导可挖层_02.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_1_2.obj",
+    "owners": [
+      "EDIT_MainGame_外部通路矿区_引导可挖层_03.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_1_3.obj",
+    "owners": [
+      "EDIT_MainGame_外部通路矿区_引导可挖层_04.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_1_4.obj",
+    "owners": [
+      "EDIT_MainGame_外部通路矿区_引导可挖层_05.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_1_5.obj",
+    "owners": [
+      "EDIT_MainGame_外部通路矿区_引导可挖层_06.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_1_6.obj",
+    "owners": [
+      "EDIT_MainGame_外部通路矿区_引导可挖层_07.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_1_7.obj",
+    "owners": [
+      "EDIT_MainGame_外部通路矿区_引导可挖层_08.obj"
+    ]
+  },
+  {
+    "target": "EDIT_MainGame_外部通路矿区_可挖岩层.obj",
+    "owners": [
+      "EDIT_MainGame_外部通路矿区_引导可挖层_01.obj",
+      "EDIT_MainGame_外部通路矿区_引导可挖层_02.obj",
+      "EDIT_MainGame_外部通路矿区_引导可挖层_03.obj",
+      "EDIT_MainGame_外部通路矿区_引导可挖层_04.obj",
+      "EDIT_MainGame_外部通路矿区_引导可挖层_05.obj",
+      "EDIT_MainGame_外部通路矿区_引导可挖层_06.obj",
+      "EDIT_MainGame_外部通路矿区_引导可挖层_07.obj",
+      "EDIT_MainGame_外部通路矿区_引导可挖层_08.obj",
+      "MAIN_GAME_ClayWallClods_1_0.obj",
+      "MAIN_GAME_ClayWallClods_1_1.obj",
+      "MAIN_GAME_ClayWallClods_1_2.obj",
+      "MAIN_GAME_ClayWallClods_1_3.obj",
+      "MAIN_GAME_ClayWallClods_1_4.obj",
+      "MAIN_GAME_ClayWallClods_1_5.obj",
+      "MAIN_GAME_ClayWallClods_1_6.obj",
+      "MAIN_GAME_ClayWallClods_1_7.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_2_0.obj",
+    "owners": [
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_01.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_2_1.obj",
+    "owners": [
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_02.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_2_3.obj",
+    "owners": [
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_04.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_2_4.obj",
+    "owners": [
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_05.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_2_5.obj",
+    "owners": [
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_06.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_2_7.obj",
+    "owners": [
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_08.obj"
+    ]
+  },
+  {
+    "target": "EDIT_MainGame_02_溶洞通路矿区_可挖岩层.obj",
+    "owners": [
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_01.obj",
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_02.obj",
+      "MAIN_GAME_BombOnly_2_3.obj",
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_04.obj",
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_05.obj",
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_06.obj",
+      "MAIN_GAME_BombOnly_2_7.obj",
+      "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_08.obj",
+      "MAIN_GAME_ClayWallClods_2_0.obj",
+      "MAIN_GAME_ClayWallClods_2_1.obj",
+      "MAIN_GAME_ClayWallClods_2_3.obj",
+      "MAIN_GAME_ClayWallClods_2_4.obj",
+      "MAIN_GAME_ClayWallClods_2_5.obj",
+      "MAIN_GAME_ClayWallClods_2_7.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_3_0.obj",
+    "owners": [
+      "EDIT_MainGame_03_石笋通路矿区_引导可挖层_01.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_3_2.obj",
+    "owners": [
+      "EDIT_MainGame_03_石笋通路矿区_引导可挖层_03.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_3_4.obj",
+    "owners": [
+      "EDIT_MainGame_03_石笋通路矿区_引导可挖层_05.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_3_6.obj",
+    "owners": [
+      "EDIT_MainGame_03_石笋通路矿区_引导可挖层_07.obj"
+    ]
+  },
+  {
+    "target": "MAIN_GAME_ClayWallClods_3_7.obj",
+    "owners": [
+      "EDIT_MainGame_03_石笋通路矿区_引导可挖层_08.obj"
+    ]
+  },
+  {
+    "target": "EDIT_MainGame_03_石笋通路矿区_可挖岩层.obj",
+    "owners": [
+      "EDIT_MainGame_03_石笋通路矿区_引导可挖层_01.obj",
+      "MAIN_GAME_BombOnly_3_2.obj",
+      "EDIT_MainGame_03_石笋通路矿区_引导可挖层_03.obj",
+      "MAIN_GAME_BombOnly_3_4.obj",
+      "EDIT_MainGame_03_石笋通路矿区_引导可挖层_05.obj",
+      "MAIN_GAME_BombOnly_3_6.obj",
+      "EDIT_MainGame_03_石笋通路矿区_引导可挖层_07.obj",
+      "EDIT_MainGame_03_石笋通路矿区_引导可挖层_08.obj",
+      "MAIN_GAME_ClayWallClods_3_0.obj",
+      "MAIN_GAME_ClayWallClods_3_2.obj",
+      "MAIN_GAME_ClayWallClods_3_4.obj",
+      "MAIN_GAME_ClayWallClods_3_6.obj",
+      "MAIN_GAME_ClayWallClods_3_7.obj"
+    ]
+  },
+  {
+    "target": "LINK_Mine01_Office_NaturalRock.obj",
+    "owners": [
+      "LINK_Mine01_Office_DiggableSoil.obj"
+    ]
+  },
+  {
+    "target": "LINK_Office_Mine02_NaturalRock.obj",
+    "owners": [
+      "MAIN_GAME_OfficeExit_BombOnly.obj"
+    ]
+  },
+  {
+    "target": "LINK_Mine02_Journey_NaturalRock.obj",
+    "owners": [
+      "LINK_Mine02_Journey_DiggableSoil.obj"
+    ]
+  },
+  {
+    "target": "LINK_Journey_Mine03_NaturalRock.obj",
+    "owners": [
+      "LINK_Journey_Mine03_DiggableSoil.obj"
+    ]
+  }
+]

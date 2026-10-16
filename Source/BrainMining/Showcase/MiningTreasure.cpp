@@ -326,12 +326,16 @@ void AMiningTreasure::ConfigureCrystalClues(const FMiningTreasurePlacement& Plac
     // Coal keeps a warm mineral glint; tin reads as cool silver-blue instead of grey.
     if(TreasureId==TEXT("1")) ClueColor=FLinearColor(.62f,.30f,.10f);
     if(TreasureId==TEXT("3")) ClueColor=FLinearColor(.25f,.65f,1.f);
+    // Iron must remain charcoal even on its tiny clues; value normalization
+    // and the generic emissive lift otherwise make it read like diamond.
+    const bool bIron = TreasureId == TEXT("4");
+    if(bIron) ClueColor=FLinearColor(.07f,.08f,.095f);
     ClueColor.A=1;
     Tint->SetVectorParameterValue(TEXT("Tint"),ClueColor);
     Tint->SetScalarParameterValue(TEXT("Style"),-1);
-    Tint->SetScalarParameterValue(TEXT("Roughness"),.19f);
+    Tint->SetScalarParameterValue(TEXT("Roughness"),bIron ? .65f : .19f);
     Tint->SetScalarParameterValue(TEXT("Metallic"),.12f);
-    Tint->SetScalarParameterValue(TEXT("Emission"),FMath::Max(1.15f,GemMaterial?GemMaterial->K2_GetScalarParameterValue(TEXT("Emission"))*1.2f:1.15f));
+    Tint->SetScalarParameterValue(TEXT("Emission"),bIron ? .35f : FMath::Max(1.15f,GemMaterial?GemMaterial->K2_GetScalarParameterValue(TEXT("Emission"))*1.2f:1.15f));
     CrystalClues->SetMaterial(0,Tint);
     CrystalTransforms=Placement.Fragments;CrystalSupports=Placement.FragmentSupports;
     for(ADiggableRock* Rock:CoveringRocks) if(IsValid(Rock))

@@ -9,6 +9,7 @@ class UCanvasPanel;
 class UImage;
 class UButton;
 class UTextBlock;
+class UProgressBar;
 class UTexture2D;
 class UMaterialInstanceDynamic;
 
@@ -66,6 +67,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void SetAvailable(bool bNewAvailable);
 	/** Gameplay owns the timer; this widget only displays it over the red icon. */
 	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void SetCooldownRemaining(float Seconds);
+	UFUNCTION(BlueprintCallable, Category="GUI|Ability") void SetRechargeState(bool bRecharging, float Progress);
+	UPROPERTY(BlueprintReadOnly, Transient, Category="GUI|Ability") TObjectPtr<UProgressBar> RechargeBar;
 	UPROPERTY(BlueprintReadOnly, Category="GUI|Ability") float CooldownRemaining = 0;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidgetOptional)) TObjectPtr<UTextBlock> CooldownText;
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget)) TObjectPtr<UImage> AbilityIcon;

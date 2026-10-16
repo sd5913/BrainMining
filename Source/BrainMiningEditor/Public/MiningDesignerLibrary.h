@@ -7,6 +7,7 @@
 #include "MiningDesignerLibrary.generated.h"
 
 class AActor;
+class UDynamicMesh;
 
 UENUM(BlueprintType)
 enum class EMiningDesignerSection : uint8
@@ -40,6 +41,14 @@ public:
     static bool ExportCampaignLayout(AActor* Hall, const FString& Directory);
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
     static bool ImportCampaignRock(AActor* Rock, const FString& Filename);
+    /** Canonical unpartitioned source, in actor-local space, for reversible editor authoring. */
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static UDynamicMesh* GetCampaignRockSource(AActor* Rock);
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool SetCampaignRockSource(AActor* Rock, UDynamicMesh* Source);
+    /** Give the higher-priority layers exclusive volume. Atomic per target. */
+    UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
+    static bool SubtractCampaignLayers(AActor* Target, const TArray<AActor*>& Owners);
 
     UFUNCTION(BlueprintCallable, Category="Mining Designer|Campaign")
     static bool FitCampaignSoil(const TArray<AActor*>& SoilActors, const TArray<AActor*>& SourceActors);

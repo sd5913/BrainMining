@@ -1,0 +1,217 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "target": "MAIN_GAME_ClayWallClods_1_0.obj",
+      "triangles": 2942,
+      "volume": 1.4242664168579908,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_1_1.obj",
+      "triangles": 2702,
+      "volume": 0.903815914731957,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_1_2.obj",
+      "triangles": 2768,
+      "volume": 0.9124079360953705,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_1_3.obj",
+      "triangles": 3924,
+      "volume": 1.2635629798794934,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_1_4.obj",
+      "triangles": 3328,
+      "volume": 1.315849093959711,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_1_5.obj",
+      "triangles": 2658,
+      "volume": 1.1093002642727654,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_1_6.obj",
+      "triangles": 2720,
+      "volume": 1.3207312398002249,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_1_7.obj",
+      "triangles": 2944,
+      "volume": 1.0474398773488227,
+      "nonmanifold": 0
+    },
+    {
+      "target": "EDIT_MainGame_外部通路矿区_可挖岩层.obj",
+      "triangles": 103102,
+      "volume": 491319.12844230514,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_2_0.obj",
+      "triangles": 2870,
+      "volume": 2.310265194671568,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_2_1.obj",
+      "triangles": 2788,
+      "volume": 2.632333611305854,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_2_3.obj",
+      "triangles": 2394,
+      "volume": 1.0946847146826066,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_2_4.obj",
+      "triangles": 2682,
+      "volume": 1.2187811526958063,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_2_5.obj",
+      "triangles": 2502,
+      "volume": 1.4202711707438165,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_2_7.obj",
+      "triangles": 2408,
+      "volume": 1.3554061792967516,
+      "nonmanifold": 0
+    },
+    {
+      "target": "EDIT_MainGame_02_溶洞通路矿区_可挖岩层.obj",
+      "triangles": 83240,
+      "volume": 505639.91895837133,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_3_0.obj",
+      "triangles": 2652,
+      "volume": 0.6741057288255665,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_3_2.obj",
+      "triangles": 3070,
+      "volume": 1.329819279676464,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_3_4.obj",
+      "triangles": 2744,
+      "volume": 0.7822552278328122,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_3_6.obj",
+      "triangles": 2666,
+      "volume": 1.0500355774537347,
+      "nonmanifold": 0
+    },
+    {
+      "target": "MAIN_GAME_ClayWallClods_3_7.obj",
+      "triangles": 2138,
+      "volume": 0.7818115451711984,
+      "nonmanifold": 0
+    },
+    {
+      "target": "EDIT_MainGame_03_石笋通路矿区_可挖岩层.obj",
+      "triangles": 95510,
+      "volume": 546422.263684867,
+      "nonmanifold": 0
+    },
+    {
+      "target": "LINK_Mine01_Office_NaturalRock.obj",
+      "triangles": 2366,
+      "volume": 294.9209460334464,
+      "nonmanifold": 0
+    },
+    {
+      "target": "LINK_Office_Mine02_NaturalRock.obj",
+      "triangles": 2634,
+      "volume": 278.48619622199516,
+      "nonmanifold": 0
+    },
+    {
+      "target": "LINK_Mine02_Journey_NaturalRock.obj",
+      "triangles": 2494,
+      "volume": 320.7679348549232,
+      "nonmanifold": 0
+    },
+    {
+      "target": "LINK_Journey_Mine03_NaturalRock.obj",
+      "triangles": 2626,
+      "volume": 337.3602189758879,
+      "nonmanifold": 0
+    }
+  ],
+  "hashes": {
+    "MAIN_GAME_ClayWallClods_1_0.obj": "1502a0e8ce4e752dca49d0ee114e799e66fc32323d2727683d4d8b8a56720782",
+    "EDIT_MainGame_外部通路矿区_引导可挖层_01.obj": "3f6650dd0d65b70ee592e773379f155fabadd8ddd8350f666a48c75af98f174e",
+    "MAIN_GAME_ClayWallClods_1_1.obj": "94c1e81f7b0db00f997ccf22b1aacd7207beb4ce69e974504dfce0c2c39b07e0",
+    "EDIT_MainGame_外部通路矿区_引导可挖层_02.obj": "29580d2354d49e760f400cf726d5e2ff145f764935a237b30a2174b254e7176f",
+    "MAIN_GAME_ClayWallClods_1_2.obj": "14c9c7138e4ee74299bc1934abab54c4c3bafa202d182b43aebb91c854a7e99b",
+    "EDIT_MainGame_外部通路矿区_引导可挖层_03.obj": "0b60a9954adefbc519626d3c074d0e198e981ec4ba52d5430ec37a57fa46b3f7",
+    "MAIN_GAME_ClayWallClods_1_3.obj": "346545344676ad949df8310b2b127b33e9f280fe1f8c70d8339df018601119df",
+    "EDIT_MainGame_外部通路矿区_引导可挖层_04.obj": "2a6e8255677d9bc6740b8bd6abd2811c5ed86190893ff6719b51db5139cec319",
+    "MAIN_GAME_ClayWallClods_1_4.obj": "22e9f89fc67495eab3764506eef7ef97a55d6213254d8fa0ec630a6c6f120fcb",
+    "EDIT_MainGame_外部通路矿区_引导可挖层_05.obj": "1769e3a2886022efe4760d3cdca554e7d87ee8da00523d93662acf8ab45067fb",
+    "MAIN_GAME_ClayWallClods_1_5.obj": "42368d713c42d1fb438dfe1388d592467705bd9f9884e13a1059d5a458addee8",
+    "EDIT_MainGame_外部通路矿区_引导可挖层_06.obj": "4f64e35545e6d758f72a0ceaedf016545ca95bee400eceb59206b6197bb64fc6",
+    "MAIN_GAME_ClayWallClods_1_6.obj": "8a7b01025b9f3984e4559e2bb1c0a7af2bd8d5370ab18b5532d8c62663d4eb5a",
+    "EDIT_MainGame_外部通路矿区_引导可挖层_07.obj": "69f5bfd2599129e9a94a6361f31fba10e0976479f596875bb5580981d7831e94",
+    "MAIN_GAME_ClayWallClods_1_7.obj": "3186a54b4e8b1f43f15f29471f9fc4cb08efd96403a8aab27b083684cab27db9",
+    "EDIT_MainGame_外部通路矿区_引导可挖层_08.obj": "859d4e2e0a0179f156da79dcc97abf11b3d094ef353260dec7e495d9c41dd7d1",
+    "EDIT_MainGame_外部通路矿区_可挖岩层.obj": "954287e197ba9692bf460e6782aa3461cc00a97af096321c556aa2cacdaefa32",
+    "MAIN_GAME_ClayWallClods_2_0.obj": "40be5af87765566aabd9ce88ad9ecdef87c434d62ef3048e81ea5dfae290861b",
+    "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_01.obj": "6b7bcd55707e83e20e02896f9eb9a9dc3c420acafc87355a84ecd2214f56f5d3",
+    "MAIN_GAME_ClayWallClods_2_1.obj": "b7f3ee1c20d2abdd5fd61a0836b17975e909cc7e45fbb9a447d0671e265c4cd6",
+    "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_02.obj": "7ee7f4e006e4ac7ec3608132ff3f2c9e2a1c1c15676ddbd1fe278b0fc4be3f0e",
+    "MAIN_GAME_ClayWallClods_2_3.obj": "590904634e1aafe1ec35d2bdc2aa52218d65749901a60992c3683f8adfddf3c1",
+    "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_04.obj": "411070c360b18d88972b3a55eff3e16d6e4712ac2f1d0a4eeaa2161aa812baa4",
+    "MAIN_GAME_ClayWallClods_2_4.obj": "79d88104e286e2d947977f540451ae5769621883248d163bac57bd8dd226d24b",
+    "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_05.obj": "89ad743725473483ba965d6f3542bdcb40eb4c08c5edd224586ba8d98f3bffc9",
+    "MAIN_GAME_ClayWallClods_2_5.obj": "a1c583144a84e870bfee58aed5417719ecab9f6d4bdcd46609b3d3b4987a6e2a",
+    "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_06.obj": "e7ab00b51294dae26f60c39030a9b68fe94ae80b2ec32256a76f7d0b66dbd348",
+    "MAIN_GAME_ClayWallClods_2_7.obj": "53aa5cc5a9114c81af215e949a2db61f9016a17989d0d1c13724388f10b597fb",
+    "EDIT_MainGame_02_溶洞通路矿区_引导可挖层_08.obj": "65f479ec9cc0d3407df29b97c41717dce8981812936d3a4d02e1db09ad8de7f7",
+    "EDIT_MainGame_02_溶洞通路矿区_可挖岩层.obj": "e71cf5e822151b735682a3c3765a6ba5d28b7112eb05bdfc52392265b556a4bc",
+    "MAIN_GAME_BombOnly_2_3.obj": "bfdca2ffb8929ea14679ca98575bfcf15556e541917777745c8588011908ad51",
+    "MAIN_GAME_BombOnly_2_7.obj": "e364241b814282d7624aebb57fbc4db45fd606a6504746a7d40fb3b07749d9fb",
+    "MAIN_GAME_ClayWallClods_3_0.obj": "c996e8d95bc1533f9589abef7e247f5eefdcab24f32b0780828a5f395ed78276",
+    "EDIT_MainGame_03_石笋通路矿区_引导可挖层_01.obj": "bbc001ff960a5667a72555c624e0c739c52b6fdd6042657654db3433c3e5642f",
+    "MAIN_GAME_ClayWallClods_3_2.obj": "98516cb1e4ece9192b9260c39799ed2b74471a5efbdcff76e474064d96fa85d3",
+    "EDIT_MainGame_03_石笋通路矿区_引导可挖层_03.obj": "402c26f0522fbda87532d32c8692a878e0eb35def662deea52eae1170b4a8798",
+    "MAIN_GAME_ClayWallClods_3_4.obj": "c8dc93faca9550c5bc8adc39bf5d6e4c5ccc3da8dbefef23657f60f4cfc67b31",
+    "EDIT_MainGame_03_石笋通路矿区_引导可挖层_05.obj": "e8afb10f1f868dcda02e34144eee65c2475cd94ab406211916635be740f65ace",
+    "MAIN_GAME_ClayWallClods_3_6.obj": "2f0d094f4c3479f6c821ecde8ac912fb9c9f567c7d3c4e953c43858f5fb73102",
+    "EDIT_MainGame_03_石笋通路矿区_引导可挖层_07.obj": "fd3b476d015640c97ff3a5d2bb886303237910c54d6c865ec0be29a4532bf122",
+    "MAIN_GAME_ClayWallClods_3_7.obj": "b0a7417a74ca642bbb1b12d693542288f9ef2dfe7a7d174f831e621927f6e056",
+    "EDIT_MainGame_03_石笋通路矿区_引导可挖层_08.obj": "c87c840af120eacdc2aac2885b78aeb317627e9cff17227da821731d0b1e2f9f",
+    "EDIT_MainGame_03_石笋通路矿区_可挖岩层.obj": "112e70f4b2730b9b4e16e71c9ad72fd75ec96b0910a2826d676cbbc9b99f19b5",
+    "MAIN_GAME_BombOnly_3_2.obj": "a19f46c971e66ee07e1e0593a89461dbee291292eed94c2f84fd68d1c9fb4632",
+    "MAIN_GAME_BombOnly_3_4.obj": "e15eb67a21da90b0e74ab4b11fc4637e838d3a740d61afd1fffbe46a15842bc1",
+    "MAIN_GAME_BombOnly_3_6.obj": "d259475e1df17e03dcc2caf7785e6bf6c4adb493f6a6a0bd7ccf27487d84c89f",
+    "LINK_Mine01_Office_NaturalRock.obj": "0d26f9273f12c7e1e288d21f73c96f997dd5e4c60a61c9219a471c9bbe2f32ff",
+    "LINK_Mine01_Office_DiggableSoil.obj": "c90ca3b0e25dd9e9a7b43242203879c7eb84da5ca942b1d6094bb3edd8de4df0",
+    "LINK_Office_Mine02_NaturalRock.obj": "ea50b53e59adf1fdc64a2753dc7235af7b1180961f74537befbfb962ca7a2027",
+    "MAIN_GAME_OfficeExit_BombOnly.obj": "e678142b941b7c7a287a6d0a927318ab618e573e7006da60f577d0dcf55c0b53",
+    "LINK_Mine02_Journey_NaturalRock.obj": "4161f810b95d911e0f15e00827999dc5ec0b0b71f0792176b05915ec2be43d0b",
+    "LINK_Mine02_Journey_DiggableSoil.obj": "ef6ab8f178334270bbfe15f4f0718491acf3c105d0bd84f1a95e1395fb170226",
+    "LINK_Journey_Mine03_NaturalRock.obj": "154659f661156c8369875db87bb258f0314f401c605baccb68aa134c16da5947",
+    "LINK_Journey_Mine03_DiggableSoil.obj": "34eb1977d3dc44e5b1318400cb9214f04fa4a0073531756c9f6b82ac6aa915bf"
+  }
+}

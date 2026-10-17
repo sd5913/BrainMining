@@ -1,6 +1,8 @@
 #include "CardRoomStage.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
@@ -19,6 +21,11 @@ ACardRoomStage::ACardRoomStage()
     PrimaryActorTick.bCanEverTick=true;
     RootComponent=CreateDefaultSubobject<USceneComponent>(TEXT("RoomOrigin"));
     ToyRoot=CreateDefaultSubobject<USceneComponent>(TEXT("Opponent")); ToyRoot->SetupAttachment(RootComponent); ToyRoot->SetRelativeLocation(FVector(180,0,112));
+    RabbitVisual=CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("RabbitOpponent"));
+    RabbitVisual->SetupAttachment(ToyRoot);
+    RabbitVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    RabbitVisual->SetGenerateOverlapEvents(false);
+    RabbitVisual->SetVisibility(false,true);
     const TCHAR* Sphere=TEXT("/Engine/BasicShapes/Sphere.Sphere");
     const TCHAR* Cube=TEXT("/Engine/BasicShapes/Cube.Cube");
     ToyParts.Add(Shape(TEXT("VelvetBody"),ToyRoot,Sphere,FVector(0,0,35),FVector(.70,.76,.85)));
@@ -80,6 +87,47 @@ void ACardRoomStage::Tint(UStaticMeshComponent* Part,FLinearColor Color,bool bGl
 void ACardRoomStage::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
+    if(RabbitVisual)
+    {
+        if(RabbitSkeletalMesh)
+        {
+            RabbitVisual->SetSkeletalMesh(RabbitSkeletalMesh);
+            RabbitVisual->SetRelativeLocation(RabbitVisualOffset);
+            // The FBX faces local -Y; the card opponent faces local -X.
+            RabbitVisual->SetRelativeRotation(FRotator(0.f,-90.f,0.f));
+            RabbitVisual->SetRelativeScale3D(FVector(FMath::Max(.01f,RabbitVisualScale)));
+            RabbitVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            RabbitVisual->SetVisibility(true,true);
+            RabbitInitialRelativeTransform=RabbitVisual->GetRelativeTransform();
+            for(auto& Part:ToyParts) if(Part) Part->SetVisibility(false,true);
+            // The imported rabbit has a single plastic face and no usable facial
+            // animation in UE. Attach small authored controls to its head bone.
+            for(const int32 FaceIndex:{4,5,10,11,12})
+                if(ToyParts.IsValidIndex(FaceIndex) && ToyParts[FaceIndex])
+                    ToyParts[FaceIndex]->AttachToComponent(RabbitVisual,FAttachmentTransformRules::SnapToTargetNotIncludingScale,TEXT("head"));
+            ToyParts[4]->SetRelativeLocation(FVector(4.f,-10.f,39.f));
+            ToyParts[5]->SetRelativeLocation(FVector(-4.f,-10.f,39.f));
+            ToyParts[10]->SetRelativeLocation(FVector(0.f,-10.f,31.f));
+            ToyParts[11]->SetRelativeLocation(FVector(4.f,-10.f,44.f));
+            ToyParts[12]->SetRelativeLocation(FVector(-4.f,-10.f,44.f));
+            ToyParts[4]->SetRelativeScale3D(FVector(.0015f,.0015f,.0015f));
+            ToyParts[5]->SetRelativeScale3D(FVector(.0015f,.0015f,.0015f));
+            ToyParts[10]->SetRelativeScale3D(FVector(.0012f,.002f,.0007f));
+            ToyParts[11]->SetRelativeScale3D(FVector(.001f,.002f,.0003f));
+            ToyParts[12]->SetRelativeScale3D(FVector(.001f,.002f,.0003f));
+            for(const int32 FaceIndex:{4,5,10,11,12}) ToyParts[FaceIndex]->SetVisibility(true,true);
+            Tint(ToyParts[4],FLinearColor(.02f,.012f,.01f)); Tint(ToyParts[5],FLinearColor(.02f,.012f,.01f));
+            Tint(ToyParts[10],FLinearColor(.12f,.015f,.01f)); Tint(ToyParts[11],FLinearColor(.02f,.012f,.01f)); Tint(ToyParts[12],FLinearColor(.02f,.012f,.01f));
+            // Existing face pieces remain active so the rabbit still blinks and emotes
+            // if the imported FBX's morph targets are unavailable in this UE build.
+            for(const int32 FaceIndex:{4,5,6,10,11,12,13,14,15,16,17})
+                if(ToyParts.IsValidIndex(FaceIndex) && ToyParts[FaceIndex]) ToyParts[FaceIndex]->SetVisibility(true,true);
+        }
+        else
+        {
+            RabbitVisual->SetVisibility(false,true);
+        }
+    }
     if(bStyledEffects)
     {
         for(auto& Part:ToyParts)
@@ -136,7 +184,55 @@ void ACardRoomStage::BeginPlay()
     }
     InitializeEffectMeshes();
     OnConstruction(GetActorTransform());
+    if(RabbitVisual && RabbitSkeletalMesh)
+    {
+        RabbitInitialRelativeTransform=RabbitVisual->GetRelativeTransform();
+        RabbitVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        RabbitVisual->SetSimulatePhysics(false);
+        bRabbitPhysicsDropped=false;
+    }
     InitializeStyledEffects();
+}
+
+void ACardRoomStage::ResetRabbitPhysicsDrop()
+{
+    if(!RabbitVisual || !RabbitSkeletalMesh) return;
+    RabbitVisual->SetSimulatePhysics(false);
+    RabbitVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    RabbitVisual->AttachToComponent(ToyRoot,FAttachmentTransformRules::KeepRelativeTransform);
+    RabbitVisual->SetRelativeTransform(RabbitInitialRelativeTransform);
+    RabbitVisual->SetVisibility(true,true);
+    bRabbitPhysicsDropped=false;
+}
+
+void ACardRoomStage::TriggerRabbitPhysicsDrop()
+{
+    if(!bRabbitPhysicsDrop || bRabbitPhysicsDropped || !RabbitVisual || !RabbitSkeletalMesh) return;
+    const FVector Launch=RabbitVisual->GetComponentLocation();
+    RabbitVisual->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+    RabbitVisual->SetCollisionProfileName(TEXT("PhysicsActor"));
+    RabbitVisual->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    RabbitVisual->SetSimulatePhysics(true);
+    RabbitVisual->SetEnableGravity(true);
+    RabbitVisual->AddImpulse(FVector(-120.f,0.f,80.f),NAME_None,true);
+    RabbitVisual->AddAngularImpulseInDegrees(FVector(0.f,0.f,180.f),NAME_None,true);
+    bRabbitPhysicsDropped=true;
+    UE_LOG(LogTemp,Log,TEXT("CardRoom rabbit physics drop at %s"),*Launch.ToString());
+}
+
+void ACardRoomStage::TickRabbitExpression(float Time,float DeltaSeconds)
+{
+    if(!RabbitVisual || !RabbitSkeletalMesh || bRabbitPhysicsDropped) return;
+    // The prepared FBX adds lightweight Blink/MouthOpen/Angry targets; bones provide the
+    // larger readable gesture so the character still works if a target is stripped by import.
+    const float Breath=FMath::Sin(Time*2.25f);
+    const bool Angry=Run.Round>=3 && (Run.Phase==ECardRoomPhase::Resolving || Run.Phase==ECardRoomPhase::Victory);
+    const bool Hurt=Run.Phase==ECardRoomPhase::Resolving && Run.PhaseTime>=1.f && Run.PhaseTime<1.75f;
+    const float Blink=(FMath::Fmod(Time,4.1f)<.14f)?1.f:0.f;
+    RabbitVisual->SetMorphTarget(TEXT("Blink"),Blink);
+    RabbitVisual->SetMorphTarget(TEXT("MouthOpen"),(Angry||Hurt)?1.f:0.f);
+    RabbitVisual->SetMorphTarget(TEXT("Angry"),Angry?1.f:0.f);
+    RabbitVisual->SetRelativeRotation(FRotator(0.f,-90.f+FMath::Sin(Time*.9f)*1.5f+(Angry?-4.f:0.f),FMath::Sin(Time*2.1f)*2.f));
 }
 void ACardRoomStage::Sound(const TCHAR* Name,float Volume)
 {
@@ -151,7 +247,7 @@ bool ACardRoomStage::CollectReward()
     if(!Run.Collect()) return false;
     Sound(TEXT("S_Reward")); OnCollectibleClaimed.Broadcast(RoomId); return true;
 }
-void ACardRoomStage::RestartEncounter() { Run.Restart(); bWinSent=false; bReplySound=false; bImpactSent=false; }
+void ACardRoomStage::RestartEncounter() { Run.Restart(); ResetRabbitPhysicsDrop(); bWinSent=false; bReplySound=false; bImpactSent=false; }
 bool ACardRoomStage::IsPlayerNear(const FVector& Position) const
 {
     return FVector::Dist2D(Position,GetApproachLocation())<180 && FMath::Abs(Position.Z-GetApproachLocation().Z)<220;
@@ -190,14 +286,18 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     const bool Sick=Run.bPoisoned;
     const bool Blink=FMath::Fmod(Time,4.1f)<.14f;
     float EyeHeight=Blink?.018f:Hurt?.035f:Sick?.05f:Panic?.24f:Angry?.085f:.13f;
-    ToyParts[4]->SetRelativeScale3D(FVector(.085f,Panic?.18f:.12f,EyeHeight));
-    ToyParts[5]->SetRelativeScale3D(FVector(.085f,Panic?.18f:.12f,EyeHeight));
-    ToyParts[10]->SetRelativeScale3D(FVector(.075f,Hurt?.17f:Sick?.13f:Panic?.18f:.11f,Hurt?.15f:Sick?.10f:Panic?.20f:Angry?.09f:.035f));
+    const float FaceWidth=RabbitSkeletalMesh?.0015f:.085f;
+    const float FaceDepth=RabbitSkeletalMesh?.0015f:(Panic?.18f:.12f);
+    const float MouthWidth=RabbitSkeletalMesh?.0012f:.075f;
+    const float MouthHeight=RabbitSkeletalMesh?.0007f:(Hurt?.15f:Sick?.10f:Panic?.20f:Angry?.09f:.035f);
+    ToyParts[4]->SetRelativeScale3D(FVector(FaceWidth,FaceDepth,RabbitSkeletalMesh?FaceWidth:EyeHeight));
+    ToyParts[5]->SetRelativeScale3D(FVector(FaceWidth,FaceDepth,RabbitSkeletalMesh?FaceWidth:EyeHeight));
+    ToyParts[10]->SetRelativeScale3D(FVector(MouthWidth,RabbitSkeletalMesh?.002f:(Hurt?.17f:Sick?.13f:Panic?.18f:.11f),MouthHeight));
     for(int32 i=0;i<2;++i)
     {
         const float Side=i==0?-1.f:1.f;
         ToyParts[11+i]->SetRelativeRotation(FRotator(0,0,Side*(Angry?32.f:Sick?-25.f:Hurt?-36.f:Panic?-18.f:-7.f)));
-        ToyParts[11+i]->SetRelativeLocation(FVector(-38,Side*17,23+(Panic?6.f:Hurt?4.f:0.f)));
+        if(!RabbitSkeletalMesh) ToyParts[11+i]->SetRelativeLocation(FVector(-38,Side*17,23+(Panic?6.f:Hurt?4.f:0.f)));
         ToyParts[2+i]->SetRelativeRotation(FRotator(Sick?25.f:Breath*4.f,0,Side*(Hurt?38.f:Panic?23.f:Angry?-12.f:4.f)));
         ToyParts[7+i]->SetRelativeLocation(FVector(-23,Side*(Panic?60.f:49.f),40+(Panic?35.f:Angry?22.f:Breath*2.f)));
     }
@@ -232,6 +332,7 @@ void ACardRoomStage::Tick(float DeltaSeconds)
         const float Fly=FMath::Clamp((T-1)/1.7f,0.f,1.f);
         Offset=FMath::Lerp(Offset,OpponentExitLocal,Fly);Offset.Z+=FMath::Sin(Fly*PI)*120;Spin.Roll=Fly*600;
         Offset-=Spin.RotateVector(OpponentExitCenterOffset*ToyRoot->GetRelativeScale3D())*Fly;
+        if(Fly>=.78f) TriggerRabbitPhysicsDrop();
         bReachedWall=Fly>=1;
     }
     ToyRoot->SetRelativeLocation(Offset); ToyRoot->SetRelativeRotation(Spin);
@@ -244,6 +345,7 @@ void ACardRoomStage::Tick(float DeltaSeconds)
         const float Yaw=FMath::RadiansToDegrees(FMath::Atan2(-To.Y,FMath::Max(1.,-To.X)));
         HeadPivot->SetRelativeRotation(FMath::RInterpTo(HeadPivot->GetRelativeRotation(),FRotator(FMath::Clamp(Pitch,-20.f,20.f),FMath::Clamp(Yaw,-30.f,30.f),0),DeltaSeconds,3.f));
     }
+    TickRabbitExpression(Time,DeltaSeconds);
     TickEffects();
 }
 

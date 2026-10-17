@@ -99,7 +99,8 @@ void ACardRoomStage::OnConstruction(const FTransform& Transform)
             RabbitVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
             RabbitVisual->SetVisibility(true,true);
             RabbitInitialRelativeTransform=RabbitVisual->GetRelativeTransform();
-            for(auto& Part:ToyParts) if(Part) Part->SetVisibility(false,true);
+            for(const int32 BodyIndex:{0,1,2,3,7,8,9})
+                if(ToyParts.IsValidIndex(BodyIndex) && ToyParts[BodyIndex]) ToyParts[BodyIndex]->SetVisibility(false,true);
             // The imported rabbit has a single plastic face and no usable facial
             // animation in UE. Attach small authored controls to its head bone.
             for(const int32 FaceIndex:{4,5,10,11,12})
@@ -275,7 +276,21 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     PreviousAudioTime=T;
     const bool bGhost=Phase==ECardRoomPhase::Seated || Phase==ECardRoomPhase::Matching || Phase==ECardRoomPhase::Victory || Phase==ECardRoomPhase::Collected;
     for(const auto& Dot:GhostDots) Dot->SetVisibility(bGhost);
-    ToyRoot->SetVisibility(bBattle || Phase==ECardRoomPhase::Arrival,true);
+    const bool bOpponentVisible=RabbitSkeletalMesh ? (Phase!=ECardRoomPhase::Exploring && Phase!=ECardRoomPhase::Collected) : (bBattle || Phase==ECardRoomPhase::Arrival);
+    ToyRoot->SetVisibility(bOpponentVisible,true);
+    // Keep the authored P2 replacement authoritative at runtime. Older saved
+    // instances can retain component visibility overrides from the static toy;
+    // re-apply the skeletal mesh and hide every legacy toy part before drawing.
+    if(RabbitSkeletalMesh && RabbitVisual)
+    {
+        if(RabbitVisual->GetSkeletalMeshAsset()!=RabbitSkeletalMesh)
+            RabbitVisual->SetSkeletalMesh(RabbitSkeletalMesh);
+        RabbitVisual->SetVisibility(bOpponentVisible,true);
+        // Keep the static body hidden, but retain the small authored eye/mouth
+        // pieces attached to the rabbit head as the animation fallback.
+        for(const int32 BodyIndex:{0,1,2,3,7,8,9})
+            if(ToyParts.IsValidIndex(BodyIndex) && ToyParts[BodyIndex]) ToyParts[BodyIndex]->SetVisibility(false,true);
+    }
     const float Time=GetWorld()->GetTimeSeconds();
     const float Breath=FMath::Sin(Time*2.25f);
     FVector Offset=OpponentBaseLocal+FVector(0,0,Breath*1.6f); FRotator Spin(0,0,FMath::Sin(Time*1.1f)*1.2f);

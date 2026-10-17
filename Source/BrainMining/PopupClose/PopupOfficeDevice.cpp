@@ -1,5 +1,4 @@
 #include "PopupClose/PopupOfficeDevice.h"
-#include "MiningInteractionTrace.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "PopupClose/PopupCloseContent.h"
 #include "PopupClose/PopupCloseFlyingWindow.h"
@@ -206,7 +205,7 @@ bool APopupOfficeDevice::CanInteract(APlayerController* PC) const
  if(bLocked || !PC || !PC->GetPawn() || FVector::Dist(PC->GetPawn()->GetActorLocation(),InteractionPoint())>320)return false;
  FVector P;FRotator R;PC->GetPlayerViewPoint(P,R);
  FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(OfficeDeviceAim),false,PC->GetPawn());
- return MiningInteraction::Trace(GetWorld(),Hit,P,R,450,Query,[this](const FHitResult& Candidate){return Candidate.GetActor()==this;});
+ return GetWorld()->LineTraceSingleByChannel(Hit,P,P+R.Vector()*450,ECC_Visibility,Query) && Hit.GetActor()==this;
 }
 void APopupOfficeDevice::AddProblem()
 {

@@ -7,6 +7,7 @@
 #include "WenSiMirrorPuzzle.generated.h"
 
 class UStaticMeshComponent;
+class UStaticMesh;
 class USceneCaptureComponent2D;
 class UTextureRenderTarget2D;
 class UMaterialInstanceDynamic;
@@ -28,6 +29,11 @@ public:
  UPROPERTY(EditAnywhere, Category="WenSi") int32 Kind=0;
  UPROPERTY(EditAnywhere, Category="WenSi") EWenSiMirrorWord Word=EWenSiMirrorWord::Ordinary;
  UPROPERTY(EditAnywhere, Category="WenSi") FString DisplayNoun;
+ UPROPERTY(EditAnywhere, Category="WenSi|Art") TObjectPtr<UStaticMesh> ArtModel;
+ UPROPERTY(EditAnywhere, Category="WenSi|Art") FRotator ArtRotation=FRotator(0,90,0);
+ UPROPERTY(EditAnywhere, Category="WenSi|Art") bool bUniformArtScale=true;
+ UPROPERTY(VisibleAnywhere, Category="WenSi|Art") TObjectPtr<UStaticMeshComponent> ArtVisual;
+ UFUNCTION(BlueprintCallable,CallInEditor,Category="WenSi|Art") void RefreshArtModel();
  UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
  UPROPERTY() TObjectPtr<USceneCaptureComponent2D> Capture;
  UPROPERTY() TObjectPtr<UTextureRenderTarget2D> MirrorTarget;

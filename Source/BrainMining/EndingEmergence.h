@@ -93,28 +93,19 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") float FinaleDrillSpeed=0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") int32 FinaleDrillCuts=0;
 private:
+#if WITH_EDITOR
     friend class FEndingTitleDrillPreview;
-    friend class FEndingPaperMoviePreview;
     friend class FEndingOrganicPreview;
+    // The editor-only paper-film harness drives the same production finale
+    // state machine for deterministic capture and validation.
+    friend class FEndingPaperMoviePreview;
+#endif
     void BuildFinale();
     void BuildPaperFinale();
     void UpdatePaperFinale(float DeltaSeconds);
     void ResetPaperFinale();
     void UpdatePaperProps(float CameraX,float DeltaSeconds);
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperScene;
-    void CapturePaperCave();
-    UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> PaperSurfaceMaterial;
-    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperSurface;
-    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperRock;
-    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperRockCap;
-    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperPick;
-    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperPickSwing;
-    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperCaveScene;
-    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperCaveSeal;
-    UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> PaperRockChips;
-    UPROPERTY(Transient) TObjectPtr<class USceneCaptureComponent2D> PaperCaveCapture;
-    UPROPERTY(Transient) TObjectPtr<UTextureRenderTarget2D> PaperCaveTexture;
-    bool bPaperRockBroken=false;
     UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> PaperCards;
     UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> PaperShadows;
     UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> PaperArtMaterials;

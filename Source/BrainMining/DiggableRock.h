@@ -25,7 +25,6 @@ public:
 	FMiningTerrainCommitted OnTerrainCommitted;
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
-	virtual void Tick(float DeltaSeconds) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining")
 	TObjectPtr<UDynamicMeshComponent> RockMesh;
@@ -44,9 +43,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining", meta=(ClampMin="1000", ClampMax="100000"))
 	int32 MaxTriangles = 30000;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Mobile")
-	bool bAllowMobileSimplification = true;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Stats")
 	int32 TriangleCount = 0;
@@ -78,14 +74,18 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category="Mining")
 	virtual void ResetRock();
 
+	// Optional authored geometry (for example the rounded television glass).
+	// Stored with the level so packaged games never need editor mesh conversion.
+	UPROPERTY(EditAnywhere, Category="Mining|Authored")
+	TObjectPtr<class UDynamicMesh> AuthoredRestMesh;
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="Mining|Authored")
+	void BakeAuthoredMesh(UDynamicMesh* Mesh);
+
 protected:
 	virtual void InitializeForPlay();
 	void CommitMesh(UE::Geometry::FDynamicMesh3&& Mesh);
-	void UpdateRockCollision();
 	bool MineCutter(FVector WorldCenter, float WorldRadius, const UE::Geometry::FDynamicMesh3* WorldCutter);
 	bool bUseProceduralCutFallback = false;
-	bool bMobileCollisionPending = false;
-	double NextMobileCollisionUpdate = 0.0;
 
 private:
 	UE::Geometry::FDynamicMesh3 UnitCutter;

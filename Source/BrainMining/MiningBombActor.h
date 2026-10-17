@@ -21,7 +21,6 @@ class BRAINMINING_API AMiningBombActor : public AActor
 	GENERATED_BODY()
 public:
 	AMiningBombActor();
-	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 	void Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMiningBombToolComponent* Tool,

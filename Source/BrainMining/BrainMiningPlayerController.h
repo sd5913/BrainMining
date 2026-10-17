@@ -11,7 +11,6 @@ class UUserWidget;
 class UMiningGUIHUDWidget;
 class UMiningInteractionHUDWidget;
 class SWidget;
-class SMobileTouchControls;
 
 /**
  *  Simple first person Player Controller
@@ -46,12 +45,6 @@ public:
 	virtual bool InputKey(const FInputKeyEventArgs& Params) override;
 	bool IsAudioSettingsOpen() const { return AudioSettingsPanel.IsValid(); }
 	void ToggleAudioSettings();
-	void HandleMobileMove(const FVector2D& Axis);
-	void HandleMobileLook(const FVector2D& Delta);
-	void HandleMobileMine(bool bPressed);
-	void HandleMobileBomb();
-	void HandleMobileDrill();
-	void HandleMobileUpgrade();
 
 protected:
 
@@ -70,8 +63,6 @@ protected:
 	/** Pointer to the mobile controls widget */
 	UPROPERTY()
 	TObjectPtr<UUserWidget> MobileControlsWidget;
-	TSharedPtr<SWidget> MobileFallbackControls;
-	TSharedPtr<SMobileTouchControls> MobileTouchControls;
 
 	/** If true, the player will use UMG touch controls even if not playing on mobile platforms */
 	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")

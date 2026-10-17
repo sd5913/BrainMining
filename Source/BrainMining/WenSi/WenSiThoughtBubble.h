@@ -44,16 +44,18 @@ namespace WenSiThoughtBubble
    Card->SetRenderTransform(FSlateRenderTransform());Card->SetRenderOpacity(1.f);Age=-1.f;
   }
  }
- // The supplied PNG has transparent margins. Sample its original alpha bounds;
- // mirror only the brush so Chinese text and input remain left-to-right.
+ // The supplied PNG has transparent margins. Sample its alpha bounds and keep
+ // the artwork at its natural cloud-like aspect ratio. The source artwork is
+ // the left-hand bubble (tail on the lower-left); mirror only the right brush
+ // so Chinese text and input remain left-to-right.
  inline FSlateBrush MakeBrush(UObject* Texture, int32 Side)
  {
   FSlateBrush Brush;
   Brush.SetResourceObject(Texture);
   Brush.DrawAs=ESlateBrushDrawType::Image;
-  Brush.ImageSize=FVector2D(440,328.19);
-  Brush.SetUVRegion(FBox2f(FVector2f(1081.f/4800.f,617.f/3584.f),FVector2f(4119.f/4800.f,2883.f/3584.f)));
-  Brush.Mirroring=Side==0 ? ESlateBrushMirrorType::Horizontal : ESlateBrushMirrorType::NoMirror;
+  Brush.ImageSize=FVector2D(440,369.75);
+  Brush.SetUVRegion(FBox2f(FVector2f(500.f/4800.f,44.f/3584.f),FVector2f(4654.f/4800.f,3536.f/3584.f)));
+  Brush.Mirroring=Side==1 ? ESlateBrushMirrorType::Horizontal : ESlateBrushMirrorType::NoMirror;
   return Brush;
  }
 
@@ -66,13 +68,13 @@ namespace WenSiThoughtBubble
   int32 Side=1;
   FVector2D Project(double X,double Y) const
   {
-   const double U=Side==0 ? 1.-X/360. : X/360.;
+   const double U=Side==1 ? 1.-X/360. : X/360.;
    const double V=Y/240.;
    constexpr double G=156./224.-1.;
    const double D=1.+G*U;
    const double PX=( (400.*(1.+G)-28.)*U+28.)/D;
    const double PY=( (18.*(1.+G)-46.)*U+156.*V+46.)/D;
-   return FVector2D(Side==0 ? 440.-PX : PX,PY);
+   return FVector2D(Side==1 ? 440.-PX : PX,PY);
   }
   virtual void OnArrangeChildren(const FGeometry& Geometry,FArrangedChildren& Arranged) const override
   {
@@ -106,7 +108,7 @@ namespace WenSiThoughtBubble
  {
   TSharedRef<SPerspectiveRow> Perspective=SNew(SPerspectiveRow);
   Perspective->Side=Side;Row=Perspective;
-  return SNew(SBox).WidthOverride(440).HeightOverride(328.19)
+  return SNew(SBox).WidthOverride(440).HeightOverride(369.75)
    [SNew(SOverlay)
     +SOverlay::Slot()[SNew(SImage).Image(Brush).Visibility(EVisibility::HitTestInvisible)]
     +SOverlay::Slot()[Perspective]

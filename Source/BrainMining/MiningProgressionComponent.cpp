@@ -1,4 +1,5 @@
 #include "MiningProgressionComponent.h"
+#include "BrainMiningCharacter.h"
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningWalletSubsystem.h"
@@ -216,4 +217,8 @@ void UMiningProgressionComponent::ApplyUpgrades()
     Flight->JetpackHeat = FMath::Clamp(Flight->JetpackHeat * PreviousHeatSeconds / FMath::Max(.1f, Flight->FlightSettings.HeatUpSeconds), 0.f, 1.f);
     Mining->DrillEnergy = FMath::Clamp(Mining->DrillEnergy, 0.f, Mining->MaxDrillEnergy);
     Bomb->BombCount = FMath::Clamp(Bomb->BombCount, 0, Bomb->MaxBombs);
+    if (auto* Character = Cast<ABrainMiningCharacter>(GetOwner()))
+    {
+        Character->RefreshPickaxeVisual(GetLevel(0));
+    }
 }

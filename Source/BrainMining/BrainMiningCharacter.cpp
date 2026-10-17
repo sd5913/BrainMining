@@ -22,6 +22,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "UObject/SoftObjectPtr.h"
 #include "UObject/ConstructorHelpers.h"
 
 ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectInitializer)
@@ -96,6 +97,16 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> PickaxeAsset(TEXT("/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> DrillAsset(TEXT("/Game/Drill/Stylized/SM_DrillStylized.SM_DrillStylized"));
 	PickaxeModel->SetStaticMesh(PickaxeAsset.Object);
+	PickaxeLevelMeshes.Reset();
+	for (const TCHAR* Path : {
+		TEXT("/Game/Pickaxe/SM_Pickaxe.SM_Pickaxe"),
+		TEXT("/Game/Pickaxe/SM_Pickaxe_copper.SM_Pickaxe_copper"),
+		TEXT("/Game/Pickaxe/SM_Pickaxe_silver.SM_Pickaxe_silver"),
+		TEXT("/Game/Pickaxe/SM_Pickaxe_gold.SM_Pickaxe_gold"),
+		TEXT("/Game/Pickaxe/SM_Pickaxe_max.SM_Pickaxe_max")})
+	{
+		PickaxeLevelMeshes.Add(TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(Path)));
+	}
 	DrillRightModel->SetStaticMesh(DrillAsset.Object);
 	DrillLeftModel->SetStaticMesh(DrillAsset.Object);
 	for (UStaticMeshComponent* Model : { PickaxeModel.Get(), DrillRightModel.Get(), DrillLeftModel.Get(), BombModel.Get() })
@@ -133,6 +144,17 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 	// Configure character movement
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
+}
+
+void ABrainMiningCharacter::RefreshPickaxeVisual(int32 PickaxeLevel)
+{
+	if (!PickaxeModel) return;
+	const int32 Level = FMath::Clamp(PickaxeLevel, 0, 4);
+	if (!PickaxeLevelMeshes.IsValidIndex(Level)) return;
+	if (UStaticMesh* NewPickaxeMesh = PickaxeLevelMeshes[Level].LoadSynchronous())
+	{
+		PickaxeModel->SetStaticMesh(NewPickaxeMesh);
+	}
 }
 
 void ABrainMiningCharacter::PostInitializeComponents()

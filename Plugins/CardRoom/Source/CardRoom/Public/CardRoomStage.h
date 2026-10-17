@@ -57,6 +57,7 @@ public:
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") TObjectPtr<USkeletalMesh> RabbitSkeletalMesh;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit", meta=(ClampMin="0.01")) float RabbitVisualScale=1.f;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") FVector RabbitVisualOffset=FVector::ZeroVector;
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") FVector RabbitLandingLocal=FVector(1700.f,0.f,-420.f);
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") bool bRabbitPhysicsDrop=true;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") FVector RewardLocal=FVector(-30,0,143);
     FVector GetCardLanding(int32 Index,int32 Count) const;
@@ -94,6 +95,7 @@ private:
     float StyledLastTime=0;
     bool bStyledPoisonLive=false;
     bool bRabbitPhysicsDropped=false;
+    bool bRabbitPhysicsSettled=false;
     FTransform RabbitInitialRelativeTransform;
     ECardRoomPhase LastPhase = ECardRoomPhase::Exploring;
     bool bReplySound = false;

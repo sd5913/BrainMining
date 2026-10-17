@@ -191,6 +191,7 @@ void ACardRoomStage::BeginPlay()
         RabbitVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         RabbitVisual->SetSimulatePhysics(false);
         bRabbitPhysicsDropped=false;
+        bRabbitPhysicsSettled=false;
     }
     InitializeStyledEffects();
 }
@@ -204,6 +205,7 @@ void ACardRoomStage::ResetRabbitPhysicsDrop()
     RabbitVisual->SetRelativeTransform(RabbitInitialRelativeTransform);
     RabbitVisual->SetVisibility(true,true);
     bRabbitPhysicsDropped=false;
+    bRabbitPhysicsSettled=false;
 }
 
 void ACardRoomStage::TriggerRabbitPhysicsDrop()
@@ -215,9 +217,15 @@ void ACardRoomStage::TriggerRabbitPhysicsDrop()
     RabbitVisual->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     RabbitVisual->SetSimulatePhysics(true);
     RabbitVisual->SetEnableGravity(true);
-    RabbitVisual->AddImpulse(FVector(-120.f,0.f,80.f),NAME_None,true);
-    RabbitVisual->AddAngularImpulseInDegrees(FVector(0.f,0.f,180.f),NAME_None,true);
+    // True free fall: no damping or hidden easing. The existing chair collision
+    // is responsible for stopping the rabbit when it lands.
+    RabbitVisual->SetLinearDamping(0.f);
+    RabbitVisual->SetAngularDamping(0.f);
+    RabbitVisual->SetUseCCD(true);
+    RabbitVisual->SetPhysicsLinearVelocity(FVector(0.f,0.f,-120.f));
+    RabbitVisual->SetPhysicsAngularVelocityInDegrees(FVector(0.f,0.f,35.f));
     bRabbitPhysicsDropped=true;
+    bRabbitPhysicsSettled=false;
     UE_LOG(LogTemp,Log,TEXT("CardRoom rabbit physics drop at %s"),*Launch.ToString());
 }
 
@@ -345,13 +353,29 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     if(bResolve && Run.Round==4 && T>1)
     {
         const float Fly=FMath::Clamp((T-1)/1.7f,0.f,1.f);
-        Offset=FMath::Lerp(Offset,OpponentExitLocal,Fly);Offset.Z+=FMath::Sin(Fly*PI)*120;Spin.Roll=Fly*600;
+        const FVector DropAboveBench=RabbitLandingLocal+FVector(0.f,0.f,900.f);
+        Offset=FMath::Lerp(Offset,DropAboveBench,Fly);Offset.Z+=FMath::Sin(Fly*PI)*120;Spin.Roll=Fly*600;
         Offset-=Spin.RotateVector(OpponentExitCenterOffset*ToyRoot->GetRelativeScale3D())*Fly;
         if(Fly>=.78f) TriggerRabbitPhysicsDrop();
         bReachedWall=Fly>=1;
     }
     ToyRoot->SetRelativeLocation(Offset); ToyRoot->SetRelativeRotation(Spin);
     if(bReachedWall) {ToyRoot->SetVisibility(false,true);if(!bImpactSent){bImpactSent=true;OnOpponentWallImpact.Broadcast(RoomId);}}
+    if(bRabbitPhysicsDropped && !bRabbitPhysicsSettled && RabbitVisual)
+    {
+        const FVector Landing=GetActorTransform().TransformPosition(RabbitLandingLocal);
+        const FVector Current=RabbitVisual->GetComponentLocation();
+        const FVector Horizontal(Current.X-Landing.X,Current.Y-Landing.Y,0.f);
+        if(Current.Z<=Landing.Z+140.f && Horizontal.SizeSquared()<=300.f*300.f && RabbitVisual->GetComponentVelocity().SizeSquared()<35.f*35.f)
+        {
+            RabbitVisual->SetPhysicsLinearVelocity(FVector::ZeroVector);
+            RabbitVisual->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+            RabbitVisual->SetSimulatePhysics(false);
+            RabbitVisual->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+            RabbitVisual->SetWorldLocation(Landing);
+            bRabbitPhysicsSettled=true;
+        }
+    }
     if(auto* PC=GetWorld()->GetFirstPlayerController())
     {
         FVector Eye;FRotator Aim;PC->GetPlayerViewPoint(Eye,Aim);

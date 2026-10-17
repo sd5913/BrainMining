@@ -19,6 +19,7 @@ AHeavenToilet::AHeavenToilet()
  WaterOutlet=CreateDefaultSubobject<USceneComponent>(TEXT("WaterOutlet"));WaterOutlet->SetupAttachment(Body);WaterOutlet->SetRelativeLocation(FVector(0,60,260));
  WaterJet=CreateDefaultSubobject<UNiagaraComponent>(TEXT("RealWaterJet"));WaterJet->SetupAttachment(WaterOutlet);WaterJet->SetAutoActivate(false);WaterJet->SetAbsolute(false,false,true);WaterJet->SetRelativeScale3D(FVector(.65));
  OpeningSplash=CreateDefaultSubobject<UNiagaraComponent>(TEXT("RealOpeningSplash"));OpeningSplash->SetupAttachment(WaterOutlet);OpeningSplash->SetAutoActivate(false);OpeningSplash->SetAbsolute(false,false,true);OpeningSplash->SetRelativeScale3D(FVector(.45));
+ SprayDuck=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SprayDuck"));SprayDuck->SetupAttachment(Body);SprayDuck->SetCollisionEnabled(ECollisionEnabled::NoCollision);SprayDuck->SetGenerateOverlapEvents(false);SprayDuck->SetVisibility(false);SprayDuck->SetRelativeScale3D(FVector(DuckScale));
  static ConstructorHelpers::FObjectFinder<UStaticMesh> BodyAsset(TEXT("/Game/HeavenPreview/Meshes/SM_HeavenToiletBody.SM_HeavenToiletBody"));
  static ConstructorHelpers::FObjectFinder<UStaticMesh> LidAsset(TEXT("/Game/HeavenPreview/Meshes/SM_HeavenToiletLid.SM_HeavenToiletLid"));
  static ConstructorHelpers::FObjectFinder<UMaterialInterface> PorcelainAsset(TEXT("/Game/Fab/Toilet/Toilet.Toilet"));
@@ -27,6 +28,7 @@ AHeavenToilet::AHeavenToilet()
  Body->SetStaticMesh(BodyAsset.Object);Lid->SetStaticMesh(LidAsset.Object);
  Body->SetMaterial(0,PorcelainAsset.Object);Lid->SetMaterial(0,PorcelainAsset.Object);
  WaterJet->SetAsset(JetAsset.Object);OpeningSplash->SetAsset(SplashAsset.Object);
+ SprayDuck->SetRelativeScale3D(FVector(DuckScale));
  ApplyLidPose();
 }
 
@@ -42,7 +44,22 @@ void AHeavenToilet::OnConstruction(const FTransform& Transform)
 void AHeavenToilet::BeginPlay()
 {
  Super::BeginPlay();LidOpenAmount=0.f;bPlayerNearby=bWaterRunning=false;
- WaterJet->DeactivateImmediate();OpeningSplash->DeactivateImmediate();ApplyLidPose();
+ if(SprayDuck&&!SprayDuck->GetStaticMesh()) SprayDuck->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/HeavenPreview/Meshes/SM_DarkDuck.SM_DarkDuck")));
+ WaterJet->DeactivateImmediate();OpeningSplash->DeactivateImmediate();ResetDuck();ApplyLidPose();
+}
+void AHeavenToilet::ResetDuck()
+{
+ bDuckInFlight=false;DuckFlightAge=0.f;DuckVelocity=FVector::ZeroVector;
+ if(SprayDuck){SprayDuck->SetVisibility(false);SprayDuck->SetWorldLocation(WaterOutlet?WaterOutlet->GetComponentLocation():GetActorLocation());}
+}
+void AHeavenToilet::LaunchDuck()
+{
+ if(!SprayDuck||!SprayDuck->GetStaticMesh()||!WaterOutlet)return;
+ SprayDuck->SetWorldLocation(WaterOutlet->GetComponentLocation());
+ SprayDuck->SetWorldRotation(WaterOutlet->GetComponentRotation());
+ SprayDuck->SetVisibility(true);
+ DuckVelocity=WaterOutlet->GetForwardVector()*DuckForwardSpeed+FVector::UpVector*DuckUpSpeed;
+ DuckFlightAge=0.f;bDuckInFlight=true;
 }
 void AHeavenToilet::Tick(float DeltaSeconds)
 {
@@ -55,11 +72,18 @@ void AHeavenToilet::Tick(float DeltaSeconds)
  const bool bStartWater=bPlayerNearby && LidOpenAmount>=.85f;
  if(bStartWater && !bWaterRunning)
  {
-  WaterJet->Activate(true);OpeningSplash->Activate(true);bWaterRunning=true;
+  WaterJet->Activate(true);OpeningSplash->Activate(true);bWaterRunning=true;LaunchDuck();
  }
  else if(!bPlayerNearby && bWaterRunning)
  {
   // Finish the original droplets naturally instead of cutting the whole effect.
   WaterJet->Deactivate();OpeningSplash->Deactivate();bWaterRunning=false;
+ }
+ if(bDuckInFlight&&SprayDuck)
+ {
+  DuckFlightAge+=DeltaSeconds;DuckVelocity.Z-=DuckGravity*DeltaSeconds;
+  SprayDuck->AddWorldOffset(DuckVelocity*DeltaSeconds);
+  SprayDuck->AddLocalRotation(FRotator(260.f*DeltaSeconds,420.f*DeltaSeconds,180.f*DeltaSeconds));
+  if(DuckFlightAge>=DuckFlightSeconds)ResetDuck();
  }
 }

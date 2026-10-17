@@ -89,8 +89,11 @@ public:
                 Screen*=FVector2D(Size.X/Width,Size.Y/Height);
                 if(Screen.X<45*S||Screen.X>Size.X-45*S||Screen.Y<45*S||Screen.Y>Size.Y-100*S)continue;
                 const bool Goal=I==D->NeuronPositions.Num()-1;
-                const FLinearColor C=Goal||I==D->TargetNeuron?Ending::Gold:Ending::Teal;
-                const float R=(Goal?38:I==D->TargetNeuron?26:18)*S;
+                // The destination is identified by its pale blue body itself;
+                // the four-corner aim widget belongs only to selectable hops.
+                if(Goal)continue;
+                const FLinearColor C=I==D->TargetNeuron?Ending::Gold:Ending::Teal;
+                const float R=(I==D->TargetNeuron?26:18)*S;
                 Rect(Screen.X-R,Screen.Y-R,10,2,C);Rect(Screen.X-R,Screen.Y-R,2,10,C);
                 Rect(Screen.X+R-10*S,Screen.Y+R,10,2,C);Rect(Screen.X+R,Screen.Y+R-8*S,2,10,C);
             }
@@ -303,11 +306,12 @@ void AEndingEmergence::BuildJourney()
         const FVector Normal=FVector(-(Ending::Ground(P.X+30,P.Y)-Ending::Ground(P.X-30,P.Y))/60,-(Ending::Ground(P.X,P.Y+30)-Ending::Ground(P.X,P.Y-30))/60,1).GetSafeNormal();
         const FQuat Surface=FRotationMatrix::MakeFromZX(Normal,FVector::ForwardVector).ToQuat();
         const FQuat Orientation=Surface*FQuat(FVector::UpVector,R.FRandRange(-PI,PI));
-        NeuronCores.Add(Shape(Goal?TEXT("LargestNeuron"):TEXT("PossessableNeuron"),P,FVector(Size,Size*R.FRandRange(.80f,1.08f),Size*R.FRandRange(.82f,1.06f)),Goal?Ending::Gold*2:FLinearColor(.15f,.65f,1.1f),TEXT("FacetNeuronSoma"),Set,TEXT("NeuronHero")));
+        const FLinearColor GoalBlue(.68f,.94f,1.0f);
+        NeuronCores.Add(Shape(Goal?TEXT("LargestNeuron"):TEXT("PossessableNeuron"),P,FVector(Size,Size*R.FRandRange(.80f,1.08f),Size*R.FRandRange(.82f,1.06f)),Goal?GoalBlue*2:FLinearColor(.15f,.65f,1.1f),TEXT("FacetNeuronSoma"),Set,TEXT("NeuronHero")));
         NeuronCores.Last()->SetRelativeRotation(Orientation);
         Shape(TEXT("NeuronNucleus"),FVector::ZeroVector,FVector(28),FLinearColor(.12f,.38f,.85f),TEXT("Sphere"),NeuronCores.Last(),TEXT("NeuronCore"));
         const FString ArborMesh=I%4?FString::Printf(TEXT("FacetNeuronArbor%d"),I%4):TEXT("FacetNeuronArbor");
-        auto* Arbor=Shape(TEXT("NeuronDendriticArbor"),P,FVector(Goal?Size*.7f:Size)*FVector(1,R.FRandRange(.8f,1.25f),1),Goal?Ending::Gold*2:FLinearColor(.15f,.65f,1.1f),*ArborMesh,Set,TEXT("NeuralFilament"));
+        auto* Arbor=Shape(TEXT("NeuronDendriticArbor"),P,FVector(Goal?Size*.7f:Size)*FVector(1,R.FRandRange(.8f,1.25f),1),Goal?GoalBlue*2:FLinearColor(.15f,.65f,1.1f),*ArborMesh,Set,TEXT("NeuralFilament"));
         Arbor->SetRelativeRotation(Orientation);Nerves.Add(Arbor);
         if(auto* Mat=Cast<UMaterialInstanceDynamic>(Arbor->GetMaterial(0)))Mat->SetScalarParameterValue(TEXT("Variant"),I*.731f);
     }
@@ -339,15 +343,18 @@ void AEndingEmergence::BuildJourney()
     // Only the final cell membrane is excavatable. Blood and brain need no tool.
     for(int I=0;I<1;++I)
     {
-        const float X=Ending::GateX[I],Y=Ending::GateY[I],Z=Ending::Ground(X,Y);
-        if(I<2)
-            Shell(TEXT("RoundMembraneFrame"),{FVector(X,0,425),FVector(X,Y,Z+250)},{FVector2D(484.5f,425),FVector2D(240,250)},FLinearColor(.30f,.068f,.085f),TEXT("CellInterior"));
-        else
-            Shell(TEXT("NeuralConnectionFrame"),{FVector(X,0,Z+700),FVector(X,Y,Z+250)},{FVector2D(1750,2200),FVector2D(240,250)},Ending::Blue*.35f,TEXT("Haze"));
-        auto* Gate=GetWorld()->SpawnActor<ADiggableRock>(ADiggableRock::StaticClass(),GetActorTransform().TransformPosition(FVector(X,Y,Z+250)),GetActorRotation());
+        const float X=Ending::GateX[I],Y=Ending::GateY[I];
+        // The cell floor is at Z=850 here, while the vessel centreline enters
+        // at Z=425.  Centering the plug on the floor left the lower half of the
+        // neck open and let the blood tube show through the room.
+        const float Z=VesselPath.IsValidIndex(0)?VesselPath[0].Z:425.f;
+        auto* Gate=GetWorld()->SpawnActor<ADiggableRock>(ADiggableRock::StaticClass(),GetActorTransform().TransformPosition(FVector(X,Y,Z)),GetActorRotation());
         Gate->AttachToActor(this,FAttachmentTransformRules::KeepWorldTransform);Gate->Tags.Add(Ending::Tag);
-        Gate->RockSize=FVector(100,480,500);Gate->RockMaterial=LoadObject<UMaterialInterface>(nullptr,I==1?TEXT("/Game/EndingEmergence/Materials/M_EE_RedMembrane"):TEXT("/Game/EndingEmergence/Materials/M_EE_Membrane"));Gate->ResetRock();Gates.Add(Gate);
-        Ring(FVector(X-90,Y,Z+250),252,Ending::Gold*.5f,Set,0,6);
+        // The circular plug spans the whole cell-to-vessel cross-section, so
+        // the blood tube cannot be seen through the room before the first cut.
+        Gate->RockSize=FVector(220,2600,2600);Gate->bUseCircularRockMesh=true;
+        Gate->RockMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_RedMembrane"));
+        Gate->ResetRock();Gates.Add(Gate);
     }
 }
 
@@ -887,7 +894,8 @@ void AEndingEmergence::RestartDemo()
     for(ADiggableRock* G:Gates)if(IsValid(G)){G->ResetRock();G->SetActorHiddenInGame(false);}
     for(int I=0;I<Sets.Num();++I)Sets[I]->SetVisibility(I==0,true);
     if(PulseTrail)PulseTrail->SetVisibility(false);
-    for(int I=0;I<NeuronCores.Num();++I)if(auto* M=Cast<UMaterialInstanceDynamic>(NeuronCores[I]->GetMaterial(0)))M->SetVectorParameterValue(TEXT("Tint"),I==NeuronPositions.Num()-1?Ending::Gold*.85f:Ending::Neural*.65f);
+    const FLinearColor GoalBlue(.68f,.94f,1.0f);
+    for(int I=0;I<NeuronCores.Num();++I)if(auto* M=Cast<UMaterialInstanceDynamic>(NeuronCores[I]->GetMaterial(0)))M->SetVectorParameterValue(TEXT("Tint"),I==NeuronPositions.Num()-1?GoalBlue*2:Ending::Neural*.65f);
     Universe->SetRelativeScale3D(FVector(1));Cell->SetRelativeScale3D(FVector(32));
     ClearEndingEffects();
     RealityHits=0;LastStrike=-100;bImpactPending=false;UniverseSnapshot=nullptr;
@@ -918,7 +926,7 @@ void AEndingEmergence::PreviewFilm()
 
 float AEndingEmergence::Duration(int32 Index)
 {
-    const float Seconds[]={5,20,14,18,35,20,18,12,4.5f,0,5.8f,6.6f,6.5f,0};
+    const float Seconds[]={5,20,14,18,35,20,18,12,4.5f,0,5.8f,6.6f,4.4f,6.f,0};
     return Index>=0&&Index<UE_ARRAY_COUNT(Seconds)?Seconds[Index]:0;
 }
 
@@ -955,8 +963,14 @@ void AEndingEmergence::SetShot(int32 Index)
     if(Shot==9)BeginFinaleDrill();
     if(Shot==10)
     {
-        EndFinaleDrill(true);PaperScene->SetRelativeRotation(FRotator(90,0,0));PaperScene->SetVisibility(false,true);
-        FinaleTunnel->SetVisibility(false,true);FinaleLight->SetVisibility(true);
+        EndFinaleDrill(true);PaperScene->SetRelativeRotation(FRotator(90,0,0));PaperScene->SetVisibility(true,true);
+        // Start with only the circular portal visible. The desktop set is
+        // revealed after the camera has entered the opening, preventing a
+        // square sheet or its props from appearing around the distant hole.
+        TArray<USceneComponent*> PaperParts;PaperScene->GetChildrenComponents(true,PaperParts);
+        for(auto* Part:PaperParts)if(Part!=PaperSurface)Part->SetVisibility(false,true);
+        if(PaperSurface)PaperSurface->SetVisibility(true,true);
+        FinaleTunnel->SetVisibility(false,true);FinaleLight->SetVisibility(false);PaperSurface->SetVisibility(true);
         for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(true);
         Sound(TEXT("Connect"),.45f,.7f);
     }
@@ -968,10 +982,11 @@ void AEndingEmergence::SetShot(int32 Index)
         for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(true);
         SetAmbience(TEXT("Cell"),.06f);
     }
-    if(Shot==13)
+    if(Shot==14)
     {
+        CapturePaperCave();PaperCaveScene->SetVisibility(false,true);
         PaperScene->SetVisibility(false,true);FinaleReality->SetVisibility(true,true);
-        CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),0);CreditsScreenLight->SetIntensity(0);
+        CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),1);CreditsScreenMaterial->SetScalarParameterValue(TEXT("CreditMix"),0);CreditsScreenLight->SetIntensity(110);
         TransitEffects(0);if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);
         Camera->GetCameraComponent()->NotifyCameraCut();
         if(Player&&Player->PlayerCameraManager)Player->PlayerCameraManager->SetGameCameraCutThisFrame();
@@ -995,7 +1010,13 @@ void AEndingEmergence::UpdateFilm(float Dt)
     // Never ease to a stop in the scale journey. Exponential distance increases
     // physical pullback speed as the represented scale grows.
     const float T=Shot>=1&&Shot<=6?Progress:Ending::Ease(Progress);
-    const float Zoom=(FMath::Exp(T*FMath::Loge(4.f))-1)/3;
+    // Increase the pullback curve so the previous scene smears into a genuine
+    // scale jump instead of lingering as a recognisable shrinking picture.
+    // Compress the recognisable previous shot immediately.  An ease-out pull
+    // moves the old city block out in the first beats, leaving the captured
+    // bridge and motion blur to carry the scale jump instead of showing a
+    // readable tile shrinking in place.
+    const float Zoom=1.f-FMath::Pow(1.f-T,2.8f);
     if(FinaleCellSpecks)if(auto* Mat=Cast<UMaterialInstanceDynamic>(FinaleCellSpecks->GetMaterial(0)))
         Mat->SetScalarParameterValue(TEXT("Fade"),Shot==6?Ending::Ease((T-.30f)/.30f):Shot>=7?1.f:0.f);
     const float W=bComfortMode?0:FMath::Clamp(Weightlessness,0.f,1.f);
@@ -1028,19 +1049,21 @@ void AEndingEmergence::UpdateFilm(float Dt)
         // Drift rotates the rail vector without changing its length. Switching
         // comfort mode can never kick the camera forward along the pullback.
         const FRotator Float(FMath::Sin(ShotTime*.13f)*.4f*W,FMath::Sin(ShotTime*.19f)*.6f*W,0);
-        Pose(Ending::Cosmos+Float.RotateVector(FMath::Lerp(FVector(-14500,-1800,4300),FVector(-42000,-4000,10500),Zoom)),Ending::Cosmos,62,FMath::Sin(ShotTime*.16)*3.5*W);break;
+         const FVector SolarEarth(FMath::Cos(2*.93f+.35f)*2400*.18f,FMath::Cos(2*.93f+.35f)*2400,FMath::Sin(2*.93f+.35f)*2400*.55f);
+         Pose(Ending::Cosmos+Float.RotateVector(FMath::Lerp(FVector(-14500,-1800,4300),FVector(-42000,-4000,10500),Zoom)),Ending::Cosmos+SolarEarth,62,FMath::Sin(ShotTime*.16)*3.5*W);break;
     }
     case 5:
     {
         // Cell already surrounds the stars. Pull through the membrane to reveal it.
         const float Decay=1-T;
         const FRotator LastFloat(FMath::Sin(Duration(4)*.13f)*.4f*W*Decay,FMath::Sin(Duration(4)*.19f)*.6f*W*Decay,0);
-        Pose(Ending::Cosmos+LastFloat.RotateVector(FMath::Lerp(FVector(-42000,-4000,10500),FVector(-5200,-250,900)*32,Zoom)),
-            Ending::Cosmos,62,FMath::Sin(Duration(4)*.16)*3.5*W*Decay);break;
+         const FVector SolarEarth(FMath::Cos(2*.93f+.35f)*2400*.18f,FMath::Cos(2*.93f+.35f)*2400,FMath::Sin(2*.93f+.35f)*2400*.55f);
+         Pose(Ending::Cosmos+LastFloat.RotateVector(FMath::Lerp(FVector(-42000,-4000,10500),FVector(-5200,-250,900)*32,Zoom)),
+             Ending::Cosmos+SolarEarth,62,FMath::Sin(Duration(4)*.16)*3.5*W*Decay);break;
     }
     case 6:
         Pose(Ending::Cosmos+FMath::Lerp(FVector(-5200,-250,900)*32,FVector(-760000,-135000,230000),Zoom),Ending::Cosmos,62,FMath::Sin(ShotTime*.13)*1.2*W);break;
-    case 7: case 8: case 9: case 10: case 11: case 12: case 13: UpdateFinale(Dt);break;
+    case 7: case 8: case 9: case 10: case 11: case 12: case 13: case 14: UpdateFinale(Dt);break;
     }
     UpdateScaleMotion(Dt);
     Exhaustion=0;
@@ -1651,7 +1674,8 @@ void AEndingEmergence::UpdatePulse(float Dt)
     {
         const bool Selected=GateIndex==2&&(I==TargetNeuron||I==TravellingToNeuron);
         const bool Goal=I==NeuronPositions.Num()-1;
-        const FLinearColor Base=GateIndex>=5?FLinearColor(.20f,.65f,1.1f)*1.4f:Goal?Ending::Gold*(2.4f+.35f*FMath::Sin(Age*2)):Selected?Ending::Gold*1.5f:FLinearColor(.15f,.65f,1.1f)*(VisitedNeurons.Contains(I)?1.2f:1.f);
+        const FLinearColor GoalBlue(.68f,.94f,1.0f);
+        const FLinearColor Base=GateIndex>=5?FLinearColor(.20f,.65f,1.1f)*1.4f:(Goal&&Selected)?Ending::Gold*1.65f:Goal?GoalBlue*(2.4f+.35f*FMath::Sin(Age*2)):Selected?Ending::Gold*1.5f:FLinearColor(.15f,.65f,1.1f)*(VisitedNeurons.Contains(I)?1.2f:1.f);
         return FMath::Lerp(Base,FLinearColor(.65f,.98f,1.f)*5,NeuralFlash(I));
     };
     for(int I=0;I<NeuronCores.Num();++I)
@@ -1738,7 +1762,7 @@ void AEndingEmergence::Tick(float Dt)
         ShotTime+=Dt*FMath::Clamp(FilmSpeed,.25f,4.f)*PullbackRate;
         // Interactive ending and speech always use real time, including preview.
         if(Shot>=7)ShotTime-=Dt*(FMath::Clamp(FilmSpeed,.25f,4.f)-1);
-        if(Shot!=9&&Shot<13&&ShotTime>=Duration(Shot))SetShot(Shot+1);
+        if(Shot!=9&&Shot<14&&ShotTime>=Duration(Shot))SetShot(Shot+1);
 
         UpdateFilm(Dt);
         if(Shot==6)RetreatSpeed=FVector::Dist(Camera->GetActorLocation(),PreviousFilmPosition)/FMath::Max(.001f,Dt)/FMath::Clamp(FilmSpeed,.25f,4.f);
@@ -1824,8 +1848,8 @@ FString AEndingEmergence::Subtitle() const
 float AEndingEmergence::OverlayAlpha() const
 {
     if(Shot<0)return 0;
-    if(Shot==12)return Ending::Ease((ShotTime-5.5f)/.8f);
-    if(Shot==13)return 1-Ending::Ease((ShotTime-.9f)/.65f);
+    if(Shot>=10)return 0;
+
     // Thought-to-street and the scale journey both use image motion, not white.
     return 0;
 }

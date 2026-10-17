@@ -76,7 +76,7 @@ public:
         {
             Test->TestTrue(TEXT("Hero Earth has gentle orbital displacement"),FVector::Dist(EarthBefore,D->EarthMovingParts[0]->GetRelativeLocation())>10);
             auto* M=Cast<UMaterialInstanceDynamic>(D->EarthMovingParts[0]->GetMaterial(0));
-            Test->TestTrue(TEXT("Hero Earth spins at the readable 1.08 degrees per second rate"),M&&FMath::IsNearlyEqual(M->K2_GetScalarParameterValue(TEXT("Spin")),D->CelestialAge*.003f,.0001f));
+            Test->TestTrue(TEXT("Hero Earth spins at a readable rate"),M&&FMath::IsNearlyEqual(M->K2_GetScalarParameterValue(TEXT("Spin")),D->CelestialAge*.012f,.0001f));
             Capture(TEXT("earth-dawn"));At=D->Age;Step=51;
         }
         else if(Step==51&&D->Age-At>.5f&&!FScreenshotRequest::IsScreenshotRequested())

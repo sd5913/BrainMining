@@ -54,11 +54,11 @@ bool FOpeningBootstrapTest::RunTest(const FString&)
 
 namespace
 {
-class FOpeningChecks : public IAutomationLatentCommand
+class FPublishedOpeningChecks : public IAutomationLatentCommand
 {
     FAutomationTestBase* Test;double Deadline=FPlatformTime::Seconds()+90;bool Started=false;
 public:
-    explicit FOpeningChecks(FAutomationTestBase* T):Test(T){}
+    explicit FPublishedOpeningChecks(FAutomationTestBase* T):Test(T){}
     bool Update() override
     {
         if(FPlatformTime::Seconds()>Deadline){Test->AddError(TEXT("Opening timed out"));return true;}
@@ -98,7 +98,7 @@ bool FPublishedMainOpeningTest::RunTest(const FString&)
 {
     AutomationOpenMap(TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
-    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FOpeningChecks>(this));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FPublishedOpeningChecks>(this));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FOpeningMenuTest,"BrainMining.Opening.MenuLifecycle",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -111,7 +111,7 @@ bool FOpeningMenuTest::RunTest(const FString&)
     Opening->SeatEye=FVector(0,0,127);Opening->StandingLocation=FVector(0,90,98);
     Opening->DoorTitleLocation=FVector(466,0,168);
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
-    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FOpeningChecks>(this));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FPublishedOpeningChecks>(this));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
 }
 #endif

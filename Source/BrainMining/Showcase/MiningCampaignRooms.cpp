@@ -14,6 +14,8 @@
 #include "WenSi/WenSiPuzzle.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMeshActor.h"
+#include "Materials/MaterialInterface.h"
 #include "MiningWalletSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Components/BoxComponent.h"
@@ -26,6 +28,7 @@
 #include "Components/DynamicMeshComponent.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "GeneratedMiningRock.h"
+#include "DiggableRock.h"
 
 namespace
 {
@@ -131,6 +134,163 @@ void FinishNaturalRoomConnections(AMiningExhibitHall* Hall)
         }
     }
 }
+
+// Keep the first bomb-only plug outside the office's immediate exit so the
+// player has room to orient after the forced turn.  This is deliberately a
+// small, one-time runtime correction and only applies to the linked MainGame;
+// standalone source levels retain their authored transforms.
+void MoveFirstOfficeHardPlug(AMiningExhibitHall* Hall)
+{
+    if (!Hall || !Hall->ActorHasTag(TEXT("BM_MainGame_RoomsLinked")) ||
+        Hall->ActorHasTag(TEXT("BM_MainGame_HardPlugAdjusted"))) return;
+    int32 OfficeIndex=INDEX_NONE;
+    for (int32 I=0; I<Hall->Areas.Num(); ++I)
+        if (Hall->Areas[I].Tag==TEXT("BM_Campaign_MainGameOffice")) { OfficeIndex=I; break; }
+    if (OfficeIndex==INDEX_NONE) return;
+    int32 NextMining=INDEX_NONE;
+    for (int32 I=OfficeIndex+1; I<Hall->Areas.Num(); ++I)
+        if (Hall->AreaKind(I)==EMiningExperienceKind::Mining) { NextMining=I; break; }
+    if (NextMining==INDEX_NONE) return;
+    const FVector Exit=Hall->Areas[OfficeIndex].Exit;
+    ADiggableRock* Candidate=nullptr; double Best=TNumericLimits<double>::Max();
+    for (TActorIterator<ADiggableRock> It(Hall->GetWorld()); It; ++It)
+    {
+        ADiggableRock* Rock=*It;
+        if (!Rock || !Rock->ActorHasTag(TEXT("BM_BombOnly"))) continue;
+        if (!Rock->ActorHasTag(Hall->Areas[NextMining].Tag)) continue;
+        const double Distance=FVector::DistSquared(Rock->GetActorLocation(),Exit);
+        if (Distance<Best) { Best=Distance; Candidate=Rock; }
+    }
+    if (Candidate)
+    {
+        FVector Away=(Candidate->GetActorLocation()-Exit).GetSafeNormal();
+        if (Away.IsNearlyZero()) Away=FVector(1,0,0);
+        Candidate->AddActorWorldOffset(Away*260.f,false,nullptr,ETeleportType::TeleportPhysics);
+    }
+    Hall->Tags.AddUnique(TEXT("BM_MainGame_HardPlugAdjusted"));
+}
+
+// The route assets are intentionally authored as one continuous baked map, so
+// the last diggable layer in each mining area needs a small runtime pass when
+// the rooms are linked.  This keeps the authored map reusable while making the
+// two transitions read correctly in the campaign: area 2 ends at a thin,
+// upward-facing layer with a landing pad, and area 3 ends at a deeper ceiling
+// drop into the museum.
+void TuneCampaignTerminalLayers(AMiningExhibitHall* Hall)
+{
+    if (!Hall || !Hall->ActorHasTag(TEXT("BM_MainGame_RoomsLinked")) ||
+        Hall->ActorHasTag(TEXT("BM_MainGame_TerminalsAdjusted"))) return;
+
+    auto FindNearestRock = [Hall](FName AreaTag, const FVector& Point, bool bAllowHard)
+        -> ADiggableRock*
+    {
+        ADiggableRock* Result=nullptr;
+        double Best=TNumericLimits<double>::Max();
+        for (TActorIterator<ADiggableRock> It(Hall->GetWorld()); It; ++It)
+        {
+            ADiggableRock* Rock=*It;
+            if (!Rock || !Rock->ActorHasTag(AreaTag)) continue;
+            if (!bAllowHard && Rock->ActorHasTag(TEXT("BM_BombOnly"))) continue;
+            const double Distance=FVector::DistSquared(Rock->GetActorLocation(),Point);
+            if (Distance<Best) {Best=Distance;Result=Rock;}
+        }
+        return Result;
+    };
+
+    int32 RegionTwo=INDEX_NONE, RegionThree=INDEX_NONE;
+    for (int32 I=0; I<Hall->Areas.Num(); ++I)
+    {
+        if (Hall->Areas[I].Tag==TEXT("BM_Campaign_MainGame02")) RegionTwo=I;
+        if (Hall->Areas[I].Tag==TEXT("BM_Campaign_MainGame03")) RegionThree=I;
+    }
+
+    if (Hall->Areas.IsValidIndex(RegionTwo))
+    {
+        const FMiningExperienceArea& Area=Hall->Areas[RegionTwo];
+        ADiggableRock* Terminal=FindNearestRock(Area.Tag,Area.Exit,false);
+        if (Terminal)
+        {
+            // Uniform scale is required by the mining boolean path.  The
+            // smaller layer leaves the same collision/material behavior while
+            // making the upward exit feel like a thin cap.
+            Terminal->SetActorScale3D(Terminal->GetActorScale3D()*.38f);
+            Terminal->Tags.AddUnique(TEXT("BM_MainGame_RegionTwoThinTerminal"));
+
+            const FVector PlatformLocation=Area.Exit+FVector(0,0,-190.f);
+            const FVector PlatformSize(900.f,900.f,70.f);
+            FActorSpawnParameters Params; Params.OverrideLevel=Hall->GetLevel();
+            auto* Platform=Hall->GetWorld()->SpawnActor<AStaticMeshActor>(
+                AStaticMeshActor::StaticClass(),PlatformLocation,FRotator::ZeroRotator,Params);
+            if (Platform)
+            {
+                Platform->Tags.AddUnique(Area.Tag);
+                Platform->Tags.AddUnique(TEXT("BM_MainGame_ParkourTerminalPlatform"));
+                auto* Mesh=Platform->GetStaticMeshComponent();
+                if (Mesh)
+                {
+                    Mesh->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube")));
+                    Mesh->SetCollisionProfileName(TEXT("BlockAll"));
+                    Mesh->SetMobility(EComponentMobility::Movable);
+                    Mesh->SetRelativeScale3D(PlatformSize/100.f);
+                    if (auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/RoutesV5/M_ParkourBasalt.M_ParkourBasalt")))
+                        Mesh->SetMaterial(0,Material);
+                }
+            }
+        }
+    }
+
+    if (Hall->Areas.IsValidIndex(RegionThree))
+    {
+        const FMiningExperienceArea& Area=Hall->Areas[RegionThree];
+        ADiggableRock* Terminal=nullptr;
+        for (TActorIterator<ADiggableRock> It(Hall->GetWorld()); It; ++It)
+            if ((*It)->ActorHasTag(TEXT("BM_MuseumDownwardSoil"))) {Terminal=*It;break;}
+        if (!Terminal) Terminal=FindNearestRock(Area.Tag,Area.Exit,false);
+        if (Terminal)
+        {
+            // The museum ceiling drop must read as a substantial shaft.  A
+            // uniform scale keeps all mining operations valid and preserves
+            // the authored material and debris behavior.
+            Terminal->SetActorScale3D(Terminal->GetActorScale3D()*2.25f);
+            Terminal->Tags.AddUnique(TEXT("BM_MainGame_RegionThreeThickTerminal"));
+        }
+    }
+    Hall->Tags.AddUnique(TEXT("BM_MainGame_TerminalsAdjusted"));
+}
+
+// Increase the vertical rhythm of the two area-2 parkour runs and add narrow
+// stems below their authored caps so the silhouettes read as mushrooms.
+void TuneParkourPlatforms(AMiningExhibitHall* Hall)
+{
+    if (!Hall || !Hall->ActorHasTag(TEXT("BM_MainGame_RoomsLinked")) ||
+        Hall->ActorHasTag(TEXT("BM_MainGame_ParkourAdjusted"))) return;
+    UStaticMesh* Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
+    UMaterialInterface* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/RoutesV5/M_ParkourBasalt.M_ParkourBasalt"));
+    for (TActorIterator<AActor> It(Hall->GetWorld()); It; ++It)
+    {
+        AActor* Platform=*It;
+        const FString Name=Platform->GetName();
+        if (!Name.StartsWith(TEXT("MAIN_GAME_Platforms_Parkour_")) || !Name.Contains(TEXT("_2_"))) continue;
+        const int32 LastUnderscore=Name.Find(TEXT("_"),ESearchCase::IgnoreCase,ESearchDir::FromEnd);
+        const int32 Index=LastUnderscore>=0 ? FCString::Atoi(*Name.Mid(LastUnderscore+1)) : 0;
+        if (Index<1 || Index>5) continue;
+        const float Raise=float(Index-1)*260.f;
+        Platform->AddActorWorldOffset(FVector(0,0,Raise),false,nullptr,ETeleportType::TeleportPhysics);
+        FActorSpawnParameters Params; Params.OverrideLevel=Hall->GetLevel();
+        auto* Stem=Hall->GetWorld()->SpawnActor<AStaticMeshActor>(
+            AStaticMeshActor::StaticClass(),Platform->GetActorLocation()-FVector(0,0,210.f),FRotator::ZeroRotator,Params);
+        if (!Stem) continue;
+        Stem->Tags.AddUnique(TEXT("BM_Campaign_MainGame02"));
+        Stem->Tags.AddUnique(TEXT("BM_MainGame_ParkourStem"));
+        if (auto* Mesh=Stem->GetStaticMeshComponent())
+        {
+            Mesh->SetStaticMesh(Cube); Mesh->SetCollisionProfileName(TEXT("BlockAll"));
+            Mesh->SetMobility(EComponentMobility::Movable); Mesh->SetRelativeScale3D(FVector(1.15f,1.15f,4.2f));
+            if (Material) Mesh->SetMaterial(0,Material);
+        }
+    }
+    Hall->Tags.AddUnique(TEXT("BM_MainGame_ParkourAdjusted"));
+}
 }
 
 void AMiningExhibitGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
@@ -195,5 +355,10 @@ void AMiningExhibitGameMode::InitGame(const FString& MapName, const FString& Opt
         }
     }
     // Source BeginPlay creates the original office vestibule meshes.
-    GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(Hall,[Hall](){FinishNaturalRoomConnections(Hall);}));
+    GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(Hall,[Hall](){
+        FinishNaturalRoomConnections(Hall);
+        MoveFirstOfficeHardPlug(Hall);
+        TuneCampaignTerminalLayers(Hall);
+        TuneParkourPlatforms(Hall);
+    }));
 }

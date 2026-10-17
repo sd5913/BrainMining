@@ -423,6 +423,22 @@ void APopupCloseStage::Tick(float Dt)
   TickSpray(Dt);
  }
  TickView(Dt);
+ // Once the player clears the office, briefly hold the camera toward the
+ // room so the bomb eruption is seen in full.  The lock is short and then
+ // normal mouse look is restored automatically.
+ if(ExitTurnLockRemaining>0.f)
+ {
+  ExitTurnLockRemaining=FMath::Max(0.f,ExitTurnLockRemaining-Dt);
+  if(auto Controller=GetWorld()->GetFirstPlayerController())
+  {
+   if(auto Pawn=Controller->GetPawn())
+   {
+    FRotator RoomView=GetActorRotation();RoomView.Yaw+=180.f;RoomView.Pitch=-4.f;
+    Controller->SetControlRotation(RoomView);
+   }
+   if(ExitTurnLockRemaining<=0.f)Controller->SetIgnoreLookInput(false);
+  }
+ }
  auto PC=GetWorld()->GetFirstPlayerController();
  if(Exit && Exit->IsWaitingForBomb())
  {

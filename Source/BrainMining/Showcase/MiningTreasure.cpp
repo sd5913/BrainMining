@@ -154,7 +154,9 @@ AMiningTreasure::AMiningTreasure()
     GlowLight->SetupAttachment(Model);
     GlowLight->SetIntensityUnits(ELightUnits::Lumens);
     GlowLight->SetIntensity(28);
-    GlowLight->SetAttenuationRadius(140);
+    // Double the already tuned penetration range so mineral clues remain
+    // readable through the thicker MainGame tunnel walls.
+    GlowLight->SetAttenuationRadius(560);
     GlowLight->SetCastShadows(false);
     GlowLight->SetVisibility(false);
     GlowLight->IndirectLightingIntensity = 0;
@@ -485,7 +487,7 @@ void AMiningTreasure::AttachBuriedHint(const FMiningTreasureDefinition& Definiti
         if (Existing) Hint->CopyParameterOverrides(Existing);
         Hint->SetVectorParameterValue(TEXT("HintCenter"), FLinearColor(GetActorLocation()));
         Hint->SetVectorParameterValue(TEXT("HintColor"), Definition.HintColor);
-        Hint->SetScalarParameterValue(TEXT("HintRadius"), Definition.HintRadius);
+        Hint->SetScalarParameterValue(TEXT("HintRadius"), Definition.HintRadius * 2.f);
         Hint->SetScalarParameterValue(TEXT("HintStrength"), Definition.HintStrength);
         Hint->SetScalarParameterValue(TEXT("HintAmount"), HintAmount);
         Rock->RockMaterial = Hint;

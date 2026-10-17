@@ -175,10 +175,6 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
         Box(FVector2D(-3, -3), FVector2D(6, 6), Circle, FLinearColor(.015f, .02f, .025f, .85f));
         Box(FVector2D(-2, -2), FVector2D(4, 4), Circle, FLinearColor::White);
     }
-    if (bExplorationVisible && GetOwningPlayerPawn())
-        if (const auto* Mining=GetOwningPlayerPawn()->FindComponentByClass<UMiningComponent>();
-            Mining && IsValid(Mining->TargetRock) && Mining->TargetRock->ActorHasTag(TEXT("BM_BombOnly")))
-            Text(TEXT("坚硬岩层 · [G] 使用炸弹"), FVector2D(0, 110), 18, FLinearColor(.8f,.85f,1), true);
     if (!InteractionAction.IsEmpty())
     {
         Text(InteractionAction, FVector2D(1, 39), 20, FLinearColor(0, 0, 0, .85f), true);

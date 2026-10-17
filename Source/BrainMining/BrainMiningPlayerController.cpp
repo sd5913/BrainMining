@@ -160,6 +160,59 @@ void ABrainMiningPlayerController::UseAbilityV()
 		MiningGUI->OnAbilityRequested.Broadcast(TEXT("V"));
 }
 
+void ABrainMiningPlayerController::HandleMobileLook(const FVector2D& Delta)
+{
+	if (IsPaused() || IsLookInputIgnored() || !GetPawn()) return;
+	const float Sensitivity=0.09f;
+	AddYawInput(Delta.X*Sensitivity);
+	AddPitchInput(-Delta.Y*Sensitivity);
+}
+
+void ABrainMiningPlayerController::HandleMobileMove(const FVector2D& Axis)
+{
+	if (IsPaused() || IsMoveInputIgnored() || !GetPawn()) return;
+	const FVector Forward=GetPawn()->GetActorForwardVector();
+	const FVector Right=GetPawn()->GetActorRightVector();
+	GetPawn()->AddMovementInput(Forward, FMath::Clamp(Axis.Y,-1.f,1.f));
+	GetPawn()->AddMovementInput(Right, FMath::Clamp(Axis.X,-1.f,1.f));
+}
+
+void ABrainMiningPlayerController::HandleMobileMine(bool bPressed)
+{
+	if (IsPaused() || IsMoveInputIgnored() || IsLookInputIgnored()) return;
+	if (auto* Mining=GetPawn()?GetPawn()->FindComponentByClass<UMiningComponent>():nullptr)
+	{
+		if (bPressed) Mining->BeginMiningInput(); else Mining->EndMiningInput();
+	}
+}
+
+void ABrainMiningPlayerController::HandleMobileBomb()
+{
+	if (!bMiningGUIEnabled || IsPaused() || IsMoveInputIgnored() || IsLookInputIgnored()) return;
+	if (auto* Bomb=GetPawn()?GetPawn()->FindComponentByClass<UMiningBombToolComponent>():nullptr)
+	{
+		if (!Bomb->bEquipped && !Bomb->ToggleEquipped()) return;
+		if (Bomb->ThrowBomb() && MiningGUI) MiningGUI->OnAbilityRequested.Broadcast(TEXT("G"));
+	}
+}
+
+void ABrainMiningPlayerController::HandleMobileDrill()
+{
+	if (IsPaused() || IsMoveInputIgnored() || IsLookInputIgnored()) return;
+	if (auto* Mining=GetPawn()?GetPawn()->FindComponentByClass<UMiningComponent>():nullptr)
+		if (Mining->ActivateDrill() && MiningGUI) MiningGUI->OnAbilityRequested.Broadcast(TEXT("V"));
+}
+
+void ABrainMiningPlayerController::HandleMobileUpgrade()
+{
+	if (!bMiningGUIEnabled || IsPaused() || IsMoveInputIgnored() || IsLookInputIgnored()) return;
+	if (auto* Progression=GetPawn()?GetPawn()->FindComponentByClass<UMiningProgressionComponent>():nullptr)
+	{
+		const bool bUpgraded=Progression->Purchase(0,Progression->GetLevel(0)+1);
+		if (auto* Audio=GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPurchase(bUpgraded);
+	}
+}
+
 bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 {
 	if (Params.Key == EKeys::F8 || (IsAudioSettingsOpen() && Params.Key == EKeys::Escape))

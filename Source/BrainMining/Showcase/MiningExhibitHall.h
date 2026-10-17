@@ -121,11 +121,15 @@ private:
     UPROPERTY() TObjectPtr<AMiningGiantRoomEntrance> Entrance;
     TSharedPtr<SWidget> Map;
     FDelegateHandle SpawnHandle;
+    FTimerHandle TerrainWarmupTimer;
+    FVector TerrainWarmupCenter = FVector::ZeroVector;
+    int32 TerrainWarmupStep = 0;
     float CompletionDelay = 0;
     bool InitializeAreas();
     void RegisterActor(AActor* Actor);
     void UpdateActorVisibility();
     void CloseInteraction();
+    void BeginTerrainWarmup(const FVector& Center);
     void ApplyUpgrades();
     UFUNCTION() void OnUpgradeRequested(int32 ItemIndex, int32 RequestedLevel);
 };

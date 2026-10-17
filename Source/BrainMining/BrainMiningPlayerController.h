@@ -45,6 +45,14 @@ public:
 	virtual bool InputKey(const FInputKeyEventArgs& Params) override;
 	bool IsAudioSettingsOpen() const { return AudioSettingsPanel.IsValid(); }
 	void ToggleAudioSettings();
+	// Touch controls forward their gestures here so desktop and mobile share
+	// the same mining, flight, bomb and upgrade rules.
+	void HandleMobileLook(const FVector2D& Delta);
+	void HandleMobileMove(const FVector2D& Axis);
+	void HandleMobileMine(bool bPressed);
+	void HandleMobileBomb();
+	void HandleMobileDrill();
+	void HandleMobileUpgrade();
 
 protected:
 

@@ -307,6 +307,13 @@ void FPopupOfficeExit::SealRoom()
  // Full-room collision prevents a flying player from returning through a different opening.
  RuinBlocker->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
  if(Owner.Flood)Owner.Flood->Stop();Owner.CancelSession();
+ if(auto Controller=Owner.GetWorld()->GetFirstPlayerController())
+ {
+  FRotator RoomView=Owner.GetActorRotation();RoomView.Yaw+=180.f;RoomView.Pitch=-4.f;
+  Controller->SetControlRotation(RoomView);
+  Controller->SetIgnoreLookInput(true);
+  Owner.ExitTurnLockRemaining=1.25f;
+ }
  Owner.GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(&Owner,[Stage=&Owner](){Stage->OnOfficeEscaped.Broadcast();}));
  UE_LOG(LogOfficeExit,Display,TEXT("Player crossed exit: return path sealed, all 12 devices begin bomb eruption"));
 }

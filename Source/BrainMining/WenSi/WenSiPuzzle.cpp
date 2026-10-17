@@ -13,6 +13,8 @@
 #include "EngineUtils.h"
 #include "InputCoreTypes.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "UObject/ConstructorHelpers.h"
 #if WITH_EDITOR
 #include "Editor.h"
@@ -39,6 +41,10 @@ AWenSiObject::AWenSiObject()
   Part->SetMobility(EComponentMobility::Movable);
   Parts.Add(Part);
  }
+ ConductiveFX=CreateDefaultSubobject<UNiagaraComponent>(TEXT("ConductiveParticles"));
+ ConductiveFX->SetupAttachment(Root);
+ ConductiveFX->SetAutoActivate(false);
+ if (auto* Spark=LoadObject<UNiagaraSystem>(nullptr,TEXT("/Game/Realistic_Starter_VFX_Pack_Niagara/Niagara/Impact/NS_Impact_Electric.NS_Impact_Electric"))) ConductiveFX->SetAsset(Spark);
 }
 
 void AWenSiObject::Configure(int32 Kind)
@@ -55,13 +61,13 @@ void AWenSiObject::Configure(int32 Kind)
   Parts[I]->SetAbsolute(false, false, true);
   Parts[I]->SetWorldScale3D(Size/100.f);
  };
- if (Kind==0) Shape(0,FVector::ZeroVector,FVector(90,176,190));
+ if (Kind==0) Shape(0,FVector::ZeroVector,FVector(76,150,165));
  else if (Kind==1)
  {
-  Shape(0,FVector::ZeroVector,FVector(170,210,12));
+  Shape(0,FVector(0,-92,0),FVector(170,28,12));
   for (int32 I=0; I<5; ++I) Shape(I+1,FVector(-70,(I-2)*49.f,-105),FVector(10,10,210));
   Shape(6,FVector(0,-100,-105),FVector(160,10,210));
-  Shape(7,FVector(0,100,-105),FVector(160,10,210));
+  Shape(7,FVector(0,92,0),FVector(170,28,12));
  }
  else if (Kind==2)
  {
@@ -149,6 +155,11 @@ void AWenSiObject::ApplyRule()
    Part->SetOverlayMaterial(UMaterialInstanceDynamic::Create(HighlightMaterial,this));
  }
  SetInteractionHighlight(false);
+ if (ConductiveFX)
+ {
+  ConductiveFX->SetVisibility(Rule==EWenSiRule::Conductive);
+  if (Rule==EWenSiRule::Conductive) ConductiveFX->Activate(true); else ConductiveFX->Deactivate();
+ }
 }
 
 void AWenSiObject::SetInteractionHighlight(bool bAimed,bool bEnabled)
@@ -159,8 +170,8 @@ void AWenSiObject::SetInteractionHighlight(bool bAimed,bool bEnabled)
   if(Part->IsVisible())
    if(auto Glow=Cast<UMaterialInstanceDynamic>(Part->GetOverlayMaterial()))
    {
-    Glow->SetScalarParameterValue(TEXT("Strength"),bEnabled ? (bAimed ? 1.8f+Pulse : 1.f) : 0.f);
-    Glow->SetScalarParameterValue(TEXT("OutlineWidth"),bAimed ? 1.2f : .8f);
+    Glow->SetScalarParameterValue(TEXT("Strength"),bEnabled ? (bAimed ? 3.2f+Pulse : 1.35f) : 0.f);
+    Glow->SetScalarParameterValue(TEXT("OutlineWidth"),bAimed ? 2.4f : 1.35f);
     Glow->SetVectorParameterValue(TEXT("Tint"),FLinearColor(1.f,.88f,.68f));
    }
 }

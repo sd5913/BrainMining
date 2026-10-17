@@ -186,6 +186,7 @@ private:
  uint8 SavedMovementMode=1;
  bool bMoveSuppressed=false;
  bool bLookSuppressed=false;
+ float ExitTurnLockRemaining=0.f;
  TWeakObjectPtr<APawn> LockedPawn;
  TWeakObjectPtr<APlayerController> LockedController;
  TUniquePtr<FPopupOfficeFlood> Flood;

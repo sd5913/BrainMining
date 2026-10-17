@@ -10,6 +10,7 @@ class UStaticMeshComponent;
 class UStaticMesh;
 class UMaterialInstanceDynamic;
 class UMaterialInterface;
+class UNiagaraComponent;
 class USceneComponent;
 class SHorizontalBox;
 class STextBlock;
@@ -32,6 +33,7 @@ public:
  UPROPERTY(EditAnywhere, Category="WenSi") EWenSiRule Rule = EWenSiRule::Heavy;
  UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Body;
  UPROPERTY(EditAnywhere, Category="WenSi|Museum") TObjectPtr<UMaterialInterface> HighlightMaterial;
+ UPROPERTY(VisibleAnywhere, Category="WenSi|VFX") TObjectPtr<UNiagaraComponent> ConductiveFX;
  void Configure(int32 Kind);
  void ApplyRule();
  void SetInteractionHighlight(bool bAimed, bool bEnabled=true);

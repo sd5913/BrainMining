@@ -31,6 +31,7 @@
 #include "Camera/PlayerCameraManager.h"
 #include "InputKeyEventArgs.h"
 #include "UObject/ConstructorHelpers.h"
+#include "TimerManager.h"
 
 AMiningExhibitGameMode::AMiningExhibitGameMode()
 {
@@ -215,6 +216,29 @@ void AMiningExhibitHall::CloseInteraction()
     }
 }
 
+void AMiningExhibitHall::BeginTerrainWarmup(const FVector& Center)
+{
+    if (!GetWorld()) return;
+    TerrainWarmupCenter=Center;
+    TerrainWarmupStep=0;
+    GetWorld()->GetTimerManager().ClearTimer(TerrainWarmupTimer);
+    // Register destination chunks over several frames. This keeps the card
+    // room exit responsive while the larger safety radius is filled in.
+    GetWorld()->GetTimerManager().SetTimer(TerrainWarmupTimer,
+        FTimerDelegate::CreateWeakLambda(this,[this]()
+        {
+            static const float Radii[]={2500.f,3300.f,4200.f,5000.f};
+            if (!GetWorld() || TerrainWarmupStep>=UE_ARRAY_COUNT(Radii))
+            {
+                if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(TerrainWarmupTimer);
+                return;
+            }
+            AGeneratedMiningRock::PrepareTerrainAt(GetWorld(),TerrainWarmupCenter,Radii[TerrainWarmupStep++]);
+            if (TerrainWarmupStep>=UE_ARRAY_COUNT(Radii))
+                GetWorld()->GetTimerManager().ClearTimer(TerrainWarmupTimer);
+        }),.035f,true);
+}
+
 bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
 {
     if(!bReady || !Controller.IsValid() || !Controller->GetPawn() || (Index!=INDEX_NONE && !Areas.IsValidIndex(Index))) return false;
@@ -242,9 +266,14 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
     const FTransform Destination=Index==INDEX_NONE?LobbyEntry:(bContinuousCampaign?Areas[Index].Entry:ResumePoints[Index]);
     if(bMovePlayer)
     {
-        AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), Destination.GetLocation());
+        // Activate the small area immediately so room transitions stay responsive.
+        // The larger safety radius is filled on the next frame after the pawn has
+        // arrived, avoiding a long synchronous mesh build during the card-to-mine
+        // transition.
+        AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), Destination.GetLocation(), Kind==EMiningExperienceKind::Mining ? 2200.f : 2800.f);
         Controller->GetPawn()->SetActorTransform(Destination,false,nullptr,ETeleportType::TeleportPhysics);
         Controller->SetControlRotation(Destination.Rotator());
+        BeginTerrainWarmup(Destination.GetLocation());
     }
     else if(Movement) { Movement->Velocity=Velocity; Movement->SetMovementMode(Mode); }
     auto* Mining=Controller->GetPawn()->FindComponentByClass<UMiningComponent>();
@@ -484,6 +513,7 @@ void AMiningExhibitHall::InteractPortal()
 void AMiningExhibitHall::EndPlay(const EEndPlayReason::Type Reason)
 {
     CloseMap();
+    if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(TerrainWarmupTimer);
     if(BoundGUI.IsValid()) BoundGUI->OnUpgradeRequested.RemoveAll(this);
     GetWorld()->RemoveOnActorSpawnedHandler(SpawnHandle);
     Super::EndPlay(Reason);

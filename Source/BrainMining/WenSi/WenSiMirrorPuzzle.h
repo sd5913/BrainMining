@@ -11,6 +11,7 @@ class UStaticMesh;
 class USceneCaptureComponent2D;
 class UTextureRenderTarget2D;
 class UMaterialInstanceDynamic;
+class UNiagaraComponent;
 class AWenSiMirrorPuzzle;
 class SHorizontalBox;
 class STextBlock;
@@ -33,6 +34,8 @@ public:
  UPROPERTY(EditAnywhere, Category="WenSi|Art") FRotator ArtRotation=FRotator(0,90,0);
  UPROPERTY(EditAnywhere, Category="WenSi|Art") bool bUniformArtScale=true;
  UPROPERTY(VisibleAnywhere, Category="WenSi|Art") TObjectPtr<UStaticMeshComponent> ArtVisual;
+ UPROPERTY(VisibleAnywhere, Category="WenSi|VFX") TObjectPtr<UStaticMeshComponent> ShadowVisual;
+ UPROPERTY(VisibleAnywhere, Category="WenSi|VFX") TObjectPtr<UNiagaraComponent> ConductiveFX;
  UFUNCTION(BlueprintCallable,CallInEditor,Category="WenSi|Art") void RefreshArtModel();
  UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
  UPROPERTY() TObjectPtr<USceneCaptureComponent2D> Capture;

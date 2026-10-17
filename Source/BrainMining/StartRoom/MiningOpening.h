@@ -8,6 +8,7 @@ class AMiningOpening;
 class UTexture2D;
 class UWidgetComponent;
 class ACameraActor;
+class ADiggableRock;
 
 UCLASS()
 class BRAINMINING_API UMiningOpeningTitle : public UUserWidget
@@ -54,8 +55,10 @@ public:
 private:
     void Prepare(APlayerController* Controller);
     void Release();
+    void EnsureTitleMiningProxy();
     UPROPERTY(Transient) TObjectPtr<UMiningOpeningMenu> Menu;
     UPROPERTY(Transient) TObjectPtr<ACameraActor> Camera;
+    UPROPERTY(Transient) TObjectPtr<ADiggableRock> TitleMiningProxy;
     TWeakObjectPtr<APlayerController> Player;
     FVector InitialTitle;
     FVector StandingEye;

@@ -19,6 +19,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "StartRoom/MiningStartRoom.h"
+#include "DiggableRock.h"
+#include "Components/DynamicMeshComponent.h"
 
 AMiningOpening* AMiningOpening::EnsureMainGameOpening(AMiningExhibitHall* Hall)
 {
@@ -85,7 +87,11 @@ AMiningOpening::AMiningOpening()
     SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
     WorldTitle=CreateDefaultSubobject<UWidgetComponent>(TEXT("TitleInRoom"));WorldTitle->SetupAttachment(RootComponent);
     WorldTitle->SetWidgetSpace(EWidgetSpace::World);WorldTitle->SetDrawSize(FVector2D(1024,600));
-    WorldTitle->SetTwoSided(true);WorldTitle->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    WorldTitle->SetTwoSided(true);
+    // The title is presentation only.  It must never intercept the mining
+    // visibility trace; the authored diggable wall behind it remains the
+    // actual target after the title settles on the wall.
+    WorldTitle->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     WorldTitle->SetCastShadow(false);WorldTitle->SetVisibility(false);
 }
 bool AMiningOpening::IsOpening(UWorld* World)
@@ -140,7 +146,35 @@ void AMiningOpening::Tick(float Dt)
     FVector Logo=FMath::Lerp(InitialTitle,DoorTitleLocation,A)+FVector(0,0,FMath::Sin(A*PI)*55);
     WorldTitle->SetWorldLocationAndRotation(Logo,FQuat::Slerp(InitialRotation,DoorTitleRotation.Quaternion(),A));
     WorldTitle->SetWorldScale3D(FVector(FMath::Lerp(.19f,.205f,A)));
-    if(T>=1.f){bFinished=true;Release();SetActorTickEnabled(false);}
+    if(T>=1.f)
+    {
+        EnsureTitleMiningProxy();
+        bFinished=true;Release();SetActorTickEnabled(false);
+    }
+}
+void AMiningOpening::EnsureTitleMiningProxy()
+{
+    if (TitleMiningProxy || !GetWorld()) return;
+    const FTransform ProxyTransform(DoorTitleRotation.Quaternion(),DoorTitleLocation);
+    TitleMiningProxy=GetWorld()->SpawnActorDeferred<ADiggableRock>(ADiggableRock::StaticClass(),ProxyTransform,
+        this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+    if (!TitleMiningProxy) return;
+    // Keep the image visible while the hidden terrain proxy supplies the same
+    // boolean/collision path as every other mineable layer. The image is
+    // removed when this proxy is fully excavated.
+    TitleMiningProxy->Tags.AddUnique(TEXT("BM_OpeningTitleMineable"));
+    TitleMiningProxy->RockSize=FVector(22.f,220.f,132.f);
+    TitleMiningProxy->FinishSpawning(ProxyTransform);
+    if (TitleMiningProxy->RockMesh)
+    {
+        TitleMiningProxy->RockMesh->SetRenderInMainPass(false);
+        TitleMiningProxy->RockMesh->SetRenderInDepthPass(false);
+    }
+    TitleMiningProxy->OnTerrainCommitted.AddLambda([this](const FBox&)
+    {
+        if (TitleMiningProxy && TitleMiningProxy->TriangleCount<=0 && WorldTitle)
+            WorldTitle->SetVisibility(false);
+    });
 }
 void AMiningOpening::Release()
 {

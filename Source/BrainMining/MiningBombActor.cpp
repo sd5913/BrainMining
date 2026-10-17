@@ -115,7 +115,15 @@ void AMiningBombActor::Contact(UPrimitiveComponent*, AActor* Other, UPrimitiveCo
 	Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	const FVector Normal = Result.ImpactNormal.GetSafeNormal();
 	if (Result.bBlockingHit && !Result.ImpactPoint.ContainsNaN() && !Normal.IsNearlyZero())
+	{
 		SetActorLocation(Result.ImpactPoint + Normal * (Collision->GetScaledSphereRadius() + .5f), false, nullptr, ETeleportType::TeleportPhysics);
+		// The broad C4 base is the face that should sit on the contacted plane.
+		// Preserve the flight roll where possible, then rotate only enough to
+		// bring the model's local bottom face flush with the impact normal.
+		const FVector CurrentBottom = GetActorQuat().RotateVector(FVector::DownVector);
+		const FQuat Align = FQuat::FindBetweenNormals(CurrentBottom, -Normal);
+		SetActorRotation(Align * GetActorQuat(), ETeleportType::TeleportPhysics);
+	}
 	// Keep the flight orientation; follow moving components and skeletal bones
 	// without welding the bomb into the contacted body's physics simulation.
 	AttachToComponent(OtherComponent, FAttachmentTransformRules::KeepWorldTransform, Result.BoneName);

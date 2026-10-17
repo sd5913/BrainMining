@@ -25,6 +25,9 @@ public:
     UPROPERTY(config, EditAnywhere, Category="Mining")
     bool bUseSimplifiedMobileMining = true;
 
+    UPROPERTY(config, EditAnywhere, Category="Input", meta=(ClampMin="0.01", ClampMax="0.5"))
+    float MobileLookSensitivity = 0.09f;
+
     static bool IsMobileRuntime();
     static bool IsMobileVerticalSliceEnabled();
     static const UMobileRuntimeSettings* Get();

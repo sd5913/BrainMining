@@ -76,8 +76,10 @@ public:
 	void CopyEditorPreviewMesh(UE::Geometry::FDynamicMesh3& Mesh) const;
 	UMaterialInterface* GetMiningMaterial();
 	UDynamicMesh* GetChunkQueryMesh(const FMiningRockChunk& Chunk) const;
-	void PrepareRuntimeGeometry(const FVector& WorldPosition, float WorldRadius);
+	void PrepareRuntimeGeometry(const FVector& WorldPosition, float WorldRadius, bool bBudgeted = false);
 	static void PrepareTerrainAt(UWorld* World, const FVector& WorldPosition, float WorldRadius = 5000.f);
+	// Shared per-frame budget, including warmup and ordinary visibility activation.
+	static void PrewarmTerrainAt(UWorld* World, const FVector& WorldPosition, float WorldRadius = 5000.f);
 	static int32 GetBackgroundTaskCount();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Chunks")

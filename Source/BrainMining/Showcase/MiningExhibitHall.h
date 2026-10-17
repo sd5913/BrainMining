@@ -125,6 +125,7 @@ private:
     FTimerHandle TerrainWarmupTimer;
     FVector TerrainWarmupCenter = FVector::ZeroVector;
     int32 TerrainWarmupStep = 0;
+    double LastJourneyPrewarm = 0;
     float CompletionDelay = 0;
     float MuseumSkipHoldSeconds = 0;
     bool bMuseumSkipTriggered = false;

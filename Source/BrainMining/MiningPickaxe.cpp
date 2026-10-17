@@ -109,7 +109,10 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 	}
 	if (Rock->ActorHasTag(TEXT("BM_BombOnly")))
 	{
-		Status = TEXT("坚硬岩层：只能用炸弹破坏");
+		// Bomb-only layers deliberately stay silent under the mouse reticle.
+		// Showing a mining failure prompt makes the cursor look actionable and
+		// competes with the bomb interaction prompt.
+		Status.Empty();
 		TargetPickaxeHits = 0; bLastPickaxeBreak = false; return false;
 	}
 	if (GetPickaxeDepthMultiplier(Rock)<=0)

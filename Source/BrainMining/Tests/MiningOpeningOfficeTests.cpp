@@ -8,6 +8,7 @@
 #include "PopupClose/PopupOfficeDevice.h"
 #include "PopupClose/PopupCloseWidgets.h"
 #include "Components/WidgetComponent.h"
+#include "Components/DecalComponent.h"
 #include "Components/Button.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Blueprint/WidgetTree.h"
@@ -45,6 +46,9 @@ public:
         if(!Opening->bFinished)return false;
         Test->TestTrue(TEXT("Started exactly once"),Opening->bStarted);
         Test->TestTrue(TEXT("Title landed on the doorway"),Opening->WorldTitle->GetComponentLocation().Equals(Opening->DoorTitleLocation,1));
+        Test->TestFalse(TEXT("Floating title image is replaced after landing"),Opening->WorldTitle->IsVisible());
+        auto* TitleDecal=Opening->FindComponentByClass<UDecalComponent>();
+        Test->TestTrue(TEXT("Title projects only onto the actual wall surface"),TitleDecal && TitleDecal->GetDecalMaterial() && TitleDecal->DecalSize.X<=18.f);
         Test->TestTrue(TEXT("Standing pawn returned to player"),PC->GetViewTarget()==PC->GetPawn());
         Test->TestFalse(TEXT("Movement unlocked after standing"),PC->IsMoveInputIgnored());
         Test->TestFalse(TEXT("Look unlocked after standing"),PC->IsLookInputIgnored());

@@ -168,6 +168,7 @@ public:
    break;
   case 12:
    if(!Test->TestTrue(TEXT("Crossing the doorway triggers evacuation"),Stage->IsOfficeEscaped()))return true;
+   Test->TestTrue(TEXT("Exit turn temporarily owns move and look input"),PC->IsMoveInputIgnored() && PC->IsLookInputIgnored());
    Test->TestEqual(TEXT("Floor heaps remain when all devices switch to finale bombs"),GroundCount(),GroundAfterLanding);
    Stage->SetAreaActive(false);Stage->SetActorTickEnabled(false);
    Test->TestTrue(TEXT("Return shutter is visible immediately"),FindMesh(TEXT("OfficeEvacuationShutter"))->IsVisible());
@@ -175,6 +176,8 @@ public:
    Position(FVector(1320,0,98),FRotator(0,180,0));break;
   case 13:
    if(!Stage->IsOfficeDestroyed())return false;
+   Test->TestFalse(TEXT("Exit turn releases movement even with stage tick disabled"),PC->IsMoveInputIgnored());
+   Test->TestFalse(TEXT("Exit turn releases mouse look even with stage tick disabled"),PC->IsLookInputIgnored());
    Test->TestEqual(TEXT("Popup/paper floor models clear only when the room collapses"),GroundCount(),0);
    Test->TestTrue(TEXT("Collapse continues after the campaign disables office tick"),Stage->GetExitStatus().Contains(TEXT("return_blocked=1")));
    Test->TestTrue(TEXT("Existing bomb skill stays unlocked outside the office"),Tool->IsSkillUnlocked());

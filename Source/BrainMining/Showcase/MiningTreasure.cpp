@@ -1,4 +1,5 @@
 #include "Showcase/MiningTreasure.h"
+#include "Components/DecalComponent.h"
 #include "MiningInteractionTrace.h"
 #include "MiningAudioComponent.h"
 #include "MiningWalletSubsystem.h"
@@ -155,12 +156,13 @@ AMiningTreasure::AMiningTreasure()
     GlowLight->SetupAttachment(Model);
     GlowLight->SetIntensityUnits(ELightUnits::Lumens);
     GlowLight->SetIntensity(28);
-    // Double the already tuned penetration range so mineral clues remain
-    // readable through the thicker MainGame tunnel walls.
     GlowLight->SetAttenuationRadius(560);
     GlowLight->SetCastShadows(false);
     GlowLight->SetVisibility(false);
     GlowLight->IndirectLightingIntensity = 0;
+    BuriedGlow=CreateDefaultSubobject<UDecalComponent>(TEXT("BuriedMineralGlow"));
+    BuriedGlow->SetupAttachment(Model);BuriedGlow->SetVisibility(false);
+    BuriedGlow->SetFadeScreenSize(0.f);
     CrystalClues = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("EmbeddedCrystalClues"));
     CrystalClues->SetupAttachment(DropBody);
     // Rock clues stay anchored to the terrain when the gem starts simulating physics.
@@ -490,13 +492,34 @@ void AMiningTreasure::AttachBuriedHint(const FMiningTreasureDefinition& Definiti
         if (Existing) Hint->CopyParameterOverrides(Existing);
         Hint->SetVectorParameterValue(TEXT("HintCenter"), FLinearColor(GetActorLocation()));
         Hint->SetVectorParameterValue(TEXT("HintColor"), Definition.HintColor);
-        Hint->SetScalarParameterValue(TEXT("HintRadius"), Definition.HintRadius * 2.f);
+        // The previous tuning already doubled the authoring radius.  Double
+        // it once more so the buried mineral signal remains readable through
+        // the thicker route layers in MainGame.
+        Hint->SetScalarParameterValue(TEXT("HintRadius"), Definition.HintRadius * 4.f);
         Hint->SetScalarParameterValue(TEXT("HintStrength"), Definition.HintStrength);
         Hint->SetScalarParameterValue(TEXT("HintAmount"), HintAmount);
         Rock->RockMaterial = Hint;
         Rock->RockMesh->SetMaterial(0, Hint);
         HintMaterials.Add(Hint);
     }
+}
+
+void AMiningTreasure::AttachCampaignHint(const FMiningTreasureDefinition& Definition)
+{
+    auto* Parent=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/M_BuriedMineralGlow.M_BuriedMineralGlow"));
+    if(!Parent)return;
+    const float Radius=Definition.HintRadius*4.f;
+    BuriedGlow->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+    BuriedGlow->SetWorldTransform(FTransform(FQuat::Identity,BuriedTransform.GetLocation()));
+    BuriedGlow->DecalSize=FVector(Radius);
+    auto* Hint=UMaterialInstanceDynamic::Create(Parent,this);
+    Hint->SetVectorParameterValue(TEXT("HintCenter"),FLinearColor(BuriedTransform.GetLocation()));
+    Hint->SetVectorParameterValue(TEXT("HintColor"),Definition.HintColor);
+    Hint->SetScalarParameterValue(TEXT("HintRadius"),Radius);
+    Hint->SetScalarParameterValue(TEXT("HintStrength"),Definition.HintStrength);
+    HintAmount=BuriedHintAmount=Definition.bBuriedHint?1.f:0.f;
+    Hint->SetScalarParameterValue(TEXT("HintAmount"),HintAmount);
+    BuriedGlow->SetDecalMaterial(Hint);HintMaterials.Add(Hint);
 }
 
 void AMiningTreasure::UpdateGlow(float DeltaSeconds, bool bAllowLight)
@@ -515,6 +538,7 @@ void AMiningTreasure::UpdateGlow(float DeltaSeconds, bool bAllowLight)
             CrystalClueMaterial->SetScalarParameterValue(TEXT("Metallic"),.12f*CrystalClueBrightness);
         }
     }
+    BuriedGlow->SetVisibility(bAllowLight && HintAmount>.001f);
     GlowLight->SetVisibility(bAllowLight && !bCollected && Exposure > .02f);
     GlowLight->SetIntensity(28*FMath::Clamp(Exposure,0.f,1.f));
 }
@@ -672,7 +696,7 @@ void AMiningTreasureField::ResetExhibit()
 void AMiningTreasureField::SetAreaActive(bool bActive)
 {
     bAreaActive = bActive;
-    if(bActive && bUseAuthoredPlacements) PrepareAuthoredArea(ActiveAreaTag);
+    // Initialization is prepared incrementally by Tick before the player arrives.
     for (AMiningTreasure* Item : Items) if (IsValid(Item)) Item->SetDropActive(bActive && (!bUseAuthoredPlacements || Item->ActorHasTag(ActiveAreaTag)));
     if (!bActive && IsValid(Target)) Target->SetHighlighted(false);
     if (!bActive) Target = nullptr;
@@ -708,13 +732,19 @@ void AMiningTreasureField::RefreshTarget(APlayerController* Controller)
 void AMiningTreasureField::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    if(!PendingAuthoredItems.IsEmpty())
+    {
+        const int32 Before=PendingAuthoredItems.Num();
+        if(bAreaActive)PrepareAuthoredArea(ActiveAreaTag,1);
+        if(PendingAuthoredItems.Num()==Before)PrepareAuthoredArea(NAME_None,1);
+    }
     ToastRemaining = FMath::Max(0.f, ToastRemaining - DeltaSeconds);
     auto* Controller = GetWorld()->GetFirstPlayerController();
     const FVector Observer = Controller && Controller->GetPawn() ? Controller->GetPawn()->GetActorLocation() : FVector(1.e9);
     TArray<AMiningTreasure*> Nearby;
-    for (AMiningTreasure* Item : Items) if (IsValid(Item) && !Item->bCollected && Item->Exposure > .02f && FVector::DistSquared(Observer, Item->GetActorLocation()) < FMath::Square(800.f)) Nearby.Add(Item);
+    for (AMiningTreasure* Item : Items) if (IsValid(Item) && !PendingAuthoredItems.Contains(Item) && !Item->bCollected && FVector::DistSquared(Observer, Item->GetActorLocation()) < FMath::Square(1600.f)) Nearby.Add(Item);
     Nearby.Sort([Observer](const AMiningTreasure& First, const AMiningTreasure& Second) { return FVector::DistSquared(Observer, First.GetActorLocation()) < FVector::DistSquared(Observer, Second.GetActorLocation()); });
-    if (Nearby.Num() > 4) Nearby.SetNum(4);
+    if (Nearby.Num() > 8) Nearby.SetNum(8);
     for (AMiningTreasure* Item : Items) if (IsValid(Item)) Item->UpdateGlow(DeltaSeconds, bAreaActive && Nearby.Contains(Item));
     if (!bAreaActive) return;
     const double TerrainStarted=FPlatformTime::Seconds();
@@ -727,7 +757,7 @@ void AMiningTreasureField::Tick(float DeltaSeconds)
         const int32 Index=TerrainUpdateCursor++%Items.Num();
         if(TerrainUpdateCursor>=Items.Num())TerrainUpdateCursor=0;
         auto* Item = Items[Index].Get();
-        if (!IsValid(Item) || (bUseAuthoredPlacements && !Item->ActorHasTag(ActiveAreaTag))) continue;
+        if (!IsValid(Item) || PendingAuthoredItems.Contains(Item) || (bUseAuthoredPlacements && !Item->ActorHasTag(ActiveAreaTag))) continue;
         int32 Cuts=0;for(ADiggableRock* Rock:Item->CoveringRocks)Cuts+=IsValid(Rock)?Rock->SuccessfulCuts:1000003;
         const uint32 Version=Item->GetTerrainVersion();
         if (!ObservedTerrain.Contains(Item) || ObservedTerrain[Item]!=Version)

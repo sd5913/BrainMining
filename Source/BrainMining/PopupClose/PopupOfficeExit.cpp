@@ -19,6 +19,8 @@
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "PopupClose/PopupOfficeExplosionShake.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -170,6 +172,7 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
 }
 FPopupOfficeExit::~FPopupOfficeExit()
 {
+ FinishExitTurn();
  if(Owner.GetWorld())Owner.GetWorld()->GetTimerManager().ClearTimer(Timer);
  if(auto Tool=BoundTool.Get())Tool->OnBombExploded.RemoveDynamic(&Owner,&APopupCloseStage::OnPlayerBombExploded);
  for(auto Effect:Effects)if(Effect.IsValid())Effect->Destroy();
@@ -250,6 +253,7 @@ void FPopupOfficeExit::HandleExplosion(const FVector& WorldPosition)
 void FPopupOfficeExit::Tick()
 {
  const double Now=Owner.GetWorld()->GetTimeSeconds();const float Dt=FMath::Max(0.f,float(Now-LastTime));LastTime=Now;if(Dt<=0)return;
+ TickExitTurn(Dt);
  BindPlayer();Age+=Dt;
  if(PickupOutline.IsValid())PickupOutline->bEnabled=Owner.bAreaActive && (Phase==1 || Phase==2);
  auto PC=Owner.GetWorld()->GetFirstPlayerController();auto Pawn=PC?PC->GetPawn():nullptr;
@@ -315,6 +319,23 @@ void FPopupOfficeExit::Tick()
   }
  }
 }
+void FPopupOfficeExit::FinishExitTurn()
+{
+ if(auto Controller=TurnController.Get())
+ {
+  Controller->SetIgnoreMoveInput(false);
+  Controller->SetIgnoreLookInput(false);
+ }
+ TurnController.Reset();
+}
+void FPopupOfficeExit::TickExitTurn(float Dt)
+{
+ auto Controller=TurnController.Get();if(!Controller)return;
+ ExitTurnElapsed+=Dt;
+ const float Alpha=FMath::SmoothStep(0.f,1.f,FMath::Clamp(ExitTurnElapsed/.85f,0.f,1.f));
+ Controller->SetControlRotation(FQuat::Slerp(ExitTurnStart.Quaternion(),ExitTurnTarget.Quaternion(),Alpha).Rotator());
+ if(ExitTurnElapsed>=.85f)FinishExitTurn();
+}
 void FPopupOfficeExit::SealRoom()
 {
  Phase=5;Age=EmissionDebt=0;Shutter->SetVisibility(true);Shutter->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);ReturnGrille->SetVisibility(true);
@@ -326,10 +347,14 @@ void FPopupOfficeExit::SealRoom()
  if(Owner.Flood)Owner.Flood->Stop();Owner.CancelSession();
  if(auto Controller=Owner.GetWorld()->GetFirstPlayerController())
  {
-  FRotator RoomView=Owner.GetActorRotation();RoomView.Yaw+=180.f;RoomView.Pitch=-4.f;
-  Controller->SetControlRotation(RoomView);
+  ExitTurnStart=Controller->GetControlRotation();
+  const FVector Eye=Controller->GetPawn()?Controller->GetPawn()->GetPawnViewLocation():Controller->GetFocalLocation();
+  ExitTurnTarget=(Owner.GetActorTransform().TransformPosition(FVector(300,0,145))-Eye).Rotation();
+  TurnController=Controller;
+  ExitTurnElapsed=0.f;
   Controller->SetIgnoreLookInput(true);
-  Owner.ExitTurnLockRemaining=1.25f;
+  Controller->SetIgnoreMoveInput(true);
+  if(auto Character=Cast<ACharacter>(Controller->GetPawn()))Character->GetCharacterMovement()->StopMovementImmediately();
  }
  Owner.GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(&Owner,[Stage=&Owner](){Stage->OnOfficeEscaped.Broadcast();}));
  UE_LOG(LogOfficeExit,Display,TEXT("Player crossed exit: return path sealed, all 12 devices begin bomb eruption"));
@@ -372,6 +397,7 @@ void FPopupOfficeExit::Collapse()
 }
 void FPopupOfficeExit::Reset()
 {
+ FinishExitTurn();
  Phase=BombsEmitted=BombCursor=ExplosionWaves=0;Age=EmissionDebt=0;bInsideSeen=bHavePosition=bDestructionSignaled=false;
  for(auto Effect:Effects)if(Effect.IsValid())Effect->Destroy();Effects.Reset();
  Door->SetVisibility(true);Door->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);

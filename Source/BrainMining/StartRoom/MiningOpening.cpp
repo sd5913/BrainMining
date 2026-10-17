@@ -19,8 +19,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "StartRoom/MiningStartRoom.h"
-#include "DiggableRock.h"
-#include "Components/DynamicMeshComponent.h"
+#include "Components/DecalComponent.h"
+#include "Materials/MaterialInterface.h"
 
 AMiningOpening* AMiningOpening::EnsureMainGameOpening(AMiningExhibitHall* Hall)
 {
@@ -148,33 +148,23 @@ void AMiningOpening::Tick(float Dt)
     WorldTitle->SetWorldScale3D(FVector(FMath::Lerp(.19f,.205f,A)));
     if(T>=1.f)
     {
-        EnsureTitleMiningProxy();
+        EnsureTitleOnWall();
         bFinished=true;Release();SetActorTickEnabled(false);
     }
 }
-void AMiningOpening::EnsureTitleMiningProxy()
+void AMiningOpening::EnsureTitleOnWall()
 {
-    if (TitleMiningProxy || !GetWorld()) return;
-    const FTransform ProxyTransform(DoorTitleRotation.Quaternion(),DoorTitleLocation);
-    TitleMiningProxy=GetWorld()->SpawnActorDeferred<ADiggableRock>(ADiggableRock::StaticClass(),ProxyTransform,
-        this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-    if (!TitleMiningProxy) return;
-    // Keep the image visible while the hidden terrain proxy supplies the same
-    // boolean/collision path as every other mineable layer. The image is
-    // removed when this proxy is fully excavated.
-    TitleMiningProxy->Tags.AddUnique(TEXT("BM_OpeningTitleMineable"));
-    TitleMiningProxy->RockSize=FVector(22.f,220.f,132.f);
-    TitleMiningProxy->FinishSpawning(ProxyTransform);
-    if (TitleMiningProxy->RockMesh)
-    {
-        TitleMiningProxy->RockMesh->SetRenderInMainPass(false);
-        TitleMiningProxy->RockMesh->SetRenderInDepthPass(false);
-    }
-    TitleMiningProxy->OnTerrainCommitted.AddLambda([this](const FBox&)
-    {
-        if (TitleMiningProxy && TitleMiningProxy->TriangleCount<=0 && WorldTitle)
-            WorldTitle->SetVisibility(false);
-    });
+    if (!GetWorld()) return;
+    auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/StartRoom/UI/M_OpeningTitleDecal.M_OpeningTitleDecal"));
+    if(!Material)return;
+    // Once the animation settles, draw the logo on the actual excavatable wall.
+    // A shallow projection disappears locally with each removed piece of terrain.
+    auto* Decal=NewObject<UDecalComponent>(this,TEXT("MineableWallTitle"));
+    AddInstanceComponent(Decal);Decal->SetupAttachment(RootComponent);
+    Decal->SetDecalMaterial(Material);Decal->DecalSize=FVector(18.f,104.96f,61.5f);
+    Decal->SetFadeScreenSize(0.f);Decal->RegisterComponent();
+    Decal->SetWorldLocationAndRotation(DoorTitleLocation-DoorTitleRotation.Vector()*10.f,DoorTitleRotation);
+    WorldTitle->SetVisibility(false);
 }
 void AMiningOpening::Release()
 {

@@ -10,11 +10,13 @@ bool AMiningTreasureField::InitializeAuthoredItem(AMiningTreasure* Item, const F
     if(!Definition || !Item->Configure(*Definition,Definition->ValuesBySize.IndexOfByKey(Placement.Value),TreasureMaterial)) return false;
     Item->Exposure=Item->MeasureExposure();
     Item->ConfigureCrystalClues(Placement,CrystalClueMesh);
+    Item->AttachCampaignHint(*Definition);
     Item->SetActorHiddenInGame(false);
+    Item->SetDropActive(bAreaActive && Placement.AreaTag==ActiveAreaTag);
     return true;
 }
 
-void AMiningTreasureField::PrepareAuthoredArea(FName AreaTag)
+void AMiningTreasureField::PrepareAuthoredArea(FName AreaTag, int32 MaxItems)
 {
     TRACE_CPUPROFILER_EVENT_SCOPE(Mining_PrepareAuthoredArea);
     for(auto Pending=PendingAuthoredItems.CreateIterator();Pending;++Pending)
@@ -22,7 +24,8 @@ void AMiningTreasureField::PrepareAuthoredArea(FName AreaTag)
         auto* Item=Pending.Key().Get();
         if(!IsValid(Item) || !AuthoredPlacements.IsValidIndex(Pending.Value())) {Pending.RemoveCurrent();continue;}
         const auto& Placement=AuthoredPlacements[Pending.Value()];
-        if(Placement.AreaTag!=AreaTag) continue;
+        if(!AreaTag.IsNone() && Placement.AreaTag!=AreaTag) continue;
+        if(MaxItems--<=0)break;
         if(!InitializeAuthoredItem(Item,Placement))
         {
             UE_LOG(LogTemp,Error,TEXT("Failed to initialize campaign mineral %s"),*Placement.TreasureId.ToString());
@@ -61,6 +64,6 @@ void AMiningTreasureField::SpawnAuthored()
         {Item->Destroy();continue;}
         Items.Add(Item);ObservedCuts.Add(INDEX_NONE);
     }
-    if(bAreaActive) PrepareAuthoredArea(ActiveAreaTag);
+    if(bAreaActive) PrepareAuthoredArea(ActiveAreaTag,1);
     GenerationStatus=FString::Printf(TEXT("矿脉 %d / %d"),Items.Num(),AuthoredPlacements.Num());
 }

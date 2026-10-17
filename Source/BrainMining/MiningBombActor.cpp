@@ -116,15 +116,19 @@ void AMiningBombActor::Contact(UPrimitiveComponent*, AActor* Other, UPrimitiveCo
 	const FVector Normal = Result.ImpactNormal.GetSafeNormal();
 	if (Result.bBlockingHit && !Result.ImpactPoint.ContainsNaN() && !Normal.IsNearlyZero())
 	{
-		SetActorLocation(Result.ImpactPoint + Normal * (Collision->GetScaledSphereRadius() + .5f), false, nullptr, ETeleportType::TeleportPhysics);
+		// Position the centered model by its actual half thickness, not its spherical flight collider.
+		const float HalfThickness=Model->GetStaticMesh()?Model->GetStaticMesh()->GetBounds().BoxExtent.Z*Model->GetComponentScale().Z:Collision->GetScaledSphereRadius();
+		SetActorLocation(Result.ImpactPoint + Normal * (HalfThickness + .1f), false, nullptr, ETeleportType::TeleportPhysics);
 		// The broad C4 base is the face that should sit on the contacted plane.
-		// Preserve the flight roll where possible, then rotate only enough to
-		// bring the model's local bottom face flush with the impact normal.
-		const FVector CurrentBottom = GetActorQuat().RotateVector(FVector::DownVector);
-		const FQuat Align = FQuat::FindBetweenNormals(CurrentBottom, -Normal);
+		// C4 meshes are authored with their thin axis as local Z, so use the
+		// negative thin-axis normal and preserve the incoming roll around it.
+		// This keeps the large bottom face flush on floors, walls and ceilings.
+		const FVector LocalBaseNormal = FVector::DownVector;
+		const FVector CurrentBase = GetActorQuat().RotateVector(LocalBaseNormal);
+		const FQuat Align = FQuat::FindBetweenNormals(CurrentBase, -Normal);
 		SetActorRotation(Align * GetActorQuat(), ETeleportType::TeleportPhysics);
 	}
-	// Keep the flight orientation; follow moving components and skeletal bones
+	// Follow moving components and skeletal bones with the aligned base
 	// without welding the bomb into the contacted body's physics simulation.
 	AttachToComponent(OtherComponent, FAttachmentTransformRules::KeepWorldTransform, Result.BoneName);
 }

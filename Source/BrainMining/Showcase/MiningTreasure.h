@@ -12,6 +12,7 @@ class UPointLightComponent;
 class UMaterialInstanceDynamic;
 class UInstancedStaticMeshComponent;
 class UBoxComponent;
+class UDecalComponent;
 
 USTRUCT(BlueprintType)
 struct FMiningTreasureDefinition
@@ -92,6 +93,8 @@ public:
     void ResetDrop();
     static bool IsExposureEligible(float Ratio) { return FMath::IsFinite(Ratio) && Ratio > .5f; }
     void SetHighlighted(bool bEnabled);
+    void AttachCampaignHint(const FMiningTreasureDefinition& Definition);
+    UPROPERTY(VisibleAnywhere) TObjectPtr<UDecalComponent> BuriedGlow;
     void AttachBuriedHint(const FMiningTreasureDefinition& Definition);
     void UpdateGlow(float DeltaSeconds, bool bAllowLight);
     float GetHintAmount() const { return HintAmount; }
@@ -152,7 +155,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Treasure") TObjectPtr<AMiningTreasure> Target;
     bool IsAreaActive() const { return bAreaActive; }
     void SetAreaActive(bool bActive);
-    void PrepareAuthoredArea(FName AreaTag);
+    void PrepareAuthoredArea(FName AreaTag, int32 MaxItems = MAX_int32);
     UFUNCTION(BlueprintCallable, Category="Treasure") void ResetExhibit();
     bool CollectTarget(APlayerController* Controller);
     FString GetPrompt() const;

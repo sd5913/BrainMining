@@ -37,6 +37,8 @@ TAutoConsoleVariable<int32> CVarMiningMaxBackgroundTasks(
 FThreadSafeCounter MiningBackgroundTasks;
 double MiningCommitWindowStart = 0;
 double MiningCommitWindowSeconds = 0;
+uint64 TerrainPreparationFrame = MAX_uint64;
+double TerrainPreparationSeconds = 0;
 
 struct FMiningTaskPermit
 {
@@ -58,7 +60,13 @@ void UpdateTerrainVisibility(AGeneratedMiningRock* Rock)
 	if (!Rock->bChunked || !Rock->GetWorld() || !Rock->GetWorld()->IsGameWorld()) return;
 	const auto* PC=Rock->GetWorld()->GetFirstPlayerController();
 	const APawn* Pawn=PC?PC->GetPawn().Get():nullptr;
-	if (Pawn) Rock->PrepareRuntimeGeometry(Pawn->GetActorLocation(), 5000.f);
+	if (Pawn)
+ {
+  // Collision immediately around the pawn is mandatory. Farther render/collision
+  // chunks share a budget instead of all rebuilding on the area-entry frame.
+  Rock->PrepareRuntimeGeometry(Pawn->GetActorLocation(), 600.f);
+  Rock->PrepareRuntimeGeometry(Pawn->GetActorLocation(), 5000.f, true);
+ }
 	const FVector Local=Pawn?Rock->GetActorTransform().InverseTransformPosition(Pawn->GetPawnViewLocation()):FVector::ZeroVector;
 	const double Radius=3200.0 / FMath::Max(.001,Rock->GetActorScale3D().GetMin());
 	for(auto& Chunk:Rock->Chunks)if(Chunk.Mesh)
@@ -243,7 +251,7 @@ UDynamicMesh* AGeneratedMiningRock::GetChunkQueryMesh(const FMiningRockChunk& Ch
 	return Chunk.bRuntimeDeferred || !Chunk.Mesh ? Chunk.InitialMesh.Get() : Chunk.Mesh->GetDynamicMesh();
 }
 
-void AGeneratedMiningRock::PrepareRuntimeGeometry(const FVector& WorldPosition, float WorldRadius)
+void AGeneratedMiningRock::PrepareRuntimeGeometry(const FVector& WorldPosition, float WorldRadius, bool bBudgeted)
 {
 	if (DeferredRuntimeChunks == 0 || SegmentState == EMiningSegmentState::Recycled ||
 		WorldPosition.ContainsNaN() || !FMath::IsFinite(WorldRadius) || WorldRadius <= 0) return;
@@ -251,10 +259,14 @@ void AGeneratedMiningRock::PrepareRuntimeGeometry(const FVector& WorldPosition, 
 	const double Radius = WorldRadius / FMath::Max(.001, GetActorScale3D().GetAbsMin());
 	if (!RuntimeChunkBounds.IsValid || RuntimeChunkBounds.ComputeSquaredDistanceToPoint(LocalPosition) > Radius * Radius) return;
 	TRACE_CPUPROFILER_EVENT_SCOPE(Mining_RuntimeActivation);
+ if(TerrainPreparationFrame!=GFrameCounter){TerrainPreparationFrame=GFrameCounter;TerrainPreparationSeconds=0;}
+ const double Started=FPlatformTime::Seconds();
+ ON_SCOPE_EXIT { TerrainPreparationSeconds+=FPlatformTime::Seconds()-Started; };
 	for (FMiningRockChunk& Chunk : Chunks)
 	{
 		if (!Chunk.bRuntimeDeferred || !Chunk.InitialMesh ||
 			Chunk.Bounds.ComputeSquaredDistanceToPoint(LocalPosition) > Radius * Radius) continue;
+		if(bBudgeted && TerrainPreparationSeconds+FPlatformTime::Seconds()-Started>=.002)break;
 		EnsureChunkComponent(Chunk);
 		FDynamicMesh3 Geometry;
 		Chunk.InitialMesh->ProcessMesh([&Geometry](const FDynamicMesh3& Source) { Geometry = Source; });
@@ -274,6 +286,13 @@ void AGeneratedMiningRock::PrepareTerrainAt(UWorld* World, const FVector& WorldP
 	if (!World || !World->IsGameWorld()) return;
 	for (TActorIterator<AGeneratedMiningRock> Rock(World); Rock; ++Rock)
 		Rock->PrepareRuntimeGeometry(WorldPosition, WorldRadius);
+}
+
+void AGeneratedMiningRock::PrewarmTerrainAt(UWorld* World, const FVector& WorldPosition, float WorldRadius)
+{
+ if (!World || !World->IsGameWorld()) return;
+ for (TActorIterator<AGeneratedMiningRock> Rock(World); Rock; ++Rock)
+  Rock->PrepareRuntimeGeometry(WorldPosition, WorldRadius, true);
 }
 
 int32 AGeneratedMiningRock::GetBackgroundTaskCount()

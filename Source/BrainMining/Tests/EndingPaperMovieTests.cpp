@@ -11,6 +11,12 @@
 #include "Tests/AutomationCommon.h"
 #include "ShaderCompiler.h"
 #include "TextureCompiler.h"
+
+#if WITH_EDITOR
+#define BM_TEXTURES_COMPILING (FTextureCompilingManager::Get().GetNumRemainingTextures() > 0)
+#else
+#define BM_TEXTURES_COMPILING false
+#endif
 #include "UnrealClient.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
@@ -42,7 +48,7 @@ public:
     bool Update() override
     {
         if(FPlatformTime::Seconds()-Started>240){FApp::SetUseFixedTimeStep(false);Test->AddError(TEXT("Paper movie timed out"));return true;}
-        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||FTextureCompilingManager::Get().GetNumRemainingTextures())return false;
+        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||BM_TEXTURES_COMPILING)return false;
         UWorld* W=AutomationCommon::GetAnyGameWorld();if(!W||!W->GetFirstPlayerController())return false;
         if(!Director.IsValid())
         {

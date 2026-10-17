@@ -143,7 +143,10 @@ void FPopupOfficeFlood::Tick(float Dt)
   else if(auto Actor=Slot.Actor.Get())
   {
    const float Age=Time-Slot.Born;
-   Actor->SetActorLocationAndRotation(Slot.Origin+Slot.Velocity*Age+FVector(0,0,.5f*Owner.GetWorld()->GetGravityZ()*Age*Age),
+   const float FlightDuration=FMath::Max(.01f,Slot.RetireTime-Slot.Born);
+   const float ArcAlpha=FMath::Clamp(Age/FlightDuration,0.f,1.f);
+   const float ArcOffset=Slot.ArcLift*4.f*ArcAlpha*(1.f-ArcAlpha);
+   Actor->SetActorLocationAndRotation(Slot.Origin+Slot.Velocity*Age+FVector(0,0,.5f*Owner.GetWorld()->GetGravityZ()*Age*Age+ArcOffset),
        Slot.Rotation+FRotator(25*Age,50*Age,40*Age),false,nullptr,ETeleportType::TeleportPhysics);
   }
  }
@@ -222,6 +225,7 @@ void FPopupOfficeFlood::Emit(int32 SourceIndex,bool bPhysical)
  FVector Velocity=(Target-Origin)/FlightSeconds;Velocity.Z-=.5f*Owner.GetWorld()->GetGravityZ()*FlightSeconds;
  Actor->SetActorLocationAndRotation(Origin,FRotator(FMath::FRandRange(-20.f,20.f),Room.Rotator().Yaw+Source.Direction.Rotation().Yaw+180.f,FMath::FRandRange(-15.f,15.f)),false,nullptr,ETeleportType::TeleportPhysics);
  Slot.Rotation=Actor->GetActorRotation();Slot.Born=Time;Slot.Origin=Origin;Slot.Velocity=Velocity;Slot.bPhysical=bPhysical;
+ Slot.ArcLift=bPhysical?0.f:FMath::FRandRange(120.f,220.f);
  if(bPhysical)Actor->Launch(PopupCloseContent::Get(Slot.Variant).Color,Velocity);
  else Actor->LaunchGenerated();
  Slot.bActive=true;Slot.RetireTime=Time+FlightSeconds;++Sources[SourceIndex].Count;

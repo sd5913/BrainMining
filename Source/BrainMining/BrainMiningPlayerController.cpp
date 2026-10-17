@@ -29,6 +29,7 @@
 #include "Components/InputComponent.h"
 #include "MiningComponent.h"
 #include "MobileRuntimeSettings.h"
+#include "MobileTouchControls.h"
 #include "MiningProgressionComponent.h"
 #include "MiningBombToolComponent.h"
 #include "Framework/Application/SlateApplication.h"
@@ -74,42 +75,51 @@ void ABrainMiningPlayerController::BeginPlay()
 	}
 
 	
-	// only spawn touch controls on local player controllers
 	if (IsLocalPlayerController() && ShouldUseTouchControls())
 	{
-		// spawn the mobile controls widget
-		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
-
-		if (MobileControlsWidget)
+		if (UMobileRuntimeSettings::IsMobileVerticalSliceEnabled())
 		{
-			MobileControlsWidget->AddToPlayerScreen(0);
+			if (APawn* PlayerPawn = GetPawn())
+				if (auto* Progression = PlayerPawn->FindComponentByClass<UMiningProgressionComponent>())
+					Progression->InitializeProgression();
+			if (auto* Viewport = GetWorld() ? GetWorld()->GetGameViewport() : nullptr)
+			{
+				MobileTouchControls = SNew(SMobileTouchControls)
+					.OwnerController(TWeakObjectPtr<ABrainMiningPlayerController>(this));
+				Viewport->AddViewportWidgetContent(MobileTouchControls.ToSharedRef(), 200);
+			}
 		}
-		else if (GetWorld() && GetWorld()->GetGameViewport())
+		else
 		{
-			TWeakObjectPtr<ABrainMiningPlayerController> WeakController(this);
-			MobileFallbackControls = SNew(SOverlay)
-				+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Bottom).Padding(FMargin(24.f, 24.f, 42.f, 42.f))
-				[
-					SNew(SButton)
-					.ContentPadding(FMargin(28.f, 20.f))
-					.OnPressed_Lambda([WeakController]()
-					{
-						if (WeakController.IsValid() && WeakController->GetPawn())
-							if (UMiningComponent* Mining = WeakController->GetPawn()->FindComponentByClass<UMiningComponent>()) Mining->BeginMiningInput();
-					})
-					.OnReleased_Lambda([WeakController]()
-					{
-						if (WeakController.IsValid() && WeakController->GetPawn())
-							if (UMiningComponent* Mining = WeakController->GetPawn()->FindComponentByClass<UMiningComponent>()) Mining->EndMiningInput();
-					})
+			MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
+			if (MobileControlsWidget)
+			{
+				MobileControlsWidget->AddToPlayerScreen(0);
+			}
+			else if (GetWorld() && GetWorld()->GetGameViewport())
+			{
+				TWeakObjectPtr<ABrainMiningPlayerController> WeakController(this);
+				MobileFallbackControls = SNew(SOverlay)
+					+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Bottom).Padding(FMargin(24.f, 24.f, 42.f, 42.f))
 					[
-						SNew(STextBlock).Text(FText::FromString(TEXT("MINE"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 24))
-					]
-				];
-			GetWorld()->GetGameViewport()->AddViewportWidgetContent(MobileFallbackControls.ToSharedRef(), 200);
-			UE_LOG(LogBrainMining, Warning, TEXT("MobileControlsWidgetClass is not assigned; using the runtime fallback mining button."));
+						SNew(SButton)
+						.ContentPadding(FMargin(28.f, 20.f))
+						.OnPressed_Lambda([WeakController]()
+						{
+							if (WeakController.IsValid()) WeakController->HandleMobileMine(true);
+						})
+						.OnReleased_Lambda([WeakController]()
+						{
+							if (WeakController.IsValid()) WeakController->HandleMobileMine(false);
+						})
+						[
+							SNew(STextBlock).Text(FText::FromString(TEXT("MINE"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 24))
+						]
+					];
+				GetWorld()->GetGameViewport()->AddViewportWidgetContent(MobileFallbackControls.ToSharedRef(), 200);
+				UE_LOG(LogBrainMining, Warning, TEXT("MobileControlsWidgetClass is not assigned; using the runtime fallback mining button."));
+			}
 		}
-
 	}
 }
 
@@ -184,6 +194,62 @@ void ABrainMiningPlayerController::UseAbilityV()
 		MiningGUI->OnAbilityRequested.Broadcast(TEXT("V"));
 }
 
+void ABrainMiningPlayerController::HandleMobileMove(const FVector2D& Axis)
+{
+	if (IsMoveInputIgnored() || IsPaused() || !GetPawn()) return;
+	GetPawn()->AddMovementInput(GetPawn()->GetActorRightVector(), FMath::Clamp(Axis.X, -1.f, 1.f));
+	GetPawn()->AddMovementInput(GetPawn()->GetActorForwardVector(), FMath::Clamp(Axis.Y, -1.f, 1.f));
+}
+
+void ABrainMiningPlayerController::HandleMobileLook(const FVector2D& Delta)
+{
+	if (IsLookInputIgnored() || IsPaused()) return;
+	const UMobileRuntimeSettings* Settings = UMobileRuntimeSettings::Get();
+	const float Sensitivity = Settings ? FMath::Clamp(Settings->MobileLookSensitivity, .01f, .5f) : .09f;
+	AddYawInput(Delta.X * Sensitivity);
+	AddPitchInput(-Delta.Y * Sensitivity);
+}
+
+void ABrainMiningPlayerController::HandleMobileMine(bool bPressed)
+{
+	UMiningComponent* Mining = GetPawn() ? GetPawn()->FindComponentByClass<UMiningComponent>() : nullptr;
+	if (!Mining) return;
+	if (!bPressed)
+	{
+		Mining->EndMiningInput();
+		return;
+	}
+	if (!bMiningGUIEnabled || IsMoveInputIgnored() || IsLookInputIgnored() || IsPaused() || bUpgradeMenuHeld) return;
+	if (auto* Bomb = GetPawn()->FindComponentByClass<UMiningBombToolComponent>(); Bomb && Bomb->bEquipped) Bomb->Stow();
+	Mining->BeginMiningInput();
+}
+
+void ABrainMiningPlayerController::HandleMobileBomb()
+{
+	if (!bMiningGUIEnabled || IsMoveInputIgnored() || IsLookInputIgnored() || IsPaused() || bUpgradeMenuHeld) return;
+	if (MiningGUI && MiningGUI->AbilityG && !MiningGUI->AbilityG->bAvailable) return;
+	UMiningBombToolComponent* Bomb = GetPawn() ? GetPawn()->FindComponentByClass<UMiningBombToolComponent>() : nullptr;
+	if (!Bomb) return;
+	const bool bSucceeded = Bomb->bEquipped ? Bomb->ThrowBomb() : Bomb->ToggleEquipped();
+	if (bSucceeded && MiningGUI) MiningGUI->OnAbilityRequested.Broadcast(TEXT("G"));
+}
+
+void ABrainMiningPlayerController::HandleMobileDrill()
+{
+	UseAbilityV();
+}
+
+void ABrainMiningPlayerController::HandleMobileUpgrade()
+{
+	if (!bMiningGUIEnabled || IsMoveInputIgnored() || IsLookInputIgnored() || IsPaused() || bUpgradeMenuHeld) return;
+	UMiningProgressionComponent* Progression = GetPawn() ? GetPawn()->FindComponentByClass<UMiningProgressionComponent>() : nullptr;
+	if (!Progression) return;
+	if (!Progression->bInitialized && !Progression->InitializeProgression()) return;
+	const int32 CurrentLevel = Progression->GetLevel(0);
+	if (CurrentLevel < 0 || CurrentLevel >= 4) return;
+	const bool bPurchased = Progression->Purchase(0, CurrentLevel + 1);
+	if (auto* Audio = GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPurchase(bPurchased);
+}
 bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 {
 	if (Params.Key == EKeys::F8 || (IsAudioSettingsOpen() && Params.Key == EKeys::Escape))
@@ -273,6 +339,11 @@ void ABrainMiningPlayerController::EndPlay(const EEndPlayReason::Type Reason)
 	SetUpgradeMenuHeld(false);
 	if (MiningGUI) MiningGUI->RemoveFromParent();
 	if (InteractionHUD) InteractionHUD->RemoveFromParent();
+	if (MobileTouchControls.IsValid() && GetWorld() && GetWorld()->GetGameViewport())
+	{
+		GetWorld()->GetGameViewport()->RemoveViewportWidgetContent(MobileTouchControls.ToSharedRef());
+		MobileTouchControls.Reset();
+	}
 	if (MobileFallbackControls.IsValid() && GetWorld() && GetWorld()->GetGameViewport())
 	{
 		GetWorld()->GetGameViewport()->RemoveViewportWidgetContent(MobileFallbackControls.ToSharedRef());

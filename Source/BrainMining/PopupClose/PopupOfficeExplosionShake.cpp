@@ -27,8 +27,7 @@ void UPopupOfficeExplosionPattern::UpdateShakePatternImpl(const FCameraShakePatt
 }
 
 UPopupOfficeExplosionShake::UPopupOfficeExplosionShake(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UPopupOfficeExplosionPattern>(TEXT("RootShakePattern")))
 {
 	bSingleInstance = false;
-	ChangeRootShakePattern<UPopupOfficeExplosionPattern>();
 }

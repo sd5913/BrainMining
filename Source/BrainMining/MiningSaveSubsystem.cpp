@@ -247,17 +247,20 @@ void UMiningSaveSubsystem::RecordCut(const FMiningSavedCut& Cut)
 void UMiningSaveSubsystem::RecordSphere(ADiggableRock* Rock, FVector Center, float Radius)
 {
 	if (!Rock || !Rock->GetWorld()) return;
-	if (auto* S = Rock->GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()) { FMiningSavedCut C; C.ActorPath=Rock->GetPathName(); C.Operation=0; C.Center=Center; C.Radius=Radius; S->RecordCut(C); }
+	if (auto* GameInstance = Rock->GetGameInstance())
+		if (auto* S = GameInstance->GetSubsystem<UMiningSaveSubsystem>()) { FMiningSavedCut C; C.ActorPath=Rock->GetPathName(); C.Operation=0; C.Center=Center; C.Radius=Radius; S->RecordCut(C); }
 }
 void UMiningSaveSubsystem::RecordPickaxe(ADiggableRock* Rock, FTransform Frame, FVector HalfSize, int32 Seed, float Roughness)
 {
 	if (!Rock || !Rock->GetWorld()) return;
-	if (auto* S = Rock->GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()) { FMiningSavedCut C; C.ActorPath=Rock->GetPathName(); C.Operation=1; C.WorldFrame=Frame; C.HalfSize=HalfSize; C.Seed=Seed; C.Roughness=Roughness; S->RecordCut(C); }
+	if (auto* GameInstance = Rock->GetGameInstance())
+		if (auto* S = GameInstance->GetSubsystem<UMiningSaveSubsystem>()) { FMiningSavedCut C; C.ActorPath=Rock->GetPathName(); C.Operation=1; C.WorldFrame=Frame; C.HalfSize=HalfSize; C.Seed=Seed; C.Roughness=Roughness; S->RecordCut(C); }
 }
 void UMiningSaveSubsystem::RecordBlast(ADiggableRock* Rock, FVector Center, float Radius, float Roughness, int32 Seed)
 {
 	if (!Rock || !Rock->GetWorld()) return;
-	if (auto* S = Rock->GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()) { FMiningSavedCut C; C.ActorPath=Rock->GetPathName(); C.Operation=2; C.Center=Center; C.Radius=Radius; C.Roughness=Roughness; C.Seed=Seed; S->RecordCut(C); }
+	if (auto* GameInstance = Rock->GetGameInstance())
+		if (auto* S = GameInstance->GetSubsystem<UMiningSaveSubsystem>()) { FMiningSavedCut C; C.ActorPath=Rock->GetPathName(); C.Operation=2; C.Center=Center; C.Radius=Radius; C.Roughness=Roughness; C.Seed=Seed; S->RecordCut(C); }
 }
 
 void UMiningSaveSubsystem::OnWorldCleanup(UWorld* World, bool, bool)

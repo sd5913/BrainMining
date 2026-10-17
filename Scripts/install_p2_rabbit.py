@@ -16,7 +16,8 @@ assert stage, "P2 CardRoomStage not found"
 rabbit = unreal.load_asset(MESH)
 assert rabbit, MESH
 stage.set_editor_property("rabbit_skeletal_mesh", rabbit)
-stage.set_editor_property("rabbit_visual_scale", 10.0)
+stage.set_editor_property("rabbit_visual_scale", 1.0)
+stage.set_editor_property("opponent_scale", 1.0)
 stage.set_editor_property("rabbit_visual_offset", unreal.Vector(0, 0, 0))
 # Physics drop is enabled by the native default; older UE Python bindings expose
 # the bool under different names, so leave the default untouched here.
@@ -30,7 +31,8 @@ out.mkdir(parents=True, exist_ok=True)
     "map": MAP,
     "stage": stage.get_path_name(),
     "mesh": rabbit.get_path_name(),
-    "scale": 10.0,
+    "opponent_scale": 1.0,
+    "scale": 1.0,
     "physics_drop": True,
 }, ensure_ascii=False, indent=2), encoding="utf-8")
 unreal.log("P2_RABBIT_STAGE_INSTALLED")

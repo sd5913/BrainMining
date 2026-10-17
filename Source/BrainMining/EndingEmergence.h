@@ -111,6 +111,8 @@ private:
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperPickSwing;
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperCaveScene;
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperCaveSeal;
+    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperCaveMiner;
+    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperCaveMinerPick;
     UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> PaperRockChips;
     UPROPERTY(Transient) TObjectPtr<class USceneCaptureComponent2D> PaperCaveCapture;
     UPROPERTY(Transient) TObjectPtr<UTextureRenderTarget2D> PaperCaveTexture;

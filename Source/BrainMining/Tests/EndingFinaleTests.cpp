@@ -105,9 +105,9 @@ public:
         }
         if(D->Shot==10&&!ExitStartCaptured&&D->ShotTime>.3f)
         {
-            Test->TestFalse(TEXT("Desktop cannot occlude the black-space exit"),D->PaperScene->IsVisible());
+            Test->TestTrue(TEXT("Paper surface is already present at the continuous exit"),D->PaperScene->IsVisible());
             Test->TestTrue(TEXT("Distant luminous aperture remains visible in black space"),D->PaperSurface->IsVisible());
-            Test->TestEqual(TEXT("Dots are absent at the distant opening"),D->PaperSurfaceMaterial->K2_GetScalarParameterValue(TEXT("DotsReveal")),0.f);
+            Test->TestTrue(TEXT("Printed dots begin revealing before the approach"),D->PaperSurfaceMaterial->K2_GetScalarParameterValue(TEXT("DotsReveal"))>.05f);
             const FTransform Frame=D->PaperScene->GetComponentTransform();
             Test->TestTrue(TEXT("Exit remains on the paper front, looking down or across it rather than at the ceiling"),Frame.InverseTransformPosition(D->Camera->GetActorLocation()).Z>0&&Frame.InverseTransformVectorNoScale(D->Camera->GetActorForwardVector()).Z<=.01f);
             Test->TestEqual(TEXT("Tool copies survive the initial exit transition"),D->FinaleDrills.Num(),2);
@@ -233,7 +233,7 @@ public:
             Test->TestEqual(TEXT("Twenty-four contour cutouts line the route"),D->PaperCardCount,24);
             int Popped=0;for(float Age:D->PaperPopAges)if(Age>=0)++Popped;
             Test->TestTrue(TEXT("Nearby cutouts pop while later cutouts remain flat"),Popped>0&&Popped<24);
-            for(const TCHAR* Name:{TEXT("toilet"),TEXT("warnings"),TEXT("glasses"),TEXT("cards"),TEXT("fountain"),TEXT("thought"),TEXT("computer"),TEXT("brain"),TEXT("solar"),TEXT("ants"),TEXT("roguelike"),TEXT("pickaxe")})
+            for(const TCHAR* Name:{TEXT("toilet"),TEXT("warnings"),TEXT("glasses"),TEXT("cards"),TEXT("fountain"),TEXT("thought"),TEXT("computer"),TEXT("brain"),TEXT("solar"),TEXT("ants"),TEXT("roguelike")})
                 Test->TestNotNull(TEXT("Individual doodle texture is available"),LoadObject<UTexture2D>(nullptr,*(FString(TEXT("/Game/EndingEmergence/PaperFinale/Doodles/T_EE_Doodle_"))+Name)));
             Test->TestEqual(TEXT("Faded tools are released before reality"),D->FinaleDrills.Num(),0);
             Test->TestEqual(TEXT("Old bulb finale is removed"),D->FinaleBulbLights.Num(),0);

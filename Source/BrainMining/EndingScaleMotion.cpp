@@ -75,18 +75,18 @@ void AEndingEmergence::ResetScaleMotion()
 void AEndingEmergence::UpdateScaleMotion(float Dt)
 {
     if(Shot>=3&&Shot<=6)CelestialAge+=Dt;
-    const FVector EarthOrbit(4000*(FMath::Cos(CelestialAge*.003f)-1),4000*FMath::Sin(CelestialAge*.003f),30*FMath::Sin(CelestialAge*.09f));
+    const FVector EarthOrbit(4000*(FMath::Cos(CelestialAge*.012f)-1),4000*FMath::Sin(CelestialAge*.012f),30*FMath::Sin(CelestialAge*.25f));
     for(auto Part:EarthMovingParts)if(Part)
     {
         Part->SetRelativeLocation(EarthOrbit);
-        if(auto* M=Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0)))M->SetScalarParameterValue(TEXT("Spin"),CelestialAge*.003f);
+        if(auto* M=Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0)))M->SetScalarParameterValue(TEXT("Spin"),CelestialAge*.012f);
     }
     for(int I=0;I<OrbitingBodies.Num();++I)
     {
         const FVector Rest=OrbitRestPositions[I];const float R=FMath::Sqrt(Rest.Y*Rest.Y+FMath::Square(Rest.Z/.55f));
-        const float A=FMath::Atan2(Rest.Z/.55f,Rest.Y)+CelestialAge*.065f/(1+I*.24f);
+        const float A=FMath::Atan2(Rest.Z/.55f,Rest.Y)+CelestialAge*.12f/(1+I*.24f);
         OrbitingBodies[I]->SetRelativeLocation(FVector(FMath::Cos(A)*R*.18f,FMath::Cos(A)*R,FMath::Sin(A)*R*.55f));
-        if(auto* M=Cast<UMaterialInstanceDynamic>(OrbitingBodies[I]->GetMaterial(0)))M->SetScalarParameterValue(TEXT("Spin"),CelestialAge*(.003f+I*.0004f));
+        if(auto* M=Cast<UMaterialInstanceDynamic>(OrbitingBodies[I]->GetMaterial(0)))M->SetScalarParameterValue(TEXT("Spin"),CelestialAge*(.012f+I*.0012f));
     }
     if(OrbitingRing&&OrbitingBodies.IsValidIndex(5))OrbitingRing->SetRelativeLocation(OrbitingBodies[5]->GetRelativeLocation());
     // Keep all anatomy out of the longer nebula passage. Reveal the surrounding
@@ -101,10 +101,10 @@ void AEndingEmergence::UpdateScaleMotion(float Dt)
     if(!ScaleZoomMaterial)return;
     const float Exit=Shot>=1&&Shot<=3?FMath::SmoothStep(0.f,1.35f,ShotTime-Duration(Shot)+1.35f):0;
     const float Arrival=(Shot==0||Shot>=2&&Shot<=4)?1-FMath::SmoothStep(0.f,1.25f,ShotTime):0;
-    const float Strength=FMath::Max(Exit,Arrival)*(bComfortMode?.35f:1.f);
+    const float Strength=FMath::Max(Exit,Arrival)*(bComfortMode?.35f:1.f)*1.35f;
     ScaleZoomMaterial->SetScalarParameterValue(TEXT("Strength"),Strength);
     ScaleZoomMaterial->SetScalarParameterValue(TEXT("Bridge"),bScaleBridgeReady?Arrival:0);
     ScaleZoomMaterial->SetScalarParameterValue(TEXT("Travel"),FMath::Clamp(ShotTime/1.25f,0.f,1.f));
-    if(Shot>=0&&Shot<=4)Camera->GetCameraComponent()->SetFieldOfView(Camera->GetCameraComponent()->FieldOfView+Strength*13);
+    if(Shot>=0&&Shot<=4)Camera->GetCameraComponent()->SetFieldOfView(Camera->GetCameraComponent()->FieldOfView+Strength*24);
     if(Arrival==0)bScaleBridgeReady=false;
 }

@@ -8,6 +8,7 @@
 #include "DynamicMesh/DynamicMeshAttributeSet.h"
 #include "DynamicMesh/MeshNormals.h"
 #include "Generators/MinimalBoxMeshGenerator.h"
+#include "Generators/SweepGenerator.h"
 #include "Generators/SphereGenerator.h"
 #include "Operations/MeshBoolean.h"
 #include "Operations/LocalPlanarSimplify.h"
@@ -68,10 +69,32 @@ void ADiggableRock::CommitMesh(FDynamicMesh3&& Mesh)
 void ADiggableRock::ResetRock()
 {
 	const FVector SafeSize(FMath::Max(50.0, RockSize.X), FMath::Max(50.0, RockSize.Y), FMath::Max(50.0, RockSize.Z));
-	FMinimalBoxMeshGenerator Generator;
-	Generator.Box = FOrientedBox3d(FVector3d::Zero(), FVector3d(SafeSize * 0.5));
-	Generator.Generate();
-	FDynamicMesh3 Mesh(&Generator);
+	FDynamicMesh3 Mesh;
+	if (bUseCircularRockMesh)
+	{
+		// FCylinderGenerator is vertical by default. Rotate its vertices so the
+		// doorway's short depth follows local X and its round face is YZ.
+		FCylinderGenerator Generator;
+		Generator.Height = SafeSize.X;
+		Generator.Radius[0] = Generator.Radius[1] = FMath::Min(SafeSize.Y, SafeSize.Z) * .5f;
+		Generator.AngleSamples = 20;
+		Generator.bCapped = true;
+		Generator.Generate();
+		Mesh = FDynamicMesh3(&Generator);
+		const FVector3d BoundsCenter = Mesh.GetBounds().Center();
+		for (int32 VertexID : Mesh.VertexIndicesItr())
+		{
+			const FVector3d P = Mesh.GetVertex(VertexID) - BoundsCenter;
+			Mesh.SetVertex(VertexID, FVector3d(P.Z, P.X, P.Y));
+		}
+	}
+	else
+	{
+		FMinimalBoxMeshGenerator Generator;
+		Generator.Box = FOrientedBox3d(FVector3d::Zero(), FVector3d(SafeSize * 0.5));
+		Generator.Generate();
+		Mesh = FDynamicMesh3(&Generator);
+	}
 	const bool bRoomValid = FogChamber->InitializeRoom(Mesh, SafeSize);
 	CommitMesh(MoveTemp(Mesh));
 	if (RockMaterial)

@@ -47,15 +47,16 @@ void AEndingEmergence::BuildPaperFinale()
     PaperEnding::Quad(Sheet,FVector(-60000,-60000,0),FVector(60000,-60000,0),FVector(60000,60000,0),FVector(-60000,60000,0));
     PaperSurfaceMaterial=MeshPart(TEXT("WhitePortalBecomesDesktop"),MoveTemp(Sheet),PaperScene,TEXT("PaperFloor"),Cream);
     PaperSurface=CastChecked<USceneComponent>(PaperSurfaceMaterial->GetOuter());
-    const TCHAR* DoodleNames[]={TEXT("toilet"),TEXT("warnings"),TEXT("glasses"),TEXT("cards"),TEXT("fountain"),TEXT("thought"),TEXT("computer"),TEXT("brain"),TEXT("solar"),TEXT("ants"),TEXT("roguelike"),TEXT("pickaxe")};
+    // The pickaxe is reserved for the final giant paper cutout.
+    const TCHAR* DoodleNames[]={TEXT("toilet"),TEXT("warnings"),TEXT("glasses"),TEXT("cards"),TEXT("fountain"),TEXT("thought"),TEXT("computer"),TEXT("brain"),TEXT("solar"),TEXT("ants"),TEXT("roguelike")};
     // Measured alpha bounds of the original drawings, plus room for the cut edge.
-    const FIntVector4 Bounds[]={ {255,29,1026,1225},{179,166,1045,1098},{88,358,1169,897},{104,199,1150,1054},{186,61,1067,1198},{141,145,1152,1122},{113,166,1144,1126},{198,160,1056,1097},{64,405,1210,869},{64,321,1206,940},{282,140,989,1150},{189,122,1145,1152} };
+    const FIntVector4 Bounds[]={ {255,29,1026,1225},{179,166,1045,1098},{88,358,1169,897},{104,199,1150,1054},{186,61,1067,1198},{141,145,1152,1122},{113,166,1144,1126},{198,160,1056,1097},{64,405,1210,869},{64,321,1206,940},{282,140,989,1150} };
     const FLinearColor Palette[]={FLinearColor(1,.045f,.27f),FLinearColor(.02f,.7f,1),FLinearColor(1,.65f,.025f),FLinearColor(.42f,.06f,.95f),FLinearColor(.04f,.92f,.51f)};
     FRandomStream R(191067);PaperCardCount=0;
     PaperPopStrokes=Instances(TEXT("PaperPopInkBursts"),TEXT("Cube"),FLinearColor(1,.7f,.02f),PaperScene,TEXT("PaperComic"));
     for(int I=0;I<24;++I)
     {
-        const int DrawingIndex=I%12,Side=I%2?1:-1;
+        const int DrawingIndex=I%11,Side=I%2?1:-1;
         const auto B=Bounds[DrawingIndex];const FVector4f UV((B.X-18)/1254.f,(B.Y-18)/1254.f,(B.Z+18)/1254.f,(B.W+18)/1254.f);
         const float H=R.FRandRange(210,450)*(I%7==0?1.2f:1.f),W=H*(UV.Z-UV.X)/(UV.W-UV.Y);
         const FVector Position(900+(I/2)*470+R.FRandRange(-85,85),Side*(W*.5f+R.FRandRange(140,270)),0);
@@ -116,15 +117,19 @@ void AEndingEmergence::BuildPaperFinale()
     };
     PaperRock=Group(TEXT("GiantHingedRockCutout"),FVector(8000,0,0),PaperScene);
     PaperRockCap=Group(TEXT("BreakablePaperRockCentre"),FVector::ZeroVector,PaperRock);
-    constexpr int Sides=20;
+    // A cut-paper silhouette uses a deliberately uneven polygon rather than a
+    // soft radial hole. The sharp facets remain readable when the pickaxe hits.
+    constexpr int Sides=12;
+    FRandomStream RockRandom(771);
     TArray<FVector> Outer,Inner;
     for(int I=0;I<Sides;++I)
     {
-        const float A=I*2*PI/Sides;
+        const float A=I*2*PI/Sides+RockRandom.FRandRange(-.055f,.055f);
         const float Y=FMath::Cos(A),Z=FMath::Sin(A);
-        const float Edge=FMath::Min(1100/FMath::Max(FMath::Abs(Y),.001f),(Z>=0?1074.f:700.f)/FMath::Max(FMath::Abs(Z),.001f));
+        const float Edge=FMath::Min(1100/FMath::Max(FMath::Abs(Y),.001f),(Z>=0?1074.f:700.f)/FMath::Max(FMath::Abs(Z),.001f))*RockRandom.FRandRange(.88f,1.08f);
         Outer.Add(FVector(0,Y*Edge,700+Z*Edge));
-        Inner.Add(FVector(0,Y*440,700+Z*440));
+        const float InnerRadius=RockRandom.FRandRange(350.f,475.f);
+        Inner.Add(FVector(0,Y*InnerRadius,700+Z*InnerRadius));
     }
     for(int I=0;I<Sides;++I)
     {
@@ -166,6 +171,16 @@ void AEndingEmergence::BuildPaperFinale()
     Shape(TEXT("CaveStageFar"),FVector(2800,0,1500),FVector(20,6000,4000),Ink*.18f,TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
     Shape(TEXT("CaveStageTop"),FVector(0,0,3500),FVector(6000,6000,20),Ink*.18f,TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
     PaperCaveSeal=Shape(TEXT("CaveStageEntrySeal"),FVector(-2300,0,1500),FVector(20,6000,4000),Ink*.18f,TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
+    // A tiny readable miner gives the cutaway a sense of scale and keeps
+    // digging alive while the camera circles the cave entrance.
+    PaperCaveMiner=Group(TEXT("PaperCaveMiner"),FVector(-1550,0,150),PaperCaveScene);
+    Shape(TEXT("PaperCaveMinerBody"),FVector(0,0,95),FVector(70,45,130),FLinearColor(.08f,.11f,.18f),TEXT("Sphere"),PaperCaveMiner,TEXT("PaperCaveSurface"));
+    Shape(TEXT("PaperCaveMinerHead"),FVector(0,0,185),FVector(58),FLinearColor(.95f,.68f,.42f),TEXT("Sphere"),PaperCaveMiner,TEXT("PaperCaveSurface"));
+    Shape(TEXT("PaperCaveMinerLegL"),FVector(0,-22,25),FVector(28,24,85),FLinearColor(.05f,.06f,.10f),TEXT("Sphere"),PaperCaveMiner,TEXT("PaperCaveSurface"));
+    Shape(TEXT("PaperCaveMinerLegR"),FVector(0,22,25),FVector(28,24,85),FLinearColor(.05f,.06f,.10f),TEXT("Sphere"),PaperCaveMiner,TEXT("PaperCaveSurface"));
+    PaperCaveMinerPick=Group(TEXT("PaperCaveMinerPick"),FVector(0,0,130),PaperCaveMiner);
+    Shape(TEXT("PaperCaveMinerPickHandle"),FVector(70,0,0),FVector(18,18,150),FLinearColor(.28f,.16f,.08f),TEXT("Cylinder"),PaperCaveMinerPick,TEXT("PaperCaveSurface"));
+    Shape(TEXT("PaperCaveMinerPickHead"),FVector(140,0,65),FVector(24,120,24),FLinearColor(.62f,.65f,.70f),TEXT("Cube"),PaperCaveMinerPick,TEXT("PaperCaveSurface"));
     PaperCaveTexture=NewObject<UTextureRenderTarget2D>(this);PaperCaveTexture->InitCustomFormat(1920,1080,PF_FloatRGBA,true);PaperCaveTexture->ClearColor=FLinearColor::Black;
     PaperCaveCapture=NewObject<USceneCaptureComponent2D>(this,NAME_None,RF_Transient);PaperCaveCapture->SetupAttachment(PaperCaveScene);PaperCaveCapture->TextureTarget=PaperCaveTexture;
     PaperCaveCapture->CaptureSource=ESceneCaptureSource::SCS_SceneColorHDR;PaperCaveCapture->bCaptureEveryFrame=false;PaperCaveCapture->bCaptureOnMovement=false;PaperCaveCapture->FOVAngle=55;
@@ -263,26 +278,19 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
     };
     if(Shot==10)
     {
-        constexpr float BlackFlight=2.6f;
         UpdateFinaleExit(Dt);
-        // One physical sheet stays visible throughout approach and the turn.
-        // A growing aperture reveals it against black; printed dots stay in its UVs.
-        const float Approach=PaperEnding::Ease((ShotTime-.7f)/1.9f);
-        PaperSurfaceMaterial->SetScalarParameterValue(TEXT("ApertureRadius"),FMath::Lerp(35.f,90000.f,FMath::Pow(Approach,5)));
-        PaperSurfaceMaterial->SetScalarParameterValue(TEXT("DotsReveal"),PaperEnding::Ease((ShotTime-1.25f)/1.1f));
-        if(ShotTime<BlackFlight)
+        // The portal is present from the first frame. Its dots and aperture
+        // grow with distance so the approach never cuts through a white flash.
+        const float Approach=PaperEnding::Ease(ShotTime/2.8f);
+        PaperSurfaceMaterial->SetScalarParameterValue(TEXT("ApertureRadius"),FMath::Lerp(180.f,90000.f,FMath::Pow(Approach,3.2f)));
+        PaperSurfaceMaterial->SetScalarParameterValue(TEXT("DotsReveal"),PaperEnding::Ease((ShotTime-1.35f)/1.8f));
+        if(!PaperScene->IsVisible())PaperScene->SetVisibility(true,true);
+        const float PaperTime=ShotTime,T=FMath::Clamp(PaperTime/3.2f,0.f,1.f),Turn=PaperEnding::Ease(PaperTime/2.6f);
+        if(Turn>.45f)
         {
-            const float U=ShotTime/BlackFlight;
-            const FVector Side=FinaleSideVector*(1-PaperEnding::Ease(U));
-            Pose(FVector(2207800+650*U,Side.Y,Side.Z),FVector(2208800+650*U,Side.Y,Side.Z),94);
-            TransitEffects(0);return;
+            TArray<USceneComponent*> PaperParts;PaperScene->GetChildrenComponents(true,PaperParts);
+            for(auto* Part:PaperParts)if(Part!=PaperSurface)Part->SetVisibility(true,true);
         }
-        if(!PaperScene->IsVisible())
-        {
-            PaperScene->SetVisibility(true,true);
-            for(auto Chip:PaperRockChips)Chip->SetVisibility(false,true);
-        }
-        const float PaperTime=ShotTime-BlackFlight,T=FMath::Clamp(PaperTime/3.2f,0.f,1.f),Turn=PaperEnding::Ease(PaperTime/2.6f);
         PaperScene->SetRelativeRotation(FRotator(90*(1-Turn),0,0));
         const float X=480*FMath::Pow(T,6),Z=FMath::Lerp(700.f,24.f,PaperEnding::Ease(PaperTime/2.4f)),Pitch=-HALF_PI*(1-Turn);
         PaperPose(FVector(X,0,Z),FVector(FMath::Cos(Pitch),0,FMath::Sin(Pitch)),FMath::Lerp(94.f,108.f,Turn));
@@ -333,9 +341,15 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
     else if(Shot==13)
     {
         const float T=PaperEnding::Ease(ShotTime/6.f),Angle=FMath::Lerp(PI,PI*.25f,T);
-        const FVector P=FVector(1900*FMath::Cos(Angle),1900*FMath::Sin(Angle),550+100*T+120*FMath::Sin(T*PI));
+        const FVector P=FVector(1900*FMath::Cos(Angle),1900*FMath::Sin(Angle),420+70*T);
         const FVector Centre=PaperEnding::Origin+FVector(10500,0,0);
-        Pose(Centre+P,Centre+FVector(0,0,350),FMath::Lerp(65.f,55.f,T));
+        Pose(Centre+P,Centre+FVector(0,0,420),FMath::Lerp(65.f,55.f,T));
+        if(PaperCaveMiner)
+        {
+            const float MinerT=FMath::Clamp((ShotTime-.2f)/5.8f,0.f,1.f);
+            PaperCaveMiner->SetRelativeLocation(FVector(-1550+MinerT*2550,FMath::Sin(ShotTime*2.2f)*55,150));
+            if(PaperCaveMinerPick)PaperCaveMinerPick->SetRelativeRotation(FRotator(0,0,25.f+FMath::Sin(ShotTime*8.f)*38.f));
+        }
     }
     else if(Shot==14)
     {

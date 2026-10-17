@@ -148,82 +148,17 @@ void AMiningRoomEscape::BuildStudyLayout()
     const float Length=FVector::Distance(ComputerEntry,TunnelEnd);
     auto TunnelPoint=[&](FVector Local){return ComputerEntry+Rotation.RotateVector(Local);};
     const float W=TunnelHalfWidth,H=TunnelHalfHeight;
-    auto* Walnut=Material(FLinearColor(.28f,.13f,.045f));
-    auto* Face=Material(FLinearColor(.48f,.40f,.26f));
-    auto* Metal=Material(FLinearColor(.26f,.30f,.31f));
-    auto* Cylinder=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-    auto Round=[&](FVector P,float Radius,float Depth,UMaterialInterface* M,FVector Axis)
+    if(AuthoredTelevisionScreen)
     {
-        auto* C=Shape(P,FVector(Radius*2,Radius*2,Depth),M,false,FQuat::FindBetweenNormals(FVector::UpVector,Axis.GetSafeNormal()).Rotator());
-        C->SetStaticMesh(Cylinder);return C;
-    };
-    // Wider wood cabinet and a separate cream control panel give the silhouette a CRT identity.
-    Shape(ComputerEntry+FVector(180,-685,-15),FVector(820,270,1330),Walnut);
-    Shape(ComputerEntry+FVector(180,800,-15),FVector(820,500,1330),Walnut);
-    Shape(ComputerEntry+FVector(180,115,585),FVector(820,1870,130),Walnut);
-    Shape(ComputerEntry+FVector(180,115,-590),FVector(820,1870,180),Walnut);
-    Shape(ComputerEntry+FVector(-280,-685,-15),FVector(110,270,1330),Face);
-    Shape(ComputerEntry+FVector(-280,800,-15),FVector(110,500,1330),Face);
-    Shape(ComputerEntry+FVector(-280,0,535),FVector(110,1100,230),Face);
-    Shape(ComputerEntry+FVector(-280,0,-550),FVector(110,1100,260),Face);
-    // Four rounded contours form a deep, bevelled CRT bezel without blocking the dig aperture.
-    {
-        using namespace UE::Geometry;
-        FDynamicMesh3 Mesh(true,false,false,false);
-        constexpr int32 CornerSteps=8,PerRing=CornerSteps*4;
-        const FVector Contours[]={FVector(-330,655,525),FVector(-395,625,500),FVector(-420,550,420),FVector(-345,550,420)};
-        const float Radii[]={160,145,115,115};
-        for(int32 Ring=0;Ring<4;++Ring)for(int32 Corner=0;Corner<4;++Corner)for(int32 Step=0;Step<CornerSteps;++Step)
-        {
-            const float Angle=(Corner*90.f+Step*90.f/(CornerSteps-1))*PI/180;
-            const float YSign=(Corner==0 || Corner==3)?1.f:-1.f,ZSign=Corner<2?1.f:-1.f;
-            const FVector C=Contours[Ring];const float R=Radii[Ring];
-            Mesh.AppendVertex(FVector3d(GetActorTransform().InverseTransformPosition(ComputerEntry+FVector(C.X,YSign*(C.Y-R)+R*FMath::Cos(Angle),ZSign*(C.Z-R)+R*FMath::Sin(Angle)))));
-        }
-        for(int32 Ring=0;Ring<3;++Ring)for(int32 i=0;i<PerRing;++i)
-        {
-            const int32 A=Ring*PerRing+i,B=Ring*PerRing+(i+1)%PerRing,C=A+PerRing,D=B+PerRing;
-            Mesh.AppendTriangle(A,C,B);Mesh.AppendTriangle(B,C,D);
-        }
-        FMeshNormals::QuickComputeVertexNormals(Mesh);Mesh.EnableAttributes();
-        FMeshNormals::InitializeOverlayToPerVertexNormals(Mesh.Attributes()->PrimaryNormals());
-        auto* Bezel=NewObject<UDynamicMeshComponent>(this);AddInstanceComponent(Bezel);Bezel->SetupAttachment(RootComponent);
-        Bezel->SetMaterial(0,Dark);Bezel->SetCollisionEnabled(ECollisionEnabled::NoCollision);Bezel->SetCastShadow(false);
-        Bezel->SetMesh(MoveTemp(Mesh));Bezel->RegisterComponent();
+        TelevisionScreen=AuthoredTelevisionScreen;
+        TelevisionScreen->ResetRock();
     }
-    // Raised circular tuning knobs, index marks, and a recessed horizontal speaker grille.
-    for(float Z:{350.f,50.f})
+    else
     {
-        Round(ComputerEntry+FVector(-355,800,Z),118,45,Metal,FVector(-1,0,0));
-        Round(ComputerEntry+FVector(-395,800,Z),93,65,Dark,FVector(-1,0,0));
-        Shape(ComputerEntry+FVector(-432,800,Z+55),FVector(8,12,40),Face,false);
-        for(int32 Mark=0;Mark<12;++Mark)
-        {
-            const float A=Mark*2*PI/12;
-            Shape(ComputerEntry+FVector(-340,800+137*FMath::Cos(A),Z+137*FMath::Sin(A)),FVector(8,10,10),Dark,false);
-        }
+        BuildTelevisionModel(false);
+        ScreenMaterial=Material(FLinearColor::Black,true);
+        TelevisionScreen=Rock(ComputerEntry+FVector(-308,0,0),FVector(100,1100,840),ScreenMaterial,FRotator::ZeroRotator);
     }
-    Shape(ComputerEntry+FVector(-340,800,-295),FVector(18,310,335),Dark,false);
-    for(int32 i=0;i<12;++i)Shape(ComputerEntry+FVector(-353,800,-445+i*27),FVector(12,300,8),Metal,false);
-    auto* Brand=Text(ComputerEntry+FVector(-340,0,-575),TEXT("AURORA  /  COLOR TV"),32,FRotator(0,180,0));
-    Brand->SetTextMaterial(LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/EngineMaterials/DefaultTextMaterialOpaque.DefaultTextMaterialOpaque")));
-    Brand->SetTextRenderColor(FColor(65,48,28));
-    // Rabbit-ear aerials are distinct from the straight ceiling suspension rods.
-    const FVector AerialBase=ComputerEntry+FVector(-90,80,700);
-    Round(AerialBase,100,80,Dark,FVector::UpVector);
-    for(float Side:{-1.f,1.f})
-    {
-        const FVector Tip=AerialBase+FVector(0,Side*580,540),D=Tip-AerialBase;
-        Round((Tip+AerialBase)*.5f,13,D.Size(),Metal,D);
-        auto* Cap=Shape(Tip,FVector(40),Metal,false);Cap->SetStaticMesh(Sphere);
-        Shape(ComputerEntry+FVector(300,Side*650,3000),FVector(45,45,4700),Dark);
-    }
-    Light(ComputerEntry+FVector(-900,-900,700),300000,2300);
-    // Top Z=6000: a 20 cm gap below the cabinet, with standing room in front of it.
-    // Keep the checkpoint above this deck rather than inside the lower CRT bezel.
-    Shape(ComputerEntry+FVector(-400,100,-750),FVector(1000,2100,100),Wood);
-    ScreenMaterial=Material(FLinearColor::Black,true);
-    TelevisionScreen=Rock(ComputerEntry+FVector(-308,0,0),FVector(100,1100,840),ScreenMaterial,FRotator::ZeroRotator);
     ComputerRocks.Add(TelevisionScreen);
     Beacon=Light(ComputerEntry+FVector(-500,0,400),180000,2200);
 
@@ -302,6 +237,148 @@ void AMiningRoomEscape::BuildStudyLayout()
     Text(Deck+FVector(885,0,590),bWalkThroughConnections?TEXT("MINE 03"):TEXT("EXIT\nREST AREA"),90,FRotator(0,180,0));
     Light(Deck+FVector(0,0,650),350000,2200);
 }
+
+void AMiningRoomEscape::ClearTelevisionPreview()
+{
+    TArray<UActorComponent*> Parts;GetComponents(Parts);
+    for(auto* Part:Parts)if(Part->ComponentHasTag(TEXT("TelevisionEditorPreview")))
+    {
+        RemoveInstanceComponent(Part);Part->DestroyComponent();
+    }
+}
+
+void AMiningRoomEscape::OnConstruction(const FTransform& Transform)
+{
+    Super::OnConstruction(Transform);
+    ClearTelevisionPreview();
+#if WITH_EDITOR
+    if(GetWorld() && !GetWorld()->IsGameWorld() && bPreviewTelevision && bBuildStudyLayout && !AuthoredTelevisionScreen)
+        BuildTelevisionModel(true);
+#endif
+}
+
+void AMiningRoomEscape::BuildTelevisionModel(bool bEditorPreview)
+{
+    auto MarkPreview=[&](USceneComponent* C)
+    {
+        if(!bEditorPreview)return;
+        C->ComponentTags.Add(TEXT("TelevisionEditorPreview"));
+        C->SetHiddenInGame(true);
+        if(auto* Primitive=Cast<UPrimitiveComponent>(C))Primitive->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    };
+    auto* Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
+    auto* Surface=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_CardRoomSurface.M_CardRoomSurface"));
+    auto* Glow=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_CardRoomGlow.M_CardRoomGlow"));
+    auto Material=[&](FLinearColor Color,bool Emissive=false)
+    {
+        auto* M=UMaterialInstanceDynamic::Create(Emissive?Glow:Surface,this);
+        M->SetVectorParameterValue(TEXT("Color"),Color);return M;
+    };
+    auto* Dark=Material(FLinearColor(.008f,.018f,.028f));
+    auto* Wood=Material(FLinearColor(.14f,.065f,.028f));
+    auto* Sphere=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+    auto Shape=[&](FVector P,FVector Size,UMaterialInterface* M,bool Collision=true,FRotator Rotation=FRotator::ZeroRotator)
+    {
+        auto* C=NewObject<UStaticMeshComponent>(this);AddInstanceComponent(C);C->SetupAttachment(RootComponent);
+        C->SetStaticMesh(Cube);C->SetMaterial(0,M);C->SetMobility(EComponentMobility::Movable);
+        C->SetCollisionProfileName(Collision?TEXT("BlockAll"):TEXT("NoCollision"));C->SetCastShadow(Collision);
+        C->RegisterComponent();C->SetWorldLocationAndRotation(P,Rotation);C->SetWorldScale3D(Size/100);MarkPreview(C);return C;
+    };
+    auto Text=[&](FVector P,const FString& Value,float Size,FRotator Rotation)
+    {
+        auto* C=NewObject<UTextRenderComponent>(this);AddInstanceComponent(C);C->SetupAttachment(RootComponent);
+        C->SetMobility(EComponentMobility::Movable);
+        if(auto* TextMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_EscapeScreenText.M_EscapeScreenText")))C->SetTextMaterial(TextMaterial);
+        C->SetText(FText::FromString(Value));C->SetWorldSize(Size);C->SetHorizontalAlignment(EHTA_Center);
+        C->SetTextRenderColor(FColor(80,235,255));C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        C->RegisterComponent();C->SetWorldLocationAndRotation(P,Rotation);MarkPreview(C);return C;
+    };
+    auto* Walnut=Material(FLinearColor(.28f,.13f,.045f));
+    auto* Face=Material(FLinearColor(.48f,.40f,.26f));
+    auto* Metal=Material(FLinearColor(.26f,.30f,.31f));
+    auto* Cylinder=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    auto Round=[&](FVector P,float Radius,float Depth,UMaterialInterface* M,FVector Axis)
+    {
+        auto* C=Shape(P,FVector(Radius*2,Radius*2,Depth),M,false,FQuat::FindBetweenNormals(FVector::UpVector,Axis.GetSafeNormal()).Rotator());
+        C->SetStaticMesh(Cylinder);return C;
+    };
+    // Wider wood cabinet and a separate cream control panel give the silhouette a CRT identity.
+    Shape(ComputerEntry+FVector(180,-685,-15),FVector(820,270,1330),Walnut);
+    Shape(ComputerEntry+FVector(180,800,-15),FVector(820,500,1330),Walnut);
+    Shape(ComputerEntry+FVector(180,115,585),FVector(820,1870,130),Walnut);
+    Shape(ComputerEntry+FVector(180,115,-590),FVector(820,1870,180),Walnut);
+    Shape(ComputerEntry+FVector(-280,-685,-15),FVector(110,270,1330),Face);
+    Shape(ComputerEntry+FVector(-280,800,-15),FVector(110,500,1330),Face);
+    Shape(ComputerEntry+FVector(-280,0,535),FVector(110,1100,230),Face);
+    Shape(ComputerEntry+FVector(-280,0,-550),FVector(110,1100,260),Face);
+    // Four rounded contours form a deep, bevelled CRT bezel without blocking the dig aperture.
+    {
+        using namespace UE::Geometry;
+        FDynamicMesh3 Mesh(true,false,false,false);
+        constexpr int32 CornerSteps=8,PerRing=CornerSteps*4;
+        const FVector Contours[]={FVector(-330,655,525),FVector(-395,625,500),FVector(-420,550,420),FVector(-345,550,420)};
+        const float Radii[]={160,145,115,115};
+        for(int32 Ring=0;Ring<4;++Ring)for(int32 Corner=0;Corner<4;++Corner)for(int32 Step=0;Step<CornerSteps;++Step)
+        {
+            const float Angle=(Corner*90.f+Step*90.f/(CornerSteps-1))*PI/180;
+            const float YSign=(Corner==0 || Corner==3)?1.f:-1.f,ZSign=Corner<2?1.f:-1.f;
+            const FVector C=Contours[Ring];const float R=Radii[Ring];
+            Mesh.AppendVertex(FVector3d(GetActorTransform().InverseTransformPosition(ComputerEntry+FVector(C.X,YSign*(C.Y-R)+R*FMath::Cos(Angle),ZSign*(C.Z-R)+R*FMath::Sin(Angle)))));
+        }
+        for(int32 Ring=0;Ring<3;++Ring)for(int32 i=0;i<PerRing;++i)
+        {
+            const int32 A=Ring*PerRing+i,B=Ring*PerRing+(i+1)%PerRing,C=A+PerRing,D=B+PerRing;
+            Mesh.AppendTriangle(A,C,B);Mesh.AppendTriangle(B,C,D);
+        }
+        FMeshNormals::QuickComputeVertexNormals(Mesh);Mesh.EnableAttributes();
+        FMeshNormals::InitializeOverlayToPerVertexNormals(Mesh.Attributes()->PrimaryNormals());
+        auto* Bezel=NewObject<UDynamicMeshComponent>(this);AddInstanceComponent(Bezel);Bezel->SetupAttachment(RootComponent);
+        Bezel->SetMaterial(0,Dark);Bezel->SetCollisionEnabled(ECollisionEnabled::NoCollision);Bezel->SetCastShadow(false);
+        Bezel->SetMesh(MoveTemp(Mesh));Bezel->RegisterComponent();MarkPreview(Bezel);
+    }
+    // Raised circular tuning knobs, index marks, and a recessed horizontal speaker grille.
+    for(float Z:{350.f,50.f})
+    {
+        Round(ComputerEntry+FVector(-355,800,Z),118,45,Metal,FVector(-1,0,0));
+        Round(ComputerEntry+FVector(-395,800,Z),93,65,Dark,FVector(-1,0,0));
+        Shape(ComputerEntry+FVector(-432,800,Z+55),FVector(8,12,40),Face,false);
+        for(int32 Mark=0;Mark<12;++Mark)
+        {
+            const float A=Mark*2*PI/12;
+            Shape(ComputerEntry+FVector(-340,800+137*FMath::Cos(A),Z+137*FMath::Sin(A)),FVector(8,10,10),Dark,false);
+        }
+    }
+    Shape(ComputerEntry+FVector(-340,800,-295),FVector(18,310,335),Dark,false);
+    for(int32 i=0;i<12;++i)Shape(ComputerEntry+FVector(-353,800,-445+i*27),FVector(12,300,8),Metal,false);
+    auto* Brand=Text(ComputerEntry+FVector(-340,0,-575),TEXT("AURORA  /  COLOR TV"),32,FRotator(0,180,0));
+    Brand->SetTextMaterial(LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/EngineMaterials/DefaultTextMaterialOpaque.DefaultTextMaterialOpaque")));
+    Brand->SetTextRenderColor(FColor(65,48,28));
+    // Rabbit-ear aerials are distinct from the straight ceiling suspension rods.
+    const FVector AerialBase=ComputerEntry+FVector(-90,80,700);
+    Round(AerialBase,100,80,Dark,FVector::UpVector);
+    for(float Side:{-1.f,1.f})
+    {
+        const FVector Tip=AerialBase+FVector(0,Side*580,540),D=Tip-AerialBase;
+        Round((Tip+AerialBase)*.5f,13,D.Size(),Metal,D);
+        auto* Cap=Shape(Tip,FVector(40),Metal,false);Cap->SetStaticMesh(Sphere);
+        Shape(ComputerEntry+FVector(300,Side*650,3000),FVector(45,45,4700),Dark);
+    }
+    // Top Z=6000: a 20 cm gap below the cabinet, with standing room in front of it.
+    // Keep the checkpoint above this deck rather than inside the lower CRT bezel.
+    Shape(ComputerEntry+FVector(-400,100,-750),FVector(1000,2100,100),Wood);
+
+    // Preview the same local lamp as gameplay; it does not relight the room.
+    auto* Lamp=NewObject<UPointLightComponent>(this);AddInstanceComponent(Lamp);Lamp->SetupAttachment(RootComponent);
+    Lamp->SetIntensity(300000);Lamp->SetAttenuationRadius(2300);
+    Lamp->SetLightColor(FLinearColor(1,.72f,.42f));Lamp->SetCastShadows(false);
+    Lamp->RegisterComponent();Lamp->SetWorldLocation(ComputerEntry+FVector(-900,-900,700));MarkPreview(Lamp);
+
+    // Runtime uses the original diggable screen. This surface only previews its
+    // intact shape in the editor and is removed before gameplay begins.
+    if(bEditorPreview)
+        Shape(ComputerEntry+FVector(-308,0,0),FVector(100,1100,840),Material(FLinearColor::Black,true),false);
+}
+
 void AMiningRoomEscape::TickPresentation(float DeltaSeconds)
 {
     BreachBurstTime+=DeltaSeconds;

@@ -4,7 +4,6 @@
 #include "Engine/World.h"
 #include "FogChamberComponent.h"
 #include "BrainMining.h"
-#include "MobileRuntimeSettings.h"
 #include "Components/DynamicMeshComponent.h"
 #include "DynamicMesh/DynamicMeshAttributeSet.h"
 #include "DynamicMesh/MeshNormals.h"
@@ -20,8 +19,7 @@ using namespace UE::Geometry;
 
 ADiggableRock::ADiggableRock()
 {
-	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.bStartWithTickEnabled = false;
+	PrimaryActorTick.bCanEverTick = false;
 	RockMesh = CreateDefaultSubobject<UDynamicMeshComponent>(TEXT("RockMesh"));
 	SetRootComponent(RockMesh);
 	// UE 5.8 dynamic-mesh BLAS can be evicted during topology replacement.
@@ -40,7 +38,6 @@ ADiggableRock::ADiggableRock()
 void ADiggableRock::BeginPlay()
 {
 	Super::BeginPlay();
-	SetActorTickEnabled(UMobileRuntimeSettings::IsMobileVerticalSliceEnabled() && bAllowMobileSimplification);
 	InitializeForPlay();
 }
 
@@ -63,39 +60,33 @@ void ADiggableRock::CommitMesh(FDynamicMesh3&& Mesh)
 	RockMesh->SetVisibleInRayTracing(false);
 	RockMesh->SetMesh(MoveTemp(Mesh));
 	RockMesh->GetBodySetup()->SetFlags(RF_Transient);
-	const UMobileRuntimeSettings* MobileSettings = UMobileRuntimeSettings::Get();
-	const bool bUseMobileThrottle = UMobileRuntimeSettings::IsMobileVerticalSliceEnabled() && bAllowMobileSimplification && MobileSettings->bUseSimplifiedMobileMining;
-	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
-	if (bUseMobileThrottle && Now < NextMobileCollisionUpdate && TriangleCount > 0)
-	{
-		bMobileCollisionPending = true;
-		LastCollisionMilliseconds = 0.0f;
-		return;
-	}
-	NextMobileCollisionUpdate = Now + (bUseMobileThrottle ? MobileSettings->MobileCollisionUpdateInterval : 0.0);
-	UpdateRockCollision();
-}
-
-void ADiggableRock::UpdateRockCollision()
-{
 	const double CollisionStart = FPlatformTime::Seconds();
 	RockMesh->UpdateCollision(false);
 	LastCollisionMilliseconds = (FPlatformTime::Seconds() - CollisionStart) * 1000.0;
-	bMobileCollisionPending = false;
 }
 
-void ADiggableRock::Tick(float DeltaSeconds)
+void ADiggableRock::BakeAuthoredMesh(UDynamicMesh* Mesh)
 {
-	Super::Tick(DeltaSeconds);
-	if (!bMobileCollisionPending || !GetWorld() || GetWorld()->GetTimeSeconds() < NextMobileCollisionUpdate) return;
-	NextMobileCollisionUpdate = GetWorld()->GetTimeSeconds() + UMobileRuntimeSettings::Get()->MobileCollisionUpdateInterval;
-	UpdateRockCollision();
+	if (!Mesh || Mesh->GetMeshRef().TriangleCount()==0 || !Mesh->GetMeshRef().IsClosed()) return;
+	Modify();
+	AuthoredRestMesh=NewObject<UDynamicMesh>(this);
+	FDynamicMesh3 Copy=Mesh->GetMeshRef();
+	AuthoredRestMesh->SetMesh(MoveTemp(Copy));
+	ResetRock();
 }
 
 void ADiggableRock::ResetRock()
 {
-	bMobileCollisionPending = false;
-	NextMobileCollisionUpdate = 0.0;
+	if(AuthoredRestMesh && AuthoredRestMesh->GetMeshRef().TriangleCount()>0)
+	{
+		FDynamicMesh3 Mesh=AuthoredRestMesh->GetMeshRef();
+		CommitMesh(MoveTemp(Mesh));
+		if(RockMaterial)RockMesh->SetMaterial(0,RockMaterial);
+		SuccessfulCuts=0;LastBooleanMilliseconds=LastTotalMilliseconds=0;
+		LastStatus=TEXT("Authored mesh ready");
+		OnTerrainCommitted.Broadcast(FBox(ForceInit));
+		return;
+	}
 	const FVector SafeSize(FMath::Max(50.0, RockSize.X), FMath::Max(50.0, RockSize.Y), FMath::Max(50.0, RockSize.Z));
 	FMinimalBoxMeshGenerator Generator;
 	Generator.Box = FOrientedBox3d(FVector3d::Zero(), FVector3d(SafeSize * 0.5));
@@ -263,11 +254,7 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 		LastStatus = TEXT("No new rock in blast volume");
 		return false;
 	}
-	const UMobileRuntimeSettings* MobileSettings = UMobileRuntimeSettings::Get();
-	const int32 ConfiguredBudget = UMobileRuntimeSettings::IsMobileVerticalSliceEnabled() && bAllowMobileSimplification && MobileSettings->bUseSimplifiedMobileMining
-		? FMath::Min(MaxTriangles, MobileSettings->MobileMaxDynamicTriangles)
-		: MaxTriangles;
-	const int32 TriangleBudget = FMath::Clamp(ConfiguredBudget, 1000, 100000);
+	const int32 TriangleBudget = FMath::Clamp(MaxTriangles, 1000, 100000);
 	if (bUseProceduralCutFallback && Result.TriangleCount() > 0 &&
 		((SuccessfulCuts + 1) % 8 == 0 || Result.TriangleCount() > TriangleBudget * 0.8))
 	{

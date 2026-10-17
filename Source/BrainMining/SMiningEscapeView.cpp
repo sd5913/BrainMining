@@ -4,6 +4,7 @@
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
 #include "Engine/World.h"
 int32 SMiningEscapeView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRect&,FSlateWindowElementList& Out,int32 Layer,const FWidgetStyle&,bool) const
 {
@@ -23,6 +24,9 @@ int32 SMiningEscapeView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSla
     else Text(E->bComputerCheckpoint?FString::Printf(TEXT("触电倒计时 %.0fs   |   检查点 2 / 2   |   第 %d 次尝试"),E->ElectricalSecondsLeft(),E->Attempts):FString::Printf(TEXT("房间灌满 %.0fs   |   检查点 1 / 2   |   第 %d 次尝试"),E->SecondsLeft(),E->Attempts),54,40,19,White);
     Box(1420,180,18,430,Dark);const float Rise=FMath::Clamp((E->WaterZ-E->WaterStartZ)/FMath::Max(1.f,E->WaterEndZ-E->WaterStartZ),0.f,1.f);
     Box(1422,608-426*Rise,14,426*Rise,Cyan);Text(TEXT("水位"),1404,145,17,Cyan);
+    Text(FString::Printf(TEXT("%.1f m"),(E->WaterZ-E->WaterStartZ)/100.f),1380,625,19,Cyan);
+    if(APawn* Pawn=E->GetWorld()->GetFirstPlayerController()->GetPawn())
+        Text(FString::Printf(TEXT("距出口 %.1f m"),FVector::Distance(Pawn->GetActorLocation(),E->Exit)/100.f),54,98,21,Gold);
     if (!UMiningInteractionHUDWidget::IsActiveFor(E->GetWorld()->GetFirstPlayerController())) Box(797,447,6,6,White);
     auto* PC=E->GetWorld()->GetFirstPlayerController();if(!PC)return L;
     FVector2D P;const FVector Target=E->GuideTarget();

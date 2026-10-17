@@ -43,27 +43,16 @@ AMiningBombActor::AMiningBombActor()
 	BounceMaterial = CreateDefaultSubobject<UPhysicalMaterial>(TEXT("BombBounceMaterial"));
 	BounceMaterial->Friction = .45f;
 	BounceMaterial->Restitution = 0.f;
+	Collision->SetPhysMaterialOverride(BounceMaterial);
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BombModel"));
 	Model->SetupAttachment(Collision);
 	Model->SetCollisionProfileName(TEXT("NoCollision"));
-}
-
-void AMiningBombActor::BeginPlay()
-{
-	Super::BeginPlay();
-	if (Collision && BounceMaterial)
-	{
-		Collision->SetPhysMaterialOverride(BounceMaterial);
-	}
 }
 
 void AMiningBombActor::Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMiningBombToolComponent* Tool,
 	const FMiningBombSettings& InSettings, const FVector& Velocity)
 {
 	Settings = InSettings;
-	// Physical-material setters access GEngine; defer until a real bomb is launched,
-	// rather than invoking them during native CDO construction in the cooker.
-	Collision->SetPhysMaterialOverride(BounceMaterial);
 	AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), GetActorLocation(), 1000.f);
 	SetActorTickEnabled(true);
 	Explosion = Effect;

@@ -3,7 +3,6 @@
 #include "MiningBombToolComponent.h"
 #include "MiningTunnelGenerator.h"
 #include "DiggableRock.h"
-#include "MobileRuntimeSettings.h"
 #include "DrawDebugHelpers.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -78,13 +77,10 @@ void UMiningComponent::BindInput(UEnhancedInputComponent* Input)
 
 float UMiningComponent::GetMiningInterval() const
 {
-	const float Base = !bDrillMode && bUsePickaxeBalance
-		? PickaxeBalance.Interval
-		: (FMath::IsFinite(Interval) ? FMath::Max(0.1f, Interval) : 0.3f);
+	if (!bDrillMode && bUsePickaxeBalance) return PickaxeBalance.Interval;
+	const float Base = FMath::IsFinite(Interval) ? FMath::Max(0.1f, Interval) : 0.3f;
 	const float Multiplier = FMath::IsFinite(DrillIntervalMultiplier) ? FMath::Clamp(DrillIntervalMultiplier, 0.1f, 1.f) : 0.4f;
-	const float ToolInterval = bDrillMode ? FMath::Max(0.04f, Base * Multiplier) : Base;
-	if (!UMobileRuntimeSettings::IsMobileVerticalSliceEnabled()) return ToolInterval;
-	return FMath::Max(0.12f, ToolInterval * UMobileRuntimeSettings::Get()->MobileMiningIntervalScale);
+	return bDrillMode ? FMath::Max(0.04f, Base * Multiplier) : Base;
 }
 
 float UMiningComponent::GetMiningRadius() const
@@ -198,13 +194,8 @@ void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	TargetPickaxeHits = !bDrillMode && IsValid(TargetRock) && PatchIndex != INDEX_NONE ? PickaxePatches[PatchIndex].Strikes : 0;
 	if (bShowPreview && IsValid(TargetRock))
 	{
-		if (bDrillMode)
-		{
-			FTransform Frame;
-			FVector HalfSize;
-			BuildPickaxeCut(TargetHit, Frame, HalfSize);
-			DrawDebugBox(GetWorld(), Frame.GetLocation(), HalfSize, Frame.GetRotation(), FColor(60, 220, 210), false, -1.f, 0, .6f);
-		}
+		const FVector Center = GetCutCenter();
+		if (bDrillMode) DrawDebugSphere(GetWorld(), Center, GetMiningRadius(), 16, FColor(60, 220, 210), false, -1.0f, 0, 0.6f);
 		else
 		{
 			FTransform Frame;
@@ -253,28 +244,14 @@ bool UMiningComponent::TryMine()
 		return true;
 	}
 	LastMinedRock = TargetRock;
+	const FVector Center = GetCutCenter();
 	const FHitResult MiningHit = TargetHit;
-	FTransform Frame;
-	FVector HalfSize;
-	BuildPickaxeCut(MiningHit, Frame, HalfSize);
-	const FVector Direction = Frame.GetUnitAxis(EAxis::X);
-	const FVector LocalPoint = TargetRock->GetActorTransform().InverseTransformPosition(MiningHit.ImpactPoint);
-	const FIntVector ShapeCell(
-		FMath::RoundToInt(LocalPoint.X / 4.f),
-		FMath::RoundToInt(LocalPoint.Y / 4.f),
-		FMath::RoundToInt(LocalPoint.Z / 4.f));
-	const int32 Seed = HashCombine(GetTypeHash(TargetRock->GetFName()), GetTypeHash(ShapeCell));
-	const float ShapeRoughness = bUsePickaxeBalance ? PickaxeBalance.Roughness : 1.f;
-	bool bResult = TargetRock->MinePickaxe(Frame, HalfSize, Seed, ShapeRoughness);
+	bool bResult = TargetRock->MineSphere(Center, GetMiningRadius());
 	const float Depth = FMath::IsFinite(DepthMultiplier) ? FMath::Clamp(DepthMultiplier, 1.f, 4.f) : 1.f;
-	const UMobileRuntimeSettings* MobileSettings = UMobileRuntimeSettings::Get();
-	const float EffectiveDepth = UMobileRuntimeSettings::IsMobileVerticalSliceEnabled() && MobileSettings->bUseSimplifiedMobileMining ? 1.f : Depth;
-	for (float Step = 1.f; Step < EffectiveDepth; Step += 1.f)
+	for (float Step = 1.f; Step < Depth; Step += 1.f)
 	{
 		const float ExtraDepth = FMath::Min(Step, Depth - 1.f) * GetMiningRadius() * (1.f + InsetFraction);
-		FTransform DepthFrame = Frame;
-		DepthFrame.AddToTranslation(Direction * ExtraDepth);
-		bResult |= TargetRock->MinePickaxe(DepthFrame, HalfSize, Seed, ShapeRoughness);
+		bResult |= TargetRock->MineSphere(Center - MiningHit.ImpactNormal * ExtraDepth, GetMiningRadius());
 	}
 	Status = TargetRock->LastStatus;
 	if (bResult) OnMiningHit.Broadcast(MiningHit);

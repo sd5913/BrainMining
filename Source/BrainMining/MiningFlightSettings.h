@@ -21,7 +21,7 @@ struct BRAINMINING_API FMiningFlightSettings
 	float AirMoveSpeed = 500;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight", meta=(ClampMin="100", ClampMax="10000", Units="cm/s^2", EditCondition="bEnabled", ToolTip="Net upward acceleration while held, after counteracting gravity. Higher values stop a fall and start rising faster. Follows Player Scale."))
-	float LiftAcceleration = 1500;
+	float LiftAcceleration = 1800;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight", meta=(ClampMin="0.1", ClampMax="4.0", EditCondition="bEnabled", ToolTip="Base airborne gravity multiplier. Jetpack release adds a brief coast followed by Fast Fall Gravity Multiplier."))
 	float FallGravityMultiplier = 1;

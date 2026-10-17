@@ -94,7 +94,9 @@ AMiningEncounterGameMode::AMiningEncounterGameMode()
 void AMiningEncounterGameMode::StartPlay()
 {
     // Runtime assembly keeps the authored study and unrelated encounter maps intact.
-    if(GetWorld()->GetMapName().EndsWith(TEXT("Lvl_EchoMazeToCards_P1")) && !TActorIterator<AMiningRoomEscape>(GetWorld()))
+    const FString Map = GetWorld()->GetMapName();
+    const bool bGiantStudy = Map.EndsWith(TEXT("Lvl_EchoMazeToCards_P1")) || Map.EndsWith(TEXT("Lvl_EchoMazeToCards_P2"));
+    if(bGiantStudy && !TActorIterator<AMiningRoomEscape>(GetWorld()))
     {
         ACardRoomStage* Cards=nullptr;
         AMiningGiantRoomEntrance* Door=nullptr;

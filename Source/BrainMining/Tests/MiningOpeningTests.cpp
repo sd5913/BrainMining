@@ -93,8 +93,8 @@ public:
     }
 };
 }
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMainOpeningTest,"BrainMining.Opening.BedToDoor",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
-bool FMainOpeningTest::RunTest(const FString&)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPublishedMainOpeningTest,"BrainMining.Opening.PublishedBedToDoor",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FPublishedMainOpeningTest::RunTest(const FString&)
 {
     AutomationOpenMap(TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));

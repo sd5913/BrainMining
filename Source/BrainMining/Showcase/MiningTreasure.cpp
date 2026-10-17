@@ -1,5 +1,4 @@
 #include "Showcase/MiningTreasure.h"
-#include "MiningInteractionTrace.h"
 #include "MiningAudioComponent.h"
 #include "MiningWalletSubsystem.h"
 #include "BrainMiningPlayerController.h"
@@ -155,7 +154,7 @@ AMiningTreasure::AMiningTreasure()
     GlowLight->SetupAttachment(Model);
     GlowLight->SetIntensityUnits(ELightUnits::Lumens);
     GlowLight->SetIntensity(28);
-    GlowLight->SetAttenuationRadius(180);
+    GlowLight->SetAttenuationRadius(140);
     GlowLight->SetCastShadows(false);
     GlowLight->SetVisibility(false);
     GlowLight->IndirectLightingIntensity = 0;
@@ -328,18 +327,16 @@ void AMiningTreasure::ConfigureCrystalClues(const FMiningTreasurePlacement& Plac
     // Coal keeps a warm mineral glint; tin reads as cool silver-blue instead of grey.
     if(TreasureId==TEXT("1")) ClueColor=FLinearColor(.62f,.30f,.10f);
     if(TreasureId==TEXT("3")) ClueColor=FLinearColor(.25f,.65f,1.f);
-    // Iron uses a dark hematite red so it remains distinct from diamond.
+    // Iron must remain charcoal even on its tiny clues; value normalization
+    // and the generic emissive lift otherwise make it read like diamond.
     const bool bIron = TreasureId == TEXT("4");
-    if(bIron) ClueColor=FLinearColor(.62f,.055f,.035f);
+    if(bIron) ClueColor=FLinearColor(.07f,.08f,.095f);
     ClueColor.A=1;
     Tint->SetVectorParameterValue(TEXT("Tint"),ClueColor);
     Tint->SetScalarParameterValue(TEXT("Style"),-1);
-    Tint->SetScalarParameterValue(TEXT("Roughness"),bIron ? .58f : .19f);
+    Tint->SetScalarParameterValue(TEXT("Roughness"),bIron ? .65f : .19f);
     Tint->SetScalarParameterValue(TEXT("Metallic"),.12f);
-    const float ClueEmission=bIron ? .7f : FMath::Max(1.15f,GemMaterial?GemMaterial->K2_GetScalarParameterValue(TEXT("Emission"))*1.2f:1.15f);
-    Tint->SetScalarParameterValue(TEXT("Emission"),ClueEmission);
-    CrystalClueColor=ClueColor; CrystalClueEmission=ClueEmission; CrystalClueBrightness=1.f;
-    CrystalClueMaterial=Tint;
+    Tint->SetScalarParameterValue(TEXT("Emission"),bIron ? .35f : FMath::Max(1.15f,GemMaterial?GemMaterial->K2_GetScalarParameterValue(TEXT("Emission"))*1.2f:1.15f));
     CrystalClues->SetMaterial(0,Tint);
     CrystalTransforms=Placement.Fragments;CrystalSupports=Placement.FragmentSupports;
     for(ADiggableRock* Rock:CoveringRocks) if(IsValid(Rock))
@@ -501,18 +498,6 @@ void AMiningTreasure::UpdateGlow(float DeltaSeconds, bool bAllowLight)
 {
     if (bCollected || bReleased) HintAmount = FMath::Max(0.f, HintAmount-DeltaSeconds*4);
     for (UMaterialInstanceDynamic* Hint : HintMaterials) if (IsValid(Hint)) Hint->SetScalarParameterValue(TEXT("HintAmount"), HintAmount);
-    if (bCollected)
-    {
-        CrystalClueBrightness=FMath::Max(0.f,CrystalClueBrightness-DeltaSeconds*.85f);
-        if (IsValid(CrystalClueMaterial))
-        {
-            const FLinearColor Dimmed=FMath::Lerp(FLinearColor(.018f,.012f,.01f),CrystalClueColor,CrystalClueBrightness);
-            CrystalClueMaterial->SetVectorParameterValue(TEXT("Tint"),Dimmed);
-            CrystalClueMaterial->SetScalarParameterValue(TEXT("Emission"),CrystalClueEmission*CrystalClueBrightness);
-            CrystalClueMaterial->SetScalarParameterValue(TEXT("Roughness"),FMath::Lerp(1.f,TreasureId==TEXT("4")?.58f:.19f,CrystalClueBrightness));
-            CrystalClueMaterial->SetScalarParameterValue(TEXT("Metallic"),.12f*CrystalClueBrightness);
-        }
-    }
     GlowLight->SetVisibility(bAllowLight && !bCollected && Exposure > .02f);
     GlowLight->SetIntensity(28*FMath::Clamp(Exposure,0.f,1.f));
 }
@@ -531,7 +516,7 @@ AMiningTreasureField::AMiningTreasureField()
     RockMaterial = Earth.Object;
     GuideMaterial = Tint.Object;
     const TCHAR* Names[] = {TEXT("煤炭"),TEXT("铜矿"),TEXT("锡矿"),TEXT("铁矿"),TEXT("硫磺"),TEXT("孔雀石"),TEXT("青金石"),TEXT("紫水晶"),TEXT("钻石")};
-    const TCHAR* Colors[] = {TEXT("1C1C1C"),TEXT("D4763A"),TEXT("E4E4E0"),TEXT("9B3028"),TEXT("F2D63A"),TEXT("2F9E6B"),TEXT("2A4FA3"),TEXT("8B4FC4"),TEXT("E7FBFF")};
+    const TCHAR* Colors[] = {TEXT("1C1C1C"),TEXT("D4763A"),TEXT("E4E4E0"),TEXT("5E7388"),TEXT("F2D63A"),TEXT("2F9E6B"),TEXT("2A4FA3"),TEXT("8B4FC4"),TEXT("E7FBFF")};
     for (int32 Index = 0; Index < 9; ++Index)
     {
         auto& Definition = Definitions.AddDefaulted_GetRef();
@@ -687,11 +672,7 @@ void AMiningTreasureField::RefreshTarget(APlayerController* Controller)
     Controller->GetPlayerViewPoint(View, Rotation);
     FHitResult Hit;
     FCollisionQueryParams Query(SCENE_QUERY_STAT(TreasureAim), true, Controller->GetPawn());
-    if (MiningInteraction::Trace(GetWorld(),Hit,View,Rotation,400,Query,[this](const FHitResult& Candidate)
-        {
-            auto* Item=Cast<AMiningTreasure>(Candidate.GetActor());
-            return IsValid(Item) && Items.Contains(Item) && !Item->bCollected && (!bUseAuthoredPlacements || Item->ActorHasTag(ActiveAreaTag));
-        }))
+    if (GetWorld()->LineTraceSingleByChannel(Hit, View, View + Rotation.Vector() * 400, ECC_Visibility, Query))
     {
         auto* Item = Cast<AMiningTreasure>(Hit.GetActor());
         if (IsValid(Item) && Items.Contains(Item) && !Item->bCollected && (!bUseAuthoredPlacements || Item->ActorHasTag(ActiveAreaTag)))

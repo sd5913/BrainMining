@@ -293,7 +293,8 @@ void APopupCloseStage::GatherDevices()
   if(Device){Device->DeviceIndex=I;Device->FinishSpawning(Transform);Devices[I]=Device;}
  }
  // Also update copies of the office used in the integrated showcase levels.
- for(int32 I=0;I<4;++I)if(Devices[I])Devices[I]->SetActorLocationAndRotation(GetActorTransform().TransformPosition(DeviceLocations[I]),GetActorRotation()+FRotator(0,DeviceYaws[I],0));
+ // Authored device transforms belong to the level. Only missing devices use the
+ // fallback spawn positions above; moving existing devices here creates overlaps.
 }
 APopupOfficeDevice* APopupCloseStage::FocusedDevice(APlayerController* PC) const
 {
@@ -487,12 +488,12 @@ void APopupCloseStage::BeginBurst()
 void APopupCloseStage::TickSpray(float Dt)
 {
  SprayTime+=Dt;if(Flood)Flood->Tick(Dt);
- if(Exit && !Exit->HasOfferedBomb() && SprayTime>=15.f)
+ if(Exit && !Exit->HasOfferedBomb() && SprayTime>=FMath::Max(18.f,EruptionBeforeBombSeconds))
  {
   if(Flood)Flood->Stop();Exit->OfferBomb();
  }
  if(SprayTime>.5f)for(auto Device:Devices)Device->CleanupOnePopup();
- if(Phase==EPhase::Spraying && SprayTime>=15.f && Flood)
+ if(Phase==EPhase::Spraying && Flood && Flood->IsFloorCovered())
  {
   Phase=EPhase::Complete;for(auto Device:Devices)Device->HideWarning();
   WriteSessionReport();

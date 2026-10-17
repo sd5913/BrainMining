@@ -18,9 +18,10 @@ The drag-editing description below applies to the older non-mirror puzzle.
 
 Both `UWenSiPuzzleWidget` (basic, extended and circuit puzzles) and
 `UWenSiMirrorWidget` use `/Game/WenSi/UI/T_ThoughtBubbleRight`.
-The supplied right-hand artwork is imported unchanged, including its alpha.
-Its empty image margins are excluded with a brush UV region. The left brush
-mirrors horizontally; the sentence never mirrors.
+The supplied artwork is imported unchanged, including its alpha. It is used as
+the left-hand bubble (tail on the lower-left); the right brush mirrors it
+horizontally. Empty image margins are excluded with a brush UV region, and the
+sentence never mirrors.
 
 `WenSiThoughtBubble.h` fits a projective transform to the bubble interior.
 Each ordinary Chinese character is positioned and transformed separately.
@@ -30,7 +31,7 @@ used by hit testing, rather than retaining the old rectangular word location.
 This keeps the word swap, close buttons, G/E/Q/R shortcuts, area activation,
 mechanism validation and progression rules in the existing implementations.
 
-The bubble is 440 × 328 Slate units, placed on the original screen sides.
+The bubble is 440 × 369.75 Slate units, placed on the original screen sides.
 Sentence colors are dark on the white paper; the swappable word stays red.
 Each newly selected thought starts near the first-person viewport center as a
 larger, tilted plane. Perspective depth recedes from 360 to 600 units; pitch,

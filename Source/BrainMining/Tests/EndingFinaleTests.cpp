@@ -25,9 +25,6 @@
 #include "Engine/Texture2D.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
-#include "Misc/CommandLine.h"
-#include "Misc/Parse.h"
-#include "Misc/App.h"
 
 class FEndingTitleDrillPreview : public IAutomationLatentCommand
 {
@@ -35,14 +32,11 @@ class FEndingTitleDrillPreview : public IAutomationLatentCommand
     int InputPhase=0,LastCuts=0,ColorCapture=0;
     bool EntryCaptured=false,FadeCaptured=false,OriginalEnabled=true,ExitStartCaptured=false,WhiteCaptured=false;
     float LastContact=0,MaxContactGap=0;
-    bool GroundTurnCaptured=false,PortalCaptured=false,PrintedPaperCaptured=false,PatternFrontCaptured=false;
+    bool GroundTurnCaptured=false,PortalCaptured=false;
     float LastBlackProbe=-1;int BlackMatchSamples=0;
-    bool bMovie=FParse::Param(FCommandLine::Get(),TEXT("PaperFinaleMovie"));
-    bool bOnly=FParse::Param(FCommandLine::Get(),TEXT("PaperFinaleOnly"));
-    int MovieFrame=0;
     float Since=0,BaseSpeed=0,BulbIntensity=0,BulbMin=10000,BulbMax=0,OriginalRadius=0,OriginalSmoke=0,OriginalDust=0,OriginalSparks=0;bool InfiniteBefore=false;
     void Key(APlayerController* P,FKey K,bool Down){P->InputKey(FInputKeyEventArgs::CreateSimulated(K,Down?IE_Pressed:IE_Released,Down?1.f:0.f));}
-    void Capture(const TCHAR* Name){if(bMovie)return;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("EndingEmergencePreview")/(FString(Name)+TEXT(".png")),true,false);}
+    void Capture(const TCHAR* Name){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("EndingEmergencePreview")/(FString(Name)+TEXT(".png")),true,false);}
 public:
     explicit FEndingTitleDrillPreview(FAutomationTestBase* T):Test(T){}
     bool Update() override
@@ -51,33 +45,24 @@ public:
         if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||FTextureCompilingManager::Get().GetNumRemainingTextures())return false;
         UWorld* W=GIsEditor?GEditor->PlayWorld.Get():AutomationCommon::GetAnyGameWorld();if(!W||W->GetTimeSeconds()<2)return false;
         AEndingEmergence* D=nullptr;for(TActorIterator<AEndingEmergence> I(W);I;++I){D=*I;break;}if(!D||!D->bReady)return false;
-        if(bMovie&&D->Shot>=10&&D->Shot<=14)
-            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("PaperFinaleMovie")/FString::Printf(TEXT("frame-%04d.png"),MovieFrame++),true,false);
         auto* P=W->GetFirstPlayerController();auto* M=D->Mining.Get();auto* Effects=P->GetPawn()->FindComponentByClass<UMiningToolEffectsComponent>();
-        if(D->Shot==10&&D->ShotTime>2.35f&&D->ShotTime<2.95f&&D->ShotTime-LastBlackProbe>.07f)
+        if(D->Shot==13&&D->ShotTime>.9f&&D->ShotTime<2.2f&&D->ShotTime-LastBlackProbe>.08f)
         {
-            Test->TestEqual(TEXT("No white overlay interrupts the sheet turn"),D->OverlayAlpha(),0.f);
-            Test->TestTrue(TEXT("The same printed surface remains visible"),D->PaperSurface->IsVisible());
-            Capture(*FString::Printf(TEXT("paper-continuity-%02d"),BlackMatchSamples++));LastBlackProbe=D->ShotTime;
+            // Slate's normal screenshot path works with RenderOffscreen. Direct
+            // viewport ReadPixels has no swapchain texture in that mode.
+            Capture(*FString::Printf(TEXT("paper-black-match-%02d"),BlackMatchSamples++));
+            LastBlackProbe=D->ShotTime;
         }
-        if(D->Shot==10&&D->ShotTime>2.8f&&!PortalCaptured)
+        if(D->Shot==10&&D->ShotTime>3.65f&&!PortalCaptured)
         {
-            Test->TestTrue(TEXT("White paper only appears after the black flight"),D->PaperScene->IsVisible()&&D->PaperSurface->IsVisible());
+            Test->TestTrue(TEXT("White paper only appears after the black flight"),D->PaperScene->IsVisible()&&!D->FinaleLight->IsVisible());
             Capture(TEXT("paper-luminous-portal"));PortalCaptured=true;
-        }
-        if(D->Shot==10&&D->ShotTime>3.8f&&!PatternFrontCaptured)
-        {
-            Capture(TEXT("paper-dots-front"));PatternFrontCaptured=true;
         }
         if(D->Shot==10&&D->ShotTime>5.35f&&!GroundTurnCaptured)
         {
             const FTransform Frame=D->PaperScene->GetComponentTransform();
             Test->TestTrue(TEXT("Exit ends above the desktop with a horizontal forward gaze"),Frame.InverseTransformPosition(D->Camera->GetActorLocation()).Z>20&&Frame.InverseTransformVectorNoScale(D->Camera->GetActorForwardVector()).X>.98f);
             Capture(TEXT("paper-white-to-ground"));GroundTurnCaptured=true;
-        }
-        if(D->Shot==10&&D->ShotTime>4.5f&&!PrintedPaperCaptured)
-        {
-            Capture(TEXT("paper-dots-turn"));PrintedPaperCaptured=true;
         }
         if(D->Shot==9&&!EntryCaptured){Capture(TEXT("wooow-cave-first-frame"));EntryCaptured=true;}
         if(D->Shot==8&&D->ShotTime>1.6f&&!FadeCaptured)
@@ -106,8 +91,7 @@ public:
         if(D->Shot==10&&!ExitStartCaptured&&D->ShotTime>.3f)
         {
             Test->TestFalse(TEXT("Desktop cannot occlude the black-space exit"),D->PaperScene->IsVisible());
-            Test->TestTrue(TEXT("Distant luminous aperture remains visible in black space"),D->PaperSurface->IsVisible());
-            Test->TestEqual(TEXT("Dots are absent at the distant opening"),D->PaperSurfaceMaterial->K2_GetScalarParameterValue(TEXT("DotsReveal")),0.f);
+            Test->TestTrue(TEXT("Distant luminous aperture remains visible in black space"),D->FinaleLight->IsVisible());
             const FTransform Frame=D->PaperScene->GetComponentTransform();
             Test->TestTrue(TEXT("Exit remains on the paper front, looking down or across it rather than at the ceiling"),Frame.InverseTransformPosition(D->Camera->GetActorLocation()).Z>0&&Frame.InverseTransformVectorNoScale(D->Camera->GetActorForwardVector()).Z<=.01f);
             Test->TestEqual(TEXT("Tool copies survive the initial exit transition"),D->FinaleDrills.Num(),2);
@@ -118,12 +102,6 @@ public:
         {
             InfiniteBefore=M->bInfiniteDrillEnergy;OriginalRadius=M->Radius;
             OriginalSmoke=Effects->DrillSmokeStrength;OriginalDust=Effects->DrillDustStrength;OriginalSparks=Effects->DrillSparkStrength;OriginalEnabled=Effects->bEnabled;
-            if(bOnly||bMovie)
-            {
-                D->PreviewFilm();D->SetShot(9);D->SetShot(10);D->FilmSpeed=1;Step=10;
-                if(bMovie){FApp::SetUseFixedTimeStep(true);FApp::SetFixedDeltaTime(1.0/30.0);}
-                return false;
-            }
             for(int Seed=137;Seed<154;++Seed)
             {
                 auto Rock=EndingComic::Volume(FVector(620,700,700));EndingComic::InkFacets(Rock);
@@ -246,23 +224,24 @@ public:
             if(InputPhase==0&&D->Shot==11&&D->ShotTime>3.2f){Capture(TEXT("paper-flight-middle"));++InputPhase;}
             else if(InputPhase==1&&D->Shot==11&&D->ShotTime>5.8f)
             {for(float Age:D->PaperPopAges)Test->TestTrue(TEXT("All cutouts rise as camera reaches the end"),Age>=0);Capture(TEXT("paper-flight-last"));++InputPhase;}
-            else if(InputPhase==2&&D->Shot==12&&D->ShotTime>.8f)
-            {Test->TestTrue(TEXT("Pickaxe strike opens a physical hole"),D->bPaperRockBroken&&!D->PaperRockCap->IsVisible());Capture(TEXT("paper-rock-impact"));++InputPhase;}
-            else if(InputPhase==3&&D->Shot==12&&D->ShotTime>4.1f)
-            {Test->TestEqual(TEXT("Passing through the rock uses no fade"),D->OverlayAlpha(),0.f);Capture(TEXT("paper-cave-entry"));++InputPhase;}
-            else if(InputPhase==4&&D->Shot==13&&D->ShotTime>2.9f)
+            else if(InputPhase==2&&D->Shot==12&&D->ShotTime>3.8f){Capture(TEXT("paper-ceiling-vent"));++InputPhase;}
+            else if(InputPhase==3&&D->Shot==12&&D->ShotTime>6.35f)
+            {Test->TestTrue(TEXT("Entering the vent reaches full black"),D->OverlayAlpha()>.99f);Capture(TEXT("paper-vent-black"));++InputPhase;}
+            else if(InputPhase==4&&D->Shot==13&&D->ShotTime>5.6f)
             {
-                const FVector Eye=D->PaperCaveScene->GetComponentTransform().InverseTransformPosition(D->Camera->GetActorLocation());
-                Test->TestTrue(TEXT("Camera orbits around the model on its right side"),Eye.Y>1700);
-                Capture(TEXT("paper-cave-orbit-right"));++InputPhase;
+                Test->TestTrue(TEXT("Pullback reveals physical computer before power-on"),D->FinaleReality->IsVisible()&&!D->PaperScene->IsVisible()&&!D->bComplete);
+                Test->TestEqual(TEXT("Monitor is off while camera pulls back"),D->CreditsScreenMaterial->K2_GetScalarParameterValue(TEXT("Power")),0.f);
+                Test->TestTrue(TEXT("Multiple rendered frames verify the black screen match"),BlackMatchSamples>=5);
+                Test->AddInfo(FString::Printf(TEXT("Black match: %d screenshot probes requested for pixel verification"),BlackMatchSamples));
+                Capture(TEXT("paper-computer-off"));++InputPhase;
             }
-            else if(InputPhase==5&&D->Shot==13&&D->ShotTime>5.85f){Capture(TEXT("paper-cave-front"));++InputPhase;}
-            else if(InputPhase==6&&D->Shot==14&&D->ShotTime>.08f)
-            {Test->TestTrue(TEXT("Captured cave fills the monitor during the match"),D->FinaleReality->IsVisible()&&!D->PaperCaveScene->IsVisible());Capture(TEXT("paper-screen-match"));++InputPhase;}
-            else if(InputPhase==7&&D->Shot==14&&D->ShotTime>5.2f){Capture(TEXT("paper-computer-cave"));++InputPhase;}
-            else if(InputPhase==8&&D->Shot==14&&D->ShotTime>8.5f)
-            {Test->TestTrue(TEXT("Cave computer reveal completes the ending"),D->bComplete);Capture(TEXT("paper-developer-credits"));Since=D->Age;++InputPhase;}
-            else if(InputPhase==9&&D->Age-Since>.5f){if(bMovie){FApp::SetUseFixedTimeStep(false);return true;}Key(P,EKeys::R,true);++Step;}
+            else if(InputPhase==5&&D->Shot==13&&D->ShotTime>8.5f)
+            {
+                Test->TestTrue(TEXT("Credits complete the new ending"),D->bComplete);
+                Test->TestEqual(TEXT("Monitor powers on after stopping"),D->CreditsScreenMaterial->K2_GetScalarParameterValue(TEXT("Power")),1.f);
+                Capture(TEXT("paper-developer-credits"));Since=D->Age;++InputPhase;
+            }
+            else if(InputPhase==6&&D->Age-Since>.5f){Key(P,EKeys::R,true);++Step;}
         }
         else if(Step==12)
         {

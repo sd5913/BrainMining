@@ -22,6 +22,12 @@
 #include "UnrealClient.h"
 #include "ShaderCompiler.h"
 #include "TextureCompiler.h"
+
+#if WITH_EDITOR
+#define BM_TEXTURES_COMPILING (FTextureCompilingManager::Get().GetNumRemainingTextures() > 0)
+#else
+#define BM_TEXTURES_COMPILING false
+#endif
 #include "Engine/Texture2D.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
@@ -48,7 +54,7 @@ public:
     bool Update() override
     {
         if(FPlatformTime::Seconds()-Started>180){Test->AddError(FString::Printf(TEXT("Finale timed out at step %d"),Step));return true;}
-        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||FTextureCompilingManager::Get().GetNumRemainingTextures())return false;
+        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||BM_TEXTURES_COMPILING)return false;
         UWorld* W=GIsEditor?GEditor->PlayWorld.Get():AutomationCommon::GetAnyGameWorld();if(!W||W->GetTimeSeconds()<2)return false;
         AEndingEmergence* D=nullptr;for(TActorIterator<AEndingEmergence> I(W);I;++I){D=*I;break;}if(!D||!D->bReady)return false;
         if(bMovie&&D->Shot>=10&&D->Shot<=14)

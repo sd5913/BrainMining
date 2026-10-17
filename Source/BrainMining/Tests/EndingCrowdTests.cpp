@@ -17,6 +17,12 @@
 #include "ShaderCompiler.h"
 #include "TextureCompiler.h"
 
+#if WITH_EDITOR
+#define BM_TEXTURES_COMPILING (FTextureCompilingManager::Get().GetNumRemainingTextures() > 0)
+#else
+#define BM_TEXTURES_COMPILING false
+#endif
+
 class FEndingOptimizationPreview : public IAutomationLatentCommand
 {
     FAutomationTestBase* Test;
@@ -38,7 +44,7 @@ public:
     {
         const double Now=FPlatformTime::Seconds();
         if(Now-Started>180){Test->AddError(FString::Printf(TEXT("Optimization preview timed out at step %d"),Step));return true;}
-        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||FTextureCompilingManager::Get().GetNumRemainingTextures()>0)return false;
+        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||BM_TEXTURES_COMPILING)return false;
         UWorld* W=GIsEditor?GEditor->PlayWorld.Get():AutomationCommon::GetAnyGameWorld();
         if(!W||W->GetTimeSeconds()<2)return false;
         AEndingEmergence* D=nullptr;

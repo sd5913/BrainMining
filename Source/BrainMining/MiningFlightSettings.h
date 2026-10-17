@@ -54,8 +54,8 @@ struct BRAINMINING_API FMiningFlightSettings
 	bool bEnableHeat = true;
 
 	/** Continuous thrust time from empty to overheated. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Heat", meta=(ClampMin="0.1", ClampMax="120", Units="s", EditCondition="bEnabled && bEnableHeat"))
-	float HeatUpSeconds = 5.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Heat", meta=(ClampMin="0.1", ClampMax="2.5", Units="s", EditCondition="bEnabled && bEnableHeat", ToolTip="Maximum jetpack capacity. The bar reaches empty after at most 2.5 seconds of continuous thrust."))
+	float HeatUpSeconds = 2.5f;
 
 	/** Time to cool a full bar when the flight button is released. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Heat", meta=(ClampMin="0.1", ClampMax="120", Units="s", EditCondition="bEnabled && bEnableHeat"))

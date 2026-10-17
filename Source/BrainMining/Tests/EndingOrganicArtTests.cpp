@@ -23,6 +23,12 @@
 #include "UDynamicMesh.h"
 #include "Engine/StaticMesh.h"
 
+#if WITH_EDITOR
+#define BM_TEXTURES_COMPILING (FTextureCompilingManager::Get().GetNumRemainingTextures() > 0)
+#else
+#define BM_TEXTURES_COMPILING false
+#endif
+
 class FEndingOrganicPreview : public IAutomationLatentCommand
 {
     FAutomationTestBase* Test;int Step=0,ShotIndex=0;
@@ -37,7 +43,7 @@ public:
     bool Update() override
     {
         if(FPlatformTime::Seconds()-Start>160){Test->AddError(FString::Printf(TEXT("Organic art route timeout at step %d"),Step));return true;}
-        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||FTextureCompilingManager::Get().GetNumRemainingTextures()>0)return false;
+        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||BM_TEXTURES_COMPILING)return false;
         UWorld* W=AutomationCommon::GetAnyGameWorld();if(!W)return false;
         AEndingEmergence* D=nullptr;for(TActorIterator<AEndingEmergence> I(W);I;++I){D=*I;break;}
         auto* P=W->GetFirstPlayerController();auto* Pawn=P?Cast<ACharacter>(P->GetPawn()):nullptr;

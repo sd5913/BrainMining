@@ -19,6 +19,8 @@
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
+#include "Camera/PlayerCameraManager.h"
+#include "PopupClose/PopupOfficeExplosionShake.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "TimerManager.h"
 #include "InputCoreTypes.h"
@@ -145,13 +147,16 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
  {
   FRubble Piece;Piece.Position=FVector(Random.FRandRange(-940,940),Random.FRandRange(-700,700),Random.FRandRange(12,85));
   Piece.Size=FVector(Random.FRandRange(35,145),Random.FRandRange(30,115),Random.FRandRange(15,65));
-  Piece.Rotation=FRotator(Random.FRandRange(-40,40),Random.FRandRange(-180,180),Random.FRandRange(-25,25));RubblePieces.Add(Piece);
+  Piece.Rotation=FRotator(Random.FRandRange(-40,40),Random.FRandRange(-180,180),Random.FRandRange(-25,25));
+  Piece.DropDelay=Random.FRandRange(.04f,.42f);Piece.DropDuration=Random.FRandRange(.85f,1.35f);RubblePieces.Add(Piece);
  }
  // A full-height heap at the doorway makes the permanent blockade visible.
  for(int32 Z=0;Z<6;++Z)for(int32 Y=0;Y<4;++Y)
  {
   FRubble Piece;Piece.Position=FVector(993+Random.FRandRange(-20,15),-82+Y*55,30+Z*56);
-  Piece.Size=FVector(95,72,72);Piece.Rotation=FRotator(Random.FRandRange(-20,20),Random.FRandRange(-30,30),Random.FRandRange(-15,15));RubblePieces.Add(Piece);
+  Piece.Size=FVector(95,72,72);Piece.Rotation=FRotator(Random.FRandRange(-20,20),Random.FRandRange(-30,30),Random.FRandRange(-15,15));
+  // Drop the doorway heap from the bottom up so the entrance visibly fills in.
+  Piece.DropDelay=Z*.22f+Random.FRandRange(0.f,.08f);Piece.DropDuration=FMath::FRandRange(.75f,1.15f);RubblePieces.Add(Piece);
  }
  TArray<FTransform> HiddenRubble;HiddenRubble.Reserve(RubblePieces.Num());
  for(const auto& R:RubblePieces)HiddenRubble.Emplace(R.Rotation,R.Position+FVector(0,0,180),R.Size/100.f);
@@ -289,12 +294,16 @@ void FPopupOfficeExit::Tick()
  }
  else if(Phase==6)
  {
-  const float A=FMath::Clamp(Age/1.2f,0.f,1.f);
+   const float A=FMath::Clamp(Age/2.35f,0.f,1.f);
   if(A>=1.f || FMath::FloorToInt(Age*VisualUpdateHz)>FMath::FloorToInt((Age-Dt)*VisualUpdateHz))
   {
    CSV_SCOPED_TIMING_STAT(OfficeFinale,RubbleInstanceUpdate);
    TArray<FTransform,TInlineAllocator<256>> Transforms;Transforms.Reserve(RubblePieces.Num());
-   for(const auto& R:RubblePieces)Transforms.Emplace(R.Rotation,R.Position+FVector(0,0,(1-A)*(1-A)*180),R.Size/100.f);
+   for(const auto& R:RubblePieces)
+   {
+    const float PieceA=FMath::Clamp((Age-R.DropDelay)/FMath::Max(.1f,R.DropDuration),0.f,1.f);
+    Transforms.Emplace(R.Rotation,R.Position+FVector(0,0,(1-PieceA)*(1-PieceA)*180),R.Size/100.f);
+   }
    Rubble->BatchUpdateInstancesTransforms(0,MakeArrayView(Transforms),false,false,true);Rubble->MarkRenderInstancesDirty();
   }
   if(ExplosionWaves<3 && Age>=ExplosionWaves*.24f)
@@ -331,6 +340,8 @@ void FPopupOfficeExit::EmitBomb(int32 I)
 void FPopupOfficeExit::SpawnExplosion(FVector P,float Scale)
 {
  UMiningRoomAudioSubsystem::Emit(&Owner,TEXT("S_CardFire"),.5f,true,.7f);
+ if(auto PC=Owner.GetWorld()->GetFirstPlayerController())
+  if(auto Camera=PC->PlayerCameraManager) Camera->StartCameraShake(UPopupOfficeExplosionShake::StaticClass(),FMath::Clamp(Scale/3.f,.35f,1.2f));
  auto Effect=Owner.GetWorld()->SpawnActor<AMiningBombExplosion>(Owner.GetActorTransform().TransformPosition(P),FRotator::ZeroRotator);
  if(Effect){FMiningBombSettings Settings;Settings.ExplosionScale=Scale;Settings.FireStrength=.64f;Settings.SmokeStrength=.49f;Effect->Initialize(nullptr,Settings);Effects.Add(Effect);}
 }

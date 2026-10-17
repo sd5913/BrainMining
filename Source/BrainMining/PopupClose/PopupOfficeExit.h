@@ -43,7 +43,7 @@ private:
  void SetBox(UStaticMeshComponent* Mesh,FVector Position,FVector Size);
 
  struct FBombVisual {FVector Origin,Velocity;float Born=0;FRotator Rotation;};
- struct FRubble {FVector Position,Size;FRotator Rotation;};
+ struct FRubble {FVector Position,Size;FRotator Rotation;float DropDelay=0.f;float DropDuration=1.2f;};
  APopupCloseStage& Owner;
  TWeakObjectPtr<UStaticMeshComponent> Door,Pickup,Shutter;
  TWeakObjectPtr<UPostProcessComponent> PickupOutline;

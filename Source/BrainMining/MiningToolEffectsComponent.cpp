@@ -7,6 +7,7 @@
 #include "MiningEncounterPlayer.h"
 #include "BrainMiningCharacter.h"
 #include "EchoPassagePlayer.h"
+#include "EchoPassageStage.h"
 #include "GameFramework/Controller.h"
 #include "Materials/MaterialInterface.h"
 #include "Camera/CameraComponent.h"
@@ -153,7 +154,7 @@ void UMiningToolEffectsComponent::UpdateEchoPickaxeStyle()
 	const auto* Echo=Controller?Controller->FindComponentByClass<UEchoPassageInteractionComponent>():nullptr;
 	// GiantRoomEntrance already turns exploration off at the warm doorway and
 	// back on when walking back into the passage. Share that exact boundary.
-	const bool bLines=Echo && Echo->Stage && Echo->bExplorationActive && EchoPickaxeBlack && EchoPickaxeLines;
+	const bool bLines=Echo && Echo->Stage && Echo->Stage->bLanded && Echo->bExplorationActive && EchoPickaxeBlack && EchoPickaxeLines;
 	if(bLines==bEchoPickaxeLines)return;
 	if(bLines)
 	{

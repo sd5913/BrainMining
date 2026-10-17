@@ -15,6 +15,7 @@
 #include "Framework/Docking/TabManager.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "ToolMenus.h"
+#include "ToolMenu.h"
 #include "Containers/Ticker.h"
 #include "Editor.h"
 #include "EngineUtils.h"

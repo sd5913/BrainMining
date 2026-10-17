@@ -12,6 +12,12 @@
 #include "ShaderCompiler.h"
 #include "TextureCompiler.h"
 
+#if WITH_EDITOR
+#define BM_TEXTURES_COMPILING (FTextureCompilingManager::Get().GetNumRemainingTextures() > 0)
+#else
+#define BM_TEXTURES_COMPILING false
+#endif
+
 class FEndingScaleMotionPreview : public IAutomationLatentCommand
 {
     FAutomationTestBase* Test;int Step=0,Target=2;float At=0;FVector EarthBefore,PlanetBefore;
@@ -23,7 +29,7 @@ public:
     bool Update() override
     {
         if(FPlatformTime::Seconds()-Started>120){Test->AddError(TEXT("Scale motion validation timed out"));return true;}
-        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||FTextureCompilingManager::Get().GetNumRemainingTextures())return false;
+        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||BM_TEXTURES_COMPILING)return false;
         UWorld* W=AutomationCommon::GetAnyGameWorld();if(!W)return false;
         AEndingEmergence* D=nullptr;for(TActorIterator<AEndingEmergence> I(W);I;++I){D=*I;break;}
         if(!D||!D->bReady||D->Age<3)return false;

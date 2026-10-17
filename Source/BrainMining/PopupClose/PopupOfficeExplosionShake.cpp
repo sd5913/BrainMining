@@ -27,7 +27,7 @@ void UPopupOfficeExplosionPattern::UpdateShakePatternImpl(const FCameraShakePatt
 }
 
 UPopupOfficeExplosionShake::UPopupOfficeExplosionShake(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UPopupOfficeExplosionPattern>(TEXT("RootShakePattern")))
 {
 	bSingleInstance = false;
 	// Camera shake constructors run while the CDO is being built; an explicit

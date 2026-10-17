@@ -5,6 +5,7 @@
 #include "SubtitleWidget.generated.h"
 
 class STextBlock;
+class SSubtitleVisual;
 
 UCLASS()
 class BRAINMINING_API USubtitleWidget : public UUserWidget
@@ -19,5 +20,5 @@ protected:
 
 private:
 	FText CurrentLine;
-	TSharedPtr<STextBlock> TextBlock;
+	TSharedPtr<SSubtitleVisual> SubtitleVisual;
 };

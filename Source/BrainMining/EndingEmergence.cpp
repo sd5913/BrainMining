@@ -343,12 +343,16 @@ void AEndingEmergence::BuildJourney()
     // Only the final cell membrane is excavatable. Blood and brain need no tool.
     for(int I=0;I<1;++I)
     {
-        const float X=Ending::GateX[I],Y=Ending::GateY[I],Z=Ending::Ground(X,Y);
-        auto* Gate=GetWorld()->SpawnActor<ADiggableRock>(ADiggableRock::StaticClass(),GetActorTransform().TransformPosition(FVector(X,Y,Z+250)),GetActorRotation());
+        const float X=Ending::GateX[I],Y=Ending::GateY[I];
+        // The cell floor is at Z=850 here, while the vessel centreline enters
+        // at Z=425.  Centering the plug on the floor left the lower half of the
+        // neck open and let the blood tube show through the room.
+        const float Z=VesselPath.IsValidIndex(0)?VesselPath[0].Z:425.f;
+        auto* Gate=GetWorld()->SpawnActor<ADiggableRock>(ADiggableRock::StaticClass(),GetActorTransform().TransformPosition(FVector(X,Y,Z)),GetActorRotation());
         Gate->AttachToActor(this,FAttachmentTransformRules::KeepWorldTransform);Gate->Tags.Add(Ending::Tag);
         // The circular plug spans the whole cell-to-vessel cross-section, so
         // the blood tube cannot be seen through the room before the first cut.
-        Gate->RockSize=FVector(120,1000,1000);Gate->bUseCircularRockMesh=true;
+        Gate->RockSize=FVector(220,2600,2600);Gate->bUseCircularRockMesh=true;
         Gate->RockMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_RedMembrane"));
         Gate->ResetRock();Gates.Add(Gate);
     }
@@ -1008,7 +1012,11 @@ void AEndingEmergence::UpdateFilm(float Dt)
     const float T=Shot>=1&&Shot<=6?Progress:Ending::Ease(Progress);
     // Increase the pullback curve so the previous scene smears into a genuine
     // scale jump instead of lingering as a recognisable shrinking picture.
-    const float Zoom=(FMath::Exp(T*FMath::Loge(16.f))-1)/15;
+    // Compress the recognisable previous shot immediately.  An ease-out pull
+    // moves the old city block out in the first beats, leaving the captured
+    // bridge and motion blur to carry the scale jump instead of showing a
+    // readable tile shrinking in place.
+    const float Zoom=1.f-FMath::Pow(1.f-T,2.8f);
     if(FinaleCellSpecks)if(auto* Mat=Cast<UMaterialInstanceDynamic>(FinaleCellSpecks->GetMaterial(0)))
         Mat->SetScalarParameterValue(TEXT("Fade"),Shot==6?Ending::Ease((T-.30f)/.30f):Shot>=7?1.f:0.f);
     const float W=bComfortMode?0:FMath::Clamp(Weightlessness,0.f,1.f);

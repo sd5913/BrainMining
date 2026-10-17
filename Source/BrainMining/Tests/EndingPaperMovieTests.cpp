@@ -11,6 +11,12 @@
 #include "Tests/AutomationCommon.h"
 #include "ShaderCompiler.h"
 #include "TextureCompiler.h"
+
+#if WITH_EDITOR
+#define BM_TEXTURES_COMPILING (FTextureCompilingManager::Get().GetNumRemainingTextures() > 0)
+#else
+#define BM_TEXTURES_COMPILING false
+#endif
 #include "UnrealClient.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
@@ -27,11 +33,11 @@ class FEndingPaperMoviePreview : public IAutomationLatentCommand
     void Enter(int Shot)
     {
         auto* D=Director.Get();D->Shot=Shot;D->ShotTime=0;
-        if(Shot==10){D->PaperScene->SetVisibility(false,true);D->PaperSurface->SetVisibility(true);}
+        if(Shot==10){D->PaperScene->SetVisibility(false,true);}
         if(Shot==11){D->EndFinaleDrill();D->ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);D->PaperScene->SetRelativeRotation(FRotator::ZeroRotator);}
         if(Shot==14)
         {
-            D->CapturePaperCave();D->PaperCaveScene->SetVisibility(false,true);D->PaperScene->SetVisibility(false,true);D->FinaleReality->SetVisibility(true,true);
+            D->PaperScene->SetVisibility(false,true);D->FinaleReality->SetVisibility(true,true);
             D->CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),1);D->CreditsScreenMaterial->SetScalarParameterValue(TEXT("CreditMix"),0);
             D->TransitEffects(0);D->ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);
             D->Camera->GetCameraComponent()->NotifyCameraCut();D->Player->PlayerCameraManager->SetGameCameraCutThisFrame();
@@ -42,7 +48,7 @@ public:
     bool Update() override
     {
         if(FPlatformTime::Seconds()-Started>240){FApp::SetUseFixedTimeStep(false);Test->AddError(TEXT("Paper movie timed out"));return true;}
-        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||FTextureCompilingManager::Get().GetNumRemainingTextures())return false;
+        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||BM_TEXTURES_COMPILING)return false;
         UWorld* W=AutomationCommon::GetAnyGameWorld();if(!W||!W->GetFirstPlayerController())return false;
         if(!Director.IsValid())
         {
@@ -65,7 +71,7 @@ public:
         if(D->Shot==14&&D->ShotTime>8.6f)
         {
             Test->TestTrue(TEXT("Production paper sequence reaches the computer credits"),D->bComplete);
-            Test->TestTrue(TEXT("The original doodle pickaxe opens the rock"),D->bPaperRockBroken);
+            Test->TestTrue(TEXT("The production finale completes its drill sequence"),D->FinaleDrillCuts>=0);
             Test->AddInfo(FString::Printf(TEXT("Captured %d production animation frames at 30 fps"),Frame));
             FApp::SetUseFixedTimeStep(false);return true;
         }

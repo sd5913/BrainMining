@@ -1,4 +1,5 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "WenSi/WenSiExhibitArt.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "WenSi/WenSiMirrorMechanismLayout.h"
 #include "WenSi/WenSiPuzzle.h"
@@ -58,6 +59,7 @@ AWenSiMirrorExhibit::AWenSiMirrorExhibit()
  Capture->CaptureSource=ESceneCaptureSource::SCS_FinalColorLDR;
  Capture->bAlwaysPersistRenderingState=true;
  Capture->bEnableClipPlane=true;Capture->bOverride_CustomNearClippingPlane=true;Capture->CustomNearClippingPlane=1.f;
+ ArtVisual=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArtVisual"));ArtVisual->SetupAttachment(RootComponent);ArtVisual->SetMobility(EComponentMobility::Movable);ArtVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 FString AWenSiMirrorExhibit::Noun() const
 {
@@ -65,6 +67,7 @@ FString AWenSiMirrorExhibit::Noun() const
  return DisplayNoun.IsEmpty()?FString(Names[FMath::Clamp(Kind,0,12)]):DisplayNoun;
 }
 FString AWenSiMirrorExhibit::Adjective() const{return WordText(Word);}
+void AWenSiMirrorExhibit::RefreshArtModel(){Configure();}
 void AWenSiMirrorExhibit::Configure()
 {
  auto Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -138,10 +141,12 @@ void AWenSiMirrorExhibit::Apply()
   auto Mat=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WenSi/Mirror/Materials/M_WenSiMirror.M_WenSiMirror")),this);
   if(Mat){Mat->SetTextureParameterValue(TEXT("MirrorTexture"),MirrorTarget);Parts[0]->SetMaterial(0,Mat);}
  }
+ WenSiExhibitArt::Apply(ArtVisual,Parts,ArtModel,ArtRotation,bUniformArtScale,Word==EWenSiMirrorWord::Passable,Ghost,Rim);
  Highlight(false);
 }
 void AWenSiMirrorExhibit::Highlight(bool bAimed)
 {
+ WenSiExhibitArt::Highlight(ArtVisual,bThinkingEnabled ? (bAimed ? 1.6f:.65f):0.f,bAimed ? 1.2f:.65f,FLinearColor(1.f,.89f,.7f));
  for(auto Part:Parts)if(auto Glow=Cast<UMaterialInstanceDynamic>(Part->GetOverlayMaterial()))
  {Glow->SetScalarParameterValue(TEXT("Strength"),bThinkingEnabled?(bAimed?1.6f:.65f):0.f);Glow->SetScalarParameterValue(TEXT("OutlineWidth"),bAimed?1.2f:.65f);Glow->SetVectorParameterValue(TEXT("Tint"),FLinearColor(1.f,.89f,.7f));}
 }

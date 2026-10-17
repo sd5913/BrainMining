@@ -15,6 +15,7 @@
 #include "Misc/ScopeExit.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "UDynamicMesh.h"
+#include "MiningSaveSubsystem.h"
 
 using namespace UE::Geometry;
 
@@ -66,8 +67,28 @@ void ADiggableRock::CommitMesh(FDynamicMesh3&& Mesh)
 	LastCollisionMilliseconds = (FPlatformTime::Seconds() - CollisionStart) * 1000.0;
 }
 
+void ADiggableRock::BakeAuthoredMesh(UDynamicMesh* Mesh)
+{
+	if (!Mesh || Mesh->GetMeshRef().TriangleCount()==0 || !Mesh->GetMeshRef().IsClosed()) return;
+	Modify();
+	AuthoredRestMesh=NewObject<UDynamicMesh>(this);
+	FDynamicMesh3 Copy=Mesh->GetMeshRef();
+	AuthoredRestMesh->SetMesh(MoveTemp(Copy));
+	ResetRock();
+}
+
 void ADiggableRock::ResetRock()
 {
+	if(AuthoredRestMesh && AuthoredRestMesh->GetMeshRef().TriangleCount()>0)
+	{
+		FDynamicMesh3 Mesh=AuthoredRestMesh->GetMeshRef();
+		CommitMesh(MoveTemp(Mesh));
+		if(RockMaterial)RockMesh->SetMaterial(0,RockMaterial);
+		SuccessfulCuts=0;LastBooleanMilliseconds=LastTotalMilliseconds=0;
+		LastStatus=TEXT("Authored mesh ready");
+		OnTerrainCommitted.Broadcast(FBox(ForceInit));
+		return;
+	}
 	const FVector SafeSize(FMath::Max(50.0, RockSize.X), FMath::Max(50.0, RockSize.Y), FMath::Max(50.0, RockSize.Z));
 	FDynamicMesh3 Mesh;
 	if (bUseCircularRockMesh)
@@ -111,7 +132,9 @@ void ADiggableRock::ResetRock()
 bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
 {
 	if (ActorHasTag(TEXT("BM_BombOnly"))) { LastStatus = TEXT("坚硬岩层：只能用炸弹破坏"); return false; }
-	return MineCutter(WorldCenter, WorldRadius, nullptr);
+	const bool bResult = MineCutter(WorldCenter, WorldRadius, nullptr);
+	if (bResult) UMiningSaveSubsystem::RecordSphere(this, WorldCenter, WorldRadius);
+	return bResult;
 }
 
 bool ADiggableRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed, float Roughness)
@@ -119,14 +142,18 @@ bool ADiggableRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 S
 	if (ActorHasTag(TEXT("BM_BombOnly"))) { LastStatus = TEXT("坚硬岩层：只能用炸弹破坏"); return false; }
 	if (!WorldFrame.IsValid() || HalfSize.ContainsNaN() || HalfSize.GetMin() <= 0) return false;
 	const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(WorldFrame, HalfSize, Seed, Roughness);
-	return MineCutter(WorldFrame.GetLocation(), HalfSize.Size() * 1.12, &Cutter);
+	const bool bResult = MineCutter(WorldFrame.GetLocation(), HalfSize.Size() * 1.12, &Cutter);
+	if (bResult) UMiningSaveSubsystem::RecordPickaxe(this, WorldFrame, HalfSize, Seed, Roughness);
+	return bResult;
 }
 
 bool ADiggableRock::MineBlast(FVector WorldCenter, float WorldRadius, float Roughness, int32 Seed)
 {
 	if (WorldCenter.ContainsNaN() || !FMath::IsFinite(WorldRadius) || WorldRadius <= 0 || !FMath::IsFinite(Roughness)) return false;
 	const FDynamicMesh3 Cutter = MiningBlast::MakeCutter(WorldCenter, WorldRadius, Roughness, Seed);
-	return MineCutter(WorldCenter, WorldRadius * 1.45f, &Cutter);
+	const bool bResult = MineCutter(WorldCenter, WorldRadius * 1.45f, &Cutter);
+	if (bResult) UMiningSaveSubsystem::RecordBlast(this, WorldCenter, WorldRadius, Roughness, Seed);
+	return bResult;
 }
 
 bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDynamicMesh3* WorldCutter)

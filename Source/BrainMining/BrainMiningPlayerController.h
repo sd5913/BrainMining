@@ -27,6 +27,14 @@ public:
 	/** Constructor */
 	ABrainMiningPlayerController();
 	void UseInputDefaultsFrom(const ABrainMiningPlayerController* Defaults);
+    // Touch controls call these small controller-side adapters so the same
+    // mining components are used on desktop and mobile input paths.
+    void HandleMobileLook(const FVector2D& Delta);
+    void HandleMobileMove(const FVector2D& Axis);
+    void HandleMobileMine(bool bPressed);
+    void HandleMobileBomb();
+    void HandleMobileDrill();
+    void HandleMobileUpgrade();
  UFUNCTION(BlueprintCallable, Category="Mining GUI")
  void SetMiningGUIEnabled(bool bEnabled);
  bool IsMiningGUIEnabled() const { return bMiningGUIEnabled; }

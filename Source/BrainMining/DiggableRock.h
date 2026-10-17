@@ -79,6 +79,13 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category="Mining")
 	virtual void ResetRock();
 
+	// Optional authored geometry (for example the rounded television glass).
+	// Stored with the level so packaged games never need editor mesh conversion.
+	UPROPERTY(EditAnywhere, Category="Mining|Authored")
+	TObjectPtr<class UDynamicMesh> AuthoredRestMesh;
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="Mining|Authored")
+	void BakeAuthoredMesh(UDynamicMesh* Mesh);
+
 protected:
 	virtual void InitializeForPlay();
 	void CommitMesh(UE::Geometry::FDynamicMesh3&& Mesh);

@@ -43,6 +43,13 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") float CardThrowHeight=48.f;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") float CardVisualScale=1.f;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") float SpellPresentationScale=1.f;
+    // Art-only override. Both study maps continue to use the same FCardRoomRun.
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation") bool bStyledEffects=false;
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TArray<TObjectPtr<class UNiagaraSystem>> StyledSystems;
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TObjectPtr<class UMaterialInterface> StyledEnergyMaterial;
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TObjectPtr<class UMaterialInterface> StyledRingMaterial;
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TMap<FName,TObjectPtr<UStaticMesh>> StyledToyMeshes;
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TMap<FName,TObjectPtr<class UMaterialInterface>> StyledToyMaterials;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") FVector RewardLocal=FVector(-30,0,143);
     FVector GetCardLanding(int32 Index,int32 Count) const;
     FVector GetSeatEyeLocation() const {return GetActorTransform().TransformPosition(FVector(-270,0,188));}
@@ -66,6 +73,14 @@ private:
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMesh>> SymbolMeshes;
     void InitializeEffectMeshes();
     void TickEffects();
+    void InitializeStyledEffects();
+    void TickStyledEffects();
+    UPROPERTY(Transient) TArray<TObjectPtr<class UNiagaraComponent>> StyledFX;
+    UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> StyledRings;
+    uint32 StyledFired=0;
+    int32 StyledRound=0;
+    float StyledLastTime=0;
+    bool bStyledPoisonLive=false;
     ECardRoomPhase LastPhase = ECardRoomPhase::Exploring;
     bool bReplySound = false;
     float PreviousAudioTime = 0;

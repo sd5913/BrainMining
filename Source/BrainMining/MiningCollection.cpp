@@ -4,7 +4,10 @@
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "DiggableRock.h"
+#include "HeavenToilet.h"
+#include "NiagaraComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/DynamicMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
@@ -31,7 +34,7 @@ AMiningCollectionField::AMiningCollectionField()
     Capture=CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("CatalogueCamera")); Capture->SetupAttachment(RootComponent);
     Capture->bCaptureEveryFrame=false; Capture->bCaptureOnMovement=false;
     Capture->PrimitiveRenderMode=ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
-    Capture->CaptureSource=ESceneCaptureSource::SCS_FinalColorLDR;
+    Capture->CaptureSource=ESceneCaptureSource::SCS_SceneColorHDR;
     Capture->FOVAngle=40;
     HighlightPostProcess=CreateDefaultSubobject<UPostProcessComponent>(TEXT("CollectionSilhouette"));
     HighlightPostProcess->SetupAttachment(RootComponent); HighlightPostProcess->bUnbound=true; HighlightPostProcess->Priority=100;
@@ -71,10 +74,20 @@ bool AMiningCollectionField::InitializePlayer()
     Inventory.Init(0,4);
     if(auto* Edge=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionSilhouette"))) HighlightPostProcess->Settings.AddBlendable(Edge,1);
     SpawnField();
-    PreviewTexture=NewObject<UTextureRenderTarget2D>(this); PreviewTexture->ClearColor=FLinearColor(.026f,.04f,.046f,1);
+    PreviewTexture=NewObject<UTextureRenderTarget2D>(this); PreviewTexture->ClearColor=FLinearColor(0,0,0,1);
     PreviewTexture->InitAutoFormat(1536,1024); Capture->TextureTarget=PreviewTexture;
+    if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionCataloguePreview.M_CollectionCataloguePreview")))
+    {PreviewMaterial=UMaterialInstanceDynamic::Create(Material,this);PreviewMaterial->SetTextureParameterValue(TEXT("Preview"),PreviewTexture);}
     Preview=GetWorld()->SpawnActor<AMiningCollectible>(FVector(0,0,-10000),FRotator::ZeroRotator);
     Preview->BuildModel(0); Preview->SetActorHiddenInGame(true); Capture->ShowOnlyActors.Add(Preview);
+    for(const auto& Placement:AuthoredPlacements)if(Placement.ItemId==0 && IsValid(Placement.PresentationActor) && Placement.PresentationActor->IsA<AHeavenToilet>())
+    {
+        PreviewToilet=GetWorld()->SpawnActor<AHeavenToilet>(FVector(0,0,-10065),FRotator(0,60,0));
+        PreviewToilet->SetActorScale3D(Placement.PresentationActor->GetActorScale3D());
+        PreviewToilet->SetActorEnableCollision(false);PreviewToilet->SetActorTickEnabled(false);
+        PreviewToilet->WaterJet->DeactivateImmediate();PreviewToilet->OpeningSplash->DeactivateImmediate();
+        PreviewToilet->SetActorHiddenInGame(true);Capture->ShowOnlyActors.Add(PreviewToilet);break;
+    }
     for(int i=0;i<2;++i)
     {
         auto* Light=NewObject<UPointLightComponent>(this); AddInstanceComponent(Light); Light->RegisterComponent();
@@ -116,6 +129,12 @@ void AMiningCollectionField::SpawnField()
             auto* Item=GetWorld()->SpawnActor<AMiningCollectible>(Placement.Transform.GetLocation(),Placement.Transform.Rotator());
             Item->Tags.Add(Placement.AreaTag);
             Item->BuildModel(Placement.ItemId);
+            if(IsValid(Placement.PresentationActor))
+            {
+                Item->PresentationActor=Placement.PresentationActor;
+                Item->PresentationActor->SetOwner(Item);
+                Item->Model->SetVisibility(false);
+            }
             if(bBuriedWithClues && Placement.HostRock)
             {
                 Item->HostRock=Placement.HostRock; Item->BuriedTransform=Item->GetActorTransform();
@@ -236,6 +255,7 @@ void AMiningCollectionField::RefreshTarget()
     if(GetWorld()->LineTraceSingleByChannel(Hit,P,P+R.Vector()*400,ECC_Visibility,Q))
     {
         auto* Item=Cast<AMiningCollectible>(Hit.GetActor());
+        if(!Item && Hit.GetActor()) Item=Cast<AMiningCollectible>(Hit.GetActor()->GetOwner());
         if(Item&&Item->bReleased&&!Item->bCollected) NewTarget=Item;
     }
     if(Target!=NewTarget)
@@ -252,6 +272,7 @@ void AMiningCollectionField::CollectTarget()
     if(!IsValid(Target)||!Inventory.IsValidIndex(Target->ItemId)) return;
     AMiningCollectible* Item=Target; Item->SetHighlighted(false); Item->bCollected=true;
     Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);
+    if(IsValid(Item->PresentationActor)) { Item->PresentationActor->Destroy(); Item->PresentationActor=nullptr; }
     ++Inventory[Item->ItemId]; SelectedId=Item->ItemId; Target=nullptr;
     Toast=FString::Printf(TEXT("已收集 · %s     [ %s ] 打开图鉴"),*AMiningCollectible::ItemName(Item->ItemId),*CatalogueKey.GetDisplayName().ToString()); ToastRemaining=5;
 }
@@ -280,6 +301,7 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         Player->GetPawn()->EnableInput(Player); Player->bShowMouseCursor=false; Player->SetInputMode(FInputModeGameOnly());
         if(View) View->SetVisibility(EVisibility::HitTestInvisible);
         if(Preview) Preview->SetActorHiddenInGame(true);
+        if(PreviewToilet)PreviewToilet->SetActorHiddenInGame(true);
     }
 }
 void AMiningCollectionField::SelectItem(int32 Id)
@@ -287,7 +309,8 @@ void AMiningCollectionField::SelectItem(int32 Id)
     SelectedId=Id;
     if(!Preview) return;
     const bool Owned=Inventory.IsValidIndex(Id)&&Inventory[Id]>0;
-    Preview->SetActorHiddenInGame(!Owned);
+    Preview->SetActorHiddenInGame(!Owned || (PreviewToilet && Id==0));
+    if(PreviewToilet)PreviewToilet->SetActorHiddenInGame(!Owned || Id!=0);
     if(Owned) Preview->BuildModel(Id);
     ResetPreview();
 }
@@ -297,6 +320,7 @@ void AMiningCollectionField::RotatePreview(float Yaw,float Pitch)
     if(!Preview) return;
     PreviewYaw=FRotator::NormalizeAxis(PreviewYaw+Yaw); PreviewPitch=FMath::Clamp(PreviewPitch+Pitch,-80.f,80.f);
     Preview->SetActorRotation(FRotator(PreviewPitch,PreviewYaw,0));
+    if(PreviewToilet)PreviewToilet->SetActorRotation(FRotator(PreviewPitch,PreviewYaw+90,0));
     Capture->SetWorldLocation(FVector(-PreviewDistance,0,-9990)); Capture->SetWorldRotation(FRotator(0,0,0));
     Capture->CaptureScene();
     PreviewRefreshFrames=3;
@@ -323,5 +347,6 @@ void AMiningCollectionField::EndPlay(const EEndPlayReason::Type Reason)
     for (AActor* Actor : Spawned) if (IsValid(Actor)) Actor->Destroy();
     Spawned.Reset();
     if (IsValid(Preview)) Preview->Destroy();
+    if(IsValid(PreviewToilet))PreviewToilet->Destroy();PreviewToilet=nullptr;
     Preview = nullptr;
 }

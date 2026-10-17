@@ -24,7 +24,7 @@ struct FMiningTreasureDefinition
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FLinearColor Color = FLinearColor::White;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FLinearColor HintColor = FLinearColor(.2f,.8f,.5f);
     UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bBuriedHint = true;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="40", ClampMax="240")) float HintRadius = 120;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="40", ClampMax="240")) float HintRadius = 180;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", ClampMax="3")) float HintStrength = .8f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", ClampMax="4")) float EmissiveStrength = .45f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", ClampMax="1")) float Roughness = .4f;
@@ -77,6 +77,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bReleased = false;
     UPROPERTY() TArray<TObjectPtr<ADiggableRock>> CoveringRocks;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UInstancedStaticMeshComponent> CrystalClues;
+    UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> CrystalClueMaterial;
     UPROPERTY() TArray<FVector> CrystalSupports;
     TArray<FTransform> CrystalTransforms;
     void ConfigureCrystalClues(const FMiningTreasurePlacement& Placement, UStaticMesh* FragmentMesh);
@@ -112,6 +113,9 @@ private:
     bool bDropPaused = false;
     TArray<FVector> SurfaceSamples;
     FLinearColor BaseColor = FLinearColor::White;
+    FLinearColor CrystalClueColor = FLinearColor::White;
+    float CrystalClueEmission = 1.f;
+    float CrystalClueBrightness = 1.f;
     float HintAmount = 1;
     float BuriedHintAmount = 1;
 };

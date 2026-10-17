@@ -160,6 +160,51 @@ void ABrainMiningPlayerController::UseAbilityV()
 		MiningGUI->OnAbilityRequested.Broadcast(TEXT("V"));
 }
 
+void ABrainMiningPlayerController::HandleMobileLook(const FVector2D& Delta)
+{
+    if (IsLookInputIgnored() || IsPaused()) return;
+    AddYawInput(Delta.X);
+    AddPitchInput(Delta.Y);
+}
+
+void ABrainMiningPlayerController::HandleMobileMove(const FVector2D& Axis)
+{
+    if (IsMoveInputIgnored() || IsPaused()) return;
+    if (APawn* ControlledPawn = GetPawn())
+    {
+        ControlledPawn->AddMovementInput(ControlledPawn->GetActorRightVector(), Axis.X);
+        ControlledPawn->AddMovementInput(ControlledPawn->GetActorForwardVector(), Axis.Y);
+    }
+}
+
+void ABrainMiningPlayerController::HandleMobileMine(bool bPressed)
+{
+    if (auto* Mining = GetPawn() ? GetPawn()->FindComponentByClass<UMiningComponent>() : nullptr)
+    {
+        if (bPressed) Mining->BeginMiningInput();
+        else Mining->EndMiningInput();
+    }
+}
+
+void ABrainMiningPlayerController::HandleMobileBomb()
+{
+    if (auto* Bomb = GetPawn() ? GetPawn()->FindComponentByClass<UMiningBombToolComponent>() : nullptr)
+    {
+        if (Bomb->ToggleEquipped()) Bomb->ThrowBomb();
+    }
+}
+
+void ABrainMiningPlayerController::HandleMobileDrill()
+{
+    if (auto* Mining = GetPawn() ? GetPawn()->FindComponentByClass<UMiningComponent>() : nullptr)
+        Mining->ActivateDrill();
+}
+
+void ABrainMiningPlayerController::HandleMobileUpgrade()
+{
+    SetUpgradeMenuHeld(true);
+}
+
 bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 {
 	if (Params.Key == EKeys::F8 || (IsAudioSettingsOpen() && Params.Key == EKeys::Escape))

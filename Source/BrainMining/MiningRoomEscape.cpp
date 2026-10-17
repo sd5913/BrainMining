@@ -28,6 +28,7 @@ AMiningRoomEscape::AMiningRoomEscape()
 void AMiningRoomEscape::BeginPlay()
 {
     Super::BeginPlay();
+    ClearTelevisionPreview();
     Player=Cast<AMiningEncounterPlayerController>(GetWorld()->GetFirstPlayerController());
     if(!Player.IsValid() || !CardStage || !Entrance){SetActorTickEnabled(false);return;}
     Checkpoint+=SourceLevelOffset;ComputerEntry+=SourceLevelOffset;
@@ -117,7 +118,7 @@ void AMiningRoomEscape::ResetJourney()
     if(bFailureLock && Player.IsValid())Player->SetIgnoreMoveInput(false);
     bFailureLock=false;Phase=EMiningEscapePhase::Idle;PhaseTime=Elapsed=ComputerElapsed=0;
     UMiningRoomAudioSubsystem::StopSource(this);
-    Attempts=ClearedNodes=0;WaterZ=WaterStartZ;bWallBroken=bEnteredComputer=bComputerCheckpoint=bExitGuidance=false;
+    Attempts=ClearedNodes=0;VictoryHoldTime=0;WaterZ=WaterStartZ;bWallBroken=bEnteredComputer=bComputerCheckpoint=bExitGuidance=false;
     if(Entrance)Entrance->bExternalEncounterActive=false;
     if(BreachWall)BreachWall->ResetRock();
     for(const auto& Rock:ComputerRocks)if(IsValid(Rock))Rock->ResetRock();
@@ -193,6 +194,11 @@ void AMiningRoomEscape::UpdateWater()
 void AMiningRoomEscape::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);if((bAreaManaged && !bAreaActive) || !Player.IsValid() || !Player->GetPawn())return;
+    if(bAutoClaimVictoryReward && Phase==EMiningEscapePhase::Idle && CardStage && CardStage->Run.Phase==ECardRoomPhase::Victory)
+    {
+        VictoryHoldTime+=DeltaSeconds;
+        if(VictoryHoldTime>=2.f)CardStage->CollectReward();
+    }
     TickPresentation(DeltaSeconds);const float PreviousPhaseTime=PhaseTime;PhaseTime+=DeltaSeconds;
     if(Phase==EMiningEscapePhase::Warning && PreviousPhaseTime<.45f && PhaseTime>=.45f)
         UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Warning"),.5f);

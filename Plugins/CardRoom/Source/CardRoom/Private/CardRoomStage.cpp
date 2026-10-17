@@ -80,6 +80,16 @@ void ACardRoomStage::Tint(UStaticMeshComponent* Part,FLinearColor Color,bool bGl
 void ACardRoomStage::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
+    if(bStyledEffects)
+    {
+        for(auto& Part:ToyParts)
+        {
+            if(auto* Mesh=StyledToyMeshes.Find(Part->GetFName()))Part->SetStaticMesh(*Mesh);
+            if(auto* Material=StyledToyMaterials.Find(Part->GetFName()))Part->SetMaterial(0,*Material);
+        }
+    }
+    if(!bStyledEffects && !ActorHasTag(TEXT("CountrysideP2Art")))
+    {
     for(int32 i=0;i<ToyParts.Num();++i) Tint(ToyParts[i],((i>=4&&i<=6)||i>=10)?FLinearColor(.025f,.016f,.013f):i==9?FLinearColor(.65f,.19f,.09f):FLinearColor(.73f,.43f,.24f));
     // Reset authored transforms too: older map component overrides must not detach the face.
     HeadPivot->SetRelativeLocation(FVector(0,0,105));
@@ -102,6 +112,7 @@ void ACardRoomStage::OnConstruction(const FTransform& Transform)
     ToyParts[9]->SetRelativeLocation(FVector(-36,0,58));
     ToyParts[9]->SetRelativeScale3D(FVector(.08,.28,.08));
     Tint(ToyParts[9],FLinearColor(.22f,.035f,.025f));
+    }
     for(const auto& Dot:GhostDots) Tint(Dot,FLinearColor(.4f,.8f,.7f),true);
     for(const auto& Puff:Puffs) Tint(Puff,FLinearColor(.22f,.8f,.08f),true);
     for(const auto& Tail:Trails) Tint(Tail,FLinearColor(.18f,.7f,1.f),true);
@@ -125,6 +136,7 @@ void ACardRoomStage::BeginPlay()
     }
     InitializeEffectMeshes();
     OnConstruction(GetActorTransform());
+    InitializeStyledEffects();
 }
 void ACardRoomStage::Sound(const TCHAR* Name,float Volume)
 {

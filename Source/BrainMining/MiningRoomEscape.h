@@ -16,6 +16,12 @@ class BRAINMINING_API AMiningRoomEscape : public AActor
     GENERATED_BODY()
 public:
     AMiningRoomEscape();
+    virtual void OnConstruction(const FTransform& Transform) override;
+    // The same CRT shell is visible while authoring and used by the live escape.
+    UPROPERTY(EditAnywhere,Category="Escape|Preview") bool bPreviewTelevision=true;
+    UPROPERTY(EditInstanceOnly,Category="Escape|Actors") TObjectPtr<ADiggableRock> AuthoredTelevisionScreen;
+    // P2 moves directly from the victory presentation to the shared P1 escape.
+    UPROPERTY(EditAnywhere,Category="Escape") bool bAutoClaimVictoryReward=false;
     UPROPERTY(EditAnywhere, Category="Integration") bool bAreaManaged = false;
     UPROPERTY(EditAnywhere, Category="Integration") bool bWalkThroughConnections = false;
     bool bAreaActive = true;
@@ -86,6 +92,8 @@ private:
     void SetTelevisionMining(bool Enabled);
     void UpdateWater();
     void BuildStudyLayout();
+    void BuildTelevisionModel(bool bEditorPreview);
+    void ClearTelevisionPreview();
     void TickPresentation(float DeltaSeconds);
     TArray<float> FloatingOffsets;
     UPROPERTY(Transient) TObjectPtr<class UMaterialInstanceDynamic> ScreenMaterial;
@@ -98,6 +106,7 @@ private:
     float JetUpdateTime=0;
     float PhaseTime=0;
     float ComputerStartWaterZ=0;
+    float VictoryHoldTime=0;
     bool bFailureLock=false;
     TWeakObjectPtr<class UMiningComponent> ScopedMiner;
     float SavedMineRadius=0;

@@ -49,6 +49,11 @@ public:
         AMiningRoomEscape* E=nullptr;
         for(TActorIterator<AMiningRoomEscape> It(World);It;++It){E=*It;break;}
         if(!Test->TestNotNull(TEXT("Study automatically assembles escape"),E))return true;
+        int32 EscapeCount=0;for(TActorIterator<AMiningRoomEscape> It(World);It;++It)++EscapeCount;
+        Test->TestEqual(TEXT("Placed escape does not also spawn a duplicate"),EscapeCount,1);
+        TArray<UActorComponent*> EscapeParts;E->GetComponents(EscapeParts);
+        for(auto* Part:EscapeParts)
+            Test->TestFalse(TEXT("Editor TV preview cannot overlap the live diggable TV"),Part->ComponentHasTag(TEXT("TelevisionEditorPreview")));
         auto* Stage=PC->CardInteraction->Stage.Get();
         auto* RoomAudio=UMiningAudioComponent::IsMainGameWorld(World)?World->GetSubsystem<UMiningRoomAudioSubsystem>():nullptr;
         if(RoomAudio)RoomAudio->Tick(.01f);
@@ -56,7 +61,10 @@ public:
         auto* Miner=Pawn->FindComponentByClass<UMiningComponent>();const float OriginalRadius=Miner->Radius;
         Test->TestEqual(TEXT("Physical screen and fourteen thick dig sections"),E->ComputerRocks.Num(),15);
         Test->TestTrue(TEXT("Water, breach and route references exist"),E->Water && E->BreachWall);
-        Test->TestTrue(TEXT("TV coordinates follow the referenced room translation"),E->ComputerEntry.Equals(GetDefault<AMiningRoomEscape>()->ComputerEntry+E->SourceLevelOffset,1.));
+        if(!E->AuthoredTelevisionScreen)
+            Test->TestTrue(TEXT("TV coordinates follow the referenced room translation"),E->ComputerEntry.Equals(GetDefault<AMiningRoomEscape>()->ComputerEntry+E->SourceLevelOffset,1.));
+        else
+            Test->TestTrue(TEXT("Authored glass remains the real diggable television"),E->TelevisionScreen==E->AuthoredTelevisionScreen && E->TelevisionScreen->AuthoredRestMesh);
         Test->TestTrue(TEXT("Water heights follow the same room translation"),FMath::IsNearlyEqual(E->WaterStartZ,GetDefault<AMiningRoomEscape>()->WaterStartZ+float(E->SourceLevelOffset.Z),1.f));
         Test->TestTrue(TEXT("Breach is rebuilt at the translated source wall"),FMath::IsNearlyEqual(E->BreachWall->GetActorLocation().Z,9400.+E->SourceLevelOffset.Z,1.));
         Test->TestTrue(TEXT("No early flood"),E->Phase==EMiningEscapePhase::Idle);
@@ -202,6 +210,22 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCardEscapeTest,"BrainMining.Encounters.PIE.Car
 bool FCardEscapeTest::RunTest(const FString&)
 {
     AutomationOpenMap(TEXT("/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P1"));
+    ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this));
+    ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FP2CardEscapeTest,"BrainMining.Encounters.PIE.P2CardEscapeCheckpoints",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FP2CardEscapeTest::RunTest(const FString&)
+{
+    AutomationOpenMap(TEXT("/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P2"));
+    UWorld* EditorWorld=GEditor->GetEditorWorldContext().World();
+    AMiningRoomEscape* Placed=nullptr;
+    for(TActorIterator<AMiningRoomEscape> It(EditorWorld);It;++It){Placed=*It;break;}
+    if(!TestNotNull(TEXT("P2 contains an authored television escape actor"),Placed))return false;
+    TestTrue(TEXT("Authored television links to P2 cards and entrance"),Placed->CardStage && Placed->Entrance);
+    TArray<UActorComponent*> Parts;Placed->GetComponents(Parts);
+    int32 PreviewParts=0;for(auto* Part:Parts)if(Part->ComponentHasTag(TEXT("TelevisionEditorPreview")))++PreviewParts;
+    TestTrue(TEXT("P2 uses authored glass with no duplicate procedural TV"),Placed->AuthoredTelevisionScreen && PreviewParts==0);
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;

@@ -46,7 +46,7 @@ def tick(dt):
             s['hall'].set_editor_property('linear_campaign',False)
             try:check(s['hall'].enter_area(1),'Enter office through MainGame area management')
             finally:s['hall'].set_editor_property('linear_campaign',True)
-            p=s['pickup_mesh'];c=s['crowd'];check(p.static_mesh.get_name()=='SM_StickyBomb' and abs(p.get_editor_property('relative_scale3d').x-1.6)<.001,'Single collectible uses full-detail C4 at 1.6 scale')
+            p=s['pickup_mesh'];c=s['crowd'];check(p.static_mesh.get_name()=='SM_StickyBomb' and abs(p.get_editor_property('relative_scale3d').x-1.9)<.001,'Single collectible uses full-detail C4 at 1.9 scale')
             check(c.static_mesh.get_name()=='SM_OfficeFinaleC4' and c.get_editor_property('forced_lod_model')==2,'Crowd selects separate reduced C4 LOD')
             check(c.static_mesh.get_num_triangles(1)<850 and c.get_instance_count()==256,'Reduced C4 geometry and 256-instance budget load from saved asset')
             check(c.get_collision_enabled()==unreal.CollisionEnabled.NO_COLLISION and not c.get_editor_property('cast_shadow'),'Crowd disables collision and shadows')

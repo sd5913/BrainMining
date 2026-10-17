@@ -1,0 +1,98 @@
+#include "MiningCollectionWidget.h"
+#include "MiningCollection.h"
+#include "Components/Button.h"
+#include "Components/Image.h"
+#include "Components/TextBlock.h"
+#include "Materials/MaterialInstanceDynamic.h"
+
+void UMiningCollectionWidget::NativeConstruct()
+{
+    Super::NativeConstruct();SetIsFocusable(true);
+    if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("ItemButton0"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Select0);
+    if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("ItemButton1"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Select1);
+    if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("ItemButton2"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Select2);
+    if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("ItemButton3"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Select3);
+    if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("PreviousButton"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Previous);
+    if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("NextButton"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Next);
+    if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("CloseButton"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::CloseCollection);
+    RefreshCollection();
+}
+void UMiningCollectionWidget::SetCollection(AMiningCollectionField* Field){Collection=Field;RefreshCollection();}
+void UMiningCollectionWidget::RefreshCollection()
+{
+    if(!IsValid(Collection))return;
+    const int32 Id=Collection->SelectedId;
+    const bool Owned=Collection->Inventory.IsValidIndex(Id)&&Collection->Inventory[Id]>0;
+    if(auto* I=Cast<UImage>(GetWidgetFromName(TEXT("PreviewImage"))))
+    {
+        if(Collection->PreviewMaterial)I->SetBrushFromMaterial(Collection->PreviewMaterial);
+        I->SetVisibility(Owned?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+    }
+    if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemName"))))T->SetText(FText::FromString(Owned?AMiningCollectible::ItemName(Id):TEXT("尚未发现")));
+    if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))T->SetText(FText::FromString(Owned?AMiningCollectible::Description(Id):TEXT("收集后即可旋转检视")));
+    if(auto* W=GetWidgetFromName(TEXT("PreviewHelp")))W->SetVisibility(Owned?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+    for(int32 I=0;I<4;++I)
+    {
+        const bool Has=Collection->Inventory.IsValidIndex(I)&&Collection->Inventory[I]>0;
+        if(auto* Image=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemArt%d"),I)))))
+        {
+            const int32 Art=Has?(I==2?3:4):2;
+            if(Collection->CatalogueArtwork.IsValidIndex(Art)&&Collection->CatalogueArtwork[Art])Image->SetBrushFromMaterial(Collection->CatalogueArtwork[Art]);
+        }
+        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetText(FText::FromString(Has&&I!=2?AMiningCollectible::ItemName(I):FString()));
+        if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I))))W->SetVisibility(Id==I?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+    }
+}
+void UMiningCollectionWidget::SelectCollectionItem(int32 Id){if(IsValid(Collection))Collection->SelectItem(Id);}
+void UMiningCollectionWidget::TurnCollectionPage(int32 Direction){if(IsValid(Collection))SelectCollectionItem((FMath::Max(0,Collection->SelectedId)+Direction+4)%4);}
+void UMiningCollectionWidget::CloseCollection(){bDragging=false;if(IsValid(Collection)&&Collection->bCatalogueOpen)Collection->ToggleCatalogue();}
+void UMiningCollectionWidget::Select0(){SelectCollectionItem(0);}void UMiningCollectionWidget::Select1(){SelectCollectionItem(1);}
+void UMiningCollectionWidget::Select2(){SelectCollectionItem(2);}void UMiningCollectionWidget::Select3(){SelectCollectionItem(3);}
+void UMiningCollectionWidget::Previous(){TurnCollectionPage(-1);}void UMiningCollectionWidget::Next(){TurnCollectionPage(1);}
+bool UMiningCollectionWidget::InPreview(const FVector2D& Position) const
+{
+    const auto* W=GetWidgetFromName(TEXT("PreviewPanel"));
+    return W&&W->GetCachedGeometry().IsUnderLocation(Position);
+}
+FReply UMiningCollectionWidget::NativeOnMouseButtonDown(const FGeometry& G,const FPointerEvent& E)
+{
+    if(E.GetEffectingButton()==EKeys::LeftMouseButton&&InPreview(E.GetScreenSpacePosition()))
+    {bDragging=true;LastMouse=E.GetScreenSpacePosition();return FReply::Handled().CaptureMouse(TakeWidget());}
+    return Super::NativeOnMouseButtonDown(G,E);
+}
+FReply UMiningCollectionWidget::NativeOnMouseButtonUp(const FGeometry& G,const FPointerEvent& E)
+{
+    if(E.GetEffectingButton()==EKeys::LeftMouseButton&&bDragging){bDragging=false;return FReply::Handled().ReleaseMouseCapture();}
+    return Super::NativeOnMouseButtonUp(G,E);
+}
+FReply UMiningCollectionWidget::NativeOnMouseButtonDoubleClick(const FGeometry& G,const FPointerEvent& E)
+{
+    if(E.GetEffectingButton()==EKeys::LeftMouseButton&&InPreview(E.GetScreenSpacePosition())&&IsValid(Collection)){Collection->ResetPreview();return FReply::Handled();}
+    return Super::NativeOnMouseButtonDoubleClick(G,E);
+}
+FReply UMiningCollectionWidget::NativeOnMouseMove(const FGeometry& G,const FPointerEvent& E)
+{
+    if(bDragging&&IsValid(Collection))
+    {
+        // Convert screen motion through the designer panel, so moving/scaling it keeps input aligned.
+        auto* Panel=GetWidgetFromName(TEXT("PreviewPanel"));
+        const auto& Geometry=Panel?Panel->GetCachedGeometry():G;
+        const auto D=Geometry.AbsoluteToLocal(E.GetScreenSpacePosition())-Geometry.AbsoluteToLocal(LastMouse);
+        Collection->RotatePreview(D.X*.45f,D.Y*.4f);LastMouse=E.GetScreenSpacePosition();return FReply::Handled();
+    }
+    return Super::NativeOnMouseMove(G,E);
+}
+FReply UMiningCollectionWidget::NativeOnMouseWheel(const FGeometry& G,const FPointerEvent& E)
+{
+    if(InPreview(E.GetScreenSpacePosition())&&IsValid(Collection)){Collection->ZoomPreview(E.GetWheelDelta());return FReply::Handled();}
+    return Super::NativeOnMouseWheel(G,E);
+}
+FReply UMiningCollectionWidget::NativeOnKeyDown(const FGeometry& G,const FKeyEvent& E)
+{
+    if(E.GetKey()==EKeys::Escape){CloseCollection();return FReply::Handled();}
+    if(E.GetKey()==EKeys::F&&IsValid(Collection)){Collection->ResetPreview();return FReply::Handled();}
+    if(E.GetKey()==EKeys::Left){Previous();return FReply::Handled();}
+    if(E.GetKey()==EKeys::Right){Next();return FReply::Handled();}
+    return Super::NativeOnKeyDown(G,E);
+}
+void UMiningCollectionWidget::NativeOnMouseCaptureLost(const FCaptureLostEvent& E){bDragging=false;Super::NativeOnMouseCaptureLost(E);}

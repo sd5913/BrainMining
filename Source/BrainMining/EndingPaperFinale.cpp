@@ -44,7 +44,26 @@ void AEndingEmergence::BuildPaperFinale()
     // The portal is the FRONT of the future desktop. Camera approaches it from
     // positive local Z, looking DOWN, then lifts its gaze by ninety degrees.
     UE::Geometry::FDynamicMesh3 Sheet;Sheet.EnableAttributes();
-    PaperEnding::Quad(Sheet,FVector(-60000,-60000,0),FVector(60000,-60000,0),FVector(60000,60000,0),FVector(-60000,60000,0));
+    // Keep the distant portal genuinely circular.  A large quad with an
+    // aperture parameter still exposes its square silhouette for a frame when
+    // the camera approaches it, which reads as the unwanted desktop block.
+    auto* SheetUV=Sheet.Attributes()->PrimaryUV();
+    const int SheetCentre=Sheet.AppendVertex(FVector::ZeroVector);
+    const int SheetCentreUV=SheetUV->AppendElement(FVector2f(.5f,.5f));
+    constexpr int SheetSegments=64; constexpr float SheetRadius=60000.f;
+    TArray<int> SheetVerts;TArray<int> SheetUVs;
+    for(int I=0;I<SheetSegments;++I)
+    {
+        const float A=2*PI*I/SheetSegments;
+        SheetVerts.Add(Sheet.AppendVertex(FVector(FMath::Cos(A)*SheetRadius,FMath::Sin(A)*SheetRadius,0)));
+        SheetUVs.Add(SheetUV->AppendElement(FVector2f(.5f+.5f*FMath::Cos(A),.5f+.5f*FMath::Sin(A))));
+    }
+    for(int I=0;I<SheetSegments;++I)
+    {
+        const int J=(I+1)%SheetSegments;
+        const int T=Sheet.AppendTriangle(SheetCentre,SheetVerts[J],SheetVerts[I]);
+        SheetUV->SetTriangle(T,UE::Geometry::FIndex3i(SheetCentreUV,SheetUVs[J],SheetUVs[I]));
+    }
     PaperSurfaceMaterial=MeshPart(TEXT("WhitePortalBecomesDesktop"),MoveTemp(Sheet),PaperScene,TEXT("PaperFloor"),Cream);
     PaperSurface=CastChecked<USceneComponent>(PaperSurfaceMaterial->GetOuter());
     // The pickaxe is reserved for the final giant paper cutout.
@@ -115,7 +134,7 @@ void AEndingEmergence::BuildPaperFinale()
         auto* Mat=MeshPart(Name,MoveTemp(M),Parent,TEXT("PaperHeroDoodle"),FLinearColor::White);
         Mat->SetTextureParameterValue(TEXT("Doodle"),RockDrawing);
     };
-    PaperRock=Group(TEXT("GiantHingedRockCutout"),FVector(8000,0,0),PaperScene);
+    PaperRock=Group(TEXT("GiantHingedRockCutout"),FVector(8000,0,-460),PaperScene);
     PaperRockCap=Group(TEXT("BreakablePaperRockCentre"),FVector::ZeroVector,PaperRock);
     // A cut-paper silhouette uses a deliberately uneven polygon rather than a
     // soft radial hole. The sharp facets remain readable when the pickaxe hits.
@@ -141,7 +160,7 @@ void AEndingEmergence::BuildPaperFinale()
         RockFacet(TEXT("DrawnPaperRockShard"),{FVector(0,0,700),Inner[I],Inner[J]},Chip,ShardCentre);
         PaperRockChips.Add(Chip);
     }
-    PaperPick=Group(TEXT("GiantHingedPickaxeCutout"),FVector(7940,1100,0),PaperScene);
+    PaperPick=Group(TEXT("GiantHingedPickaxeCutout"),FVector(7940,1100,-460),PaperScene);
     PaperPickSwing=Group(TEXT("PickaxeStrikePivot"),FVector(0,0,1500),PaperPick);
     // Existing doodle, hinged at its handle butt (240,1090). The measured sharp
     // tip (1114,720) lands at Y=0,Z=700; texture alpha supplies the cut contour.
@@ -300,8 +319,10 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
     {
         const float T=FMath::Clamp(ShotTime/6.6f,0.f,1.f),X=FMath::Lerp(480.f,6200.f,T),Y=FMath::Sin(T*2*PI)*65;
         const float FrameRock=PaperEnding::Ease((ShotTime-4.8f)/1.8f);
-        FVector Eye(X,Y,24+FMath::Sin(T*PI)*6+196*FrameRock);
-        FVector Aim=FMath::Lerp(FVector(1,FMath::Cos(T*2*PI)*.025f,.012f*(1-T)).GetSafeNormal(),(FVector(8000,250,1100)-Eye).GetSafeNormal(),FrameRock);
+        // Keep the flight at one height.  The paper rock is lowered to this
+        // sightline, so the approach never has to pitch down or up to find it.
+        FVector Eye(X,Y,90);
+        FVector Aim=FMath::Lerp(FVector(1,FMath::Cos(T*2*PI)*.025f,0).GetSafeNormal(),(FVector(8000,250,90)-Eye).GetSafeNormal(),FrameRock);
         PaperPose(Eye,Aim,108,bComfortMode?0:FMath::Sin(T*2*PI)*4.5f);
         PaperRock->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.4f)/1.1f)),0,0));
         PaperPick->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-5.35f)/1.15f)),0,0));
@@ -329,13 +350,22 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
             PaperRockChips[I]->SetRelativeRotation(FRotator(ShardAge*(55+I*11),ShardAge*(I%2?90:-75),ShardAge*60));
             PaperRockChips[I]->SetRelativeScale3D(FVector(1-PaperEnding::Ease((ShardAge-1.2f)/.9f)));
         }
-        const float X=FMath::CubicInterp(6200.f,(5720.f/6.6f)*4.4f,8600.f,0.f,T);
-        const float Z=220+330*PaperEnding::Ease(T/.72f);
-        FVector P(X,0,Z),Target=FMath::Lerp(FMath::Lerp(FVector(8000,250,1100),FVector(8000,0,700),PaperEnding::Ease(T/.4f)),FVector(10500,0,350),PaperEnding::Ease((T-.45f)/.55f));
+        const float Entry=PaperEnding::Ease(T/.42f);
+        const float Orbit=PaperEnding::Ease((T-.42f)/.58f);
+        const FVector CaveCentre(10500,0,90);
+        FVector P(FMath::Lerp(6200.f,8500.f,Entry),0,90);
+        // Once through the cut, move sideways around the cave while keeping
+        // the eye and aim on the same horizontal plane.
+        if(Orbit>0)
+        {
+            const float Angle=FMath::Lerp(PI,HALF_PI,Orbit);
+            P=CaveCentre+FVector(FMath::Cos(Angle)*2000,FMath::Sin(Angle)*2000,0);
+        }
+        const FVector Target=CaveCentre;
         const float Shake=bComfortMode?0:FMath::Exp(-ShardAge*8)*FMath::Sin(ShardAge*70)*(bPaperRockBroken?6:0);
-        P.Y+=Shake;P.Z+=Shake*.6f;
+        P.Y+=Shake;
         PaperPose(P,(Target-P).GetSafeNormal(),FMath::Lerp(108.f,65.f,PaperEnding::Ease(T)));
-        if(X>8300){PaperCaveSeal->SetVisibility(true);PaperScene->SetVisibility(false,true);}
+        if(P.X>8300){PaperCaveSeal->SetVisibility(true);PaperScene->SetVisibility(false,true);}
         UpdatePaperProps(10000,Dt);
     }
     else if(Shot==13)

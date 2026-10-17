@@ -254,4 +254,5 @@ void ACardRoomStage::TickEffects()
         }
         Illuminate(P,Blue,1800);
     }
+    if(bStyledEffects)TickStyledEffects();
 }

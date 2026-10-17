@@ -23,7 +23,10 @@ FMiningFlightSettings FMiningFlightSettings::Sanitized() const
 	Result.HangDrag = Safe(HangDrag, 1, 20, 7);
 	Result.FastFallGravityMultiplier = Safe(FastFallGravityMultiplier, 1, 5, 2.8f);
 	Result.FastFallSpeedMultiplier = Safe(FastFallSpeedMultiplier, 1, 8, 5);
-	Result.HeatUpSeconds = Safe(HeatUpSeconds, 0.1f, 120, 5);
+	// Keep serialized maps from retaining the old five-second capacity.  The
+	// new design caps the jetpack at half that duration even when an older map
+	// still contains the previous value.
+	Result.HeatUpSeconds = FMath::Min(Safe(HeatUpSeconds, 0.1f, 2.5f, 2.5f), 2.5f);
 	Result.PassiveCoolSeconds = Safe(PassiveCoolSeconds, 0.1f, 120, 2);
 	Result.OverheatLockSeconds = Safe(OverheatLockSeconds, 0.1f, 30, 3);
 	return Result;

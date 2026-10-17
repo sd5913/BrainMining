@@ -293,7 +293,8 @@ void APopupCloseStage::GatherDevices()
   if(Device){Device->DeviceIndex=I;Device->FinishSpawning(Transform);Devices[I]=Device;}
  }
  // Also update copies of the office used in the integrated showcase levels.
- for(int32 I=0;I<4;++I)if(Devices[I])Devices[I]->SetActorLocationAndRotation(GetActorTransform().TransformPosition(DeviceLocations[I]),GetActorRotation()+FRotator(0,DeviceYaws[I],0));
+ // Authored device transforms belong to the level. Only missing devices use the
+ // fallback spawn positions above; moving existing devices here creates overlaps.
 }
 APopupOfficeDevice* APopupCloseStage::FocusedDevice(APlayerController* PC) const
 {

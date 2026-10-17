@@ -1,4 +1,6 @@
 #include "HeavenToiletWater.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "DiggableRock.h"
 #include "Components/DynamicMeshComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -60,6 +62,9 @@ AHeavenToiletWater::AHeavenToiletWater()
     SetRootComponent(Basin);
     Spill=CreateDefaultSubobject<UDynamicMeshComponent>(TEXT("ExcavatedOutletWater"));
     Spill->SetupAttachment(Basin);
+    OutletSpray=CreateDefaultSubobject<UNiagaraComponent>(TEXT("RealOutletSpray"));
+    OutletSpray->SetupAttachment(Basin);OutletSpray->SetAutoActivate(false);
+    OutletSpray->SetAbsolute(false,false,true);
     for(auto* C:{Basin.Get(),Spill.Get()})
     {
         C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -83,6 +88,7 @@ void AHeavenToiletWater::RebuildWater()
     FWaterMesh Empty; Empty.Apply(Spill);
     Spill->SetVisibility(false);
     bSpilling=false; ConnectedCells=0; BreachCount=0; SpillStrength=0; SpillAge=0; ObservedCuts.Reset();
+    OutletSpray->SetAsset(OutletSpraySystem);OutletSpray->DeactivateImmediate();
 }
 
 void AHeavenToiletWater::BeginPlay()
@@ -149,7 +155,7 @@ void AHeavenToiletWater::RefreshBreach()
     const bool Open=Exit!=INDEX_NONE && !RetainingSoil.IsEmpty();
     if(Open && !bSpilling) { ++BreachCount; SpillAge=0; }
     bSpilling=Open; Spill->SetVisibility(Open);
-    if(!Open) { SpillStrength=0; return; }
+    if(!Open) { SpillStrength=0; OutletSpray->Deactivate(); return; }
     FWaterMesh Flow;
     const FTransform Frame=GetActorTransform();
     auto Local=[&](FVector P) { return Frame.InverseTransformPosition(P); };
@@ -161,6 +167,8 @@ void AHeavenToiletWater::RefreshBreach()
             Flow.Quad(Local(Point(X,Y)),Local(Point(X+1,Y)),Local(Point(X+1,Y+1)),Local(Point(X,Y+1)));
     }
     const float ExitY=Point(0,Exit%NY).Y;
+    OutletSpray->SetWorldLocation(FVector(OuterX,ExitY,GetActorLocation().Z+WaterHeight+1));
+    if(OutletSpraySystem && !OutletSpray->IsActive()) OutletSpray->Activate(true);
     // Short descending sheet and a small persistent puddle, not a draining simulation.
     for(int i=0;i<12;++i)
     {

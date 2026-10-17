@@ -25,14 +25,25 @@ public:
  UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Toilet") TObjectPtr<USceneComponent> WaterOutlet;
  UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Toilet") TObjectPtr<UNiagaraComponent> WaterJet;
  UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Toilet") TObjectPtr<UNiagaraComponent> OpeningSplash;
+ UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Toilet|SprayDuck") TObjectPtr<UStaticMeshComponent> SprayDuck;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|Proximity",meta=(ClampMin="1")) float OpenDistance=220.f;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|Proximity",meta=(ClampMin="1")) float CloseDistance=280.f;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|Animation",meta=(ClampMin="0.1")) float OpenSeconds=.7f;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|Animation",meta=(ClampMin="0.1")) float CloseSeconds=1.f;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|Animation") float ClosedLidRoll=96.f;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0")) float DuckForwardSpeed=480.f;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0")) float DuckUpSpeed=260.f;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0.1")) float DuckFlightSeconds=1.35f;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0")) float DuckGravity=620.f;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0.001")) float DuckScale=0.18f;
  UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Toilet|State") float LidOpenAmount=0.f;
  UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Toilet|State") bool bPlayerNearby=false;
  UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Toilet|State") bool bWaterRunning=false;
 private:
  void ApplyLidPose();
+ void LaunchDuck();
+ void ResetDuck();
+ FVector DuckVelocity=FVector::ZeroVector;
+ float DuckFlightAge=0.f;
+ bool bDuckInFlight=false;
 };

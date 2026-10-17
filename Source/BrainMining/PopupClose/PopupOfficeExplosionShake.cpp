@@ -30,5 +30,7 @@ UPopupOfficeExplosionShake::UPopupOfficeExplosionShake(const FObjectInitializer&
 	: Super(ObjectInitializer)
 {
 	bSingleInstance = false;
-	ChangeRootShakePattern<UPopupOfficeExplosionPattern>();
+	// Camera shake constructors run while the CDO is being built; an explicit
+	// object name avoids NewObject's empty-name assertion in commandlets.
+	SetRootShakePattern(NewObject<UPopupOfficeExplosionPattern>(this, TEXT("ExplosionPattern")));
 }

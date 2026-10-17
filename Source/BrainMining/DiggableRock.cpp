@@ -15,7 +15,6 @@
 #include "Misc/ScopeExit.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "UDynamicMesh.h"
-#include "MiningSaveSubsystem.h"
 
 using namespace UE::Geometry;
 
@@ -133,7 +132,6 @@ bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
 {
 	if (ActorHasTag(TEXT("BM_BombOnly"))) { LastStatus = TEXT("坚硬岩层：只能用炸弹破坏"); return false; }
 	const bool bResult = MineCutter(WorldCenter, WorldRadius, nullptr);
-	if (bResult) UMiningSaveSubsystem::RecordSphere(this, WorldCenter, WorldRadius);
 	return bResult;
 }
 
@@ -143,7 +141,6 @@ bool ADiggableRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 S
 	if (!WorldFrame.IsValid() || HalfSize.ContainsNaN() || HalfSize.GetMin() <= 0) return false;
 	const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(WorldFrame, HalfSize, Seed, Roughness);
 	const bool bResult = MineCutter(WorldFrame.GetLocation(), HalfSize.Size() * 1.12, &Cutter);
-	if (bResult) UMiningSaveSubsystem::RecordPickaxe(this, WorldFrame, HalfSize, Seed, Roughness);
 	return bResult;
 }
 
@@ -152,7 +149,6 @@ bool ADiggableRock::MineBlast(FVector WorldCenter, float WorldRadius, float Roug
 	if (WorldCenter.ContainsNaN() || !FMath::IsFinite(WorldRadius) || WorldRadius <= 0 || !FMath::IsFinite(Roughness)) return false;
 	const FDynamicMesh3 Cutter = MiningBlast::MakeCutter(WorldCenter, WorldRadius, Roughness, Seed);
 	const bool bResult = MineCutter(WorldCenter, WorldRadius * 1.45f, &Cutter);
-	if (bResult) UMiningSaveSubsystem::RecordBlast(this, WorldCenter, WorldRadius, Roughness, Seed);
 	return bResult;
 }
 

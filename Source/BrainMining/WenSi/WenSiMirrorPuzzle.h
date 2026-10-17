@@ -34,7 +34,6 @@ public:
  UPROPERTY(EditAnywhere, Category="WenSi|Art") FRotator ArtRotation=FRotator(0,90,0);
  UPROPERTY(EditAnywhere, Category="WenSi|Art") bool bUniformArtScale=true;
  UPROPERTY(VisibleAnywhere, Category="WenSi|Art") TObjectPtr<UStaticMeshComponent> ArtVisual;
- UPROPERTY(VisibleAnywhere, Category="WenSi|VFX") TObjectPtr<UStaticMeshComponent> ShadowVisual;
  UPROPERTY(VisibleAnywhere, Category="WenSi|VFX") TObjectPtr<UNiagaraComponent> ConductiveFX;
  UFUNCTION(BlueprintCallable,CallInEditor,Category="WenSi|Art") void RefreshArtModel();
  UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
@@ -50,6 +49,8 @@ public:
  bool bThinkingEnabled=true;
 private:
  float MirrorClock=0;
+ float RestBoundsMinZ=0.f;
+ bool bRestBoundsInitialized=false;
  void UpdateMirror();
 };
 
@@ -141,6 +142,7 @@ public:
  void RefreshSelfThoughts();
  AWenSiMirrorExhibit* Find(int32 Kind) const;
  UFUNCTION(BlueprintCallable, Category="WenSi") void ResetPuzzle();
+ UFUNCTION(BlueprintCallable, Category="WenSi|Developer") bool SkipToReward();
  UFUNCTION(BlueprintCallable, Category="WenSi|Validation") FString ValidateMirrorPuzzle();
  UFUNCTION(BlueprintCallable, Category="WenSi|Validation") FString MirrorStatus();
 #if WITH_EDITOR

@@ -37,18 +37,21 @@ namespace
  void TuneCampaignMirrorGeometry(UWorld* World,const FTransform& PuzzleTransform,bool bAreaManaged)
  {
   if(!IsCampaignMirrorMap(World,bAreaManaged))return;
-  // Open the pocket directly above the first cage in the MainGame copy.
+  // Open the pocket directly above the first cage in the MainGame copy. The
+  // source level contains a named cap for the pocket; older saved copies do
+  // not always preserve that label, so retain the local-space fallback.
   for(TActorIterator<AActor> It(World);It;++It)
   {
    AActor* Actor=*It;if(!Actor)continue;
    const FVector Local=PuzzleTransform.InverseTransformPosition(Actor->GetActorLocation());
-   if(FMath::Abs(Local.X-650.f)<85.f && FMath::Abs(Local.Y)<145.f && FMath::Abs(Local.Z-430.f)<35.f)
+   const FString Label=Actor->GetActorLabel();
+   const bool bPocketCap=Label.Contains(TEXT("LiftPocketCeiling")) ||
+    (FMath::Abs(Local.X-650.f)<85.f && FMath::Abs(Local.Y)<145.f && FMath::Abs(Local.Z-430.f)<35.f);
+   if(bPocketCap)
    {
-    if(auto* Mesh=Actor->FindComponentByClass<UPrimitiveComponent>())
-    {
-     Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-     Actor->SetActorHiddenInGame(true);
-    }
+    Actor->SetActorEnableCollision(false);
+    Actor->SetActorHiddenInGame(true);
+    Actor->Tags.AddUnique(TEXT("WenSiStageOneLiftPocket"));
    }
   }
  }
@@ -86,7 +89,6 @@ AWenSiMirrorExhibit::AWenSiMirrorExhibit()
  Capture->bAlwaysPersistRenderingState=true;
  Capture->bEnableClipPlane=true;Capture->bOverride_CustomNearClippingPlane=true;Capture->CustomNearClippingPlane=1.f;
  ArtVisual=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArtVisual"));ArtVisual->SetupAttachment(RootComponent);ArtVisual->SetMobility(EComponentMobility::Movable);ArtVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
- ShadowVisual=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MirrorFollowerShadow"));ShadowVisual->SetupAttachment(RootComponent);ShadowVisual->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Sphere.Sphere")));ShadowVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);ShadowVisual->SetCastShadow(false);ShadowVisual->SetVisibility(false);
  ConductiveFX=CreateDefaultSubobject<UNiagaraComponent>(TEXT("ConductiveParticles"));ConductiveFX->SetupAttachment(RootComponent);ConductiveFX->SetAutoActivate(false);
  if(auto* Spark=LoadObject<UNiagaraSystem>(nullptr,TEXT("/Game/Realistic_Starter_VFX_Pack_Niagara/Niagara/Impact/NS_Impact_Electric.NS_Impact_Electric")))ConductiveFX->SetAsset(Spark);
 }
@@ -109,7 +111,11 @@ void AWenSiMirrorExhibit::Configure()
  };
  switch(Kind)
  {
- case 0: Shape(0,FVector::ZeroVector,FVector(85,190,180));break;
+  // The stone remains wide enough to seal the corridor for a normal miner,
+  // while its smaller silhouette leaves a visibly different gap once the
+  // cage is lifted.  Keep the collision envelope and the authored read in
+  // sync so the player cannot mistake the two openings for one another.
+  case 0: Shape(0,FVector(0,0,-18),FVector(76,166,154));break;
  case 1:
   Shape(0,FVector(0,0,120),FVector(150,228,14));
   Shape(1,FVector(0,-108,0),FVector(150,12,240));Shape(2,FVector(0,108,0),FVector(150,12,240));
@@ -170,6 +176,18 @@ void AWenSiMirrorExhibit::Apply()
   auto Mat=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WenSi/Mirror/Materials/M_WenSiMirror.M_WenSiMirror")),this);
   if(Mat){Mat->SetTextureParameterValue(TEXT("MirrorTexture"),MirrorTarget);Parts[0]->SetMaterial(0,Mat);}
  }
+ // Word scaling is applied around the actor origin. Re-seat the exhibit on
+ // the same support plane after a big/small exchange so the enlarged mesh
+ // does not sink through its plinth and the small mesh does not float.
+ if(bRestBoundsInitialized && !(Kind==9 && bBallLanded))
+ {
+  const FBox Bounds=ExhibitBounds(this);
+  if(Bounds.IsValid)
+  {
+   const float Delta=RestBoundsMinZ-Bounds.Min.Z;
+   if(!FMath::IsNearlyZero(Delta,.01f)) AddActorWorldOffset(FVector(0,0,Delta),false,nullptr,ETeleportType::TeleportPhysics);
+  }
+ }
  WenSiExhibitArt::Apply(ArtVisual,Parts,ArtModel,ArtRotation,bUniformArtScale,Word==EWenSiMirrorWord::Passable,Ghost,Rim);
  if(ConductiveFX)
  {
@@ -180,13 +198,15 @@ void AWenSiMirrorExhibit::Apply()
 }
 void AWenSiMirrorExhibit::Highlight(bool bAimed)
 {
- WenSiExhibitArt::Highlight(ArtVisual,bThinkingEnabled ? (bAimed ? 1.6f:.65f):0.f,bAimed ? 1.2f:.65f,FLinearColor(1.f,.89f,.7f));
+ WenSiExhibitArt::Highlight(ArtVisual,bThinkingEnabled ? (bAimed ? 2.2f:.8f):0.f,bAimed ? 4.0f:1.8f,FLinearColor(1.f,.89f,.7f));
  for(auto Part:Parts)if(auto Glow=Cast<UMaterialInstanceDynamic>(Part->GetOverlayMaterial()))
- {Glow->SetScalarParameterValue(TEXT("Strength"),bThinkingEnabled?(bAimed?3.2f:1.35f):0.f);Glow->SetScalarParameterValue(TEXT("OutlineWidth"),bAimed?2.4f:1.35f);Glow->SetVectorParameterValue(TEXT("Tint"),FLinearColor(1.f,.89f,.7f));}
+ {Glow->SetScalarParameterValue(TEXT("Strength"),bThinkingEnabled?(bAimed?4.5f:1.8f):0.f);Glow->SetScalarParameterValue(TEXT("OutlineWidth"),bAimed?4.0f:1.8f);Glow->SetVectorParameterValue(TEXT("Tint"),FLinearColor(1.f,.89f,.7f));}
 }
 void AWenSiMirrorExhibit::BeginPlay()
 {
  Super::BeginPlay();Rest=GetActorLocation();Configure();
+ const FBox InitialBounds=ExhibitBounds(this);
+ if(InitialBounds.IsValid){RestBoundsMinZ=InitialBounds.Min.Z;bRestBoundsInitialized=true;}
  if(Kind==2)
  {
   SetActorHiddenInGame(true);SetActorEnableCollision(false);bThinkingEnabled=false;
@@ -203,25 +223,7 @@ void AWenSiMirrorExhibit::UpdateMirror()
  FVector Eye;FRotator Rot;PC->GetPlayerViewPoint(Eye,Rot);
  const FVector Normal=GetActorForwardVector();const FVector Plane=GetActorLocation()+Normal*3.f;
  const float Distance=FVector::DotProduct(Eye-Plane,Normal);
- if(Distance<=5.f || Distance>450.f){if(ShadowVisual)ShadowVisual->SetVisibility(false);return;}
- // A soft silhouette follows the miner across the mirror plane.  It is kept
- // as a tiny translucent sphere so the effect remains cheap in packaged play.
- if(ShadowVisual && PC->GetPawn())
- {
-  const FVector PawnLocation=PC->GetPawn()->GetActorLocation();
-  const FVector ShadowPoint=PawnLocation-Normal*FVector::DotProduct(PawnLocation-Plane,Normal);
-  ShadowVisual->SetWorldLocation(ShadowPoint+Normal*2.f);
-  ShadowVisual->SetWorldRotation(FRotationMatrix::MakeFromXZ(Normal,FVector::UpVector).Rotator());
-  const float ShadowScale=FMath::Clamp(1.15f-Distance/520.f,.35f,1.0f);
-  ShadowVisual->SetWorldScale3D(FVector(.035f,ShadowScale*.8f,ShadowScale*1.45f));
-  ShadowVisual->SetVisibility(true);
-  if(!ShadowVisual->GetMaterial(0))
-   if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial")))
-   {
-    auto* BaseShadow=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/EngineDebugMaterials/M_SimpleTranslucent.M_SimpleTranslucent"));
-    auto* Dark=UMaterialInstanceDynamic::Create(BaseShadow?BaseShadow:Base,this);Dark->SetVectorParameterValue(TEXT("Color"),FLinearColor(0.f,0.f,0.f,.28f));Dark->SetScalarParameterValue(TEXT("Opacity"),.28f);ShadowVisual->SetMaterial(0,Dark);
-   }
- }
+ if(Distance<=5.f || Distance>450.f)return;
  const FVector Reflected=Eye-2.f*Distance*Normal;
  // A frosted reflection preserves the room's broad shapes without showing the miner.
  const FVector Forward=FMath::GetReflectionVector(Rot.Vector(),Normal);
@@ -298,9 +300,21 @@ bool AWenSiMirrorPawn::SetWord(EWenSiMirrorWord NewWord)
 {
  const float Scale=NewWord==EWenSiMirrorWord::Small?.38f:NewWord==EWenSiMirrorWord::Big?1.45f:1.f;
  const FVector Feet=GetActorLocation()-FVector(0,0,GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
- const FVector Next=Feet+FVector(0,0,88.f*Scale+.5f);
+ FVector Next=Feet+FVector(0,0,88.f*Scale+.5f);
  FCollisionQueryParams Query;Query.AddIgnoredActor(this);
- if(NewWord!=EWenSiMirrorWord::Passable && GetWorld()->OverlapBlockingTestByChannel(Next,FQuat::Identity,ECC_Pawn,FCollisionShape::MakeCapsule(32.f*Scale,88.f*Scale-.2f),Query))return false;
+ // Shrinking can only reduce the occupied volume, so it is always safe to
+ // apply even when the old capsule is touching a nearby surface.  Keep the
+ // overlap guard for growth/solidification where a new penetration is possible.
+ if(NewWord!=EWenSiMirrorWord::Passable && NewWord!=EWenSiMirrorWord::Small)
+ {
+  const FCollisionShape Shape=FCollisionShape::MakeCapsule(32.f*Scale,88.f*Scale-.2f);
+  bool bBlocked=GetWorld()->OverlapBlockingTestByChannel(Next,FQuat::Identity,ECC_Pawn,Shape,Query);
+  // If the old small capsule was placed close to the floor, lift the growing
+  // body until its feet clear the support plane. This keeps growth safe while
+  // still allowing the intended exchange in a low maintenance alcove.
+  for(int32 Attempt=0;bBlocked&&Attempt<24;++Attempt){Next.Z+=8.f;bBlocked=GetWorld()->OverlapBlockingTestByChannel(Next,FQuat::Identity,ECC_Pawn,Shape,Query);}
+  if(bBlocked)return false;
+ }
  Word=NewWord;SetActorScale3D(FVector(Scale));SetActorLocation(Next,false,nullptr,ETeleportType::TeleportPhysics);
  GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic,NewWord==EWenSiMirrorWord::Passable?ECR_Ignore:ECR_Block);
  GetCharacterMovement()->MaxWalkSpeed=Scale<1.f?220.f:300.f;
@@ -335,9 +349,15 @@ bool AWenSiMirrorPuzzle::SetPlayerWord(EWenSiMirrorWord NewWord)
  auto Capsule=Pawn->GetCapsuleComponent();
  const float Half=Capsule->GetUnscaledCapsuleHalfHeight()*PlayerBaseScale.Z*Scale;
  const float Radius=Capsule->GetUnscaledCapsuleRadius()*PlayerBaseScale.X*Scale;
- const FVector Next=Pawn->GetActorLocation()+FVector(0,0,Half-Capsule->GetScaledCapsuleHalfHeight()+.5f);
+ FVector Next=Pawn->GetActorLocation()+FVector(0,0,Half-Capsule->GetScaledCapsuleHalfHeight()+.5f);
  FCollisionQueryParams Q;Q.AddIgnoredActor(Pawn);
- if(NewWord!=EWenSiMirrorWord::Passable && GetWorld()->OverlapBlockingTestByChannel(Next,FQuat::Identity,ECC_Pawn,FCollisionShape::MakeCapsule(Radius,Half-.2f),Q))return false;
+ if(NewWord!=EWenSiMirrorWord::Passable && NewWord!=EWenSiMirrorWord::Small)
+ {
+  const FCollisionShape Shape=FCollisionShape::MakeCapsule(Radius,Half-.2f);
+  bool bBlocked=GetWorld()->OverlapBlockingTestByChannel(Next,FQuat::Identity,ECC_Pawn,Shape,Q);
+  for(int32 Attempt=0;bBlocked&&Attempt<24;++Attempt){Next.Z+=8.f;bBlocked=GetWorld()->OverlapBlockingTestByChannel(Next,FQuat::Identity,ECC_Pawn,Shape,Q);}
+  if(bBlocked)return false;
+ }
  SharedPlayerWord=NewWord;Pawn->SetActorScale3D(PlayerBaseScale*Scale);Pawn->SetActorLocation(Next,false,nullptr,ETeleportType::TeleportPhysics);
  Capsule->SetCollisionResponseToChannel(ECC_WorldDynamic,NewWord==EWenSiMirrorWord::Passable?ECR_Ignore:PlayerBaseCollision);
  Pawn->GetCharacterMovement()->MaxWalkSpeed=Scale<1?220.f:300.f;
@@ -365,6 +385,7 @@ void AWenSiMirrorPuzzle::SetAreaActive(bool Active)
   Pawn->GetCharacterMovement()->MaxWalkSpeed=PlayerBaseSpeed;Pawn->GetCharacterMovement()->MaxStepHeight=PlayerBaseStepHeight;
  }
  if(auto Mining=Pawn->FindComponentByClass<UMiningComponent>()){Mining->CancelMining();Mining->SetInputContextEnabled(!Active);Mining->SetInputSuspended(Active);}
+ if(Active)UpdateMechanism();
 }
 void AWenSiMirrorPuzzle::BeginPlay()
 {
@@ -555,6 +576,35 @@ void AWenSiMirrorPuzzle::ResetPuzzle()
  if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,32)));if(Reward)Reward->SetActorHiddenInGame(true);RefreshSelfThoughts();if(UI)UI->Refresh();
  UpdateMechanism();
  UE_LOG(LogWenSiMirror,Display,TEXT("Reset: all words, transforms, miner size, mirrors, ball, balance, locks and reward restored"));
+}
+bool AWenSiMirrorPuzzle::SkipToReward()
+{
+ if(!bAreaManaged || !bAreaActive || bComplete)return false;
+ auto Hall=AMiningExhibitHall::Find(GetWorld());
+ if(!Hall || !Hall->Areas.IsValidIndex(Hall->ActiveArea) ||
+    Hall->Areas[Hall->ActiveArea].Tag!=TEXT("BM_Campaign_MainGameMuseum"))return false;
+ auto PC=GetWorld()->GetFirstPlayerController();auto Pawn=PC?Cast<ACharacter>(PC->GetPawn()):nullptr;
+ if(!Pawn)return false;
+ CancelSwap();
+ if(bEditing)ToggleEdit();
+ Thoughts[0].Reset();Thoughts[1].Reset();Aim.Reset();bAimReset=false;
+ // Keep the same physical end state as a solved run, then put the tiny miner
+ // at the reward aperture. The normal completion tick performs the existing
+ // transition to the ending map, so the hidden command cannot bypass cleanup.
+ if(!SetPlayerWord(EWenSiMirrorWord::Small))return false;
+ if(auto Block=Find(6)){Block->Word=EWenSiMirrorWord::Heavy;Block->Apply();Block->SetActorLocation(Block->Rest-FVector(0,0,WenSiMuseumMechanisms::BalanceTravel));}
+ if(auto Ball=Find(9)){Ball->Word=EWenSiMirrorWord::Conductive;Ball->bBallLanded=true;Ball->Apply();Ball->SetActorLocation(RoomPoint(FVector(1900,120,80)));}
+ bPressure=true;bPower=true;bRewardUnlocked=true;bSecondRoom=true;
+ if(Reward)Reward->SetActorHiddenInGame(false);
+ if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,112)));
+ // The tiny capsule is roughly 33 cm half-height; keep its feet just above
+ // the alcove floor instead of dropping the scaled body into the slab.
+ Pawn->SetActorLocation(RoomPoint(FVector(2300,-350,42)),false,nullptr,ETeleportType::TeleportPhysics);
+ if(auto Movement=Pawn->FindComponentByClass<UCharacterMovementComponent>())Movement->StopMovementImmediately();
+ if(PC)PC->SetControlRotation((RoomPoint(FVector(2300,-350,80))-Pawn->GetActorLocation()).Rotation());
+ if(UI)UI->Refresh();
+ UE_LOG(LogWenSiMirror,Display,TEXT("Hidden museum skip accepted: small miner moved to golden reward alcove"));
+ return true;
 }
 void AWenSiMirrorPuzzle::EndPlay(const EEndPlayReason::Type Reason){CancelSwap();if(bEditing)ToggleEdit();if(UI)UI->RemoveFromParent();Super::EndPlay(Reason);}
 FString AWenSiMirrorPuzzle::MirrorStatus()

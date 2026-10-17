@@ -95,6 +95,7 @@ public:
     void InteractPortal();
     bool IsInteractionOpen() const;
     bool HandleMirrorInput(const FInputKeyEventArgs& Params);
+    bool IsMuseumSkipChordCandidate() const;
     static AMiningExhibitHall* Find(UWorld* World);
 private:
     struct FAreaActor
@@ -125,11 +126,14 @@ private:
     FVector TerrainWarmupCenter = FVector::ZeroVector;
     int32 TerrainWarmupStep = 0;
     float CompletionDelay = 0;
+    float MuseumSkipHoldSeconds = 0;
+    bool bMuseumSkipTriggered = false;
     bool InitializeAreas();
     void RegisterActor(AActor* Actor);
     void UpdateActorVisibility();
     void CloseInteraction();
     void BeginTerrainWarmup(const FVector& Center);
     void ApplyUpgrades();
+    void TickMuseumSkipChord(float DeltaSeconds);
     UFUNCTION() void OnUpgradeRequested(int32 ItemIndex, int32 RequestedLevel);
 };

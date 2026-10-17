@@ -19,7 +19,6 @@
 #include "GameFramework/PlayerStart.h"
 #include "HAL/ThreadSafeCounter.h"
 #include "TimerManager.h"
-#include "MiningSaveSubsystem.h"
 
 namespace
 {
@@ -397,7 +396,6 @@ bool AGeneratedMiningRock::MineSphere(FVector WorldCenter, float WorldRadius)
 	{
 		LastStatus = TEXT("This segment reached its mesh budget; other segments are independent");
 	}
-	if (bResult && bChunked) UMiningSaveSubsystem::RecordSphere(this, WorldCenter, WorldRadius);
 	return bResult;
 }
 
@@ -418,7 +416,6 @@ bool AGeneratedMiningRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, 
 	if (!bChunked) return Super::MinePickaxe(WorldFrame, HalfSize, Seed, Roughness);
 	const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(WorldFrame, HalfSize, Seed, Roughness);
 	const bool bResult = MineChunks(WorldFrame.GetLocation(), HalfSize.Size() * 1.12, &Cutter);
-	if (bResult) UMiningSaveSubsystem::RecordPickaxe(this, WorldFrame, HalfSize, Seed, Roughness);
 	return bResult;
 }
 
@@ -657,7 +654,6 @@ bool AGeneratedMiningRock::MineBlast(FVector WorldCenter, float WorldRadius, flo
 	if (!bChunked) return Super::MineBlast(WorldCenter, WorldRadius, Roughness, Seed);
 	const FDynamicMesh3 Cutter = MiningBlast::MakeCutter(WorldCenter, WorldRadius, Roughness, Seed);
 	const bool bResult = MineChunks(WorldCenter, WorldRadius * 1.45f, &Cutter);
-	if (bResult) UMiningSaveSubsystem::RecordBlast(this, WorldCenter, WorldRadius, Roughness, Seed);
 	return bResult;
 }
 

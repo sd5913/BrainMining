@@ -55,6 +55,11 @@ void ABrainMiningPlayerController::BeginPlay()
 			if (MiningGUI)
 			{
 				MiningGUI->AddToPlayerScreen(10);
+				if (UMobileRuntimeSettings::IsMobileVerticalSliceEnabled())
+				{
+					if (MiningGUI->AbilityG) MiningGUI->AbilityG->SetVisibility(ESlateVisibility::Collapsed);
+					if (MiningGUI->AbilityV) MiningGUI->AbilityV->SetVisibility(ESlateVisibility::Collapsed);
+				}
 				if (!ShouldUseTouchControls())
 				{
 					if (auto* Viewport = GetWorld()->GetGameViewport())

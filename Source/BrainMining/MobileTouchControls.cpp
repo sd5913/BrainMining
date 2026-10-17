@@ -288,12 +288,13 @@ void SMobileTouchControls::DrawButton(FSlateWindowElementList& OutDrawElements, 
     const FVector2D Center = GetButtonCenter(Button, Size);
     const float PressScale = IsButtonPressed(Button) ? .9f : 1.f;
     const float DrawRadius = Radius * PressScale;
-    FSlateRoundedBoxBrush Brush(Color.CopyWithNewOpacity(Color.A * (bParentEnabled ? .88f : .35f)), DrawRadius);
+    const FLinearColor FillColor = Color.CopyWithNewOpacity(Color.A * (bParentEnabled ? .88f : .35f));
+    FSlateRoundedBoxBrush Brush(FillColor, DrawRadius);
     FSlateDrawElement::MakeBox(OutDrawElements, LayerId, Geometry.ToPaintGeometry(
         FVector2D(DrawRadius * 2.f), FSlateLayoutTransform(Center - FVector2D(DrawRadius))), &Brush);
     const float TextSize = 15.f * GetUiScale(Size);
     DrawText(OutDrawElements, Geometry, LayerId + 1, Label,
-        Center - FVector2D(Label.Len() * TextSize * .28f, TextSize * .55f), FMath::RoundToInt(TextSize), FLinearColor::White);
+        Center - FVector2D(Label.Len() * TextSize * .28f, TextSize * .55f), FMath::RoundToInt(TextSize), FLinearColor(.02f, .02f, .02f, 1.f));
 }
 
 int32 SMobileTouchControls::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,

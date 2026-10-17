@@ -68,6 +68,9 @@ class ABrainMiningCharacter : public ACharacter
 	TObjectPtr<USceneComponent> PickaxeMotion;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<UStaticMeshComponent> PickaxeModel;
+	/** First-person pickaxe meshes for levels 0..4: base, copper, silver, gold, max. */
+	UPROPERTY(EditDefaultsOnly, Category="Tools|Pickaxe")
+	TArray<TSoftObjectPtr<UStaticMesh>> PickaxeLevelMeshes;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<USceneComponent> DrillRightMount;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
@@ -159,6 +162,8 @@ public:
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 	USceneComponent* GetPickaxeMotion() const { return PickaxeMotion; }
 	UStaticMeshComponent* GetPickaxeModel() const { return PickaxeModel; }
+	/** Applies the visual mesh for the progression level without changing mining stats. */
+	void RefreshPickaxeVisual(int32 PickaxeLevel);
 	USceneComponent* GetDrillRightMotion() const { return DrillRightMotion; }
 	UStaticMeshComponent* GetDrillRightModel() const { return DrillRightModel; }
 	USceneComponent* GetDrillLeftMotion() const { return DrillLeftMotion; }

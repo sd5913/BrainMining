@@ -11,6 +11,7 @@
 #include "CardRoomStage.h"
 #include "EchoPassagePlayer.h"
 #include "DiggableRock.h"
+#include "Components/DynamicMeshComponent.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
 #include "Misc/AutomationTest.h"
@@ -157,12 +158,18 @@ public:
         Test->TestTrue(TEXT("Checkpoint captured before digging TV"),E->bComputerCheckpoint);
         Test->TestTrue(TEXT("TV cuts have capsule clearance"),Miner->Radius>=E->TelevisionMineRadius);
         auto* Screen=E->ComputerRocks[0].Get();
-        Pawn->SetActorLocation(FVector(E->ComputerCheckpointPosition.X,E->ComputerEntry.Y,E->ComputerEntry.Z));
+        const FVector ScreenCenter=Screen->RockMesh->Bounds.Origin;
+        Pawn->SetActorLocation(ScreenCenter-Axis*400);
         FHitResult ScreenHit;
-        Pawn->SetActorLocation(E->ComputerEntry,true,&ScreenHit);
-        Test->TestTrue(TEXT("Intact TV screen blocks walking into television"),ScreenHit.bBlockingHit && ScreenHit.GetActor()==Screen);
+        Pawn->SetActorLocation(ScreenCenter,true,&ScreenHit);
+        // The authored cabinet may intercept the capsule before its glass.
+        Test->TestTrue(TEXT("Intact television blocks walking into its interior"),ScreenHit.bBlockingHit);
+        FHitResult GlassHit;
+        Test->TestTrue(TEXT("Authored glass itself retains blocking collision"),Screen->ActorLineTraceSingle(GlassHit,ScreenCenter-Axis*400,ScreenCenter+Axis*400,ECC_Visibility,FCollisionQueryParams(SCENE_QUERY_STAT(TVGlassTest),true)));
+        if(!ScreenHit.bBlockingHit || !GlassHit.bBlockingHit)
+            Test->AddInfo(FString::Printf(TEXT("Screen collision diagnostic: center=%s start=%s axis=%s enabled=%d meshCollision=%d capsuleHit=%s"),*ScreenCenter.ToString(),*(ScreenCenter-Axis*400).ToString(),*Axis.ToString(),Screen->GetActorEnableCollision(),int32(Screen->RockMesh->GetCollisionEnabled()),*GetNameSafe(ScreenHit.GetActor())));
         Test->TestFalse(TEXT("An intact screen has not entered the television"),E->bEnteredComputer);
-        Screen->MineSphere(Screen->GetActorLocation(),190);
+        Test->TestTrue(TEXT("Authored screen accepts excavation at its visible surface"),Screen->MineSphere(ScreenCenter,190));
         Pawn->SetActorLocation(E->ComputerEntry+Axis*180);E->Tick(.01f);
         Test->TestTrue(TEXT("Excavated screen crossing creates second checkpoint"),E->bComputerCheckpoint);
         E->Tick(E->ComputerSeconds+.1f);
@@ -188,11 +195,12 @@ public:
         Test->TestTrue(TEXT("Cannot bypass sealed tunnel"),E->Phase==EMiningEscapePhase::Flooding);
         for(auto& Rock:E->ComputerRocks)
         {
-            Test->TestTrue(TEXT("TV fill accepts real mesh excavation"),Rock->MineSphere(Rock->GetActorLocation(),190));
-            Pawn->SetActorLocation(Rock->GetActorLocation()+Rock->GetActorForwardVector()*(Rock->RockSize.X*.5f+60));E->Tick(.01f);
+            Test->TestTrue(TEXT("TV fill accepts real mesh excavation"),Rock->MineSphere(Rock->RockMesh->Bounds.Origin,190));
+            Pawn->SetActorLocation(Rock==Screen ? E->ComputerEntry+Axis*180 : Rock->GetActorLocation()+Rock->GetActorForwardVector()*(Rock->RockSize.X*.5f+60));E->Tick(.01f);
         }
         Pawn->SetActorLocation(E->Exit);E->Tick(.01f);
         Test->TestTrue(TEXT("Upper exit completes escape"),E->Phase==EMiningEscapePhase::Escaped);
+        Test->TestTrue(TEXT("Mining input is restored after the card/TV escape"),PC->EncounterPolicy && PC->EncounterPolicy->IsMiningAllowed() && !Miner->IsEncounterBlocked());
         if(RoomAudio)
         {
             for(FName Cue:{FName(TEXT("S_CardDraw")),FName(TEXT("S_CardReward")),FName(TEXT("S_FloodStart")),FName(TEXT("S_Drown")),FName(TEXT("S_Retry")),FName(TEXT("S_Checkpoint")),FName(TEXT("S_ShortCircuit")),FName(TEXT("S_Escape"))})

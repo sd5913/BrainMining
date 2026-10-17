@@ -194,8 +194,13 @@ void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	TargetPickaxeHits = !bDrillMode && IsValid(TargetRock) && PatchIndex != INDEX_NONE ? PickaxePatches[PatchIndex].Strikes : 0;
 	if (bShowPreview && IsValid(TargetRock))
 	{
-		const FVector Center = GetCutCenter();
-		if (bDrillMode) DrawDebugSphere(GetWorld(), Center, GetMiningRadius(), 16, FColor(60, 220, 210), false, -1.0f, 0, 0.6f);
+		if (bDrillMode)
+		{
+			FTransform Frame;
+			FVector HalfSize;
+			BuildPickaxeCut(TargetHit, Frame, HalfSize);
+			DrawDebugBox(GetWorld(), Frame.GetLocation(), HalfSize, Frame.GetRotation(), FColor(60, 220, 210), false, -1.f, 0, .6f);
+		}
 		else
 		{
 			FTransform Frame;
@@ -244,14 +249,26 @@ bool UMiningComponent::TryMine()
 		return true;
 	}
 	LastMinedRock = TargetRock;
-	const FVector Center = GetCutCenter();
 	const FHitResult MiningHit = TargetHit;
-	bool bResult = TargetRock->MineSphere(Center, GetMiningRadius());
+	FTransform Frame;
+	FVector HalfSize;
+	BuildPickaxeCut(MiningHit, Frame, HalfSize);
+	const FVector Direction = Frame.GetUnitAxis(EAxis::X);
+	const FVector LocalPoint = TargetRock->GetActorTransform().InverseTransformPosition(MiningHit.ImpactPoint);
+	const FIntVector ShapeCell(
+		FMath::RoundToInt(LocalPoint.X / 4.f),
+		FMath::RoundToInt(LocalPoint.Y / 4.f),
+		FMath::RoundToInt(LocalPoint.Z / 4.f));
+	const int32 Seed = HashCombine(GetTypeHash(TargetRock->GetFName()), GetTypeHash(ShapeCell));
+	const float ShapeRoughness = bUsePickaxeBalance ? PickaxeBalance.Roughness : 1.f;
+	bool bResult = TargetRock->MinePickaxe(Frame, HalfSize, Seed, ShapeRoughness);
 	const float Depth = FMath::IsFinite(DepthMultiplier) ? FMath::Clamp(DepthMultiplier, 1.f, 4.f) : 1.f;
 	for (float Step = 1.f; Step < Depth; Step += 1.f)
 	{
 		const float ExtraDepth = FMath::Min(Step, Depth - 1.f) * GetMiningRadius() * (1.f + InsetFraction);
-		bResult |= TargetRock->MineSphere(Center - MiningHit.ImpactNormal * ExtraDepth, GetMiningRadius());
+		FTransform DepthFrame = Frame;
+		DepthFrame.AddToTranslation(Direction * ExtraDepth);
+		bResult |= TargetRock->MinePickaxe(DepthFrame, HalfSize, Seed, ShapeRoughness);
 	}
 	Status = TargetRock->LastStatus;
 	if (bResult) OnMiningHit.Broadcast(MiningHit);

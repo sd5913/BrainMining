@@ -1,4 +1,5 @@
 #include "MiningCollection.h"
+#include "MiningInteractionTrace.h"
 #include "BrainMiningPlayerController.h"
 #include "SMiningCollectionView.h"
 #include "MiningComponent.h"
@@ -252,7 +253,12 @@ void AMiningCollectionField::RefreshTarget()
     AMiningCollectible* NewTarget=nullptr;
     FVector P; FRotator R; Player->GetPlayerViewPoint(P,R);
     FHitResult Hit; FCollisionQueryParams Q(SCENE_QUERY_STAT(CollectionAim),true,Player->GetPawn());
-    if(GetWorld()->LineTraceSingleByChannel(Hit,P,P+R.Vector()*400,ECC_Visibility,Q))
+    if(MiningInteraction::Trace(GetWorld(),Hit,P,R,400,Q,[](const FHitResult& Candidate)
+    {
+        auto* Item=Cast<AMiningCollectible>(Candidate.GetActor());
+        if(!Item && Candidate.GetActor()) Item=Cast<AMiningCollectible>(Candidate.GetActor()->GetOwner());
+        return Item && Item->bReleased && !Item->bCollected;
+    }))
     {
         auto* Item=Cast<AMiningCollectible>(Hit.GetActor());
         if(!Item && Hit.GetActor()) Item=Cast<AMiningCollectible>(Hit.GetActor()->GetOwner());

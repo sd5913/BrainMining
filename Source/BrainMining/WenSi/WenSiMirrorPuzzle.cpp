@@ -1,4 +1,5 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "MiningInteractionTrace.h"
 #include "WenSi/WenSiExhibitArt.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "WenSi/WenSiMirrorMechanismLayout.h"
@@ -549,7 +550,12 @@ void AWenSiMirrorPuzzle::Tick(float Dt)
  {
   FVector P;FRotator R;PC->GetPlayerViewPoint(P,R);FHitResult Hit;FCollisionQueryParams Q;Q.AddIgnoredActor(PC->GetPawn());
   // Passing through an object never removes it from the thinking trace.
-  if(GetWorld()->LineTraceSingleByChannel(Hit,P,P+R.Vector()*310.f,ECC_Visibility,Q))
+  if(MiningInteraction::Trace(GetWorld(),Hit,P,R,310.f,Q,[this,PC](const FHitResult& Candidate)
+  {
+   auto* Exhibit=Cast<AWenSiMirrorExhibit>(Candidate.GetActor());
+   return PC->GetPawn() && FVector::Dist(PC->GetPawn()->GetActorLocation(),Candidate.ImpactPoint)<280.f
+    && (Cast<AWenSiResetButton>(Candidate.GetActor()) || (Exhibit && Exhibit->bThinkingEnabled && !bComplete));
+  }))
   {
    auto Exhibit=Cast<AWenSiMirrorExhibit>(Hit.GetActor());
    const bool Nearby=PC->GetPawn() && FVector::Dist(PC->GetPawn()->GetActorLocation(),Hit.ImpactPoint)<280.f;

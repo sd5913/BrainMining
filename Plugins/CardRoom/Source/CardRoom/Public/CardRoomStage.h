@@ -4,8 +4,10 @@
 #include "CardRoomRun.h"
 #include "CardRoomStage.generated.h"
 class UStaticMeshComponent;
+class USkeletalMeshComponent;
 class USceneComponent;
 class UStaticMesh;
+class USkeletalMesh;
 class UPointLightComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCardRoomCompleted, FName, RoomId);
 DECLARE_DELEGATE_TwoParams(FCardRoomAudioOverride, FName, float);
@@ -50,6 +52,12 @@ public:
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TObjectPtr<class UMaterialInterface> StyledRingMaterial;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TMap<FName,TObjectPtr<UStaticMesh>> StyledToyMeshes;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TMap<FName,TObjectPtr<class UMaterialInterface>> StyledToyMaterials;
+    // Optional P2 character replacement. When assigned, the authored static toy is hidden
+    // and this skeletal mesh drives the encounter presentation and final drop.
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") TObjectPtr<USkeletalMesh> RabbitSkeletalMesh;
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit", meta=(ClampMin="0.01")) float RabbitVisualScale=1.f;
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") FVector RabbitVisualOffset=FVector::ZeroVector;
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") bool bRabbitPhysicsDrop=true;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") FVector RewardLocal=FVector(-30,0,143);
     FVector GetCardLanding(int32 Index,int32 Count) const;
     FVector GetSeatEyeLocation() const {return GetActorTransform().TransformPosition(FVector(-270,0,188));}
@@ -59,6 +67,7 @@ public:
 private:
     UPROPERTY() TObjectPtr<USceneComponent> ToyRoot;
     UPROPERTY() TObjectPtr<USceneComponent> HeadPivot;
+    UPROPERTY() TObjectPtr<USkeletalMeshComponent> RabbitVisual;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> ToyParts;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> GhostDots;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> Puffs;
@@ -75,12 +84,17 @@ private:
     void TickEffects();
     void InitializeStyledEffects();
     void TickStyledEffects();
+    void TriggerRabbitPhysicsDrop();
+    void ResetRabbitPhysicsDrop();
+    void TickRabbitExpression(float Time, float DeltaSeconds);
     UPROPERTY(Transient) TArray<TObjectPtr<class UNiagaraComponent>> StyledFX;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> StyledRings;
     uint32 StyledFired=0;
     int32 StyledRound=0;
     float StyledLastTime=0;
     bool bStyledPoisonLive=false;
+    bool bRabbitPhysicsDropped=false;
+    FTransform RabbitInitialRelativeTransform;
     ECardRoomPhase LastPhase = ECardRoomPhase::Exploring;
     bool bReplySound = false;
     float PreviousAudioTime = 0;

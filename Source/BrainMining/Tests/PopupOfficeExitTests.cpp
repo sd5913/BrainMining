@@ -71,8 +71,8 @@ public:
     const auto Pickup=FindMesh(TEXT("OfficeBombSkillPickup"));
     const auto Bombs=Cast<UInstancedStaticMeshComponent>(FindMesh(TEXT("OfficeFinaleBombs")));
     Test->TestTrue(TEXT("Collectible uses the current full-detail C4"),Pickup && Pickup->GetStaticMesh() && Pickup->GetStaticMesh()->GetName()==TEXT("SM_StickyBomb"));
-    Test->TestTrue(TEXT("Collectible C4 is enlarged and centered on its physical body"),Pickup && Pickup->GetStaticMesh() && Pickup->GetRelativeScale3D().Equals(FVector(1.6f),.001) &&
-     (Pickup->GetRelativeLocation()+Pickup->GetStaticMesh()->GetBounds().Origin*1.6f).IsNearlyZero(.01));
+    Test->TestTrue(TEXT("Collectible C4 is enlarged and centered on its physical body"),Pickup && Pickup->GetStaticMesh() && Pickup->GetRelativeScale3D().Equals(FVector(1.9f),.001) &&
+     (Pickup->GetRelativeLocation()+Pickup->GetStaticMesh()->GetBounds().Origin*1.9f).IsNearlyZero(.01));
     Test->TestTrue(TEXT("Finale has a separate low-detail C4 asset"),Pickup && Bombs && Bombs->GetStaticMesh() && Bombs->GetStaticMesh()->GetName()==TEXT("SM_OfficeFinaleC4") && Bombs->GetStaticMesh()!=Pickup->GetStaticMesh());
     Test->TestTrue(TEXT("C4 crowd forces its reduced LOD"),Bombs && Bombs->GetForcedLodModel()==2);
     Test->TestTrue(TEXT("C4 crowd is bounded to 256 prewarmed instances"),Bombs && Bombs->GetInstanceCount()==256);
@@ -97,7 +97,7 @@ public:
    }
    if(!Stage->GetExitStatus().Contains(TEXT("Exit phase=2")))return false;
    if(W->GetTimeSeconds()-PhysicalLaunchTime<2)return false;
-   Test->TestEqual(TEXT("Last popups and papers finish landing after emission stops"),Airborne(),0);
+   Test->TestTrue(TEXT("Slow-phase physical popups remain visible after emission stops"),Airborne()>0);
    GroundAfterLanding=GroundCount();
    Test->TestTrue(TEXT("The final airborne batch adds persistent floor models"),GroundAfterLanding>GroundAtHandoff);
    Test->TestTrue(TEXT("Skill pickup remains a physical body after becoming collectible"),PickupBody() && PickupBody()->IsSimulatingPhysics());
@@ -119,6 +119,16 @@ public:
    Key(EKeys::E,IE_Pressed);break;
   case 3:
    Key(EKeys::E,IE_Released);
+   if(!Wallet->bBombSkillUnlocked && PickupBody())
+   {
+    FVector Eye;FRotator Aim;PC->GetPlayerViewPoint(Eye,Aim);
+    const FVector Target=PickupBody()->GetComponentLocation();FHitResult Hit;
+    FCollisionQueryParams Query(SCENE_QUERY_STAT(OfficePickupTest),false,Pawn);
+    W->LineTraceSingleByChannel(Hit,Eye,Target,ECC_Visibility,Query);
+    Test->AddInfo(FString::Printf(TEXT("Pickup diagnostic: distance=%.1f aim=%.3f moveLocked=%d lookLocked=%d paused=%d hit=%s component=%s target=%s eye=%s %s"),
+     FVector::Dist(Eye,Target),FVector::DotProduct(Aim.Vector(),(Target-Eye).GetSafeNormal()),PC->IsMoveInputIgnored(),PC->IsLookInputIgnored(),PC->IsPaused(),
+     *GetNameSafe(Hit.GetActor()),*GetNameSafe(Hit.GetComponent()),*Target.ToString(),*Eye.ToString(),*Stage->GetExitStatus()));
+   }
    if(!Test->TestTrue(TEXT("Real near/aim/E unlocks the shared bomb skill"),Wallet->bBombSkillUnlocked))return true;
    Test->TestFalse(TEXT("Bomb pickup disappears after collection"),FindMesh(TEXT("OfficeBombSkillPickup"))->IsVisible());
    Test->TestTrue(TEXT("Collection stops the pickup's physics and collision"),PickupBody() && !PickupBody()->IsSimulatingPhysics() && PickupBody()->GetCollisionEnabled()==ECollisionEnabled::NoCollision);

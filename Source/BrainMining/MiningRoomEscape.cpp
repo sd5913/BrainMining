@@ -50,7 +50,8 @@ void AMiningRoomEscape::SetAreaActive(bool bActive)
     if (View) View->SetVisibility(bActive ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
     if (bActive && Phase != EMiningEscapePhase::Idle) ApplyExploration();
     if (!bActive) SetTelevisionMining(false);
-    else if (bEnteredComputer) SetTelevisionMining(true);
+    else if (bEnteredComputer && Phase!=EMiningEscapePhase::Escaped) SetTelevisionMining(true);
+    if (bActive && Phase==EMiningEscapePhase::Escaped && Player.IsValid())Player->EncounterPolicy->SetMiningAllowed(true);
     if (!bActive && bFailureLock && Player.IsValid()) { Player->SetIgnoreMoveInput(false); bFailureLock=false; }
 }
 void AMiningRoomEscape::OnWallImpact(FName RoomId)
@@ -241,8 +242,12 @@ void AMiningRoomEscape::Tick(float DeltaSeconds)
         {
             auto* Rock=ComputerRocks[ClearedNodes].Get();
             const FVector Local=Rock->GetActorRotation().UnrotateVector(P-Rock->GetActorLocation());
-            if(Rock->SuccessfulCuts>0 && Local.X>Rock->RockSize.X*.5f && Local.X<Rock->RockSize.X*.5f+600 &&
-                FMath::Abs(Local.Y)<TunnelHalfWidth && FMath::Abs(Local.Z)<TunnelHalfHeight){++ClearedNodes;UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Confirm"),.2f);}
+            // The authored CRT has an offset mesh pivot, rotation and scale.
+            // Its passage is defined by the TV entrance, not the asset's pivot.
+            const bool Crossed = ClearedNodes==0 ? bEnteredComputer :
+                Local.X>Rock->RockSize.X*.5f && Local.X<Rock->RockSize.X*.5f+600 &&
+                FMath::Abs(Local.Y)<TunnelHalfWidth && FMath::Abs(Local.Z)<TunnelHalfHeight;
+            if(Rock->SuccessfulCuts>0 && Crossed){++ClearedNodes;UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Confirm"),.2f);}
         }
         const auto* Character=Cast<ACharacter>(Player->GetPawn());
         const float Head=Character?Character->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()*.75f:50.f;
@@ -251,7 +256,7 @@ void AMiningRoomEscape::Tick(float DeltaSeconds)
         else if(P.Z+Head<WaterZ || P.Z<SourceLevelOffset.Z)Fail(TEXT("被上涨的水淹没了！"));
         else if(!bComputerCheckpoint && Elapsed>=FMath::Max(1.f,FloodSeconds))Fail(TEXT("房间被灌满，未能及时逃出！"));
         else if(bEnteredComputer && !ComputerRocks.IsEmpty() && ClearedNodes==ComputerRocks.Num() && FVector::Dist(P,Exit)<ExitRadius)
-        {Phase=EMiningEscapePhase::Escaped;PhaseTime=0;Player->EncounterPolicy->SetMiningAllowed(false);SetTelevisionMining(false);UMiningRoomAudioSubsystem::StopSource(this);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Escape"),.65f);}
+        {Phase=EMiningEscapePhase::Escaped;PhaseTime=0;Player->EncounterPolicy->SetMiningAllowed(true);SetTelevisionMining(false);UMiningRoomAudioSubsystem::StopSource(this);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Escape"),.65f);}
         UpdateWater();
     }
 }

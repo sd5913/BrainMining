@@ -13,6 +13,7 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/PostProcessComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
@@ -30,7 +31,7 @@ CSV_DEFINE_CATEGORY(OfficeFinale,true);
 namespace
 {
  constexpr int32 BombBudget=256;
- constexpr float PickupBombScale=1.6f;
+ constexpr float PickupBombScale=1.9f;
  constexpr float ExitPlane=1090.f;
  constexpr float VisualUpdateHz=30.f;
  void WarmBombRenderPool(UInstancedStaticMeshComponent* Mesh)
@@ -93,6 +94,12 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
  Pickup->SetRelativeScale3D(FVector(PickupBombScale));Pickup->SetRelativeLocation(-BombMeshOrigin*PickupBombScale);
  Pickup->SetCollisionEnabled(ECollisionEnabled::NoCollision);Pickup->SetVisibility(false);
  Pickup->SetRenderCustomDepth(true);Pickup->SetCustomDepthStencilValue(2);
+ auto Outline=NewObject<UPostProcessComponent>(&Owner,TEXT("OfficeBombPickupOutline"));
+ Owner.AddInstanceComponent(Outline);Outline->SetupAttachment(Owner.GetRootComponent());
+ Outline->bUnbound=true;Outline->bEnabled=false;Outline->Priority=50.f;
+ if(auto Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionSilhouette.M_CollectionSilhouette")))
+  Outline->Settings.AddBlendable(Material,1.f);
+ Outline->RegisterComponent();PickupOutline=Outline;
  auto Instances=[&](const TCHAR* Name,UStaticMesh* Asset,FLinearColor Color)
  {
   auto Mesh=NewObject<UInstancedStaticMeshComponent>(&Owner,Name);Owner.AddInstanceComponent(Mesh);
@@ -107,6 +114,13 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
  if(auto FinaleMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/PopupClose/FX/SM_OfficeFinaleC4.SM_OfficeFinaleC4")))
  {
   Bombs->SetStaticMesh(FinaleMesh);Bombs->SetForcedLodModel(2);
+  // Match named slots against the current full-detail C4. The reduced mesh
+  // may predate the body texture, fuse lamp and display material import.
+  if(BombMesh)for(int32 Slot=0;Slot<FinaleMesh->GetStaticMaterials().Num();++Slot)
+  {
+   const int32 SourceSlot=BombMesh->GetMaterialIndex(FinaleMesh->GetStaticMaterials()[Slot].MaterialSlotName);
+   if(SourceSlot!=INDEX_NONE)Bombs->SetMaterial(Slot,BombMesh->GetMaterial(SourceSlot));
+  }
  }
  Bombs->SetAffectDistanceFieldLighting(false);Bombs->SetEvaluateWorldPositionOffset(false);
  WarmBombRenderPool(Bombs.Get());BombVisuals.Reserve(BombBudget);
@@ -164,6 +178,7 @@ FPopupOfficeExit::~FPopupOfficeExit()
  if(PickupBody)if(auto PickupActor=PickupBody->GetOwner())PickupActor->Destroy();
  for(auto Mesh:{Bombs.Get(),Rubble.Get(),DoorFragments.Get(),ReturnGrille.Get()})if(Mesh)Mesh->DestroyComponent();
  if(RuinBlocker.IsValid())RuinBlocker->DestroyComponent();
+ if(PickupOutline.IsValid())PickupOutline->DestroyComponent();
  for(auto Part:CorridorParts)if(Part.IsValid())Part->DestroyComponent();
 }
 void FPopupOfficeExit::SetBox(UStaticMeshComponent* Mesh,FVector P,FVector Size)
@@ -191,7 +206,7 @@ bool FPopupOfficeExit::CanCollect(APlayerController* PC) const
 {
  if(Phase!=2 || !PC || !PC->GetPawn() || PC->IsPaused() || PC->IsMoveInputIgnored() || PC->IsLookInputIgnored())return false;
  FVector Eye;FRotator View;PC->GetPlayerViewPoint(Eye,View);const FVector Target=PickupPosition();
- if(FVector::DistSquared(Eye,Target)>FMath::Square(240.f) || FVector::DotProduct(View.Vector(),(Target-Eye).GetSafeNormal())<.94f)return false;
+ if(FVector::DistSquared(Eye,Target)>FMath::Square(300.f) || FVector::DotProduct(View.Vector(),(Target-Eye).GetSafeNormal())<.86f)return false;
  FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(OfficeBombPickup),false,PC->GetPawn());
  return !Owner.GetWorld()->LineTraceSingleByChannel(Hit,Eye,Target,ECC_Visibility,Query) || Hit.GetComponent()==Pickup.Get() || Hit.GetComponent()==Pickup->GetAttachParent();
 }
@@ -199,6 +214,7 @@ bool FPopupOfficeExit::Collect(APlayerController* PC)
 {
  if(!CanCollect(PC))return false;BindPlayer();auto Tool=BoundTool.Get();if(!Tool || !Tool->UnlockSkill())return false;
  Phase=3;Pickup->SetVisibility(false);Pickup->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ if(PickupOutline.IsValid())PickupOutline->bEnabled=false;
  UMiningRoomAudioSubsystem::Emit(&Owner,TEXT("S_BombPickup"),.6f);
  if(auto Body=Cast<USphereComponent>(Pickup->GetAttachParent())){Body->SetSimulatePhysics(false);Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);}
  Owner.ShowPrompt(PC,TEXT(""));UE_LOG(LogOfficeExit,Display,TEXT("Bomb skill acquired through approach/aim/E; shared unlock=%d inventory=%d"),Tool->IsSkillUnlocked(),Tool->BombCount);return true;
@@ -235,6 +251,7 @@ void FPopupOfficeExit::Tick()
 {
  const double Now=Owner.GetWorld()->GetTimeSeconds();const float Dt=FMath::Max(0.f,float(Now-LastTime));LastTime=Now;if(Dt<=0)return;
  BindPlayer();Age+=Dt;
+ if(PickupOutline.IsValid())PickupOutline->bEnabled=Owner.bAreaActive && (Phase==1 || Phase==2);
  auto PC=Owner.GetWorld()->GetFirstPlayerController();auto Pawn=PC?PC->GetPawn():nullptr;
  if(Phase==1)
  {
@@ -359,6 +376,7 @@ void FPopupOfficeExit::Reset()
  for(auto Effect:Effects)if(Effect.IsValid())Effect->Destroy();Effects.Reset();
  Door->SetVisibility(true);Door->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
  Pickup->SetVisibility(false);Pickup->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ if(PickupOutline.IsValid())PickupOutline->bEnabled=false;
  if(auto Body=Cast<USphereComponent>(Pickup->GetAttachParent()))
  {
   Body->SetSimulatePhysics(false);Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);

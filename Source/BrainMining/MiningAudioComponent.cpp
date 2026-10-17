@@ -333,10 +333,10 @@ void UMiningAudioComponent::UpdateTools(float DeltaTime)
 	bDrillRunning = bDrill;
 	const auto* Flight = Cast<UMiningCharacterMovementComponent>(Character->GetCharacterMovement());
 	const bool bJet = Flight && Flight->IsFlightAvailable() && (Flight->IsFlightThrustActive() || (Flight->bCreativeFlight && Flight->IsFalling()));
-	if (bJet != bJetRunning) Play(bJet ? TEXT("S_JetStart") : TEXT("S_JetStop"), .4f);
-	SetToolLoop(TEXT("S_Jet_Loop"), bJet, .3f);
+	if (bJet && !bJetRunning) Play(TEXT("S_JetStart"), .25f);
+	SetToolLoop(TEXT("S_Jet_Loop"), bJet, .15f);
 	const bool bHot = Flight && Flight->IsJetpackOverheated();
-	if (bHot && !bOverheated) Play(TEXT("S_JetOverheat"), .5f);
+	if (bHot && !bOverheated) Play(TEXT("S_JetOverheat"), .3f);
 	bOverheated = bHot;
 	bJetRunning = bJet;
 }

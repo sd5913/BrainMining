@@ -43,7 +43,10 @@ private:
 	void RecordCut(const FMiningSavedCut& Cut);
 
 	static constexpr const TCHAR* SlotName = TEXT("BrainMining_Auto");
+	// TObjectPtr alone is not a GC root: periodic saves must retain this object.
+	UPROPERTY(Transient)
 	TObjectPtr<UMiningSaveGame> SaveData;
+	friend class FMiningSaveLifetimeTest;
 	TWeakObjectPtr<UWorld> ActiveWorld;
 	FDelegateHandle WorldCleanupHandle;
 	FDelegateHandle PreExitHandle;

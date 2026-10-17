@@ -6,6 +6,7 @@ from pathlib import Path
 import unreal
 
 OUT=Path(unreal.Paths.project_dir()).resolve()/'Saved/Validation/MaterialProgression'
+OUT.mkdir(parents=True, exist_ok=True)
 ed=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
 levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 actors=unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
@@ -20,6 +21,30 @@ def shot(name):
 def press():
     helper.send_preview_key(state['pc'],'Tab',True)
     helper.send_preview_key(state['pc'],'Tab',False)
+
+def verify_rows(level, amounts):
+    gui=state['gui']
+    labels=[label for label in unreal.ObjectIterator(unreal.TextBlock)
+            if label.get_path_name().startswith(gui.get_path_name())
+            and isinstance(label.slot, unreal.CanvasPanelSlot)]
+    level_labels=[label for label in labels if label.slot.get_position()==unreal.Vector2D(0,355)]
+    check(len(level_labels)==1 and str(level_labels[0].get_text())=='等级 '+str(level), 'HUD displays level '+str(level))
+    panel=level_labels[0].get_parent()
+    rows=sorted([label for label in labels if label.get_parent()==panel and label.slot.get_position().y>=451],
+                key=lambda label: label.slot.get_position().y)
+    check(len(rows)==4, 'HUD owns four independent material requirement rows')
+    for index,row in enumerate(rows):
+        if index>=len(amounts):
+            check(not str(row.get_text()), 'Unused material row is empty '+str(index))
+            continue
+        owned,required=amounts[index]
+        check(str(row.get_text()).endswith(f'{owned} / {required}'), 'Material quantities refresh '+str(index))
+        color=row.get_editor_property('color_and_opacity').get_editor_property('specified_color')
+        green=color.g>.95 and color.r<.4 and color.b<.6
+        check(green==(owned>=required), 'Each material turns green independently '+str(index))
+    if level==4:
+        heading=next(label for label in labels if label.get_parent()==panel and label.slot.get_position().y==427)
+        check(heading.get_visibility()==unreal.SlateVisibility.COLLAPSED, 'Maximum level hides recipe heading')
 def finish(error=None):
     report.update(passed=error is None,error=error,elapsed=time.monotonic()-state['start'])
     (OUT/'hud.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
@@ -33,7 +58,9 @@ def tick(dt):
         if state['phase']=='done':
             if not ed.get_game_world():
                 unreal.unregister_slate_post_tick_callback(callback)
-                unreal.SystemLibrary.execute_console_command(ed.get_editor_world(),'QUIT_EDITOR')
+                state.clear()
+                unreal.EditorPythonScripting.set_keep_python_script_alive(False)
+                unreal.SystemLibrary.quit_editor()
             return
         assert now-state['start']<120,'HUD fixture timed out'
         world=ed.get_game_world()
@@ -58,10 +85,19 @@ def tick(dt):
             progress=pawn.get_component_by_class(unreal.MiningProgressionComponent)
             state.update(pc=pc,gui=pc.mining_gui,progress=progress,wallet=progress.get_wallet(),phase='empty',next=now+2)
         elif state['phase']=='empty':
+            verify_rows(0,[(0,4),(0,2)])
             shot('hud_01_empty')
-            for mineral,count in [('2',28),('4',20),('6',6),('9',2)]:state['wallet'].add_mineral(mineral,count)
+            state['wallet'].add_mineral('2',4)
+            state.update(phase='partial',next=now+.5)
+        elif state['phase']=='partial':
+            verify_rows(0,[(4,4),(0,2)])
+            shot('hud_01_partial')
+            press()
+            check(state['progress'].get_level(0)==0, 'Partial recipe cannot upgrade')
+            state['wallet'].add_mineral('4',2)
             state.update(phase='ready',next=now+.5)
         elif state['phase']=='ready':
+            verify_rows(0,[(4,4),(2,2)])
             shot('hud_02_ready')
             # Route through Slate/game viewport just like a physical keyboard event.
             helper.send_preview_focused_key(state['pc'],'Tab',True)
@@ -69,14 +105,19 @@ def tick(dt):
         elif state['phase']=='focused':
             helper.send_preview_focused_key(state['pc'],'Tab',False)
             check(state['progress'].get_level(0)==1,'Focused Slate Tab input buys exactly one level')
+            verify_rows(1,[(0,6),(0,4)])
+            shot('hud_02_spent')
+            for mineral,count in [('2',24),('4',18),('6',6),('9',2)]:state['wallet'].add_mineral(mineral,count)
             press();press()
             state.update(phase='four_materials',next=now+.8)
         elif state['phase']=='four_materials':
             check(state['progress'].get_level(0)==3,'Level three displays four material requirements')
+            verify_rows(3,[(10,10),(8,8),(4,4),(2,2)])
             shot('hud_03_four_materials');press()
             state.update(phase='max',next=now+.8)
         elif state['phase']=='max':
             check(state['progress'].get_level(0)==4,'Rendered HUD reaches maximum level')
+            verify_rows(4,[])
             shot('hud_04_max');finish()
     except Exception:finish(traceback.format_exc())
     finally:state['busy']=False

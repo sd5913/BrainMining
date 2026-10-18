@@ -1,6 +1,8 @@
 #include "SSubtitleToolPanel.h"
 
 #include "Subtitles/SubtitleSegment.h"
+#include "Subtitles/SubtitleSettings.h"
+#include "Subtitles/SubtitleWidget.h"
 #include "Subtitles/SubtitleTrigger.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Editor.h"
@@ -12,6 +14,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SSplitter.h"
+#include "Widgets/Layout/SExpandableArea.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
@@ -24,9 +27,52 @@ void SSubtitleToolPanel::Construct(const FArguments& InArgs)
 	Args.bHideSelectionTip = true;
 	Args.NameAreaSettings = FDetailsViewArgs::HideNameArea;
 	DetailsView = PropertyEditor.CreateDetailView(Args);
+	SettingsView = PropertyEditor.CreateDetailView(Args);
+	SettingsView->SetObject(GetMutableDefault<USubtitleSettings>());
 
 	ChildSlot
 	[
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(8.f)
+		[
+			SNew(SExpandableArea)
+			.InitiallyCollapsed(false)
+			.HeaderContent()
+			[
+				SNew(STextBlock).Text(FText::FromString(TEXT("通用设置 · 统一调整所有字幕")))
+			]
+			.BodyContent()
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(SBox).HeightOverride(170.f)[SettingsView.ToSharedRef()]
+				]
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(SBox).HeightOverride(85.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
+					[
+						USubtitleWidget::CreateStylePreview(FText::FromString(TEXT("字幕效果预览 · 让思绪轻轻漂浮")))
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						SNew(SButton).Text(FText::FromString(TEXT("保存通用设置")))
+						.OnClicked(this, &SSubtitleToolPanel::SaveGeneralSettings)
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(12.f, 0.f).VAlign(VAlign_Center)
+					[
+						SAssignNew(SettingsStatus, STextBlock).AutoWrapText(true)
+						.Text(FText::FromString(TEXT("调整即时预览，也会应用到当前试玩。保存后重启与打包仍生效。")))
+					]
+				]
+			]
+		]
+		+ SVerticalBox::Slot().FillHeight(1.f)
+		[
 		SNew(SSplitter)
 		+ SSplitter::Slot()
 		.Value(0.38f)
@@ -38,7 +84,7 @@ void SSubtitleToolPanel::Construct(const FArguments& InArgs)
 			[
 				SNew(STextBlock)
 				.AutoWrapText(true)
-				.Text(FText::FromString(TEXT("新建字幕段后，在右侧为每条字幕填写文本并放入音频。需要时再把触发盒放进当前关卡，玩家第一次走过就会播放。其它玩法可调用 PlaySubtitleSegment。")))
+				.Text(FText::FromString(TEXT("新建字幕段后，在右侧填写文本并选择音频。音频留空时会自动生成随文字变调的复古说话音效。将触发盒放进当前关卡，玩家首次经过时播放。")))
 			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()
@@ -114,9 +160,23 @@ void SSubtitleToolPanel::Construct(const FArguments& InArgs)
 		[
 			DetailsView.ToSharedRef()
 		]
+		]
 	];
+	SettingsView->OnFinishedChangingProperties().AddLambda([this](const FPropertyChangedEvent&)
+	{
+		SettingsStatus->SetText(FText::FromString(TEXT("通用设置已修改，预览与当前试玩已更新；点击保存后保留。")));
+	});
 
 	RefreshSegments();
+}
+
+FReply SSubtitleToolPanel::SaveGeneralSettings()
+{
+	const bool bSaved = GetMutableDefault<USubtitleSettings>()->TryUpdateDefaultConfigFile();
+	SettingsStatus->SetText(FText::FromString(bSaved
+		? TEXT("已保存通用设置，所有字幕统一生效；重启与打包后保留。")
+		: TEXT("保存失败：请检查 Config/DefaultGame.ini 是否可写。当前效果尚未保存。")));
+	return FReply::Handled();
 }
 
 void SSubtitleToolPanel::RefreshSegments()

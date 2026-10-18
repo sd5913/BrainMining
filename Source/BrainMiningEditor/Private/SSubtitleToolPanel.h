@@ -26,6 +26,7 @@ private:
 	void RefreshSegments();
 	FReply CreateSegment();
 	FReply PlaceTrigger();
+	FReply SaveGeneralSettings();
 	TSharedRef<ITableRow> GenerateRow(TSharedPtr<FSubtitleRow> Item, const TSharedRef<STableViewBase>& OwnerTable);
 	void OnSelected(TSharedPtr<FSubtitleRow> Item, ESelectInfo::Type SelectInfo);
 	USubtitleSegment* LoadSelected() const;
@@ -33,6 +34,8 @@ private:
 	TArray<TSharedPtr<FSubtitleRow>> Rows;
 	TSharedPtr<SListView<TSharedPtr<FSubtitleRow>>> ListView;
 	TSharedPtr<IDetailsView> DetailsView;
+	TSharedPtr<IDetailsView> SettingsView;
+	TSharedPtr<STextBlock> SettingsStatus;
 	TSharedPtr<SEditableTextBox> IdBox;
 	TSharedPtr<STextBlock> StatusText;
 	TSharedPtr<FSubtitleRow> Selected;

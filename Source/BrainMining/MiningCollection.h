@@ -29,6 +29,7 @@ struct FMiningCollectionPlacement
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FName AreaTag;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TObjectPtr<ADiggableRock> HostRock;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform ClueTransform;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform ApproachTransform;
     // Optional authored prop replaces only the generated presentation.
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TObjectPtr<AActor> PresentationActor;
     // A room-owned echo stage supplies the same pulse materials as its walls.
@@ -39,9 +40,10 @@ struct FCollectionAnt
 {
     TWeakObjectPtr<AActor> Actor;
     TArray<TWeakObjectPtr<USceneComponent>> Legs;
+    TWeakObjectPtr<UMaterialInstanceDynamic> FadeMaterial;
     FVector Start;
     FTransform Frame;
-    float Length=260,Phase=0;
+    float Length=260,Phase=0,Fade=1;
     int32 TrailIndex=INDEX_NONE;
 };
 struct FCollectionAntTrail
@@ -184,6 +186,7 @@ private:
     TArray<FCollectionAntTrail> AntTrails;
     TArray<FCollectionBird> Birds;
     TArray<FCollectionClue> Clues;
+    UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> ReagentStain;
     TArray<FVector> BirdPath;
     TWeakObjectPtr<AMiningCollectible> ResidentBird;
     float AmbientTime=0,FlightTime=-1,NextFlockCheck=0;

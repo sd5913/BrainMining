@@ -56,7 +56,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending|Video") TObjectPtr<UMediaSource> FinaleVideoSource;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ending") TArray<TObjectPtr<ADiggableRock>> Gates;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") int32 GateIndex = 0;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending|Painterly", meta=(ClampMin="0",ClampMax="1")) float CellPaintWeight=.85f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending|Painterly", meta=(ClampMin="0",ClampMax="1")) float CellPaintWeight=1.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending|Painterly", meta=(ClampMin="0",ClampMax="1")) float BloodPaintWeight=.7f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Painterly") float ActivePaintWeight=0;
     static float PaintWeightForStage(int32 InGate, int32 InShot, bool EnteringBrain, float CellWeight, float BloodWeight);

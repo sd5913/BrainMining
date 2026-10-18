@@ -73,7 +73,7 @@
     },
     {
       "id": "Journey",
-      "source": "/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P1",
+      "source": "/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P2",
       "tag": "BM_Campaign_MainGameJourney",
       "kind": "JOURNEY",
       "origin": [

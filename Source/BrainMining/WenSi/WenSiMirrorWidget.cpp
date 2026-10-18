@@ -218,7 +218,7 @@ void UWenSiMirrorWidget::Refresh()
  }
  FString Message;
  if(Puzzle->MousePortal && Puzzle->MousePortal->IsEntering()) Message=TEXT("正在进入画中的细胞……");
- else if(Puzzle->MousePortal && Puzzle->MousePortal->IsFocused()) Message=TEXT("E 进入画中的圆环");
+ else if(Puzzle->MousePortal && Puzzle->MousePortal->IsFocused()) Message=FString();
  else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("E 重置谜题");
  else if (!Puzzle->bComplete)
  {

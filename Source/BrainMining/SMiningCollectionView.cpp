@@ -18,7 +18,7 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
     const auto* F=Owner.Get();
     const bool HeavenRoom=F->bUseAuthoredPlacements && F->AuthoredPlacements.Num()==1 && F->AuthoredPlacements[0].ItemId==0;
     const TArray<int32> Ids=F->CatalogueIds();
-    const int32 Total=Ids.Num(),Page=FMath::Max(0,Ids.IndexOfByKey(F->SelectedId))/4;
+    const int32 Total=Ids.Num();
     if (!F->bCatalogueOpen && !F->bShowExplorationHUD) return Layer;
     const FVector2D Size=G.GetLocalSize(); const float S=FMath::Min(Size.X/1600,Size.Y/900); const FVector2D O=(Size-FVector2D(1600,900)*S)*.5;
     const FLinearColor Ink(.018f,.034f,.038f,1),Panel(.035f,.057f,.061f,1),Cream(.89f,.91f,.81f,1),Muted(.47f,.58f,.54f,1),Gold(.93f,.62f,.23f,1),Mint(.24f,.72f,.57f,1);
@@ -70,21 +70,25 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
         Text(TEXT("收藏后即可检视"),1223,380,16,Muted);
     }
     Text(TEXT("拖动旋转    滚轮缩放    双击复位"),355,729,14,Muted);
-    for(int Slot=0;Slot<4 && Page*4+Slot<Total;++Slot)
+    const float MaxScroll=FMath::Max(0.f,Total*267.f-25.f-1480.f);
+    Out.PushClip(FSlateClippingZone(G.MakeChild(FVector2D(1480*S,90*S),FSlateLayoutTransform(FVector2f(O+FVector2D(60,780)*S)))));
+    for(int Slot=0;Slot<Total;++Slot)
     {
-        const int i=Ids[Page*4+Slot];
-        const float X=60+Slot*267; const bool Has=F->Inventory.IsValidIndex(i)&&F->Inventory[i]>0,Selected=F->SelectedId==i;
-        Box(X,790,242,75,Selected?FLinearColor(.095f,.135f,.12f):Panel);
-        if(Selected) Box(X,790,242,2,Gold);
-        Text(FString::Printf(TEXT("%02d"),i+1),X+17,815,15,Selected?Gold:Muted);
-        Text(Has?AMiningCollectible::ItemName(i):TEXT("未发现"),X+55,812,20,Has?Cream:Muted);
+        const int i=Ids[Slot];const float X=60+Slot*267-ListScroll;
+        if(X+242<60 || X>1540)continue;
+        const bool Has=F->Inventory.IsValidIndex(i)&&F->Inventory[i]>0,Selected=F->SelectedId==i;
+        Box(X,790,242,75,Has?FLinearColor(.07f,.17f,.13f):Panel);
+        Box(X,790,4,75,Has?Mint:Muted);
+        if(Selected)Box(X,790,242,3,Gold);
+        Text(FString::Printf(TEXT("%02d"),i+1),X+17,811,15,Has?Gold:Muted);
+        Text(Has?AMiningCollectible::ItemName(i):TEXT("未发现"),X+55,800,19,Has?Cream:Muted);
+        Text(Has?TEXT("已收集"):TEXT("等待探索"),X+55,833,12,Has?Mint:Muted);
     }
-    if(Total>4)
-    {
-        Box(1180,790,70,75,Panel); Text(TEXT("<"),1204,812,23,Cream);
-        Text(FString::Printf(TEXT("%d / %d"),Page+1,(Total+3)/4),1300,815,20,Gold);
-        Box(1450,790,70,75,Panel); Text(TEXT(">"),1474,812,23,Cream);
-    }
+    Out.PopClip();
+    Box(60,877,1480,3,Panel);
+    const float Thumb=1480*FMath::Min(1.f,1480.f/FMath::Max(1.f,Total*267.f-25));
+    Box(60+(MaxScroll>0?ListScroll/MaxScroll*(1480-Thumb):0),876,Thumb,5,Muted);
+    Text(TEXT("拖动藏品列表或使用滚轮浏览"),60,755,12,Muted);
     Box(1220,661,252,44,Panel); Text(TEXT("F   恢复展示角度"),1240,672,15,Muted);
     return L;
 }
@@ -92,24 +96,31 @@ FReply SMiningCollectionView::OnMouseButtonDown(const FGeometry& G,const FPointe
 {
     if(!Owner.IsValid()||!Owner->bCatalogueOpen) return FReply::Unhandled();
     const auto Ids=Owner->CatalogueIds();
-    const int32 Total=Ids.Num(),Page=FMath::Max(0,Ids.IndexOfByKey(Owner->SelectedId))/4;
+    const int32 Total=Ids.Num();
     FVector2D P=ToVirtual(G,E.GetScreenSpacePosition());
     if(E.GetEffectingButton()!=EKeys::LeftMouseButton) return FReply::Handled();
     if(P.X>=1408&&P.X<=1540&&P.Y>=35&&P.Y<=79) { Owner->ToggleCatalogue(); return FReply::Handled(); }
-    for(int Slot=0;Slot<4 && Page*4+Slot<Total;++Slot) if(P.X>=60+Slot*267&&P.X<=302+Slot*267&&P.Y>=790&&P.Y<=865) { Owner->SelectItem(Ids[Page*4+Slot]); return FReply::Handled(); }
-    if(Total>4 && P.Y>=790 && P.Y<=865)
+    if(P.X>=60 && P.X<=1540 && P.Y>=790 && P.Y<=885)
     {
-        const int Pages=(Total+3)/4;
-        if(P.X>=1180 && P.X<=1250) Owner->SelectItem(Ids[((Page+Pages-1)%Pages)*4]);
-        if(P.X>=1450 && P.X<=1520) Owner->SelectItem(Ids[((Page+1)%Pages)*4]);
+        bListDragging=true;ListPress=P;ListDragStart=ListScroll;
+        return FReply::Handled().CaptureMouse(AsShared());
     }
     if(P.X>=1220&&P.X<=1472&&P.Y>=661&&P.Y<=705) { Owner->ResetPreview(); return FReply::Handled(); }
     if(P.X>=30&&P.X<=1155&&P.Y>=90&&P.Y<=770) { bDragging=true; LastMouse=P; return FReply::Handled().CaptureMouse(AsShared()); }
     return FReply::Handled();
 }
-FReply SMiningCollectionView::OnMouseButtonUp(const FGeometry&,const FPointerEvent& E)
+FReply SMiningCollectionView::OnMouseButtonUp(const FGeometry& G,const FPointerEvent& E)
 {
-    if(E.GetEffectingButton()==EKeys::LeftMouseButton) { bDragging=false; return FReply::Handled().ReleaseMouseCapture(); }
+    if(E.GetEffectingButton()==EKeys::LeftMouseButton)
+    {
+        const auto P=ToVirtual(G,E.GetScreenSpacePosition());
+        if(bListDragging&&Owner.IsValid()&&FVector2D::Distance(P,ListPress)<6)
+        {
+            const auto Ids=Owner->CatalogueIds();const int Index=FMath::FloorToInt((P.X-60+ListScroll)/267);
+            if(Ids.IsValidIndex(Index)&&P.Y>=790&&P.Y<=865&&FMath::Fmod(float(P.X-60+ListScroll),267.f)<242)Owner->SelectItem(Ids[Index]);
+        }
+        bDragging=bListDragging=false;return FReply::Handled().ReleaseMouseCapture();
+    }
     return FReply::Handled();
 }
 FReply SMiningCollectionView::OnMouseButtonDoubleClick(const FGeometry& G,const FPointerEvent& E)
@@ -121,13 +132,15 @@ FReply SMiningCollectionView::OnMouseButtonDoubleClick(const FGeometry& G,const 
 FReply SMiningCollectionView::OnMouseMove(const FGeometry& G,const FPointerEvent& E)
 {
     const auto P=ToVirtual(G,E.GetScreenSpacePosition());
+    if(bListDragging&&Owner.IsValid())ListScroll=FMath::Clamp(ListDragStart+float(ListPress.X-P.X),0.f,FMath::Max(0.f,Owner->CatalogueIds().Num()*267.f-25-1480));
     if(bDragging&&Owner.IsValid()) { const auto D=P-LastMouse; Owner->RotatePreview(D.X*.45f,D.Y*.4f); LastMouse=P; }
     return FReply::Handled();
 }
 FReply SMiningCollectionView::OnMouseWheel(const FGeometry& G,const FPointerEvent& E)
 {
     const auto P=ToVirtual(G,E.GetScreenSpacePosition());
-    if(Owner.IsValid()&&P.X>=30&&P.X<=1155&&P.Y>=90&&P.Y<=770) Owner->ZoomPreview(E.GetWheelDelta());
+    if(Owner.IsValid()&&P.Y>=780&&P.Y<=890)ListScroll=FMath::Clamp(ListScroll-E.GetWheelDelta()*150,0.f,FMath::Max(0.f,Owner->CatalogueIds().Num()*267.f-25-1480));
+    else if(Owner.IsValid()&&P.X>=30&&P.X<=1155&&P.Y>=90&&P.Y<=770) Owner->ZoomPreview(E.GetWheelDelta());
     return FReply::Handled();
 }
 FReply SMiningCollectionView::OnKeyDown(const FGeometry&,const FKeyEvent& E)

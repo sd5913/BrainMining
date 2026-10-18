@@ -63,7 +63,7 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 	PickaxeMotion->SetupAttachment(PickaxeMount);
 	PickaxeModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PickaxeModel"));
 	PickaxeModel->SetupAttachment(PickaxeMotion);
-	PickaxeModel->SetRelativeLocationAndRotation(FVector(-9.885566, -.907176, 1.205274), FRotator(-6.922544, 5.243221, -4.019591));
+	PickaxeModel->SetRelativeLocationAndRotation(FVector(-9.885566, -.907176, 1.205274), FRotator(-6.922544, 5.243221, -4.019591).Quaternion()*FQuat(FVector::UpVector,PI));
 	PickaxeModel->SetRelativeScale3D(FVector(.65));
 
 	DrillRightMount = CreateDefaultSubobject<USceneComponent>(TEXT("DrillRightMount"));

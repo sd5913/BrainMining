@@ -160,7 +160,7 @@ void UWenSiPuzzleWidget::Refresh()
  if(Puzzle->bAimReset && !Puzzle->bEditing) { if (!SharedHUD) Message=TEXT("E 重置谜题"); }
  else if (!Puzzle->bComplete)
  {
-  if (Puzzle->bEditing) Message=TEXT("拖动红词交换    G 返回    × 放下思考");
+  if (Puzzle->bEditing) Message=TEXT("拖动红词交换    G 返回    Q 放下思考");
   else
   {
    if (Puzzle->Aim!=INDEX_NONE && !SharedHUD) Message=TEXT("E 思考    ");

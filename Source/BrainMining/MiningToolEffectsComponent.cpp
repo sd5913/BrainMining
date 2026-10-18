@@ -89,7 +89,7 @@ void UMiningToolEffectsComponent::BeginPlay()
 		PickaxeMesh->SetStaticMesh(Mesh);
 		// Match test109's camera-mounted mesh pose and material, without replacing the player.
 		PickaxeMesh->SetRelativeLocation(FVector(-9.885566, -0.907176, 1.205274));
-		PickaxeMesh->SetRelativeRotation(FRotator(-6.922544, 5.243221, -4.019591));
+		PickaxeMesh->SetRelativeRotation(FRotator(-6.922544, 5.243221, -4.019591).Quaternion()*FQuat(FVector::UpVector,PI));
 		PickaxeMesh->SetRelativeScale3D(FVector(0.65));
 		PickaxeMesh->SetOnlyOwnerSee(true);
 		PickaxeMesh->SetCastShadow(false);
@@ -158,7 +158,7 @@ void UMiningToolEffectsComponent::PreparePickaxeMeshChange()
 
 void UMiningToolEffectsComponent::PlayPickaxeUpgrade()
 {
-	PickaxeUpgradeRemaining = .65f;
+	PickaxeUpgradeRemaining = 1.15f;
 	bSwinging = false;
 }
 
@@ -461,11 +461,11 @@ void UMiningToolEffectsComponent::TickComponent(float DeltaTime, ELevelTick Tick
 	if (PresentedTool == 0 && PickaxeUpgradeRemaining > 0)
 	{
 		PickaxeUpgradeRemaining = FMath::Max(0.f, PickaxeUpgradeRemaining - DeltaTime);
-		const float T = 1.f - PickaxeUpgradeRemaining / .65f;
+		const float T = 1.f - PickaxeUpgradeRemaining / 1.15f;
 		const float Lift = FMath::Sin(PI * T);
 		ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator,
-			Lowered + FVector(-3, -4, 10) * Lift,
-			EquipTilt + FRotator(12 * Lift, -9 * Lift, 18 * FMath::Sin(T * TWO_PI) * (1-T)));
+			Lowered + FVector(20, -18, 16) * Lift,
+			EquipTilt + FRotator(-18 * Lift, -14 * Lift, 45 * FMath::Sin(T * TWO_PI) * (1-T)));
 	}
 	bDrillRunning = Mining->bDrillMode && Mining->IsMiningActive() && IsValid(DrillMesh) && IsValid(DrillSpinCurve);
 	if (bDrillRunning)

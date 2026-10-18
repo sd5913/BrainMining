@@ -1,6 +1,6 @@
 # MainGame 原关卡房间整合
 
-MainGame 的顺序为：初始房间及硅质岩区 → `Lvl_PopupClose1` → 溶洞岩区 → `Lvl_EchoMazeToCards_P1` → 石笋岩区 → `Lvl_WenSi_MirrorMuseum1` → 神经岩区。
+MainGame 当前的卡牌房引用为 `Lvl_EchoMazeToCards_P2`（2026-10-18 从 P1 更新）。保留原 Journey 子关卡平移 `(0,0,10000)`、区域入口/出口和主关卡矿区；保存 P2 后重新打开 MainGame 即载入最新地编、机器人对手、电视逃生与出口舞台。此前四矿区的历史装配和验收记录保留在下文，当前主流程以 `README_MainGame.md` 为准。
 
 三个房间使用 Always Loaded 子关卡直接引用原地图，未复制房间 Actor 到主关卡。修改并保存原房间地图后，重新打开 MainGame 即会载入更新；也可以通过 Levels 面板编辑对应子关卡。原地图可以独立运行，其 GameMode 不会替换 MainGame 的 GameMode。入口/出口位置发生变更时，需要同步调整主关卡的过渡段与 `MiningExhibitHall.Areas`，引用本身不会自动推断新的门口位置。
 

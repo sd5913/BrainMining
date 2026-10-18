@@ -4,6 +4,7 @@
 #include "MiningRoomAudioSubsystem.h"
 #include "MiningAudioComponent.h"
 #include "Showcase/MiningExhibitHall.h"
+#include "StartRoom/MiningStartRoom.h"
 #include "MiningEncounterPlayer.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningComponent.h"
@@ -42,6 +43,9 @@ public:
         {
             auto* Hall=AMiningExhibitHall::Find(World);
             if(!Hall || !Hall->bReady || World->GetTimeSeconds()<2.5) return false;
+            // This isolated room fixture skips the starting bedroom. Grant only its
+            // pickaxe/jetpack prerequisites; drill ownership still requires the card reward.
+            if(auto* StartRoom=AMiningStartRoom::Find(World))StartRoom->UnlockDeveloperEquipment();
             const int32 JourneyIndex=Hall->bLinearCampaign?3:2;
             if(Hall->bLinearCampaign) Hall->UnlockedArea=JourneyIndex; // Isolated encounter fixture.
             if(Hall->ActiveArea!=JourneyIndex) Hall->EnterArea(JourneyIndex);
@@ -146,6 +150,9 @@ public:
         Test->TestFalse(TEXT("Spent step sinks completely and loses collision"),E->FloatingProps[0]->IsVisible() || E->FloatingProps[0]->GetCollisionEnabled()!=ECollisionEnabled::NoCollision);
         E->RetryEscape();E->Tick(E->RapidFillSeconds);
         Test->TestTrue(TEXT("Automatic retry restores floating steps"),E->FloatingSinkElapsed[0]<0 && E->FloatingProps[0]->IsVisible());
+        auto* LastPad=E->FloatingProps.Last().Get();
+        Pawn->SetBase(LastPad);E->Tick(.1f);Pawn->SetBase(static_cast<UPrimitiveComponent*>(nullptr));
+        Test->TestTrue(TEXT("Final TV platform stays stable on contact"),E->FloatingSinkElapsed.Last()<0);
         const FVector Axis=(E->TunnelEnd-E->ComputerEntry).GetSafeNormal();
         TArray<UPostProcessComponent*> ExposureComponents;E->GetComponents(ExposureComponents);
         Test->TestEqual(TEXT("Television and stage have local exposure"),ExposureComponents.Num(),2);
@@ -230,7 +237,18 @@ public:
         }
         Pawn->SetActorLocation(E->Exit);E->Tick(.01f);
         Test->TestTrue(TEXT("Upper exit completes escape"),E->Phase==EMiningEscapePhase::Escaped);
-        Test->TestTrue(TEXT("Stage arrival fires the reused celebration"),E->StageCelebration && E->StageCelebration->bStageActive);
+        Test->TestNotNull(TEXT("Stage celebration exists"),E->StageCelebration.Get());
+        E->StageCelebration->Tick(.1f);
+        Test->TestTrue(TEXT("Approaching stage opens its curtain"),E->StageCelebration->bCurtainOpen);
+        Test->TestFalse(TEXT("Leaving the television does not fire confetti early"),E->StageCelebration->bStageActive);
+        Test->TestTrue(TEXT("Collectible ribbon waits inside its cannon"),E->StageRibbon->IsHidden() && !E->StageRibbon->bReleased);
+        Pawn->SetActorLocation(E->Exit+FVector(650,0,0));E->StageCelebration->Tick(.1f);
+        Test->TestTrue(TEXT("Walking forward onto stage fires confetti"),E->StageCelebration->bStageActive);
+        E->StageCelebration->Tick(.6f);E->Tick(.01f);
+        Test->TestTrue(TEXT("Collectible ribbon launches visibly before becoming collectible"),!E->StageRibbon->IsHidden() && !E->StageRibbon->bReleased);
+        E->StageCelebration->Tick(4.5f);E->Tick(.01f);
+        Test->TestTrue(TEXT("Ribbon lands before enabling pickup"),E->StageRibbon->bReleased);
+        Pawn->SetActorLocation(E->Exit);
         Test->TestTrue(TEXT("Stage has one collectible ribbon using shared item ID"),E->StageRibbon && E->StageRibbon->ItemId==11 && !E->StageRibbon->bCollected);
         Test->TestTrue(TEXT("Mining input is restored after the card/TV escape"),PC->EncounterPolicy && PC->EncounterPolicy->IsMiningAllowed() && !Miner->IsEncounterBlocked());
         if(RoomAudio)
@@ -292,6 +310,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMainGameCardEscapeTest,"BrainMining.MainGame.F
 bool FMainGameCardEscapeTest::RunTest(const FString&)
 {
     AutomationOpenMap(TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
+    int32 RobotStages=0;
+    for(TActorIterator<ACardRoomStage> It(GEditor->GetEditorWorldContext().World());It;++It)
+    {
+        TestTrue(TEXT("MainGame references latest P2 source"),It->GetOutermost()->GetName().Contains(TEXT("Lvl_EchoMazeToCards_P2")));
+        TestTrue(TEXT("MainGame uses the supplied robot opponent"),It->bUseRobotOpponent);
+        ++RobotStages;
+    }
+    TestEqual(TEXT("MainGame has one P2 card encounter"),RobotStages,1);
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;

@@ -301,6 +301,8 @@ TArray<int32> AMiningCollectionField::CatalogueIds() const
     {
         for(const auto& Placement:AuthoredPlacements)
             if(Placement.ItemId>=0 && Placement.ItemId<AMiningCollectible::ItemTypeCount) Result.AddUnique(Placement.ItemId);
+        // The authored TV room owns this reward; show its locked entry before escaping.
+        if(ActorHasTag(TEXT("BM_MainGame_Collections")))Result.AddUnique(11);
     }
     else for(int32 Id=0;Id<(bDeepField && bExpandedCollection?AMiningCollectible::ItemTypeCount:4);++Id) Result.Add(Id);
     for(const auto& Item:Items)if(IsValid(Item))Result.AddUnique(Item->ItemId);

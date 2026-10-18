@@ -41,6 +41,7 @@ private:
     UPROPERTY(VisibleAnywhere) TObjectPtr<UInstancedStaticMeshComponent> Rock;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UInstancedStaticMeshComponent> Outlines;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UInstancedStaticMeshComponent> WarmWood;
+    UPROPERTY(VisibleAnywhere) TObjectPtr<UInstancedStaticMeshComponent> EntranceRock;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UInstancedStaticMeshComponent> WarmGlow;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> TrapFloor;
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> EchoMaterial;

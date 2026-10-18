@@ -51,11 +51,18 @@ void AMiningCollectionEffects::Tick(float Dt)
         if(auto* Pawn=UGameplayStatics::GetPlayerPawn(this,0))
         {
             const FVector P=GetActorTransform().InverseTransformPosition(Pawn->GetActorLocation());
-            if(FMath::Abs(P.X)<570 && P.Y>-200 && P.Y<1350 && P.Z<800) bStageActive=true;
+            if(FMath::Abs(P.X)<570 && P.Y>-200 && P.Y<1350 && FMath::Abs(P.Z)<800)
+            {
+                bCurtainOpen=true;
+                if(!bSeparateStageTriggers || P.Y>CelebrationForward)bStageActive=true;
+            }
         }
-        CurtainOpening=FMath::FInterpTo(CurtainOpening,bStageActive?1.f:0.f,Dt,2.5f);
+        bCurtainOpen|=bStageActive;
+        CurtainOpening=FMath::FInterpTo(CurtainOpening,bCurtainOpen?1.f:0.f,Dt,2.5f);
+        if(CurtainClosedLocations.Num()!=Curtains.Num())
+        {CurtainClosedLocations.Reset();for(const auto& Curtain:Curtains)CurtainClosedLocations.Add(IsValid(Curtain)?Curtain->GetActorLocation():FVector::ZeroVector);}
         for(int I=0;I<Curtains.Num();++I) if(IsValid(Curtains[I]))
-            Curtains[I]->SetActorLocation(GetActorTransform().TransformPosition(FVector((I==0?-1:1)*(270+CurtainOpening*250),0,300)));
+            Curtains[I]->SetActorLocation(CurtainClosedLocations[I]+GetActorTransform().TransformVector(FVector((I==0?-1:1)*CurtainOpening*CurtainSlideDistance,0,0)));
         if(!bStageActive) return;
     }
     Age+=Dt;
@@ -70,7 +77,10 @@ void AMiningCollectionEffects::Tick(float Dt)
             FVector P,Scale; FRotator Rotation=FRotator::ZeroRotator;
             if(Kind==3)
             {
-                const float T=FMath::Fmod(Age+I*.067f+C*.031f,4.3f),Side=I%2?1.f:-1.f;
+                // Stagger launches over the entire flight cycle: a continuous shower.
+                const float Delay=4.3f*(I+float(C)/Pools.Num())/Pool->GetInstanceCount();
+                if(bSeparateStageTriggers && Age<Delay){Pool->UpdateInstanceTransform(I,FTransform(FQuat::Identity,FVector::ZeroVector,FVector::ZeroVector),false,false,true);continue;}
+                const float T=FMath::Fmod(bSeparateStageTriggers?FMath::Max(0.f,Age-Delay):Age+I*.067f+C*.031f,4.3f),Side=I%2?1.f:-1.f;
                 const float Speed=150+45*FMath::Sin(Seed);
                 P=FVector(Side*(480-Speed*T)+18*FMath::Sin(T*4+Seed),650+T*(35+22*FMath::Sin(Seed)),FMath::Max(52.f,145+410*T-105*T*T));
                 Rotation=FRotator(T*170+Seed*50,T*110+Seed*90,T*210);

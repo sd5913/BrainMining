@@ -841,7 +841,7 @@ bool AEndingEmergence::Initialize()
     // Arrival waves illuminate distant nodes and links only. A shell around the
     // host crossed the camera near plane and caused a full-screen green flash.
     BuildFinale();
-    SetAmbience(TEXT("Cell_Loop"),.26f);SetMusic(TEXT("Cosmic_Loop"),.32f);return true;
+    SetAmbience(TEXT("Cell_Loop"),.26f);return true;
 }
 
 void AEndingEmergence::WarmStreetRendering()
@@ -973,7 +973,7 @@ void AEndingEmergence::RestartDemo()
     if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->SetMovementMode(MOVE_Walking);}
     if(auto* C=Player->GetPawn()->FindComponentByClass<UCameraComponent>()){C->SetFieldOfView(90);if(FisheyeMaterial)C->AddOrUpdateBlendable(FisheyeMaterial,0);}
     Player->SetViewTarget(Player->GetPawn());Mining->SetInputSuspended(false);Mining->SetInputContextEnabled(true);
-    bFinalResolvePlayed=false;UpdatePainterly();UpdateNerves();SetAmbience(TEXT("Cell_Loop"),.26f);SetMusic(TEXT("Cosmic_Loop"),.32f);
+    bFinalResolvePlayed=false;UpdatePainterly();UpdateNerves();SetAmbience(TEXT("Cell_Loop"),.26f);
 }
 
 void AEndingEmergence::PreviewFilm()
@@ -1026,17 +1026,17 @@ void AEndingEmergence::SetShot(int32 Index)
         TitleLookStart=Camera->GetActorRotation();TitleUpdateAt=-1;
         DriftVelocity=FVector::ZeroVector;Exhaustion=0;
         if(Ambience)Ambience->AdjustVolume(2,.22f);
-        SetMusic(TEXT("Cosmic_Loop"),.32f);
+
     }
     if(Shot>=1&&Shot<=6)Sound(Shot%2?TEXT("ScaleWhoosh_01"):TEXT("ScaleWhoosh_02"),.22f,.9f+Shot*.035f);
     if(Shot==8){UpdateCellTitle(1);Sound(TEXT("PulseFlight"),.7f,.6f);Sound(TEXT("NeuralPulse_01"),.3f,.92f);}
-    if(Shot==9){SetMusic(TEXT("Cosmic_Loop"),.32f);BeginFinaleDrill();}
+    if(Shot==9){BeginFinaleDrill();}
     if(Shot==10)
     {
         PrepareFinaleVideo();
         PaperSurfaceMaterial->SetScalarParameterValue(TEXT("ApertureRadius"),37.5f);
         PaperSurfaceMaterial->SetScalarParameterValue(TEXT("DotsReveal"),0);
-        EndFinaleDrill(true);SetAmbience(TEXT("Cell_Loop"),.10f);SetMusic(TEXT("Cosmic_Loop"),.32f);
+        EndFinaleDrill(true);SetAmbience(TEXT("Cell_Loop"),.10f);
         PaperScene->SetRelativeRotation(FRotator(90,0,0));PaperScene->SetVisibility(true);
         // Start with only the circular portal visible. The desktop set is
         // revealed after the camera has entered the opening, preventing a
@@ -1060,11 +1060,11 @@ void AEndingEmergence::SetShot(int32 Index)
     {
         PaperScene->SetVisibility(false,true);PaperCaveScene->SetVisibility(true,true);
         TransitEffects(0);if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);
-        SetAmbience(TEXT("Afternoon"),.24f);SetMusic(TEXT("Cosmic_Loop"),.28f);
+        SetAmbience(TEXT("Afternoon"),.24f);
         if(!bFinalResolvePlayed){Sound(TEXT("FinalComputer"),.55f,.96f);bFinalResolvePlayed=true;}
     }
-    if(Shot==0){SetAmbience(TEXT("Street"),.28f);SetMusic(TEXT("Cosmic_Loop"),.32f);Sound(TEXT("ScaleWhoosh_01"),.32f,.86f);}
-    if(Shot==3){SetAmbience(TEXT("Space"),.18f);SetMusic(TEXT("Cosmic_Loop"),.28f);Sound(TEXT("ScaleWhoosh_02"),.34f,.82f);}
+    if(Shot==0){SetAmbience(TEXT("Street"),.28f);Sound(TEXT("ScaleWhoosh_01"),.32f,.86f);}
+    if(Shot==3){SetAmbience(TEXT("Space"),.18f);Sound(TEXT("ScaleWhoosh_02"),.34f,.82f);}
     UE_LOG(LogTemp,Display,TEXT("ENDING_SHOT %d"),Shot);
 }
 
@@ -1526,7 +1526,7 @@ void AEndingEmergence::EnterBlood()
     Player->SetIgnoreMoveInput(true);Player->GetPawn()->SetActorHiddenInGame(true);
     if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->DisableMovement();}
     Camera->SetActorLocation(Eye);Camera->SetActorRotation(Player->GetControlRotation());Player->SetViewTarget(Camera);
-    SetAmbience(TEXT("Blood_Loop"),.25f);SetMusic(TEXT("Cosmic_Loop"),.32f);Sound(TEXT("Connect"),.45f);
+    SetAmbience(TEXT("Blood_Loop"),.25f);Sound(TEXT("Connect"),.45f);
 }
 
 FVector AEndingEmergence::NeuronWorldPosition(int32 I) const

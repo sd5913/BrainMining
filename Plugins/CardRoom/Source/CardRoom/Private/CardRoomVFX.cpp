@@ -8,6 +8,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MeshDescription.h"
 #include "StaticMeshAttributes.h"
+#include "Components/PostProcessComponent.h"
 
 namespace
 {
@@ -96,6 +97,16 @@ void ACardRoomStage::TickEffects()
 {
     const bool Resolve=Run.Phase==ECardRoomPhase::Resolving;
     const bool RewardVisible=Run.Phase==ECardRoomPhase::Victory;
+    if(!RewardOutline)
+    {
+        RewardOutline=NewObject<UPostProcessComponent>(this,TEXT("DrillRewardOutline"));
+        AddInstanceComponent(RewardOutline);RewardOutline->SetupAttachment(RootComponent);
+        RewardOutline->bUnbound=true;RewardOutline->Priority=50;
+        if(auto* M=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionSilhouette.M_CollectionSilhouette")))
+            RewardOutline->Settings.AddBlendable(M,1.f);
+        RewardOutline->RegisterComponent();
+    }
+    RewardOutline->bEnabled=RewardVisible;
     const float T=Run.PhaseTime,Time=GetWorld()->GetTimeSeconds();
     const float S=FMath::Clamp(SpellPresentationScale,1.f,4.f);
     const FLinearColor Fire(2.8f,.27f,.012f),Hot(4.f,2.f,.30f),Blue(.025f,.55f,3.f),Ice(.65f,2.3f,3.8f),Gold(3.f,1.5f,.18f);
@@ -242,7 +253,8 @@ void ACardRoomStage::TickEffects()
     if(Resolve&&(Run.Round==1||Run.Round==3))Flash(CameraLocal+FVector(100,0,-20),T-2.35f,.5f,Fire,Run.Round==3?115:75);
     Reward->SetVisibility(RewardVisible);
     Reward->SetRelativeLocation(RewardLocal+FVector(0,0,FMath::Sin(Time*2)*8));
-    Reward->SetRelativeRotation(FRotator(0,Time*25,15));Reward->SetRelativeScale3D(FVector(1.4f));
+    Reward->SetRelativeRotation(FRotator(0,Time*25,15));Reward->SetRelativeScale3D(FVector(2.5f));
+    Reward->SetRenderCustomDepth(RewardVisible);Reward->SetCustomDepthStencilValue(2);
     if(RewardVisible)
     {
         const FVector P=Reward->GetRelativeLocation();

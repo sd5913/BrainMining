@@ -1,5 +1,7 @@
 #include "MiningCollection.h"
 #include "DiggableRock.h"
+#include "Showcase/MiningTreasure.h"
+#include "GameFramework/PlayerController.h"
 #include "FogChamberComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/DynamicMeshComponent.h"
@@ -82,9 +84,7 @@ void AMiningCollectionField::SpawnDeepField()
         }
         else if(Id==1)
         {
-            MakeProp(FVector(Front-2,Y,36),FVector(5,44,48),FLinearColor(.015f,.017f,.013f),true);
-            // A narrow initial bore lets moving ants disappear into a genuine hole.
-            Rock->MineSphere(FVector(Front+2,Y,32),24);
+            // Match the campaign: the moving ants themselves are the clue.
             SpawnAntTrail(Rock,FVector(210,Y,95),FVector(RoomX+15,Y,95));
         }
         else if(Id==2)
@@ -119,6 +119,23 @@ bool AMiningCollectionField::FindBirdExit(TArray<FVector>& Path) const
 {
     if(!ResidentBird.IsValid()||!ResidentBird->HostRock) return false;
     ADiggableRock* Rock=ResidentBird->HostRock;
+    if(bUseAuthoredPlacements && Player)
+    {
+        FVector Eye;FRotator EyeRotation;Player->GetPlayerViewPoint(Eye,EyeRotation);
+        const FVector Start=ResidentBird->GetActorLocation()+FVector(0,0,25);
+        const FVector Toward=(Eye-Start).GetSafeNormal();
+        FCollisionQueryParams Query(SCENE_QUERY_STAT(AuthoredBirdFlight),true,ResidentBird.Get());
+        if(Player->GetPawn())Query.AddIgnoredActor(Player->GetPawn());
+        FHitResult Hit;
+        const FVector End=Eye+FVector(0,0,35);
+        if(GetWorld()->SweepSingleByChannel(Hit,Start,End,FQuat::Identity,ECC_Visibility,FCollisionShape::MakeSphere(14),Query))return false;
+        TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints({Rock},{Start},Covered);
+        if(Covered[0])return false;
+        Path={Start,FMath::Lerp(Start,End,.5f),End};
+        const FVector Beyond=End+Toward*240+FVector(0,0,120);
+        if(!GetWorld()->SweepSingleByChannel(Hit,End,Beyond,FQuat::Identity,ECC_Visibility,FCollisionShape::MakeSphere(14),Query))Path.Add(Beyond);
+        return true;
+    }
     const auto& Mesh=Rock->RockMesh->GetDynamicMesh()->GetMeshRef();
     UE::Geometry::FDynamicMeshAABBTree3 Tree(&Mesh,true);
     UE::Geometry::TFastWindingTree<UE::Geometry::FDynamicMesh3> Winding(&Tree);
@@ -180,6 +197,18 @@ void AMiningCollectionField::TickAmbient(float Dt)
     UpdateAntTrails();
     for(FCollectionAnt& Ant:Ants) if(Ant.Actor.IsValid())
     {
+        const bool ComputerCollected=Inventory.IsValidIndex(1)&&Inventory[1]>0;
+        if(ComputerCollected)
+        {
+            Ant.Fade=FMath::Max(0.f,Ant.Fade-Dt/2.5f);
+            if(Ant.FadeMaterial.IsValid())Ant.FadeMaterial->SetVectorParameterValue(TEXT("Fade"),FLinearColor(Ant.Fade,Ant.Fade,Ant.Fade));
+            if(Ant.Fade<=0)
+            {
+                TArray<AActor*> Parts;Ant.Actor->GetAttachedActors(Parts,true,true);
+                for(AActor* Part:Parts)Part->Destroy();
+                Ant.Actor->Destroy();continue;
+            }
+        }
         const float T=FMath::Fmod(AmbientTime*32/Ant.Length+Ant.Phase,1.f);
         if(AntTrails.IsValidIndex(Ant.TrailIndex))
         {
@@ -227,7 +256,7 @@ void AMiningCollectionField::TickAmbient(float Dt)
     {
         NextFlockCheck=AmbientTime+.3f;
         const int Cuts=ResidentBird->HostRock->SuccessfulCuts;
-        if(Cuts!=BirdObservedCuts)
+        if(Cuts>0)
         {
             BirdObservedCuts=Cuts;
             if(Cuts>0&&FindBirdExit(BirdPath))

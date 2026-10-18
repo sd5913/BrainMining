@@ -363,4 +363,24 @@ bool FMiningFlightSettingsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAirCoolingTest, "BrainMining.Flight.AirbornePassiveCooling", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMiningAirCoolingTest::RunTest(const FString&)
+{
+    auto* Movement=NewObject<UMiningCharacterMovementComponent>();
+    Movement->FlightSettings.bEnabled=true;
+    Movement->FlightSettings.bEnableHeat=true;
+    Movement->CoolingDelay=1;
+    Movement->UpdatedComponent=NewObject<USceneComponent>();
+    Movement->MovementMode=MOVE_Falling;
+    Movement->UpdateJetpackHeat(1.f,true);
+    const float Before=Movement->JetpackHeat;
+    Movement->UpdateJetpackHeat(.2f,false);
+    TestTrue(TEXT("Coasting cools before the ground delay expires"),Movement->JetpackHeat<Before);
+    TestTrue(TEXT("Air cooling is gradual"),Movement->JetpackHeat>Before-.1f);
+    Movement->UpdateJetpackHeat(.2f,true);
+    TestTrue(TEXT("Thrust heats again without needing to land"),Movement->JetpackHeat>Before);
+    Movement->UpdateJetpackHeat(20.f,false);
+    TestEqual(TEXT("A long airborne coast cools fully"),Movement->JetpackHeat,0.f);
+    return true;
+}
 #endif

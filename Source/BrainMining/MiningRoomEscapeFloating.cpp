@@ -13,7 +13,8 @@ void AMiningRoomEscape::TickFloatingProps(float DeltaSeconds)
         if(Base && FloatingProps[Part]==Base && FloatingPadIndices.IsValidIndex(Part))
         {
             const int32 Pad=FloatingPadIndices[Part];
-            if(FloatingSinkElapsed[Pad]<0)FloatingSinkElapsed[Pad]=0;
+            // The final platform is a stable drilling stance in front of the TV.
+            if(Pad!=FloatingSinkElapsed.Num()-1 && FloatingSinkElapsed[Pad]<0)FloatingSinkElapsed[Pad]=0;
             break;
         }
     for(float& Age:FloatingSinkElapsed)if(Age>=0)Age+=DeltaSeconds;

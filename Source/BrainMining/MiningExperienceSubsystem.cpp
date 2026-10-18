@@ -1,6 +1,8 @@
 #include "MiningExperienceSubsystem.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningComponent.h"
+#include "MiningCollection.h"
+#include "EngineUtils.h"
 #include "MiningCharacterMovementComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
@@ -71,7 +73,13 @@ namespace MiningExperiences
             if (Event.GetKey() == EKeys::F6 && !Owner->IsMenuOpen())
                 if (auto* Hall = AMiningExhibitHall::Find(Owner->GetWorld())) { Hall->ReturnToLobby(); return true; }
             if (Event.GetKey() == EKeys::F4) return Owner->ToggleMenu();
-            if (Event.GetKey() == EKeys::Escape && Owner->IsMenuOpen()) { Owner->CloseMenu(); return true; }
+            if (Event.GetKey() == EKeys::Escape)
+            {
+                if(Owner->IsMenuOpen()) { if(Owner->bQuitConfirmation)Owner->CancelQuitConfirmation();else Owner->CloseMenu();return true; }
+                auto* Viewport=Owner->GetWorld()?Owner->GetWorld()->GetGameViewport():nullptr;
+                auto Widget=Viewport?Viewport->GetGameViewportWidget():nullptr;
+                if(Widget&&(Widget->HasKeyboardFocus()||Widget->HasFocusedDescendants()))return Owner->TogglePauseMenu();
+            }
             return false;
         }
     private:
@@ -169,6 +177,11 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
             }
             if (!Hall->bReady) MenuError = TEXT("房间仍在加载，稍后重新打开面板即可跳转。");
         }
+        Choices->AddSlot().AutoHeight().Padding(0,12)[SNew(STextBlock).Text(FText::FromString(TEXT("GM · 收集物附近"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",18))];
+        for(int32 Id=0;Id<AMiningCollectible::ItemTypeCount;++Id)
+            Choices->AddSlot().AutoHeight().Padding(0,2)[SNew(SButton).ContentPadding(10)
+                .OnClicked_Lambda([this,Id](){JumpToCollectible(Id);return FReply::Handled();})
+                [SNew(STextBlock).Text(FText::FromString(AMiningCollectible::ItemName(Id)))]];
         Choices->AddSlot().AutoHeight().Padding(0, 16, 0, 6)
             [SNew(STextBlock).Text(FText::FromString(TEXT("独立玩法 · 切换地图并从头测试房间"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))];
     }
@@ -241,7 +254,7 @@ void UMiningExperienceSubsystem::CloseMenu()
     bPausedByMenu = false;
     MenuController.Reset();
     MenuWorld.Reset();
-    bDeveloperMenu = false;
+    bDeveloperMenu = false;bPauseMenu=false;bQuitConfirmation=false;
 }
 
 void UMiningExperienceSubsystem::OnWorldCleanup(UWorld* World, bool bSessionEnded, bool bCleanupResources)

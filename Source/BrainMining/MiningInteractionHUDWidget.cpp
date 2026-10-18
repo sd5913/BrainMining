@@ -2,6 +2,8 @@
 #include "BrainMiningPlayerController.h"
 #include "MiningGUIWidgets.h"
 #include "MiningCollection.h"
+#include "WenSi/WenSiMirrorPuzzle.h"
+#include "WenSi/MouseMuseumPortal.h"
 #include "MiningComponent.h"
 #include "DiggableRock.h"
 #include "MiningWalletSubsystem.h"
@@ -100,6 +102,8 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
                     return TEXT("思考 · ") + Object->Noun();
             }
         }
+    for (TActorIterator<AWenSiMirrorPuzzle> Mirror(GetWorld()); Mirror; ++Mirror)
+        if(Mirror->bAreaActive && Mirror->MousePortal && Mirror->MousePortal->IsFocused())return TEXT("进入画中的圆环");
     for (TActorIterator<AMiningCollectionField> Collection(GetWorld()); Collection; ++Collection)
         if (Collection->IsAreaActive() && !Collection->bCatalogueOpen && IsValid(Collection->Target)
             && !Collection->Target->bCollected && Collection->Target->bReleased)
@@ -108,6 +112,9 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
         if (Treasure->IsAreaActive() && IsValid(Treasure->Target) && !Treasure->Target->bCollected
             && AMiningTreasure::IsExposureEligible(Treasure->Target->Exposure))
             return TEXT("领取 · ") + Treasure->Target->TreasureName.ToString();
+    if (auto* Reward = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
+        Reward && Reward->bRoomActive && IsValid(Reward->Stage) && Reward->Stage->Run.Phase == ECardRoomPhase::Victory)
+        return TEXT("拾取 · 钻机");
     if (auto* Cards = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
         Cards && Cards->bRoomActive && IsValid(Cards->Stage) && Cards->Stage->Run.Phase == ECardRoomPhase::Exploring
         && Cards->Stage->IsPlayerNear(Controller->GetPawn()->GetActorLocation()))
@@ -131,6 +138,9 @@ void UMiningInteractionHUDWidget::NativeTick(const FGeometry& Geometry, float De
     bExplorationVisible = Controller && Controller->GetPawn() && !Controller->IsPaused()
         && !Controller->bShowMouseCursor && !Controller->IsLookInputIgnored()
         && Controller->GetViewTarget() == Controller->GetPawn();
+    const auto* Cards = Controller ? Controller->FindComponentByClass<UCardRoomInteractionComponent>() : nullptr;
+    const bool bCardReward = Cards && Cards->bRoomActive && IsValid(Cards->Stage) && Cards->Stage->Run.Phase == ECardRoomPhase::Victory && !Controller->IsPaused();
+    bExplorationVisible |= bCardReward;
     InteractionAction = bExplorationVisible ? ResolveInteractionAction() : FString();
 }
 

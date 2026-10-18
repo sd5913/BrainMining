@@ -16,33 +16,34 @@ def build_tv_material():
     def scalar(value,target):
         n=lib.create_material_expression(m,unreal.MaterialExpressionConstant);n.set_editor_property('r',value)
         assert lib.connect_material_property(n,'',target)
-    base=vector('BaseColor',(.045,.065,.075))
+    base=vector('BaseColor',(.003,.006,.012))
     assert lib.connect_material_property(base,'RGB',unreal.MaterialProperty.MP_BASE_COLOR)
     n=lib.create_material_expression(m,unreal.MaterialExpressionCustom)
     n.set_editor_property('output_type',unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     inputs=[]
-    for name in ['P','O','A','U']:
+    for name in ['P','T']:
         i=unreal.CustomInput();i.set_editor_property('input_name',name);inputs.append(i)
     n.set_editor_property('inputs',inputs)
-    # Coarse, static traces; neither time nor noise drives the entire excavated surface.
+    # Restore the original dark circuit board and cyan pulsing tracks.
     n.set_editor_property('code',r"""
-float3 d=P-O;
-float along=dot(d,A), height=dot(d,U), side=dot(d,normalize(cross(U,A)));
-float lower=1-smoothstep(-120,60,height);
-float panel=1-smoothstep(3,8,abs(frac(along/800)*800-400));
-float rail=1-smoothstep(10,22,abs(height+235));
-float2 q=float2(along,side);
-float traceMask=(1-smoothstep(3,8,abs(frac(q.y/500)*500-250)))*.025;
-float3 shell=lerp(float3(.045,.12,.21),float3(.10,.15,.18),lower);
-return shell+panel*float3(.025,.035,.04)+rail*float3(.12,.65,1.05)+traceMask;
+float2 q=float2(P.x*.012+P.y*.007,P.z*.014+P.y*.009);
+float2 tile=floor(q/4), u=frac(q/4);
+float id=frac(sin(dot(tile,float2(17.13,91.71)))*4375.23);
+float lane=.2+floor(id*4)*.14;
+float trace=(1-smoothstep(.009,.017,abs(u.y-lane)))*step(.12,u.x)*step(u.x,.82);
+trace=max(trace,(1-smoothstep(.009,.017,abs(u.x-.82)))*step(lane,u.y)*step(u.y,.92));
+float pad=1-smoothstep(.023,.036,length(u-float2(.12,lane)));
+float seam=1-smoothstep(.006,.012,min(min(u.x,1-u.x),min(u.y,1-u.y)));
+float pulse=pow(saturate(.5+.5*sin(q.x*1.7+q.y*.5-T*1.6)),12);
+return float3(.003,.008,.015)+seam*float3(.005,.014,.026)+(trace+pad)*float3(.025,.18,.32)*(.65+pulse*24.0);
 """)
     position=lib.create_material_expression(m,unreal.MaterialExpressionWorldPosition)
     assert lib.connect_material_expressions(position,'XYZ',n,'P')
-    for key,name,value in [('O','TunnelOrigin',(23520,11750,6700)),('A','TunnelAxis',(.882,0,.471)),('U','TunnelUp',(-.471,0,.882))]:
-        assert lib.connect_material_expressions(vector(name,value),'RGB',n,key)
+    time=lib.create_material_expression(m,unreal.MaterialExpressionTime)
+    assert lib.connect_material_expressions(time,'',n,'T')
     assert lib.connect_material_property(n,'',unreal.MaterialProperty.MP_EMISSIVE_COLOR)
-    scalar(.82,unreal.MaterialProperty.MP_ROUGHNESS)
-    scalar(.05,unreal.MaterialProperty.MP_METALLIC)
+    scalar(.38,unreal.MaterialProperty.MP_ROUGHNESS)
+    scalar(.3,unreal.MaterialProperty.MP_METALLIC)
     lib.recompile_material(m)
     assert unreal.EditorAssetLibrary.save_loaded_asset(m)
     unreal.log('CARD_TV_COMFORT_MATERIAL_READY')

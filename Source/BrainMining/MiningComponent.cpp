@@ -16,6 +16,7 @@
 #include "TimerManager.h"
 #include "MiningWalletSubsystem.h"
 #include "Engine/GameInstance.h"
+#include "Components/CapsuleComponent.h"
 
 UMiningComponent::UMiningComponent()
 {
@@ -156,9 +157,28 @@ bool UMiningComponent::MineTelevision(const FHitResult& Hit)
 	if(!Rock || !Rock->ActorHasTag(TEXT("CardEscapeTelevision")))return false;
 	// Keep the original smooth CRT cutter. Mining-balance changes elsewhere must not
 	// replace it with shallow, jagged pickaxe cavities that trap the player capsule.
-	const float CutRadius=FMath::Max(220.f,GetMiningRadius());
+	const auto* Character=Cast<ACharacter>(GetOwner());
+	const auto* Capsule=Character?Character->GetCapsuleComponent():nullptr;
+	const float HalfHeight=Capsule?Capsule->GetScaledCapsuleHalfHeight():96.f;
+	const float CutRadius=FMath::Max(240.f,GetMiningRadius());
+	FVector Center=Hit.ImpactPoint-Hit.ImpactNormal*CutRadius*.3f-FVector(0,0,40);
+	if(bDrillMode && Character)
+	{
+		// Follow the player's feet, not just the elevated crosshair. Keep a
+		// shallow step beneath the capsule when drilling up the TV incline.
+		Center.Z=FMath::Min(Center.Z,Character->GetActorLocation().Z-HalfHeight+CutRadius*.72f);
+	}
 	LastMinedRock=Rock;
-	const bool Cut=Rock->MineSphere(Hit.ImpactPoint-Hit.ImpactNormal*CutRadius*.3f-FVector(0,0,40),CutRadius);
+	bool Cut=false;
+	// A stroke can cross the seam between two of the tunnel's solid chunks.
+	// Clear both sides in the same frame so the next chunk cannot catch the feet.
+	for(TActorIterator<ADiggableRock> It(GetWorld());It;++It)
+	{
+		if(!It->ActorHasTag(TEXT("CardEscapeTelevision")))continue;
+		FVector Origin,Extent;It->GetActorBounds(false,Origin,Extent);
+		if(FBox(Origin-Extent,Origin+Extent).ComputeSquaredDistanceToPoint(Center)>FMath::Square(CutRadius))continue;
+		Cut|=It->MineSphere(Center,CutRadius);
+	}
 	Status=Rock->LastStatus;
 	if(Cut)OnMiningHit.Broadcast(Hit);
 	return Cut;

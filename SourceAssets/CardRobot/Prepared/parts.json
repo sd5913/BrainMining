@@ -1,0 +1,102 @@
+[
+  {
+    "name": "Body",
+    "mesh": "SM_Robot_Body",
+    "pivot": [
+      0.0,
+      0.0,
+      65.0
+    ],
+    "vertices": 10208
+  },
+  {
+    "name": "Head",
+    "mesh": "SM_Robot_Head",
+    "pivot": [
+      0.0,
+      0.0,
+      90.0
+    ],
+    "vertices": 294
+  },
+  {
+    "name": "ArmL",
+    "mesh": "SM_Robot_ArmL",
+    "pivot": [
+      0.0,
+      36.5,
+      62.0
+    ],
+    "vertices": 172
+  },
+  {
+    "name": "ArmR",
+    "mesh": "SM_Robot_ArmR",
+    "pivot": [
+      0.0,
+      -36.5,
+      62.0
+    ],
+    "vertices": 172
+  },
+  {
+    "name": "FootL",
+    "mesh": "SM_Robot_FootL",
+    "pivot": [
+      0.0,
+      12.5,
+      30.0
+    ],
+    "vertices": 176
+  },
+  {
+    "name": "FootR",
+    "mesh": "SM_Robot_FootR",
+    "pivot": [
+      0.0,
+      -12.5,
+      30.0
+    ],
+    "vertices": 176
+  },
+  {
+    "name": "BrowL",
+    "mesh": "SM_Robot_BrowL",
+    "pivot": [
+      -13.8515,
+      21.232,
+      128.2902
+    ],
+    "vertices": 8
+  },
+  {
+    "name": "BrowR",
+    "mesh": "SM_Robot_BrowR",
+    "pivot": [
+      -13.8515,
+      -22.7574,
+      129.4159
+    ],
+    "vertices": 8
+  },
+  {
+    "name": "EyeL",
+    "mesh": "SM_Robot_EyeL",
+    "pivot": [
+      -9.6565,
+      20.7581,
+      118.7902
+    ],
+    "vertices": 4704
+  },
+  {
+    "name": "EyeR",
+    "mesh": "SM_Robot_EyeR",
+    "pivot": [
+      -9.6565,
+      -21.078,
+      118.7902
+    ],
+    "vertices": 4704
+  }
+]

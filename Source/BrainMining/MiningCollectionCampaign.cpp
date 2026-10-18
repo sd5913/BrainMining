@@ -6,6 +6,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/DynamicMeshComponent.h"
 #include "Engine/StaticMeshActor.h"
+#include "Engine/DecalActor.h"
+#include "Components/DecalComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MiningCollectionEffects.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -34,36 +36,42 @@ void AMiningCollectionField::SpawnAuthoredClues(const FMiningCollectionPlacement
     }
     else if(Id==1)
     {
-        MakeProp(FVector(-2,0,-190),FVector(5,42,46),FLinearColor(.015f,.017f,.013f),true);
-        Rock->MineSphere(T.TransformPosition(FVector(2,0,-190)),24);
+        // Ants follow the soil surface; no artificial black disc or initial bore.
         // Spawn after the authored clue transform pass below: the route uses world-space samples.
     }
     else if(Id==2)
     {
         if(Cast<AGeneratedMiningRock>(Rock))
         {
-            // MainGame uses chunked themed terrain. Local stains preserve its materials.
-            const FLinearColor Colors[]={FLinearColor(.035f,.14f,.045f),FLinearColor(.18f,.018f,.025f),FLinearColor(.025f,.065f,.19f)};
-            FRandomStream StainRandom(260218);
-            for(int I=0;I<18;++I)
+            auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionStainOverlay"));
+            if(Base)
             {
-                FVector P(0,(I%3-1)*35+StainRandom.FRandRange(-20,20),StainRandom.FRandRange(-45,45));FHitResult Hit;
-                if(!Rock->ActorLineTraceSingle(Hit,T.TransformPosition(P-FVector(100,0,0)),T.TransformPosition(P+FVector(100,0,0)),ECC_Visibility,FCollisionQueryParams(NAME_None,true)))continue;
-                P=T.InverseTransformPosition(Hit.ImpactPoint);
-                auto* Drop=MakeProp(P-FVector(.15,0,0),FVector(.6,StainRandom.FRandRange(16,32),StainRandom.FRandRange(35,75)),Colors[I%3],true);
-                Drop->Tags.Add(TEXT("CollectionReagentStain"));
-                FCollectionClue C;C.Actor=Drop;C.Rock=Rock;C.Support=P+FVector(2,0,0);Clues.Add(C);
+                ReagentStain=UMaterialInstanceDynamic::Create(Base,this);
+                const FVector O=T.GetLocation(),F=T.GetRotation().GetForwardVector(),R=T.GetRotation().GetRightVector();
+                ReagentStain->SetVectorParameterValue(TEXT("Origin"),FLinearColor(O.X,O.Y,O.Z));
+                ReagentStain->SetVectorParameterValue(TEXT("Forward"),FLinearColor(F.X,F.Y,F.Z));
+                ReagentStain->SetVectorParameterValue(TEXT("Right"),FLinearColor(R.X,R.Y,R.Z));
+                // Dynamic-mesh scene proxies do not render UMeshComponent's overlay
+                // pass. A bounded decal follows both the original and freshly cut faces.
+                auto* Stain=GetWorld()->SpawnActor<ADecalActor>();
+                Stain->SetActorLocation(FVector(450,0,0));
+                Stain->SetActorRotation(FRotator::ZeroRotator);
+                Stain->GetDecal()->DecalSize=FVector(500,150,150);
+                Stain->GetDecal()->SetDecalMaterial(ReagentStain);
+                Stain->GetDecal()->SetFadeScreenSize(0);
+                Spawned.Add(Stain);
+                Rock->Tags.AddUnique(TEXT("CollectionReagentStain"));
             }
         }
         else
         {
-        auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Campaign/Materials/M_CampaignStainedEarth"));
-        auto* Stain=UMaterialInstanceDynamic::Create(Base,Rock);
-        const FVector F=T.GetRotation().GetForwardVector(),R=T.GetRotation().GetRightVector(),O=T.GetLocation();
-        Stain->SetVectorParameterValue(TEXT("Origin"),FLinearColor(O.X,O.Y,O.Z));
-        Stain->SetVectorParameterValue(TEXT("Forward"),FLinearColor(F.X,F.Y,F.Z));
-        Stain->SetVectorParameterValue(TEXT("Right"),FLinearColor(R.X,R.Y,R.Z));
-        Rock->RockMaterial=Stain;Rock->RockMesh->SetMaterial(0,Stain);
+            auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Campaign/Materials/M_CampaignStainedEarth"));
+            auto* Stain=UMaterialInstanceDynamic::Create(Base,Rock);
+            const FVector F=T.GetRotation().GetForwardVector(),R=T.GetRotation().GetRightVector(),O=T.GetLocation();
+            Stain->SetVectorParameterValue(TEXT("Origin"),FLinearColor(O.X,O.Y,O.Z));
+            Stain->SetVectorParameterValue(TEXT("Forward"),FLinearColor(F.X,F.Y,F.Z));
+            Stain->SetVectorParameterValue(TEXT("Right"),FLinearColor(R.X,R.Y,R.Z));
+            Rock->RockMaterial=Stain;Rock->RockMesh->SetMaterial(0,Stain);
         }
     }
     else if(Id==3)
@@ -112,7 +120,7 @@ void AMiningCollectionField::SpawnAuthoredPresentation(AMiningCollectible* Item,
     {
         Item->bReleased=true;Item->Exposure=1;Item->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
         auto* Jet=Effect(0,Item->GetActorLocation()+FVector(-6,0,38));
-        Jet->FlowHeight=FMath::Max(140.f,float(P.ClueTransform.GetLocation().Z-Jet->GetActorLocation().Z+120));
+        Jet->FlowHeight=FMath::Max(140.f,float(P.ClueTransform.GetLocation().Z-Jet->GetActorLocation().Z+300));
         Jet->Tags.Add(TEXT("CollectionVerticalColaBore"));
     }
     else if(P.ItemId==10)

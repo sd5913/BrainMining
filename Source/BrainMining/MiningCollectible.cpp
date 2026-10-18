@@ -127,7 +127,7 @@ FString AMiningCollectible::Clue(int32 Id)
 void AMiningCollectible::BuildModel(int32 Id,bool Flying)
 {
     ItemId=FMath::Clamp(Id,0,ItemTypeCount-1);
-    Body->SetBoxExtent(ItemId==9?FVector(105,105,137):ItemId==11?FVector(12,54,9):FVector(49,45,61));
+    Body->SetBoxExtent(ItemId==9?FVector(165,165,220):ItemId==11?FVector(12,54,9):FVector(49,45,61));
     FCollectibleMesh B;
     // Ivory, charcoal, turquoise, purple, gold, timber, pigeon-grey, coral.
     const FLinearColor Colors[]={{.85f,.87f,.77f},{.035f,.06f,.07f},{.06f,.65f,.43f},{.48f,.12f,.65f},{.95f,.59f,.07f},{.3f,.12f,.045f},{.36f,.44f,.54f},{.86f,.27f,.15f}};
@@ -302,6 +302,11 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
                 B.Curve(P,P+FVector(Roots.FRandRange(-12,12),Roots.FRandRange(-12,12),-7),Tip+FVector(8,-5,12),Tip,Roots.FRandRange(.8,1.7),5,15);
             }
         }
+        for(int V:B.Mesh.VertexIndicesItr())
+        {
+            FVector3d P=B.Mesh.GetVertex(V);P.X*=1.65;P.Y*=1.65;P.Z=12+(P.Z-12)*1.55;
+            B.Mesh.SetVertex(V,P);
+        }
         for(int F=0;F<7;++F)
         {
             const float Angle=F*2.39996f;
@@ -368,7 +373,7 @@ void AMiningCollectible::SetHighlighted(bool Enabled)
     // The postprocess draws only outside the visible custom-depth silhouette.
     // Keep the old inverted hull disabled: it can cover surfaces or outline internal seams.
     Outline->SetVisibility(bEchoPresentation&&!bCollected);
-    Model->SetRenderCustomDepth(Enabled&&!bCollected&&!bEchoPresentation);
+    Model->SetRenderCustomDepth(Enabled&&!bCollected);
 }
 void AMiningCollectible::ApplyEchoPresentation(UMaterialInterface* Surface,UMaterialInterface* Contours)
 {
@@ -392,6 +397,16 @@ void AMiningCollectible::ApplyEchoPresentation(UMaterialInterface* Surface,UMate
 float AMiningCollectible::MeasureExposure() const
 {
     if(!IsValid(HostRock)||HostRock->TriangleCount==0) return 1;
+    if(ItemId==9)
+    {
+        // Uncover the root crown to lift the plant; fine roots need not all be excavated.
+        TArray<FVector> Crown;
+        for(int X=-1;X<=1;++X)for(int Y=-1;Y<=1;++Y)
+            Crown.Add(GetActorTransform().TransformPosition(FVector(X*30,Y*30,-12)));
+        TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints({HostRock},Crown,Covered);
+        int Free=0;for(bool Solid:Covered)Free+=!Solid;
+        return float(Free)/Crown.Num();
+    }
     // Sample the actual model surface, independent of attempted/failed cutting spheres.
     const FDynamicMesh3& Art=Model->GetDynamicMesh()->GetMeshRef();
     TArray<FVector> Samples;const int Stride=FMath::Max(1,Art.VertexCount()/100);
@@ -411,6 +426,16 @@ bool AMiningCollectible::CanRelease(float Threshold) const
 void AMiningCollectible::Release()
 {
     if(bReleased||bCollected) return;
+    if(ItemId==4 || ItemId==9)
+    {
+        if(MeasureExposure()<.65f)return;
+        // Keep the excavated calculator facing the player, with no Chaos impulse
+        // that can throw it through a terrain chunk awaiting collision cooking.
+        bReleased=true;
+        if(ItemId==9)Body->SetBoxExtent(FVector(48,48,125));
+        Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        return;
+    }
     // Before enabling physics, require a clear body volume and an air path to it.
     // This prevents a partly buried rigid body being explosively ejected by Chaos.
     FVector Position=GetActorLocation(); bool Clear=!IsValid(HostRock)||HostRock->TriangleCount==0;

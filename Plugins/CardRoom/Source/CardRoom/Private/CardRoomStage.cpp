@@ -1,4 +1,6 @@
 #include "CardRoomStage.h"
+#include "CardRoomRobot.h"
+#include "Components/ChildActorComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -21,6 +23,7 @@ ACardRoomStage::ACardRoomStage()
     PrimaryActorTick.bCanEverTick=true;
     RootComponent=CreateDefaultSubobject<USceneComponent>(TEXT("RoomOrigin"));
     ToyRoot=CreateDefaultSubobject<USceneComponent>(TEXT("Opponent")); ToyRoot->SetupAttachment(RootComponent); ToyRoot->SetRelativeLocation(FVector(180,0,112));
+    RobotOpponent=CreateDefaultSubobject<UChildActorComponent>(TEXT("RobotOpponent"));RobotOpponent->SetupAttachment(ToyRoot);
     RabbitVisual=CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("RabbitOpponent"));
     RabbitVisual->SetupAttachment(ToyRoot);
     RabbitVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -87,6 +90,8 @@ void ACardRoomStage::Tint(UStaticMeshComponent* Part,FLinearColor Color,bool bGl
 void ACardRoomStage::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
+    RobotOpponent->SetChildActorClass(bUseRobotOpponent?ACardRoomRobot::StaticClass():nullptr);
+    if(auto* Robot=Cast<ACardRoomRobot>(RobotOpponent->GetChildActor()))Robot->bEncounterDriven=true;
     if(RabbitVisual)
     {
         if(RabbitSkeletalMesh)
@@ -268,7 +273,7 @@ void ACardRoomStage::Tick(float DeltaSeconds)
         if(Phase==ECardRoomPhase::Seated && AudioOverride.IsBound()) Sound(TEXT("S_Seat"),.4f);
         if(Phase==ECardRoomPhase::Matching && AudioOverride.IsBound()) Sound(TEXT("S_Confirm"),.35f);
         if(Phase==ECardRoomPhase::Resolving) { Sound(Run.Round==2?TEXT("S_Poison"):Run.Round==4?TEXT("S_Finale"):TEXT("S_Laser")); if(AudioOverride.IsBound())Sound(TEXT("S_CardPlace"),.35f); bReplySound=false; }
-        if(Phase==ECardRoomPhase::Victory && !bWinSent) { bWinSent=true; Sound(TEXT("S_Victory")); OnRoomCompleted.Broadcast(RoomId); }
+        if(Phase==ECardRoomPhase::Victory && !bWinSent) { bWinSent=true; Sound(TEXT("S_Victory")); if(SubtitleOverride.IsBound())SubtitleOverride.Execute(TEXT("恭喜你获得胜利！"),3.f); OnRoomCompleted.Broadcast(RoomId); }
         LastPhase=Phase;
     }
     const float T=Run.PhaseTime;
@@ -336,7 +341,7 @@ void ACardRoomStage::Tick(float DeltaSeconds)
         const float Fly=FMath::Clamp((T-1)/1.7f,0.f,1.f);
         Offset=FMath::Lerp(Offset,OpponentExitLocal,Fly);Offset.Z+=FMath::Sin(Fly*PI)*120;Spin.Roll=Fly*600;
         Offset-=Spin.RotateVector(OpponentExitCenterOffset*ToyRoot->GetRelativeScale3D())*Fly;
-        if(Fly>=.78f) TriggerRabbitPhysicsDrop();
+        if(Fly>=.78f && !bUseRobotOpponent) TriggerRabbitPhysicsDrop();
         bReachedWall=Fly>=1;
     }
     ToyRoot->SetRelativeLocation(Offset); ToyRoot->SetRelativeRotation(Spin);
@@ -350,6 +355,19 @@ void ACardRoomStage::Tick(float DeltaSeconds)
         HeadPivot->SetRelativeRotation(FMath::RInterpTo(HeadPivot->GetRelativeRotation(),FRotator(FMath::Clamp(Pitch,-20.f,20.f),FMath::Clamp(Yaw,-30.f,30.f),0),DeltaSeconds,3.f));
     }
     TickRabbitExpression(Time,DeltaSeconds);
+    if(bUseRobotOpponent)
+    {
+        for(const auto& Part:ToyParts)Part->SetVisibility(false,true);
+        RabbitVisual->SetVisibility(false,true);
+        if(auto* Robot=Cast<ACardRoomRobot>(RobotOpponent->GetChildActor()))
+        {
+            Robot->SetActorHiddenInGame(!(bBattle || Phase==ECardRoomPhase::Arrival) || bReachedWall);
+            Robot->SetActorEnableCollision(false);
+            const bool Fly=bResolve && Run.Round==4 && T>1;
+            const FName State=Fly?TEXT("Fly"):Hurt?TEXT("Hurt"):bResolve&&T>=1.75f?TEXT("Attack"):Panic?TEXT("Panic"):Sick?TEXT("Sick"):Phase==ECardRoomPhase::Arrival?TEXT("Arrival"):TEXT("Idle");
+            Robot->Pose(State,Time,DeltaSeconds,HeadPivot->GetRelativeRotation());
+        }
+    }
     TickEffects();
 }
 

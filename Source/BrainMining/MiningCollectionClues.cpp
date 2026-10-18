@@ -50,6 +50,12 @@ void AMiningCollectionField::SpawnAntTrail(ADiggableRock* Rock,FVector Start,FVe
             }
         }
         Root->SetActorScale3D(FVector(.45f));
+        if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionAntFade")))
+        {
+            auto* Fade=UMaterialInstanceDynamic::Create(Base,Root);Ant.FadeMaterial=Fade;
+            TArray<AActor*> Parts;Root->GetAttachedActors(Parts,true,true);
+            for(AActor* BodyPart:Parts)if(auto* Mesh=BodyPart->FindComponentByClass<UStaticMeshComponent>())Mesh->SetMaterial(0,Fade);
+        }
         Ants.Add(Ant);
     }
     AmbientAntCount=Ants.Num();

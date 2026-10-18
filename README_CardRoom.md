@@ -130,6 +130,15 @@
 - 实时四回合渲染检查通过：两条通用字幕已截图确认；胜利时仍锁定钻机，按 E 后才解锁并装备；旧电视在水位达到桌面后亮起绿色屏幕。对应 `pickup.json` 与 `08-matching.png` 至 `11-green-television.png`。
 - 本轮 Development Editor 编译成功；`CardEscapeCheckpoints`、`P2CardEscapeCheckpoints`、`GiantRoomInput` 三项独立进程回归均通过且无测试警告。P2 渲染检查以实际钻机射线和角色胶囊扫掠穿过屏幕与十四段实体通道（146 个路径点、158 次尝试），确认安全区、水位上限、出口红幕、双侧彩带炮和 E 收集一根彩带。尺子路线 12 次胶囊查询均无额外阻挡。报告与截图见 `Saved/Validation/CardP2Flow/`；自动检查使用定点移动和测试用无限钻机能量，不代表人工完整跳跳乐手感验收。
 
+### 2026-10-18：MainGame 接入与机器人大改版
+
+- MainGame 的 Journey AlwaysLoaded 引用已从 P1 换为 P2，配置 `Config/MainGameRooms.json` 同步更新；主关卡的矿区和接口不重建。源 P2 不保存宿主的 100 米偏移。
+- 地面拼装玩偶和对手改为用户提供的 `SourceAssets/CardRobot/character.fbx`。`ACardRoomRobot` 分别控制头、双臂、双脚、螺丝眼和眉毛，具备待机、空降、反击、受击、中毒、惊慌和打飞动作；机器人沿原轨迹到达墙洞后消失，不再提前启用旧兔子物理掉落。
+- 电视出口幕布复用收集场景的平滑双侧开启逻辑；到达幕布前先开幕，继续走到舞台中央前方才触发彩带炮。第一波彩带从炮口发射，不在开启瞬间凭空铺满空中。彩带仍由 E 拾取一根。
+- 后墙圆钟移动到左侧 Y=-1500，避开牌子上方的墙洞和打飞终点。
+- 导入、安装、接入和验证脚本为 `import_card_robot.py`、`install_card_robot.py`、`link_main_game_card_p2.py`、`verify_card_robot.py`；验证产物在 `Saved/Validation/CardRobot/`。这些脚本按阶段使用，不批量执行旧 P2 安装器。
+- 验证：Development Editor 编译通过；MainGame 定向原生回归确认 P2 引用、机器人对手和完整逃生逻辑，0 失败（附带已有网络探测超时及收藏目录预览材质缺失警告）。机器人实时四回合渲染检查通过；P2 实际钻机射线连续挖掘、双侧幕布位移、门口不喷彩带、走上舞台后喷发、E 收集彩带均通过。截图包含 `CardRobot/opponent-Arrival.png` 和 `CardP2Flow/05a-curtain-opening.png`。测试使用隔离定位及部分前置装备设置，不代表人工从主关卡出生点连续通关。
+
 ## 4. 代码导航与职责
 
 以下路径相对工程根目录；头文件看接口，cpp 看行为。

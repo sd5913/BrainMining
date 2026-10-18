@@ -109,6 +109,12 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
         else if(R.Round==2) Speech=R.PhaseTime<1?TEXT("这张绿牌……闻着不对。"):TEXT("呕——！这也算魔法？！");
         else if(R.Round==3) Speech=R.PhaseTime<1?TEXT("别点火！别点火！"):R.PhaseTime<1.8f?TEXT("啊啊啊！我的眉毛！"):TEXT("气死我了！吃我一拳！");
         else Speech=R.PhaseTime<1?TEXT("停！怎么能一次出这么多！"):TEXT("我还会回来的——！");
+        if(Owner->Stage->bUseRobotOpponent)
+        {
+            Speech.ReplaceInline(TEXT("我只是个玩偶"),TEXT("我只是个小机器人"));
+            Speech.ReplaceInline(TEXT("我的棉花都焦了"),TEXT("我的电路要过热了"));
+            Speech.ReplaceInline(TEXT("谁把窗户打开"),TEXT("散热风扇快转起来"));
+        }
         if(!(R.Phase==ECardRoomPhase::Resolving && R.Round==4 && R.PhaseTime>2.5f))
         {
             Box(1018,283,500,88,Ink); Box(1022,287,492,80,Cream);
@@ -121,7 +127,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     {
         if(R.Round==3 && R.PhaseTime>2.15f && R.PhaseTime<2.7f) Box(0,0,1600,900,FLinearColor(.7f,.025f,.008f,.16f));
     }
-    if(R.Phase==ECardRoomPhase::Victory || R.Phase==ECardRoomPhase::Collected)
+    if(!Owner->bUseSharedInteractionHUD && (R.Phase==ECardRoomPhase::Victory || R.Phase==ECardRoomPhase::Collected))
     {
         Box(48,610,870,160,Dark); Box(48,610,870,3,Gold);
         Text(R.Phase==ECardRoomPhase::Victory?TEXT("恭喜你获得胜利！"):TEXT("钻机 · 已获得"),82,634,32,Cream);

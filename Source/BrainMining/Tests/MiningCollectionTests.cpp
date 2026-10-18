@@ -8,8 +8,32 @@
 #include "Misc/ScopeExit.h"
 #include "EchoPassageStage.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "SMiningCollectionView.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCollectionScrollTest,"BrainMining.Collection.HorizontalCatalogueInput",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FCollectionScrollTest::RunTest(const FString&)
+{
+    UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    auto* Field=World->SpawnActor<AMiningCollectionField>();Field->bDeepField=true;Field->bExpandedCollection=true;Field->bCatalogueOpen=true;
+    auto View=SNew(SMiningCollectionView).Owner(Field);
+    const FGeometry Geometry=FGeometry::MakeRoot(FVector2D(1600,900),FSlateLayoutTransform());
+    auto Pointer=[](FVector2D P,FKey Button,float Wheel=0.f){return FPointerEvent(0,P,P,TSet<FKey>(),Button,Wheel,FModifierKeysState());};
+    View->OnMouseWheel(Geometry,Pointer(FVector2D(800,820),EKeys::Invalid,-30));
+    View->OnMouseButtonDown(Geometry,Pointer(FVector2D(1450,820),EKeys::LeftMouseButton));
+    View->OnMouseButtonUp(Geometry,Pointer(FVector2D(1450,820),EKeys::LeftMouseButton));
+    TestEqual(TEXT("Wheel scrolling reaches the last locked collectible"),Field->SelectedId,11);
+    View->OnMouseButtonDown(Geometry,Pointer(FVector2D(200,820),EKeys::LeftMouseButton));
+    View->OnMouseMove(Geometry,Pointer(FVector2D(1500,820),EKeys::Invalid));
+    View->OnMouseButtonUp(Geometry,Pointer(FVector2D(1500,820),EKeys::LeftMouseButton));
+    TestEqual(TEXT("Dragging the strip does not accidentally select a card"),Field->SelectedId,11);
+    View->OnMouseWheel(Geometry,Pointer(FVector2D(800,820),EKeys::Invalid,30));
+    View->OnMouseButtonDown(Geometry,Pointer(FVector2D(100,820),EKeys::LeftMouseButton));
+    View->OnMouseButtonUp(Geometry,Pointer(FVector2D(100,820),EKeys::LeftMouseButton));
+    TestEqual(TEXT("Scrolling back reaches the first card"),Field->SelectedId,0);
+    return true;
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCollectionExposureTest,"BrainMining.Collection.ExposureAndPhysicsGate",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FCollectionExposureTest::RunTest(const FString& Parameters)
 {
@@ -87,11 +111,18 @@ bool FCollectionExpansionTest::RunTest(const FString& Parameters)
     auto* Flower=World->SpawnActor<AMiningCollectible>(FVector(0,0,175),FRotator::ZeroRotator);
     Flower->BuildModel(9); Flower->HostRock=Soil;
     const float Exposure=Flower->MeasureExposure();
-    TestTrue(TEXT("Flower is visible but dense underground roots prevent immediate release"),Exposure>.01f && Exposure<.65f);
+    TestTrue(TEXT("A buried root crown prevents immediate release even with visible flowers"),Exposure<.65f);
     Flower->Exposure=1; Flower->Release(); TestFalse(TEXT("Roots cannot release through intact soil"),Flower->bReleased);
     TestTrue(TEXT("Excavation clears the actual root volume"),Soil->MineSphere(Flower->GetActorLocation(),230));
     Flower->Exposure=Flower->MeasureExposure(); Flower->Release();
     TestTrue(TEXT("Fully excavated root system can be collected"),Flower->bReleased);
+    auto* Calculator=World->SpawnActor<AMiningCollectible>(FVector(0,0,150),FRotator(0,35,0));
+    Calculator->BuildModel(4);Calculator->HostRock=Soil;
+    const FTransform Pose=Calculator->GetActorTransform();
+    Calculator->Exposure=Calculator->MeasureExposure();Calculator->Release();
+    TestTrue(TEXT("Excavated calculator releases for pickup"),Calculator->bReleased);
+    TestFalse(TEXT("Calculator cannot fall through freshly rebuilt terrain"),Calculator->Body->IsSimulatingPhysics());
+    TestTrue(TEXT("Calculator retains its readable orientation and location"),Calculator->GetActorTransform().Equals(Pose));
     return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCollectionEchoTest,"BrainMining.Collection.AuthoredEchoSharesRoomPulse",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -113,7 +144,9 @@ bool FCollectionEchoTest::RunTest(const FString& Parameters)
         auto* Item=World->SpawnActor<AMiningCollectible>();Item->BuildModel(Id);Item->ApplyEchoPresentation(Surface,Contours);
         TestTrue(TEXT("Collectible uses the room's actual shared pulse material"),Item->Outline->GetMaterial(0)==Contours && Item->Model->GetMaterial(0)==Surface);
         TestTrue(TEXT("Model contours are real geometry"),Item->Outline->GetDynamicMesh()->GetMeshRef().TriangleCount()>100);
-        Item->SetHighlighted(true);Item->SetHighlighted(false);
+        Item->SetHighlighted(true);
+        TestTrue(TEXT("Aimed echo collectible uses the standard selection silhouette"),Item->Model->bRenderCustomDepth);
+        Item->SetHighlighted(false);
         TestTrue(TEXT("Pickup highlighting preserves echo-controlled contours"),Item->Outline->IsVisible());
         TestFalse(TEXT("Pickup highlighting never creates permanent visibility in dark maze"),Item->Model->bRenderCustomDepth);
     }

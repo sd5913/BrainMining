@@ -49,6 +49,7 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") float SpellPresentationScale=1.f;
     // Art-only override. Both study maps continue to use the same FCardRoomRun.
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") bool bStyledEffects=false;
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") bool bUseRobotOpponent=false;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TArray<TObjectPtr<class UNiagaraSystem>> StyledSystems;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TObjectPtr<class UMaterialInterface> StyledEnergyMaterial;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TObjectPtr<class UMaterialInterface> StyledRingMaterial;
@@ -69,6 +70,7 @@ public:
     bool IsPlayerNear(const FVector& Position) const;
 private:
     UPROPERTY() TObjectPtr<USceneComponent> ToyRoot;
+    UPROPERTY() TObjectPtr<class UChildActorComponent> RobotOpponent;
     UPROPERTY() TObjectPtr<USceneComponent> HeadPivot;
     UPROPERTY() TObjectPtr<USkeletalMeshComponent> RabbitVisual;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> ToyParts;
@@ -78,6 +80,7 @@ private:
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Beam;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Ball;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Reward;
+    UPROPERTY(Transient) TObjectPtr<class UPostProcessComponent> RewardOutline;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> PlayedCards;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> CardMarks;
     UPROPERTY() TObjectPtr<UPointLightComponent> SpellLight;

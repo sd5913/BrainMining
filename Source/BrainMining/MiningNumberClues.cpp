@@ -45,14 +45,16 @@ void AMiningNumberClues::Initialize(ADiggableRock* Rock,FVector Core,FVector Sur
     TArray<FVector> Candidates,Probe;
     for(int I=0;I<12000;++I)
     {
-        const FVector Q=Core+Random.VRand()*225*FMath::Pow(Random.FRand(),.6f);
+        const FVector Q=I%3==0
+            ?FMath::Lerp(Surface,Core,Random.FRandRange(.06f,1.f))+Right*Random.FRandRange(-105,105)+Up*Random.FRandRange(-105,105)
+            :Core+Random.VRand()*225*FMath::Pow(Random.FRand(),.6f);
         if(FVector::DotProduct(Q-Surface,Inward)<18)continue;
         Candidates.Add(Q);
         for(FVector D:{Inward,-Inward,Right,-Right,Up,-Up})Probe.Add(Q+D*18);
     }
     TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints({Rock},Probe,Covered);
     int Buried=0;
-    for(int I=0;I<Candidates.Num() && Buried<850;++I)
+    for(int I=0;I<Candidates.Num() && Buried<1100;++I)
     {
         bool Solid=true;for(int J=0;J<6;++J)Solid&=Covered[I*6+J];
         if(Solid && Add(Candidates[I],Candidates[I],17))++Buried;

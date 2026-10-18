@@ -31,6 +31,11 @@ void AMiningRoomEscape::BuildExitStage()
         C->RegisterComponent();C->SetWorldLocation(P);C->SetWorldScale3D(Size/100);return C;
     };
     const FVector Deck(31900+SourceLevelOffset.X,ComputerEntry.Y,9900+SourceLevelOffset.Z);
+    StageCelebration=GetWorld()->SpawnActor<AMiningCollectionEffects>(Deck-FVector(900,0,0),FRotator(0,-90,0));
+    StageCelebration->SetOwner(this);StageCelebration->SetActorScale3D(FVector(1.5));
+    StageCelebration->bSeparateStageTriggers=true;StageCelebration->CurtainSlideDistance=530;StageCelebration->CelebrationForward=440;
+    StageCelebration->Initialize(3,nullptr,128);StageCelebration->SetActorTickEnabled(false);
+    GeneratedActors.Add(StageCelebration);
     auto* ExposureBounds=NewObject<UBoxComponent>(this);AddInstanceComponent(ExposureBounds);ExposureBounds->SetupAttachment(RootComponent);
     ExposureBounds->SetBoxExtent(FVector(1500,1300,950));ExposureBounds->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     ExposureBounds->SetCollisionResponseToAllChannels(ECR_Ignore);ExposureBounds->SetGenerateOverlapEvents(false);
@@ -42,13 +47,16 @@ void AMiningRoomEscape::BuildExitStage()
     Exposure->Settings.bOverride_AutoExposureApplyPhysicalCameraExposure=true;Exposure->Settings.AutoExposureApplyPhysicalCameraExposure=false;
     Exposure->Settings.bOverride_BloomIntensity=true;Exposure->Settings.BloomIntensity=.1f;
     Exposure->Settings.bOverride_MotionBlurAmount=true;Exposure->Settings.MotionBlurAmount=0;Exposure->RegisterComponent();
-    // The red curtain is on the far side of the gentle ramp. It is intentionally walk-through.
+    // Reuse collection theatre opening: each leaf and its pleats move as one group.
     const FVector Curtain(31070+SourceLevelOffset.X,ComputerEntry.Y,10470+SourceLevelOffset.Z);
     for(float Side:{-1.f,1.f})
     {
-        Shape(Curtain+FVector(0,Side*450,0),FVector(28,900,1140),Red,TEXT("EscapeStageCurtain"));
+        auto* Leaf=GetWorld()->SpawnActor<AActor>(Curtain+FVector(0,Side*450,0),FRotator::ZeroRotator);
+        auto* LeafRoot=NewObject<USceneComponent>(Leaf);Leaf->SetRootComponent(LeafRoot);Leaf->AddInstanceComponent(LeafRoot);LeafRoot->RegisterComponent();Leaf->SetActorLocation(Curtain+FVector(0,Side*450,0));
+        Leaf->SetOwner(this);GeneratedActors.Add(Leaf);StageCelebration->Curtains.Insert(Leaf,0);
+        Shape(Curtain+FVector(0,Side*450,0),FVector(28,900,1140),Red,TEXT("EscapeStageCurtain"))->AttachToComponent(LeafRoot,FAttachmentTransformRules::KeepWorldTransform);
         for(int J=0;J<14;++J)
-            Shape(Curtain+FVector(-20,Side*450-420+J*64,0),FVector(35,25,1120),Pleat,TEXT("EscapeStageCurtain"));
+            Shape(Curtain+FVector(-20,Side*450-420+J*64,0),FVector(35,25,1120),Pleat,TEXT("EscapeStageCurtain"))->AttachToComponent(LeafRoot,FAttachmentTransformRules::KeepWorldTransform);
         Shape(Curtain+FVector(0,Side*930,0),FVector(65,65,1200),Gold,TEXT("EscapeStageFrame"));
         const FVector Cannon=Deck+FVector(75,Side*720,135);
         auto* Barrel=Shape(Cannon,FVector(52,52,180),Gold,TEXT("CollectionRibbonCannon"));
@@ -67,21 +75,40 @@ void AMiningRoomEscape::BuildExitStage()
     auto* CurtainLight=NewObject<UPointLightComponent>(this);AddInstanceComponent(CurtainLight);CurtainLight->SetupAttachment(RootComponent);
     CurtainLight->SetIntensity(120000);CurtainLight->SetAttenuationRadius(1900);CurtainLight->SetLightColor(FLinearColor(1,.5f,.3f));
     CurtainLight->SetCastShadows(false);CurtainLight->RegisterComponent();CurtainLight->SetWorldLocation(Curtain+FVector(-450,0,200));
+    // Carry light through the exit corridor after leaving the spotlit stage.
+    for(int I=0;I<6;++I)
+    {
+        auto* ExitLight=NewObject<UPointLightComponent>(this);AddInstanceComponent(ExitLight);ExitLight->SetupAttachment(RootComponent);
+        ExitLight->SetIntensityUnits(ELightUnits::Candelas);ExitLight->SetIntensity(650);ExitLight->SetAttenuationRadius(1700);
+        ExitLight->SetLightColor(FLinearColor(.84f,.88f,1));ExitLight->SetCastShadows(false);ExitLight->RegisterComponent();
+        ExitLight->SetWorldLocation(Deck+FVector(500+I*750,0,650));
+    }
     // Same fixed pools, two cannon trajectories and collectible model as the collection theatre.
-    StageCelebration=GetWorld()->SpawnActor<AMiningCollectionEffects>(Deck-FVector(900,0,0),FRotator(0,-90,0));
-    StageCelebration->SetOwner(this);StageCelebration->SetActorScale3D(FVector(1.5));
-    StageCelebration->Initialize(3,nullptr,128);StageCelebration->SetActorTickEnabled(false);
-    GeneratedActors.Add(StageCelebration);
     StageRibbon=GetWorld()->SpawnActor<AMiningCollectible>(Deck+FVector(0,0,14),FRotator(0,30,0));
-    StageRibbon->BuildModel(11);StageRibbon->bReleased=true;StageRibbon->Exposure=1;
-    StageRibbon->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);StageRibbon->SetOwner(this);
+    StageRibbon->BuildModel(11);StageRibbon->Exposure=1;StageRibbon->SetActorHiddenInGame(true);
+    StageRibbon->Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);StageRibbon->SetOwner(this);
     StageRibbon->Tags.Add(TEXT("CardEscapeStageRibbon"));GeneratedActors.Add(StageRibbon);
 }
 
 void AMiningRoomEscape::TickExitStage()
 {
-    if(Phase!=EMiningEscapePhase::Escaped || !StageCelebration || !StageRibbon)return;
-    StageCelebration->bStageActive=true;StageCelebration->SetActorTickEnabled(true);
+    if(!StageCelebration || !StageRibbon)return;
+    StageCelebration->SetActorTickEnabled(bEnteredComputer || Phase==EMiningEscapePhase::Escaped);
+    if(!StageRibbon->bReleased)
+    {
+        const float T=StageCelebration->GetCelebrationAge()-.35f;
+        if(T<0 || !StageCelebration->bStageActive)return;
+        StageRibbon->SetActorHiddenInGame(false);
+        const float Flight=FMath::Min(T,4.25f);
+        const FVector P(480-113*Flight+12*FMath::Sin(Flight*4),650+36*Flight,
+            FMath::Max(9.4f,145+410*Flight-105*Flight*Flight));
+        StageRibbon->SetActorLocation(StageCelebration->GetActorTransform().TransformPosition(P));
+        StageRibbon->SetActorRotation(FRotator(T<4.25f?T*170:0,T*45,T<4.25f?T*210:0));
+        if(T<4.25f)return;
+        StageRibbon->bReleased=true;
+        StageRibbon->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    }
+    if(Phase!=EMiningEscapePhase::Escaped)return;
     if(!StageCollection.IsValid())
     {
         for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It){StageCollection=*It;break;}

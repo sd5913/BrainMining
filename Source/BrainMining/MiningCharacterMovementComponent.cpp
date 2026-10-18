@@ -230,10 +230,12 @@ void UMiningCharacterMovementComponent::UpdateJetpackHeat(float DeltaSeconds, bo
 		}
 		else
 		{
+			const bool bAirborne = IsFalling();
+			if(bAirborne)CoolingDelayRemaining=0;
 			const float Waiting = FMath::Min(RemainingTime, CoolingDelayRemaining);
 			CoolingDelayRemaining -= Waiting;
 			RemainingTime -= Waiting;
-			JetpackHeat = FMath::Max(0.f, JetpackHeat - RemainingTime / Settings.PassiveCoolSeconds);
+			JetpackHeat = FMath::Max(0.f, JetpackHeat - RemainingTime * (bAirborne?.35f:1.f) / Settings.PassiveCoolSeconds);
 			return;
 		}
 	}

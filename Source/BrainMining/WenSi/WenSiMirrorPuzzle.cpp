@@ -1,6 +1,9 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
 #include "MiningInteractionTrace.h"
 #include "WenSi/MouseMuseumPortal.h"
+#include "Components/WidgetComponent.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Styling/CoreStyle.h"
 #include "WenSi/WenSiExhibitArt.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "WenSi/WenSiMirrorMechanismLayout.h"
@@ -130,7 +133,7 @@ void AWenSiMirrorExhibit::Configure()
   Shape(4,FVector(0,-14,-52),FVector(22,20,40));Shape(5,FVector(0,14,-52),FVector(22,20,40));
   Shape(6,FVector(0,0,-80),FVector(80,70,12));break;
  case 3:
-  Shape(0,FVector::ZeroVector,FVector(55,55,70),Sphere);Shape(1,FVector(0,0,-40),FVector(10),Cylinder);
+  Shape(0,FVector::ZeroVector,FVector(95,95,110),Sphere);Shape(1,FVector(0,0,-40),FVector(10),Cylinder);
   Shape(2,FVector(0,0,-66),FVector(1.5,1.5,46),Cylinder);break;
  case 4:
   for(int32 I=0;I<7;++I)Shape(I,FVector((I%3-1)*15,(I%2?1:-1)*12,I*10),FVector(40,40,40),Sphere);break;
@@ -166,7 +169,7 @@ void AWenSiMirrorExhibit::Apply()
   if(Word==EWenSiMirrorWord::Passable && !IsSelf(this)){Part->SetCollisionResponseToAllChannels(ECR_Ignore);Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);}
   if(Kind==3 && I>0){Part->SetCollisionResponseToAllChannels(ECR_Ignore);Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);}
   if(Kind==4 && Word!=EWenSiMirrorWord::Heavy){Part->SetCollisionResponseToAllChannels(ECR_Ignore);Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);}
-  UMaterialInterface* Use=(Word==EWenSiMirrorWord::Passable && !IsSelf(this))||Kind==4?Ghost:Kind==7&&I!=0?Glass:Parent;
+  UMaterialInterface* Use=(Word==EWenSiMirrorWord::Passable && !IsSelf(this))||Kind==4?Ghost:Parent;
   if(Use)
   {
    auto Mat=UMaterialInstanceDynamic::Create(Use,this);Mat->SetVectorParameterValue(TEXT("Color"),FLinearColor(.68f,.72f,.78f,.2f));Mat->SetScalarParameterValue(TEXT("Opacity"),Kind==4?.18f:.15f);Part->SetMaterial(0,Mat);
@@ -191,6 +194,14 @@ void AWenSiMirrorExhibit::Apply()
   }
  }
  WenSiExhibitArt::Apply(ArtVisual,Parts,ArtModel,ArtRotation,bUniformArtScale,Word==EWenSiMirrorWord::Passable,Ghost,Rim);
+ if(Kind==7 && Word!=EWenSiMirrorWord::Passable && Parent)
+  for(int32 I=0;I<ArtVisual->GetNumMaterials();++I)ArtVisual->SetMaterial(I,Parent);
+ if(Kind==3)
+ {
+  // The tether stretches independently; a fixed authored string cannot follow the ceiling balloon.
+  ArtVisual->SetVisibility(false);
+  for(auto Part:Parts)if(Part->GetStaticMesh()){Part->SetRenderInMainPass(true);Part->SetRenderInDepthPass(true);}
+ }
  if(ConductiveFX)
  {
   ConductiveFX->SetVisibility(Word==EWenSiMirrorWord::Conductive);
@@ -209,6 +220,14 @@ void AWenSiMirrorExhibit::Highlight(bool bAimed)
 void AWenSiMirrorExhibit::BeginPlay()
 {
  Super::BeginPlay();Rest=GetActorLocation();Configure();
+ if(Kind==3){Rest.Z+=195;SetActorLocation(Rest);}
+ if(Kind==7)
+ {
+  auto Label=NewObject<UWidgetComponent>(this,TEXT("PreciousExhibitWarning"));AddInstanceComponent(Label);Label->SetupAttachment(RootComponent);
+  Label->SetRelativeLocation(FVector(-102,0,95));Label->SetRelativeRotation(FRotator(0,180,0));Label->SetRelativeScale3D(FVector(.19f));
+  Label->SetDrawSize(FVector2D(900,100));Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);Label->SetTwoSided(true);
+  Label->SetSlateWidget(SNew(STextBlock).Text(FText::FromString(TEXT("注意！内有珍品"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",70)).ColorAndOpacity(FLinearColor(.08f,.035f,.01f)).Justification(ETextJustify::Center));Label->RegisterComponent();
+ }
  const FBox InitialBounds=ExhibitBounds(this);
  if(InitialBounds.IsValid){RestBoundsMinZ=InitialBounds.Min.Z;bRestBoundsInitialized=true;}
  if(Kind==2)
@@ -228,7 +247,7 @@ void AWenSiMirrorExhibit::UpdateMirror()
  FVector Eye;FRotator Rot;PC->GetPlayerViewPoint(Eye,Rot);
  const FVector Normal=GetActorForwardVector();const FVector Plane=GetActorLocation()+Normal*3.f;
  const float Distance=FVector::DotProduct(Eye-Plane,Normal);
- if(Distance<=5.f || Distance>450.f)return;
+ if(Distance<=5.f || Distance>1800.f)return;
  const FVector Reflected=Eye-2.f*Distance*Normal;
  // A capture-only glowing egg provides a presence for the first-person pawn.
  if(MirrorPresence && PC->GetPawn())
@@ -247,8 +266,17 @@ void AWenSiMirrorExhibit::UpdateMirror()
    PresenceParts[I]->SetRelativeLocation(FVector(0,0,-2.f+Breath*1.5f));
   }
  }
- const FVector Forward=FMath::GetReflectionVector(Rot.Vector(),Normal);
- const FVector Up=FMath::GetReflectionVector(FRotationMatrix(Rot).GetUnitAxis(EAxis::Z),Normal);
+ const FVector Forward=Normal,Up=GetActorUpVector();
+ const FVector Right=FVector::CrossProduct(Up,Forward).GetSafeNormal();
+ // Off-axis projection pins the rendered window to the physical mirror plane.
+ // A head-aimed symmetric camera otherwise makes the reflection follow the crosshair.
+ const FVector Center=Plane-Reflected;const double Width=125,Height=245;
+ FMatrix Projection=FMatrix::Identity;
+ Projection.M[0][0]=2*Distance/Width;Projection.M[1][1]=2*Distance/Height;
+ Projection.M[2][0]=-2*FVector::DotProduct(Center,Right)/Width;
+ Projection.M[2][1]=-2*FVector::DotProduct(Center,Up)/Height;
+ Projection.M[2][2]=0;Projection.M[2][3]=1;Projection.M[3][2]=1;Projection.M[3][3]=0;
+ Capture->bUseCustomProjectionMatrix=true;Capture->CustomProjectionMatrix=Projection;
  // Stock projects can have shader clip planes disabled. Exclude geometry behind
  // the mirror so the reflected camera cannot be occluded by the museum wall.
  Capture->HiddenActors.Reset();Capture->HiddenActors.Add(this);
@@ -280,7 +308,13 @@ void AWenSiMirrorExhibit::Tick(float Dt)
    for(TActorIterator<AWenSiMirrorExhibit> It(GetWorld());It;++It)
     if(It->Kind==1 && It->Word!=EWenSiMirrorWord::Passable)Target=FMath::Min(Target,It->GetActorLocation().Z+120.f-7.f-90.f-2.f);
  }
- if(Kind==3 && Word!=EWenSiMirrorWord::Floating)Target=Rest.Z-65.f;
+ if(Kind==3)
+ {
+  if(Word!=EWenSiMirrorWord::Floating)Target=Rest.Z-230.f;
+  const float Anchor=Rest.Z-301.f,Bottom=GetActorLocation().Z-55.f*GetActorScale3D().Z;
+  Parts[2]->SetWorldLocation(FVector(Rest.X,Rest.Y,(Anchor+Bottom)*.5f));
+  Parts[2]->SetWorldScale3D(FVector(.015f,.015f,FMath::Max(1.f,Bottom-Anchor)/100.f));
+ }
  if(Kind==6 && Word==EWenSiMirrorWord::Heavy)Target=Rest.Z-WenSiMuseumMechanisms::BalanceTravel;
  if(Kind==6 && Word==EWenSiMirrorWord::Ordinary)Target=Rest.Z-WenSiMuseumMechanisms::BalanceTravel*WenSiMuseumMechanisms::InitialBalanceAlpha;
  if(Kind==9)

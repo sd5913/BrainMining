@@ -18,6 +18,12 @@ public:
     virtual void Deinitialize() override;
     bool ToggleMenu();
     bool ToggleDeveloperMenu();
+    UFUNCTION(BlueprintCallable) bool TogglePauseMenu();
+    UFUNCTION(BlueprintCallable) bool JumpToCollectible(int32 ItemId);
+    UFUNCTION(BlueprintCallable) void OpenPauseCollection();
+    UFUNCTION(BlueprintCallable) void RequestQuitConfirmation();
+    UFUNCTION(BlueprintCallable) void CancelQuitConfirmation();
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bQuitConfirmation=false;
     bool JumpToDeveloperArea(int32 Index);
     bool OpenDeveloperExperience(int32 Index);
     static TArray<FString> DeveloperMapPaths();
@@ -33,6 +39,7 @@ private:
     TWeakObjectPtr<UWorld> MenuWorld;
     FString MenuError;
     bool bDeveloperMenu = false;
+    bool bPauseMenu = false;
     TSharedPtr<IInputProcessor> Shortcuts;
     TSharedPtr<SWidget> Menu;
     TWeakObjectPtr<APlayerController> MenuController;

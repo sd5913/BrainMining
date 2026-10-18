@@ -21,6 +21,7 @@ void AEndingEmergence::UpdatePainterly()
   if(ActivePaintWeight>0)C->AddOrUpdateBlendable(PainterlyMaterial,ActivePaintWeight);
   else C->RemoveBlendable(PainterlyMaterial);
  };
- Apply(Camera?Camera->GetCameraComponent():nullptr);
+ // This camera never renders the playable cell. Do not seed it with the cell shader.
+ if(Camera)Camera->GetCameraComponent()->RemoveBlendable(PainterlyMaterial);
  Apply(Player && Player->GetPawn()?Player->GetPawn()->FindComponentByClass<UCameraComponent>():nullptr);
 }

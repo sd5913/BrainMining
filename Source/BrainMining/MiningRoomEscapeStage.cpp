@@ -59,10 +59,6 @@ void AMiningRoomEscape::BuildExitStage()
         for(int J=0;J<14;++J)
             Shape(Curtain+FVector(-20,Side*450-420+J*64,0),FVector(35,25,1120),Pleat,TEXT("EscapeStageCurtain"))->AttachToComponent(LeafRoot,FAttachmentTransformRules::KeepWorldTransform);
         Shape(Curtain+FVector(0,Side*930,0),FVector(65,65,1200),Gold,TEXT("EscapeStageFrame"));
-        const FVector Cannon=Deck+FVector(75,Side*720,135);
-        auto* Barrel=Shape(Cannon,FVector(52,52,180),Gold,TEXT("CollectionRibbonCannon"));
-        Barrel->SetStaticMesh(Cylinder);Barrel->SetWorldRotation(FRotator(0,0,Side*35));
-        Shape(Cannon-FVector(0,0,82),FVector(135,135,24),Dark,TEXT("EscapeStageCannonBase"));
         const FVector LampPosition=Deck+FVector(250,Side*580,1050);
         Shape(LampPosition,FVector(100,90,65),Dark,TEXT("CollectionStageLight"));
         auto* Spot=NewObject<USpotLightComponent>(this);AddInstanceComponent(Spot);Spot->SetupAttachment(RootComponent);
@@ -71,6 +67,17 @@ void AMiningRoomEscape::BuildExitStage()
         Spot->SetLightColor(Side<0?FLinearColor(1,.72f,.38f):FLinearColor(.42f,.65f,1));
         Spot->SetCastShadows(false);Spot->RegisterComponent();Spot->SetWorldLocation(LampPosition-FVector(0,0,40));
         Spot->SetWorldRotation((Deck+FVector(0,0,35)-LampPosition).Rotation());
+    }
+    for(int32 I=0;I<3;++I)
+    {
+        const FTransform T=StageCelebration->GetActorTransform();
+        const FVector Muzzle=AMiningCollectionEffects::WelcomeCannonMuzzle(I);
+        const FVector Axis=AMiningCollectionEffects::WelcomeCannonDirection(I);
+        auto* Barrel=Shape(T.TransformPosition(Muzzle-Axis*60),FVector(52,52,180),Gold,TEXT("CollectionRibbonCannon"));
+        Barrel->SetStaticMesh(Cylinder);Barrel->SetWorldRotation(FRotationMatrix::MakeFromZ(T.TransformVectorNoScale(Axis)).Rotator());
+        FVector BasePosition=Muzzle-Axis*120;
+        const float StandHeight=BasePosition.Z;BasePosition.Z=StandHeight*.5f;
+        Shape(T.TransformPosition(BasePosition),FVector(135,135,StandHeight*T.GetScale3D().Z+8),Dark,TEXT("EscapeStageCannonBase"));
     }
     Shape(Curtain+FVector(0,0,610),FVector(60,1940,140),Red,TEXT("EscapeStageCurtain"));
     auto* CurtainLight=NewObject<UPointLightComponent>(this);AddInstanceComponent(CurtainLight);CurtainLight->SetupAttachment(RootComponent);
@@ -84,7 +91,7 @@ void AMiningRoomEscape::BuildExitStage()
         ExitLight->SetLightColor(FLinearColor(.84f,.88f,1));ExitLight->SetCastShadows(false);ExitLight->RegisterComponent();
         ExitLight->SetWorldLocation(Deck+FVector(500+I*750,0,650));
     }
-    // Same fixed pools, two cannon trajectories and collectible model as the collection theatre.
+    // The collectible leaves the middle cannon in the opening salvo.
     StageRibbon=GetWorld()->SpawnActor<AMiningCollectible>(Deck+FVector(0,0,14),FRotator(0,30,0));
     StageRibbon->BuildModel(11);StageRibbon->Exposure=1;StageRibbon->SetActorHiddenInGame(true);
     StageRibbon->Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);StageRibbon->SetOwner(this);
@@ -97,15 +104,16 @@ void AMiningRoomEscape::TickExitStage()
     StageCelebration->SetActorTickEnabled(bEnteredComputer || Phase==EMiningEscapePhase::Escaped);
     if(!StageRibbon->bReleased)
     {
-        const float T=StageCelebration->GetCelebrationAge()-.35f;
+        const float T=StageCelebration->GetCelebrationAge();
         if(T<0 || !StageCelebration->bStageActive)return;
         StageRibbon->SetActorHiddenInGame(false);
-        const float Flight=FMath::Min(T,3.f);
-        const FVector P(480-113*Flight+12*FMath::Sin(Flight*4),650+36*Flight,
-            FMath::Max(9.4f,145+260*Flight-105*Flight*Flight));
+        constexpr float LandingTime=.9f;
+        const float Flight=FMath::Min(T,LandingTime);
+        const FVector P=AMiningCollectionEffects::WelcomeCannonMuzzle(2)+FVector(0,-260,180)*Flight
+            +FVector(0,0,-(145.f+180.f*LandingTime-9.4f)/(LandingTime*LandingTime)*Flight*Flight);
         StageRibbon->SetActorLocation(StageCelebration->GetActorTransform().TransformPosition(P));
-        StageRibbon->SetActorRotation(FRotator(T<3.f?T*170:0,T*45,T<3.f?T*210:0));
-        if(T<3.f)return;
+        StageRibbon->SetActorRotation(FRotator(T<LandingTime?T*170:0,Flight*45,T<LandingTime?T*210:0));
+        if(T<LandingTime)return;
         StageRibbon->bReleased=true;
         StageRibbon->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     }

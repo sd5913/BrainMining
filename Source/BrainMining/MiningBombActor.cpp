@@ -60,7 +60,9 @@ void AMiningBombActor::Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMining
 	Explosion = Effect;
 	SourceTool = Tool;
 	Model->SetStaticMesh(Mesh);
-	Model->SetRelativeLocation(-Mesh->GetBounds().Origin);
+	constexpr float ThrownModelScale=1.4f;
+	Model->SetRelativeScale3D(FVector(ThrownModelScale));
+	Model->SetRelativeLocation(-Mesh->GetBounds().Origin*ThrownModelScale);
 	Collision->SetSphereRadius(FMath::Clamp(Settings.CollisionRadius, 1.f, 50.f));
 	Collision->SetPhysMaterialOverride(BounceMaterial);
 	Collision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);

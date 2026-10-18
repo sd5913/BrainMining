@@ -71,8 +71,9 @@ public:
     const auto Pickup=FindMesh(TEXT("OfficeBombSkillPickup"));
     const auto Bombs=Cast<UInstancedStaticMeshComponent>(FindMesh(TEXT("OfficeFinaleBombs")));
     Test->TestTrue(TEXT("Collectible uses the current full-detail C4"),Pickup && Pickup->GetStaticMesh() && Pickup->GetStaticMesh()->GetName()==TEXT("SM_StickyBomb"));
-    Test->TestTrue(TEXT("Collectible C4 is enlarged and centered on its physical body"),Pickup && Pickup->GetStaticMesh() && Pickup->GetRelativeScale3D().Equals(FVector(3.2f),.001) &&
-     (Pickup->GetRelativeLocation()+Pickup->GetStaticMesh()->GetBounds().Origin*3.2f).IsNearlyZero(.01));
+    Test->TestTrue(TEXT("Collectible C4 is readable and centered on its physical body"),Pickup && Pickup->GetStaticMesh() && Pickup->GetRelativeScale3D().Equals(FVector(2.2f),.001) &&
+     (Pickup->GetRelativeLocation()+Pickup->GetStaticMesh()->GetBounds().Origin*2.2f).IsNearlyZero(.01));
+    Test->TestTrue(TEXT("First exit door is visible before the bomb is collected"),FindMesh(TEXT("OfficeBlastDoor"))->IsVisible() && !FindMesh(TEXT("OfficeBlastDoor"))->bHiddenInGame);
     Test->TestTrue(TEXT("Finale has a separate low-detail C4 asset"),Pickup && Bombs && Bombs->GetStaticMesh() && Bombs->GetStaticMesh()->GetName()==TEXT("SM_OfficeFinaleC4") && Bombs->GetStaticMesh()!=Pickup->GetStaticMesh());
     Test->TestTrue(TEXT("C4 crowd forces its reduced LOD"),Bombs && Bombs->GetForcedLodModel()==2);
     Test->TestTrue(TEXT("C4 crowd is bounded to 256 prewarmed instances"),Bombs && Bombs->GetInstanceCount()==256);

@@ -9,6 +9,7 @@
 #include "Camera/CameraActor.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
@@ -216,6 +217,10 @@ public:
    {
     Test->TestEqual(TEXT("Ending starts at gameplay, before its film"),Ending->Shot,-1);
     Test->TestTrue(TEXT("Cell camera uses the imported oil paint shader"),PaintWeight(Pawn->FindComponentByClass<UCameraComponent>())>0);
+    TArray<USkeletalMeshComponent*> Bodies;Pawn->GetComponents(Bodies);
+    for(auto* Body:Bodies)Test->TestTrue(TEXT("Cell player body and arms stay hidden"),Body->bHiddenInGame && !Body->IsVisible());
+    for(TActorIterator<ACameraActor> It(World);It;++It)
+     Test->TestEqual(TEXT("Film camera never inherits opening-cell paint"),PaintWeight(It->GetCameraComponent()),0.f);
     Capture(TEXT("Cell"));
    }
    else if(Step==7)

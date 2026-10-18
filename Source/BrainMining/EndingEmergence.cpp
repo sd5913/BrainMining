@@ -14,6 +14,7 @@
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/SplineMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/AudioComponent.h"
@@ -975,6 +976,9 @@ void AEndingEmergence::RestartDemo()
     for(UStaticMeshComponent* S:Sketch)S->SetVisibility(false);
     Player->ResetIgnoreMoveInput();Player->ResetIgnoreLookInput();
     Player->GetPawn()->SetActorHiddenInGame(false);
+    // Hide both body and first-person arms without hiding their camera/tool children.
+    TArray<USkeletalMeshComponent*> PlayerBodies;Player->GetPawn()->GetComponents(PlayerBodies);
+    for(auto* Body:PlayerBodies){Body->SetHiddenInGame(true,false);Body->SetVisibility(false,false);Body->SetCastShadow(false);}
     Player->GetPawn()->SetActorLocation(GetActorTransform().TransformPosition(FVector(100,0,Ending::Ground(100)+110)),false,nullptr,ETeleportType::TeleportPhysics);
     Player->SetControlRotation(GetActorRotation());
     if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->SetMovementMode(MOVE_Walking);}
@@ -998,7 +1002,7 @@ void AEndingEmergence::PreviewFilm()
 
 float AEndingEmergence::Duration(int32 Index)
 {
-    const float Seconds[]={5,10,8,10,35,20,18,12,4.5f,0,3.7f,6.6f,2.8f,3.f,0};
+    const float Seconds[]={5,10,8,11,35,20,18,12,4.5f,0,3.7f,6.6f,2.8f,3.f,0};
     return Index>=0&&Index<UE_ARRAY_COUNT(Seconds)?Seconds[Index]:0;
 }
 
@@ -1508,6 +1512,7 @@ void AEndingEmergence::UpdateNerves()
 void AEndingEmergence::EnterBlood()
 {
     GateIndex=1;BloodAt=Age;BeatAt=Age+3;BloodSpeed=480;BloodY=0;
+    UpdatePainterly(); // Clear both views before the camera handoff, not a tick later.
     const FVector Eye=Player->PlayerCameraManager->GetCameraLocation();
     const FVector LocalEye=GetActorTransform().InverseTransformPosition(Eye);
     VesselDistance=FMath::Max(150.f,float(LocalEye.X)-1600);BloodStartZ=LocalEye.Z-VesselPoint(VesselDistance).Z;

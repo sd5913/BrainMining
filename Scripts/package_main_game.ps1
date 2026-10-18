@@ -79,8 +79,14 @@ $requiredAssets = @(
     'EndingEmergence/Materials/M_EE_StarlightStream.uasset',
     'EndingEmergence/Materials/M_EE_UniverseShard.uasset',
     'Rooms/CardDuel/Robot/SM_Robot_Head.uasset',
-    'Rooms/CardDuel/Robot/SM_Robot_Body.uasset'
+    'Rooms/CardDuel/Robot/SM_Robot_Body.uasset',
+    'Rooms/CardDuel/Robot/SM_Robot_FootL.uasset',
+    'Rooms/CardDuel/Robot/SM_Robot_FootR.uasset',
+    'PopupClose/Maps/_GENERATED/Lenovo/office_doors_Submesh_704FAA0D.uasset'
 )
+Get-ChildItem -LiteralPath "$projectRoot/Content/Passages/Echo/ArtP2/Collision" -Filter '*_Walkable.uasset' -File | ForEach-Object {
+    $requiredAssets += 'Passages/Echo/ArtP2/Collision/' + $_.Name
+}
 foreach ($asset in $requiredAssets) {
     if (-not $containerText.Contains("../../../BrainMining/Content/$asset,")) {
         throw "Required runtime asset missing from packaged container: $asset"

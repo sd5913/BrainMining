@@ -25,6 +25,8 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) FVector TrailEnd=FVector::ZeroVector;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) float FlowHeight=140;
     float GetCelebrationAge() const { return bStageActive?Age:0.f; }
+    static FVector WelcomeCannonMuzzle(int32 Index);
+    static FVector WelcomeCannonDirection(int32 Index);
 private:
     UPROPERTY() TArray<TObjectPtr<UInstancedStaticMeshComponent>> Pools;
     TWeakObjectPtr<AMiningCollectible> SourceItem;

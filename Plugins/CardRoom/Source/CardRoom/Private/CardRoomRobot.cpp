@@ -27,6 +27,7 @@ void ACardRoomRobot::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
     Mouth->SetMaterial(0,LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Robot/RobotGraphite")));
+    Pose(TEXT("Idle"),0,1);
 }
 void ACardRoomRobot::Tick(float Dt)
 {
@@ -49,7 +50,10 @@ void ACardRoomRobot::Pose(FName State,float Time,float Dt,const FRotator& Look)
         FVector Eye=Parts[8+Side]->GetRelativeLocation();Eye.X=-17.65;Parts[8+Side]->SetRelativeLocation(Eye);
         const float ArmPitch=Fly?-100+Flail*35:Panic?-100+Flail*12:Hurt?-70:Attack?(Side==0?-115:-45):Arrival?-70+Wave*20:Sick?-20:Wave*1.5f;
         Rotate(Parts[2+Side],FRotator(ArmPitch,0,Sign*(Panic?22:Attack?16:5)));
-        Rotate(Parts[4+Side],FRotator(Fly?Sign*Flail*35:Panic?Sign*Wave*12:Arrival?-15:0,0,0));
+        // The supplied feet point forwards in bind pose. Rest them on the floor
+        // for the seated toy; hang them down over the chair during the duel.
+        Parts[4+Side]->SetRelativeLocation(FVector(0,Sign*12.5f,bEncounterDriven?30.f:19.78f));
+        Rotate(Parts[4+Side],FRotator(Fly?Sign*Flail*35:bEncounterDriven?65.f:0.f,0,0));
         // Neutralise the source's permanently angry brows; rotate them back for attacks.
         Rotate(Parts[6+Side],FRotator(0,0,Sign*(Attack?0:Panic?38:Hurt?32:Sick?34:20)));
         const float EyeZ=Hurt?.22f:Sick?.5f:(1-Blink*.92f)*(Panic?1.3f:1.f);

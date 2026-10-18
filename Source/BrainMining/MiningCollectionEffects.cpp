@@ -7,6 +7,16 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/PointLightComponent.h"
 
+FVector AMiningCollectionEffects::WelcomeCannonMuzzle(int32 Index)
+{
+    return Index==2?FVector(0,1000,145):FVector(Index==0?-445:445,650,145);
+}
+
+FVector AMiningCollectionEffects::WelcomeCannonDirection(int32 Index)
+{
+    return (Index==2?FVector(0,-500,420):FVector(Index==0?350:-350,-110,420)).GetSafeNormal();
+}
+
 AMiningCollectionEffects::AMiningCollectionEffects()
 {
     PrimaryActorTick.bCanEverTick=true;
@@ -77,12 +87,20 @@ void AMiningCollectionEffects::Tick(float Dt)
             FVector P,Scale; FRotator Rotation=FRotator::ZeroRotator;
             if(Kind==3)
             {
-                // Stagger launches over the entire flight cycle: a continuous shower.
-                const float Delay=3.f*(I+float(C)/Pools.Num())/Pool->GetInstanceCount();
+                // A dense first salvo, then repeating showers from all three TV-stage cannons.
+                const float Delay=(bSeparateStageTriggers?.18f:3.f)*(I+float(C)/Pools.Num())/Pool->GetInstanceCount();
                 if(bSeparateStageTriggers && Age<Delay){Pool->UpdateInstanceTransform(I,FTransform(FQuat::Identity,FVector::ZeroVector,FVector::ZeroVector),false,false,true);continue;}
-                const float T=FMath::Fmod(bSeparateStageTriggers?FMath::Max(0.f,Age-Delay):Age+I*.067f+C*.031f,3.f),Side=I%2?1.f:-1.f;
+                const float T=FMath::Fmod(bSeparateStageTriggers?FMath::Max(0.f,Age-Delay):Age+I*.067f+C*.031f,bSeparateStageTriggers?1.5f:3.f),Side=I%2?1.f:-1.f;
                 const float Speed=150+45*FMath::Sin(Seed);
                 P=FVector(Side*(480-Speed*T)+18*FMath::Sin(T*4+Seed),650+T*(35+22*FMath::Sin(Seed)),FMath::Max(9.4f,145+260*T-105*T*T));
+                if(bSeparateStageTriggers)
+                {
+                    const int32 Cannon=I%3;
+                    const FVector Velocity=WelcomeCannonDirection(Cannon)*(Cannon==2?653.f:558.f)
+                        +FVector(FMath::Sin(Seed)*65,FMath::Cos(Seed)*40,FMath::Sin(Seed*.7f)*45);
+                    P=WelcomeCannonMuzzle(Cannon)+Velocity*T+FVector(0,0,-390*T*T);
+                    P.Z=FMath::Max(9.4,P.Z);
+                }
                 Rotation=FRotator(T*170+Seed*50,T*110+Seed*90,T*210);
                 Scale=FVector(.035,.16+(I%4)*.03,.009);
             }

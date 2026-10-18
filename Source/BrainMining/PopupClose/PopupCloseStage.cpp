@@ -1,4 +1,5 @@
 #include "PopupClose/PopupCloseStage.h"
+#include "Subtitles/SubtitleLibrary.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "HAL/IConsoleManager.h"
 #include "PopupClose/PopupCloseContent.h"
@@ -327,6 +328,7 @@ void APopupCloseStage::StartOfficeRound()
 {
  if(Phase!=EPhase::Idle)return;
  Phase=EPhase::Running;RoundTime=0;SlowPhaseScheduledIssues=0;
+ USubtitleLibrary::PlayMainGameSubtitle(this,TEXT("电脑弹窗玩法1"));
  // Randomize the initial order, with separated time slots instead of four immediate problems.
  int32 Order[]={0,1,2,3};
  for(int32 I=3;I>0;--I)Swap(Order[I],Order[FMath::RandRange(0,I)]);
@@ -476,6 +478,7 @@ void APopupCloseStage::BeginBurst()
 {
  if(Phase!=EPhase::Running)return;
  Phase=EPhase::Spraying;SprayTime=0;SprayDebt=0;
+ USubtitleLibrary::PlayMainGameSubtitle(this,TEXT("电脑弹窗玩法2"));
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_OfficePanic"),.65f);
  bForcedExit=View==EView::Entering || View==EView::InScreen;
  // Disable every reply before releasing any shared Slate pointer capture.

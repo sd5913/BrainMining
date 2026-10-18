@@ -82,6 +82,8 @@ void USubtitleSubsystem::PlaySegment(FName SegmentId)
 void USubtitleSubsystem::PlayStatusLine(FText Text, float Duration)
 {
 	if(Text.IsEmpty() || !GetWorld())return;
+	// Brief matching/status messages must not erase an authored narrative queue.
+	if(bPlaying && ActiveSegment && ActiveSegment->SegmentId != TEXT("GameplayStatus")) return;
 	StopAll();
 	auto* Segment=NewObject<USubtitleSegment>(this);
 	Segment->SegmentId=TEXT("GameplayStatus");

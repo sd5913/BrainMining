@@ -107,6 +107,7 @@ class BRAINMINING_API AMiningCollectionField : public AActor
     GENERATED_BODY()
 public:
     AMiningCollectionField();
+    bool bCatalogueOnly=false;
     UPROPERTY(EditAnywhere, Category="Collection") bool bAreaManaged = false;
     UPROPERTY(EditAnywhere, Category="Collection") FKey CatalogueKey = EKeys::Tab;
     // Kept for the existing catalogue UMG's authored material slots.

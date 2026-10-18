@@ -148,8 +148,13 @@ void AWenSiMirrorExhibit::Configure()
  case 7:
   Shape(0,FVector(0,0,130),FVector(200,200,10));Shape(1,FVector(94,0,0),FVector(12,200,260));
   Shape(2,FVector(0,-94,0),FVector(200,12,260));Shape(3,FVector(0,94,0),FVector(200,12,260));
-  Shape(4,FVector(-94,-60,0),FVector(12,80,260));Shape(5,FVector(-94,60,0),FVector(12,80,260));
-  Shape(6,FVector(-94,0,33),FVector(12,40,194));break;
+  Shape(4,FVector(-94,-67.5,0),FVector(12,65,260));Shape(5,FVector(-94,67.5,0),FVector(12,65,260));
+  Shape(6,FVector(-94,0,-57.5),FVector(12,70,15));
+  Shape(7,FVector(-94,0,85),FVector(12,70,90));
+  Shape(8,FVector(-94,0,-5),FVector(3,70,90));
+  // Preserve the original 40 x 65 cm maintenance hatch below the new window.
+  Shape(9,FVector(-94,-27.5,-97.5),FVector(12,15,65));
+  Shape(10,FVector(-94,27.5,-97.5),FVector(12,15,65));break;
  case 8:Shape(0,FVector::ZeroVector,FVector(38,42,56));break;
  case 9:Shape(0,FVector::ZeroVector,FVector(72),Sphere);break;
  case 10:
@@ -175,6 +180,8 @@ void AWenSiMirrorExhibit::Apply()
   if(Kind==3 && I>0){Part->SetCollisionResponseToAllChannels(ECR_Ignore);Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);}
   if(Kind==4 && Word!=EWenSiMirrorWord::Heavy){Part->SetCollisionResponseToAllChannels(ECR_Ignore);Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);}
   UMaterialInterface* Use=(Word==EWenSiMirrorWord::Passable && !IsSelf(this))||Kind==4?Ghost:Parent;
+  // A clear pane exposes the prize visually while retaining the puzzle's thinking/collision barrier.
+  if(Kind==7 && I==8 && Word!=EWenSiMirrorWord::Passable && Glass)Use=Glass;
   if(Use)
   {
    auto Mat=UMaterialInstanceDynamic::Create(Use,this);Mat->SetVectorParameterValue(TEXT("Color"),FLinearColor(.68f,.72f,.78f,.2f));Mat->SetScalarParameterValue(TEXT("Opacity"),Kind==4?.18f:.15f);Part->SetMaterial(0,Mat);
@@ -201,11 +208,12 @@ void AWenSiMirrorExhibit::Apply()
  WenSiExhibitArt::Apply(ArtVisual,Parts,ArtModel,ArtRotation,bUniformArtScale,Word==EWenSiMirrorWord::Passable,Ghost,Rim);
  if(Kind==7 && Word!=EWenSiMirrorWord::Passable && Parent)
   for(int32 I=0;I<ArtVisual->GetNumMaterials();++I)ArtVisual->SetMaterial(I,Parent);
- if(Kind==3)
+ if(Kind==3 || Kind==7)
  {
+  // The window and balloon tether are represented by the separate proxy parts.
   // The tether stretches independently; a fixed authored string cannot follow the ceiling balloon.
   ArtVisual->SetVisibility(false);
-  for(auto Part:Parts)if(Part->GetStaticMesh()){Part->SetRenderInMainPass(true);Part->SetRenderInDepthPass(true);}
+  for(auto Part:Parts)if(Part->GetStaticMesh()){Part->SetRenderInMainPass(true);Part->SetRenderInDepthPass(true);Part->SetCastShadow(true);if(Kind==7 && Rim && !Part->GetOverlayMaterial())Part->SetOverlayMaterial(UMaterialInstanceDynamic::Create(Rim,this));}
  }
  if(ConductiveFX)
  {
@@ -229,9 +237,9 @@ void AWenSiMirrorExhibit::BeginPlay()
  if(Kind==7)
  {
   auto Label=NewObject<UWidgetComponent>(this,TEXT("PreciousExhibitWarning"));AddInstanceComponent(Label);Label->SetupAttachment(RootComponent);
-  Label->SetRelativeLocation(FVector(-102,0,95));Label->SetRelativeRotation(FRotator(0,180,0));Label->SetRelativeScale3D(FVector(.19f));
+  Label->SetRelativeLocation(FVector(-102,0,-58));Label->SetRelativeRotation(FRotator(0,180,0));Label->SetRelativeScale3D(FVector(.16f));
   Label->SetDrawSize(FVector2D(900,100));Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);Label->SetTwoSided(true);
-  Label->SetSlateWidget(SNew(STextBlock).Text(FText::FromString(TEXT("注意！内有珍品"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",70)).ColorAndOpacity(FLinearColor(.08f,.035f,.01f)).Justification(ETextJustify::Center));Label->RegisterComponent();
+  Label->SetSlateWidget(SNew(STextBlock).Text(FText::FromString(TEXT("内有珍品"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",70)).ColorAndOpacity(FLinearColor(.08f,.035f,.01f)).Justification(ETextJustify::Center));Label->RegisterComponent();
  }
  const FBox InitialBounds=ExhibitBounds(this);
  if(InitialBounds.IsValid){RestBoundsMinZ=InitialBounds.Min.Z;bRestBoundsInitialized=true;}
@@ -458,6 +466,10 @@ void AWenSiMirrorPuzzle::BeginPlay()
  if(PlayerStartIt)StartTransform=PlayerStartIt->GetActorTransform();
  for(TActorIterator<AActor> It(GetWorld());It;++It)
  {
+  if(It->ActorHasTag(TEXT("WenSiPowerCable")) || It->ActorHasTag(TEXT("WenSiPlugSupplyCable")) || It->ActorHasTag(TEXT("WenSiBalanceCable")))
+   if(auto* Mesh=It->FindComponentByClass<UStaticMeshComponent>())
+    if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WenSi/Mirror/Materials/M_PoweredCable")))
+    {auto* Mat=UMaterialInstanceDynamic::Create(Base,this);Mesh->SetMaterial(0,Mat);CableMaterials.Add(Mat);CablePressure.Add(It->ActorHasTag(TEXT("WenSiBalanceCable")));}
   if(It->ActorHasTag(TEXT("MirrorRewardShutter")))RewardShutter=*It;
   if(It->ActorHasTag(TEXT("MirrorReward")))Reward=*It;
   for(int32 I=0;I<2;++I)if(It->ActorHasTag(I?TEXT("MirrorPowerLamp"):TEXT("MirrorPressureLamp")))
@@ -595,6 +607,7 @@ void AWenSiMirrorPuzzle::UpdateMechanism()
  if(bPower!=WasPower)UMiningRoomAudioSubsystem::Emit(Ball,bPower?TEXT("S_Power"):TEXT("S_PowerOff"),.6f,true);
  if(bPressure && bPower && !bRewardUnlocked){bRewardUnlocked=true;UMiningRoomAudioSubsystem::Emit(RewardShutter,TEXT("S_RewardDoor"),.6f,true);UE_LOG(LogWenSiMirror,Display,TEXT("Both physical locks active; mouse museum hatch unlocked"));}
  if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,FMath::FInterpConstantTo(RewardShutter->GetActorLocation().Z-GetActorLocation().Z,bRewardUnlocked?128.f:40.f,GetWorld()->GetDeltaSeconds(),90.f))));
+ for(int32 I=0;I<CableMaterials.Num();++I)CableMaterials[I]->SetScalarParameterValue(TEXT("Powered"),(CablePressure[I]?bPressure:bPower)?1.f:0.f);
  for(int32 I=0;I<Lamps.Num();++I){const bool On=I?bPower:bPressure;Lamps[I]->SetVectorParameterValue(TEXT("Tint"),On?FLinearColor(.12,.75,.2):FLinearColor(.55,.025,.015));if(auto Overlay=Cast<UMaterialInstanceDynamic>(LampMeshes[I]->GetOverlayMaterial())){Overlay->SetVectorParameterValue(TEXT("Tint"),On?FLinearColor(.35,1,.45):FLinearColor(.5,.04,.025));Overlay->SetScalarParameterValue(TEXT("Strength"),On?2.f:.45f);}}
 }
 void AWenSiMirrorPuzzle::Tick(float Dt)

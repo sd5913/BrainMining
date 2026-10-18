@@ -67,9 +67,6 @@ void UMiningExperienceSubsystem::OpenPauseCollection()
 }
 bool UMiningExperienceSubsystem::JumpToCollectible(int32 Id)
 {
-#if UE_BUILD_SHIPPING
-    return false;
-#else
     if(!Menu||!bDeveloperMenu||Id<0||Id>=AMiningCollectible::ItemTypeCount)return false;
     auto* PC=MenuController.Get();auto* Hall=AMiningExhibitHall::Find(GetWorld());
     if(!PC||!PC->GetPawn())return false;
@@ -117,5 +114,4 @@ bool UMiningExperienceSubsystem::JumpToCollectible(int32 Id)
     PC->GetPawn()->SetActorLocation(Destination,false,nullptr,ETeleportType::TeleportPhysics);PC->SetControlRotation(Facing);
     if(Id==11)for(TActorIterator<AMiningRoomEscape> Room(GetWorld());Room;++Room)if(Room->StageRibbon)Room->Phase=EMiningEscapePhase::Escaped;
     CloseMenu();return true;
-#endif
 }

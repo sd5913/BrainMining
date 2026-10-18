@@ -99,12 +99,12 @@ void AMiningRoomEscape::TickExitStage()
         const float T=StageCelebration->GetCelebrationAge()-.35f;
         if(T<0 || !StageCelebration->bStageActive)return;
         StageRibbon->SetActorHiddenInGame(false);
-        const float Flight=FMath::Min(T,4.25f);
+        const float Flight=FMath::Min(T,3.f);
         const FVector P(480-113*Flight+12*FMath::Sin(Flight*4),650+36*Flight,
-            FMath::Max(9.4f,145+410*Flight-105*Flight*Flight));
+            FMath::Max(9.4f,145+260*Flight-105*Flight*Flight));
         StageRibbon->SetActorLocation(StageCelebration->GetActorTransform().TransformPosition(P));
-        StageRibbon->SetActorRotation(FRotator(T<4.25f?T*170:0,T*45,T<4.25f?T*210:0));
-        if(T<4.25f)return;
+        StageRibbon->SetActorRotation(FRotator(T<3.f?T*170:0,T*45,T<3.f?T*210:0));
+        if(T<3.f)return;
         StageRibbon->bReleased=true;
         StageRibbon->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     }

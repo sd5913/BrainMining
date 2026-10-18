@@ -1,3 +1,4 @@
+#include "Subtitles/SubtitleSubsystem.h"
 #include "EndingEmergence.h"
 #include "EndingComicRock.h"
 #include "Camera/CameraActor.h"
@@ -267,7 +268,7 @@ void AEndingEmergence::ResetPaperFinale()
     if(PaperScene)PaperScene->SetRelativeRotation(FRotator(90,0,0));
     for(auto M:PaperArtMaterials)M->SetScalarParameterValue(TEXT("WhiteBlend"),0);
     if(PaperSurfaceMaterial){PaperSurfaceMaterial->SetScalarParameterValue(TEXT("DotsReveal"),0);PaperSurfaceMaterial->SetScalarParameterValue(TEXT("ApertureRadius"),35);}
-    bPaperRockBroken=false;
+    bPaperRockBroken=false;LastPaperSubtitle=-1;bMealSubtitle=false;
     if(PaperRock)PaperRock->SetRelativeRotation(FRotator(-90,0,0));
     if(PaperRockCap)PaperRockCap->SetVisibility(true,true);
     if(PaperPick)PaperPick->SetRelativeRotation(FRotator(-90,0,0));
@@ -285,6 +286,17 @@ void AEndingEmergence::ResetPaperFinale()
 
 void AEndingEmergence::UpdatePaperProps(float CameraX,float Dt)
 {
+    if(!bMealSubtitle)
+    {
+        const TCHAR* Captions[]={TEXT("马桶"),TEXT("警告"),TEXT("眼镜"),TEXT("卡牌"),TEXT("喷泉"),TEXT("思考"),TEXT("电脑"),TEXT("大脑"),TEXT("太阳系"),TEXT("蚂蚁"),TEXT("肉鸽")};
+        int32 Pair=LastPaperSubtitle;
+        for(int32 I=0;I+1<PaperCards.Num();I+=2)if(CameraX+600>PaperCards[I]->GetRelativeLocation().X)Pair=FMath::Max(Pair,I/2);
+        if(Pair!=LastPaperSubtitle)
+        {
+            LastPaperSubtitle=Pair;
+            if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(FString(Captions[(Pair*2)%11])+TEXT(" · ")+Captions[(Pair*2+1)%11]),.8f);}
+        }
+    }
     for(int I=0;I<PaperCards.Num();++I)
     {
         auto* Card=PaperCards[I].Get();float& PopAge=PaperPopAges[I];
@@ -361,6 +373,8 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
         FVector Eye(X,Y,90);
         FVector Aim=FMath::Lerp(FVector(1,FMath::Cos(T*2*PI)*.025f,0).GetSafeNormal(),(FVector(8000,0,240)-Eye).GetSafeNormal(),FrameRock);
         PaperPose(Eye,Aim,108,bComfortMode?0:FMath::Sin(T*2*PI)*4.5f);
+        if(ShotTime>=4.05f && !bMealSubtitle)
+        {bMealSubtitle=true;if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("走吧，吃饭吧")),4.f);}}
         PaperRock->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.05f)/.70f)),0,0));
         PaperPick->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.95f)/.65f)),0,0));
         // Submit the film surface while the upright, unbroken rock still covers
@@ -377,6 +391,7 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
         PaperPickSwing->SetRelativeRotation(FQuat(FVector::ForwardVector,FMath::DegreesToRadians(PickAngle)));
         if(ShotTime>=.75f&&!bPaperRockBroken)
         {
+            if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("等一下！")),5.f);}
             bPaperRockBroken=true;PaperRockCap->SetVisibility(false,true);
             for(auto Chip:PaperRockChips)Chip->SetVisibility(true,true);
             PaperCaveScene->SetVisibility(true,true);

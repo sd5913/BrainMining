@@ -39,7 +39,6 @@ namespace MiningExperiences
         {TEXT("多矿区串联"), TEXT("主房间 · 独立矿区 · 隐藏洞室"), TEXT("/Game/MiningPrototype/Maps/Lvl_MiningHollowChain_Demo")}
     };
 
-#if !UE_BUILD_SHIPPING
     const FEntry DeveloperEntries[] = {
         {TEXT("主游戏 · MainGame"), TEXT("重新载入三矿区主流程，再用上方房间列表跳转"), TEXT("/Game/MainGame/Maps/Lvl_MainGame")},
         {TEXT("办公室 · 独立测试"), TEXT("电脑弹窗、打印机、炸弹与撤离，从房间初始状态开始"), TEXT("/Game/PopupClose/Maps/Lvl_PopupClose")},
@@ -49,7 +48,6 @@ namespace MiningExperiences
         {TEXT("涌现结尾 · 独立测试"), TEXT("新结尾房的独立演示"), TEXT("/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo")},
         {TEXT("旧主流程 · FullJourney"), TEXT("重新载入旧主流程，可继续使用房间跳转"), TEXT("/Game/Campaign/Maps/Lvl_FullJourney")}
     };
-#endif
 
     class FShortcuts : public IInputProcessor
     {
@@ -60,7 +58,6 @@ namespace MiningExperiences
         {
             auto* Owner = Subsystem.Get();
             if (!Owner || Event.IsRepeat()) return false;
-#if !UE_BUILD_SHIPPING
             if (Event.GetKey() == EKeys::F10 && Event.IsControlDown())
             {
                 auto* Viewport = Owner->GetWorld() ? Owner->GetWorld()->GetGameViewport() : nullptr;
@@ -69,7 +66,6 @@ namespace MiningExperiences
                     return Owner->ToggleDeveloperMenu();
                 return false;
             }
-#endif
             if (Event.GetKey() == EKeys::F6 && !Owner->IsMenuOpen())
                 if (auto* Hall = AMiningExhibitHall::Find(Owner->GetWorld())) { Hall->ReturnToLobby(); return true; }
             if (Event.GetKey() == EKeys::F4) return Owner->ToggleMenu();
@@ -123,9 +119,6 @@ bool UMiningExperienceSubsystem::ToggleMenu()
 
 bool UMiningExperienceSubsystem::ToggleDeveloperMenu()
 {
-#if UE_BUILD_SHIPPING
-    return false;
-#else
     if (Menu) { CloseMenu(); return true; }
     if (auto* Hall = AMiningExhibitHall::Find(GetWorld()))
     {
@@ -133,7 +126,6 @@ bool UMiningExperienceSubsystem::ToggleDeveloperMenu()
         if (Hall->IsInteractionOpen()) return false;
     }
     return BuildMenu(true);
-#endif
 }
 
 bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
@@ -158,7 +150,6 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
         if (auto* Movement = Pawn->FindComponentByClass<UMiningCharacterMovementComponent>()) Movement->ResetFlightInput();
     }
     auto Choices = SNew(SVerticalBox);
-#if !UE_BUILD_SHIPPING
     if (bDeveloper)
     {
         auto* Hall = AMiningExhibitHall::Find(World);
@@ -185,12 +176,9 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
         Choices->AddSlot().AutoHeight().Padding(0, 16, 0, 6)
             [SNew(STextBlock).Text(FText::FromString(TEXT("独立玩法 · 切换地图并从头测试房间"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))];
     }
-#endif
     const MiningExperiences::FEntry* MenuEntries = MiningExperiences::Entries;
     int32 EntryCount = UE_ARRAY_COUNT(MiningExperiences::Entries);
-#if !UE_BUILD_SHIPPING
     if (bDeveloper) { MenuEntries = MiningExperiences::DeveloperEntries; EntryCount = UE_ARRAY_COUNT(MiningExperiences::DeveloperEntries); }
-#endif
     for (int32 Index = 0; Index < EntryCount; ++Index)
     {
         const auto& Entry = MenuEntries[Index];
@@ -265,30 +253,21 @@ void UMiningExperienceSubsystem::OnWorldCleanup(UWorld* World, bool bSessionEnde
 TArray<FString> UMiningExperienceSubsystem::DeveloperMapPaths()
 {
     TArray<FString> Paths;
-#if !UE_BUILD_SHIPPING
     for (const auto& Entry : MiningExperiences::DeveloperEntries) Paths.Add(Entry.Map);
-#endif
     return Paths;
 }
 
 bool UMiningExperienceSubsystem::JumpToDeveloperArea(int32 Index)
 {
-#if UE_BUILD_SHIPPING
-    return false;
-#else
     auto* Hall = AMiningExhibitHall::Find(GetWorld());
     if (!Menu || !bDeveloperMenu || !Hall) return false;
     if (!Hall->EnterDeveloperArea(Index, MenuError)) return false;
     CloseMenu();
     return true;
-#endif
 }
 
 bool UMiningExperienceSubsystem::OpenDeveloperExperience(int32 Index)
 {
-#if UE_BUILD_SHIPPING
-    return false;
-#else
     if (!Menu || !bDeveloperMenu || !GetWorld()) return false;
     const auto Paths = DeveloperMapPaths();
     if (!Paths.IsValidIndex(Index) || !FPackageName::DoesPackageExist(Paths[Index]))
@@ -300,7 +279,6 @@ bool UMiningExperienceSubsystem::OpenDeveloperExperience(int32 Index)
     CloseMenu();
     UGameplayStatics::OpenLevel(GetWorld(), Map);
     return true;
-#endif
 }
 
 bool UMiningExperienceSubsystem::OpenExperience(int32 Index)

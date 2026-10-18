@@ -41,5 +41,6 @@ private:
  uint8 PreviousMovementMode=0,PreviousCustomMode=0;
  bool bPawnWasHidden=false;
  float EntryFOV=90,EntryAge=-1;
+ bool bGalleryHintShown=false;
  bool bFocused=false,bTravelRequested=false,bInputLocked=false;
 };

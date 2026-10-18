@@ -75,10 +75,10 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     }
     if(R.Round>0)
     {
-        Box(47,202,226,70,Dark); Text(FString::Printf(TEXT("你     %d / 100"),R.PlayerHP),61,212,19,R.PlayerHP==1?FLinearColor(1,.3f,.2f):Cream);
-        Box(61,248,192,5,FLinearColor(.22f,.17f,.13f)); Box(61,248,192*R.PlayerHP/100.f,5,R.PlayerHP==1?FLinearColor(1,.16f,.05f):Gold);
-        Box(1265,145,307,68,Dark); Text(FString::Printf(TEXT("超级人机    %d / 100"),R.RivalHP),1285,158,18,Cream);
-        Box(1285,195,248,4,FLinearColor(.22f,.17f,.13f)); Box(1285,195,248*R.RivalHP/100.f,4,Gold);
+        Box(47,225,307,70,Dark); Text(FString::Printf(TEXT("你     %d / 100"),R.PlayerHP),67,238,19,R.PlayerHP==1?FLinearColor(1,.3f,.2f):Cream);
+        Box(67,275,248,5,FLinearColor(.22f,.17f,.13f)); Box(67,275,248*R.PlayerHP/100.f,5,R.PlayerHP==1?FLinearColor(1,.16f,.05f):Gold);
+        Box(47,145,307,68,Dark); Text(FString::Printf(TEXT("超级人机    %d / 100"),R.RivalHP),67,158,18,Cream);
+        Box(67,195,248,4,FLinearColor(.22f,.17f,.13f)); Box(67,195,248*R.RivalHP/100.f,4,Gold);
         if(R.bPoisoned) { Box(1355,220,217,36,FLinearColor(.1f,.23f,.08f,.9f)); Text(TEXT("中毒 · 可被点燃"),1370,228,14,FLinearColor(.7f,1,.4f)); }
     }
     if(R.Phase==ECardRoomPhase::Seated || R.Phase==ECardRoomPhase::Matching || R.Phase==ECardRoomPhase::Arrival)

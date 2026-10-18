@@ -313,10 +313,6 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
 
 bool AMiningExhibitHall::EnterDeveloperArea(int32 Index, FString& Error)
 {
-#if UE_BUILD_SHIPPING
-    Error = TEXT("发行版本不提供开发者跳转。");
-    return false;
-#else
     if (!bReady || !Controller.IsValid() || !Controller->GetPawn() || !Areas.IsValidIndex(Index))
     {
         Error = TEXT("房间尚未就绪，或目标区域不存在。");
@@ -365,7 +361,6 @@ bool AMiningExhibitHall::EnterDeveloperArea(int32 Index, FString& Error)
     if (auto* StartRoom = AMiningStartRoom::Find(GetWorld())) StartRoom->UnlockDeveloperEquipment();
     Error.Empty();
     return true;
-#endif
 }
 
 void AMiningExhibitHall::ReturnToLobby()

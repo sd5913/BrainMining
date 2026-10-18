@@ -361,6 +361,8 @@ void ACardRoomStage::Tick(float DeltaSeconds)
         RabbitVisual->SetVisibility(false,true);
         if(auto* Robot=Cast<ACardRoomRobot>(RobotOpponent->GetChildActor()))
         {
+            // Child actors recreated during level load must not also run their idle pose tick.
+            Robot->bEncounterDriven=true;
             Robot->SetActorHiddenInGame(!(bBattle || Phase==ECardRoomPhase::Arrival) || bReachedWall);
             Robot->SetActorEnableCollision(false);
             const bool Fly=bResolve && Run.Round==4 && T>1;

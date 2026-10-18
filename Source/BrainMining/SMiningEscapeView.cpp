@@ -16,7 +16,8 @@ int32 SMiningEscapeView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSla
     auto Text=[&](FString T,float X,float Y,int32 Font,FLinearColor C){FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(1550*S,65*S),FSlateLayoutTransform(FVector2f(Origin+FVector2D(X,Y)*S))),T,FCoreStyle::GetDefaultFontStyle("Regular",FMath::Max(10,FMath::RoundToInt(Font*S))),ESlateDrawEffect::None,C);};
     if(E->Phase==EMiningEscapePhase::Failed)
     {
-        Box(0,0,1600,900,FLinearColor(.22,.005,.02,.56));Box(410,340,800,150,Dark);
+        FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),Brush,ESlateDrawEffect::None,FLinearColor(.22f,.005f,.02f,.56f));
+        Box(410,340,800,150,Dark);
         Text(E->FailureReason,450,365,30,White);Text(E->bComputerCheckpoint?TEXT("正在回到电视屏幕前……无需重跑攀升路线"):TEXT("正在回到涨水检查点……无需重新打牌"),450,422,21,Gold);return L;
     }
     if (!UMiningInteractionHUDWidget::IsActiveFor(E->GetWorld()->GetFirstPlayerController())) Box(797,447,6,6,White);

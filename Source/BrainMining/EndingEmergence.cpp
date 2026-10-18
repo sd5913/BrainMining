@@ -1,4 +1,5 @@
 #include "EndingEmergence.h"
+#include "UObject/ConstructorHelpers.h"
 #include "MiningAudioSettings.h"
 #include "EndingCrowd.h"
 #include "DiggableRock.h"
@@ -78,7 +79,7 @@ public:
     void Construct(const FArguments& A) { Owner=A._Owner; }
     virtual int32 OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRect&,FSlateWindowElementList& Out,int32 L,const FWidgetStyle&,bool) const override
     {
-        if(!Owner.IsValid())return L;
+        if(!Owner.IsValid() || Owner->bComplete)return L;
         const auto* D=Owner.Get();const FVector2D Size=G.GetLocalSize();
         const float S=FMath::Min(Size.X/1600,Size.Y/900);
         // Retain controls, aim and target markers, without narrative or target labels.
@@ -122,7 +123,12 @@ private:
     TWeakObjectPtr<AEndingEmergence> Owner;
 };
 
-AEndingEmergenceGameMode::AEndingEmergenceGameMode() { HUDClass=AHUD::StaticClass(); }
+AEndingEmergenceGameMode::AEndingEmergenceGameMode()
+{
+    static ConstructorHelpers::FClassFinder<APawn> Pawn(TEXT("/Game/Showcase/Blueprints/BP_SharedMiningCharacter"));
+    if(Pawn.Succeeded())DefaultPawnClass=Pawn.Class;
+    HUDClass=AHUD::StaticClass();
+}
 AEndingEmergence::AEndingEmergence()
 {
     PrimaryActorTick.bCanEverTick=true;
@@ -1762,6 +1768,9 @@ void AEndingEmergence::Tick(float Dt)
 {
     Super::Tick(Dt);
     if(!bReady){bReady=Initialize();if(!bReady)return;RestartDemo();}
+    if(bComplete){Age+=Dt;ShotTime+=Dt;UpdateCredits();return;}
+    // First-use resource uploads in cooked builds must not skip an entire short scale transition.
+    if((Shot>=0 && Shot<=8) || (Shot<0 && GateIndex>=5))Dt=FMath::Min(Dt,1.f/15.f);
     Age+=Dt;UpdateCellMotion();UpdatePainterly();
     // Warm resources in the opening cell. Cross-scale jumps use only the live
     // 3D camera; an arrival never displays a static scene-capture image.
@@ -1924,7 +1933,7 @@ void AEndingEmergence::EndPlay(const EEndPlayReason::Type Reason)
 {
     if(PainterlyMaterial && Player && Player->GetPawn())
         if(auto* C=Player->GetPawn()->FindComponentByClass<UCameraComponent>())C->RemoveBlendable(PainterlyMaterial);
-    ResetFinale();ClearEndingEffects();
+    RemoveCredits();ResetFinale();ClearEndingEffects();
     if(Mining)Mining->bFieldResetEnabled=SavedFieldResetEnabled;
     if(Ambience){Ambience->Stop();Ambience->DestroyComponent();}
     if(Music){Music->Stop();Music->DestroyComponent();}

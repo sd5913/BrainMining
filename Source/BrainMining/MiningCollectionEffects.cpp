@@ -54,7 +54,7 @@ void AMiningCollectionEffects::Tick(float Dt)
             if(FMath::Abs(P.X)<570 && P.Y>-200 && P.Y<1350 && FMath::Abs(P.Z)<800)
             {
                 bCurtainOpen=true;
-                if(!bSeparateStageTriggers || P.Y>CelebrationForward)bStageActive=true;
+                bStageActive=true;
             }
         }
         bCurtainOpen|=bStageActive;
@@ -78,11 +78,11 @@ void AMiningCollectionEffects::Tick(float Dt)
             if(Kind==3)
             {
                 // Stagger launches over the entire flight cycle: a continuous shower.
-                const float Delay=4.3f*(I+float(C)/Pools.Num())/Pool->GetInstanceCount();
+                const float Delay=3.f*(I+float(C)/Pools.Num())/Pool->GetInstanceCount();
                 if(bSeparateStageTriggers && Age<Delay){Pool->UpdateInstanceTransform(I,FTransform(FQuat::Identity,FVector::ZeroVector,FVector::ZeroVector),false,false,true);continue;}
-                const float T=FMath::Fmod(bSeparateStageTriggers?FMath::Max(0.f,Age-Delay):Age+I*.067f+C*.031f,4.3f),Side=I%2?1.f:-1.f;
+                const float T=FMath::Fmod(bSeparateStageTriggers?FMath::Max(0.f,Age-Delay):Age+I*.067f+C*.031f,3.f),Side=I%2?1.f:-1.f;
                 const float Speed=150+45*FMath::Sin(Seed);
-                P=FVector(Side*(480-Speed*T)+18*FMath::Sin(T*4+Seed),650+T*(35+22*FMath::Sin(Seed)),FMath::Max(52.f,145+410*T-105*T*T));
+                P=FVector(Side*(480-Speed*T)+18*FMath::Sin(T*4+Seed),650+T*(35+22*FMath::Sin(Seed)),FMath::Max(9.4f,145+260*T-105*T*T));
                 Rotation=FRotator(T*170+Seed*50,T*110+Seed*90,T*210);
                 Scale=FVector(.035,.16+(I%4)*.03,.009);
             }

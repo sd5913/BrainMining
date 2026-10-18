@@ -52,6 +52,8 @@ def tick(dt):
         if not world:return
         phase=s['phase']
         if phase=='setup':
+            for opening in unreal.GameplayStatics.get_all_actors_of_class(world,unreal.MiningOpening):
+                if not opening.finished:opening.start_game();s['next']=now+1;return
             pc=unreal.GameplayStatics.get_player_controller(world,0);pawn=unreal.GameplayStatics.get_player_pawn(world,0);halls=unreal.GameplayStatics.get_all_actors_of_class(world,unreal.MiningExhibitHall)
             if not pawn or not pc or not pc.mining_gui or not halls or not halls[0].get_editor_property('bReady'):return
             s.update(world=world,pc=pc,pawn=pawn,hall=halls[0],mining=pawn.get_component_by_class(unreal.MiningComponent),effects=pawn.get_component_by_class(unreal.MiningToolEffectsComponent),move=pawn.get_component_by_class(unreal.MiningCharacterMovementComponent),pickups=list(unreal.GameplayStatics.get_all_actors_of_class(world,unreal.MiningStarterPickup)),room=unreal.GameplayStatics.get_all_actors_of_class(world,unreal.MiningStartRoom)[0],phase='aim')
@@ -60,6 +62,14 @@ def tick(dt):
         elif phase=='pickup':
             press('E');check(s['pickups'][s['pickup']].collected,'Real E acquires starter pickup '+str(s['pickup']));s['pickup']+=1;s.update(phase='aim' if s['pickup']<2 else 'equip',next=now+.4)
         elif phase=='equip':
+            check(not s['mining'].is_drill_unlocked(),'Starter pickups do not unlock the card-room drill')
+            check(not s['pawn'].get_component_by_class(unreal.MiningBombToolComponent).is_skill_unlocked(),'Starter pickups do not unlock the office bomb')
+            press('V');press('G')
+            check(not s['mining'].get_editor_property('bDrillMode') and not s['pawn'].get_component_by_class(unreal.MiningBombToolComponent).get_editor_property('bEquipped'),'V and G cannot equip locked campaign rewards')
+            s.update(phase='grant',next=now+.3)
+        elif phase=='grant':
+            # Drill pickup now belongs to the card room; grant it for this pose fixture.
+            s['mining'].unlock_drill()
             s['pc'].set_control_rotation(unreal.Rotator());frame('pickaxe');press('V');s.update(phase='equipped',next=now+.8)
         elif phase=='equipped':
             frame('drill_equipped');check(s['mining'].get_editor_property('bDrillMode'),'Real V equips the drill');key('LeftMouseButton',True);s.update(phase='running',next=now+.7)

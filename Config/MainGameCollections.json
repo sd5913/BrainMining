@@ -43,8 +43,14 @@
       "area_tag": "BM_Campaign_MainGame02",
       "route_fraction": 0.67,
       "side": -1,
-      "depth_cm": 75,
-      "floor": true
+      "depth_cm": 45,
+      "floor": true,
+      "branch": "Branch_02",
+      "authored_position_cm": [
+        -10273.788231,
+        -898.844428,
+        10141.609846
+      ]
     },
     {
       "item_id": 0,

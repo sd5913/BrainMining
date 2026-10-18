@@ -113,7 +113,10 @@ bool FCollectionExpansionTest::RunTest(const FString& Parameters)
     const float Exposure=Flower->MeasureExposure();
     TestTrue(TEXT("A buried root crown prevents immediate release even with visible flowers"),Exposure<.65f);
     Flower->Exposure=1; Flower->Release(); TestFalse(TEXT("Roots cannot release through intact soil"),Flower->bReleased);
-    TestTrue(TEXT("Excavation clears the actual root volume"),Soil->MineSphere(Flower->GetActorLocation(),230));
+    Soil->MineSphere(Flower->GetActorLocation()-FVector(0,0,20),65);
+    Flower->Exposure=Flower->MeasureExposure();Flower->Release();
+    TestFalse(TEXT("A shallow crown cut cannot release the deep roots"),Flower->bReleased);
+    TestTrue(TEXT("Excavation clears the actual root volume"),Soil->MineSphere(Flower->GetActorLocation()-FVector(0,0,90),300));
     Flower->Exposure=Flower->MeasureExposure(); Flower->Release();
     TestTrue(TEXT("Fully excavated root system can be collected"),Flower->bReleased);
     auto* Calculator=World->SpawnActor<AMiningCollectible>(FVector(0,0,150),FRotator(0,35,0));

@@ -1,4 +1,4 @@
-﻿"""Rebuild the ending's pulse lens and comic exit; preserve shared game materials."""
+"""Rebuild the ending's pulse lens and comic exit; preserve shared game materials."""
 import unreal
 
 finish_lib=unreal.MaterialEditingLibrary
@@ -35,7 +35,7 @@ def post_finish(name,code,priority,bridge=False):
     for key in bindings:
         inp=unreal.CustomInput();inp.set_editor_property('input_name',key);inputs.append(inp)
     custom.set_editor_property('inputs',inputs)
-    custom.set_editor_property('code','#if PLATFORM_ANDROID\nreturn SC.rgb;\n#else\n'+code+'\n#endif')
+    custom.set_editor_property('code','#if SHADING_PATH_MOBILE\nreturn SC.rgb;\n#else\n'+code+'\n#endif')
     for key,(node,output) in bindings.items():assert finish_lib.connect_material_expressions(node,output,custom,key)
     assert finish_lib.connect_material_property(custom,'',unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     finish_lib.recompile_material(m);assert unreal.EditorAssetLibrary.save_loaded_asset(m)

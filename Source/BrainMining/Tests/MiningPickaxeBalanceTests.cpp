@@ -21,6 +21,9 @@ bool FMiningGlowRangeTest::RunTest(const FString&)
     UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
     auto* Item=World->SpawnActor<AMiningTreasure>();
     FMiningTreasureDefinition Definition;Definition.HintRadius=120.f;
+    Definition.bBuriedHint=true;
+    Item->UpdateGlow(0.f,true);
+    TestFalse(TEXT("Unconfigured decal cannot display the engine fallback"),Item->BuriedGlow->IsVisible());
     Item->AttachCampaignHint(Definition);
     if(TestTrue(TEXT("Campaign glow material attached"),!Item->HintMaterials.IsEmpty()))
     {
@@ -31,6 +34,13 @@ bool FMiningGlowRangeTest::RunTest(const FString&)
         TestEqual(TEXT("Restoring saved range updates existing material"),Item->HintMaterials[0]->K2_GetScalarParameterValue(TEXT("HintRadius")),240.f);
         Item->ApplyGlowRadius(std::numeric_limits<float>::quiet_NaN());
         TestTrue(TEXT("Invalid runtime range remains finite"),Item->BuriedGlow->DecalSize.Equals(FVector(240.f)));
+        Item->UpdateGlow(0.f,true);
+        TestTrue(TEXT("Valid buried glow is visible"),Item->BuriedGlow->IsVisible());
+        Item->UpdateGlow(0.f,false);
+        TestFalse(TEXT("Room lighting suppression still hides the glow"),Item->BuriedGlow->IsVisible());
+        Item->BuriedGlow->SetDecalMaterial(nullptr);
+        Item->UpdateGlow(0.f,true);
+        TestFalse(TEXT("Missing material never displays a bright fallback rectangle"),Item->BuriedGlow->IsVisible());
     }
     World->DestroyWorld(false);return true;
 }

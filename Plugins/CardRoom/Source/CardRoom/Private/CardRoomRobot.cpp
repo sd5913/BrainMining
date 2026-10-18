@@ -37,7 +37,7 @@ void ACardRoomRobot::Pose(FName State,float Time,float Dt,const FRotator& Look)
 {
     Expression=State;
     const bool Hurt=State==TEXT("Hurt"),Sick=State==TEXT("Sick"),Panic=State==TEXT("Panic"),Attack=State==TEXT("Attack"),Arrival=State==TEXT("Arrival"),Fly=State==TEXT("Fly");
-    const float Wave=FMath::Sin(Time*3),Flail=FMath::Sin(Time*13);
+    const float Wave=FMath::Sin(Time*1.8f),Flail=FMath::Sin(Time*7.f);
     auto Rotate=[&](USceneComponent* C,FRotator R){C->SetRelativeRotation(FMath::RInterpTo(C->GetRelativeRotation(),R,Dt,Hurt?18.f:8.f));};
     Rotate(Head,FRotator(Look.Pitch+(Hurt?-18:Sick?14:Attack?-8:Wave*2),Look.Yaw+FMath::Sin(Time*.8f)*(Sick?15:4),Hurt?Flail*7:Sick?Wave*12:Panic?Wave*7:Wave*2));
     const float Blink=FMath::Clamp(1-FMath::Abs(FMath::Fmod(Time+1.7f,4.1f)-.12f)/.10f,0.f,1.f);
@@ -47,7 +47,7 @@ void ACardRoomRobot::Pose(FName State,float Time,float Dt,const FRotator& Look)
         // Keep facial hardware just in front of the bevelled panel throughout articulation.
         FVector Brow=Parts[6+Side]->GetRelativeLocation();Brow.X=-20.5;Parts[6+Side]->SetRelativeLocation(Brow);
         FVector Eye=Parts[8+Side]->GetRelativeLocation();Eye.X=-17.65;Parts[8+Side]->SetRelativeLocation(Eye);
-        const float ArmPitch=Fly?-100+Flail*35:Panic?-100+Flail*20:Hurt?-70:Attack?(Side==0?-115:-45):Arrival?-70+Wave*30:Sick?-20:Wave*6;
+        const float ArmPitch=Fly?-100+Flail*35:Panic?-100+Flail*12:Hurt?-70:Attack?(Side==0?-115:-45):Arrival?-70+Wave*20:Sick?-20:Wave*1.5f;
         Rotate(Parts[2+Side],FRotator(ArmPitch,0,Sign*(Panic?22:Attack?16:5)));
         Rotate(Parts[4+Side],FRotator(Fly?Sign*Flail*35:Panic?Sign*Wave*12:Arrival?-15:0,0,0));
         // Neutralise the source's permanently angry brows; rotate them back for attacks.

@@ -43,7 +43,8 @@ AMiningBombActor::AMiningBombActor()
 	BounceMaterial = CreateDefaultSubobject<UPhysicalMaterial>(TEXT("BombBounceMaterial"));
 	BounceMaterial->Friction = .45f;
 	BounceMaterial->Restitution = 0.f;
-	Collision->SetPhysMaterialOverride(BounceMaterial);
+	// Applying this material updates physics and must wait until Launch: the
+	// class default object is constructed before GEngine exists during cook.
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BombModel"));
 	Model->SetupAttachment(Collision);
 	Model->SetCollisionProfileName(TEXT("NoCollision"));
@@ -60,6 +61,7 @@ void AMiningBombActor::Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMining
 	Model->SetStaticMesh(Mesh);
 	Model->SetRelativeLocation(-Mesh->GetBounds().Origin);
 	Collision->SetSphereRadius(FMath::Clamp(Settings.CollisionRadius, 1.f, 50.f));
+	Collision->SetPhysMaterialOverride(BounceMaterial);
 	Collision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	Collision->SetMassOverrideInKg(NAME_None, FMath::Clamp(Settings.Mass, .1f, 100.f), true);

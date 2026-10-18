@@ -34,7 +34,7 @@ CSV_DEFINE_CATEGORY(OfficeFinale,true);
 namespace
 {
  constexpr int32 BombBudget=256;
- constexpr float PickupBombScale=1.9f;
+ constexpr float PickupBombScale=3.2f;
  constexpr float ExitPlane=1090.f;
  constexpr float VisualUpdateHz=30.f;
  void WarmBombRenderPool(UInstancedStaticMeshComponent* Mesh)

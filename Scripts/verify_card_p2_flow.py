@@ -116,15 +116,15 @@ def tick(dt):
    effects=e.get_editor_property('stage_celebration')
    leaves=[a for a in unreal.GameplayStatics.get_all_actors_of_class(w,unreal.Actor) if a.get_class().get_name()=='Actor' and a.get_owner()==e and abs(a.get_actor_location().x-31070)<1]
    check(len(leaves)==2 and all(abs(a.get_actor_location().y-11750)>1000 for a in leaves),'Both curtain leaves physically slide clear of the doorway')
-   check(not effects.get_editor_property('bStageActive'),'Opening curtain does not start cannons')
+   check(effects.get_editor_property('bStageActive'),'Opening curtain immediately starts cannons')
    shot('05a-curtain-opening.png')
    pose(e.get_editor_property('exit'),unreal.Vector(31900,11750,10100));s.update(phase=9,next=now+2);return
   if phase==9:
    check(e.get_editor_property('phase')==unreal.MiningEscapePhase.ESCAPED,'Cut and crossed tunnel reaches stage')
    effects=e.get_editor_property('stage_celebration')
    check(effects.get_editor_property('bCurtainOpen'),'Approaching from the television opens the curtain')
-   check(not effects.get_editor_property('bStageActive'),'Confetti stays quiet at the curtain threshold')
-   shot('05b-curtain-open-before-confetti.png')
+   check(effects.get_editor_property('bStageActive'),'Confetti remains continuous at the curtain threshold')
+   shot('05b-curtain-open-with-confetti.png')
    pose(e.get_editor_property('exit')+unreal.Vector(400,0,0),unreal.Vector(32500,11750,10250));s.update(phase=12,next=now+2.6);return
   if phase==12:
    effects=e.get_editor_property('stage_celebration')

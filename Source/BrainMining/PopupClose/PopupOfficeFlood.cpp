@@ -41,11 +41,12 @@ namespace
  }
  float EmissionRate(float Seconds,bool bAdditionalComputer)
  {
-  // The first five seconds are deliberately sparse and physically simulated;
-  // the remaining ten seconds ramp sharply and land as pooled instances.
+  // The first phase should feel like a steady physical ejection. The second
+  // phase keeps the same ten-second window, but eases into a restrained rate
+  // so the room does not look like it is accelerating objects unnaturally.
   if(Seconds>=TotalEmissionSeconds)return 0.f;
-  const float SlowRate=bAdditionalComputer?.5f:1.25f;
-  return Seconds<SlowEmissionSeconds ? SlowRate : FMath::Lerp(24.f,36.f,FMath::Clamp((Seconds-SlowEmissionSeconds)/RapidEmissionSeconds,0.f,1.f));
+  const float SlowRate=bAdditionalComputer?1.5f:2.f;
+  return Seconds<SlowEmissionSeconds ? SlowRate : FMath::Lerp(8.f,12.f,FMath::Clamp((Seconds-SlowEmissionSeconds)/RapidEmissionSeconds,0.f,1.f));
  }
 }
 
@@ -144,9 +145,10 @@ void FPopupOfficeFlood::Tick(float Dt)
   {
    const float Age=Time-Slot.Born;
    const float FlightDuration=FMath::Max(.01f,Slot.RetireTime-Slot.Born);
-   const float ArcAlpha=FMath::Clamp(Age/FlightDuration,0.f,1.f);
-   const float ArcOffset=Slot.ArcLift*4.f*ArcAlpha*(1.f-ArcAlpha);
-   Actor->SetActorLocationAndRotation(Slot.Origin+Slot.Velocity*Age+FVector(0,0,.5f*Owner.GetWorld()->GetGravityZ()*Age*Age+ArcOffset),
+   // Keep the generated phase on the same constant-gravity ballistic curve as
+   // the physical phase. The old hand-added arc lift made the midpoint speed
+   // jump and read as an artificial acceleration.
+   Actor->SetActorLocationAndRotation(Slot.Origin+Slot.Velocity*Age+FVector(0,0,.5f*Owner.GetWorld()->GetGravityZ()*Age*Age),
        Slot.Rotation+FRotator(25*Age,50*Age,40*Age),false,nullptr,ETeleportType::TeleportPhysics);
   }
  }
@@ -221,11 +223,10 @@ void FPopupOfficeFlood::Emit(int32 SourceIndex,bool bPhysical)
  const FTransform Room=Owner.GetActorTransform();
  const FVector Origin=Room.TransformPosition(Source.Origin);
  const FVector Target=Room.TransformPosition(Slot.Target);
- const float FlightSeconds=bPhysical?FMath::FRandRange(1.15f,1.40f):FMath::FRandRange(.45f,.65f);
+ const float FlightSeconds=bPhysical?FMath::FRandRange(1.35f,1.65f):FMath::FRandRange(1.05f,1.35f);
  FVector Velocity=(Target-Origin)/FlightSeconds;Velocity.Z-=.5f*Owner.GetWorld()->GetGravityZ()*FlightSeconds;
  Actor->SetActorLocationAndRotation(Origin,FRotator(FMath::FRandRange(-20.f,20.f),Room.Rotator().Yaw+Source.Direction.Rotation().Yaw+180.f,FMath::FRandRange(-15.f,15.f)),false,nullptr,ETeleportType::TeleportPhysics);
  Slot.Rotation=Actor->GetActorRotation();Slot.Born=Time;Slot.Origin=Origin;Slot.Velocity=Velocity;Slot.bPhysical=bPhysical;
- Slot.ArcLift=bPhysical?0.f:FMath::FRandRange(120.f,220.f);
  if(bPhysical)Actor->Launch(PopupCloseContent::Get(Slot.Variant).Color,Velocity);
  else Actor->LaunchGenerated();
  Slot.bActive=true;Slot.RetireTime=Time+FlightSeconds;++Sources[SourceIndex].Count;

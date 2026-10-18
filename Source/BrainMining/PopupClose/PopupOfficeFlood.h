@@ -34,7 +34,6 @@ private:
   FVector Origin=FVector::ZeroVector, Velocity=FVector::ZeroVector;
   // Additional control-point lift used by generated (non-physics) emissions.
   // It creates a visible upward arc while preserving the authored landing cell.
-  float ArcLift=0;
   FRotator Rotation=FRotator::ZeroRotator;
   int32 Cell=INDEX_NONE;
   int32 Variant=0;

@@ -36,6 +36,8 @@ private:
  void BindPlayer();
  void StartTimer();
  void SealRoom();
+ void FinishExitTurn();
+ void TickExitTurn(float Dt);
  void EmitBomb(int32 Source);
  void Collapse();
  void SetInteriorVisible(bool bVisible);
@@ -55,6 +57,9 @@ private:
  TArray<FRubble> RubblePieces;
  TArray<FVector> Sources;
  FTimerHandle Timer;
+ TWeakObjectPtr<APlayerController> TurnController;
+ float ExitTurnElapsed=0.f;
+ FRotator ExitTurnStart=FRotator::ZeroRotator,ExitTurnTarget=FRotator::ZeroRotator;
  double LastTime=0;
  float Age=0,EmissionDebt=0;
  float PreviousX=0;

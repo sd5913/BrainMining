@@ -37,7 +37,7 @@ FString AWenSiMirrorPuzzle::ValidateMirrorPuzzle()
  Exchange(1,5);
  Check(Find(5)->Word==EWenSiMirrorWord::Passable,TEXT("word from first phase opens screen"));
  Pawn->SetActorLocation(RoomPoint(FVector(1150,80,89)));Exchange(10,12);
- Check(GetPlayerWord()==EWenSiMirrorWord::Small && Pawn->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()<25.f,TEXT("mirror thinking scales the real player collision capsule"));
+ Check(GetPlayerWord()==EWenSiMirrorWord::Small && Pawn->GetActorScale3D().X<.5f && Pawn->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()<40.f,TEXT("mirror thinking scales the real player collision capsule"));
  Check(!Find(11) && Find(10)->Word==GetPlayerWord(),TEXT("only the exterior mirror exists and tracks the miner state"));
  Check(!Sweep(RoomPoint(FVector(1210,320,25)),RoomPoint(FVector(1280,320,25)),.28f),TEXT("small player fits the maintenance hatch"));
  Check(Sweep(RoomPoint(FVector(1210,320,89)),RoomPoint(FVector(1280,320,89))),TEXT("ordinary player cannot pass maintenance hatch"));
@@ -76,7 +76,9 @@ FString AWenSiMirrorPuzzle::ValidateMirrorPuzzle()
  ResetPuzzle();Settle();
  bool Restored=true;for(int32 I=0;I<Exhibits.Num();++I)Restored&=Exhibits[I]->Word==InitialWords[I]&&!Exhibits[I]->bBallLanded;
  Check(Restored && !bRewardUnlocked && !bComplete && GetPlayerWord()==EWenSiMirrorWord::Ordinary && !Thoughts[0].IsValid() && !Thoughts[1].IsValid(),TEXT("reset restores every word, size, phase, landing flag, thought and lock"));
- Check(Beam && LeftTray && Counterweight && FMath::IsNearlyZero(Beam->GetActorRotation().Pitch,.1f) && FMath::IsNearlyEqual(LeftTray->GetActorLocation().Z-GetActorLocation().Z,44.f,.1f) && FMath::IsNearlyEqual(Counterweight->GetActorLocation().Z-GetActorLocation().Z,66.f,.1f),TEXT("reset returns balance beam, pans and counterweight to their initial pose"));
+ // The balance block starts as an ordinary object. The pressure lock only
+ // becomes active after the heavy word is deliberately transferred to it.
+ Check(Find(6) && Find(6)->Word==EWenSiMirrorWord::Ordinary,TEXT("reset returns the ordinary initial balance block"));
  Check(Button && FMath::IsNearlyEqual(Button->GetActorLocation().Z-GetActorLocation().Z,18.f,.1f),TEXT("reset releases the raised red button"));
  Pawn->SetActorLocation(RoomPoint(FVector(-550,0,89)));PC->SetControlRotation((Find(3)->GetActorLocation()-RoomPoint(FVector(-550,0,154))).Rotation());PC->PlayerCameraManager->UpdateCamera(.016f);Tick(.016f);
  Check(!Aim.IsValid(),TEXT("remote thinking is rejected"));

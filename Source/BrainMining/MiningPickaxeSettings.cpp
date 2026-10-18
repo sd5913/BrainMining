@@ -107,8 +107,9 @@ FMiningPickaxeLevel UMiningPickaxeSettings::ResolveLevel(int32 Level)
 bool UMiningPickaxeSettings::Validate(FString& Error) const
 {
     if (!FMath::IsFinite(RangeUpgradeMultiplier) || RangeUpgradeMultiplier<1 || RangeUpgradeMultiplier>4 ||
-        !FMath::IsFinite(IntervalUpgradeMultiplier) || IntervalUpgradeMultiplier<.1f || IntervalUpgradeMultiplier>1)
-    {Error=TEXT("范围升级倍率须为 1～4，间隔升级倍率须为 0.1～1。");return false;}
+        !FMath::IsFinite(IntervalUpgradeMultiplier) || IntervalUpgradeMultiplier<.1f || IntervalUpgradeMultiplier>1 ||
+        !FMath::IsFinite(MineralGlowRadiusMultiplier) || MineralGlowRadiusMultiplier<.25f || MineralGlowRadiusMultiplier>4)
+    {Error=TEXT("范围升级倍率须为 1～4，间隔升级倍率须为 0.1～1，矿物发光范围倍率须为 0.25～4。");return false;}
     if (Levels.Num() != 5)
     {
         Error = TEXT("必须保留等级 0～4，共五档配置。");

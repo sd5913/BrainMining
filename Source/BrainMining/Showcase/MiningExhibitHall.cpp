@@ -30,6 +30,8 @@
 #include "GameFramework/HUD.h"
 #include "Camera/PlayerCameraManager.h"
 #include "InputKeyEventArgs.h"
+#include "InputCoreTypes.h"
+#include "Widgets/Input/SVirtualJoystick.h"
 #include "UObject/ConstructorHelpers.h"
 #include "TimerManager.h"
 
@@ -74,6 +76,9 @@ bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
     {
         if (Params.Key==EKeys::M) { if(Params.Event==IE_Pressed) Hall->ToggleMap(); return true; }
         if (Hall->IsMapOpen()) { if(Params.Key==EKeys::Escape && Params.Event==IE_Pressed) Hall->CloseMap(); return true; }
+        // I is part of the museum's hidden SKIP chord. Consume that press so
+        // it cannot open the catalogue while the three other keys are held.
+        if (Params.Key==EKeys::I && Params.Event==IE_Pressed && Hall->IsMuseumSkipChordCandidate()) return true;
         if (Params.Key==EKeys::I) { if(Params.Event==IE_Pressed) Hall->ToggleCatalogue(); return true; }
         if (!IsPaused() && Hall->HandleMirrorInput(Params)) return true;
         if (Params.Key==EKeys::F6) { if(Params.Event==IE_Pressed) Hall->ReturnToLobby(); return true; }
@@ -95,6 +100,17 @@ bool AMiningExhibitHall::HandleMirrorInput(const FInputKeyEventArgs& Params)
         else MirrorMuseum->CloseThoughts();
     }
     return true;
+}
+
+bool AMiningExhibitHall::IsMuseumSkipChordCandidate() const
+{
+    return bLinearCampaign && Areas.IsValidIndex(ActiveArea) &&
+        AreaKind(ActiveArea)==EMiningExperienceKind::Museum && MirrorMuseum &&
+        MirrorMuseum->bAreaActive && Controller.IsValid() &&
+        // S and K are enough to reserve I for the chord while the user is
+        // still pressing the four keys in sequence; TickMuseumSkipChord
+        // requires all four keys for the actual three-second activation.
+        Controller->IsInputKeyDown(EKeys::S) && Controller->IsInputKeyDown(EKeys::K);
 }
 
 AMiningExhibitHall::AMiningExhibitHall()
@@ -222,21 +238,13 @@ void AMiningExhibitHall::BeginTerrainWarmup(const FVector& Center)
     TerrainWarmupCenter=Center;
     TerrainWarmupStep=0;
     GetWorld()->GetTimerManager().ClearTimer(TerrainWarmupTimer);
-    // Register destination chunks over several frames. This keeps the card
-    // room exit responsive while the larger safety radius is filled in.
+    // Keep the same destination queued while budgeted activation catches up.
     GetWorld()->GetTimerManager().SetTimer(TerrainWarmupTimer,
         FTimerDelegate::CreateWeakLambda(this,[this]()
         {
-            static const float Radii[]={2500.f,3300.f,4200.f,5000.f};
-            if (!GetWorld() || TerrainWarmupStep>=UE_ARRAY_COUNT(Radii))
-            {
-                if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(TerrainWarmupTimer);
-                return;
-            }
-            AGeneratedMiningRock::PrepareTerrainAt(GetWorld(),TerrainWarmupCenter,Radii[TerrainWarmupStep++]);
-            if (TerrainWarmupStep>=UE_ARRAY_COUNT(Radii))
-                GetWorld()->GetTimerManager().ClearTimer(TerrainWarmupTimer);
-        }),.035f,true);
+            AGeneratedMiningRock::PrewarmTerrainAt(GetWorld(),TerrainWarmupCenter,5000.f);
+            if(++TerrainWarmupStep>=300)GetWorld()->GetTimerManager().ClearTimer(TerrainWarmupTimer);
+        }),.016f,true);
 }
 
 bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
@@ -266,11 +274,8 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
     const FTransform Destination=Index==INDEX_NONE?LobbyEntry:(bContinuousCampaign?Areas[Index].Entry:ResumePoints[Index]);
     if(bMovePlayer)
     {
-        // Activate the small area immediately so room transitions stay responsive.
-        // The larger safety radius is filled on the next frame after the pawn has
-        // arrived, avoiding a long synchronous mesh build during the card-to-mine
-        // transition.
-        AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), Destination.GetLocation(), Kind==EMiningExperienceKind::Mining ? 2200.f : 2800.f);
+        // Teleports require immediate collision only around the landing point.
+        AGeneratedMiningRock::PrepareTerrainAt(GetWorld(),Destination.GetLocation(),1400.f);
         Controller->GetPawn()->SetActorTransform(Destination,false,nullptr,ETeleportType::TeleportPhysics);
         Controller->SetControlRotation(Destination.Rotator());
         BeginTerrainWarmup(Destination.GetLocation());
@@ -404,6 +409,55 @@ bool AMiningExhibitHall::CanAdvanceCampaign() const
     }
 }
 
+void AMiningExhibitHall::TickMuseumSkipChord(float DeltaSeconds)
+{
+    if(!bLinearCampaign || !Areas.IsValidIndex(ActiveArea) ||
+       AreaKind(ActiveArea)!=EMiningExperienceKind::Museum || !MirrorMuseum ||
+       !MirrorMuseum->bAreaActive || IsInteractionOpen() || !Controller.IsValid() ||
+       Controller->IsPaused())
+    {
+        MuseumSkipHoldSeconds=0.f;
+        bMuseumSkipTriggered=false;
+        return;
+    }
+
+    const bool bKeyboardChord=Controller->IsInputKeyDown(EKeys::S) &&
+        Controller->IsInputKeyDown(EKeys::K) && Controller->IsInputKeyDown(EKeys::I) &&
+        Controller->IsInputKeyDown(EKeys::P);
+    bool bCornerTouchChord=false;
+    if(SVirtualJoystick::ShouldDisplayTouchInterface())
+    {
+        int32 Width=0,Height=0;Controller->GetViewportSize(Width,Height);
+        if(Width>0 && Height>0)
+        {
+            bool Corners[4]={false,false,false,false};
+            for(int32 Index=0;Index<10;++Index)
+            {
+                float X=0.f,Y=0.f;bool bPressed=false;
+                Controller->GetInputTouchState(static_cast<ETouchIndex::Type>(Index),X,Y,bPressed);
+                if(!bPressed)continue;
+                const bool bLeft=X<Width*.22f,bRight=X>Width*.78f;
+                const bool bTop=Y<Height*.22f,bBottom=Y>Height*.78f;
+                if(bLeft&&bTop)Corners[0]=true;
+                else if(bRight&&bTop)Corners[1]=true;
+                else if(bLeft&&bBottom)Corners[2]=true;
+                else if(bRight&&bBottom)Corners[3]=true;
+            }
+            bCornerTouchChord=Corners[0]&&Corners[1]&&Corners[2]&&Corners[3];
+        }
+    }
+
+    if(!(bKeyboardChord||bCornerTouchChord))
+    {
+        MuseumSkipHoldSeconds=0.f;
+        bMuseumSkipTriggered=false;
+        return;
+    }
+    MuseumSkipHoldSeconds+=FMath::Max(0.f,DeltaSeconds);
+    if(!bMuseumSkipTriggered && MuseumSkipHoldSeconds>=3.f)
+        bMuseumSkipTriggered=MirrorMuseum->SkipToReward();
+}
+
 void AMiningExhibitHall::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
@@ -414,6 +468,12 @@ void AMiningExhibitHall::Tick(float DeltaSeconds)
         for(auto& Actor:Pending) if(Actor.IsValid()) RegisterActor(Actor.Get());
         UpdateActorVisibility();
     }
+    // The next mine is prepared throughout the card room, well before its exit.
+    if(bContinuousCampaign && AreaKind(ActiveArea)==EMiningExperienceKind::Journey && GetWorld()->GetTimeSeconds()-LastJourneyPrewarm>.25)
+        for(int32 Next=ActiveArea+1;Next<Areas.Num();++Next)
+            if(AreaKind(Next)==EMiningExperienceKind::Mining)
+            { LastJourneyPrewarm=GetWorld()->GetTimeSeconds(); AGeneratedMiningRock::PrewarmTerrainAt(GetWorld(),Areas[Next].Entry.GetLocation(),5000.f); break; }
+    TickMuseumSkipChord(DeltaSeconds);
     auto* GUI=Controller.IsValid()?Controller->MiningGUI.Get():nullptr;
     if(GUI)
     {

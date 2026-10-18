@@ -1,4 +1,5 @@
 #include "StartRoom/MiningStartRoom.h"
+#include "MiningInteractionTrace.h"
 #include "MiningAudioComponent.h"
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
@@ -77,7 +78,12 @@ AMiningStarterPickup* AMiningStartRoom::GetTarget(APlayerController* Controller)
     Controller->GetPlayerViewPoint(Location, Rotation);
     FHitResult Hit;
     FCollisionQueryParams Params(SCENE_QUERY_STAT(StartRoomPickup), false, Controller->GetPawn());
-    if (!GetWorld()->LineTraceSingleByChannel(Hit, Location, Location + Rotation.Vector() * InteractionReach, ECC_Visibility, Params)) return nullptr;
+    if (!MiningInteraction::Trace(GetWorld(),Hit,Location,Rotation,InteractionReach,Params,[](const FHitResult& Candidate)
+        {
+            for (AActor* Actor=Candidate.GetActor(); Actor; Actor=Actor->GetAttachParentActor())
+                if (auto* Pickup=Cast<AMiningStarterPickup>(Actor)) return !Pickup->bCollected;
+            return false;
+        })) return nullptr;
     for (AActor* Actor = Hit.GetActor(); Actor; Actor = Actor->GetAttachParentActor())
         if (auto* Pickup = Cast<AMiningStarterPickup>(Actor)) return Pickup->bCollected ? nullptr : Pickup;
     return nullptr;

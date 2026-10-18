@@ -170,8 +170,8 @@ void AWenSiObject::SetInteractionHighlight(bool bAimed,bool bEnabled)
   if(Part->IsVisible())
    if(auto Glow=Cast<UMaterialInstanceDynamic>(Part->GetOverlayMaterial()))
    {
-    Glow->SetScalarParameterValue(TEXT("Strength"),bEnabled ? (bAimed ? 3.2f+Pulse : 1.35f) : 0.f);
-    Glow->SetScalarParameterValue(TEXT("OutlineWidth"),bAimed ? 2.4f : 1.35f);
+    Glow->SetScalarParameterValue(TEXT("Strength"),bEnabled ? (bAimed ? 4.5f+Pulse : 1.8f) : 0.f);
+    Glow->SetScalarParameterValue(TEXT("OutlineWidth"),bAimed ? 4.0f : 1.8f);
     Glow->SetVectorParameterValue(TEXT("Tint"),FLinearColor(1.f,.88f,.68f));
    }
 }

@@ -12,6 +12,7 @@ class UPointLightComponent;
 class UMaterialInstanceDynamic;
 class UInstancedStaticMeshComponent;
 class UBoxComponent;
+class UDecalComponent;
 
 USTRUCT(BlueprintType)
 struct FMiningTreasureDefinition
@@ -92,8 +93,11 @@ public:
     void ResetDrop();
     static bool IsExposureEligible(float Ratio) { return FMath::IsFinite(Ratio) && Ratio > .5f; }
     void SetHighlighted(bool bEnabled);
+    void AttachCampaignHint(const FMiningTreasureDefinition& Definition);
+    UPROPERTY(VisibleAnywhere) TObjectPtr<UDecalComponent> BuriedGlow;
     void AttachBuriedHint(const FMiningTreasureDefinition& Definition);
     void UpdateGlow(float DeltaSeconds, bool bAllowLight);
+    void ApplyGlowRadius(float Multiplier);
     float GetHintAmount() const { return HintAmount; }
     int32 GetSurfaceSampleCount() const { return SurfaceSamples.Num(); }
 private:
@@ -118,6 +122,8 @@ private:
     float CrystalClueBrightness = 1.f;
     float HintAmount = 1;
     float BuriedHintAmount = 1;
+    float BaseHintRadius = 180.f;
+    float AppliedHintRadius = -1.f;
 };
 
 UCLASS(Blueprintable)
@@ -134,6 +140,8 @@ public:
     UPROPERTY(EditAnywhere, Category="Treasure|Campaign") TArray<FMiningTreasurePlacement> AuthoredPlacements;
     UPROPERTY(EditAnywhere, Category="Treasure|Campaign") TObjectPtr<UStaticMesh> CrystalClueMesh;
     FName ActiveAreaTag;
+    // Editor preview belongs to this world, never to the saved default object.
+    float PreviewGlowRadiusMultiplier = -1.f;
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
@@ -152,7 +160,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Treasure") TObjectPtr<AMiningTreasure> Target;
     bool IsAreaActive() const { return bAreaActive; }
     void SetAreaActive(bool bActive);
-    void PrepareAuthoredArea(FName AreaTag);
+    void PrepareAuthoredArea(FName AreaTag, int32 MaxItems = MAX_int32);
     UFUNCTION(BlueprintCallable, Category="Treasure") void ResetExhibit();
     bool CollectTarget(APlayerController* Controller);
     FString GetPrompt() const;

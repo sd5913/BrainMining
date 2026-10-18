@@ -1,6 +1,7 @@
 #include "Showcase/MiningTreasure.h"
 #include "DiggableRock.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
@@ -11,6 +12,46 @@
 #include "Misc/ScopeExit.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTreasureCrystalFadeTest, "BrainMining.Treasure.CollectedCrystalFade", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTreasureCrystalFadeTest::RunTest(const FString&)
+{
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(World);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); GEngine->DestroyWorldContext(World); };
+    auto* Field = World->SpawnActor<AMiningTreasureField>();
+    auto* FragmentMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Showcase/Treasure/Meshes/SM_CrystalClue"));
+    if (!TestNotNull(TEXT("Authored crystal clue mesh exists"), FragmentMesh)) return false;
+    for (const FName Id : {FName(TEXT("2")), FName(TEXT("4")), FName(TEXT("9"))})
+    {
+        const auto* Definition = Field->Definitions.FindByPredicate([Id](const auto& D) { return D.Id == Id; });
+        if (!TestNotNull(TEXT("Mineral definition exists"), Definition)) return false;
+        auto* Item = World->SpawnActor<AMiningTreasure>();
+        TestTrue(TEXT("Configure mineral"), Item->Configure(*Definition, 0, Field->TreasureMaterial));
+        Item->ConfigureCrystalClues(FMiningTreasurePlacement(), FragmentMesh);
+        auto* Material = Item->CrystalClueMaterial.Get();
+        if (!TestNotNull(TEXT("Clues retain their own dynamic material"), Material)) return false;
+        Item->CrystalClues->AddInstance(FTransform::Identity);
+        const float InitialEmission = Material->K2_GetScalarParameterValue(TEXT("Emission"));
+        const FLinearColor InitialTint = Material->K2_GetVectorParameterValue(TEXT("Tint"));
+        TestTrue(TEXT("Uncollected clues shimmer"), InitialEmission > 0.f);
+        Item->UpdateGlow(2.f, false);
+        TestEqual(TEXT("Uncollected clues do not dim with time"), Material->K2_GetScalarParameterValue(TEXT("Emission")), InitialEmission);
+        Item->bCollected = true;
+        Item->UpdateGlow(.4f, false);
+        const float PartialEmission = Material->K2_GetScalarParameterValue(TEXT("Emission"));
+        TestTrue(TEXT("Collection dims gradually instead of disappearing"), PartialEmission > 0.f && PartialEmission < InitialEmission);
+        TestTrue(TEXT("Clue tint darkens during fade"), Material->K2_GetVectorParameterValue(TEXT("Tint")).GetLuminance() < InitialTint.GetLuminance());
+        Item->UpdateGlow(2.f, false);
+        Item->UpdateGlow(2.f, false);
+        TestEqual(TEXT("Collected clues stop emitting and remain clamped"), Material->K2_GetScalarParameterValue(TEXT("Emission")), 0.f);
+        TestEqual(TEXT("Collected clues become matte"), Material->K2_GetScalarParameterValue(TEXT("Roughness")), 1.f);
+        TestEqual(TEXT("Collected clues lose metallic shine"), Material->K2_GetScalarParameterValue(TEXT("Metallic")), 0.f);
+        TestEqual(TEXT("Fade preserves supported fragment geometry"), Item->CrystalClues->GetInstanceCount(), 1);
+        Item->Destroy();
+    }
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTreasureRulesTest, "BrainMining.Treasure.RulesAndWeights", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTreasureRulesTest::RunTest(const FString& Parameters)
 {

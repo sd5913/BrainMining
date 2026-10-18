@@ -18,7 +18,7 @@ if (-not $dotnet) { throw 'Bundled win-x64 .NET runtime not found.' }
 $arguments = @(
     (Join-Path $EngineRoot 'Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll'),
     'BrainMiningEditor', 'Win64', 'Development', "-Project=$projectRoot\BrainMining.uproject",
-    '-WaitMutex', '-NoHotReloadFromIDE', '-MaxParallelActions=1', '-NoUBA', '-NoXGE', '-NoFASTBuild', '-NoSNDBS'
+    '-WaitMutex', '-NoHotReloadFromIDE', '-MaxParallelActions=12', '-NoUBA', '-NoXGE', '-NoFASTBuild', '-NoSNDBS'
 )
 $reportPath = Join-Path $projectRoot ('Saved\Performance\build-resources-{0}.csv' -f (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
 Start-MiningGuardedProcess -Executable $dotnet.FullName -Arguments $arguments -ReportPath $reportPath -BelowNormal -MaximumSeconds 1800

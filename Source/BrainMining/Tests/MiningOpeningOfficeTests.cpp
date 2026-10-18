@@ -8,11 +8,38 @@
 #include "PopupClose/PopupOfficeDevice.h"
 #include "PopupClose/PopupCloseWidgets.h"
 #include "Components/WidgetComponent.h"
+#include "Components/DecalComponent.h"
 #include "Components/Button.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Blueprint/WidgetTree.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FOpeningTitleProjectionTest,"BrainMining.Opening.TitleProjection",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FOpeningTitleProjectionTest::RunTest(const FString&)
+{
+    UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+    for(const FRotator Rotation:{FRotator(0,180,0),FRotator(12,47,9)})
+    {
+        auto* Opening=World->SpawnActor<AMiningOpening>();
+        Opening->DoorTitleLocation=FVector(466,200,168);
+        Opening->DoorTitleRotation=Rotation;Opening->EnsureTitleOnWall();
+        auto* Decal=Opening->FindComponentByClass<UDecalComponent>();
+        if(TestNotNull(TEXT("Wall title created"),Decal))
+        {
+            // Compare all four texture corners with the widget's rendered UV convention.
+            for(int U=0;U<=1;++U)for(int V=0;V<=1;++V)
+            {
+                const FVector WidgetCorner=Rotation.RotateVector(FVector(0,(.5-U)*209.92,(.5-V)*123.));
+                const FVector DecalCorner=Decal->GetComponentQuat().RotateVector(FVector(0,(V*2-1)*Decal->DecalSize.Y,(U*2-1)*Decal->DecalSize.Z));
+                TestTrue(TEXT("Projected bitmap preserves orientation and aspect"),WidgetCorner.Equals(DecalCorner,.01));
+            }
+        }
+        Opening->Destroy();
+    }
+    World->DestroyWorld(false);return true;
+}
 
 namespace
 {
@@ -45,6 +72,9 @@ public:
         if(!Opening->bFinished)return false;
         Test->TestTrue(TEXT("Started exactly once"),Opening->bStarted);
         Test->TestTrue(TEXT("Title landed on the doorway"),Opening->WorldTitle->GetComponentLocation().Equals(Opening->DoorTitleLocation,1));
+        Test->TestFalse(TEXT("Floating title image is replaced after landing"),Opening->WorldTitle->IsVisible());
+        auto* TitleDecal=Opening->FindComponentByClass<UDecalComponent>();
+        Test->TestTrue(TEXT("Title projects only onto the actual wall surface"),TitleDecal && TitleDecal->GetDecalMaterial() && TitleDecal->DecalSize.X<=18.f);
         Test->TestTrue(TEXT("Standing pawn returned to player"),PC->GetViewTarget()==PC->GetPawn());
         Test->TestFalse(TEXT("Movement unlocked after standing"),PC->IsMoveInputIgnored());
         Test->TestFalse(TEXT("Look unlocked after standing"),PC->IsLookInputIgnored());

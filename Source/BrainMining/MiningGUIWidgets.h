@@ -185,5 +185,6 @@ protected:
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> MineralCounts;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> PickaxeLevelLabel;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> PickaxeRequirements;
+    UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> PickaxeRequirementRows;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> PickaxeUpgradeHint;
 };

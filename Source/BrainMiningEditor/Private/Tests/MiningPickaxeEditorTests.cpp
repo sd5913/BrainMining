@@ -18,6 +18,7 @@ bool FMiningPickaxeConfigPersistenceTest::RunTest(const FString&)
     auto* Draft = NewObject<UMiningPickaxeSettings>();
     Draft->Levels = UMiningPickaxeSettings::MakeRecommendedLevels();
     Draft->Levels[1].Price = 789;
+    Draft->MineralGlowRadiusMultiplier=1.25f;
     Draft->Levels[1].MaterialCosts[0].Count = 7;
     Draft->Levels[2].Width = 444;
     Draft->Levels[4].Stages[0].DepthPercent = 63;
@@ -36,6 +37,7 @@ bool FMiningPickaxeConfigPersistenceTest::RunTest(const FString&)
     if (!TestTrue(TEXT("Reloaded config is valid"), Reloaded->Validate(Error))) return false;
     if (!TestEqual(TEXT("All five levels survive reload"), Reloaded->Levels.Num(), 5)) return false;
     TestEqual(TEXT("Price survives restart"), Reloaded->Levels[1].Price, int64(789));
+    TestEqual(TEXT("Mineral glow range survives restart"), Reloaded->MineralGlowRadiusMultiplier,1.25f);
     TestEqual(TEXT("Material recipe survives restart"), Reloaded->Levels[1].MaterialCosts[0].Count, 7);
     TestEqual(TEXT("Width survives restart"), Reloaded->Levels[2].Width, 444.f);
     TestEqual(TEXT("Stage count survives restart"), Reloaded->Levels[4].Stages.Num(), 2);

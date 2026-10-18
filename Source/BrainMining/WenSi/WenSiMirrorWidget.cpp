@@ -1,8 +1,8 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "BrainMiningFonts.h"
 #include "WenSi/MouseMuseumPortal.h"
 #include "WenSi/WenSiThoughtBubble.h"
 #include "Engine/Texture2D.h"
-#include "Fonts/CompositeFont.h"
 #include "Input/DragAndDrop.h"
 #include "InputCoreTypes.h"
 #include "Styling/CoreStyle.h"
@@ -22,14 +22,8 @@ namespace
 {
  FSlateFontInfo ThoughtFont(float Size)
  {
-  static TSharedPtr<const FCompositeFont> Font;
-  if (!Font)
-  {
-   FString Path=TEXT("C:/Windows/Fonts/simhei.ttf");
-   if (FPaths::FileExists(Path)) Font=MakeShared<FStandaloneCompositeFont>(NAME_None,Path,EFontHinting::Default,EFontLoadingPolicy::LazyLoad);
-  }
-  return Font ? FSlateFontInfo(Font,Size) : FCoreStyle::GetDefaultFontStyle(TEXT("Regular"),Size);
- }
+        return BrainMiningFonts::Body(Size);
+    }
  class SThoughtExchange : public SLeafWidget
  {
  public:

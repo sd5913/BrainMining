@@ -80,10 +80,15 @@ void UMiningComponent::BindInput(UEnhancedInputComponent* Input)
 
 float UMiningComponent::GetMiningInterval() const
 {
-	if (!bDrillMode && bUsePickaxeBalance) return PickaxeBalance.Interval;
+	if (!bDrillMode && bUsePickaxeBalance)
+	{
+		const float BalancedInterval = FMath::Max(0.1f, PickaxeBalance.Interval);
+		return bMobileMiningInput ? FMath::Max(0.14f, BalancedInterval * .72f) : BalancedInterval;
+	}
 	const float Base = FMath::IsFinite(Interval) ? FMath::Max(0.1f, Interval) : 0.3f;
 	const float Multiplier = FMath::IsFinite(DrillIntervalMultiplier) ? FMath::Clamp(DrillIntervalMultiplier, 0.1f, 1.f) : 0.4f;
-	return bDrillMode ? FMath::Max(0.04f, Base * Multiplier) : Base;
+	if (bDrillMode) return FMath::Max(0.04f, Base * Multiplier);
+	return bMobileMiningInput ? FMath::Max(0.14f, Base * .72f) : Base;
 }
 
 float UMiningComponent::GetMiningRadius() const
@@ -267,7 +272,7 @@ void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 			DrawDebugBox(GetWorld(), Frame.GetLocation(), HalfSize, Frame.GetRotation(), FColor(60, 220, 210), false, -1.f, 0, .6f);
 		}
 	}
-	if (bMiningHeld && GetWorld()->GetTimeSeconds() >= NextMineTime)
+	if ((bMiningHeld || bMineQueued) && GetWorld()->GetTimeSeconds() >= NextMineTime)
 	{
 		TryMine();
 	}
@@ -281,10 +286,16 @@ bool UMiningComponent::TryMine()
 {
     if(IsEncounterBlocked() || !GetOwner() || !GetWorld())return false;
     if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); Bomb && Bomb->bEquipped) return false;
-	if (bInputSuspended || GetWorld()->GetTimeSeconds() < NextMineTime)
+	if (bInputSuspended)
 	{
 		return false;
 	}
+	if (GetWorld()->GetTimeSeconds() < NextMineTime)
+	{
+		bMineQueued = true;
+		return false;
+	}
+	bMineQueued = false;
 	if (!bDrillMode && GetWorld()->GetTimerManager().IsTimerActive(PickaxeImpactTimer)) return false;
 	const float MiningInterval = GetMiningInterval();
 	NextMineTime = GetWorld()->GetTimeSeconds() + MiningInterval;
@@ -340,6 +351,7 @@ void UMiningComponent::StartMining()
 		return;
 	}
 	bMiningHeld = true;
+	bMineQueued = true;
 	TryMine();
 }
 
@@ -351,11 +363,13 @@ FVector UMiningComponent::GetCutCenter() const
 void UMiningComponent::StopMining()
 {
 	bMiningHeld = false;
+	bMineQueued = false;
 }
 
 void UMiningComponent::CancelMining()
 {
 	StopMining();
+	bMineQueued = false;
 	PickaxeSwingTarget = FHitResult();
 	if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(PickaxeImpactTimer);
 }

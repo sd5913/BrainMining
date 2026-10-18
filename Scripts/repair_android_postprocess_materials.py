@@ -1,5 +1,5 @@
 """Restore authored desktop effects and select passthrough only for mobile shading.
-Only the six targeted definitions are reused; maps and other art stay untouched.
+Restore six authored effects and preserve the Android CelPaint compatibility fix.
 """
 import ast,json,shutil,time
 from pathlib import Path
@@ -13,7 +13,8 @@ paths=['/Game/CollectionPrototype/Materials/M_CollectionSilhouette']+[
 backup=project/'Saved/Backups'/('DesktopPostEffects_'+time.strftime('%Y%m%d-%H%M%S'))
 backup.mkdir(parents=True)
 report={'backup':str(backup),'before':{},'restored':[]}
-for path in paths:
+cel_path='/Game/CelPaint/Main/CelPaint'
+for path in paths+[cel_path]:
     m=unreal.load_asset(path);assert m,path
     shutil.copy2(project/('Content/'+path.removeprefix('/Game/')+'.uasset'),backup/(path.rsplit('/',1)[-1]+'.uasset'))
     report['before'][path]=[n.get_editor_property('code') for n in lib.get_material_expressions(m) if isinstance(n,unreal.MaterialExpressionCustom)]
@@ -58,6 +59,22 @@ for path in paths:
     assert any('SceneTextureLookup' in c and '#if SHADING_PATH_MOBILE' in c for c in codes),path
     lib.recompile_material(m);assert unreal.EditorAssetLibrary.save_loaded_asset(m)
     report['restored'].append(path)
+
+# Keep the upstream CelPaint Android fix without replacing its desktop shader,
+# or stripping the six restored desktop effects on a later Android repair run.
+cel=unreal.load_asset(cel_path);assert cel,cel_path
+cel_patched=0
+for node in lib.get_material_expressions(cel):
+    if not isinstance(node,unreal.MaterialExpressionCustom):continue
+    code=node.get_editor_property('code')
+    if '#if ES3_1_PROFILE' in code or '#if SHADING_PATH_MOBILE' in code:continue
+    if 'GetDefaultSceneTextureUV' not in code and 'SceneTextureLookup' not in code:continue
+    node.set_editor_property('code','#if SHADING_PATH_MOBILE || ES3_1_PROFILE\nreturn ppinput0;\n#else\n'+code+'\n#endif')
+    node.set_editor_property('output_type',unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    cel_patched+=1
+if cel_patched:
+    lib.recompile_material(cel);assert unreal.EditorAssetLibrary.save_loaded_asset(cel)
+report['celpaint_mobile_nodes_patched']=cel_patched
 report['passed']=True
 out=project/'Saved/Validation/PackagePlaytest';out.mkdir(parents=True,exist_ok=True)
 (out/'desktop-postprocess.json').write_text(json.dumps(report,indent=2),encoding='utf-8')

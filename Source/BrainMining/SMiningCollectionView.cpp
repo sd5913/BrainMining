@@ -1,4 +1,5 @@
 #include "SMiningCollectionView.h"
+#include "BrainMiningFonts.h"
 #include "MiningCollection.h"
 #include "MiningInteractionHUDWidget.h"
 #include "Engine/World.h"
@@ -25,11 +26,11 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
     const auto* Brush=FCoreStyle::Get().GetBrush("WhiteBrush"); int L=Layer;
     auto Geo=[&](float X,float Y,float W,float H) { return G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(O+FVector2D(X,Y)*S))); };
     auto Box=[&](float X,float Y,float W,float H,FLinearColor C) { FSlateDrawElement::MakeBox(Out,++L,Geo(X,Y,W,H),Brush,ESlateDrawEffect::None,C); };
-    auto Text=[&](FString T,float X,float Y,int Font,FLinearColor C) { FSlateDrawElement::MakeText(Out,++L,Geo(X,Y,1500,90),T,FCoreStyle::GetDefaultFontStyle("Regular",FMath::Max(8,FMath::RoundToInt(Font*S))),ESlateDrawEffect::None,C); };
+    auto Text=[&](FString T,float X,float Y,int Font,FLinearColor C,bool bTitle=false) { FSlateDrawElement::MakeText(Out,++L,Geo(X,Y,1500,90),T,BrainMiningFonts::Style(bTitle ? TEXT("Bold") : TEXT("Medium"),FMath::Max(8,FMath::RoundToInt(Font*S))),ESlateDrawEffect::None,C); };
     if(!F->bCatalogueOpen)
     {
         Box(40,35,395,104,Ink); Box(40,35,4,104,Gold);
-        Text(HeavenRoom?TEXT("天堂马桶  /  穹顶秘室"):TEXT("地下奇物  /  收集试验场"),63,52,23,Cream); Text(HeavenRoom?TEXT("HEAVEN    /    FOLLOW THE PIPE"):F->bDeepField?FString(TEXT("DEEP COLLECTION     ·     "))+F->DisplayVersion:TEXT("COLLECTION FIELD     ·     V0.1"),64,91,12,Gold);
+        Text(HeavenRoom?TEXT("天堂马桶  /  穹顶秘室"):TEXT("地下奇物  /  收集试验场"),63,52,23,Cream,true); Text(HeavenRoom?TEXT("HEAVEN    /    FOLLOW THE PIPE"):F->bDeepField?FString(TEXT("DEEP COLLECTION     ·     "))+F->DisplayVersion:TEXT("COLLECTION FIELD     ·     V0.1"),64,91,12,Gold);
         Box(1280,36,280,83,Ink); Text(FString::Printf(TEXT("图鉴  %02d / %02d"),F->UniqueCount(),Total),1304,50,23,Cream); Text(TEXT("[ Tab ]  查看我的收藏"),1304,86,13,Mint);
         Box(50,762,940,88,Ink);
         Text(TEXT("左键 挖掘    E 收集    Tab 图鉴    按住空格 上升 / 松开 下落"),70,775,18,Cream);
@@ -53,20 +54,20 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
         // SceneColorHDR stores inverse opacity in alpha; this preview has an opaque black backdrop.
         FSlateDrawElement::MakeBox(Out,++L,Geo(0,8,1155,770),&PreviewBrush,ESlateDrawEffect::IgnoreTextureAlpha,FLinearColor::White);
     }
-    Text(TEXT("奇物收藏"),60,37,24,Cream);
+    Text(TEXT("奇物收藏"),60,37,24,Cream,true);
     Text(FString::Printf(TEXT("%02d / %02d"),F->UniqueCount(),Total),230,48,12,Muted);
     Box(1408,35,132,44,Panel); Text(FString::Printf(TEXT("返回  %s"),*F->CatalogueKey.GetDisplayName().ToString()),1426,47,14,Cream);
     Box(1178,140,1,585,FLinearColor(.12f,.17f,.16f));
     if(Owned)
     {
-        Text(AMiningCollectible::ItemName(F->SelectedId),1220,280,32,Cream);
+        Text(AMiningCollectible::ItemName(F->SelectedId),1220,280,32,Cream,true);
         Box(1223,344,46,2,Gold);
         TArray<FString> Lines; AMiningCollectible::Description(F->SelectedId).ParseIntoArrayLines(Lines);
         for(int i=0;i<Lines.Num();++i) Text(Lines[i],1223,379+i*35,15,Muted);
     }
     else
     {
-        Text(TEXT("尚未发现"),1220,280,32,Muted);
+        Text(TEXT("尚未发现"),1220,280,32,Muted,true);
         Text(TEXT("收藏后即可检视"),1223,380,16,Muted);
     }
     Text(TEXT("拖动旋转    滚轮缩放    双击复位"),355,729,14,Muted);

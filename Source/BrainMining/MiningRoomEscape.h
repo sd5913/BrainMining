@@ -99,6 +99,7 @@ private:
     void BuildStudyLayout();
     void BuildExitStage();
     void TickExitStage();
+    void InitializeRuntime();
     void TickFloatingProps(float DeltaSeconds);
     void BuildTelevisionModel(bool bEditorPreview);
     void ClearTelevisionPreview();
@@ -120,6 +121,7 @@ private:
     float ComputerStartWaterZ=0;
     float VictoryHoldTime=0;
     bool bFailureLock=false;
+    bool bRuntimeInitialized=false;
     TWeakObjectPtr<class UMiningComponent> ScopedMiner;
     float SavedMineRadius=0;
     TWeakObjectPtr<AMiningEncounterPlayerController> Player;

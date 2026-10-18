@@ -1,5 +1,6 @@
 #include "EndingEmergence.h"
 #include "UObject/ConstructorHelpers.h"
+#include "BrainMiningFonts.h"
 #include "MiningAudioSettings.h"
 #include "EndingCrowd.h"
 #include "DiggableRock.h"
@@ -112,7 +113,7 @@ public:
         const FString Controls=D->Hint();
         if(!Controls.IsEmpty())
         {
-            const auto Font=FCoreStyle::GetDefaultFontStyle("Regular",FMath::Max(10,FMath::RoundToInt(13*S)));
+            const auto Font=BrainMiningFonts::Style("Regular",FMath::Max(10,FMath::RoundToInt(13*S)));
             const FVector2f Position(48*S,Size.Y-40*S);
             FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(Size.X-96*S,30*S),FSlateLayoutTransform(Position+FVector2f(1,1))),Controls,Font,ESlateDrawEffect::None,FLinearColor(0,0,0,.7f));
             FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(Size.X-96*S,30*S),FSlateLayoutTransform(Position)),Controls,Font,ESlateDrawEffect::None,FLinearColor(.8f,.86f,.89f,.9f));

@@ -144,6 +144,7 @@ public:
     UPROPERTY() TObjectPtr<USceneCaptureComponent2D> Capture;
     UPROPERTY() TObjectPtr<AHeavenToilet> PreviewToilet;
     UPROPERTY() TObjectPtr<UPostProcessComponent> HighlightPostProcess;
+    bool TryCollectTarget();
     UFUNCTION(BlueprintCallable) void CollectTarget();
     // Register a room-owned reward with the existing inventory and pickup path.
     bool RegisterExternalCollectible(AMiningCollectible* Item);

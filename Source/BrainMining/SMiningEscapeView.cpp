@@ -1,4 +1,5 @@
 #include "SMiningEscapeView.h"
+#include "BrainMiningFonts.h"
 #include "MiningRoomEscape.h"
 #include "MiningInteractionHUDWidget.h"
 #include "Rendering/DrawElements.h"
@@ -13,12 +14,12 @@ int32 SMiningEscapeView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSla
     int32 L=Layer;auto* Brush=FCoreStyle::Get().GetBrush("WhiteBrush");
     const FLinearColor Gold(1,.74,.28),White(.94,.97,1),Cyan(.12,.85,1),Dark(.015,.022,.03,.92);
     auto Box=[&](float X,float Y,float W,float H,FLinearColor C){FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(Origin+FVector2D(X,Y)*S))),Brush,ESlateDrawEffect::None,C);};
-    auto Text=[&](FString T,float X,float Y,int32 Font,FLinearColor C){FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(1550*S,65*S),FSlateLayoutTransform(FVector2f(Origin+FVector2D(X,Y)*S))),T,FCoreStyle::GetDefaultFontStyle("Regular",FMath::Max(10,FMath::RoundToInt(Font*S))),ESlateDrawEffect::None,C);};
+    auto Text=[&](FString T,float X,float Y,int32 Font,FLinearColor C,bool bTitle=false){FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(1550*S,65*S),FSlateLayoutTransform(FVector2f(Origin+FVector2D(X,Y)*S))),T,BrainMiningFonts::Style(bTitle ? TEXT("Bold") : TEXT("Medium"),FMath::Max(10,FMath::RoundToInt(Font*S))),ESlateDrawEffect::None,C);};
     if(E->Phase==EMiningEscapePhase::Failed)
     {
         FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),Brush,ESlateDrawEffect::None,FLinearColor(.22f,.005f,.02f,.56f));
         Box(410,340,800,150,Dark);
-        Text(E->FailureReason,450,365,30,White);Text(E->bComputerCheckpoint?TEXT("正在回到电视屏幕前……无需重跑攀升路线"):TEXT("正在回到涨水检查点……无需重新打牌"),450,422,21,Gold);return L;
+        Text(E->FailureReason,450,365,30,White,true);Text(E->bComputerCheckpoint?TEXT("正在回到电视屏幕前……无需重跑攀升路线"):TEXT("正在回到涨水检查点……无需重新打牌"),450,422,21,Gold);return L;
     }
     if (!UMiningInteractionHUDWidget::IsActiveFor(E->GetWorld()->GetFirstPlayerController())) Box(797,447,6,6,White);
     auto* PC=E->GetWorld()->GetFirstPlayerController();if(!PC)return L;

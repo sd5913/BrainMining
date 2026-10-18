@@ -17,7 +17,8 @@ bool UMiningComponent::ApplyPickaxeBalance(const FMiningPickaxeLevel& Level)
 
 float UMiningComponent::GetPickaxeImpactDelay() const
 {
-	return FMath::Min(13.f / 30.f, GetMiningInterval()) * (.19f / (13.f / 30.f));
+	const float Delay = FMath::Min(13.f / 30.f, GetMiningInterval()) * (.19f / (13.f / 30.f));
+	return bMobileMiningInput ? FMath::Min(Delay, .06f) : Delay;
 }
 
 float UMiningComponent::GetPickaxeDepthMultiplier(const ADiggableRock* Rock) const
@@ -37,23 +38,24 @@ void UMiningComponent::ResolvePickaxeStrike()
 	PickaxeSwingTarget = FHitResult();
 	if (!GetWorld() || !GetOwner() || bDrillMode || bInputSuspended || IsEncounterBlocked()) return;
 	if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); Bomb && Bomb->bEquipped) return;
+	ADiggableRock* SwingRock = Cast<ADiggableRock>(SwingTarget.GetActor());
 	RefreshTarget();
-	if (IsValid(TargetRock)) { ApplyPickaxeHit(TargetHit); return; }
+	if (IsValid(TargetRock) && (!IsValid(SwingRock) || TargetRock == SwingRock)) { ApplyPickaxeHit(TargetHit); return; }
 	// Keep an already-started strike on a narrow edge through a few centimetres
 	// of camera sway. Re-trace from the current eye: never use stale terrain,
 	// mine through another object, extend reach, or stick to a deliberate turn.
 	const APawn* Pawn = Cast<APawn>(GetOwner());
 	const auto* PC = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
-	if (PC && IsValid(Cast<ADiggableRock>(SwingTarget.GetActor())))
+	if (PC && IsValid(SwingRock))
 	{
 		FVector Eye; FRotator View;
 		PC->GetPlayerViewPoint(Eye, View);
 		const FVector ToContact = SwingTarget.ImpactPoint - Eye;
 		const double Along = FVector::DotProduct(ToContact, View.Vector());
-		const double Margin = FMath::Min(8.f, GetMiningRadius() * .1f);
+		const double Margin = FMath::Max(12.f, GetMiningRadius() * .35f);
 		if (Along > 0 && ToContact.Size() <= Reach &&
 			(ToContact - View.Vector() * Along).SizeSquared() <= FMath::Square(Margin) &&
-			FVector::DotProduct(ToContact.GetSafeNormal(), View.Vector()) >= FMath::Cos(FMath::DegreesToRadians(4.f)))
+			FVector::DotProduct(ToContact.GetSafeNormal(), View.Vector()) >= FMath::Cos(FMath::DegreesToRadians(12.f)))
 		{
 			FHitResult Verified;
 			if (GetWorld()->LineTraceSingleByChannel(Verified, Eye, SwingTarget.ImpactPoint + ToContact.GetSafeNormal() * 2,
@@ -63,6 +65,11 @@ void UMiningComponent::ResolvePickaxeStrike()
 			{
 				ApplyPickaxeHit(Verified); return;
 			}
+		}
+		if (SwingTarget.bBlockingHit && SwingTarget.Distance <= Reach)
+		{
+			ApplyPickaxeHit(SwingTarget);
+			return;
 		}
 	}
 	Status = TEXT("Aim at rock within reach");

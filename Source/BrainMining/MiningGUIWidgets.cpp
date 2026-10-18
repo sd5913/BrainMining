@@ -1,4 +1,5 @@
 #include "MiningGUIWidgets.h"
+#include "BrainMiningFonts.h"
 #include "MiningBombToolComponent.h"
 #include "MiningComponent.h"
 #include "MiningAudioComponent.h"
@@ -269,7 +270,7 @@ void UMiningGUIHUDWidget::EnableProgressionPanel()
 	if (AbilityG && AbilityG->AbilityContent && !AbilityG->CooldownText)
 	{
 		AbilityG->CooldownText = WidgetTree->ConstructWidget<UTextBlock>();
-		AbilityG->CooldownText->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 18));
+		AbilityG->CooldownText->SetFont(BrainMiningFonts::Body(18));
 		AbilityG->CooldownText->SetColorAndOpacity(FLinearColor::White);
 		AbilityG->CooldownText->SetJustification(ETextJustify::Center);
 		AbilityG->CooldownText->SetVisibility(ESlateVisibility::HitTestInvisible);
@@ -291,7 +292,7 @@ void UMiningGUIHUDWidget::EnableProgressionPanel()
 	if (auto* PanelSlot = Cast<UCanvasPanelSlot>(UpgradePanel->Slot)) PanelSlot->SetSize(FVector2D(724, 540));
 	auto* Credits = WidgetTree->ConstructWidget<UTextBlock>();
 	Credits->SetText(FText::FromString(TEXT("Music: Dreamy Flashback — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — creativecommons.org/licenses/by/4.0/\nSource: incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532\nEdited: 48 kHz conversion, loop crossfade and volume adjustment.\nSound effects: Kenney / rubberduck — CC0; project-synthesized tool sounds\n音量设置：松开 Tab 后按 F8；关闭时自动保存")));
-	Credits->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 12));
+	Credits->SetFont(BrainMiningFonts::Body(12));
 	Credits->SetColorAndOpacity(FLinearColor(.8f,.84f,.87f));
 	Credits->SetAutoWrapText(true);
 	Credits->SetVisibility(ESlateVisibility::HitTestInvisible);
@@ -327,7 +328,7 @@ void UMiningGUIHUDWidget::EnableProgressionPanel()
 		for (int32 Row = 0; Row < 2; ++Row)
 		{
 			auto* Label = WidgetTree->ConstructWidget<UTextBlock>();
-			Label->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), Row == 0 ? 22 : 17));
+			Label->SetFont(Row == 0 ? BrainMiningFonts::Title(22) : BrainMiningFonts::Body(17));
 			Label->SetColorAndOpacity(FLinearColor::White);
 			Label->SetJustification(ETextJustify::Center);
 			Label->SetAutoWrapText(true);
@@ -486,17 +487,17 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
         auto* PanelSlot = Root->AddChildToCanvas(MineralPanel);
         PanelSlot->SetAnchors(FAnchors(1,0)); PanelSlot->SetAlignment(FVector2D(1,0));
         PanelSlot->SetPosition(FVector2D(-32,24)); PanelSlot->SetSize(FVector2D(280,570));
-        const auto AddLabel = [&](const FString& Text, FVector2D Position, FVector2D Size, int32 FontSize)
+        const auto AddLabel = [&](const FString& Text, FVector2D Position, FVector2D Size, int32 FontSize, bool bTitle = false)
         {
             auto* Label = WidgetTree->ConstructWidget<UTextBlock>();
-            auto Font = CoinText->GetFont(); Font.Size = FontSize;
+            auto Font = BrainMiningFonts::Restyle(CoinText->GetFont(), bTitle); Font.Size = FontSize;
             Label->SetFont(Font); Label->SetText(FText::FromString(Text));
             Label->SetColorAndOpacity(FLinearColor(.94f,.97f,1));
             Label->SetShadowOffset(FVector2D(1,2)); Label->SetShadowColorAndOpacity(FLinearColor(0,0,0,.9f));
             auto* LabelSlot = MineralPanel->AddChildToCanvas(Label); LabelSlot->SetPosition(Position); LabelSlot->SetSize(Size);
             return Label;
         };
-        AddLabel(TEXT("矿石背包"), FVector2D(0,0), FVector2D(280,28), 20);
+        AddLabel(TEXT("矿石背包"), FVector2D(0,0), FVector2D(280,28), 20, true);
         const FLinearColor Colors[] = {FLinearColor(.9f,.43f,.19f), FLinearColor(.72f,.09f,.045f), FLinearColor(.16f,.78f,.43f), FLinearColor(.4f,.88f,1)};
         for (int32 I = 0; I < 4; ++I)
         {

@@ -1,4 +1,5 @@
 #include "MiningCellUniverse.h"
+#include "BrainMiningFonts.h"
 #include "BrainMiningCharacter.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningComponent.h"
@@ -46,14 +47,14 @@ public:
         const FLinearColor Cream(.9f, .94f, .91f), Muted(.47f, .62f, .65f), Dark(.007f, .016f, .024f, .84f);
         auto Geo = [&](float X, float Y, float W, float H) { return G.ToPaintGeometry(FVector2f(W*S,H*S), FSlateLayoutTransform(FVector2f(O+FVector2D(X,Y)*S))); };
         auto Box = [&](float X,float Y,float W,float H,FLinearColor C) { FSlateDrawElement::MakeBox(Out,++Layer,Geo(X,Y,W,H),Brush,ESlateDrawEffect::None,C); };
-        auto Text = [&](FString T,float X,float Y,int F,FLinearColor C) { FSlateDrawElement::MakeText(Out,++Layer,Geo(X,Y,1480,80),T,FCoreStyle::GetDefaultFontStyle("Regular",FMath::Max(9,FMath::RoundToInt(F*S))),ESlateDrawEffect::None,C); };
+        auto Text = [&](FString T,float X,float Y,int F,FLinearColor C,bool bTitle=false) { FSlateDrawElement::MakeText(Out,++Layer,Geo(X,Y,1480,80),T,BrainMiningFonts::Style(bTitle ? TEXT("Bold") : TEXT("Medium"),FMath::Max(9,FMath::RoundToInt(F*S))),ESlateDrawEffect::None,C); };
         Box(36,32,390,110,Dark); Box(36,32,3,110,CellUniverse::Gold);
-        Text(TEXT("涌现  /  尺度尽头"),57,47,22,Cream);
+        Text(TEXT("涌现  /  尺度尽头"),57,47,22,Cream,true);
         Text(TEXT("CELL / COSMOS    ·    FIRST-PERSON STUDY"),58,87,11,Muted);
         for(int32 I=0;I<D->StageCount;++I) Box(58+I*31,118,24,3,I<=D->CurrentStage?CellUniverse::Gold:Muted*.3f);
         Box(1190,32,374,83,Dark);
         Text(FString::Printf(TEXT("%02d / %02d"),D->CurrentStage+1,D->StageCount),1210,45,12,CellUniverse::Gold);
-        Text(D->StageName(),1210,71,18,Cream);
+        Text(D->StageName(),1210,71,18,Cream,true);
         const auto* M=D->GetMining();
         const FLinearColor Aim=M&&M->TargetRock?CellUniverse::Cyan:Cream;
         if (!UMiningInteractionHUDWidget::IsActiveFor(D->GetWorld()->GetFirstPlayerController()))
@@ -69,13 +70,13 @@ public:
         {
             const float SubtitleY=D->bAreaManaged?180:676;
             Box(280,SubtitleY,1040,62,Dark); Box(280,SubtitleY,3,62,CellUniverse::Gold);
-            Text(Sub,306,SubtitleY+17,23,Cream);
+            Text(Sub,306,SubtitleY+17,23,Cream,true);
         }
         if(D->bComplete)
         {
             Box(408,272,784,128,Dark);
-            Text(TEXT("挖通了。"),685,292,34,CellUniverse::Gold);
-            Text(TEXT("我们终于知道，要做一个怎样的游戏。"),527,354,21,Cream);
+            Text(TEXT("挖通了。"),685,292,34,CellUniverse::Gold,true);
+            Text(TEXT("我们终于知道，要做一个怎样的游戏。"),527,354,21,Cream,true);
         }
         return Layer;
     }

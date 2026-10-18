@@ -1,7 +1,7 @@
 #include "Subtitles/SubtitleWidget.h"
+#include "BrainMiningFonts.h"
 #include "Subtitles/SubtitleSettings.h"
 
-#include "Fonts/CompositeFont.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SCompoundWidget.h"
@@ -12,25 +12,8 @@ namespace
 {
 	FSlateFontInfo SubtitleFont(float Size)
 	{
-		static TSharedPtr<const FCompositeFont> ChineseFont;
-		if (!ChineseFont)
-		{
-			const TCHAR* Candidates[] = {
-				TEXT("C:/Windows/Fonts/simhei.ttf"),
-				TEXT("C:/Windows/Fonts/msyh.ttc"),
-				TEXT("C:/Windows/Fonts/msyh.ttf")
-			};
-			for (const TCHAR* Path : Candidates)
-			{
-				if (FPaths::FileExists(Path))
-				{
-					ChineseFont = MakeShared<FStandaloneCompositeFont>(NAME_None, FString(Path), EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
-					break;
-				}
-			}
-		}
-		return ChineseFont ? FSlateFontInfo(ChineseFont, Size) : FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), Size);
-	}
+        return BrainMiningFonts::Title(Size);
+    }
 }
 
 	/**

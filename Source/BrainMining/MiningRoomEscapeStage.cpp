@@ -15,6 +15,7 @@ void AMiningRoomEscape::BuildExitStage()
     auto* Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube"));
     auto* Cylinder=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cylinder"));
     auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
+    if(!Base)Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
     auto Material=[&](FLinearColor Tint)
     {
         auto* M=UMaterialInstanceDynamic::Create(Base,this);M->SetVectorParameterValue(TEXT("Tint"),Tint);return M;
@@ -111,7 +112,7 @@ void AMiningRoomEscape::TickExitStage()
     if(Phase!=EMiningEscapePhase::Escaped)return;
     if(!StageCollection.IsValid())
     {
-        for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It){StageCollection=*It;break;}
+        if(TActorIterator<AMiningCollectionField> It(GetWorld());It)StageCollection=*It;
         if(!StageCollection.IsValid())
         {
             auto* Field=GetWorld()->SpawnActorDeferred<AMiningCollectionField>(AMiningCollectionField::StaticClass(),FTransform::Identity,this);

@@ -1,4 +1,5 @@
 #include "MiningExperienceSubsystem.h"
+#include "BrainMiningFonts.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningComponent.h"
 #include "MiningCollection.h"
@@ -155,7 +156,7 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
         auto* Hall = AMiningExhibitHall::Find(World);
         Choices->AddSlot().AutoHeight().Padding(0, 10)
             [SNew(STextBlock).Text(FText::FromString(Hall ? TEXT("当前地图 · 跳转到区域入口（保留房间进度）") : TEXT("当前地图无主流程区域，请使用下方独立玩法入口。")))
-                .Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).AutoWrapText(true)];
+                .Font(BrainMiningFonts::Style("Bold", 18)).AutoWrapText(true)];
         if (Hall)
         {
             for (int32 Index = 0; Index < Hall->Areas.Num(); ++Index)
@@ -164,17 +165,17 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
                     [SNew(SButton).IsEnabled(Hall->bReady).ContentPadding(FMargin(18, 9))
                         .OnClicked_Lambda([this, Index]() { JumpToDeveloperArea(Index); return FReply::Handled(); })
                         [SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("跳转 · %s%s"), *Hall->Areas[Index].Title.ToString(),
-                            Index == Hall->ActiveArea ? TEXT("（当前）") : TEXT("")))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))]];
+                            Index == Hall->ActiveArea ? TEXT("（当前）") : TEXT("")))).Font(BrainMiningFonts::Body(18))]];
             }
             if (!Hall->bReady) MenuError = TEXT("房间仍在加载，稍后重新打开面板即可跳转。");
         }
-        Choices->AddSlot().AutoHeight().Padding(0,12)[SNew(STextBlock).Text(FText::FromString(TEXT("GM · 收集物附近"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",18))];
+        Choices->AddSlot().AutoHeight().Padding(0,12)[SNew(STextBlock).Text(FText::FromString(TEXT("GM · 收集物附近"))).Font(BrainMiningFonts::Style("Bold",18))];
         for(int32 Id=0;Id<AMiningCollectible::ItemTypeCount;++Id)
             Choices->AddSlot().AutoHeight().Padding(0,2)[SNew(SButton).ContentPadding(10)
                 .OnClicked_Lambda([this,Id](){JumpToCollectible(Id);return FReply::Handled();})
-                [SNew(STextBlock).Text(FText::FromString(AMiningCollectible::ItemName(Id)))]];
+                [SNew(STextBlock).Font(BrainMiningFonts::Body(12)).Text(FText::FromString(AMiningCollectible::ItemName(Id)))]];
         Choices->AddSlot().AutoHeight().Padding(0, 16, 0, 6)
-            [SNew(STextBlock).Text(FText::FromString(TEXT("独立玩法 · 切换地图并从头测试房间"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))];
+            [SNew(STextBlock).Text(FText::FromString(TEXT("独立玩法 · 切换地图并从头测试房间"))).Font(BrainMiningFonts::Style("Bold", 18))];
     }
     const MiningExperiences::FEntry* MenuEntries = MiningExperiences::Entries;
     int32 EntryCount = UE_ARRAY_COUNT(MiningExperiences::Entries);
@@ -188,9 +189,9 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
             { if (bDeveloper) OpenDeveloperExperience(Index); else OpenExperience(Index); return FReply::Handled(); })
             [SNew(SVerticalBox)
                 + SVerticalBox::Slot().AutoHeight()
-                    [SNew(STextBlock).Text(FText::FromString(Entry.Title)).Font(FCoreStyle::GetDefaultFontStyle("Bold", 20)).ColorAndOpacity(FLinearColor::White)]
+                    [SNew(STextBlock).Text(FText::FromString(Entry.Title)).Font(BrainMiningFonts::Style("Bold", 20)).ColorAndOpacity(FLinearColor::White)]
                 + SVerticalBox::Slot().AutoHeight().Padding(0,3,0,0)
-                    [SNew(STextBlock).Text(FText::FromString(bAvailable ? Entry.Detail : TEXT("当前安装或构建未包含此关卡"))).Font(FCoreStyle::GetDefaultFontStyle("Regular", 14)).ColorAndOpacity(FLinearColor(.75f,.83f,.86f)).AutoWrapText(true)]]];
+                    [SNew(STextBlock).Text(FText::FromString(bAvailable ? Entry.Detail : TEXT("当前安装或构建未包含此关卡"))).Font(BrainMiningFonts::Style("Regular", 14)).ColorAndOpacity(FLinearColor(.75f,.83f,.86f)).AutoWrapText(true)]]];
     }
     TSharedPtr<SButton> CloseButton;
     Menu = SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -198,21 +199,21 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
         [SNew(SBox).WidthOverride(860).MaxDesiredHeight(850)
             [SNew(SVerticalBox)
                 + SVerticalBox::Slot().AutoHeight().Padding(12)
-                    [SNew(STextBlock).Text(FText::FromString(bDeveloper ? TEXT("开发者 · 房间跳转与玩法测试") : TEXT("BrainMining · 全部玩法"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 26)).ColorAndOpacity(FLinearColor::White)]
+                    [SNew(STextBlock).Text(FText::FromString(bDeveloper ? TEXT("开发者 · 房间跳转与玩法测试") : TEXT("BrainMining · 全部玩法"))).Font(BrainMiningFonts::Style("Bold", 26)).ColorAndOpacity(FLinearColor::White)]
                 + SVerticalBox::Slot().AutoHeight().Padding(12,0,12,10)
                     [SNew(STextBlock).Text(FText::FromString(bDeveloper
                         ? FString::Printf(TEXT("当前地图：%s\n跳转可进入未解锁区域，并补齐开局装备；不会自动通关。\n独立测试会离开当前地图，当前房间进度不保留。Ctrl + F10 / Esc 关闭。"), *UGameplayStatics::GetCurrentLevelName(World))
                         : FString(TEXT("切换关卡会重开试玩，本轮进度不跨地图保存。\nF4 / Esc 关闭并继续当前试玩。"))))
-                        .Font(FCoreStyle::GetDefaultFontStyle("Regular", 15)).ColorAndOpacity(FLinearColor(.75f,.83f,.86f)).AutoWrapText(true)]
+                        .Font(BrainMiningFonts::Style("Regular", 15)).ColorAndOpacity(FLinearColor(.75f,.83f,.86f)).AutoWrapText(true)]
                 + SVerticalBox::Slot().FillHeight(1)
                     [SNew(SScrollBox) + SScrollBox::Slot()[Choices]]
                 + SVerticalBox::Slot().AutoHeight().Padding(0, 6)
-                    [SNew(STextBlock).Text_Lambda([this]() { return FText::FromString(MenuError); })
+                    [SNew(STextBlock).Font(BrainMiningFonts::Body(12)).Text_Lambda([this]() { return FText::FromString(MenuError); })
                         .ColorAndOpacity(FLinearColor(1.f, .55f, .3f)).AutoWrapText(true)]
                 + SVerticalBox::Slot().AutoHeight().Padding(0,8)
                     [SAssignNew(CloseButton, SButton).HAlign(HAlign_Center).ContentPadding(12)
                         .OnClicked_Lambda([this]() { CloseMenu(); return FReply::Handled(); })
-                        [SNew(STextBlock).Text(FText::FromString(TEXT("继续当前试玩"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White)]]]];
+                        [SNew(STextBlock).Text(FText::FromString(TEXT("继续当前试玩"))).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(FLinearColor::White)]]]];
     Controller->SetIgnoreMoveInput(true);
     Controller->SetIgnoreLookInput(true);
     bPausedByMenu = Controller->SetPause(true);

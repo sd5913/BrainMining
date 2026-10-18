@@ -3,6 +3,7 @@
 #include "MiningExperienceSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
+#include "BrainMiningFonts.h"
 #include "MiningGUIWidgets.h"
 #include "WidgetBlueprint.h"
 #include "WidgetBlueprintFactory.h"
@@ -103,7 +104,7 @@ namespace MiningGUIEditor
 	{
 		auto* Result = Widget<UTextBlock>(BP, Name);
 		Result->SetText(FText::FromString(Value));
-		Result->SetFont(FSlateFontInfo(LoadObject<UFont>(nullptr, TEXT("/Engine/EngineFonts/Roboto.Roboto")), FontSize, FName(TEXT("Bold"))));
+		Result->SetFont(BrainMiningFonts::Body(FontSize));
 		Result->SetColorAndOpacity(FSlateColor(FLinearColor::White));
 		Result->SetJustification(ETextJustify::Center);
 		Result->SetVisibility(ESlateVisibility::HitTestInvisible);
@@ -456,7 +457,7 @@ void UMiningGUIEditorLibrary::StartFloatingPreview()
 bool UMiningGUIEditorLibrary::RepairMissingGUIFonts()
 {
 	using namespace MiningGUIEditor;
-	UFont* Font = LoadObject<UFont>(nullptr, TEXT("/Engine/EngineFonts/Roboto.Roboto"));
+	UFont* Font = BrainMiningFonts::Asset();
 	if (!Font) return false;
 	for (const TCHAR* Name : {TEXT("WBP_UpgradePickaxe"), TEXT("WBP_UpgradeVortex"), TEXT("WBP_UpgradeBlast"), TEXT("WBP_MiningHUD")})
 	{
@@ -467,7 +468,7 @@ bool UMiningGUIEditorLibrary::RepairMissingGUIFonts()
 		{
 			if (auto* Label = Cast<UTextBlock>(Widget); Label && !Label->GetFont().FontObject)
 			{
-				Label->SetFont(FSlateFontInfo(Font, Label->GetName() == TEXT("CoinText") ? 26 : 24, FName(TEXT("Bold"))));
+				Label->SetFont(BrainMiningFonts::Body(Label->GetName() == TEXT("CoinText") ? 26 : 24));
 				bChanged = true;
 			}
 		});

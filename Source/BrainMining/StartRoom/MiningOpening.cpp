@@ -1,4 +1,5 @@
 #include "StartRoom/MiningOpening.h"
+#include "BrainMiningFonts.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -70,7 +71,7 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
         Style.Hovered.TintColor=FSlateColor(FLinearColor(.32f,.23f,.09f,1));
         Style.Pressed.TintColor=FSlateColor(FLinearColor(.5f,.35f,.1f,1));Button->SetStyle(Style);
         auto* Text=WidgetTree->ConstructWidget<UTextBlock>();Text->SetText(FText::FromString(Label));
-        auto Font=Text->GetFont();Font.Size=24;Text->SetFont(Font);Text->SetColorAndOpacity(FSlateColor(FLinearColor(1,.79f,.4f)));
+        Text->SetFont(BrainMiningFonts::Body(24));Text->SetColorAndOpacity(FSlateColor(FLinearColor(1,.79f,.4f)));
         Button->AddChild(Text);
         if(Start)Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);
         else Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);

@@ -1,4 +1,5 @@
 #include "CollectionUMGEditorLibrary.h"
+#include "BrainMiningFonts.h"
 #include "MiningCollectionWidget.h"
 #include "MiningCollection.h"
 #include "WidgetBlueprint.h"
@@ -49,7 +50,7 @@ UImage* Image(UWidgetBlueprint* BP,UCanvasPanel* Parent,const FString& Name,floa
 }
 UTextBlock* Text(UWidgetBlueprint* BP,UCanvasPanel* Parent,const FString& Name,const FString& Value,float X,float Y,float W,float H,int32 Size,FLinearColor Color=FLinearColor::White)
 {
-    auto* T=Make<UTextBlock>(BP,Name);T->SetText(FText::FromString(Value));T->SetFont(FCoreStyle::GetDefaultFontStyle("Regular",Size));
+    auto* T=Make<UTextBlock>(BP,Name);T->SetText(FText::FromString(Value));T->SetFont((Name.Contains(TEXT("Title")) || Name.Contains(TEXT("Header")) || Name == TEXT("ItemName")) ? BrainMiningFonts::Title(Size) : BrainMiningFonts::Body(Size));
     T->SetColorAndOpacity(Color);T->SetVisibility(ESlateVisibility::HitTestInvisible);Place(Parent,T,X,Y,W,H);return T;
 }
 UButton* Button(UWidgetBlueprint* BP,UCanvasPanel* Parent,const FString& Name,float X,float Y,float W,float H)
@@ -92,7 +93,7 @@ bool UCollectionUMGEditorLibrary::CreateCollectionInspectWidget()
         Image(BP,SlotCanvas,FString::Printf(TEXT("ItemArt%d"),I),0,0,222,98,TEXT("/Game/CollectionPrototype/UI/MI_CatalogueUnknown"));
         Text(BP,SlotCanvas,FString::Printf(TEXT("ItemLabel%d"),I),FString(),6,31,205,38,23,FLinearColor(.005f,.01f,.005f))->SetJustification(ETextJustify::Center);
     }
-    auto Arrow=[&](const TCHAR* Name,const TCHAR* Label,float X){auto* B=Button(BP,Bar,Name,X,22,50,57);auto* T=Make<UTextBlock>(BP,FString(Name)+TEXT("Label"));T->SetText(FText::FromString(Label));T->SetFont(FCoreStyle::GetDefaultFontStyle("Bold",32));T->SetJustification(ETextJustify::Center);T->SetColorAndOpacity(FLinearColor(.6f,.62f,.62f));T->SetVisibility(ESlateVisibility::HitTestInvisible);Content(B,T);};
+    auto Arrow=[&](const TCHAR* Name,const TCHAR* Label,float X){auto* B=Button(BP,Bar,Name,X,22,50,57);auto* T=Make<UTextBlock>(BP,FString(Name)+TEXT("Label"));T->SetText(FText::FromString(Label));T->SetFont(BrainMiningFonts::Body(32));T->SetJustification(ETextJustify::Center);T->SetColorAndOpacity(FLinearColor(.6f,.62f,.62f));T->SetVisibility(ESlateVisibility::HitTestInvisible);Content(B,T);};
     Arrow(TEXT("PreviousButton"),TEXT("❮"),5);Arrow(TEXT("NextButton"),TEXT("❯"),975);
     FAssetRegistryModule::AssetCreated(BP);FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);FKismetEditorUtilities::CompileBlueprint(BP);
     if(BP->Status==BS_Error||!BP->GeneratedClass)return false;

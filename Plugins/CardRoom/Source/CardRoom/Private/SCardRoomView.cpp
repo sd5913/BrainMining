@@ -7,6 +7,7 @@
 #include "Styling/CoreStyle.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Engine/Texture2D.h"
+#include "CardRoomUISettings.h"
 
 namespace CardRoomUI
 {
@@ -32,6 +33,14 @@ namespace CardRoomUI
         Brush.ImageSize=Size;
         return Brush;
     }
+    FSlateBrush ArtBrush(UTexture2D* Texture,const FVector2D& Size)
+    {
+        FSlateBrush Brush;
+        Brush.DrawAs=ESlateBrushDrawType::Image;
+        Brush.SetResourceObject(Texture);
+        Brush.ImageSize=Size;
+        return Brush;
+    }
 }
 FVector2D SCardRoomView::ToVirtual(const FGeometry& G,const FVector2D& P) const
 {
@@ -40,16 +49,21 @@ FVector2D SCardRoomView::ToVirtual(const FGeometry& G,const FVector2D& P) const
 }
 FSlateRect SCardRoomView::CardRect(int32 Index,const FCardRoomRun& Run) const
 {
-    const bool Many=Run.Hand.Num()>5; const float Width=Many?64:138,Step=Many?75:160;
-    const float Left=800-(Run.Hand.Num()*Step- (Step-Width))*.5+Index*Step;
-    const float Top=Run.Staged.Contains(Index)?642:672;
-    return FSlateRect(Left,Top,Left+Width,Top+(Many?96:200));
+    const UCardRoomUISettings* UI=Owner.IsValid()&&Owner->Stage?Owner->Stage->UISettings.Get():nullptr;
+    const bool Many=Run.Hand.Num()>5; const float Width=Many?(UI?UI->CardManySize.X:64.f):(UI?UI->CardNormalSize.X:138.f);
+    const float Height=Many?(UI?UI->CardManySize.Y:96.f):(UI?UI->CardNormalSize.Y:200.f);
+    const float Step=Many?(UI?UI->CardManyStep:75.f):(UI?UI->CardNormalStep:160.f);
+    const float Center=UI?UI->CardHandCenterX:800.f;
+    const float Left=Center-(Run.Hand.Num()*Step- (Step-Width))*.5+Index*Step;
+    const float Top=(UI?UI->CardTop:672.f)-(Run.Staged.Contains(Index)?(UI?UI->CardSelectedLift:30.f):0.f);
+    return FSlateRect(Left,Top,Left+Width,Top+Height);
 }
 int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSlateRect& Cull,FSlateWindowElementList& Out,int32 Layer,const FWidgetStyle& Style,bool Enabled) const
 {
     using namespace CardRoomUI;
     if(!Owner.IsValid() || !Owner->Stage) return Layer;
     const FCardRoomRun& R=Owner->Stage->Run;
+    const UCardRoomUISettings* UI=Owner->Stage->UISettings;
     if(R.Phase==ECardRoomPhase::Collected)return Layer;
     const FVector2D Size=G.GetLocalSize(); const float S=FMath::Min(Size.X/1600,Size.Y/900); const FVector2D Origin=(Size-FVector2D(1600,900)*S)*.5;
     const FSlateBrush* Brush=FCoreStyle::Get().GetBrush("WhiteBrush"); int32 L=Layer;
@@ -57,6 +71,10 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     auto Box=[&](float X,float Y,float W,float H,FLinearColor C) { FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(Origin+FVector2D(X,Y)*S))),Brush,ESlateDrawEffect::None,C); };
     auto Text=[&](FString T,float X,float Y,int32 Font,FLinearColor C=FLinearColor::White) { FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(1500*S,70*S),FSlateLayoutTransform(FVector2f(Origin+FVector2D(X,Y)*S))),T,FCoreStyle::GetDefaultFontStyle("Regular",FMath::Max(9,FMath::RoundToInt(Font*S))),ESlateDrawEffect::None,C); };
     auto Button=[&](FSlateRect Rect,FString Label,bool Active=true) { Box(Rect.Left,Rect.Top,Rect.Right-Rect.Left,Rect.Bottom-Rect.Top,Active?(In(Mouse,Rect)?FLinearColor(1,.76f,.4f):Gold):FLinearColor(.23f,.25f,.24f)); Text(Label,Rect.Left+22,Rect.Top+10,20,Active?Ink:Cream); };
+    auto UIBox=[&](const FCardRoomUIBox& B,const FSlateRect& Fallback)->FSlateRect { return UI&&B.Size.X>0.f&&B.Size.Y>0.f?FSlateRect(B.Position.X,B.Position.Y,B.Position.X+B.Size.X,B.Position.Y+B.Size.Y):Fallback; };
+    const FSlateRect MatchRect=UI?UIBox(UI->SeatedPanel,FSlateRect(465,625,1135,710)):Match;
+    const FSlateRect ConfirmRect=UI?UIBox(UI->Confirm,Confirm):Confirm;
+    const FSlateRect AllRect=UI?UIBox(UI->SelectAll,All):All;
     auto Icon=[&](ERoomCard Type,float X,float Y,float Extent)
     {
         const auto Art=CardRoomSymbols::Make(Type);
@@ -77,13 +95,19 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
         FSlateBrush Art=CardRoomUI::ArtBrush(Path,FVector2D(W,H));
         FSlateDrawElement::MakeBox(Out,++L,Geo(X,Y,W,H),&Art,ESlateDrawEffect::None,FLinearColor::White);
     };
+    auto DrawTextureObject=[&](UTexture2D* Texture,const TCHAR* Fallback,float X,float Y,float W,float H)
+    {
+        FSlateBrush Art=Texture?CardRoomUI::ArtBrush(Texture,FVector2D(W,H)):CardRoomUI::ArtBrush(Fallback,FVector2D(W,H));
+        FSlateDrawElement::MakeBox(Out,++L,Geo(X,Y,W,H),&Art,ESlateDrawEffect::None,FLinearColor::White);
+    };
     auto Card=[&](int32 Index,FSlateRect B,bool Floating=false)
     {
         const ERoomCard C=R.Hand[Index]; const bool Many=R.Hand.Num()>5&&!Floating; const bool Staged=R.Staged.Contains(Index)&&!Floating;
         const float W=B.Right-B.Left,H=B.Bottom-B.Top;
+        UTexture2D* Texture=C==ERoomCard::Laser?(UI?UI->CardLaserArt.Get():nullptr):C==ERoomCard::Poison?(UI?UI->CardPoisonArt.Get():nullptr):(UI?UI->CardFireArt.Get():nullptr);
         const TCHAR* Path=C==ERoomCard::Laser?TEXT("/Game/Rooms/CardDuel/UI/T_Card_Laser.T_Card_Laser"):C==ERoomCard::Poison?TEXT("/Game/Rooms/CardDuel/UI/T_Card_Poison.T_Card_Poison"):TEXT("/Game/Rooms/CardDuel/UI/T_Card_Fire.T_Card_Fire");
         Box(B.Left+5,B.Top+7,W,H,FLinearColor(0,0,0,.48f));
-        DrawTexture(Path,B.Left,B.Top,W,H);
+        DrawTextureObject(Texture,Path,B.Left,B.Top,W,H);
         if(Staged)
         {
             Box(B.Left-4,B.Top-4,W+8,4,FLinearColor(1.f,.85f,.28f,.95f));
@@ -99,38 +123,44 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     }
     if(R.Round>0)
     {
-        FSlateBrush Round=CardRoomUI::ArtBrush(TEXT("/Game/Rooms/CardDuel/UI/T_RoundDots.T_RoundDots"),FVector2D(100,180));
-        FSlateDrawElement::MakeBox(Out,++L,Geo(48,103,100,180),&Round,ESlateDrawEffect::None,FLinearColor::White);
-        Text(FString::Printf(TEXT("第 %02d / 04 回合"),R.Round),126,132,25,Cream);
-        Box(126,173,245,3,Gold);
-        for(int32 i=0;i<4;++i) Box(126+i*65,189,54,4,i<R.Round?Gold:FLinearColor(.2f,.2f,.2f));
+        const FSlateRect B=UI?FSlateRect(UI->Round.Position.X,UI->Round.Position.Y,UI->Round.Position.X+UI->Round.Size.X,UI->Round.Position.Y+UI->Round.Size.Y):FSlateRect(48,103,370,283);
+        DrawTextureObject(UI?UI->RoundArt.Get():nullptr,TEXT("/Game/Rooms/CardDuel/UI/T_RoundHeader.T_RoundHeader"),B.Left,B.Top,B.Right-B.Left,B.Bottom-B.Top);
+        Text(FString::Printf(TEXT("第 %02d / 04 回合"),R.Round),B.Left+78,B.Top+29,25,Cream);
+        Box(B.Left+78,B.Top+70,245,3,Gold);
+        for(int32 i=0;i<4;++i) Box(B.Left+78+i*65,B.Top+86,54,4,i<R.Round?Gold:FLinearColor(.2f,.2f,.2f));
         auto Health=[&](bool Player,float HP,float X,float Y)
         {
             const TCHAR* Path=Player?TEXT("/Game/Rooms/CardDuel/UI/T_Health_Player.T_Health_Player"):TEXT("/Game/Rooms/CardDuel/UI/T_Health_Boss.T_Health_Boss");
             const float W=430.f,H=67.f;
-            DrawTexture(Path,X,Y,W,H);
-            const float CellsX=X+73.f,CellsW=W-80.f,Fill=FMath::Clamp(HP/100.f,0.f,1.f);
-            if(Fill<1.f) Box(CellsX+CellsW*Fill,Y+8,CellsW*(1.f-Fill),H-16,FLinearColor(0.015f,.018f,.02f,.72f));
-            Text(FString::Printf(TEXT("%d / 100"),FMath::RoundToInt(HP)),X+W-104,Y+24,16,FLinearColor::White);
+            const float BX=UI?(Player?UI->PlayerHealth.Position.X:UI->BossHealth.Position.X):X;
+            const float BY=UI?(Player?UI->PlayerHealth.Position.Y:UI->BossHealth.Position.Y):Y;
+            const float BW=UI?(Player?UI->PlayerHealth.Size.X:UI->BossHealth.Size.X):W;
+            const float BH=UI?(Player?UI->PlayerHealth.Size.Y:UI->BossHealth.Size.Y):H;
+            DrawTextureObject(Player?(UI?UI->PlayerHealthArt.Get():nullptr):(UI?UI->BossHealthArt.Get():nullptr),Path,BX,BY,BW,BH);
+            const float Fill=FMath::Clamp(HP/100.f,0.f,1.f);
+            if(Fill<1.f) Box(BX+73.f+(BW-80.f)*Fill,BY+8,(BW-80.f)*(1.f-Fill),BH-16,FLinearColor(0.015f,.018f,.02f,.72f));
+            Text(FString::Printf(TEXT("%d / 100"),FMath::RoundToInt(HP)),BX+BW-104,BY+24,16,FLinearColor::White);
         };
         Health(true,R.PlayerHP,46,205); Health(false,R.RivalHP,1120,205);
-        if(R.bPoisoned) { Box(1355,220,217,36,FLinearColor(.1f,.23f,.08f,.9f)); Text(TEXT("中毒 · 可被点燃"),1370,228,14,FLinearColor(.7f,1,.4f)); }
+        if(R.bPoisoned) { const FSlateRect P=UI?FSlateRect(UI->Poison.Position.X,UI->Poison.Position.Y,UI->Poison.Position.X+UI->Poison.Size.X,UI->Poison.Position.Y+UI->Poison.Size.Y):FSlateRect(1355,220,1572,256); Box(P.Left,P.Top,P.Right-P.Left,P.Bottom-P.Top,FLinearColor(.1f,.23f,.08f,.9f)); Text(TEXT("中毒 · 可被点燃"),P.Left+15,P.Top+8,14,FLinearColor(.7f,1,.4f)); }
     }
     if(R.Phase==ECardRoomPhase::Seated || R.Phase==ECardRoomPhase::Matching || R.Phase==ECardRoomPhase::Arrival)
     {
-        Box(465,625,670,85,Dark); Text(R.Message,500,638,22,Cream);
-        Text(TEXT("今晚的规则很简单：把你的好牌，全都打出去。"),500,678,14,Gold);
-        if(R.Phase==ECardRoomPhase::Seated) Button(Match,TEXT("开始匹配     →"));
-        else Text(R.Phase==ECardRoomPhase::Matching?TEXT("·   ·   ·"):TEXT("请注意头顶！"),715,745,24,Gold);
+        const FSlateRect B=UI?FSlateRect(UI->SeatedPanel.Position.X,UI->SeatedPanel.Position.Y,UI->SeatedPanel.Position.X+UI->SeatedPanel.Size.X,UI->SeatedPanel.Position.Y+UI->SeatedPanel.Size.Y):FSlateRect(465,625,1135,710);
+        Box(B.Left,B.Top,B.Right-B.Left,B.Bottom-B.Top,Dark); Text(R.Message,B.Left+35,B.Top+13,22,Cream);
+        Text(TEXT("今晚的规则很简单：把你的好牌，全都打出去。"),B.Left+35,B.Top+53,14,Gold);
+        if(R.Phase==ECardRoomPhase::Seated) Button(MatchRect,TEXT("开始匹配     →"));
+        else Text(R.Phase==ECardRoomPhase::Matching?TEXT("·   ·   ·"):TEXT("请注意头顶！"),B.Left+250,B.Bottom+35,24,Gold);
     }
     if(R.Phase==ECardRoomPhase::Choosing)
     {
         // Prompts live above the hand. The table stays unobstructed.
-        Box(48,596,910,55,Dark);
+        const FSlateRect PromptBox=UI?FSlateRect(UI->Prompt.Position.X,UI->Prompt.Position.Y,UI->Prompt.Position.X+UI->Prompt.Size.X,UI->Prompt.Position.Y+UI->Prompt.Size.Y):FSlateRect(48,596,958,651);
+        Box(PromptBox.Left,PromptBox.Top,PromptBox.Right-PromptBox.Left,PromptBox.Bottom-PromptBox.Top,Dark);
         FString Prompt=R.CanConfirm()?FString::Printf(TEXT("已选 %d 张 · 按空格，甩向桌心！"),R.Staged.Num()):R.Round==3?TEXT("点击选中「火」和「激光弹」，空格打出组合技"):R.Round==4?TEXT("最后一搏！选中 17 张牌，空格全部甩出"):TEXT("点击手牌选中，再按空格打出");
-        Text(Prompt,68,609,19,Cream);
-        Button(Confirm,R.CanConfirm()?TEXT("空格   打出选中的牌"):FString::Printf(TEXT("已选 %d / %d 张"),R.Staged.Num(),R.Hand.Num()),R.CanConfirm());
-        if(R.Round==4) Button(All,R.CanConfirm()?TEXT("取消全选"):TEXT("全选 17 张"));
+        Text(Prompt,PromptBox.Left+20,PromptBox.Top+13,19,Cream);
+        Button(ConfirmRect,R.CanConfirm()?TEXT("空格   打出选中的牌"):FString::Printf(TEXT("已选 %d / %d 张"),R.Staged.Num(),R.Hand.Num()),R.CanConfirm());
+        if(R.Round==4) Button(AllRect,R.CanConfirm()?TEXT("取消全选"):TEXT("全选 17 张"));
         for(int32 i=0;i<R.Hand.Num();++i) Card(i,CardRect(i,R));
     }
     // Opponent speech stays beside the face, never over the table.
@@ -149,26 +179,35 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
         else Speech=R.PhaseTime<1?TEXT("停！怎么能一次出这么多！"):TEXT("我还会回来的——！");
         if(!(R.Phase==ECardRoomPhase::Resolving && R.Round==4 && R.PhaseTime>2.5f))
         {
-            Box(1018,283,500,88,Ink); Box(1022,287,492,80,Cream);
-            Box(1005,328,20,14,Cream); Box(996,334,13,7,Cream);
-            Text(TEXT("超级人机"),1040,296,12,Ink); Text(Speech,1040,323,18,Ink);
+            const FSlateRect D=UI?FSlateRect(UI->Dialogue.Position.X,UI->Dialogue.Position.Y,UI->Dialogue.Position.X+UI->Dialogue.Size.X,UI->Dialogue.Position.Y+UI->Dialogue.Size.Y):FSlateRect(1018,283,1518,371);
+            if(UI&&UI->SpeechBubbleArt)
+                DrawTextureObject(UI->SpeechBubbleArt.Get(),TEXT("/Game/Rooms/CardDuel/UI/T_SpeechBubble.T_SpeechBubble"),D.Left,D.Top,D.Right-D.Left,D.Bottom-D.Top);
+            else
+            {
+                Box(D.Left,D.Top,D.Right-D.Left,D.Bottom-D.Top,Ink); Box(D.Left+4,D.Top+4,D.Right-D.Left-8,D.Bottom-D.Top-8,Cream);
+                Box(D.Left-13,D.Top+45,20,14,Cream); Box(D.Left-22,D.Top+51,13,7,Cream);
+            }
+            Text(TEXT("超级人机"),D.Left+44,D.Top+14,12,Ink); Text(Speech,D.Left+44,D.Top+42,18,Ink);
         }
     }
 
     if(R.Phase==ECardRoomPhase::Resolving)
     {
-        Box(335,711,930,114,Dark); Text(R.Message,372,735,23,Cream);
-        Text(TEXT("牌已打出，看看会发生什么……"),585,782,15,Gold);
+        const FSlateRect B=UI?UIBox(UI->Prompt,FSlateRect(335,711,1265,825)):FSlateRect(335,711,1265,825);
+        Box(B.Left,B.Top,B.Right-B.Left,B.Bottom-B.Top,Dark); Text(R.Message,B.Left+37,B.Top+24,23,Cream);
+        Text(TEXT("牌已打出，看看会发生什么……"),B.Left+250,B.Bottom-32,15,Gold);
         if(R.Round==3 && R.PhaseTime>2.15f && R.PhaseTime<2.7f) Box(0,0,1600,900,FLinearColor(.7f,.025f,.008f,.16f));
     }
     if(R.Phase==ECardRoomPhase::Victory || R.Phase==ECardRoomPhase::Collected)
     {
-        Box(48,610,870,160,Dark); Box(48,610,870,3,Gold);
-        Text(R.Phase==ECardRoomPhase::Victory?TEXT("恭喜你获得胜利！"):TEXT("彗尾法球 · 已收藏"),82,634,32,Cream);
-        Text(R.Phase==ECardRoomPhase::Victory?TEXT("超级人机已退场。属于你的星光，留在桌上。"):TEXT("本版奖励为房间内占位，不改变挖掘数值。"),82,703,18,Gold);
+        const FSlateRect B=UI?UIBox(UI->Victory,FSlateRect(48,610,918,770)):FSlateRect(48,610,918,770);
+        Box(B.Left,B.Top,B.Right-B.Left,B.Bottom-B.Top,Dark); Box(B.Left,B.Top,B.Right-B.Left,3,Gold);
+        Text(R.Phase==ECardRoomPhase::Victory?TEXT("恭喜你获得胜利！"):TEXT("彗尾法球 · 已收藏"),B.Left+34,B.Top+24,32,Cream);
+        Text(R.Phase==ECardRoomPhase::Victory?TEXT("超级人机已退场。属于你的星光，留在桌上。"):TEXT("本版奖励为房间内占位，不改变挖掘数值。"),B.Left+34,B.Top+93,18,Gold);
         if(R.Phase==ECardRoomPhase::Victory) Button(Collect,TEXT("E   收集桌上的彗尾法球"));
     }
-    Text(TEXT("点击选牌 / 再点取消     空格出牌"),48,866,12,Cream);
+    const FSlateRect Hint=UI?UIBox(UI->BottomHint,FSlateRect(48,850,430,890)):FSlateRect(48,850,430,890);
+    Text(TEXT("点击选牌 / 再点取消     空格出牌"),Hint.Left,Hint.Top,12,Cream);
     return L;
 }
 FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& E)
@@ -176,13 +215,18 @@ FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& 
     using namespace CardRoomUI;
     if(!Owner.IsValid()||!Owner->Stage||E.GetEffectingButton()!=EKeys::LeftMouseButton) return FReply::Unhandled();
     Mouse=ToVirtual(G,E.GetScreenSpacePosition()); auto& R=Owner->Stage->Run;
+    const UCardRoomUISettings* UI=Owner->Stage->UISettings;
+    auto UIBox=[&](const FCardRoomUIBox& B,const FSlateRect& Fallback)->FSlateRect { return UI&&B.Size.X>0.f&&B.Size.Y>0.f?FSlateRect(B.Position.X,B.Position.Y,B.Position.X+B.Size.X,B.Position.Y+B.Size.Y):Fallback; };
+    const FSlateRect MatchRect=UI?UIBox(UI->SeatedPanel,FSlateRect(640,740,960,800)):FSlateRect(640,740,960,800);
+    const FSlateRect ConfirmRect=UI?UIBox(UI->Confirm,Confirm):Confirm;
+    const FSlateRect AllRect=UI?UIBox(UI->SelectAll,All):All;
     if(R.Phase==ECardRoomPhase::Exploring) return FReply::Unhandled();
-    if(R.Phase==ECardRoomPhase::Seated&&In(Mouse,Match)) R.Match();
+    if(R.Phase==ECardRoomPhase::Seated&&In(Mouse,MatchRect)) R.Match();
     if(R.Phase==ECardRoomPhase::Victory&&In(Mouse,Collect)) { Owner->Interact();return FReply::Handled(); }
     if(R.Phase==ECardRoomPhase::Choosing)
     {
-        if(In(Mouse,Confirm)) Owner->ConfirmCards();
-        else if(R.Round==4&&In(Mouse,All))
+        if(In(Mouse,ConfirmRect)) Owner->ConfirmCards();
+        else if(R.Round==4&&In(Mouse,AllRect))
         {
             const bool Clear=R.CanConfirm();
             for(int32 i=0;i<R.Hand.Num();++i) { if(Clear) R.Unstage(i); else R.Stage(i); }

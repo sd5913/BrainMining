@@ -8,6 +8,7 @@
 #include "Sound/SoundBase.h"
 #include "GameFramework/PlayerController.h"
 #include "UObject/ConstructorHelpers.h"
+#include "CardRoomUISettings.h"
 
 UStaticMeshComponent* ACardRoomStage::Shape(FName Name,USceneComponent* Parent,const TCHAR* Path,FVector Position,FVector Scale)
 {
@@ -19,6 +20,7 @@ UStaticMeshComponent* ACardRoomStage::Shape(FName Name,USceneComponent* Parent,c
 ACardRoomStage::ACardRoomStage()
 {
     PrimaryActorTick.bCanEverTick=true;
+    UISettings=LoadObject<UCardRoomUISettings>(nullptr,TEXT("/Game/Rooms/CardDuel/UI/DA_CardRoomUISettings.DA_CardRoomUISettings"));
     RootComponent=CreateDefaultSubobject<USceneComponent>(TEXT("RoomOrigin"));
     ToyRoot=CreateDefaultSubobject<USceneComponent>(TEXT("Opponent")); ToyRoot->SetupAttachment(RootComponent); ToyRoot->SetRelativeLocation(FVector(180,0,112));
     RabbitVisual=CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("RabbitOpponent"));

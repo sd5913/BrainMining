@@ -8,6 +8,7 @@ class USkeletalMeshComponent;
 class USceneComponent;
 class UStaticMesh;
 class USkeletalMesh;
+class UCardRoomUISettings;
 class UPointLightComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCardRoomCompleted, FName, RoomId);
 DECLARE_DELEGATE_TwoParams(FCardRoomAudioOverride, FName, float);
@@ -45,6 +46,7 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") float CardThrowHeight=48.f;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") float CardVisualScale=1.f;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") float SpellPresentationScale=1.f;
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|UI") TObjectPtr<UCardRoomUISettings> UISettings;
     // Art-only override. Both study maps continue to use the same FCardRoomRun.
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") bool bStyledEffects=false;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TArray<TObjectPtr<class UNiagaraSystem>> StyledSystems;

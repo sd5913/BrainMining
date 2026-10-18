@@ -161,9 +161,16 @@ void AMiningOpening::EnsureTitleOnWall()
     // A shallow projection disappears locally with each removed piece of terrain.
     auto* Decal=NewObject<UDecalComponent>(this,TEXT("MineableWallTitle"));
     AddInstanceComponent(Decal);Decal->SetupAttachment(RootComponent);
-    Decal->SetDecalMaterial(Material);Decal->DecalSize=FVector(18.f,104.96f,61.5f);
+    Decal->SetDecalMaterial(Material);Decal->DecalSize=FVector(18.f,61.5f,104.96f);
     Decal->SetFadeScreenSize(0.f);Decal->RegisterComponent();
-    Decal->SetWorldLocationAndRotation(DoorTitleLocation-DoorTitleRotation.Vector()*10.f,DoorTitleRotation);
+    // Decal UVs use local Z for horizontal and local Y for vertical. Rotate
+    // the projection frame from the widget frame so the projected bitmap is
+    // upright instead of rotated 90 degrees on the wall.
+    const FRotationMatrix WidgetFrame(DoorTitleRotation);
+    const FVector Projection = -WidgetFrame.GetUnitAxis(EAxis::X);
+    const FVector Horizontal = -WidgetFrame.GetUnitAxis(EAxis::Y);
+    const FRotator DecalRotation = FRotationMatrix::MakeFromXZ(Projection, Horizontal).Rotator();
+    Decal->SetWorldLocationAndRotation(DoorTitleLocation+Projection*10.f,DecalRotation);
     WorldTitle->SetVisibility(false);
 }
 void AMiningOpening::Release()

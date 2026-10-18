@@ -1,6 +1,7 @@
 #include "SMiningPickaxeBalancePanel.h"
 #include "MiningComponent.h"
 #include "MiningProgressionComponent.h"
+#include "Showcase/MiningTreasure.h"
 #include "Editor.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -20,6 +21,7 @@ void SMiningPickaxeBalancePanel::Construct(const FArguments& Arguments)
     Draft->Levels = GetDefault<UMiningPickaxeSettings>()->Levels;
     Draft->RangeUpgradeMultiplier=GetDefault<UMiningPickaxeSettings>()->RangeUpgradeMultiplier;
     Draft->IntervalUpgradeMultiplier=GetDefault<UMiningPickaxeSettings>()->IntervalUpgradeMultiplier;
+    Draft->MineralGlowRadiusMultiplier=GetDefault<UMiningPickaxeSettings>()->MineralGlowRadiusMultiplier;
     Draft->RefreshDerivedLevels();
     FDetailsViewArgs ViewArgs;
     ViewArgs.bAllowSearch = true;
@@ -37,7 +39,7 @@ void SMiningPickaxeBalancePanel::Construct(const FArguments& Arguments)
         [
             SNew(SVerticalBox)
             + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 8)
-            [ SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(TEXT("等级 0 配置基础每击深度、范围边长和挥镐间隔；等级 1～4 的破坏等级自动对应 1～4。2 级起累计范围 ×1.25，3 级起累计间隔 ×0.75，倍率可调整。每击实际深度由破坏等级减岩层硬度修正；差值 ≤-4 时无法破坏。后续等级尺寸自动派生。"))) ]
+            [ SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(TEXT("等级 0 配置基础每击深度、范围边长和挥镐间隔；等级 1～4 的破坏等级自动对应 1～4。2 级起累计范围 ×1.25，3 级起累计间隔 ×0.75，矿物发光范围倍率也可调整。每击实际深度由破坏等级减岩层硬度修正；差值 ≤-4 时无法破坏。后续等级尺寸自动派生。"))) ]
             + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 8)
             [
                 SNew(SWrapBox).UseAllottedSize(true).InnerSlotPadding(FVector2D(8, 4))
@@ -70,7 +72,8 @@ void SMiningPickaxeBalancePanel::Construct(const FArguments& Arguments)
 bool SMiningPickaxeBalancePanel::IsDirty() const
 {
     if(Draft->RangeUpgradeMultiplier!=GetDefault<UMiningPickaxeSettings>()->RangeUpgradeMultiplier ||
-       Draft->IntervalUpgradeMultiplier!=GetDefault<UMiningPickaxeSettings>()->IntervalUpgradeMultiplier)return true;
+       Draft->IntervalUpgradeMultiplier!=GetDefault<UMiningPickaxeSettings>()->IntervalUpgradeMultiplier ||
+       Draft->MineralGlowRadiusMultiplier!=GetDefault<UMiningPickaxeSettings>()->MineralGlowRadiusMultiplier)return true;
     const auto& Saved = GetDefault<UMiningPickaxeSettings>()->Levels;
     if (Draft->Levels.Num() != Saved.Num()) return true;
     for (int32 Index = 0; Index < Saved.Num(); ++Index)
@@ -102,13 +105,13 @@ FReply SMiningPickaxeBalancePanel::Save()
     if (!Draft->Validate(Message)) return FReply::Handled();
     auto* Settings = GetMutableDefault<UMiningPickaxeSettings>();
     const auto Previous = Settings->Levels;
-    const float OldRange=Settings->RangeUpgradeMultiplier,OldInterval=Settings->IntervalUpgradeMultiplier;
-    Settings->RangeUpgradeMultiplier=Draft->RangeUpgradeMultiplier;Settings->IntervalUpgradeMultiplier=Draft->IntervalUpgradeMultiplier;
+    const float OldRange=Settings->RangeUpgradeMultiplier,OldInterval=Settings->IntervalUpgradeMultiplier,OldGlow=Settings->MineralGlowRadiusMultiplier;
+    Settings->RangeUpgradeMultiplier=Draft->RangeUpgradeMultiplier;Settings->IntervalUpgradeMultiplier=Draft->IntervalUpgradeMultiplier;Settings->MineralGlowRadiusMultiplier=Draft->MineralGlowRadiusMultiplier;
     Settings->Levels = Draft->Levels;
     if (!Settings->TryUpdateDefaultConfigFile())
     {
         Settings->Levels = Previous;
-        Settings->RangeUpgradeMultiplier=OldRange;Settings->IntervalUpgradeMultiplier=OldInterval;
+        Settings->RangeUpgradeMultiplier=OldRange;Settings->IntervalUpgradeMultiplier=OldInterval;Settings->MineralGlowRadiusMultiplier=OldGlow;
         Message = TEXT("保存失败，请检查 Config/DefaultGame.ini 是否可写。草稿已保留。");
         return FReply::Handled();
     }
@@ -124,6 +127,7 @@ FReply SMiningPickaxeBalancePanel::Reload()
     Draft->Levels = GetDefault<UMiningPickaxeSettings>()->Levels;
     Draft->RangeUpgradeMultiplier=GetDefault<UMiningPickaxeSettings>()->RangeUpgradeMultiplier;
     Draft->IntervalUpgradeMultiplier=GetDefault<UMiningPickaxeSettings>()->IntervalUpgradeMultiplier;
+    Draft->MineralGlowRadiusMultiplier=GetDefault<UMiningPickaxeSettings>()->MineralGlowRadiusMultiplier;
     Draft->RefreshDerivedLevels();
     Details->ForceRefresh();
     Message = TEXT("已重新读取已保存配置。可用 Ctrl+Z 恢复刚才的草稿；试玩中的临时属性需点恢复已购等级。");
@@ -135,7 +139,7 @@ FReply SMiningPickaxeBalancePanel::Recommended()
     const FScopedTransaction Transaction(FText::FromString(TEXT("填入矿镐推荐配置")));
     Draft->Modify();
     Draft->Levels = UMiningPickaxeSettings::MakeRecommendedLevels();
-    Draft->RangeUpgradeMultiplier=1.25f;Draft->IntervalUpgradeMultiplier=.75f;Draft->RefreshDerivedLevels();
+    Draft->RangeUpgradeMultiplier=1.25f;Draft->IntervalUpgradeMultiplier=.75f;Draft->MineralGlowRadiusMultiplier=2.f;Draft->RefreshDerivedLevels();
     Details->ForceRefresh();
     Message = TEXT("推荐配置已填入草稿，尚未保存。可先在试玩中试用。");
     return FReply::Handled();
@@ -160,6 +164,8 @@ FReply SMiningPickaxeBalancePanel::Preview()
     {
         UWorld* World = Context.World();
         if (!World || World->WorldType != EWorldType::PIE) continue;
+        for(TActorIterator<AMiningTreasureField> Field(World);Field;++Field)
+            Field->PreviewGlowRadiusMultiplier=Draft->MineralGlowRadiusMultiplier;
         for (TActorIterator<AActor> Actor(World); Actor; ++Actor)
             if (auto* Mining = Actor->FindComponentByClass<UMiningComponent>())
                 Count += Mining->ApplyPickaxeBalance(Draft->GetLevel(PreviewLevel)) ? 1 : 0;
@@ -176,6 +182,8 @@ int32 SMiningPickaxeBalancePanel::ApplySavedToPIE()
     {
         UWorld* World = Context.World();
         if (!World || World->WorldType != EWorldType::PIE) continue;
+        for(TActorIterator<AMiningTreasureField> Field(World);Field;++Field)
+            Field->PreviewGlowRadiusMultiplier=-1.f;
         for (TActorIterator<AActor> Actor(World); Actor; ++Actor)
         {
             auto* Mining = Actor->FindComponentByClass<UMiningComponent>();

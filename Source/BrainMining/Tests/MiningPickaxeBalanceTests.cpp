@@ -3,6 +3,9 @@
 #include "MiningProgressionComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningWalletSubsystem.h"
+#include "Showcase/MiningTreasure.h"
+#include "Components/DecalComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
@@ -12,6 +15,26 @@
 #include <limits>
 
 #if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningGlowRangeTest,"BrainMining.Pickaxe.MineralGlowRange",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningGlowRangeTest::RunTest(const FString&)
+{
+    UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+    auto* Item=World->SpawnActor<AMiningTreasure>();
+    FMiningTreasureDefinition Definition;Definition.HintRadius=120.f;
+    Item->AttachCampaignHint(Definition);
+    if(TestTrue(TEXT("Campaign glow material attached"),!Item->HintMaterials.IsEmpty()))
+    {
+        Item->ApplyGlowRadius(1.25f);
+        TestTrue(TEXT("Decal volume shrinks immediately"),Item->BuriedGlow->DecalSize.Equals(FVector(150.f)));
+        TestEqual(TEXT("Material radius matches decal bounds"),Item->HintMaterials[0]->K2_GetScalarParameterValue(TEXT("HintRadius")),150.f);
+        Item->ApplyGlowRadius(2.f);
+        TestEqual(TEXT("Restoring saved range updates existing material"),Item->HintMaterials[0]->K2_GetScalarParameterValue(TEXT("HintRadius")),240.f);
+        Item->ApplyGlowRadius(std::numeric_limits<float>::quiet_NaN());
+        TestTrue(TEXT("Invalid runtime range remains finite"),Item->BuriedGlow->DecalSize.Equals(FVector(240.f)));
+    }
+    World->DestroyWorld(false);return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningPickaxeBalanceValidationTest, "BrainMining.Pickaxe.BalanceValidation", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FMiningPickaxeBalanceValidationTest::RunTest(const FString&)
 {
@@ -20,6 +43,12 @@ bool FMiningPickaxeBalanceValidationTest::RunTest(const FString&)
     FString Error;
     TestTrue(TEXT("Recommended levels are valid"), Settings->Validate(Error));
     TestTrue(TEXT("Project config is valid"), GetDefault<UMiningPickaxeSettings>()->Validate(Error));
+    const float OriginalGlow=Settings->MineralGlowRadiusMultiplier;
+    Settings->MineralGlowRadiusMultiplier=std::numeric_limits<float>::quiet_NaN();
+    TestFalse(TEXT("Nonfinite glow range is rejected"),Settings->Validate(Error));
+    Settings->MineralGlowRadiusMultiplier=.1f;
+    TestFalse(TEXT("Out of range glow is rejected"),Settings->Validate(Error));
+    Settings->MineralGlowRadiusMultiplier=OriginalGlow;
     const auto Defaults = Settings->Levels;
     Settings->Levels[0].Stages[1].DepthPercent = 20;
     TestFalse(TEXT("Backward depth is rejected"), Settings->Validate(Error));

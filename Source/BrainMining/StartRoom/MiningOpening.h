@@ -52,6 +52,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bFinished = false;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UWidgetComponent> WorldTitle;
 private:
+    friend class FOpeningTitleProjectionTest;
     void Prepare(APlayerController* Controller);
     void Release();
     void EnsureTitleOnWall();

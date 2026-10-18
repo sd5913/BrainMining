@@ -1,4 +1,5 @@
 #include "Showcase/MiningTreasure.h"
+#include "MiningPickaxeSettings.h"
 #include "Components/DecalComponent.h"
 #include "MiningInteractionTrace.h"
 #include "MiningAudioComponent.h"
@@ -481,6 +482,7 @@ void AMiningTreasure::SetHighlighted(bool bEnabled)
 
 void AMiningTreasure::AttachBuriedHint(const FMiningTreasureDefinition& Definition)
 {
+    BaseHintRadius=Definition.HintRadius;AppliedHintRadius=-1.f;
     HintMaterials.Reset();
     HintAmount = Definition.bBuriedHint ? 1.f : 0.f;
     BuriedHintAmount = HintAmount;
@@ -492,10 +494,8 @@ void AMiningTreasure::AttachBuriedHint(const FMiningTreasureDefinition& Definiti
         if (Existing) Hint->CopyParameterOverrides(Existing);
         Hint->SetVectorParameterValue(TEXT("HintCenter"), FLinearColor(GetActorLocation()));
         Hint->SetVectorParameterValue(TEXT("HintColor"), Definition.HintColor);
-        // The previous tuning already doubled the authoring radius.  Double
-        // it once more so the buried mineral signal remains readable through
-        // the thicker route layers in MainGame.
-        Hint->SetScalarParameterValue(TEXT("HintRadius"), Definition.HintRadius * 4.f);
+        const float Radius = Definition.HintRadius * GetDefault<UMiningPickaxeSettings>()->MineralGlowRadiusMultiplier;
+        Hint->SetScalarParameterValue(TEXT("HintRadius"), Radius);
         Hint->SetScalarParameterValue(TEXT("HintStrength"), Definition.HintStrength);
         Hint->SetScalarParameterValue(TEXT("HintAmount"), HintAmount);
         Rock->RockMaterial = Hint;
@@ -506,9 +506,10 @@ void AMiningTreasure::AttachBuriedHint(const FMiningTreasureDefinition& Definiti
 
 void AMiningTreasure::AttachCampaignHint(const FMiningTreasureDefinition& Definition)
 {
+    BaseHintRadius=Definition.HintRadius;AppliedHintRadius=-1.f;
     auto* Parent=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/M_BuriedMineralGlow.M_BuriedMineralGlow"));
     if(!Parent)return;
-    const float Radius=Definition.HintRadius*4.f;
+    const float Radius=Definition.HintRadius*GetDefault<UMiningPickaxeSettings>()->MineralGlowRadiusMultiplier;
     BuriedGlow->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
     BuriedGlow->SetWorldTransform(FTransform(FQuat::Identity,BuriedTransform.GetLocation()));
     BuriedGlow->DecalSize=FVector(Radius);
@@ -520,6 +521,16 @@ void AMiningTreasure::AttachCampaignHint(const FMiningTreasureDefinition& Defini
     HintAmount=BuriedHintAmount=Definition.bBuriedHint?1.f:0.f;
     Hint->SetScalarParameterValue(TEXT("HintAmount"),HintAmount);
     BuriedGlow->SetDecalMaterial(Hint);HintMaterials.Add(Hint);
+}
+
+void AMiningTreasure::ApplyGlowRadius(float Multiplier)
+{
+    const float SafeMultiplier=FMath::IsFinite(Multiplier)?FMath::Clamp(Multiplier,.25f,4.f):2.f;
+    const float Radius=BaseHintRadius*SafeMultiplier;
+    if(FMath::IsNearlyEqual(Radius,AppliedHintRadius))return;
+    AppliedHintRadius=Radius;
+    for(UMaterialInstanceDynamic* Hint:HintMaterials)if(IsValid(Hint))Hint->SetScalarParameterValue(TEXT("HintRadius"),Radius);
+    BuriedGlow->DecalSize=FVector(Radius);BuriedGlow->MarkRenderStateDirty();
 }
 
 void AMiningTreasure::UpdateGlow(float DeltaSeconds, bool bAllowLight)
@@ -745,7 +756,12 @@ void AMiningTreasureField::Tick(float DeltaSeconds)
     for (AMiningTreasure* Item : Items) if (IsValid(Item) && !PendingAuthoredItems.Contains(Item) && !Item->bCollected && FVector::DistSquared(Observer, Item->GetActorLocation()) < FMath::Square(1600.f)) Nearby.Add(Item);
     Nearby.Sort([Observer](const AMiningTreasure& First, const AMiningTreasure& Second) { return FVector::DistSquared(Observer, First.GetActorLocation()) < FVector::DistSquared(Observer, Second.GetActorLocation()); });
     if (Nearby.Num() > 8) Nearby.SetNum(8);
-    for (AMiningTreasure* Item : Items) if (IsValid(Item)) Item->UpdateGlow(DeltaSeconds, bAreaActive && Nearby.Contains(Item));
+    const float GlowMultiplier=PreviewGlowRadiusMultiplier>0?PreviewGlowRadiusMultiplier:GetDefault<UMiningPickaxeSettings>()->MineralGlowRadiusMultiplier;
+    for (AMiningTreasure* Item : Items) if (IsValid(Item))
+    {
+        Item->ApplyGlowRadius(GlowMultiplier);
+        Item->UpdateGlow(DeltaSeconds, bAreaActive && Nearby.Contains(Item));
+    }
     if (!bAreaActive) return;
     const double TerrainStarted=FPlatformTime::Seconds();
     LastUpdatedDeposits=0;

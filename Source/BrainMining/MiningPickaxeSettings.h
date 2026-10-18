@@ -76,6 +76,8 @@ public:
     float RangeUpgradeMultiplier = 1.25f;
     UPROPERTY(Config, EditAnywhere, Category="升级倍率", meta=(DisplayName="3 级起间隔倍率", ClampMin="0.1", ClampMax="1"))
     float IntervalUpgradeMultiplier = .75f;
+    UPROPERTY(Config, EditAnywhere, Category="矿物提示", meta=(DisplayName="矿物发光范围倍率", ClampMin="0.25", ClampMax="4", ToolTip="控制矿物被土层覆盖时的穿透发光范围；矿物自身的提示半径乘以此倍率。建议从 2.0 开始调整。"))
+    float MineralGlowRadiusMultiplier = 2.f;
 
     FMiningPickaxeLevel GetLevel(int32 Level) const;
     void RefreshDerivedLevels();

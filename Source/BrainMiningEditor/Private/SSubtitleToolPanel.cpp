@@ -46,7 +46,7 @@ void SSubtitleToolPanel::Construct(const FArguments& InArgs)
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight()
 				[
-					SNew(SBox).HeightOverride(170.f)[SettingsView.ToSharedRef()]
+					SNew(SBox).HeightOverride(230.f)[SettingsView.ToSharedRef()]
 				]
 				+ SVerticalBox::Slot().AutoHeight()
 				[

@@ -170,7 +170,10 @@ TSharedRef<SWidget> USubtitleWidget::RebuildWidget()
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Bottom)
-		.Padding(FMargin(48.f, 0.f, 48.f, 72.f))
+			.Padding(TAttribute<FMargin>::CreateLambda([]
+			{
+				return FMargin(48.f, 0.f, 48.f, FMath::Clamp(GetDefault<USubtitleSettings>()->BottomMargin, 0.f, 500.f));
+			}))
 		[
 			SNew(SBox)
 			.Padding(FMargin(18.f, 10.f))

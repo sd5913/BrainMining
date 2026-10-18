@@ -308,7 +308,7 @@ FString APopupCloseStage::GetInteractionAction(APlayerController* PC) const
  if (!bAreaActive) return FString();
  auto* Device = FocusedDevice(PC);
  if (!Device) return FString();
- if (Phase == EPhase::Idle) return TEXT("开始办公");
+ if (Phase == EPhase::Idle) return FString();
  return Device->IsPrinter() ? FString::Printf(TEXT("处理文件 · %d 张"), Device->Pending()) : TEXT("使用电脑");
 }
 
@@ -433,12 +433,11 @@ void APopupCloseStage::Tick(float Dt)
  }
  if(auto Device=FocusedDevice(PC))
  {
-  ShowPrompt(PC,Phase==EPhase::Idle?TEXT("按 E 开始办公"):
+  ShowPrompt(PC,Phase==EPhase::Idle?TEXT(""):
    Device->IsPrinter()?FString::Printf(TEXT("按 E 处理文件  ·  %d 张"),Device->Pending()):TEXT("按 E 使用电脑"));
   if(PC && PC->WasInputKeyJustPressed(EKeys::E))HandleInteraction(PC,Device);
  }
- else ShowPrompt(PC,bStartOnAreaEntry && Phase==EPhase::Running && View==EView::Free && RoundTime<10.f
-  ?TEXT("办公已开始 · 靠近电脑或打印机，瞄准后按 E 处理") :TEXT(""));
+ else ShowPrompt(PC,TEXT(""));
 }
 void APopupCloseStage::TickIssues(float Dt)
 {

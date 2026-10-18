@@ -58,6 +58,8 @@ bool FSubtitleConfigPersistenceTest::RunTest(const FString&)
 	Draft->FontSize = 34;
 	Draft->ChromaticStrength = 1.75f;
 	Draft->FloatStrength = 1.6f;
+	Draft->LineGap = .45f;
+	Draft->BottomMargin = 160.f;
 	const FString Directory = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation/Subtitles"));
 	IFileManager::Get().MakeDirectory(*Directory, true);
 	const FString Filename = FPaths::ConvertRelativePathToFull(FPaths::Combine(Directory, FGuid::NewGuid().ToString() + TEXT(".ini")));
@@ -68,6 +70,8 @@ bool FSubtitleConfigPersistenceTest::RunTest(const FString&)
 	TestEqual(TEXT("Font size survives reload"), Reloaded->FontSize, 34);
 	TestEqual(TEXT("Chromatic strength survives reload"), Reloaded->ChromaticStrength, 1.75f);
 	TestEqual(TEXT("Float strength survives reload"), Reloaded->FloatStrength, 1.6f);
+	TestEqual(TEXT("Line gap survives reload"), Reloaded->LineGap, .45f);
+	TestEqual(TEXT("Bottom margin survives reload"), Reloaded->BottomMargin, 160.f);
 	return true;
 }
 #endif

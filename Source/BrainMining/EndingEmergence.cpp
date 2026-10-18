@@ -836,7 +836,7 @@ bool AEndingEmergence::Initialize()
     // Arrival waves illuminate distant nodes and links only. A shell around the
     // host crossed the camera near plane and caused a full-screen green flash.
     BuildFinale();WarmStreetRendering();
-    SetAmbience(TEXT("Cell"),.34f);return true;
+    SetAmbience(TEXT("Cell_Loop"),.26f);SetMusic(TEXT("Cosmic_Loop"),.32f);return true;
 }
 
 void AEndingEmergence::WarmStreetRendering()
@@ -869,16 +869,38 @@ void AEndingEmergence::Sound(const TCHAR* Name,float Volume,float Pitch)
 
 void AEndingEmergence::SetAmbience(const TCHAR* Name,float Volume)
 {
-    if(Ambience){Ambience->Stop();Ambience->DestroyComponent();Ambience=nullptr;}
-    if(auto* S=LoadObject<USoundBase>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Audio/S_EE_"))+Name)))
+    if(Ambience){Ambience->FadeOut(.8f,0);Ambience->bAutoDestroy=true;Ambience=nullptr;}
+    const FString AssetName(Name);
+    const FString Prefix=AssetName.EndsWith(TEXT("_Loop"))?TEXT("A_EE_"):TEXT("S_EE_");
+    const FString Path=FString(TEXT("/Game/EndingEmergence/Audio/"))+Prefix+AssetName;
+    if(auto* S=LoadObject<USoundBase>(nullptr,*Path))
     {
-        Ambience=UGameplayStatics::CreateSound2D(this,S,Volume,1,0,nullptr,false,false);
+        Ambience=UGameplayStatics::CreateSound2D(this,S,0,1,0,nullptr,false,false);
         if (Ambience && GetGameInstance())
         {
             Ambience->SoundClassOverride=GetGameInstance()->GetSubsystem<UMiningAudioSettings>()->GetClass(3);
-            Ambience->Play();
+            Ambience->SetVolumeMultiplier(Volume);Ambience->Play();
         }
     }
+    else UE_LOG(LogTemp,Warning,TEXT("ENDING_AUDIO_MISSING_AMBIENCE %s"),*Path);
+}
+
+void AEndingEmergence::SetMusic(const TCHAR* Name,float Volume)
+{
+    if(Music){Music->FadeOut(1.2f,0);Music->bAutoDestroy=true;Music=nullptr;}
+    const FString AssetName(Name);
+    const FString Path=FString(TEXT("/Game/EndingEmergence/Audio/M_EE_"))+AssetName;
+    if(auto* S=LoadObject<USoundBase>(nullptr,*Path))
+    {
+        Music=UGameplayStatics::CreateSound2D(this,S,0,1,0,nullptr,false,false);
+        if (Music && GetGameInstance())
+        {
+            Music->SoundClassOverride=GetGameInstance()->GetSubsystem<UMiningAudioSettings>()->GetClass(1);
+            Music->SetVolumeMultiplier(Volume);Music->Play();
+            UE_LOG(LogTemp,Display,TEXT("ENDING_MUSIC_PLAY %s volume=%.2f duration=%.2f"),*Path,Volume,S->GetDuration());
+        }
+    }
+    else UE_LOG(LogTemp,Warning,TEXT("ENDING_AUDIO_MISSING_MUSIC %s"),*Path);
 }
 
 void AEndingEmergence::RestartDemo()
@@ -909,7 +931,7 @@ void AEndingEmergence::RestartDemo()
     if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->SetMovementMode(MOVE_Walking);}
     if(auto* C=Player->GetPawn()->FindComponentByClass<UCameraComponent>()){C->SetFieldOfView(90);if(FisheyeMaterial)C->AddOrUpdateBlendable(FisheyeMaterial,0);}
     Player->SetViewTarget(Player->GetPawn());Mining->SetInputSuspended(false);Mining->SetInputContextEnabled(true);
-    UpdateNerves();SetAmbience(TEXT("Cell"),.34f);
+    bFinalResolvePlayed=false;UpdateNerves();SetAmbience(TEXT("Cell_Loop"),.26f);SetMusic(TEXT("Cosmic_Loop"),.32f);
 }
 
 void AEndingEmergence::PreviewFilm()
@@ -957,13 +979,15 @@ void AEndingEmergence::SetShot(int32 Index)
         TitleLookStart=Camera->GetActorRotation();TitleUpdateAt=-1;
         DriftVelocity=FVector::ZeroVector;Exhaustion=0;
         if(Ambience)Ambience->AdjustVolume(2,.22f);
+        SetMusic(TEXT("Cosmic_Loop"),.32f);
     }
-    if(Shot==8){UpdateCellTitle(1);Sound(TEXT("PulseFlight"),.7f,.6f);}
+    if(Shot>=1&&Shot<=6)Sound(Shot%2?TEXT("ScaleWhoosh_01"):TEXT("ScaleWhoosh_02"),.22f,.9f+Shot*.035f);
+    if(Shot==8){UpdateCellTitle(1);Sound(TEXT("PulseFlight"),.7f,.6f);Sound(TEXT("NeuralPulse_01"),.3f,.92f);}
     if(Shot>=9)for(auto Set:Sets)Set->SetVisibility(false,true);
-    if(Shot==9)BeginFinaleDrill();
+    if(Shot==9){SetMusic(TEXT("Cosmic_Loop"),.32f);BeginFinaleDrill();}
     if(Shot==10)
     {
-        EndFinaleDrill(true);PaperScene->SetRelativeRotation(FRotator(90,0,0));PaperScene->SetVisibility(true,true);
+        EndFinaleDrill(true);SetAmbience(TEXT("Cell_Loop"),.10f);SetMusic(TEXT("Cosmic_Loop"),.32f);PaperScene->SetRelativeRotation(FRotator(90,0,0));PaperScene->SetVisibility(true,true);
         // Start with only the circular portal visible. The desktop set is
         // revealed after the camera has entered the opening, preventing a
         // square sheet or its props from appearing around the distant hole.
@@ -972,7 +996,7 @@ void AEndingEmergence::SetShot(int32 Index)
         if(PaperSurface)PaperSurface->SetVisibility(true,true);
         FinaleTunnel->SetVisibility(false,true);FinaleLight->SetVisibility(false);PaperSurface->SetVisibility(true);
         for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(true);
-        Sound(TEXT("Connect"),.45f,.7f);
+        Sound(TEXT("Connect"),.45f,.7f);Sound(TEXT("ScaleWhoosh_01"),.28f,.72f);
     }
     if(Shot==11)
     {
@@ -980,7 +1004,7 @@ void AEndingEmergence::SetShot(int32 Index)
         if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);
         FinaleTunnel->SetVisibility(false,true);PaperScene->SetRelativeRotation(FRotator::ZeroRotator);TransitEffects(0);
         for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(true);
-        SetAmbience(TEXT("Cell"),.06f);
+        SetAmbience(TEXT("Cell_Loop"),.06f);
     }
     if(Shot==14)
     {
@@ -988,11 +1012,13 @@ void AEndingEmergence::SetShot(int32 Index)
         PaperScene->SetVisibility(false,true);FinaleReality->SetVisibility(true,true);
         CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),1);CreditsScreenMaterial->SetScalarParameterValue(TEXT("CreditMix"),0);CreditsScreenLight->SetIntensity(110);
         TransitEffects(0);if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),0);
+        SetAmbience(TEXT("Afternoon"),.24f);SetMusic(TEXT("Cosmic_Loop"),.28f);
+        if(!bFinalResolvePlayed){Sound(TEXT("FinalComputer"),.55f,.96f);bFinalResolvePlayed=true;}
         Camera->GetCameraComponent()->NotifyCameraCut();
         if(Player&&Player->PlayerCameraManager)Player->PlayerCameraManager->SetGameCameraCutThisFrame();
     }
-    if(Shot==0)SetAmbience(TEXT("Street"),.48f);
-    if(Shot==3)SetAmbience(TEXT("Space"),.32f);
+    if(Shot==0){SetAmbience(TEXT("Street"),.28f);SetMusic(TEXT("Cosmic_Loop"),.32f);Sound(TEXT("ScaleWhoosh_01"),.32f,.86f);}
+    if(Shot==3){SetAmbience(TEXT("Space"),.18f);SetMusic(TEXT("Cosmic_Loop"),.28f);Sound(TEXT("ScaleWhoosh_02"),.34f,.82f);}
     UE_LOG(LogTemp,Display,TEXT("ENDING_SHOT %d"),Shot);
 }
 
@@ -1211,7 +1237,7 @@ void AEndingEmergence::UpdateStarlightAndPaper()
         auto* Paper=EndingPapers[I].Get();
         if(U>=1)++Arrived;
         if(U<=0||Slide>=1.65f){Paper->SetVisibility(false);continue;}
-        if(!Paper->IsVisible())Sound(TEXT("PaperFlutter"),.22f,1+I*.025f);
+        if(!Paper->IsVisible())Sound(TEXT("PaperFlight"),.20f,1+I*.025f);
         Paper->SetVisibility(true);
         const float Depth=Final?23.5f:25.f+(I%5)*.8f,HalfWidth=Depth*FMath::Tan(FMath::DegreesToRadians(31.f)),HalfHeight=HalfWidth*Height/FMath::Max(1,Width);
         const FVector End(Depth,PaperCenters[I].X*HalfWidth,PaperCenters[I].Y*HalfHeight);
@@ -1240,7 +1266,7 @@ void AEndingEmergence::UpdateStarlightAndPaper()
         }
         FMeshNormals::InitializeOverlayToPerVertexNormals(Mesh.Attributes()->PrimaryNormals(),false);Paper->SetMesh(MoveTemp(Mesh));
     }
-    if(Arrived>PapersArrived)Sound(TEXT("PaperSlap"),Arrived==EndingPapers.Num()?.6f:.16f,1+(Arrived%3)*.08f);
+    if(Arrived>PapersArrived)Sound(TEXT("PaperLand"),Arrived==EndingPapers.Num()?.48f:.14f,1+(Arrived%3)*.08f);
     PapersArrived=Arrived;bFinalPaperVisible=Arrived==EndingPapers.Num();PapersLanded=bFinalPaperVisible?1:0;
 }
 
@@ -1478,7 +1504,7 @@ void AEndingEmergence::EnterBlood()
     Player->SetIgnoreMoveInput(true);Player->GetPawn()->SetActorHiddenInGame(true);
     if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->DisableMovement();}
     Camera->SetActorLocation(Eye);Camera->SetActorRotation(Player->GetControlRotation());Player->SetViewTarget(Camera);
-    SetAmbience(TEXT("Blood"),.42f);Sound(TEXT("Connect"),.45f);
+    SetAmbience(TEXT("Blood_Loop"),.25f);SetMusic(TEXT("Cosmic_Loop"),.32f);Sound(TEXT("Connect"),.45f);
 }
 
 FVector AEndingEmergence::NeuronWorldPosition(int32 I) const
@@ -1498,8 +1524,7 @@ void AEndingEmergence::EnterBrain()
     bEnteringBrain=true;BrainEntryAt=Age;TransitStart=Camera->GetActorLocation();
     TransitEnd=NeuronWorldPosition(0)+GetActorUpVector()*380;TransitLook=Camera->GetActorRotation();
     Player->SetIgnoreLookInput(true);
-    if(Ambience){Ambience->bAutoDestroy=true;Ambience->FadeOut(2,0);Ambience=nullptr;}
-    SetAmbience(TEXT("Brain"),.4f);if(Ambience)Ambience->FadeIn(1.2f,.4f);
+    SetAmbience(TEXT("Cell_Loop"),.22f);
     Sound(TEXT("PulseFlight"),.8f,.95f);
     if(DroppedPickaxe)DroppedPickaxe->SetVisibility(false);
 }
@@ -1859,6 +1884,7 @@ void AEndingEmergence::EndPlay(const EEndPlayReason::Type Reason)
     ResetFinale();ClearEndingEffects();
     if(Mining)Mining->OnFieldReset.RemoveDynamic(this,&AEndingEmergence::RestartDemo);
     if(Ambience){Ambience->Stop();Ambience->DestroyComponent();}
+    if(Music){Music->Stop();Music->DestroyComponent();}
     if(View&&GEngine&&GEngine->GameViewport)GEngine->GameViewport->RemoveViewportWidgetContent(View.ToSharedRef());
     if(Voice){Voice->Stop();Voice->DestroyComponent();}
     View.Reset();if(Camera)Camera->Destroy();

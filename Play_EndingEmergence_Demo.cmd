@@ -1,6 +1,6 @@
 @echo off
 setlocal
-if not defined UE_EDITOR set "UE_EDITOR=C:\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe"
+if not defined UE_EDITOR set "UE_EDITOR=E:\UE5\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe"
 if not exist "%UE_EDITOR%" (
   echo Set UE_EDITOR to your Unreal Engine 5.8 UnrealEditor.exe path.
   pause

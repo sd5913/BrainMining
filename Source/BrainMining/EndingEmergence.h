@@ -260,10 +260,12 @@ private:
     UPROPERTY(Transient) TObjectPtr<UMiningComponent> Mining;
     UPROPERTY(Transient) TObjectPtr<ACameraActor> Camera;
     UPROPERTY(Transient) TObjectPtr<UAudioComponent> Ambience;
+    UPROPERTY(Transient) TObjectPtr<UAudioComponent> Music;
     UPROPERTY(Transient) TObjectPtr<UMaterialInterface> FisheyeMaterial;
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> TransitMaterial;
     TSharedPtr<SEmergenceEndingView> View;
     bool bReady = false;
+    bool bFinalResolvePlayed = false;
     void WarmStreetRendering();
     bool bRestoring = false;
     float Age = 0;
@@ -316,6 +318,7 @@ private:
     void Pose(FVector Position,FVector LookAt,float Fov=65,float Roll=0);
     void Sound(const TCHAR* Name,float Volume=1,float Pitch=1);
     void SetAmbience(const TCHAR* Name,float Volume);
+    void SetMusic(const TCHAR* Name,float Volume);
 };
 
 UCLASS()

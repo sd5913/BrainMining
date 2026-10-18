@@ -218,13 +218,15 @@ void AEndingEmergence::BeginFinaleDrill()
     ResetPaperFinale();PaperScene->SetVisibility(false,true);
     ToolLight->SetVisibility(true);ToolLight->SetIntensity(1800);
     Pose(Finale::Tunnel,Finale::Tunnel+FVector(1000,0,0),86);
-    Mining->BeginMiningInput();SetAmbience(TEXT("Brain"),.32f);
+    Mining->BeginMiningInput();SetAmbience(TEXT("Drill_Loop"),.24f);Sound(TEXT("DrillHit_01"),.16f,.82f);
 }
 
 void AEndingEmergence::FinaleDrillHit(const FHitResult& Hit)
 {
     if(!bFinaleDrilling||!FinaleRocks.Contains(Cast<ADiggableRock>(Hit.GetActor())))return;
     ++FinaleDrillCuts;FinaleKick=Finale::Impact(DrillDistance);
+    Sound(TEXT("DrillHit_01"),.28f,.90f+(FinaleDrillCuts%4)*.045f);
+    if(FinaleDrillCuts%4==0)Sound(TEXT("DrillDebris_01"),.20f,.92f+(FinaleDrillCuts%3)*.04f);
     FinaleImpactOrigins[FinaleImpactSlot]=GetActorTransform().InverseTransformPosition(Hit.ImpactPoint)-Finale::Tunnel;
     FinaleImpactAges[FinaleImpactSlot]=0;FinaleImpactSlot=(FinaleImpactSlot+1)%6;
 }

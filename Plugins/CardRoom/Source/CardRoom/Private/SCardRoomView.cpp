@@ -6,9 +6,23 @@
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Engine/Font.h"
+#include "UObject/StrongObjectPtr.h"
 
 namespace CardRoomUI
 {
+    // The plugin also supports standalone use without the project's font assets.
+    FSlateFontInfo Font(float Size, bool bTitle)
+    {
+        static TStrongObjectPtr<UFont> Medium;
+        static TStrongObjectPtr<UFont> Bold;
+        auto& Family = bTitle ? Bold : Medium;
+        if (!Family.IsValid()) Family.Reset(LoadObject<UFont>(nullptr, bTitle
+            ? TEXT("/Game/Fonts/F_SourceHanSansCN_Bold.F_SourceHanSansCN_Bold")
+            : TEXT("/Game/Fonts/F_SourceHanSansCN_Medium.F_SourceHanSansCN_Medium")));
+        return Family.IsValid() ? FSlateFontInfo(Family.Get(), Size, bTitle ? TEXT("Bold") : TEXT("Medium"))
+            : FCoreStyle::GetDefaultFontStyle(bTitle ? TEXT("Bold") : TEXT("Regular"), Size);
+    }
     const FLinearColor Cream(.94f,.86f,.69f,1),Gold(.9f,.61f,.25f,1),Ink(.10f,.07f,.055f,1),Dark(.035f,.044f,.043f,.95f);
     const FSlateRect Match(640,740,960,800),Confirm(1100,590,1530,640),Collect(48,790,548,850),All(1100,538,1530,580);
     FLinearColor Color(ERoomCard C) { return C==ERoomCard::Laser?FLinearColor(.18f,.65f,.77f):C==ERoomCard::Poison?FLinearColor(.43f,.66f,.23f):FLinearColor(.91f,.34f,.15f); }
@@ -34,7 +48,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     const FVector2D Size=G.GetLocalSize(); const float S=FMath::Min(Size.X/1600,Size.Y/900); const FVector2D Origin=(Size-FVector2D(1600,900)*S)*.5;
     const FSlateBrush* Brush=FCoreStyle::Get().GetBrush("WhiteBrush"); int32 L=Layer;
     auto Box=[&](float X,float Y,float W,float H,FLinearColor C) { FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(Origin+FVector2D(X,Y)*S))),Brush,ESlateDrawEffect::None,C); };
-    auto Text=[&](FString T,float X,float Y,int32 Font,FLinearColor C=FLinearColor::White) { FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(1500*S,70*S),FSlateLayoutTransform(FVector2f(Origin+FVector2D(X,Y)*S))),T,FCoreStyle::GetDefaultFontStyle("Regular",FMath::Max(9,FMath::RoundToInt(Font*S))),ESlateDrawEffect::None,C); };
+    auto Text=[&](FString T,float X,float Y,int32 Font,FLinearColor C=FLinearColor::White,bool bTitle=false) { FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(1500*S,70*S),FSlateLayoutTransform(FVector2f(Origin+FVector2D(X,Y)*S))),T,CardRoomUI::Font(FMath::Max(9,FMath::RoundToInt(Font*S)),bTitle),ESlateDrawEffect::None,C); };
     auto Button=[&](FSlateRect Rect,FString Label,bool Active=true) { Box(Rect.Left,Rect.Top,Rect.Right-Rect.Left,Rect.Bottom-Rect.Top,Active?(In(Mouse,Rect)?FLinearColor(1,.76f,.4f):Gold):FLinearColor(.23f,.25f,.24f)); Text(Label,Rect.Left+22,Rect.Top+10,20,Active?Ink:Cream); };
     auto Icon=[&](ERoomCard Type,float X,float Y,float Extent)
     {
@@ -59,12 +73,12 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
         if(Staged) { Box(B.Left-5,B.Top-5,W+10,H+10,Gold); Box(B.Left-9,B.Top-9,W+18,3,FLinearColor(1,.85f,.4f)); }
         Box(B.Left,B.Top,W,H,Staged?FLinearColor(.98f,.91f,.72f):Cream);
         Box(B.Left+5,B.Top+5,W-10,4,Color(C));
-        if(Many) { Text(FString::FromInt(Index+1),B.Left+8,B.Top+13,12,Ink); Icon(C,B.Left+10,B.Top+35,46); Text(FCardRoomRun::CardName(C),B.Left+7,B.Top+88,14,Ink); Text(Staged?TEXT("已选中"):TEXT("点击选"),B.Left+7,B.Top+119,11,Ink); }
+        if(Many) { Text(FString::FromInt(Index+1),B.Left+8,B.Top+13,12,Ink); Icon(C,B.Left+10,B.Top+35,46); Text(FCardRoomRun::CardName(C),B.Left+7,B.Top+88,14,Ink,true); Text(Staged?TEXT("已选中"):TEXT("点击选"),B.Left+7,B.Top+119,11,Ink); }
         else
         {
             Text(C==ERoomCard::Laser?TEXT("01 / ARC"):C==ERoomCard::Poison?TEXT("02 / SPORE"):TEXT("03 / EMBER"),B.Left+12,B.Top+15,12,Ink);
             Icon(C,B.Left+W*.5f-35,B.Top+34,70);
-            Text(FCardRoomRun::CardName(C),B.Left+17,B.Top+109,22,Ink);
+            Text(FCardRoomRun::CardName(C),B.Left+17,B.Top+109,22,Ink,true);
             Text(Staged?TEXT("已选中 · 点击取消"):FCardRoomRun::CardDescription(C),B.Left+12,B.Top+148,10,Ink);
         }
     };

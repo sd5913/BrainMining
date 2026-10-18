@@ -1,4 +1,5 @@
 #include "MiningInteractionHUDWidget.h"
+#include "BrainMiningFonts.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningGUIWidgets.h"
 #include "MiningCollection.h"
@@ -164,7 +165,7 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
     };
     auto Text = [&](const FString& Label, FVector2D Position, int32 FontSize, FLinearColor Color, bool bCentered)
     {
-        const auto Font = FCoreStyle::GetDefaultFontStyle("Bold", FMath::Max(8, FMath::RoundToInt(FontSize * Scale)));
+        const auto Font = BrainMiningFonts::Style("Medium", FMath::Max(8, FMath::RoundToInt(FontSize * Scale)));
         const FVector2D TextSize = FontMeasure->Measure(Label, Font);
         FVector2D Offset = Center + Position * Scale;
         if (bCentered) Offset.X -= TextSize.X * .5f;
@@ -198,7 +199,7 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
         const float Fade = FMath::Clamp((FMiningCoinFeedback::Duration - CoinFeedback.Age) / .35f, 0.f, 1.f);
         const float Pop = 1.f + .16f * FMath::Sin(FMath::Clamp(CoinFeedback.Age / .18f, 0.f, 1.f) * PI);
         const FString Amount = TEXT("+") + FText::AsNumber(CoinFeedback.Amount).ToString();
-        const auto Font = FCoreStyle::GetDefaultFontStyle("Bold", FMath::Max(8, FMath::RoundToInt(22 * Scale)));
+        const auto Font = BrainMiningFonts::Style("Medium", FMath::Max(8, FMath::RoundToInt(22 * Scale)));
         const float Width = 34.f + FontMeasure->Measure(Amount, Font).X / Scale;
         const float Left = -Width * .5f;
         const float Top = (InteractionAction.IsEmpty() ? 60.f : 142.f) - CoinFeedback.Age * 19.f;

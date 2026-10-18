@@ -2,6 +2,7 @@
 
 
 #include "BrainMiningPlayerController.h"
+#include "BrainMiningFonts.h"
 #include "MiningAudioSettings.h"
 #include "MiningAudioComponent.h"
 #include "Widgets/Layout/SBorder.h"
@@ -540,13 +541,13 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 	SetIgnoreLookInput(true);
 	bAudioPausedWorld = SetPause(true);
 	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
-	Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 20)[SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold", 22)).Text(FText::FromString(TEXT("音量设置 · F8 / Esc 关闭")))];
+	Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 20)[SNew(STextBlock).Font(BrainMiningFonts::Style("Bold", 22)).Text(FText::FromString(TEXT("音量设置 · F8 / Esc 关闭")))];
 	const TCHAR* Labels[] = {TEXT("总音量"), TEXT("音乐"), TEXT("音效"), TEXT("环境声"), TEXT("语音")};
 	TWeakObjectPtr<UMiningAudioSettings> WeakSettings(Settings);
 	for (int32 Channel = 0; Channel < 5; ++Channel)
 	{
 		const FString Label(Labels[Channel]);
-		Rows->AddSlot().AutoHeight().Padding(0, 8)[SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 16)).Text_Lambda([WeakSettings, Channel, Label]()
+		Rows->AddSlot().AutoHeight().Padding(0, 8)[SNew(STextBlock).Font(BrainMiningFonts::Style("Regular", 16)).Text_Lambda([WeakSettings, Channel, Label]()
 		{
 			return FText::FromString(FString::Printf(TEXT("%s   %d%%"), *Label, WeakSettings.IsValid() ? FMath::RoundToInt(100 * WeakSettings->GetVolume(Channel)) : 0));
 		})];
@@ -558,9 +559,9 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 	{
 		if (WeakSettings.IsValid()) WeakSettings->RestoreDefaults();
 		return FReply::Handled();
-	})[SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 16)).Text(FText::FromString(TEXT("恢复默认音量")))]];
+	})[SNew(STextBlock).Font(BrainMiningFonts::Style("Regular", 16)).Text(FText::FromString(TEXT("恢复默认音量")))]];
 	Rows->AddSlot().AutoHeight()[SNew(SButton).HAlign(HAlign_Center).ContentPadding(FMargin(12, 8)).OnClicked_Lambda([this]() { ToggleAudioSettings(); return FReply::Handled(); })
-		[SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 16)).Text(FText::FromString(TEXT("保存并返回游戏")))]];
+		[SNew(STextBlock).Font(BrainMiningFonts::Style("Regular", 16)).Text(FText::FromString(TEXT("保存并返回游戏")))]];
 	AudioSettingsPanel = SNew(SOverlay)
 		+ SOverlay::Slot()[SNew(SBorder).BorderBackgroundColor(FLinearColor(0, 0, 0, .85f))]
 		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(SBox).WidthOverride(540)[SNew(SBorder).Padding(28)[Rows]]];

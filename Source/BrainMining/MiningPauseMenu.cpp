@@ -1,4 +1,5 @@
 #include "MiningExperienceSubsystem.h"
+#include "BrainMiningFonts.h"
 #include "MiningCollection.h"
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
@@ -33,14 +34,14 @@ bool UMiningExperienceSubsystem::TogglePauseMenu()
     if(auto* Move=PC->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()){Move->ResetFlightInput();Move->StopMovementImmediately();}
     auto Choices=SNew(SVerticalBox);
     Choices->AddSlot().AutoHeight().Padding(0,0,0,32)[SNew(STextBlock).Justification(ETextJustify::Center)
-        .Text_Lambda([this](){return FText::FromString(bQuitConfirmation?TEXT("确定退出游戏？"):TEXT("暂停"));}).Font(FCoreStyle::GetDefaultFontStyle("Bold",30))];
+        .Text_Lambda([this](){return FText::FromString(bQuitConfirmation?TEXT("确定退出游戏？"):TEXT("暂停"));}).Font(BrainMiningFonts::Style("Bold",30))];
     TSharedPtr<SButton> FirstButton;
     auto Button=[&](const TCHAR* Text,TFunction<void()> Action,bool Confirm)
     {
         auto Choice=SNew(SButton).HAlign(HAlign_Center).ContentPadding(FMargin(30,18))
             .Visibility_Lambda([this,Confirm](){return bQuitConfirmation==Confirm?EVisibility::Visible:EVisibility::Collapsed;})
             .OnClicked_Lambda([Action](){Action();return FReply::Handled();})
-            [SNew(STextBlock).Text(FText::FromString(Text)).Font(FCoreStyle::GetDefaultFontStyle("Regular",22))];
+            [SNew(STextBlock).Text(FText::FromString(Text)).Font(BrainMiningFonts::Style("Regular",22))];
         Choices->AddSlot().AutoHeight().Padding(0,7)[Choice];
         if(!FirstButton)FirstButton=Choice;
     };
@@ -48,7 +49,7 @@ bool UMiningExperienceSubsystem::TogglePauseMenu()
     Button(TEXT("退出游戏"),[this](){RequestQuitConfirmation();},false);
     Button(TEXT("取消"),[this](){CancelQuitConfirmation();},true);
     Button(TEXT("确认退出"),[this](){auto* PC=MenuController.Get();CloseMenu();UKismetSystemLibrary::QuitGame(this,PC,EQuitPreference::Quit,false);},true);
-    Choices->AddSlot().AutoHeight().Padding(0,24)[SNew(STextBlock).Text_Lambda([this](){return FText::FromString(bQuitConfirmation?TEXT("Esc 取消退出"):TEXT("Esc 返回游戏"));}).Justification(ETextJustify::Center)];
+    Choices->AddSlot().AutoHeight().Padding(0,24)[SNew(STextBlock).Text_Lambda([this](){return FText::FromString(bQuitConfirmation?TEXT("Esc 取消退出"):TEXT("Esc 返回游戏"));}).Font(BrainMiningFonts::Body(12)).Justification(ETextJustify::Center)];
     Menu=SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.012,.025,.03,.96))
         .HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(SBox).WidthOverride(400)[Choices]];
     PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);bPausedByMenu=PC->SetPause(true);

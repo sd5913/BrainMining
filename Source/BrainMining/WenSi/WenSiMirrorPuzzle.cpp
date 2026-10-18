@@ -1,4 +1,5 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "BrainMiningFonts.h"
 #include "MiningInteractionTrace.h"
 #include "WenSi/MouseMuseumPortal.h"
 #include "Components/WidgetComponent.h"
@@ -231,7 +232,7 @@ void AWenSiMirrorExhibit::BeginPlay()
   auto Label=NewObject<UWidgetComponent>(this,TEXT("PreciousExhibitWarning"));AddInstanceComponent(Label);Label->SetupAttachment(RootComponent);
   Label->SetRelativeLocation(FVector(-102,0,95));Label->SetRelativeRotation(FRotator(0,180,0));Label->SetRelativeScale3D(FVector(.19f));
   Label->SetDrawSize(FVector2D(900,100));Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);Label->SetTwoSided(true);
-  Label->SetSlateWidget(SNew(STextBlock).Text(FText::FromString(TEXT("注意！内有珍品"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",70)).ColorAndOpacity(FLinearColor(.08f,.035f,.01f)).Justification(ETextJustify::Center));Label->RegisterComponent();
+  Label->SetSlateWidget(SNew(STextBlock).Text(FText::FromString(TEXT("注意！内有珍品"))).Font(BrainMiningFonts::Style("Bold",70)).ColorAndOpacity(FLinearColor(.08f,.035f,.01f)).Justification(ETextJustify::Center));Label->RegisterComponent();
  }
  const FBox InitialBounds=ExhibitBounds(this);
  if(InitialBounds.IsValid){RestBoundsMinZ=InitialBounds.Min.Z;bRestBoundsInitialized=true;}

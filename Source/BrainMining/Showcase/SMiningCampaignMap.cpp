@@ -1,4 +1,5 @@
 #include "Showcase/SMiningCampaignMap.h"
+#include "BrainMiningFonts.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningCollection.h"
 #include "MiningComponent.h"
@@ -53,11 +54,11 @@ int32 SMiningCampaignMap::OnPaint(const FPaintArgs&,const FGeometry& Allotted,co
     const float Scale=FMath::Min(Allotted.GetLocalSize().X/1400,Allotted.GetLocalSize().Y/900);
     const auto G=Allotted.MakeChild(FVector2D(1400,900),FSlateLayoutTransform(Scale,(Allotted.GetLocalSize()-FVector2D(1400,900)*Scale)*.5));
     auto Box=[&](FVector2D P,FVector2D Size,FLinearColor Color){FSlateDrawElement::MakeBox(Out,Layer+1,G.ToPaintGeometry(Size,FSlateLayoutTransform(P)),Brush,ESlateDrawEffect::None,Color);};
-    auto Text=[&](FVector2D P,const FString& S,int32 Size,FLinearColor Color){FSlateDrawElement::MakeText(Out,Layer+5,G.ToPaintGeometry(FVector2D(1300,60),FSlateLayoutTransform(P)),S,FCoreStyle::GetDefaultFontStyle("Regular",Size),ESlateDrawEffect::None,Color);};
+    auto Text=[&](FVector2D P,const FString& S,int32 Size,FLinearColor Color,bool bTitle=false){FSlateDrawElement::MakeText(Out,Layer+5,G.ToPaintGeometry(FVector2D(1300,60),FSlateLayoutTransform(P)),S,BrainMiningFonts::Style(bTitle ? TEXT("Bold") : TEXT("Medium"),Size),ESlateDrawEffect::None,Color);};
     auto Line=[&](const TArray<FVector2D>& Points,FLinearColor Color,float Width){FSlateDrawElement::MakeLines(Out,Layer+2,G.ToPaintGeometry(),Points,ESlateDrawEffect::None,Color,true,Width);};
     auto Mark=[&](FVector2D P,FLinearColor Color,const FString& Name){Box(P-FVector2D(5,5),FVector2D(10,10),Color);Text(P+FVector2D(10,-12),Name,15,Color);};
-    Text({42,28},TEXT("矿道地图"),32,White);Text({1100,40},TEXT("已暂停  ·  M / Esc 返回"),18,Muted);
-    Text({42,82},Area.Title.ToString(),22,Cyan);
+    Text({42,28},TEXT("矿道地图"),32,White,true);Text({1100,40},TEXT("已暂停  ·  M / Esc 返回"),18,Muted);
+    Text({42,82},Area.Title.ToString(),22,Cyan,true);
     const TCHAR* Short[]={TEXT("挖掘 01"),TEXT("电脑房"),TEXT("挖掘 02"),TEXT("回声 / 卡牌"),TEXT("挖掘 03"),TEXT("博物馆"),TEXT("宇宙细胞")};
     for(int32 I=0;I<H->Areas.Num();++I)
     {
@@ -66,11 +67,11 @@ int32 SMiningCampaignMap::OnPaint(const FPaintArgs&,const FGeometry& Allotted,co
         Text({X+12,139},I<7?Short[I]:H->Areas[I].Title.ToString(),17,I==H->ActiveArea?Cyan:I<=H->UnlockedArea?White:Muted);
     }
     Box({32,199},{895,627},Panel);
-    Text({955,211},TEXT("你在这里"),24,Gold);
+    Text({955,211},TEXT("你在这里"),24,Gold,true);
     Text({955,253},TEXT("黄色箭头 = 位置与朝向"),18,White);
     Text({955,288},TEXT("青线 = 通往出口的主路"),18,Cyan);
     Text({955,323},TEXT("白点 = 入口   绿点 = 出口"),18,White);
-    Text({955,368},H->Collection && H->Collection->bBuriedWithClues?TEXT("本段挖掘线索"):TEXT("本段藏品"),21,White);
+    Text({955,368},H->Collection && H->Collection->bBuriedWithClues?TEXT("本段挖掘线索"):TEXT("本段藏品"),21,White,true);
     int32 Row=0;
     if(H->Collection) for(const auto& Item:H->Collection->AuthoredPlacements) if(Item.AreaTag==Area.Tag)
     {
@@ -82,7 +83,7 @@ int32 SMiningCampaignMap::OnPaint(const FPaintArgs&,const FGeometry& Allotted,co
     Text({42,852},TEXT("路线示意，不显示挖开的洞形；矿道会向下延伸，请同时参考高度图。"),17,Muted);
     if(Area.MapRoute.Num()<2)
     {
-        Text({80,280},TEXT("当前为玩法房间"),30,White);
+        Text({80,280},TEXT("当前为玩法房间"),30,White,true);
         Text({80,340},TEXT("本页显示全流程位置；此房间暂无内部平面图。"),21,Muted);
         Text({80,402},Area.Instructions.ToString(),18,Cyan);
         Text({955,570},TEXT("完成当前玩法后"),20,White);Text({955,607},H->bContinuousCampaign?TEXT("出口打开，步行继续。"):TEXT("自动进入下一段。"),20,White);

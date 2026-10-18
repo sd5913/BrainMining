@@ -1,4 +1,5 @@
 #include "MobileTouchControls.h"
+#include "BrainMiningFonts.h"
 
 #include "BrainMiningPlayerController.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
@@ -436,7 +437,7 @@ void SMobileTouchControls::DrawText(FSlateWindowElementList& OutDrawElements, co
 {
     FSlateDrawElement::MakeText(OutDrawElements, LayerId,
         Geometry.ToPaintGeometry(FVector2D(300.f, 60.f), FSlateLayoutTransform(Position)),
-        FText::FromString(Text), FCoreStyle::GetDefaultFontStyle("Bold", FontSize), ESlateDrawEffect::None, Color);
+        FText::FromString(Text), BrainMiningFonts::Style("Medium", FontSize), ESlateDrawEffect::None, Color);
 }
 
 void SMobileTouchControls::DrawButton(FSlateWindowElementList& OutDrawElements, const FGeometry& Geometry, int32 LayerId,

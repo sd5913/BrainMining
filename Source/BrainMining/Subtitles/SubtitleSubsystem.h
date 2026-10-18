@@ -7,6 +7,7 @@
 class USubtitleSegment;
 class USubtitleWidget;
 class UAudioComponent;
+class USoundWaveProcedural;
 
 UCLASS()
 class BRAINMINING_API USubtitleSubsystem : public UGameInstanceSubsystem
@@ -40,6 +41,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> ActiveAudio;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USoundWaveProcedural> ActiveGeneratedVoice;
 
 	TArray<FName> Queue;
 	int32 LineIndex = 0;

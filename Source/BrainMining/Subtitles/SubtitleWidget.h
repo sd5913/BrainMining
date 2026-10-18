@@ -14,6 +14,7 @@ class BRAINMINING_API USubtitleWidget : public UUserWidget
 
 public:
 	void SetLine(const FText& Line);
+	static TSharedRef<SWidget> CreateStylePreview(const FText& Text);
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;

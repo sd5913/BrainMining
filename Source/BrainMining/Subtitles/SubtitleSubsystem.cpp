@@ -3,16 +3,27 @@
 
 #include "Subtitles/SubtitleSegment.h"
 #include "Subtitles/SubtitleWidget.h"
+#include "Subtitles/SubtitleVoice.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "Sound/SoundWaveProcedural.h"
 #include "TimerManager.h"
 #include "Components/AudioComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSubtitles, Log, All);
+
+namespace
+{
+	void StopLineAudio(TObjectPtr<UAudioComponent>& Audio)
+	{
+		if (IsValid(Audio)) Audio->Stop();
+		Audio = nullptr;
+	}
+}
 
 USubtitleSubsystem* USubtitleSubsystem::Get(const UObject* WorldContext)
 {
@@ -33,8 +44,8 @@ void USubtitleSubsystem::StopAll()
 	bPlaying = false;
 	ActiveSegment = nullptr;
 	LineIndex = 0;
-	if (IsValid(ActiveAudio)) ActiveAudio->Stop();
-	ActiveAudio = nullptr;
+	StopLineAudio(ActiveAudio);
+	ActiveGeneratedVoice = nullptr;
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(LineTimer);
@@ -147,21 +158,43 @@ void USubtitleSubsystem::ShowCurrentLine()
 	}
 
 	const FSubtitleLine& Line = ActiveSegment->Lines[LineIndex];
+	StopLineAudio(ActiveAudio);
+	ActiveGeneratedVoice = nullptr;
 	EnsureWidget();
 	if (Widget)
 	{
 		Widget->SetLine(Line.Text);
 	}
 
-	float Duration = FMath::Clamp(Line.Text.ToString().Len() * 0.16f, 1.6f, 8.f);
-	if (Line.Audio)
+	const FString Text = Line.Text.ToString();
+	float Duration = SubtitleVoice::TextDuration(Text);
+	USoundBase* Sound = Line.Audio;
+	if (!Sound)
 	{
-		ActiveAudio = UGameplayStatics::CreateSound2D(World, Line.Audio);
+		auto Clip = SubtitleVoice::Generate(Text, FMath::Rand());
+		if (!Clip.Samples.IsEmpty())
+		{
+			ActiveGeneratedVoice = NewObject<USoundWaveProcedural>(this, NAME_None, RF_Transient);
+			ActiveGeneratedVoice->SetSampleRate(Clip.SampleRate);
+			ActiveGeneratedVoice->SetNumFrames(Clip.Samples.Num());
+			ActiveGeneratedVoice->NumChannels = 1;
+			ActiveGeneratedVoice->Duration = Clip.Duration;
+			ActiveGeneratedVoice->SoundGroup = SOUNDGROUP_Voice;
+			ActiveGeneratedVoice->QueueAudio(reinterpret_cast<const uint8*>(Clip.Samples.GetData()), Clip.Samples.Num() * sizeof(int16));
+			Sound = ActiveGeneratedVoice;
+		}
+	}
+	if (Sound)
+	{
+		ActiveAudio = UGameplayStatics::CreateSound2D(World, Sound);
 		if (ActiveAudio)
 		{
 			if (auto* Instance = World->GetGameInstance()) ActiveAudio->SoundClassOverride = Instance->GetSubsystem<UMiningAudioSettings>()->GetClass(4);
 			ActiveAudio->Play();
 		}
+	}
+	if (Line.Audio)
+	{
 		const float SoundDuration = Line.Audio->GetDuration();
 		if (SoundDuration > 0.05f)
 		{
@@ -185,6 +218,8 @@ void USubtitleSubsystem::Advance()
 
 void USubtitleSubsystem::FinishCurrent()
 {
+	StopLineAudio(ActiveAudio);
+	ActiveGeneratedVoice = nullptr;
 	bPlaying = false;
 	ActiveSegment = nullptr;
 	LineIndex = 0;

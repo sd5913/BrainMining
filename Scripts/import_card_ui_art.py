@@ -3,7 +3,7 @@ root=pathlib.Path(unreal.Paths.project_dir())
 folder='/Game/Rooms/CardDuel/UI'
 source=root/'SourceAssets/CardRoomUI'
 assets=unreal.AssetToolsHelpers.get_asset_tools(); files=unreal.EditorAssetLibrary
-names=['T_Card_Laser','T_Card_Poison','T_Card_Fire','T_Health_Player','T_Health_Boss','T_RoundHeader','T_RoundDots','T_SpeechBubble']
+names=['T_Card_Laser','T_Card_Laser_Selected','T_Card_Poison','T_Card_Poison_Selected','T_Card_Fire','T_Card_Fire_Selected','T_Health_Player','T_Health_Boss','T_RoundHeader','T_RoundDots','T_SpeechBubble']
 for name in names:
  path=folder+'/'+name
  if files.does_asset_exist(path): files.delete_asset(path)

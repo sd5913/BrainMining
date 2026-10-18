@@ -27,6 +27,11 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Artwork") TObjectPtr<UTexture2D> CardLaserArt;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Artwork") TObjectPtr<UTexture2D> CardPoisonArt;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Artwork") TObjectPtr<UTexture2D> CardFireArt;
+    // Optional baked selected-state artwork. When set, the card artwork carries
+    // its own lower label so the view does not need to draw a second label.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Artwork") TObjectPtr<UTexture2D> CardLaserSelectedArt;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Artwork") TObjectPtr<UTexture2D> CardPoisonSelectedArt;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Artwork") TObjectPtr<UTexture2D> CardFireSelectedArt;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Layout") FCardRoomUIBox Round;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Layout") FCardRoomUIBox PlayerHealth;

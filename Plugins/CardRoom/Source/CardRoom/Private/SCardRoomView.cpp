@@ -104,8 +104,26 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     {
         const ERoomCard C=R.Hand[Index]; const bool Many=R.Hand.Num()>5&&!Floating; const bool Staged=R.Staged.Contains(Index)&&!Floating;
         const float W=B.Right-B.Left,H=B.Bottom-B.Top;
-        UTexture2D* Texture=C==ERoomCard::Laser?(UI?UI->CardLaserArt.Get():nullptr):C==ERoomCard::Poison?(UI?UI->CardPoisonArt.Get():nullptr):(UI?UI->CardFireArt.Get():nullptr);
-        const TCHAR* Path=C==ERoomCard::Laser?TEXT("/Game/Rooms/CardDuel/UI/T_Card_Laser.T_Card_Laser"):C==ERoomCard::Poison?TEXT("/Game/Rooms/CardDuel/UI/T_Card_Poison.T_Card_Poison"):TEXT("/Game/Rooms/CardDuel/UI/T_Card_Fire.T_Card_Fire");
+        UTexture2D* Texture=nullptr;
+        const TCHAR* Path=nullptr;
+        if(C==ERoomCard::Laser)
+        {
+            Texture=Staged?(UI?UI->CardLaserSelectedArt.Get():nullptr):(UI?UI->CardLaserArt.Get():nullptr);
+            if(!Texture) Texture=UI?UI->CardLaserArt.Get():nullptr;
+            Path=Staged?TEXT("/Game/Rooms/CardDuel/UI/T_Card_Laser_Selected.T_Card_Laser_Selected"):TEXT("/Game/Rooms/CardDuel/UI/T_Card_Laser.T_Card_Laser");
+        }
+        else if(C==ERoomCard::Poison)
+        {
+            Texture=Staged?(UI?UI->CardPoisonSelectedArt.Get():nullptr):(UI?UI->CardPoisonArt.Get():nullptr);
+            if(!Texture) Texture=UI?UI->CardPoisonArt.Get():nullptr;
+            Path=Staged?TEXT("/Game/Rooms/CardDuel/UI/T_Card_Poison_Selected.T_Card_Poison_Selected"):TEXT("/Game/Rooms/CardDuel/UI/T_Card_Poison.T_Card_Poison");
+        }
+        else
+        {
+            Texture=Staged?(UI?UI->CardFireSelectedArt.Get():nullptr):(UI?UI->CardFireArt.Get():nullptr);
+            if(!Texture) Texture=UI?UI->CardFireArt.Get():nullptr;
+            Path=Staged?TEXT("/Game/Rooms/CardDuel/UI/T_Card_Fire_Selected.T_Card_Fire_Selected"):TEXT("/Game/Rooms/CardDuel/UI/T_Card_Fire.T_Card_Fire");
+        }
         Box(B.Left+5,B.Top+7,W,H,FLinearColor(0,0,0,.48f));
         DrawTextureObject(Texture,Path,B.Left,B.Top,W,H);
         if(Staged)
@@ -113,8 +131,6 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
             Box(B.Left-4,B.Top-4,W+8,4,FLinearColor(1.f,.85f,.28f,.95f));
             Box(B.Left-4,B.Bottom,W+8,4,FLinearColor(1.f,.85f,.28f,.95f));
         }
-        const float LabelY=B.Bottom-(Many?28.f:34.f);
-        Text(Staged?TEXT("已选中 · 点击取消"):TEXT("点击选择"),B.Left+8,LabelY,Many?10:13,Staged?FLinearColor(1.f,.86f,.35f):FLinearColor(.92f,.92f,.92f));
     };
     if(R.Phase==ECardRoomPhase::Exploring)
     {

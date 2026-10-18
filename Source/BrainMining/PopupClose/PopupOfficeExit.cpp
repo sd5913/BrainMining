@@ -267,7 +267,7 @@ void FPopupOfficeExit::Tick()
  }
  if(Phase==2 && Owner.bAreaActive && Owner.View==APopupCloseStage::EView::Free)
  {
-  if(CanCollect(PC)){Owner.ShowPrompt(PC,TEXT("E 获取炸弹技能"));if(PC->WasInputKeyJustPressed(EKeys::E))Collect(PC);}
+  if(CanCollect(PC))Owner.ShowPrompt(PC,TEXT("E 获取炸弹技能"));
  }
  if(Pawn && Phase<5)
  {

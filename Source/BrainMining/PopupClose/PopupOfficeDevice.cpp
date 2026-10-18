@@ -305,9 +305,9 @@ void APopupOfficeDevice::Emit()
  Item->Launch(PopupCloseContent::Get(PoolCursor).Color,Out*FMath::FRandRange(550.f,1100.f)+FVector::UpVector*FMath::FRandRange(180.f,430.f)+GetActorRightVector()*FMath::FRandRange(-280.f,280.f));
 }
 void APopupOfficeDevice::CleanupOnePopup() { if(Desktop)Desktop->ClearOldestPopup(); }
-bool APopupOfficeDevice::ClickReplyForValidation()
+bool APopupOfficeDevice::ClickReplyForMobile()
 {
- if(!Desktop || Pending()==0 || bLocked)return false;
+	if(!Pointer || !Surface || !Desktop || Pending()==0 || bLocked)return false;
  const FVector2D Pixel=Desktop->GetLatestClosePoint();
  const FVector Point=Surface->GetComponentTransform().TransformPosition(FVector(0,-(Pixel.X-640),-(Pixel.Y-400)));
  FHitResult Hit(this,Surface,Point,-GetActorForwardVector());Hit.bBlockingHit=true;Hit.Location=Point;Hit.ImpactPoint=Point;
@@ -332,4 +332,8 @@ bool APopupOfficeDevice::ClickReplyForValidation()
  Pointer->PressPointerKey(EKeys::LeftMouseButton);Pointer->ReleasePointerKey(EKeys::LeftMouseButton);
  Pointer->InteractionSource=EWidgetInteractionSource::Mouse;
  return Pending()==Before-1;
+}
+bool APopupOfficeDevice::ClickReplyForValidation()
+{
+	return ClickReplyForMobile();
 }

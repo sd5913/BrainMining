@@ -225,6 +225,14 @@ void UMiningToolEffectsComponent::PlaySwing(float MiningInterval)
 void UMiningToolEffectsComponent::QueueImpact(const FHitResult& Hit)
 {
 	if (!CanShowEffects() || !Hit.bBlockingHit || Hit.ImpactPoint.ContainsNaN() || Hit.ImpactNormal.ContainsNaN()) return;
+	const auto* Controller = Cast<ABrainMiningPlayerController>(Cast<APawn>(GetOwner()) ? Cast<APawn>(GetOwner())->GetController() : nullptr);
+	const bool bTouchControls = Controller && Controller->IsUsingTouchControls();
+	if (bTouchControls && Mining->bDrillMode)
+	{
+		const double Now = GetWorld()->GetTimeSeconds();
+		if (Now - LastDrillContactEffectTime < 0.28) return;
+		LastDrillContactEffectTime = Now;
+	}
 	PendingHit = Hit;
 	PendingSurfaceMaterial = Hit.GetComponent() ? Hit.GetComponent()->GetMaterial(0) : nullptr;
 	// Lazily created terrain chunks can report their hit before an override slot
@@ -262,6 +270,8 @@ void UMiningToolEffectsComponent::WarmDebrisPool()
 void UMiningToolEffectsComponent::SpawnImpact()
 {
 	if (!CanShowEffects() || !LoadedDebrisClass || !PendingHit.bBlockingHit) return;
+	const auto* Controller = Cast<ABrainMiningPlayerController>(Cast<APawn>(GetOwner()) ? Cast<APawn>(GetOwner())->GetController() : nullptr);
+	const bool bTouchControls = Controller && Controller->IsUsingTouchControls();
 	const FVector Normal = PendingHit.ImpactNormal.GetSafeNormal(UE_SMALL_NUMBER, FVector::UpVector);
 	const FTransform Transform(FRotationMatrix::MakeFromZ(Normal).ToQuat(), PendingHit.ImpactPoint + Normal * 6);
 	FActorSpawnParameters Params;
@@ -280,16 +290,16 @@ void UMiningToolEffectsComponent::SpawnImpact()
 		if (AMiningDrillDustBurst* Dust = GetWorld()->SpawnActor<AMiningDrillDustBurst>(Transform.GetLocation(), FRotator::ZeroRotator, DustParams))
 		{
 			FMiningDrillContactSettings Settings;
-			Settings.DustCount = DrillDustParticleCount;
-			Settings.SmokeCount = DrillSmokeParticleCount;
-			Settings.SparkCount = DrillSparkParticleCount;
+			Settings.DustCount = bTouchControls && bPendingDrillImpact ? FMath::Min(DrillDustParticleCount, 8) : DrillDustParticleCount;
+			Settings.SmokeCount = bTouchControls && bPendingDrillImpact ? FMath::Min(DrillSmokeParticleCount, 3) : DrillSmokeParticleCount;
+			Settings.SparkCount = bTouchControls && bPendingDrillImpact ? FMath::Min(DrillSparkParticleCount, 4) : DrillSparkParticleCount;
 			Settings.DustStrength = DrillDustStrength;
 			Settings.SmokeStrength = DrillSmokeStrength;
 			Settings.SparkStrength = DrillSparkStrength;
 			Settings.DustSize = DrillDustSize;
 			Settings.SmokeSize = DrillSmokeSize;
 			Settings.SparkSize = DrillSparkSize;
-			Settings.LifetimeScale = DrillContactLifetimeScale;
+			Settings.LifetimeScale = bTouchControls && bPendingDrillImpact ? FMath::Min(DrillContactLifetimeScale, .75f) : DrillContactLifetimeScale;
 			Settings.SparkSpeed = DrillSparkSpeed;
 			Settings.SparkBrightness = DrillSparkBrightness;
 			if (!bPendingDrillImpact)
@@ -311,7 +321,7 @@ void UMiningToolEffectsComponent::SpawnImpact()
             }
 			Dust->Initialize(DustPlane, LoadedDustMaterial, LoadedSmokeMaterial, LoadedSparkMaterial, PendingSurfaceMaterial, Normal, Mining->GetMiningRadius(), DrillDustColor, Settings);
 			DustActors.RemoveAll([](const TWeakObjectPtr<AActor>& Actor) { return !Actor.IsValid(); });
-			while (DustActors.Num() >= 12)
+			while (DustActors.Num() >= (bTouchControls && bPendingDrillImpact ? 4 : 12))
 			{
 				if (DustActors[0].IsValid()) DustActors[0]->Destroy();
 				DustActors.RemoveAt(0);
@@ -336,7 +346,7 @@ void UMiningToolEffectsComponent::SpawnImpact()
 	if (AMiningDebrisBurst* SoilBurst = Cast<AMiningDebrisBurst>(Burst))
 	{
 		const bool bLightStrike = !bPendingDrillImpact && !Mining->bLastPickaxeBreak;
-		const int32 BaseCount = bPendingDrillImpact ? DrillDebrisChunkCount : (bLightStrike ? 12 + Mining->TargetPickaxeHits * 3 : DebrisChunkCount);
+		const int32 BaseCount = bPendingDrillImpact ? (bTouchControls ? FMath::Min(DrillDebrisChunkCount, 20) : DrillDebrisChunkCount) : (bLightStrike ? 12 + Mining->TargetPickaxeHits * 3 : DebrisChunkCount);
 		const int32 Count = FMath::RandRange(FMath::Clamp(BaseCount - 6, 12, 64), FMath::Clamp(BaseCount + 6, 12, 64));
 		const float DebrisScale = bLightStrike ? (Mining->TargetPickaxeHits == 1 ? .42f : .65f) : 1.f;
 		SoilBurst->Initialize(LoadedDebrisMeshes, PendingSurfaceMaterial, Normal, Mining->GetMiningRadius() * DebrisScale, Count, bPendingDrillImpact ? DrillDebrisLifetime : DebrisLifetime);
@@ -355,7 +365,7 @@ void UMiningToolEffectsComponent::SpawnImpact()
 	if (Burst->GetLifeSpan() <= 0) Burst->SetLifeSpan(DebrisLifetime);
 	DebrisActors.RemoveAll([Burst](const TWeakObjectPtr<AActor>& Actor) { return !Actor.IsValid() || Actor.Get() == Burst; });
 	// Bound the physics cost even if a level uses a very short mining interval.
-	const int32 MaxBursts = bPendingDrillImpact ? 6 : 8;
+	const int32 MaxBursts = bPendingDrillImpact ? (bTouchControls ? 3 : 6) : 8;
 	while (DebrisActors.Num() >= MaxBursts)
 	{
 		if (auto* Pooled = Cast<AMiningDebrisBurst>(DebrisActors[0].Get()); Pooled && Pooled->IsPooled()) Pooled->ReleaseToPool();

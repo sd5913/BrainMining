@@ -15,6 +15,7 @@ class UNiagaraComponent;
 class AWenSiMirrorPuzzle;
 class SHorizontalBox;
 class STextBlock;
+class APlayerController;
 
 UENUM(BlueprintType)
 enum class EWenSiMirrorWord : uint8 { Ordinary, Heavy, Floating, Passable, Conductive, Big, Small };
@@ -113,6 +114,7 @@ public:
  bool bAreaActive=true;
  FTransform AreaPlayerStart;
  void SetAreaActive(bool Active);
+	bool HandleInteractionInput(APlayerController* PC);
  EWenSiMirrorWord GetPlayerWord() const;
  bool SetPlayerWord(EWenSiMirrorWord Word);
  FVector RoomPoint(FVector Local) const { return Local+GetActorLocation(); }

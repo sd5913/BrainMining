@@ -311,6 +311,20 @@ FString APopupCloseStage::GetInteractionAction(APlayerController* PC) const
  if (Phase == EPhase::Idle) return FString();
  return Device->IsPrinter() ? FString::Printf(TEXT("处理文件 · %d 张"), Device->Pending()) : TEXT("使用电脑");
 }
+bool APopupCloseStage::HandleInteractionInput(APlayerController* PC)
+{
+ if(!PC || !bAreaActive)return false;
+ if(View==EView::InScreen){ExitScreen();return true;}
+ if(View!=EView::Free)return false;
+ if(Exit && Exit->IsWaitingForBomb() && Exit->CanCollect(PC))return Exit->Collect(PC);
+ if(auto Device=FocusedDevice(PC)){HandleInteraction(PC,Device);return true;}
+ return false;
+}
+bool APopupCloseStage::HandleMobilePrimary(APlayerController* PC)
+{
+	if (!PC || !bAreaActive || View != EView::InScreen || !ActiveComputer) return false;
+	return ActiveComputer->ClickReplyForMobile();
+}
 
 void APopupCloseStage::ShowPrompt(APlayerController* PC,const FString& Message)
 {
@@ -395,8 +409,7 @@ void APopupCloseStage::TickView(float Dt)
  }
  else if(View==EView::InScreen)
  {
-  if(PC && PC->WasInputKeyJustPressed(EKeys::E))ExitScreen();
-  else if(ActiveComputer)ActiveComputer->TickScreen(Dt,PC);
+  if(ActiveComputer)ActiveComputer->TickScreen(Dt,PC);
  }
  else if(View==EView::Exiting && ViewTime>=ScreenExitSeconds)
  {
@@ -435,7 +448,6 @@ void APopupCloseStage::Tick(float Dt)
  {
   ShowPrompt(PC,Phase==EPhase::Idle?TEXT(""):
    Device->IsPrinter()?FString::Printf(TEXT("按 E 处理文件  ·  %d 张"),Device->Pending()):TEXT("按 E 使用电脑"));
-  if(PC && PC->WasInputKeyJustPressed(EKeys::E))HandleInteraction(PC,Device);
  }
  else ShowPrompt(PC,TEXT(""));
 }

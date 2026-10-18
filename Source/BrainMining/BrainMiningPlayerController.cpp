@@ -16,18 +16,32 @@
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
 #include "BrainMiningCameraManager.h"
+#include "BrainMiningCharacter.h"
 #include "Blueprint/UserWidget.h"
 #include "BrainMining.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 #include "MiningGUIWidgets.h"
 #include "MiningInteractionHUDWidget.h"
+#include "MobileTouchControls.h"
 #include "Engine/GameViewportClient.h"
 #include "Components/InputComponent.h"
 #include "MiningComponent.h"
 #include "MiningProgressionComponent.h"
 #include "MiningBombToolComponent.h"
+#include "PopupClose/PopupCloseStage.h"
+#include "WenSi/WenSiMirrorPuzzle.h"
+#include "WenSi/WenSiPuzzle.h"
+#include "EchoPassageStage.h"
+#include "EchoPassagePlayer.h"
+#include "CardRoomStage.h"
+#include "MiningCollection.h"
+#include "MiningCellUniverse.h"
+#include "EndingEmergence.h"
+#include "Showcase/MiningExhibitHall.h"
+#include "InputKeyEventArgs.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GameFramework/Pawn.h"
+#include "EngineUtils.h"
 
 ABrainMiningPlayerController::ABrainMiningPlayerController()
 {
@@ -49,6 +63,11 @@ void ABrainMiningPlayerController::BeginPlay()
 			if (MiningGUI)
 			{
 				MiningGUI->AddToPlayerScreen(10);
+				if (ShouldUseTouchControls())
+				{
+					if (MiningGUI->AbilityG) MiningGUI->AbilityG->SetVisibility(ESlateVisibility::Collapsed);
+					if (MiningGUI->AbilityV) MiningGUI->AbilityV->SetVisibility(ESlateVisibility::Collapsed);
+				}
 				if (!ShouldUseTouchControls())
 				{
 					if (auto* Viewport = GetWorld()->GetGameViewport())
@@ -69,23 +88,13 @@ void ABrainMiningPlayerController::BeginPlay()
 	}
 
 	
-	// only spawn touch controls on local player controllers
 	if (IsLocalPlayerController() && ShouldUseTouchControls())
 	{
-		// spawn the mobile controls widget
-		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
-
-		if (MobileControlsWidget)
+		if (auto* Viewport = GetWorld()->GetGameViewport())
 		{
-			// add the controls to the player screen
-			MobileControlsWidget->AddToPlayerScreen(0);
-
-		} else {
-
-			UE_LOG(LogBrainMining, Error, TEXT("Could not spawn mobile controls widget."));
-
+			MobileTouchControls = SNew(SMobileTouchControls).OwnerController(this);
+			Viewport->AddViewportWidgetContent(MobileTouchControls.ToSharedRef(), 0);
 		}
-
 	}
 }
 
@@ -165,11 +174,15 @@ void ABrainMiningPlayerController::HandleMobileLook(const FVector2D& Delta)
 	if (IsPaused() || IsLookInputIgnored() || !GetPawn()) return;
 	const float Sensitivity=0.09f;
 	AddYawInput(Delta.X*Sensitivity);
-	AddPitchInput(-Delta.Y*Sensitivity);
+	AddPitchInput(Delta.Y*Sensitivity);
 }
 
 void ABrainMiningPlayerController::HandleMobileMove(const FVector2D& Axis)
 {
+	SetMobileVirtualKey(EKeys::W, Axis.Y > .2f);
+	SetMobileVirtualKey(EKeys::S, Axis.Y < -.2f);
+	SetMobileVirtualKey(EKeys::D, Axis.X > .2f);
+	SetMobileVirtualKey(EKeys::A, Axis.X < -.2f);
 	if (IsPaused() || IsMoveInputIgnored() || !GetPawn()) return;
 	const FVector Forward=GetPawn()->GetActorForwardVector();
 	const FVector Right=GetPawn()->GetActorRightVector();
@@ -203,14 +216,178 @@ void ABrainMiningPlayerController::HandleMobileDrill()
 		if (Mining->ActivateDrill() && MiningGUI) MiningGUI->OnAbilityRequested.Broadcast(TEXT("V"));
 }
 
-void ABrainMiningPlayerController::HandleMobileUpgrade()
+void ABrainMiningPlayerController::HandleMobileJump(bool bPressed)
 {
-	if (!bMiningGUIEnabled || IsPaused() || IsMoveInputIgnored() || IsLookInputIgnored()) return;
-	if (auto* Progression=GetPawn()?GetPawn()->FindComponentByClass<UMiningProgressionComponent>():nullptr)
+	SetMobileVirtualKey(EKeys::SpaceBar, bPressed);
+	auto* PawnCharacter = Cast<ABrainMiningCharacter>(GetPawn());
+	if (!PawnCharacter) return;
+	if (bPressed)
 	{
-		const bool bUpgraded=Progression->Purchase(0,Progression->GetLevel(0)+1);
-		if (auto* Audio=GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPurchase(bUpgraded);
+		if (IsPaused() || IsMoveInputIgnored() || bUpgradeMenuHeld) return;
+		PawnCharacter->DoJumpStart();
 	}
+	else
+	{
+		PawnCharacter->DoJumpEnd();
+	}
+}
+
+void ABrainMiningPlayerController::HandleMobileInteract()
+{
+	for (TActorIterator<APopupCloseStage> It(GetWorld()); It; ++It)
+	{
+		if (It->IsSessionActive())
+		{
+			It->HandleInteractionInput(this);
+			return;
+		}
+	}
+	if (IsPaused() || IsMoveInputIgnored() || IsLookInputIgnored() || bUpgradeMenuHeld) return;
+	InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E, IE_Pressed, 1.f));
+}
+
+void ABrainMiningPlayerController::HandleMobilePrimary()
+{
+	for (TActorIterator<APopupCloseStage> It(GetWorld()); It; ++It)
+	{
+		if (It->IsSessionActive())
+		{
+			It->HandleMobilePrimary(this);
+			return;
+		}
+	}
+	if (auto* EchoInteraction = FindComponentByClass<UEchoPassageInteractionComponent>())
+	{
+		if (EchoInteraction->Stage && EchoInteraction->Stage->bLanded && !EchoInteraction->Stage->bCompleted)
+		{
+			EchoInteraction->Knock();
+			return;
+		}
+	}
+	TriggerMobileKey(EKeys::LeftMouseButton);
+}
+
+void ABrainMiningPlayerController::HandleMobileConfirm()
+{
+	TriggerMobileKey(EKeys::SpaceBar);
+}
+
+void ABrainMiningPlayerController::HandleMobileReset()
+{
+	TriggerMobileKey(EKeys::R);
+}
+
+void ABrainMiningPlayerController::HandleMobileThoughtLeft()
+{
+	TriggerMobileKey(EKeys::Q);
+}
+
+void ABrainMiningPlayerController::HandleMobileThoughtRight()
+{
+	TriggerMobileKey(EKeys::R);
+}
+
+void ABrainMiningPlayerController::HandleMobileMap()
+{
+	TriggerMobileKey(EKeys::M);
+}
+
+void ABrainMiningPlayerController::HandleMobileCatalogue()
+{
+	if (AMiningExhibitHall::Find(GetWorld())) TriggerMobileKey(EKeys::I);
+	else TriggerMobileKey(EKeys::Tab);
+}
+
+void ABrainMiningPlayerController::HandleMobileBack()
+{
+	TriggerMobileKey(EKeys::Escape);
+}
+
+void ABrainMiningPlayerController::HandleMobileEdit()
+{
+	TriggerMobileKey(EKeys::G);
+}
+
+void ABrainMiningPlayerController::SetMobileVirtualKey(const FKey& Key, bool bPressed)
+{
+	const bool bWasPressed = MobileVirtualKeys.Contains(Key);
+	if (bWasPressed == bPressed) return;
+	const FInputKeyEventArgs Args = FInputKeyEventArgs::CreateSimulated(Key, bPressed ? IE_Pressed : IE_Released, bPressed ? 1.f : 0.f);
+	Super::InputKey(Args);
+	if (bPressed) MobileVirtualKeys.Add(Key);
+	else MobileVirtualKeys.Remove(Key);
+}
+
+void ABrainMiningPlayerController::TriggerMobileKey(const FKey& Key)
+{
+	InputKey(FInputKeyEventArgs::CreateSimulated(Key, IE_Pressed, 1.f));
+	InputKey(FInputKeyEventArgs::CreateSimulated(Key, IE_Released, 0.f));
+}
+
+bool ABrainMiningPlayerController::IsMobileActionVisible() const
+{
+	for (TActorIterator<AEchoPassageStage> It(GetWorld()); It; ++It) if (It->bLanded && !It->bCompleted) return true;
+	for (TActorIterator<APopupCloseStage> It(GetWorld()); It; ++It) if (It->IsSessionActive()) return true;
+	return false;
+}
+
+bool ABrainMiningPlayerController::IsMobileConfirmVisible() const
+{
+	for (TActorIterator<ACardRoomStage> It(GetWorld()); It; ++It)
+		if (It->Run.Phase == ECardRoomPhase::Choosing) return true;
+	return false;
+}
+
+bool ABrainMiningPlayerController::IsMobileResetVisible() const
+{
+	if (IsMobileActionVisible() || IsMobileThoughtVisible() || IsMobileCatalogueVisible()) return true;
+	if (AMiningExhibitHall::Find(GetWorld())) return true;
+	TActorIterator<AMiningCellUniverse> CellIt(GetWorld());
+	if (CellIt) return true;
+	TActorIterator<AEndingEmergence> EndingIt(GetWorld());
+	if (EndingIt) return true;
+	return false;
+}
+
+bool ABrainMiningPlayerController::IsMobileThoughtVisible() const
+{
+	for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It) if (It->bAreaActive) return true;
+	for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It) if (It->bAreaActive) return true;
+	return false;
+}
+
+bool ABrainMiningPlayerController::IsMobileMapVisible() const
+{
+	const AMiningExhibitHall* Hall = AMiningExhibitHall::Find(GetWorld());
+	return Hall && Hall->bReady;
+}
+
+bool ABrainMiningPlayerController::IsMobileCatalogueVisible() const
+{
+	for (TActorIterator<AMiningCollectionField> It(GetWorld()); It; ++It) if (It->IsAreaActive()) return true;
+	return false;
+}
+
+bool ABrainMiningPlayerController::IsMobileBackVisible() const
+{
+	const AMiningExhibitHall* Hall = AMiningExhibitHall::Find(GetWorld());
+	if (Hall && Hall->IsMapOpen()) return true;
+	for (TActorIterator<AMiningCollectionField> It(GetWorld()); It; ++It) if (It->bCatalogueOpen) return true;
+	return false;
+}
+
+bool ABrainMiningPlayerController::IsMobileEditVisible() const
+{
+	for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It) if (It->bAreaActive) return true;
+	for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It) if (It->bAreaActive) return true;
+	return false;
+}
+
+FString ABrainMiningPlayerController::GetMobileActionLabel() const
+{
+	for (TActorIterator<AEchoPassageStage> It(GetWorld()); It; ++It) if (It->bLanded && !It->bCompleted) return TEXT("HIT");
+	for (TActorIterator<APopupCloseStage> It(GetWorld()); It; ++It) if (It->IsSessionActive()) return TEXT("CLICK");
+	return TEXT("TAP");
 }
 
 bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
@@ -221,6 +398,15 @@ bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 		return true;
 	}
 	if (IsAudioSettingsOpen()) return true;
+	if (Params.Key == EKeys::E && Params.Event == IE_Pressed && !bUpgradeMenuHeld)
+	{
+		for (TActorIterator<APopupCloseStage> It(GetWorld()); It; ++It)
+			if (It->HandleInteractionInput(this)) return true;
+		for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It)
+			if (It->HandleInteractionInput(this)) return true;
+		for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It)
+			if (It->HandleInteractionInput(this)) return true;
+	}
     auto* Progression = GetPawn() ? GetPawn()->FindComponentByClass<UMiningProgressionComponent>() : nullptr;
     if (Params.Key == EKeys::Tab && Progression && Progression->UsesMineralInventory())
     {
@@ -296,12 +482,21 @@ void ABrainMiningPlayerController::OnApplicationActivationChanged(bool bActive)
 
 void ABrainMiningPlayerController::EndPlay(const EEndPlayReason::Type Reason)
 {
+	for (const FKey& Key : MobileVirtualKeys)
+		Super::InputKey(FInputKeyEventArgs::CreateSimulated(Key, IE_Released, 0.f));
+	MobileVirtualKeys.Reset();
 	if (IsAudioSettingsOpen()) ToggleAudioSettings();
 	if (ApplicationActivationHandle.IsValid() && FSlateApplication::IsInitialized())
 		FSlateApplication::Get().OnApplicationActivationStateChanged().Remove(ApplicationActivationHandle);
 	SetUpgradeMenuHeld(false);
 	if (MiningGUI) MiningGUI->RemoveFromParent();
 	if (InteractionHUD) InteractionHUD->RemoveFromParent();
+	if (MobileTouchControls.IsValid())
+	{
+		if (auto* Viewport = GetWorld() ? GetWorld()->GetGameViewport() : nullptr)
+			Viewport->RemoveViewportWidgetContent(MobileTouchControls.ToSharedRef());
+		MobileTouchControls.Reset();
+	}
 	if (bOwnsDesktopGUIInput && IsLocalPlayerController())
 	{
 		bShowMouseCursor = false;

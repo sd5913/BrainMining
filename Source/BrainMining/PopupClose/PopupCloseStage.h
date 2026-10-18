@@ -66,6 +66,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="PopupClose|Validation") FString ValidateOffice();
 	UFUNCTION(BlueprintCallable, Category="PopupClose|Validation") FString GetSessionStatus() const;
 	UFUNCTION(BlueprintCallable, Category="PopupClose") void StartOfficeRound();
+	bool HandleInteractionInput(APlayerController* PC);
+	bool HandleMobilePrimary(APlayerController* PC);
 
 	UFUNCTION(BlueprintPure, Category="PopupClose") FTransform GetPlayerSpawnTransform() const;
 

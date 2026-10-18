@@ -3,6 +3,8 @@
 #include "GeneratedMiningRock.h"
 #include "MiningBombToolComponent.h"
 #include "Engine/World.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 
 bool UMiningComponent::ApplyPickaxeBalance(const FMiningPickaxeLevel& Level)
 {
@@ -31,11 +33,39 @@ float UMiningComponent::GetPickaxeDepth(const ADiggableRock* Rock) const
 
 void UMiningComponent::ResolvePickaxeStrike()
 {
+	const FHitResult SwingTarget = PickaxeSwingTarget;
+	PickaxeSwingTarget = FHitResult();
 	if (!GetWorld() || !GetOwner() || bDrillMode || bInputSuspended || IsEncounterBlocked()) return;
 	if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); Bomb && Bomb->bEquipped) return;
 	RefreshTarget();
-	if (IsValid(TargetRock)) ApplyPickaxeHit(TargetHit);
-	else Status = TEXT("Aim at rock within reach");
+	if (IsValid(TargetRock)) { ApplyPickaxeHit(TargetHit); return; }
+	// Keep an already-started strike on a narrow edge through a few centimetres
+	// of camera sway. Re-trace from the current eye: never use stale terrain,
+	// mine through another object, extend reach, or stick to a deliberate turn.
+	const APawn* Pawn = Cast<APawn>(GetOwner());
+	const auto* PC = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
+	if (PC && IsValid(Cast<ADiggableRock>(SwingTarget.GetActor())))
+	{
+		FVector Eye; FRotator View;
+		PC->GetPlayerViewPoint(Eye, View);
+		const FVector ToContact = SwingTarget.ImpactPoint - Eye;
+		const double Along = FVector::DotProduct(ToContact, View.Vector());
+		const double Margin = FMath::Min(8.f, GetMiningRadius() * .1f);
+		if (Along > 0 && ToContact.Size() <= Reach &&
+			(ToContact - View.Vector() * Along).SizeSquared() <= FMath::Square(Margin) &&
+			FVector::DotProduct(ToContact.GetSafeNormal(), View.Vector()) >= FMath::Cos(FMath::DegreesToRadians(4.f)))
+		{
+			FHitResult Verified;
+			if (GetWorld()->LineTraceSingleByChannel(Verified, Eye, SwingTarget.ImpactPoint + ToContact.GetSafeNormal() * 2,
+				ECC_Visibility, FCollisionQueryParams(SCENE_QUERY_STAT(PickaxeSwingContact), true, GetOwner())) &&
+				Verified.GetActor() == SwingTarget.GetActor() && Verified.Distance <= Reach &&
+				FVector::DistSquared(Verified.ImpactPoint, SwingTarget.ImpactPoint) <= 4)
+			{
+				ApplyPickaxeHit(Verified); return;
+			}
+		}
+	}
+	Status = TEXT("Aim at rock within reach");
 }
 
 int32 UMiningComponent::FindPickaxePatch(const FHitResult& Hit) const
@@ -94,6 +124,7 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 	ADiggableRock* Rock = Cast<ADiggableRock>(Hit.GetActor());
 	if (!IsValid(Rock) || !Hit.bBlockingHit || Hit.ImpactPoint.ContainsNaN() || Hit.ImpactNormal.ContainsNaN() ||
 		Hit.ImpactNormal.IsNearlyZero() || bDrillMode || bInputSuspended || IsEncounterBlocked()) return false;
+	if(Rock->ActorHasTag(TEXT("CardEscapeTelevision")))return MineTelevision(Hit);
 	if (const auto* Segment = Cast<AGeneratedMiningRock>(Rock))
 	{
 		if (Segment->SegmentIndex != INDEX_NONE && Segment->SegmentState != EMiningSegmentState::Active)

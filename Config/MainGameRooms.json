@@ -179,7 +179,7 @@
       ],
       "width_a": 200,
       "width_b": 500,
-      "plug_x": -14180
+      "plug_x": -13760
     },
     {
       "id": "Mine02_Journey",
@@ -388,7 +388,9 @@
       ],
       "width_a": 200,
       "width_b": 500,
-      "plug_x": -14180.0,
+      "plug_x": -13760.0,
+      "plug_depth": 90,
+      "placement_baked": true,
       "plug": "/Game/MainGame/Maps/Lvl_MainGame.Lvl_MainGame:PersistentLevel.GeneratedMiningRock_6",
       "height": 290,
       "natural": true,

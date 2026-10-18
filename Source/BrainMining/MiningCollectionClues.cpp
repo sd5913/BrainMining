@@ -10,6 +10,77 @@
 #include "DynamicMesh/MeshNormals.h"
 #include "Spatial/FastWinding.h"
 #include "UDynamicMesh.h"
+#include "Showcase/MiningTreasure.h"
+#include "Engine/StaticMeshActor.h"
+#include "GameFramework/PlayerController.h"
+
+void AMiningCollectionField::SpawnAntTrail(ADiggableRock* Rock,FVector Start,FVector End)
+{
+    FCollectionAntTrail Trail;Trail.Rock=Rock;Trail.Start=Start;Trail.End=End;
+    const int TrailIndex=AntTrails.Add(Trail);
+    for(int I=0;I<42;++I)
+    {
+        auto* Root=GetWorld()->SpawnActor<AActor>();Spawned.Add(Root);Root->Tags.Add(TEXT("CollectionAmbientAnt"));Root->Tags.Add(TEXT("CollectionSoilAnt"));Root->SetOwner(Rock);
+        auto* Scene=NewObject<USceneComponent>(Root);Root->SetRootComponent(Scene);Root->AddInstanceComponent(Scene);Scene->RegisterComponent();
+        FCollectionAnt Ant;Ant.Actor=Root;Ant.TrailIndex=TrailIndex;Ant.Length=FVector::Distance(Start,End);Ant.Phase=I/42.f;
+        const FLinearColor Shell(.028,.014,.008);
+        auto Part=[&](FVector P,FVector Size){auto* A=MakeProp(P,Size,Shell,true);A->AttachToActor(Root,FAttachmentTransformRules::KeepRelativeTransform);return A;};
+        Part(FVector(-5.5,0,2.8),FVector(7.3,4.5,4.6)); // Gaster
+        Part(FVector(-1.3,0,2.6),FVector(1.5,1.4,1.5)); // Narrow petiole
+        Part(FVector(1,0,2.7),FVector(3.6,2.6,3));      // Thorax
+        Part(FVector(4.4,0,3),FVector(4.2,3.8,3.4));   // Head faces travel
+        auto Rod=[&](FVector A,FVector B,float Width,USceneComponent* Parent)
+        {
+            auto* Segment=MakeProp((A+B)*.5,FVector((B-A).Size(),Width,Width),Shell);
+            Segment->SetActorRotation((B-A).Rotation());
+            Segment->AttachToComponent(Parent,FAttachmentTransformRules::KeepRelativeTransform);
+        };
+        for(int Side:{-1,1})
+        {
+            Rod(FVector(5.4,Side*1.1,3.7),FVector(7.7,Side*2.1,4.5),.45,Scene);
+            Rod(FVector(7.7,Side*2.1,4.5),FVector(9.3,Side*3.8,3.8),.35,Scene);
+            for(int J=0;J<3;++J)
+            {
+                auto* Joint=NewObject<USceneComponent>(Root);Root->AddInstanceComponent(Joint);Joint->SetupAttachment(Scene);Joint->RegisterComponent();
+                Joint->SetRelativeLocation(FVector(2-J*1.6,Side*.8,2.4));
+                const float Sweep=2.8f-J*2.8f;
+                const FVector Knee(Sweep,Side*3.2,1.2),Foot(Sweep*1.8,Side*5.2,-2.2);
+                Rod(FVector::ZeroVector,Knee,.55,Joint);Rod(Knee,Foot,.4,Joint);
+                Rod(Foot,Foot+FVector(1,Side*.7,0),.3,Joint);Ant.Legs.Add(Joint);
+            }
+        }
+        Root->SetActorScale3D(FVector(.45f));
+        Ants.Add(Ant);
+    }
+    AmbientAntCount=Ants.Num();
+}
+
+void AMiningCollectionField::UpdateAntTrails()
+{
+    for(auto& Trail:AntTrails)
+    {
+        auto* Rock=Trail.Rock.Get();if(!Rock || Trail.ObservedCuts==Rock->SuccessfulCuts)continue;
+        Trail.ObservedCuts=Rock->SuccessfulCuts;
+        const int Samples=FMath::Clamp(FMath::CeilToInt(FVector::Distance(Trail.Start,Trail.End)/24),8,140);
+        TArray<FVector> Centers;for(int I=0;I<=Samples;++I)Centers.Add(FMath::Lerp(Trail.Start,Trail.End,float(I)/Samples));
+        TArray<TObjectPtr<ADiggableRock>> Rocks;Rocks.Add(Rock);TArray<bool> Covered;
+        AMiningTreasure::MarkCoveredPoints(Rocks,Centers,Covered);
+        Trail.Points=Centers;Trail.Normals.Init(FVector::UpVector,Centers.Num());Trail.Exposed.Init(false,Centers.Num());
+        const FVector Side=FVector::CrossProduct((Trail.End-Trail.Start).GetSafeNormal(),FVector::UpVector).GetSafeNormal();
+        FCollisionQueryParams Query(SCENE_QUERY_STAT(CollectionAntSurface),true);if(Player&&Player->GetPawn())Query.AddIgnoredActor(Player->GetPawn());
+        for(int I=0;I<Centers.Num();++I)
+        {
+            if(Covered[I])continue; // Still buried; this part becomes visible as excavation advances.
+            float Nearest=280;
+            for(FVector D:{-FVector::UpVector,Side,-Side,FVector::UpVector})
+            {
+                FHitResult Hit;
+                if(GetWorld()->LineTraceSingleByChannel(Hit,Centers[I],Centers[I]+D*280,ECC_Visibility,Query)&&Hit.Distance<Nearest&&FVector::DotProduct(Hit.ImpactNormal,-D)>.1)
+                { Nearest=Hit.Distance;Trail.Points[I]=Hit.ImpactPoint;Trail.Normals[I]=Hit.ImpactNormal;Trail.Exposed[I]=true; }
+            }
+        }
+    }
+}
 
 void AMiningCollectionField::MakeFeather(ADiggableRock* Rock,FVector Support,float Angle)
 {
@@ -57,20 +128,27 @@ void AMiningCollectionField::TickClues(float Dt)
     // One acceleration structure per edited rock, not one per feather every frame.
     for(ADiggableRock* Rock:Dirty)
     {
-        const auto& Mesh=Rock->RockMesh->GetDynamicMesh()->GetMeshRef();
-        FDynamicMeshAABBTree3 Tree(&Mesh,true); TFastWindingTree<FDynamicMesh3> Winding(&Tree);
+        TArray<FVector> Supports;
+        for(const auto& C:Clues)if(C.Actor.IsValid()&&C.Rock.Get()==Rock)Supports.Add(C.Support);
+        TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints({Rock},Supports,Covered);
+        int32 SupportIndex=0;
         for(auto& C:Clues) if(C.Actor.IsValid()&&C.Rock.Get()==Rock)
         {
             C.ObservedCuts=Rock->SuccessfulCuts;
+            bool Supported=Covered[SupportIndex++];
             if(C.bFalling) continue;
-            bool Supported=Mesh.TriangleCount()>0&&FMath::Abs(Winding.FastWindingNumber(Rock->GetActorTransform().InverseTransformPosition(C.Support)))>.5;
             if(C.bLanded)
             {
                 FHitResult Hit; const FVector P=C.Actor->GetActorLocation();
                 Supported=GetWorld()->LineTraceSingleByChannel(Hit,P,P-FVector(0,0,12),ECC_Visibility)&&Hit.Normal.Z>.4;
             }
             if(Supported) continue;
-            if(!C.bFeather) { C.Actor->Destroy(); continue; }
+            if(!C.bFeather)
+            {
+                TArray<AActor*> Parts;C.Actor->GetAttachedActors(Parts,true,true);
+                for(AActor* Part:Parts)if(IsValid(Part))Part->Destroy();
+                C.Actor->Destroy();continue;
+            }
             C.bFalling=true; C.bLanded=false; C.Speed=8; C.Age=0;
             C.Actor->Tags.Remove(TEXT("FeatherLanded")); C.Actor->Tags.AddUnique(TEXT("FeatherFalling"));
         }

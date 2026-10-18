@@ -164,7 +164,9 @@ void ACardRoomStage::OnConstruction(const FTransform& Transform)
     for(const auto& Dot:GhostDots) Tint(Dot,FLinearColor(.4f,.8f,.7f),true);
     for(const auto& Puff:Puffs) Tint(Puff,FLinearColor(.22f,.8f,.08f),true);
     for(const auto& Tail:Trails) Tint(Tail,FLinearColor(.18f,.7f,1.f),true);
-    Tint(Beam,FLinearColor(.3f,.85f,1.f),true); Tint(Ball,FLinearColor(1.f,.26f,.04f),true); Tint(Reward,FLinearColor(.25f,.9f,1.f),true);
+    Tint(Beam,FLinearColor(.3f,.85f,1.f),true); Tint(Ball,FLinearColor(1.f,.26f,.04f),true);
+    Reward->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/Drill/Stylized/SM_DrillStylized.SM_DrillStylized")));
+    Reward->EmptyOverrideMaterials();
     Beam->SetVisibility(false); Ball->SetVisibility(false); Reward->SetVisibility(false);
     for(const auto& Part:Puffs) Part->SetVisibility(false);
     for(const auto& Part:Trails) Part->SetVisibility(false);
@@ -250,7 +252,7 @@ bool ACardRoomStage::CollectReward()
 void ACardRoomStage::RestartEncounter() { Run.Restart(); ResetRabbitPhysicsDrop(); bWinSent=false; bReplySound=false; bImpactSent=false; }
 bool ACardRoomStage::IsPlayerNear(const FVector& Position) const
 {
-    return FVector::Dist2D(Position,GetApproachLocation())<180 && FMath::Abs(Position.Z-GetApproachLocation().Z)<220;
+    return FVector::Dist2D(Position,GetApproachLocation())<GetApproachRadius() && FMath::Abs(Position.Z-GetApproachLocation().Z)<220;
 }
 void ACardRoomStage::Tick(float DeltaSeconds)
 {
@@ -259,6 +261,8 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     if(Phase!=LastPhase)
     {
         PreviousAudioTime=0;
+        if(SubtitleOverride.IsBound() && Phase==ECardRoomPhase::Matching)SubtitleOverride.Execute(TEXT("正在匹配中……"),2.2f);
+        if(SubtitleOverride.IsBound() && Phase==ECardRoomPhase::Arrival)SubtitleOverride.Execute(TEXT("匹配成功！"),1.4f);
         if(Phase==ECardRoomPhase::Arrival) Sound(TEXT("S_Arrival"));
         if(Phase==ECardRoomPhase::Choosing) Sound(TEXT("S_Draw"),.3f);
         if(Phase==ECardRoomPhase::Seated && AudioOverride.IsBound()) Sound(TEXT("S_Seat"),.4f);

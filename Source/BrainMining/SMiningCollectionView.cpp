@@ -17,7 +17,8 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
     if(!Owner.IsValid()) return Layer;
     const auto* F=Owner.Get();
     const bool HeavenRoom=F->bUseAuthoredPlacements && F->AuthoredPlacements.Num()==1 && F->AuthoredPlacements[0].ItemId==0;
-    const int32 Total=HeavenRoom?1:4;
+    const TArray<int32> Ids=F->CatalogueIds();
+    const int32 Total=Ids.Num(),Page=FMath::Max(0,Ids.IndexOfByKey(F->SelectedId))/4;
     if (!F->bCatalogueOpen && !F->bShowExplorationHUD) return Layer;
     const FVector2D Size=G.GetLocalSize(); const float S=FMath::Min(Size.X/1600,Size.Y/900); const FVector2D O=(Size-FVector2D(1600,900)*S)*.5;
     const FLinearColor Ink(.018f,.034f,.038f,1),Panel(.035f,.057f,.061f,1),Cream(.89f,.91f,.81f,1),Muted(.47f,.58f,.54f,1),Gold(.93f,.62f,.23f,1),Mint(.24f,.72f,.57f,1);
@@ -32,7 +33,7 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
         Box(1280,36,280,83,Ink); Text(FString::Printf(TEXT("图鉴  %02d / %02d"),F->UniqueCount(),Total),1304,50,23,Cream); Text(TEXT("[ Tab ]  查看我的收藏"),1304,86,13,Mint);
         Box(50,762,940,88,Ink);
         Text(TEXT("左键 挖掘    E 收集    Tab 图鉴    按住空格 上升 / 松开 下落"),70,775,18,Cream);
-        Text(HeavenRoom?TEXT("WASD 移动    沿外露水管挖穿土层，前往半球大厅中央"):TEXT("WASD 移动    R 新一轮（清空收集）    高处鸟巢可用飞行接近"),70,814,14,Muted);
+        Text(HeavenRoom?TEXT("WASD 移动    沿外露水管挖穿土层，前往半球大厅中央"):F->bExpandedCollection?TEXT("WASD 移动    R 重置    右侧通道：新藏品与红幕布舞台"):TEXT("WASD 移动    R 新一轮（清空收集）    高处鸟巢可用飞行接近"),70,814,14,Muted);
         const bool SharedHUD = UMiningInteractionHUDWidget::IsActiveFor(F->GetWorld()->GetFirstPlayerController());
         if (!SharedHUD) Box(798,448,4,4,F->Target?Gold:Cream);
         if(F->Target && !SharedHUD)
@@ -40,7 +41,7 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
             Box(570,568,460,58,Ink); Text(TEXT("[ E ]  收集  ")+AMiningCollectible::ItemName(F->Target->ItemId),600,580,23,Gold);
         }
         if(F->ToastRemaining>0) { Box(320,665,960,61,Panel); Text(F->Toast,343,681,18,Cream); }
-        if(F->UniqueCount()==4) { Text(TEXT("四种奇物已集齐 · 打开图鉴，看看它们的另一面"),470,169,22,Gold); }
+        if(!HeavenRoom && Total>0 && F->UniqueCount()==Total) { Text(TEXT("本区奇物已集齐 · 打开图鉴，看看它们的另一面"),470,169,22,Gold); }
         if(HeavenRoom && F->UniqueCount()==1) { Text(TEXT("已找到天堂马桶 · Tab 打开图鉴检视"),525,169,22,Gold); }
         return L;
     }
@@ -49,7 +50,8 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
     if(Owned&&F->PreviewTexture)
     {
         auto* Self=const_cast<SMiningCollectionView*>(this); Self->PreviewBrush.SetResourceObject(F->PreviewTexture);
-        FSlateDrawElement::MakeBox(Out,++L,Geo(0,8,1155,770),&PreviewBrush,ESlateDrawEffect::None,FLinearColor::White);
+        // SceneColorHDR stores inverse opacity in alpha; this preview has an opaque black backdrop.
+        FSlateDrawElement::MakeBox(Out,++L,Geo(0,8,1155,770),&PreviewBrush,ESlateDrawEffect::IgnoreTextureAlpha,FLinearColor::White);
     }
     Text(TEXT("奇物收藏"),60,37,24,Cream);
     Text(FString::Printf(TEXT("%02d / %02d"),F->UniqueCount(),Total),230,48,12,Muted);
@@ -68,13 +70,20 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
         Text(TEXT("收藏后即可检视"),1223,380,16,Muted);
     }
     Text(TEXT("拖动旋转    滚轮缩放    双击复位"),355,729,14,Muted);
-    for(int i=0;i<Total;++i)
+    for(int Slot=0;Slot<4 && Page*4+Slot<Total;++Slot)
     {
-        const float X=60+i*267; const bool Has=F->Inventory.IsValidIndex(i)&&F->Inventory[i]>0,Selected=F->SelectedId==i;
+        const int i=Ids[Page*4+Slot];
+        const float X=60+Slot*267; const bool Has=F->Inventory.IsValidIndex(i)&&F->Inventory[i]>0,Selected=F->SelectedId==i;
         Box(X,790,242,75,Selected?FLinearColor(.095f,.135f,.12f):Panel);
         if(Selected) Box(X,790,242,2,Gold);
-        Text(FString::Printf(TEXT("0%d"),i+1),X+17,815,15,Selected?Gold:Muted);
+        Text(FString::Printf(TEXT("%02d"),i+1),X+17,815,15,Selected?Gold:Muted);
         Text(Has?AMiningCollectible::ItemName(i):TEXT("未发现"),X+55,812,20,Has?Cream:Muted);
+    }
+    if(Total>4)
+    {
+        Box(1180,790,70,75,Panel); Text(TEXT("<"),1204,812,23,Cream);
+        Text(FString::Printf(TEXT("%d / %d"),Page+1,(Total+3)/4),1300,815,20,Gold);
+        Box(1450,790,70,75,Panel); Text(TEXT(">"),1474,812,23,Cream);
     }
     Box(1220,661,252,44,Panel); Text(TEXT("F   恢复展示角度"),1240,672,15,Muted);
     return L;
@@ -82,12 +91,18 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
 FReply SMiningCollectionView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& E)
 {
     if(!Owner.IsValid()||!Owner->bCatalogueOpen) return FReply::Unhandled();
-    const bool HeavenRoom=Owner->bUseAuthoredPlacements && Owner->AuthoredPlacements.Num()==1 && Owner->AuthoredPlacements[0].ItemId==0;
-    const int32 Total=HeavenRoom?1:4;
+    const auto Ids=Owner->CatalogueIds();
+    const int32 Total=Ids.Num(),Page=FMath::Max(0,Ids.IndexOfByKey(Owner->SelectedId))/4;
     FVector2D P=ToVirtual(G,E.GetScreenSpacePosition());
     if(E.GetEffectingButton()!=EKeys::LeftMouseButton) return FReply::Handled();
     if(P.X>=1408&&P.X<=1540&&P.Y>=35&&P.Y<=79) { Owner->ToggleCatalogue(); return FReply::Handled(); }
-    for(int i=0;i<Total;++i) if(P.X>=60+i*267&&P.X<=302+i*267&&P.Y>=790&&P.Y<=865) { Owner->SelectItem(i); return FReply::Handled(); }
+    for(int Slot=0;Slot<4 && Page*4+Slot<Total;++Slot) if(P.X>=60+Slot*267&&P.X<=302+Slot*267&&P.Y>=790&&P.Y<=865) { Owner->SelectItem(Ids[Page*4+Slot]); return FReply::Handled(); }
+    if(Total>4 && P.Y>=790 && P.Y<=865)
+    {
+        const int Pages=(Total+3)/4;
+        if(P.X>=1180 && P.X<=1250) Owner->SelectItem(Ids[((Page+Pages-1)%Pages)*4]);
+        if(P.X>=1450 && P.X<=1520) Owner->SelectItem(Ids[((Page+1)%Pages)*4]);
+    }
     if(P.X>=1220&&P.X<=1472&&P.Y>=661&&P.Y<=705) { Owner->ResetPreview(); return FReply::Handled(); }
     if(P.X>=30&&P.X<=1155&&P.Y>=90&&P.Y<=770) { bDragging=true; LastMouse=P; return FReply::Handled().CaptureMouse(AsShared()); }
     return FReply::Handled();

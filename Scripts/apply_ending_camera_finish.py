@@ -22,7 +22,7 @@ def post_finish(name,code,priority,bridge=False):
     param.set_editor_property('parameter_name','Strength');param.set_editor_property('default_value',0.);bindings['Strength']=(param,'')
     bindings['T']=(finish_lib.create_material_expression(m,unreal.MaterialExpressionTime),'')
     if bridge:
-        for name in ['Bridge','Travel']:
+        for name in ['Bridge','Travel','Handoff','Rise']:
             value=finish_lib.create_material_expression(m,unreal.MaterialExpressionScalarParameter)
             value.set_editor_property('parameter_name',name);value.set_editor_property('default_value',0.)
             bindings[name]=(value,'')
@@ -40,21 +40,47 @@ def post_finish(name,code,priority,bridge=False):
     finish_lib.recompile_material(m);assert unreal.EditorAssetLibrary.save_loaded_asset(m)
 
 post_finish('ScaleZoom',r'''
-float amount=saturate(Strength), blend=saturate(Bridge), travel=saturate(Travel);
+float amount=saturate(Strength), warp=clamp(Strength,0,2.5), blend=saturate(Bridge), travel=saturate(Travel);
+float handoff=saturate(Handoff),rise=saturate(Rise);
+[branch] if(amount<.001 && blend<.001) return SC.rgb;
 float2 p=UV-.5;
 float edge=smoothstep(.015,.3,dot(p,p));
-float3 current=0,previous=0;
-[unroll] for(int i=0;i<13;i++) {
-    float tap=i/12.0;
-    float2 q=.5+p*(1+tap*.40*amount);
-    current+=SceneTextureLookup(ViewportUVToSceneTextureUV(clamp(q,.002,.998),14),14,false).rgb;
-    float2 oldUV=.5+p*(1+travel*1.8+tap*.38*amount);
-    float valid=1-smoothstep(.45,.66,length(oldUV-.5));
-    float3 old=Texture2DSample(PreviousFrame,PreviousFrameSampler,saturate(oldUV)).rgb;
-    previous+=lerp(SceneTextureLookup(ViewportUVToSceneTextureUV(clamp(q,.002,.998),14),14,false).rgb,old,valid);
+// World-space camera motion supplies the lift and perspective change.
+// Only radial shutter trails anticipate and continue the spatial camera rush.
+// A short outgoing exposure overlaps the live arrival. Both images preserve
+// their aspect ratio; only uniform radial scaling is allowed.
+[branch] if(handoff>.0001 || rise>.0001) {
+    float3 moving=0,oldExposure=0;
+    float rush=max(handoff,rise);
+    [unroll] for(int j=0;j<11;j++) {
+        float tap=j/10.0;
+        float2 q=.5+p*(1+tap*.95*rush);
+        moving+=SceneTextureLookup(ViewportUVToSceneTextureUV(clamp(q,.002,.998),14),14,false).rgb;
+        [branch] if(blend>.001) {
+            float2 oldUV=.5+p*(1+travel*.32+tap*.60);
+            oldExposure+=Texture2DSample(PreviousFrame,PreviousFrameSampler,clamp(oldUV,.002,.998)).rgb;
+        }
+    }
+    float angle=atan2(p.y,p.x),radius=length(p);
+    float streak=pow(saturate(.5+.5*sin(angle*139+sin(angle*11)*2)),32)*smoothstep(.24,.65,radius);
+    return lerp(moving/11,oldExposure/11,blend)*(1+streak*rush*.18);
 }
-current=lerp(SC.rgb,current/13,amount*(.25+edge*.75));
-float3 result=lerp(current,previous/13,blend);
+float3 current=0,previous=0;
+[unroll] for(int i=0;i<9;i++) {
+    float tap=i/8.0;
+    float2 q=.5+p*(1+tap*.55*warp);
+    float3 sampleColour=SceneTextureLookup(ViewportUVToSceneTextureUV(clamp(q,.002,.998),14),14,false).rgb;
+    current+=sampleColour;
+    [branch] if(blend>.001) {
+        // Preserve the earlier brain bridge without anisotropic translation.
+        float2 oldUV=.5+p*(1+travel*3.8+tap*.48*warp);
+        float valid=1-smoothstep(.45,.66,length(oldUV-.5));
+        float3 old=Texture2DSample(PreviousFrame,PreviousFrameSampler,saturate(oldUV)).rgb;
+        previous+=lerp(sampleColour,old,valid);
+    }
+}
+current=lerp(SC.rgb,current/9,amount*(.25+edge*.75));
+float3 result=lerp(current,previous/9,blend);
 // Dim radial trails preserve the original scene colours, never a white overlay.
 float a=atan2(p.y,p.x),r=length(p);
 float streak=pow(saturate(.5+.5*sin(a*139+sin(a*11)*2)),32)*smoothstep(.24,.65,r);

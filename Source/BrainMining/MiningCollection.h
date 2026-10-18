@@ -31,15 +31,26 @@ struct FMiningCollectionPlacement
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FTransform ClueTransform;
     // Optional authored prop replaces only the generated presentation.
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TObjectPtr<AActor> PresentationActor;
+    // A room-owned echo stage supplies the same pulse materials as its walls.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) TObjectPtr<AActor> EchoSource;
 };
 
 struct FCollectionAnt
 {
     TWeakObjectPtr<AActor> Actor;
-    TArray<TWeakObjectPtr<UStaticMeshComponent>> Legs;
+    TArray<TWeakObjectPtr<USceneComponent>> Legs;
     FVector Start;
     FTransform Frame;
     float Length=260,Phase=0;
+    int32 TrailIndex=INDEX_NONE;
+};
+struct FCollectionAntTrail
+{
+    TWeakObjectPtr<ADiggableRock> Rock;
+    FVector Start,End;
+    TArray<FVector> Points,Normals;
+    TArray<bool> Exposed;
+    int32 ObservedCuts=INDEX_NONE;
 };
 struct FCollectionBird
 {
@@ -64,6 +75,7 @@ class BRAINMINING_API AMiningCollectible : public AActor
     GENERATED_BODY()
 public:
     AMiningCollectible();
+    static constexpr int32 ItemTypeCount = 12;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UBoxComponent> Body;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UDynamicMeshComponent> Model;
     UPROPERTY() TObjectPtr<UDynamicMeshComponent> Outline;
@@ -77,12 +89,14 @@ public:
     FTransform BuriedTransform;
     void BuildModel(int32 Id, bool Flying=false);
     void SetHighlighted(bool Enabled);
+    void ApplyEchoPresentation(class UMaterialInterface* Surface,class UMaterialInterface* Contours);
     void Release();
     float MeasureExposure() const;
     bool CanRelease(float Threshold) const;
     static FString ItemName(int32 Id);
     static FString Description(int32 Id);
     static FString Clue(int32 Id);
+    bool bEchoPresentation=false;
 };
 
 UCLASS()
@@ -109,6 +123,8 @@ public:
     // Zero chooses a new seed each run. A positive seed reproduces a layout.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection") int32 RandomSeed = 0;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|V02") bool bDeepField = false;
+    // Enabled only by the expanded collection test map, never by campaign defaults.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection") bool bExpandedCollection = false;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection") FString DisplayVersion=TEXT("V0.2");
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|V02", meta=(ClampMin="650",ClampMax="1800",Units="cm")) float ExcavationDepth = 1100;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Collection|V02") int32 FlockBursts = 0;
@@ -126,6 +142,8 @@ public:
     UPROPERTY() TObjectPtr<AHeavenToilet> PreviewToilet;
     UPROPERTY() TObjectPtr<UPostProcessComponent> HighlightPostProcess;
     UFUNCTION(BlueprintCallable) void CollectTarget();
+    // Register a room-owned reward with the existing inventory and pickup path.
+    bool RegisterExternalCollectible(AMiningCollectible* Item);
     UFUNCTION(BlueprintCallable) void ToggleCatalogue();
     UFUNCTION(BlueprintCallable) void ResetCollection();
     UFUNCTION(BlueprintCallable) void SelectItem(int32 Id);
@@ -133,17 +151,22 @@ public:
     UFUNCTION(BlueprintCallable) void ZoomPreview(float Steps);
     UFUNCTION(BlueprintCallable) void ResetPreview();
     int32 UniqueCount() const;
+    TArray<int32> CatalogueIds() const;
     FString Toast;
     float ToastRemaining = 0;
 private:
     bool InitializePlayer();
     void SpawnField();
     void SpawnAuthoredClues(const FMiningCollectionPlacement& Placement);
+    void SpawnAuthoredPresentation(AMiningCollectible* Item,const FMiningCollectionPlacement& Placement);
     void SpawnDeepField();
+    void SpawnExpandedCollection();
     void RelocateGeneratedField();
     void TickAmbient(float DeltaSeconds);
     void TickClues(float DeltaSeconds);
     void MakeFeather(ADiggableRock* Rock, FVector Support, float Angle);
+    void SpawnAntTrail(ADiggableRock* Rock,FVector Start,FVector End);
+    void UpdateAntTrails();
     bool FindBirdExit(TArray<FVector>& Path) const;
     AActor* MakeProp(FVector Position, FVector Size, FLinearColor Color, bool Round=false);
     void RefreshTarget();
@@ -158,6 +181,7 @@ private:
     bool bAreaActive = true;
     int32 PreviewRefreshFrames=0;
     TArray<FCollectionAnt> Ants;
+    TArray<FCollectionAntTrail> AntTrails;
     TArray<FCollectionBird> Birds;
     TArray<FCollectionClue> Clues;
     TArray<FVector> BirdPath;

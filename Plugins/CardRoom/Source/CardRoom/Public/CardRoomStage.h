@@ -11,6 +11,7 @@ class USkeletalMesh;
 class UPointLightComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCardRoomCompleted, FName, RoomId);
 DECLARE_DELEGATE_TwoParams(FCardRoomAudioOverride, FName, float);
+DECLARE_DELEGATE_TwoParams(FCardRoomSubtitleOverride, const FString&, float);
 
 UCLASS()
 class CARDROOM_API ACardRoomStage : public AActor
@@ -23,6 +24,7 @@ public:
     virtual void BeginPlay() override;
     FCardRoomRun Run;
     FCardRoomAudioOverride AudioOverride;
+    FCardRoomSubtitleOverride SubtitleOverride;
     void Sound(const TCHAR* Name, float Volume=0.65f);
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Card Room") FName RoomId = TEXT("CardDuel_P1");
     // Integration hooks only: listeners decide what a win or collectible means in the main game.
@@ -62,7 +64,8 @@ public:
     FVector GetCardLanding(int32 Index,int32 Count) const;
     FVector GetSeatEyeLocation() const {return GetActorTransform().TransformPosition(FVector(-270,0,188));}
     FVector GetSeatLocation() const { return GetActorTransform().TransformPosition(FVector(-270,0,100)); }
-    FVector GetApproachLocation() const { return GetActorTransform().TransformPosition(bTabletopEntry?FVector(-270,0,115):FVector(-295,0,0)); }
+    FVector GetApproachLocation() const { return GetActorTransform().TransformPosition(bTabletopEntry?FVector(-75,0,115):FVector(-295,0,0)); }
+    float GetApproachRadius() const { return bTabletopEntry?800.f:180.f; }
     bool IsPlayerNear(const FVector& Position) const;
 private:
     UPROPERTY() TObjectPtr<USceneComponent> ToyRoot;

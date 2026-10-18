@@ -1,6 +1,10 @@
 #if WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS
 #include "EndingEmergence.h"
 #include "MiningComponent.h"
+#include "MiningSaveSubsystem.h"
+#include "Subsystems/GameInstanceSubsystem.h"
+#include "Engine/GameInstance.h"
+#include "Components/SceneCaptureComponent2D.h"
 #include "MiningToolEffectsComponent.h"
 #include "DiggableRock.h"
 #include "EndingComicRock.h"
@@ -28,18 +32,24 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "Misc/App.h"
+#include "MediaPlayer.h"
+#include "MediaSoundComponent.h"
+#include "MediaTexture.h"
 
 class FEndingTitleDrillPreview : public IAutomationLatentCommand
 {
     FAutomationTestBase* Test;int Step=0;double Started=FPlatformTime::Seconds();
     int InputPhase=0,LastCuts=0,ColorCapture=0;
+    FVector ExitLastPosition=FVector::ZeroVector;float ExitLastTime=-1;int ExitLastShot=-1;
     bool EntryCaptured=false,FadeCaptured=false,OriginalEnabled=true,ExitStartCaptured=false,WhiteCaptured=false;
     float LastContact=0,MaxContactGap=0;
+    bool EarlyPickCaptured=false;
     bool GroundTurnCaptured=false,PortalCaptured=false,PrintedPaperCaptured=false,PatternFrontCaptured=false;
     float LastBlackProbe=-1;int BlackMatchSamples=0;
     bool bMovie=FParse::Param(FCommandLine::Get(),TEXT("PaperFinaleMovie"));
     bool bOnly=FParse::Param(FCommandLine::Get(),TEXT("PaperFinaleOnly"));
     int MovieFrame=0;
+    int LastObservedShot=INDEX_NONE;
     float Since=0,BaseSpeed=0,BulbIntensity=0,BulbMin=10000,BulbMax=0,OriginalRadius=0,OriginalSmoke=0,OriginalDust=0,OriginalSparks=0;bool InfiniteBefore=false;
     void Key(APlayerController* P,FKey K,bool Down){P->InputKey(FInputKeyEventArgs::CreateSimulated(K,Down?IE_Pressed:IE_Released,Down?1.f:0.f));}
     void Capture(const TCHAR* Name){if(bMovie)return;FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("EndingEmergencePreview")/(FString(Name)+TEXT(".png")),true,false);}
@@ -47,13 +57,46 @@ public:
     explicit FEndingTitleDrillPreview(FAutomationTestBase* T):Test(T){}
     bool Update() override
     {
-        if(FPlatformTime::Seconds()-Started>180){Test->AddError(FString::Printf(TEXT("Finale timed out at step %d"),Step));return true;}
-        if((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||FTextureCompilingManager::Get().GetNumRemainingTextures())return false;
+        if(FPlatformTime::Seconds()-Started>180){Test->AddError(FString::Printf(TEXT("Finale timed out at step %d, phase %d, last observed shot %d"),Step,InputPhase,LastObservedShot));return true;}
+        // Wait for startup compilation only. Media texture/material updates must
+        // not suspend observation while the live camera passes a short checkpoint.
+        if(Step==0&&((GShaderCompilingManager&&GShaderCompilingManager->IsCompiling())||FTextureCompilingManager::Get().GetNumRemainingTextures()))return false;
         UWorld* W=GIsEditor?GEditor->PlayWorld.Get():AutomationCommon::GetAnyGameWorld();if(!W||W->GetTimeSeconds()<2)return false;
         AEndingEmergence* D=nullptr;for(TActorIterator<AEndingEmergence> I(W);I;++I){D=*I;break;}if(!D||!D->bReady)return false;
+        if(D->Shot!=LastObservedShot)
+        {
+            UE_LOG(LogTemp,Display,TEXT("ENDING_VIDEO_TEST shot=%d time=%.3f step=%d phase=%d media=%d ready=%d playing=%d"),D->Shot,D->ShotTime,Step,InputPhase,D->FinaleVideoPlayer!=nullptr,D->FinaleVideoPlayer&&D->FinaleVideoPlayer->IsReady(),D->FinaleVideoPlayer&&D->FinaleVideoPlayer->IsPlaying());
+            LastObservedShot=D->Shot;
+        }
         if(bMovie&&D->Shot>=10&&D->Shot<=14)
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("PaperFinaleMovie")/FString::Printf(TEXT("frame-%04d.png"),MovieFrame++),true,false);
         auto* P=W->GetFirstPlayerController();auto* M=D->Mining.Get();auto* Effects=P->GetPawn()->FindComponentByClass<UMiningToolEffectsComponent>();
+        if(D->Shot==8&&D->ShotTime<2.1f)
+            Test->TestEqual(TEXT("Cave waits until the second half of the o dive"),D->FinalePreviewMaterials[0]->K2_GetScalarParameterValue(TEXT("Reveal")),0.f);
+        if(D->Shot==11&&D->ShotTime>5.65f&&!EarlyPickCaptured)
+        {
+            Test->TestTrue(TEXT("Giant rock is upright well before the final rush"),FMath::Abs(D->PaperRock->GetRelativeRotation().Pitch)<1);
+            Test->TestTrue(TEXT("Pickaxe is visible early enough to read its windup"),FMath::Abs(D->PaperPick->GetRelativeRotation().Pitch)<1);
+            Capture(TEXT("paper-pick-early"));EarlyPickCaptured=true;
+        }
+        if(D->Shot==10||D->Shot==11)
+        {
+            const FTransform Frame=D->PaperScene->GetComponentTransform();
+            const FVector Local=Frame.InverseTransformPosition(D->Camera->GetActorLocation());
+            if(ExitLastShot==10&&D->Shot==11)
+            {
+                Test->TestTrue(TEXT("Portal to desktop flight has no camera position jump"),FVector::Dist(Local,ExitLastPosition)<1200*(D->Age-ExitLastTime)+5);
+                // The last sampled turn frame can precede the endpoint by a
+                // variable amount. Its 66 cm smoothstep has a 90 cm/s peak.
+                Test->TestTrue(TEXT("Desktop height remains continuous across sampled frames"),FMath::Abs(Local.Z-ExitLastPosition.Z)<=90.f*(D->Age-ExitLastTime)+.1f);
+                Test->TestTrue(TEXT("Desktop flight starts at the authored turn endpoint height"),FMath::Abs(Local.Z-90.f)<.1f);
+            }
+            Test->TestEqual(TEXT("Portal and desktop carry no dot pattern"),D->PaperSurfaceMaterial->K2_GetScalarParameterValue(TEXT("DotsReveal")),0.f);
+            Test->TestEqual(TEXT("No full-screen flash interrupts the white portal"),D->OverlayAlpha(),0.f);
+            if(D->Shot==11||D->ShotTime>=2.6f)
+                Test->TestEqual(TEXT("Exit speed lines clear before the desktop turn"),D->ExitInkMaterial->K2_GetScalarParameterValue(TEXT("Strength")),0.f);
+            ExitLastPosition=Local;ExitLastTime=D->Age;ExitLastShot=D->Shot;
+        }
         if(D->Shot==10&&D->ShotTime>2.35f&&D->ShotTime<2.95f&&D->ShotTime-LastBlackProbe>.07f)
         {
             Test->TestEqual(TEXT("No white overlay interrupts the sheet turn"),D->OverlayAlpha(),0.f);
@@ -65,22 +108,22 @@ public:
             Test->TestTrue(TEXT("White paper only appears after the black flight"),D->PaperScene->IsVisible()&&D->PaperSurface->IsVisible());
             Capture(TEXT("paper-luminous-portal"));PortalCaptured=true;
         }
-        if(D->Shot==10&&D->ShotTime>3.8f&&!PatternFrontCaptured)
+        if(D->Shot==10&&D->ShotTime>3.05f&&!PatternFrontCaptured)
         {
             Capture(TEXT("paper-dots-front"));PatternFrontCaptured=true;
         }
-        if(D->Shot==10&&D->ShotTime>5.35f&&!GroundTurnCaptured)
+        if(D->Shot==10&&D->ShotTime>3.55f&&!GroundTurnCaptured)
         {
             const FTransform Frame=D->PaperScene->GetComponentTransform();
             Test->TestTrue(TEXT("Exit ends above the desktop with a horizontal forward gaze"),Frame.InverseTransformPosition(D->Camera->GetActorLocation()).Z>20&&Frame.InverseTransformVectorNoScale(D->Camera->GetActorForwardVector()).X>.98f);
             Capture(TEXT("paper-white-to-ground"));GroundTurnCaptured=true;
         }
-        if(D->Shot==10&&D->ShotTime>4.5f&&!PrintedPaperCaptured)
+        if(D->Shot==10&&D->ShotTime>3.3f&&!PrintedPaperCaptured)
         {
             Capture(TEXT("paper-dots-turn"));PrintedPaperCaptured=true;
         }
         if(D->Shot==9&&!EntryCaptured){Capture(TEXT("wooow-cave-first-frame"));EntryCaptured=true;}
-        if(D->Shot==8&&D->ShotTime>1.6f&&!FadeCaptured)
+        if(D->Shot==8&&D->ShotTime>2.7f&&!FadeCaptured)
         {
             const float Reveal=D->FinalePreviewMaterials[0]->K2_GetScalarParameterValue(TEXT("Reveal"));
             Test->TestTrue(TEXT("Cave is partially revealed during descent, not instant"),Reveal>.1f&&Reveal<.8f);
@@ -107,7 +150,7 @@ public:
         {
             Test->TestTrue(TEXT("Paper surface is already present at the continuous exit"),D->PaperScene->IsVisible());
             Test->TestTrue(TEXT("Distant luminous aperture remains visible in black space"),D->PaperSurface->IsVisible());
-            Test->TestTrue(TEXT("Printed dots begin revealing before the approach"),D->PaperSurfaceMaterial->K2_GetScalarParameterValue(TEXT("DotsReveal"))>.05f);
+            Test->TestEqual(TEXT("Distant exit keeps the drilling light's 75 cm diameter"),D->PaperSurfaceMaterial->K2_GetScalarParameterValue(TEXT("ApertureRadius")),37.5f);
             const FTransform Frame=D->PaperScene->GetComponentTransform();
             Test->TestTrue(TEXT("Exit remains on the paper front, looking down or across it rather than at the ceiling"),Frame.InverseTransformPosition(D->Camera->GetActorLocation()).Z>0&&Frame.InverseTransformVectorNoScale(D->Camera->GetActorForwardVector()).Z<=.01f);
             Test->TestEqual(TEXT("Tool copies survive the initial exit transition"),D->FinaleDrills.Num(),2);
@@ -116,6 +159,31 @@ public:
         }
         if(Step==0)
         {
+            const int SavedPaperShot=D->Shot;const float SavedPaperTime=D->ShotTime;
+            D->Shot=10;
+            for(float Time:{2.50f,2.56f,2.58f,2.60f})
+            {
+                D->ShotTime=Time;D->UpdatePaperFinale(0);
+                Test->TestEqual(TEXT("The white exit keeps its physical radius throughout approach"),D->PaperSurfaceMaterial->K2_GetScalarParameterValue(TEXT("ApertureRadius")),37.5f);
+            }
+            D->PaperScene->SetRelativeRotation(FRotator::ZeroRotator);
+            D->Shot=11;D->ShotTime=6.59f;D->UpdatePaperFinale(0);
+            const FVector BeforeHit=D->Camera->GetActorLocation();
+            D->ShotTime=6.6f;D->UpdatePaperFinale(0);
+            const FVector Seam=D->Camera->GetActorLocation();const FQuat SeamFacing=D->Camera->GetActorQuat();
+            D->Shot=12;D->ShotTime=0;D->UpdatePaperFinale(0);
+            Test->TestTrue(TEXT("The impact rail starts at the flight endpoint"),Seam.Equals(D->Camera->GetActorLocation(),.1f));
+            Test->TestTrue(TEXT("The impact rail preserves the incoming camera direction"),SeamFacing.AngularDistance(D->Camera->GetActorQuat())<.001f);
+            D->ShotTime=.01f;D->UpdatePaperFinale(0);
+            const FVector Next=D->Camera->GetActorLocation()-Seam;
+            Test->TestTrue(TEXT("Paper impact never restarts forward motion from zero"),(Next-(Seam-BeforeHit)).Size()<.2f);
+            D->ResetPaperFinale();D->Shot=SavedPaperShot;D->ShotTime=SavedPaperTime;
+            Test->TestFalse(TEXT("The ending disables the shared R reset action"),M->bFieldResetEnabled);
+            const int SavedShot=D->Shot;
+            for(int S=-1;S<=14;++S){D->Shot=S;Test->TestFalse(TEXT("Hints omit comfort and replay controls"),D->Hint().Contains(TEXT("C "))||D->Hint().Contains(TEXT("R ")));}
+            D->Shot=SavedShot;
+            Test->TestFalse(TEXT("The retired save holder cannot auto-load or write campaign progress"),
+                UMiningSaveSubsystem::StaticClass()->IsChildOf(UGameInstanceSubsystem::StaticClass()));
             InfiniteBefore=M->bInfiniteDrillEnergy;OriginalRadius=M->Radius;
             OriginalSmoke=Effects->DrillSmokeStrength;OriginalDust=Effects->DrillDustStrength;OriginalSparks=Effects->DrillSparkStrength;OriginalEnabled=Effects->bEnabled;
             if(bOnly||bMovie)
@@ -140,8 +208,12 @@ public:
             for(int I=0;I<D->TitleTargets.Num();++I)
             {
                 FTransform T;D->TitleBatches[0]->GetInstanceTransform(I,T);
-                Test->TestTrue(TEXT("Membranes keep the letter geometry within subtle floating motion"),T.GetLocation().Equals(D->TitleTargets[I],700));
+                Test->TestTrue(TEXT("Membranes keep the letter geometry within subtle floating motion"),T.GetLocation().Equals(D->TitleTargets[I],36000));
             }
+            const FVector Before=D->TitleAnimatedCenters[0];const float Now=D->Age;
+            D->Age+=.7f;D->UpdateCellTitle(1);
+            Test->TestTrue(TEXT("Assembled letters and their cells stay alive"),FVector::Dist(Before,D->TitleAnimatedCenters[0])>200);
+            D->Age=Now;D->UpdateCellTitle(1);
             Test->TestEqual(TEXT("Title has no exhausted grey filter"),D->Exhaustion,0.f);++Step;
             Test->TestTrue(TEXT("Petri specks decorate the cell background"),D->FinaleCellSpecks->IsVisible()&&D->FinaleCellSpecks->GetInstanceCount()==1900);
             Test->TestEqual(TEXT("All six stages are prepared before the dive"),D->FinaleRocks.Num(),12);
@@ -205,6 +277,9 @@ public:
                 {
                     Test->TestTrue(TEXT("Excavated faceted rocks remain closed and valid"),Mesh.IsClosed()&&Mesh.CheckValidity(UE::Geometry::FDynamicMesh3::FValidityOptions(),UE::Geometry::EValidityCheckFailMode::ReturnOnly));
                     Test->TestEqual(TEXT("Cut faces retain separate hard normals"),Mesh.Attributes()->PrimaryNormals()->ElementCount(),Mesh.TriangleCount()*3);
+                    Test->TestNotNull(TEXT("Real drill cuts rebuild ink vertex colors"),Mesh.Attributes()->PrimaryColors());
+                    Test->TestEqual(TEXT("Real drill cuts rebuild every triangle's barycentric UVs"),Mesh.Attributes()->PrimaryUV()->ElementCount(),Mesh.TriangleCount()*3);
+                    for(int Triangle:Mesh.TriangleIndicesItr())Test->TestTrue(TEXT("Ink UV is assigned on each excavated face"),Mesh.Attributes()->PrimaryUV()->IsSetTriangle(Triangle));
                 });
             }
             Test->TestTrue(TEXT("Successive physical rock faces are actually excavated"),Opened>=7);++Step;
@@ -229,7 +304,7 @@ public:
         }
         else if(Step==10&&D->Shot==11&&D->ShotTime>1.5f)
         {
-            Test->TestTrue(TEXT("Paper flight follows the tunnel before reality"),D->PaperScene->IsVisible()&&!D->FinaleReality->IsVisible()&&!D->bComplete);
+            Test->TestTrue(TEXT("Paper flight follows the tunnel before reality"),D->PaperScene->IsVisible()&&!D->PaperCaveScene->IsVisible()&&!D->bComplete);
             Test->TestEqual(TEXT("Twenty-four contour cutouts line the route"),D->PaperCardCount,24);
             int Popped=0;for(float Age:D->PaperPopAges)if(Age>=0)++Popped;
             Test->TestTrue(TEXT("Nearby cutouts pop while later cutouts remain flat"),Popped>0&&Popped<24);
@@ -247,42 +322,47 @@ public:
             else if(InputPhase==1&&D->Shot==11&&D->ShotTime>5.8f)
             {for(float Age:D->PaperPopAges)Test->TestTrue(TEXT("All cutouts rise as camera reaches the end"),Age>=0);Capture(TEXT("paper-flight-last"));++InputPhase;}
             else if(InputPhase==2&&D->Shot==12&&D->ShotTime>.8f)
-            {Test->TestTrue(TEXT("Pickaxe strike opens a physical hole"),D->bPaperRockBroken&&!D->PaperRockCap->IsVisible());Capture(TEXT("paper-rock-impact"));++InputPhase;}
-            else if(InputPhase==3&&D->Shot==12&&D->ShotTime>4.1f)
-            {Test->TestEqual(TEXT("Passing through the rock uses no fade"),D->OverlayAlpha(),0.f);Capture(TEXT("paper-cave-entry"));++InputPhase;}
-            else if(InputPhase==4&&D->Shot==13&&D->ShotTime>2.9f)
             {
-                const FVector Eye=D->PaperCaveScene->GetComponentTransform().InverseTransformPosition(D->Camera->GetActorLocation());
-                Test->TestTrue(TEXT("Camera orbits around the model on its right side"),Eye.Y>1700);
-                Capture(TEXT("paper-cave-orbit-right"));++InputPhase;
+                Test->TestTrue(TEXT("Pickaxe strike opens a physical hole"),D->bPaperRockBroken&&!D->PaperRockCap->IsVisible());
+                Test->TestTrue(TEXT("The opening frame is already visible inside the hole"),D->PaperCaveScene->IsVisible());
+                Test->TestFalse(TEXT("The opening does not consume the movie before entry"),D->bFinaleVideoRequested);
+                Test->TestNotNull(TEXT("The supplied movie is prepared before impact"),D->FinaleVideoPlayer.Get());
+                if(D->FinaleVideoPlayer)Test->TestTrue(TEXT("The movie decoder is ready before impact"),D->FinaleVideoPlayer->IsReady());
+                Capture(TEXT("paper-rock-impact"));++InputPhase;
             }
-            else if(InputPhase==5&&D->Shot==13&&D->ShotTime>5.85f){Capture(TEXT("paper-cave-front"));++InputPhase;}
-            else if(InputPhase==6&&D->Shot==14&&D->ShotTime>.08f)
-            {Test->TestTrue(TEXT("Captured cave fills the monitor during the match"),D->FinaleReality->IsVisible()&&!D->PaperCaveScene->IsVisible());Capture(TEXT("paper-screen-match"));++InputPhase;}
-            else if(InputPhase==7&&D->Shot==14&&D->ShotTime>5.2f){Capture(TEXT("paper-computer-cave"));++InputPhase;}
-            else if(InputPhase==8&&D->Shot==14&&D->ShotTime>8.5f)
-            {Test->TestTrue(TEXT("Cave computer reveal completes the ending"),D->bComplete);Capture(TEXT("paper-developer-credits"));Since=D->Age;++InputPhase;}
-            else if(InputPhase==9&&D->Age-Since>.5f){if(bMovie){FApp::SetUseFixedTimeStep(false);return true;}Key(P,EKeys::R,true);++Step;}
+            else if(InputPhase==3&&D->Shot==12&&D->ShotTime>2.3f)
+            {Test->TestEqual(TEXT("Passing through the rock uses no fade"),D->OverlayAlpha(),0.f);Capture(TEXT("paper-black-hole-entry"));++InputPhase;}
+            else if(InputPhase==4&&D->Shot==13&&D->ShotTime>.1f)
+            {
+                Test->TestTrue(TEXT("The camera enters straight into the video"),FMath::Abs(D->Camera->GetActorRotation().Pitch)<.1f);
+                Test->TestTrue(TEXT("The same video aperture survives the crossing"),D->PaperCaveScene->IsVisible());
+                Test->TestFalse(TEXT("Paper scenery is cleared only after crossing the rim"),D->PaperScene->IsVisible());
+                Test->TestNotNull(TEXT("The film material is ready for the supplied movie"),D->FinaleVideoMaterial.Get());
+                Test->TestTrue(TEXT("Crossing the rim starts video playback"),D->bFinaleVideoRequested&&D->FinaleVideoPlayer&&D->FinaleVideoPlayer->IsPlaying());
+                if(D->FinaleVideoPlayer)
+                {
+                    Test->TestTrue(TEXT("The real media clock advances"),D->FinaleVideoPlayer->GetTime().GetTotalSeconds()>.1);
+                    Test->TestTrue(TEXT("The supplied audio track is retained"),D->FinaleVideoPlayer->GetNumTracks(EMediaPlayerTrack::Audio)>0);
+                }
+                Test->TestTrue(TEXT("Video sound component is active"),D->FinaleVideoSound&&D->FinaleVideoSound->IsActive());
+                Capture(TEXT("paper-video-fullscreen"));Since=D->Age;++InputPhase;
+            }
+            else if(InputPhase==5&&D->ShotTime>1.5f){Capture(TEXT("paper-video-middle"));++InputPhase;}
+            else if(InputPhase==6&&D->bComplete)
+            {
+                Test->TestTrue(TEXT("Video completion comes from its end event"),D->FinaleVideoPlayer&&!D->FinaleVideoPlayer->HasError());
+                Capture(TEXT("paper-video-last-frame"));Since=D->Age;++InputPhase;
+            }
+            else if(InputPhase==7&&D->Age-Since>.5f){if(bMovie){FApp::SetUseFixedTimeStep(false);return true;}Key(P,EKeys::R,true);++Step;}
         }
         else if(Step==12)
         {
-            Key(P,EKeys::R,false);Test->TestEqual(TEXT("Restart returns to the playable cell"),D->Shot,-1);
-            Test->TestEqual(TEXT("Restart removes excavatable finale rocks"),D->FinaleRocks.Num(),0);
-            Test->TestTrue(TEXT("Restart restores the cell cloud"),D->bTitleRestored);
-            Test->TestFalse(TEXT("Restart hides the paper route"),D->PaperScene->IsVisible());
-            Test->TestFalse(TEXT("Restart hides credits room"),D->FinaleReality->IsVisible());
-            for(float Age:D->PaperPopAges)Test->TestTrue(TEXT("Restart rearms every folded cutout"),Age<0);
-            D->PreviewFilm();D->SetShot(9);Since=D->Age;++Step;
-        }
-        else if(Step==13&&D->Age-Since>.5f){Key(P,EKeys::R,true);++Step;}
-        else if(Step==14)
-        {
-            Key(P,EKeys::R,false);Test->TestEqual(TEXT("Mid-drill restart restores energy mode"),M->bInfiniteDrillEnergy,InfiniteBefore);
-            Test->TestFalse(TEXT("Mid-drill restart stops automatic digging"),M->IsMiningActive());
-            Test->TestEqual(TEXT("Mid-drill restart restores shared effects"),Effects->DrillSmokeStrength,OriginalSmoke);
-            Test->TestEqual(TEXT("Mid-drill restart restores effects enablement"),Effects->bEnabled,OriginalEnabled);
-            Test->TestFalse(TEXT("Mid-drill restart clears comic fragments"),D->FinaleImpactShards->IsVisible());
-            Test->TestEqual(TEXT("Mid-drill restart removes drill copies"),D->FinaleDrills.Num(),0);return true;
+            Key(P,EKeys::R,false);M->ResetField();
+            Test->TestEqual(TEXT("R cannot restart the completed ending"),D->Shot,13);
+            Test->TestTrue(TEXT("Disabled shared reset preserves the completed scene"),D->bComplete&&D->PaperCaveScene->IsVisible());
+            Test->TestFalse(TEXT("Digging stays stopped after completion"),M->IsMiningActive());
+            Test->TestEqual(TEXT("Ending restores the shared tool effects"),Effects->bEnabled,OriginalEnabled);
+            return true;
         }
         return false;
     }

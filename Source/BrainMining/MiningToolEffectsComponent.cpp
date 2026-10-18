@@ -146,6 +146,22 @@ void UMiningToolEffectsComponent::BeginPlay()
 	EchoPickaxeLines=EchoPickaxeLinesAsset.LoadSynchronous();
 }
 
+void UMiningToolEffectsComponent::PreparePickaxeMeshChange()
+{
+	if (!PickaxeMesh || !bEchoPickaxeLines) return;
+	PickaxeMesh->EmptyOverrideMaterials();
+	PickaxeMesh->SetOverlayMaterial(NormalPickaxeOverlay);
+	NormalPickaxeMaterials.Reset();
+	NormalPickaxeOverlay = nullptr;
+	bEchoPickaxeLines = false;
+}
+
+void UMiningToolEffectsComponent::PlayPickaxeUpgrade()
+{
+	PickaxeUpgradeRemaining = .65f;
+	bSwinging = false;
+}
+
 void UMiningToolEffectsComponent::UpdateEchoPickaxeStyle()
 {
 	if(!PickaxeMesh)return;
@@ -195,6 +211,7 @@ bool UMiningToolEffectsComponent::CanShowEffects() const
 void UMiningToolEffectsComponent::PlaySwing(float MiningInterval)
 {
 	if (!CanShowEffects()) return;
+	PickaxeUpgradeRemaining = 0; // A new player swing takes priority over the celebration.
 	PendingHit = FHitResult();
 	PendingSurfaceMaterial = nullptr;
 	if (Mining->bDrillMode) return;
@@ -441,6 +458,15 @@ void UMiningToolEffectsComponent::TickComponent(float DeltaTime, ELevelTick Tick
 		if (LeftDrillMesh) LeftDrillMesh->SetRelativeScale3D(FVector(SafeScale, -SafeScale, SafeScale));
 	}
 	ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator, Lowered, EquipTilt);
+	if (PresentedTool == 0 && PickaxeUpgradeRemaining > 0)
+	{
+		PickaxeUpgradeRemaining = FMath::Max(0.f, PickaxeUpgradeRemaining - DeltaTime);
+		const float T = 1.f - PickaxeUpgradeRemaining / .65f;
+		const float Lift = FMath::Sin(PI * T);
+		ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator,
+			Lowered + FVector(-3, -4, 10) * Lift,
+			EquipTilt + FRotator(12 * Lift, -9 * Lift, 18 * FMath::Sin(T * TWO_PI) * (1-T)));
+	}
 	bDrillRunning = Mining->bDrillMode && Mining->IsMiningActive() && IsValid(DrillMesh) && IsValid(DrillSpinCurve);
 	if (bDrillRunning)
 	{

@@ -18,6 +18,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="字幕")
 	void PlaySegment(FName SegmentId);
+	// Time-sensitive gameplay status uses the same subtitle widget and styling.
+	UFUNCTION(BlueprintCallable, Category="字幕")
+	void PlayStatusLine(FText Text, float Duration);
 
 	UFUNCTION(BlueprintCallable, Category="字幕")
 	void StopAll();

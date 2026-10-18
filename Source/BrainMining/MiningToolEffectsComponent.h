@@ -21,6 +21,10 @@ class BRAINMINING_API UMiningToolEffectsComponent : public UActorComponent
 public:
 	void PlayEncounterSwing() { PlaySwing(.48f); }
 	void UpdateEchoPickaxeStyle();
+	void PreparePickaxeMeshChange();
+	void PlayPickaxeUpgrade();
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Effects")
+	float PickaxeUpgradeRemaining = 0;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Effects")
 	bool bEchoPickaxeLines = false;
 	UMiningToolEffectsComponent();

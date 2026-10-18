@@ -1,4 +1,4 @@
-﻿"""Ending-only inked rock material. Does not rebuild the map or edit shared tools."""
+"""Ending-only inked rock material. Does not rebuild the map or edit shared tools."""
 import unreal
 
 lib = unreal.MaterialEditingLibrary
@@ -42,11 +42,15 @@ float band=.18+.82*smoothstep(.12,.78,diffuse);
 float light=lerp(pow(diffuse,1.65),band,.18);
 float attenuation=1/(1+pow(length(toLight)/360,2));
 float focus=.045+.955*pow(saturate(dot(v,float3(-1,0,0))),10);
+// Restore the reference's bright mining contact and shaded peripheral walls.
 float3 illumination=float3(.018,.027,.045)+float3(2.25,1.95,1.55)*light*attenuation*focus;
 float3 bary=float3(UV.x,UV.y,1-UV.x-UV.y);
 float3 pixelDistance=bary/max(fwidth(bary),.00001);
 float3 edgeInk=(1-smoothstep(.28,1.75,pixelDistance))*C.rgb;
 float ink=MeshInk*max(edgeInk.x,max(edgeInk.y,edgeInk.z));
+// Missing UVs must never turn every pixel into an edge. Geometry regression
+// tests additionally require the real drill path to reconstruct every overlay.
+ink*=step(.000001,fwidth(UV.x)+fwidth(UV.y));
 float rim=(1-smoothstep(.015,.075,abs(dot(n,v))))*.32;
 ink=max(ink*.98,rim);
 // Restrained pigment variation, not wallpaper dots or curved contour stripes.

@@ -8,6 +8,7 @@ namespace WenSiMuseumMechanisms
 {
  constexpr float BlockRestZ=89.f;
  constexpr float BalanceTravel=24.f;
+ constexpr float InitialBalanceAlpha=-.35f;
  inline void CylinderBetween(AActor* Actor,const FVector& Start,const FVector& End,float Diameter)
  {
   const FVector Delta=End-Start;
@@ -17,7 +18,7 @@ namespace WenSiMuseumMechanisms
  }
  inline void UpdateBalance(UWorld* World,float Alpha,FVector Origin=FVector::ZeroVector)
  {
-  Alpha=FMath::Clamp(Alpha,0.f,1.f);
+  Alpha=FMath::Clamp(Alpha,-1.f,1.f);
   const float Drop=BalanceTravel*Alpha;
   const float Angle=FMath::RadiansToDegrees(FMath::Asin(Drop/90.f));
   const float Offset=90.f*FMath::Cos(FMath::DegreesToRadians(Angle));

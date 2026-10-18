@@ -1,4 +1,5 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "WenSi/MouseMuseumPortal.h"
 #include "WenSi/WenSiThoughtBubble.h"
 #include "Engine/Texture2D.h"
 #include "Fonts/CompositeFont.h"
@@ -216,7 +217,9 @@ void UWenSiMirrorWidget::Refresh()
   if(WordWidgets[Index].IsValid())WordWidgets[Index]->SetRenderOpacity(Puzzle->IsSwapping() && !Puzzle->HasSwapCommitted()?0.f:1.f);
  }
  FString Message;
- if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("E 重置谜题");
+ if(Puzzle->MousePortal && Puzzle->MousePortal->IsEntering()) Message=TEXT("正在进入画中的细胞……");
+ else if(Puzzle->MousePortal && Puzzle->MousePortal->IsFocused()) Message=TEXT("E 进入画中的圆环");
+ else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("E 重置谜题");
  else if (!Puzzle->bComplete)
  {
   if (Puzzle->Aim.IsValid()) Message=TEXT("E 思考    ");

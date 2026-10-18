@@ -7,6 +7,8 @@
 #include "MiningEncounterPlayer.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningComponent.h"
+#include "MiningCollection.h"
+#include "MiningCollectionEffects.h"
 #include "CardRoomPlayer.h"
 #include "CardRoomStage.h"
 #include "EchoPassagePlayer.h"
@@ -60,6 +62,9 @@ public:
         if(RoomAudio)RoomAudio->Tick(.01f);
         auto* Move=Cast<UMiningCharacterMovementComponent>(Pawn->GetCharacterMovement());
         auto* Miner=Pawn->FindComponentByClass<UMiningComponent>();const float OriginalRadius=Miner->Radius;
+        Test->TestFalse(TEXT("Drill cannot activate before reward pickup"),Miner->IsDrillUnlocked() || Miner->ActivateDrill());
+        Test->TestTrue(TEXT("Seat range covers the lamp pool"),Stage->IsPlayerNear(Stage->GetApproachLocation()+FVector(0,750,100)));
+        Test->TestFalse(TEXT("Seat range ends outside the lamp pool"),Stage->IsPlayerNear(Stage->GetApproachLocation()+FVector(0,850,100)));
         Test->TestEqual(TEXT("Physical screen and fourteen thick dig sections"),E->ComputerRocks.Num(),15);
         Test->TestTrue(TEXT("Water, breach and route references exist"),E->Water && E->BreachWall);
         if(!E->AuthoredTelevisionScreen)
@@ -103,7 +108,16 @@ public:
             Test->TestTrue(TEXT("Floating props appear with the first outburst"),Prop->IsVisible());
             Test->TestTrue(TEXT("Early floating props can be landed on"),Prop->GetCollisionEnabled()==ECollisionEnabled::QueryAndPhysics);
         }
+        for(int32 Pad=0;Pad<6;++Pad)
+        {
+            double Bottom=MAX_dbl;
+            for(const auto& Prop:E->FloatingProps)
+                if(Prop->ComponentHasTag(FName(*FString::Printf(TEXT("EscapeFloatingPad%d"),Pad))))
+                    Bottom=FMath::Min(Bottom,Prop->Bounds.Origin.Z-Prop->Bounds.BoxExtent.Z);
+            Test->TestTrue(TEXT("Every floating stack extends below the water surface"),Bottom<E->WaterZ);
+        }
         Test->TestTrue(TEXT("Victory reward claim succeeds"),Stage->CollectReward());
+        Test->TestTrue(TEXT("Only the pickup unlocks and equips the drill"),Miner->IsDrillUnlocked() && Miner->bDrillMode);
         Test->TestTrue(TEXT("Reward starts warning and releases controls"),E->Phase==EMiningEscapePhase::Warning && !PC->IsMoveInputIgnored() && !PC->IsLookInputIgnored());
         Test->TestFalse(TEXT("Duplicate reward ignored"),Stage->CollectReward());
         E->Tick(E->WarningSeconds+.1f);
@@ -126,9 +140,15 @@ public:
         const float PreviousRisePerSecond=(E->WaterEndZ-E->TableWaterZ)/(120.f-E->RapidFillSeconds);
         Test->TestTrue(TEXT("Steady water rises twice as fast as the previous 120-second route"),FMath::IsNearlyEqual(E->WaterZ,E->TableWaterZ+PreviousRisePerSecond*4.f,1.f));
         Test->TestTrue(TEXT("HUD time matches the faster flood"),FMath::IsNearlyEqual(E->SecondsLeft(),56.f,.01f));
+        Pawn->SetBase(E->FloatingProps[0]);E->Tick(.1f);Pawn->SetBase(static_cast<UPrimitiveComponent*>(nullptr));
+        Test->TestTrue(TEXT("Standing contact starts only that floating step timer"),E->FloatingSinkElapsed[0]>=0 && E->FloatingSinkElapsed[1]<0);
+        E->Tick(E->FloatingSinkDelay+E->FloatingSinkSeconds);
+        Test->TestFalse(TEXT("Spent step sinks completely and loses collision"),E->FloatingProps[0]->IsVisible() || E->FloatingProps[0]->GetCollisionEnabled()!=ECollisionEnabled::NoCollision);
+        E->RetryEscape();E->Tick(E->RapidFillSeconds);
+        Test->TestTrue(TEXT("Automatic retry restores floating steps"),E->FloatingSinkElapsed[0]<0 && E->FloatingProps[0]->IsVisible());
         const FVector Axis=(E->TunnelEnd-E->ComputerEntry).GetSafeNormal();
         TArray<UPostProcessComponent*> ExposureComponents;E->GetComponents(ExposureComponents);
-        Test->TestEqual(TEXT("Television has local exposure"),ExposureComponents.Num(),1);
+        Test->TestEqual(TEXT("Television and stage have local exposure"),ExposureComponents.Num(),2);
         if(ExposureComponents.Num())
         {
             auto* Exposure=ExposureComponents[0];
@@ -152,9 +172,9 @@ public:
         E->RetryEscape();
         Test->TestTrue(TEXT("Parkour retry resets guidance"),!E->bExitGuidance && E->GuideTarget().Equals(E->ComputerEntry));
         E->Tick(E->RapidFillSeconds);
+        const float SavedFloatZ=E->FloatingProps[0]->GetComponentLocation().Z;
         Pawn->SetActorLocation(E->ComputerCheckpointPosition);E->Tick(.01f);
         const float SavedWater=E->CheckpointWaterZ,SavedElapsed=E->CheckpointElapsed;
-        const float SavedFloatZ=E->FloatingProps[0]->GetComponentLocation().Z;
         Test->TestTrue(TEXT("Checkpoint captured before digging TV"),E->bComputerCheckpoint);
         Test->TestTrue(TEXT("TV cuts have capsule clearance"),Miner->Radius>=E->TelevisionMineRadius);
         auto* Screen=E->ComputerRocks[0].Get();
@@ -172,8 +192,14 @@ public:
         Test->TestTrue(TEXT("Authored screen accepts excavation at its visible surface"),Screen->MineSphere(ScreenCenter,190));
         Pawn->SetActorLocation(E->ComputerEntry+Axis*180);E->Tick(.01f);
         Test->TestTrue(TEXT("Excavated screen crossing creates second checkpoint"),E->bComputerCheckpoint);
-        E->Tick(E->ComputerSeconds+.1f);
-        Test->TestTrue(TEXT("Computer short circuit causes failure"),E->Phase==EMiningEscapePhase::Failed && E->FailureReason.Contains(TEXT("电路")));
+        const float SafeWater=E->WaterZ;
+        E->Tick(E->ComputerSeconds*4);
+        Test->TestTrue(TEXT("Real television entry grants permanent safety with no electrical timeout"),E->bEnteredComputer && E->Phase==EMiningEscapePhase::Flooding && E->ComputerElapsed==0);
+        Test->TestEqual(TEXT("Safe entry stops room water rising"),E->WaterZ,SafeWater);
+        // Before screen entry, drowning still returns to the saved television checkpoint.
+        E->RetryEscape();
+        Pawn->SetActorLocation(FVector(E->ComputerCheckpointPosition.X,E->ComputerCheckpointPosition.Y,E->WaterZ-200));E->Tick(.01f);
+        Test->TestTrue(TEXT("Drowning before entering television still fails"),E->Phase==EMiningEscapePhase::Failed);
         E->Tick(E->RetrySeconds+.1f);
         Test->TestTrue(TEXT("Automatic retry is before computer"),FVector::Dist(Pawn->GetActorLocation(),E->ComputerCheckpointPosition)<1 && E->bComputerCheckpoint);
         Test->TestEqual(TEXT("Dig geometry restored"),Screen->SuccessfulCuts,0);
@@ -183,6 +209,10 @@ public:
         Test->TestTrue(TEXT("Floating props restore checkpoint height"),FMath::Abs(E->FloatingProps[0]->GetComponentLocation().Z-SavedFloatZ)<1);
         E->Tick(10);E->RetryEscape();
         Test->TestEqual(TEXT("Repeated retries do not accumulate water"),E->WaterZ,SavedWater);
+        Pawn->SetActorLocation(E->ComputerCheckpointPosition);E->Tick(E->FloodSeconds*2);
+        Test->TestTrue(TEXT("TV shelf remains safe past the room time limit"),E->Phase==EMiningEscapePhase::Flooding && !E->bEnteredComputer);
+        Test->TestTrue(TEXT("Water stops below the TV landing"),E->WaterZ<=E->ComputerEntry.Z-850);
+        E->RetryEscape();
         Test->TestTrue(TEXT("Computer retry receives full countdown"),E->ElectricalSecondsLeft()>=E->ComputerSeconds-.1f);
         const int32 AttemptsBeforeR=E->Attempts;
         const FVector PositionBeforeR=Pawn->GetActorLocation();
@@ -200,10 +230,12 @@ public:
         }
         Pawn->SetActorLocation(E->Exit);E->Tick(.01f);
         Test->TestTrue(TEXT("Upper exit completes escape"),E->Phase==EMiningEscapePhase::Escaped);
+        Test->TestTrue(TEXT("Stage arrival fires the reused celebration"),E->StageCelebration && E->StageCelebration->bStageActive);
+        Test->TestTrue(TEXT("Stage has one collectible ribbon using shared item ID"),E->StageRibbon && E->StageRibbon->ItemId==11 && !E->StageRibbon->bCollected);
         Test->TestTrue(TEXT("Mining input is restored after the card/TV escape"),PC->EncounterPolicy && PC->EncounterPolicy->IsMiningAllowed() && !Miner->IsEncounterBlocked());
         if(RoomAudio)
         {
-            for(FName Cue:{FName(TEXT("S_CardDraw")),FName(TEXT("S_CardReward")),FName(TEXT("S_FloodStart")),FName(TEXT("S_Drown")),FName(TEXT("S_Retry")),FName(TEXT("S_Checkpoint")),FName(TEXT("S_ShortCircuit")),FName(TEXT("S_Escape"))})
+            for(FName Cue:{FName(TEXT("S_CardDraw")),FName(TEXT("S_CardReward")),FName(TEXT("S_FloodStart")),FName(TEXT("S_Drown")),FName(TEXT("S_Retry")),FName(TEXT("S_Checkpoint")),FName(TEXT("S_Escape"))})
                 Test->TestTrue(*FString::Printf(TEXT("Encounter triggers %s"),*Cue.ToString()),RoomAudio->EventCount(Cue)>0);
         }
         Test->TestEqual(TEXT("TV mining adjustment is restored on exit"),Miner->Radius,OriginalRadius);
@@ -231,9 +263,11 @@ bool FP2CardEscapeTest::RunTest(const FString&)
     for(TActorIterator<AMiningRoomEscape> It(EditorWorld);It;++It){Placed=*It;break;}
     if(!TestNotNull(TEXT("P2 contains an authored television escape actor"),Placed))return false;
     TestTrue(TEXT("Authored television links to P2 cards and entrance"),Placed->CardStage && Placed->Entrance);
+    TestTrue(TEXT("P2 television entrance matches P1"),Placed->ComputerEntry.Equals(GetDefault<AMiningRoomEscape>()->ComputerEntry,1));
+    TestTrue(TEXT("P2 landing and final exit match P1"),Placed->ComputerCheckpointPosition.Equals(GetDefault<AMiningRoomEscape>()->ComputerCheckpointPosition,1) && Placed->Exit.Equals(GetDefault<AMiningRoomEscape>()->Exit,1));
     TArray<UActorComponent*> Parts;Placed->GetComponents(Parts);
     int32 PreviewParts=0;for(auto* Part:Parts)if(Part->ComponentHasTag(TEXT("TelevisionEditorPreview")))++PreviewParts;
-    TestTrue(TEXT("P2 uses authored glass with no duplicate procedural TV"),Placed->AuthoredTelevisionScreen && PreviewParts==0);
+    TestTrue(TEXT("P2 restores the P1 television and green diggable screen"),!Placed->AuthoredTelevisionScreen && PreviewParts>0);
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;

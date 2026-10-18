@@ -75,8 +75,6 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     }
     if(R.Round>0)
     {
-        Text(FString::Printf(TEXT("第 %02d / 04 回合"),R.Round),48,128,22,Cream);
-        for(int32 i=0;i<4;++i) Box(48+i*65,168,54,4,i<R.Round?Gold:FLinearColor(.2f,.2f,.2f));
         Box(47,202,226,70,Dark); Text(FString::Printf(TEXT("你     %d / 100"),R.PlayerHP),61,212,19,R.PlayerHP==1?FLinearColor(1,.3f,.2f):Cream);
         Box(61,248,192,5,FLinearColor(.22f,.17f,.13f)); Box(61,248,192*R.PlayerHP/100.f,5,R.PlayerHP==1?FLinearColor(1,.16f,.05f):Gold);
         Box(1265,145,307,68,Dark); Text(FString::Printf(TEXT("超级人机    %d / 100"),R.RivalHP),1285,158,18,Cream);
@@ -85,10 +83,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     }
     if(R.Phase==ECardRoomPhase::Seated || R.Phase==ECardRoomPhase::Matching || R.Phase==ECardRoomPhase::Arrival)
     {
-        Box(465,625,670,85,Dark); Text(R.Message,500,638,22,Cream);
-        Text(TEXT("今晚的规则很简单：把你的好牌，全都打出去。"),500,678,14,Gold);
         if(R.Phase==ECardRoomPhase::Seated) Button(Match,TEXT("开始匹配     →"));
-        else Text(R.Phase==ECardRoomPhase::Matching?TEXT("·   ·   ·"):TEXT("请注意头顶！"),715,745,24,Gold);
     }
     if(R.Phase==ECardRoomPhase::Choosing)
     {
@@ -124,18 +119,14 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
 
     if(R.Phase==ECardRoomPhase::Resolving)
     {
-        Box(335,711,930,114,Dark); Text(R.Message,372,735,23,Cream);
-        Text(TEXT("牌已打出，看看会发生什么……"),585,782,15,Gold);
         if(R.Round==3 && R.PhaseTime>2.15f && R.PhaseTime<2.7f) Box(0,0,1600,900,FLinearColor(.7f,.025f,.008f,.16f));
     }
     if(R.Phase==ECardRoomPhase::Victory || R.Phase==ECardRoomPhase::Collected)
     {
         Box(48,610,870,160,Dark); Box(48,610,870,3,Gold);
-        Text(R.Phase==ECardRoomPhase::Victory?TEXT("恭喜你获得胜利！"):TEXT("彗尾法球 · 已收藏"),82,634,32,Cream);
-        Text(R.Phase==ECardRoomPhase::Victory?TEXT("超级人机已退场。属于你的星光，留在桌上。"):TEXT("本版奖励为房间内占位，不改变挖掘数值。"),82,703,18,Gold);
-        if(R.Phase==ECardRoomPhase::Victory) Button(Collect,TEXT("E   收集桌上的彗尾法球"));
+        Text(R.Phase==ECardRoomPhase::Victory?TEXT("恭喜你获得胜利！"):TEXT("钻机 · 已获得"),82,634,32,Cream);
+        if(R.Phase==ECardRoomPhase::Victory) Button(Collect,TEXT("E   拾取钻机"));
     }
-    Text(TEXT("点击选牌 / 再点取消     空格出牌"),48,866,12,Cream);
     return L;
 }
 FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& E)

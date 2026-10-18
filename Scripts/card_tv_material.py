@@ -33,8 +33,8 @@ float panel=1-smoothstep(3,8,abs(frac(along/800)*800-400));
 float rail=1-smoothstep(10,22,abs(height+235));
 float2 q=float2(along,side);
 float traceMask=(1-smoothstep(3,8,abs(frac(q.y/500)*500-250)))*.025;
-float3 shell=lerp(float3(.055,.09,.11),float3(.13,.105,.065),lower);
-return shell+panel*float3(.025,.035,.04)+rail*float3(.08,.21,.24)+traceMask;
+float3 shell=lerp(float3(.045,.12,.21),float3(.10,.15,.18),lower);
+return shell+panel*float3(.025,.035,.04)+rail*float3(.12,.65,1.05)+traceMask;
 """)
     position=lib.create_material_expression(m,unreal.MaterialExpressionWorldPosition)
     assert lib.connect_material_expressions(position,'XYZ',n,'P')

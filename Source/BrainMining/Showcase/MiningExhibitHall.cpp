@@ -17,6 +17,7 @@
 #include "PopupClose/PopupCloseStage.h"
 #include "WenSi/WenSiPuzzle.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "WenSi/MouseMuseumPortal.h"
 #include "EchoPassagePlayer.h"
 #include "CardRoomPlayer.h"
 #include "EchoPassageStage.h"
@@ -92,8 +93,17 @@ bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
 
 bool AMiningExhibitHall::HandleMirrorInput(const FInputKeyEventArgs& Params)
 {
-    if (!MirrorMuseum || !MirrorMuseum->bAreaActive || IsInteractionOpen() ||
-        (Params.Key!=EKeys::R && Params.Key!=EKeys::Q)) return false;
+    if (!MirrorMuseum || !MirrorMuseum->bAreaActive || IsInteractionOpen()) return false;
+    if (Params.Key==EKeys::E && MirrorMuseum->MousePortal)
+    {
+        auto* Portal=MirrorMuseum->MousePortal.Get();
+        if(Portal->IsEntering())return true;
+        Portal->RefreshFocus();
+        if(!Portal->IsFocused())return false;
+        if(Params.Event==IE_Pressed)Portal->TryEnter();
+        return true;
+    }
+    if (Params.Key!=EKeys::R && Params.Key!=EKeys::Q) return false;
     if (Params.Event==IE_Pressed)
     {
         if (Params.Key==EKeys::R) MirrorMuseum->SwapThoughts();
@@ -261,7 +271,8 @@ bool AMiningExhibitHall::EnterArea(int32 Index, bool bMovePlayer)
     CompletionDelay=0;
     const auto Kind=AreaKind(Index);
     UpdateActorVisibility();
-    Collection->SetAreaActive(Kind==EMiningExperienceKind::Collection || (bLinearCampaign && Kind==EMiningExperienceKind::Mining));
+    const bool bAreaHasCollectibles=Areas.IsValidIndex(Index) && Collection->AuthoredPlacements.ContainsByPredicate([&](const FMiningCollectionPlacement& P){return P.AreaTag==Areas[Index].Tag;});
+    Collection->SetAreaActive(Kind==EMiningExperienceKind::Collection || (bLinearCampaign && (Kind==EMiningExperienceKind::Mining || bAreaHasCollectibles)));
     if(Treasure)
     {
         Treasure->ActiveAreaTag=Areas.IsValidIndex(Index)?Areas[Index].Tag:NAME_None;

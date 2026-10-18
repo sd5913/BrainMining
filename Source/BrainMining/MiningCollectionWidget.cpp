@@ -31,23 +31,32 @@ void UMiningCollectionWidget::RefreshCollection()
     if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemName"))))T->SetText(FText::FromString(Owned?AMiningCollectible::ItemName(Id):TEXT("尚未发现")));
     if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))T->SetText(FText::FromString(Owned?AMiningCollectible::Description(Id):TEXT("收集后即可旋转检视")));
     if(auto* W=GetWidgetFromName(TEXT("PreviewHelp")))W->SetVisibility(Owned?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+    const auto Ids=Collection->CatalogueIds();
+    const int32 Page=FMath::Max(0,Ids.IndexOfByKey(Id))/4;
     for(int32 I=0;I<4;++I)
     {
-        const bool Has=Collection->Inventory.IsValidIndex(I)&&Collection->Inventory[I]>0;
+        const int32 Item=Ids.IsValidIndex(Page*4+I)?Ids[Page*4+I]:INDEX_NONE;
+        const bool Has=Collection->Inventory.IsValidIndex(Item)&&Collection->Inventory[Item]>0;
         if(auto* Image=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemArt%d"),I)))))
         {
-            const int32 Art=Has?(I==2?3:4):2;
+            const int32 Art=Has?(Item==2?3:4):2;
             if(Collection->CatalogueArtwork.IsValidIndex(Art)&&Collection->CatalogueArtwork[Art])Image->SetBrushFromMaterial(Collection->CatalogueArtwork[Art]);
         }
-        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetText(FText::FromString(Has&&I!=2?AMiningCollectible::ItemName(I):FString()));
-        if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I))))W->SetVisibility(Id==I?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetText(FText::FromString(Has&&Item!=2?AMiningCollectible::ItemName(Item):FString()));
+        if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I))))W->SetVisibility(Id==Item?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
     }
 }
 void UMiningCollectionWidget::SelectCollectionItem(int32 Id){if(IsValid(Collection))Collection->SelectItem(Id);}
-void UMiningCollectionWidget::TurnCollectionPage(int32 Direction){if(IsValid(Collection))SelectCollectionItem((FMath::Max(0,Collection->SelectedId)+Direction+4)%4);}
+void UMiningCollectionWidget::TurnCollectionPage(int32 Direction)
+{
+    if(!IsValid(Collection))return;
+    const auto Ids=Collection->CatalogueIds(); if(Ids.IsEmpty())return;
+    SelectCollectionItem(Ids[(FMath::Max(0,Ids.IndexOfByKey(Collection->SelectedId))+Direction+Ids.Num())%Ids.Num()]);
+    RefreshCollection();
+}
 void UMiningCollectionWidget::CloseCollection(){bDragging=false;if(IsValid(Collection)&&Collection->bCatalogueOpen)Collection->ToggleCatalogue();}
-void UMiningCollectionWidget::Select0(){SelectCollectionItem(0);}void UMiningCollectionWidget::Select1(){SelectCollectionItem(1);}
-void UMiningCollectionWidget::Select2(){SelectCollectionItem(2);}void UMiningCollectionWidget::Select3(){SelectCollectionItem(3);}
+void UMiningCollectionWidget::Select0(){SelectSlot(0);}void UMiningCollectionWidget::Select1(){SelectSlot(1);}
+void UMiningCollectionWidget::Select2(){SelectSlot(2);}void UMiningCollectionWidget::Select3(){SelectSlot(3);}
 void UMiningCollectionWidget::Previous(){TurnCollectionPage(-1);}void UMiningCollectionWidget::Next(){TurnCollectionPage(1);}
 bool UMiningCollectionWidget::InPreview(const FVector2D& Position) const
 {
@@ -96,3 +105,11 @@ FReply UMiningCollectionWidget::NativeOnKeyDown(const FGeometry& G,const FKeyEve
     return Super::NativeOnKeyDown(G,E);
 }
 void UMiningCollectionWidget::NativeOnMouseCaptureLost(const FCaptureLostEvent& E){bDragging=false;Super::NativeOnMouseCaptureLost(E);}
+
+void UMiningCollectionWidget::SelectSlot(int32 SlotIndex)
+{
+    if(!IsValid(Collection))return;
+    const auto Ids=Collection->CatalogueIds();
+    const int32 Index=(FMath::Max(0,Ids.IndexOfByKey(Collection->SelectedId))/4)*4+SlotIndex;
+    if(Ids.IsValidIndex(Index)) { SelectCollectionItem(Ids[Index]); RefreshCollection(); }
+}

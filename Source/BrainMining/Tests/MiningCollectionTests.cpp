@@ -6,6 +6,8 @@
 #include "Engine/World.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
+#include "EchoPassageStage.h"
+#include "Components/InstancedStaticMeshComponent.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCollectionExposureTest,"BrainMining.Collection.ExposureAndPhysicsGate",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -45,6 +47,76 @@ bool FCollectionReuseTest::RunTest(const FString& Parameters)
     auto* Base=GetDefault<AMiningPrototypeGameMode>(); auto* Collection=GetDefault<AMiningCollectionGameMode>();
     TestEqual(TEXT("Original first person pawn is reused"),Collection->DefaultPawnClass,Base->DefaultPawnClass);
     TestEqual(TEXT("Original player controller is reused"),Collection->PlayerControllerClass,Base->PlayerControllerClass);
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCollectionExpansionTest,"BrainMining.Collection.ExpandedModelsAndCatalogue",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FCollectionExpansionTest::RunTest(const FString& Parameters)
+{
+    UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    auto* Field=World->SpawnActor<AMiningCollectionField>();
+    TestEqual(TEXT("Existing fields retain four catalogue entries"),Field->CatalogueIds().Num(),4);
+    Field->bDeepField=true; Field->bExpandedCollection=true;
+    TestEqual(TEXT("Expanded test room shows all twelve entries"),Field->CatalogueIds().Num(),12);
+    TSet<FString> Names;
+    for(int Id=0;Id<AMiningCollectible::ItemTypeCount;++Id)
+    {
+        auto* Item=World->SpawnActor<AMiningCollectible>(); Item->BuildModel(Id);
+        Names.Add(AMiningCollectible::ItemName(Id));
+        TestEqual(TEXT("Stable item ID survives model building"),Item->ItemId,Id);
+        TestTrue(TEXT("Every entry has inspectable geometry"),Item->Model->GetDynamicMesh()->GetMeshRef().TriangleCount()>100);
+        TestFalse(TEXT("Every entry has a description"),AMiningCollectible::Description(Id).IsEmpty());
+        for(int V:Item->Model->GetDynamicMesh()->GetMeshRef().VertexIndicesItr())
+        {
+            const FVector P=Item->Model->GetDynamicMesh()->GetMeshRef().GetVertex(V);
+            const FVector E=Item->Body->GetUnscaledBoxExtent();
+            if(Id>=4 && (FMath::Abs(P.X)>E.X+.01 || FMath::Abs(P.Y)>E.Y+.01 || FMath::Abs(P.Z)>E.Z+.01))
+            { AddError(FString::Printf(TEXT("Item %d geometry exceeds interaction / release body"),Id)); break; }
+        }
+        Item->Destroy();
+    }
+    TestEqual(TEXT("All twelve names are distinct"),Names.Num(),12);
+    for(int Id:{5,6,7}) TestTrue(TEXT("Direct displays have no excavation clue"),AMiningCollectible::Clue(Id).IsEmpty());
+    Field->bUseAuthoredPlacements=true;
+    FMiningCollectionPlacement Placement; Placement.ItemId=11; Field->AuthoredPlacements.Add(Placement); Field->AuthoredPlacements.Add(Placement);
+    TestEqual(TEXT("Authored catalogue deduplicates types"),Field->CatalogueIds().Num(),1);
+    TestEqual(TEXT("Authored catalogue supports nonzero IDs"),Field->CatalogueIds()[0],11);
+
+    auto* Soil=World->SpawnActor<ADiggableRock>(FVector(0,0,130),FRotator::ZeroRotator);
+    Soil->RockSize=FVector(600,600,260); Soil->ResetRock();
+    auto* Flower=World->SpawnActor<AMiningCollectible>(FVector(0,0,175),FRotator::ZeroRotator);
+    Flower->BuildModel(9); Flower->HostRock=Soil;
+    const float Exposure=Flower->MeasureExposure();
+    TestTrue(TEXT("Flower is visible but dense underground roots prevent immediate release"),Exposure>.01f && Exposure<.65f);
+    Flower->Exposure=1; Flower->Release(); TestFalse(TEXT("Roots cannot release through intact soil"),Flower->bReleased);
+    TestTrue(TEXT("Excavation clears the actual root volume"),Soil->MineSphere(Flower->GetActorLocation(),230));
+    Flower->Exposure=Flower->MeasureExposure(); Flower->Release();
+    TestTrue(TEXT("Fully excavated root system can be collected"),Flower->bReleased);
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCollectionEchoTest,"BrainMining.Collection.AuthoredEchoSharesRoomPulse",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FCollectionEchoTest::RunTest(const FString& Parameters)
+{
+    UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    auto* Stage=World->SpawnActor<AEchoPassageStage>();Stage->OnConstruction(Stage->GetActorTransform());
+    UMaterialInterface* Surface=nullptr;UMaterialInterface* Contours=nullptr;
+    TArray<UInstancedStaticMeshComponent*> Components;Stage->GetComponents(Components);
+    for(auto* C:Components)
+    {
+        if(C->GetFName()==TEXT("CollisionRock"))Surface=C->GetMaterial(0);
+        if(C->GetFName()==TEXT("EchoContours"))Contours=C->GetMaterial(0);
+    }
+    TestNotNull(TEXT("Room surface pulse exists"),Surface);TestNotNull(TEXT("Room contour pulse exists"),Contours);
+    for(int Id:{6,7})
+    {
+        auto* Item=World->SpawnActor<AMiningCollectible>();Item->BuildModel(Id);Item->ApplyEchoPresentation(Surface,Contours);
+        TestTrue(TEXT("Collectible uses the room's actual shared pulse material"),Item->Outline->GetMaterial(0)==Contours && Item->Model->GetMaterial(0)==Surface);
+        TestTrue(TEXT("Model contours are real geometry"),Item->Outline->GetDynamicMesh()->GetMeshRef().TriangleCount()>100);
+        Item->SetHighlighted(true);Item->SetHighlighted(false);
+        TestTrue(TEXT("Pickup highlighting preserves echo-controlled contours"),Item->Outline->IsVisible());
+        TestFalse(TEXT("Pickup highlighting never creates permanent visibility in dark maze"),Item->Model->bRenderCustomDepth);
+    }
     return true;
 }
 #endif

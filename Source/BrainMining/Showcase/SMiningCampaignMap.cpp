@@ -75,8 +75,8 @@ int32 SMiningCampaignMap::OnPaint(const FPaintArgs&,const FGeometry& Allotted,co
     if(H->Collection) for(const auto& Item:H->Collection->AuthoredPlacements) if(Item.AreaTag==Area.Tag)
     {
         const bool Got=H->Collection->Inventory.IsValidIndex(Item.ItemId)&&H->Collection->Inventory[Item.ItemId]>0;
-        const TCHAR* Clues[]={TEXT("漏水的水管"),TEXT("钻入土里的蚂蚁"),TEXT("化学品污渍"),TEXT("羽毛与枝条")};
-        const FString Name=H->Collection->bBuriedWithClues && !Got?Clues[FMath::Clamp(Item.ItemId,0,3)]:AMiningCollectible::ItemName(Item.ItemId);
+        const FString Clue=AMiningCollectible::Clue(Item.ItemId);
+        const FString Name=H->Collection->bBuriedWithClues && !Got && !Clue.IsEmpty()?Clue:AMiningCollectible::ItemName(Item.ItemId);
         Text({955,409+Row++*36.f},FString::Printf(TEXT("%d  %s  %s"),Item.ItemId+1,*Name,Got?TEXT("已收集"):TEXT("")),17,Got?Muted:Gold);
     }
     Text({42,852},TEXT("路线示意，不显示挖开的洞形；矿道会向下延伸，请同时参考高度图。"),17,Muted);

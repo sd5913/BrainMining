@@ -68,6 +68,17 @@ void USubtitleSubsystem::PlaySegment(FName SegmentId)
 	StartSegment(Segment);
 }
 
+void USubtitleSubsystem::PlayStatusLine(FText Text, float Duration)
+{
+	if(Text.IsEmpty() || !GetWorld())return;
+	StopAll();
+	auto* Segment=NewObject<USubtitleSegment>(this);
+	Segment->SegmentId=TEXT("GameplayStatus");
+	Segment->Lines.AddDefaulted_GetRef().Text=Text;
+	StartSegment(Segment);
+	GetWorld()->GetTimerManager().SetTimer(LineTimer,this,&USubtitleSubsystem::Advance,FMath::Max(.1f,Duration),false);
+}
+
 USubtitleSegment* USubtitleSubsystem::FindSegment(FName SegmentId) const
 {
 	FAssetRegistryModule& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));

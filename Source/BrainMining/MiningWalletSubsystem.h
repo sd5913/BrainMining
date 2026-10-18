@@ -25,6 +25,8 @@ public:
     // Ability ownership follows the game instance, just like upgrade purchases.
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Abilities") bool bBombSkillRequiresUnlock = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Abilities") bool bBombSkillUnlocked = false;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Abilities") bool bDrillSkillRequiresUnlock = false;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Abilities") bool bDrillSkillUnlocked = false;
     int32 GetUpgradeLevel(int32 Index) const { return UpgradeLevels.IsValidIndex(Index) ? UpgradeLevels[Index] : INDEX_NONE; }
     int64 CalculateMineralReward(int32 BaseValue, float Roll) const
     {

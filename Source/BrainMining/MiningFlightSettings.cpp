@@ -15,6 +15,8 @@ FMiningFlightSettings FMiningFlightSettings::Sanitized() const
 	Result.HoldToIgniteSeconds = Safe(HoldToIgniteSeconds, .05f, 1, .22f);
 	Result.DoubleTapWindowSeconds = Safe(DoubleTapWindowSeconds, .05f, 1, .30f);
 	Result.SpoolUpSeconds = Safe(SpoolUpSeconds, .05f, 2, .28f);
+	Result.AirCatchHangSeconds = Safe(AirCatchHangSeconds, 0, 2, .30f);
+	Result.AirCatchRiseSeconds = Safe(AirCatchRiseSeconds, .05f, 2, .32f);
 	Result.InitialThrustFraction = Safe(InitialThrustFraction, .05f, 1, .18f);
 	Result.BoostSpeedMultiplier = Safe(BoostSpeedMultiplier, 1, 5, 2.4f);
 	Result.BoostAccelerationMultiplier = Safe(BoostAccelerationMultiplier, 1, 5, 2.6f);

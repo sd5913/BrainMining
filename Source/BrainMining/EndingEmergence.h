@@ -22,6 +22,10 @@ class UPointLightComponent;
 class UEndingCrowdAssets;
 class UEndingCrowdComponent;
 class UCurveFloat;
+class UMediaSource;
+class UMediaPlayer;
+class UMediaTexture;
+class UMediaSoundComponent;
 
 /** Standalone playable ending study; never changes the campaign or shared pawn defaults. */
 UCLASS()
@@ -42,13 +46,20 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     UFUNCTION(CallInEditor, BlueprintCallable, Category="Ending") void BuildDemo();
-    UFUNCTION(BlueprintCallable, Category="Ending") void RestartDemo();
+    void RestartDemo(); // Internal initialization and automation reset only.
     UFUNCTION(BlueprintCallable, Category="Ending") void PreviewFilm();
     UFUNCTION(BlueprintPure, Category="Ending") FVector GetGateApproach(int32 Index) const;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending", meta=(ClampMin="0",ClampMax="1")) float Weightlessness = .65f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending", meta=(ClampMin="0.25",ClampMax="4")) float FilmSpeed = 1;
+    // Assign the supplied movie here. Until then, the aperture shows a neutral
+    // credit frame so the camera/physical opening can be reviewed separately.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending|Video") TObjectPtr<UMediaSource> FinaleVideoSource;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ending") TArray<TObjectPtr<ADiggableRock>> Gates;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") int32 GateIndex = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending|Painterly", meta=(ClampMin="0",ClampMax="1")) float CellPaintWeight=.85f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending|Painterly", meta=(ClampMin="0",ClampMax="1")) float BloodPaintWeight=.7f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Painterly") float ActivePaintWeight=0;
+    static float PaintWeightForStage(int32 InGate, int32 InShot, bool EnteringBrain, float CellWeight, float BloodWeight);
     // -1: gameplay, 0..6: scale journey, 7: cell title, 8: dive into o, 9: drill, 10: light, 11: reality.
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") int32 Shot = -1;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") float ShotTime = 0;
@@ -93,6 +104,8 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") float FinaleDrillSpeed=0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") int32 FinaleDrillCuts=0;
 private:
+    UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> PainterlyMaterial;
+    void UpdatePainterly();
     friend class FEndingTitleDrillPreview;
     friend class FEndingPaperMoviePreview;
     friend class FEndingOrganicPreview;
@@ -101,8 +114,17 @@ private:
     void UpdatePaperFinale(float DeltaSeconds);
     void ResetPaperFinale();
     void UpdatePaperProps(float CameraX,float DeltaSeconds);
+    void PrepareFinaleVideo();
+    void StartFinaleVideo();
+    void ResetFinaleVideo();
+    UFUNCTION() void FinaleVideoOpened(FString OpenedUrl);
+    UFUNCTION() void FinaleVideoEnded();
+    UPROPERTY(Transient) TObjectPtr<UMediaPlayer> FinaleVideoPlayer;
+    UPROPERTY(Transient) TObjectPtr<UMediaTexture> FinaleVideoTexture;
+    UPROPERTY(Transient) TObjectPtr<UMediaSoundComponent> FinaleVideoSound;
+    UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> FinaleVideoMaterial;
+    bool bFinaleVideoRequested=false;
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperScene;
-    void CapturePaperCave();
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> PaperSurfaceMaterial;
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperSurface;
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperRock;
@@ -110,12 +132,7 @@ private:
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperPick;
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperPickSwing;
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperCaveScene;
-    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperCaveSeal;
-    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperCaveMiner;
-    UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperCaveMinerPick;
     UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> PaperRockChips;
-    UPROPERTY(Transient) TObjectPtr<class USceneCaptureComponent2D> PaperCaveCapture;
-    UPROPERTY(Transient) TObjectPtr<UTextureRenderTarget2D> PaperCaveTexture;
     bool bPaperRockBroken=false;
     UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> PaperCards;
     UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> PaperShadows;
@@ -123,8 +140,6 @@ private:
     UPROPERTY(Transient) TObjectPtr<UInstancedStaticMeshComponent> PaperPopStrokes;
     TArray<FRotator> PaperRestRotations;
     TArray<float> PaperPopAges;
-    UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> CreditsScreenMaterial;
-    UPROPERTY(Transient) TObjectPtr<UPointLightComponent> CreditsScreenLight;
     int32 PaperCardCount=0;
     void UpdateFinale(float DeltaSeconds);
     void ResetFinale();
@@ -142,11 +157,16 @@ private:
     UPROPERTY(Transient) TObjectPtr<UInstancedStaticMeshComponent> FinaleCellSpecks;
     float FinaleSide=0,FinaleSideSpeed=0;
     FVector FinaleSideVector=FVector::ZeroVector;
-    UPROPERTY(Transient) TObjectPtr<USceneComponent> FinaleReality;
     UPROPERTY(Transient) TArray<TObjectPtr<UInstancedStaticMeshComponent>> TitleBatches;
     TArray<TArray<FTransform>> TitleOriginals;
+    TArray<TArray<FTransform>> TitleWorkingPoses;
+    TArray<FVector> TitleAnimatedCenters;
+    TArray<float> TitleAnimatedScales;
     TArray<FVector> TitleTargets,TitleCenters;
+    TArray<int32> TitleGlyphs;
     FVector TitleCameraStart=FVector::ZeroVector;
+    FVector TitleCameraVelocity=FVector::ZeroVector;
+    FVector FilmCameraVelocity=FVector::ZeroVector;
     FRotator TitleLookStart=FRotator::ZeroRotator;
     bool bTitleRestored=true,bFinaleDrilling=false;
     float TitleUpdateAt=-1,FinaleSpin=0;
@@ -167,6 +187,7 @@ private:
     UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> FinaleDrillMaterials;
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> ExitInkMaterial;
     bool SavedEffectsEnabled=true;
+    bool SavedFieldResetEnabled=true;
     float SavedDrillSmoke=0,SavedDrillDust=0,SavedDrillSparks=0;
     bool SavedInfiniteEnergy=false,SavedUseEnergy=true,SavedPreview=false;
     float SavedRadius=0,SavedReach=0,SavedInterval=0,SavedDrillMultiplier=0,SavedDepth=0,SavedDownward=0,SavedInset=0,SavedEnergy=0;
@@ -234,9 +255,11 @@ private:
     void InitializeScaleMotion();
     void CaptureScaleBridge();
     void UpdateScaleMotion(float Dt);
+    void UpdateCosmicRail();
     void ResetScaleMotion();
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> ScaleZoomMaterial;
     UPROPERTY(Transient) TObjectPtr<UTextureRenderTarget2D> ScaleBridge;
+    bool bScaleWarmupComplete=false;
     UPROPERTY(Transient) TObjectPtr<class USceneCaptureComponent2D> ScaleCapture;
     UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> CellRevealMaterials;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> BrainDecorationBatches;
@@ -247,6 +270,8 @@ private:
     TArray<FVector> OrbitRestPositions;
     float CelestialAge=0;
     bool bScaleBridgeReady=false;
+    bool bScaleBridgePrepared=false;
+    UPROPERTY(Transient) TMap<FName,TObjectPtr<class USoundBase>> EndingSounds;
     friend class FEndingScaleMotionPreview;
     UPROPERTY() TObjectPtr<USceneComponent> Cell;
     UPROPERTY() TObjectPtr<USceneComponent> OtherCells;

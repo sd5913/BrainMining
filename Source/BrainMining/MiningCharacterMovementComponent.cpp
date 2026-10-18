@@ -8,6 +8,21 @@ namespace
 {
 // Extra counter-thrust per unit of downward speed; fades continuously to zero at hover.
 constexpr double AirCatchResponse = 12.;
+constexpr double AirCatchDriftResponse = 20.;
+// Cross a small velocity band under gentle lift instead of holding zero velocity.
+double GetCatchDriftLift(const FMiningFlightSettings& Settings)
+{
+	const double FullLift = Settings.LiftAcceleration * Settings.BoostAccelerationMultiplier;
+	return Settings.AirCatchHangSeconds > UE_SMALL_NUMBER
+		? FMath::Min(FullLift * .5, 120. / Settings.AirCatchHangSeconds) : FullLift;
+}
+// Integral of smoothstep after the gentle drift interval, including its full-thrust tail.
+double IntegrateCatchRise(double Time, double Duration)
+{
+	const double Alpha = FMath::Clamp(Time / Duration, 0., 1.);
+	return Duration * (Alpha * Alpha * Alpha - .5 * FMath::Pow(Alpha, 4.))
+		+ FMath::Max(0., Time - Duration);
+}
 // Integral of a coast envelope: hold briefly, then smoothly hand gravity back over.
 // Averaging the envelope avoids a different transition when the frame rate changes.
 double IntegrateReleaseCoast(double Time, double Duration)
@@ -55,17 +70,34 @@ void UMiningCharacterMovementComponent::SetFlightInputHeld(bool bHeld)
 		}
 		bFlightInputHeld = bJetpackEngaged = false;
 		FlightHoldSeconds = ThrustSeconds = 0.f;
+		ResetAirCatchRecovery();
 	}
 }
 
 void UMiningCharacterMovementComponent::IgniteJetpack()
 {
 	bJetpackEngaged = true;
+	ResetAirCatchRecovery();
+	const auto Settings = FlightSettings.Sanitized();
+	if (!bCreativeFlight && !IsJetpackOverheated() && IsFalling()
+		&& FVector::DotProduct(Velocity, -GetGravityDirection()) <= 0.)
+	{
+		bAirCatchRecovery = true;
+		AirCatchRecoveryTime = -Settings.AirCatchHangSeconds;
+		AirCatchLiftWeight = GetCatchDriftLift(Settings) / (Settings.LiftAcceleration * Settings.BoostAccelerationMultiplier);
+	}
 	// First takeoff keeps its wind-up; an airborne correction needs thrust immediately.
 	const bool bAirCatch = IsFalling() && (bJetpackUsedInAir || FVector::DotProduct(Velocity, -GetGravityDirection()) <= 0.);
 	ThrustSeconds = bAirCatch ? FlightSettings.Sanitized().SpoolUpSeconds : 0.f;
 	// An overheated press cannot create a free coast or change a normal jump's gravity.
 	if (!IsJetpackOverheated()) JetpackHangRemaining = ReleaseCoastWeight = ReleaseHangDuration = 0.f;
+}
+
+void UMiningCharacterMovementComponent::ResetAirCatchRecovery()
+{
+	bAirCatchRecovery = false;
+	AirCatchRecoveryTime = 0.f;
+	AirCatchLiftWeight = 1.f;
 }
 
 void UMiningCharacterMovementComponent::ResetFlightInput()
@@ -78,6 +110,7 @@ void UMiningCharacterMovementComponent::ResetFlightInput()
 	bFlightInputHeld = bJetpackEngaged = bJetpackUsedInAir = false;
 	FlightHoldSeconds = DoubleTapRemaining = ThrustSeconds = JetpackHangRemaining = 0.f;
 	ReleaseCoastWeight = ReleaseHangDuration = 0.f;
+	ResetAirCatchRecovery();
 }
 
 void UMiningCharacterMovementComponent::UpdateFlightState(float DeltaSeconds)
@@ -106,11 +139,32 @@ void UMiningCharacterMovementComponent::UpdateFlightState(float DeltaSeconds)
 	if (IsJetpackOverheated())
 	{
 		ThrustSeconds = JetpackHangRemaining = ReleaseCoastWeight = ReleaseHangDuration = 0.f;
+		ResetAirCatchRecovery();
 	}
 	else if (IsFlightThrustActive())
 	{
 		bJetpackUsedInAir = true;
 		ThrustSeconds += ThrustDelta;
+		AirCatchLiftWeight = 1.f;
+		if (bAirCatchRecovery)
+		{
+			const double DriftLift = GetCatchDriftLift(Settings);
+			const double DriftSpeed = .5 * DriftLift * Settings.AirCatchHangSeconds * FlightSizeScale;
+			const float DriftWeight = DriftLift / (Settings.LiftAcceleration * Settings.BoostAccelerationMultiplier);
+			AirCatchLiftWeight = DriftWeight;
+			if (FVector::DotProduct(Velocity, -GetGravityDirection()) >= -DriftSpeed)
+			{
+				const float PreviousTime = AirCatchRecoveryTime;
+				AirCatchRecoveryTime += ThrustDelta;
+				if (ThrustDelta > UE_SMALL_NUMBER)
+				{
+					const float RiseWeight = FMath::Clamp(float((IntegrateCatchRise(AirCatchRecoveryTime, Settings.AirCatchRiseSeconds)
+						- IntegrateCatchRise(PreviousTime, Settings.AirCatchRiseSeconds)) / ThrustDelta), 0.f, 1.f);
+					AirCatchLiftWeight = FMath::Lerp(DriftWeight, 1.f, RiseWeight);
+				}
+				if (AirCatchRecoveryTime >= Settings.AirCatchRiseSeconds) bAirCatchRecovery = false;
+			}
+		}
 	}
 }
 
@@ -170,6 +224,7 @@ void UMiningCharacterMovementComponent::UpdateJetpackHeat(float DeltaSeconds, bo
 			JetpackOverheatRemaining = Settings.OverheatLockSeconds;
 			JetpackOverheatDuration = Settings.OverheatLockSeconds;
 			JetpackHangRemaining = ThrustSeconds = ReleaseCoastWeight = ReleaseHangDuration = 0.f;
+			ResetAirCatchRecovery();
 			const FVector Up = -GetGravityDirection();
 			Velocity -= Up * FMath::Max(0.0, FVector::DotProduct(Velocity, Up));
 		}
@@ -208,8 +263,26 @@ FVector UMiningCharacterMovementComponent::NewFallVelocity(const FVector& Initia
 		// A gentle ignition, then a steep ramp gives the lift a distinct kick.
 		const double Alpha = FMath::Clamp(double(ThrustSeconds / Settings.SpoolUpSeconds), 0., 1.);
 		const double Thrust = FMath::Lerp(double(Settings.InitialThrustFraction), double(Settings.BoostAccelerationMultiplier), Alpha * Alpha * Alpha);
-		const double LiftRate = Settings.LiftAcceleration * FlightSizeScale * Thrust;
-		if (OldVerticalSpeed < 0. && LiftRate > UE_SMALL_NUMBER)
+		const double LiftRate = Settings.LiftAcceleration * FlightSizeScale * Thrust * AirCatchLiftWeight;
+		if (bAirCatchRecovery)
+		{
+			const double DriftSpeed = .5 * GetCatchDriftLift(Settings) * Settings.AirCatchHangSeconds * FlightSizeScale;
+			if (OldVerticalSpeed < -DriftSpeed)
+			{
+				// Strong braking fades continuously into gentle lift at the drift band.
+				// Integrate exactly across its boundary so physics substeps agree.
+				const double BrakeTarget = LiftRate / AirCatchDriftResponse - DriftSpeed;
+				const double TimeToDrift = FMath::Loge((BrakeTarget - OldVerticalSpeed) / (BrakeTarget + DriftSpeed)) / AirCatchDriftResponse;
+				VerticalSpeed = DeltaTime < TimeToDrift
+					? BrakeTarget + (OldVerticalSpeed - BrakeTarget) * FMath::Exp(-AirCatchDriftResponse * DeltaTime)
+					: FMath::Min(BoostSpeed, -DriftSpeed + LiftRate * (DeltaTime - TimeToDrift));
+			}
+			else
+			{
+				VerticalSpeed = FMath::Min(BoostSpeed, OldVerticalSpeed + LiftRate * DeltaTime);
+			}
+		}
+		else if (OldVerticalSpeed < 0.)
 		{
 			// dv/dt = full lift - response * v while descending. Fast falls get a strong
 			// catch without snapping velocity to zero; the extra brake vanishes at hover.
@@ -228,7 +301,8 @@ FVector UMiningCharacterMovementComponent::NewFallVelocity(const FVector& Initia
 		}
 		else
 		{
-			VerticalSpeed = FMath::FInterpConstantTo(OldVerticalSpeed, BoostSpeed, double(DeltaTime), LiftRate);
+			const double LiftStep = LiftRate * DeltaTime;
+			VerticalSpeed = OldVerticalSpeed + FMath::Clamp(BoostSpeed - OldVerticalSpeed, -LiftStep, LiftStep);
 		}
 	}
 	else

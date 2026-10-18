@@ -195,9 +195,6 @@ bool FMiningAirCatchTest::RunTest(const FString& Parameters)
 			{
 				auto* Movement = NewObject<UMiningCharacterMovementComponent>();
 				Movement->FlightSettings.bEnabled = true;
-				// This timing matrix isolates the air-catch algorithm at its original
-				// tuning. EditableSettings separately checks the current default lift.
-				Movement->FlightSettings.LiftAcceleration = 1800.f;
 				Movement->FlightSizeScale = Scale;
 				Movement->UpdatedComponent = NewObject<USceneComponent>();
 				Movement->MovementMode = MOVE_Falling;
@@ -208,8 +205,10 @@ bool FMiningAirCatchTest::RunTest(const FString& Parameters)
 				const float DT = 1.f / FPS;
 				const FVector Gravity(0, 0, -980 * Scale);
 				double Drop = 0.;
-				float StopTime = 0.f;
-				for (int32 Frame = 0; Frame < FMath::CeilToInt(.3f * FPS); ++Frame)
+				float BrakeTime = 0.f;
+				float DriftTime = 0.f;
+				float RiseTime = 0.f;
+				for (int32 Frame = 0; Frame < FPS; ++Frame)
 				{
 					Movement->UpdateFlightState(DT);
 					const FVector Before = Movement->Velocity;
@@ -218,16 +217,29 @@ bool FMiningAirCatchTest::RunTest(const FString& Parameters)
 					TestTrue(TEXT("Air brake crosses zero consistently under physics substeps"),
 						After.Equals(Movement->NewFallVelocity(Half, Gravity, DT * .5f), .01));
 					if (Before.Z < 0.) Drop += FMath::Max(0., -(Before.Z + After.Z) * .5 * DT);
-					if (After.Z >= 0. && StopTime == 0.f) StopTime = (Frame + 1) * DT;
+					if (After.Z >= -80. * Scale && BrakeTime == 0.f) BrakeTime = (Frame + 1) * DT;
+					if (FMath::Abs(After.Z) <= 60. * Scale) DriftTime += DT;
+					if (Before.Z < 150. * Scale)
+						TestTrue(TEXT("Catch and drift keep changing velocity without a stationary plateau"), After.Z > Before.Z + .01 * Scale);
+					if (After.Z > .01 * Scale && RiseTime == 0.f)
+					{
+						RiseTime = (Frame + 1) * DT;
+						TestTrue(TEXT("The first upward step eases in instead of applying full lift"), After.Z < 100. * Scale);
+					}
+					if ((Frame + 1) * DT <= .30f)
+						TestTrue(TEXT("The initial catch cannot immediately spring upward"), After.Z < 60. * Scale);
 					Movement->Velocity = After;
 				}
-				TestTrue(TEXT("Default terminal fall is arrested within a quarter second"), StopTime > 0.f && StopTime <= .25f);
+				TestTrue(TEXT("Terminal descent slows into the drift band promptly"), BrakeTime > 0.f && BrakeTime <= .30f);
 				TestTrue(TEXT("Catching a fall costs less than 2.3 player-scaled metres"), Drop < 230. * Scale);
-				TestTrue(TEXT("Holding continues straight into a clear ascent"), Movement->Velocity.Z > 400. * Scale);
+				TestTrue(TEXT("The low-speed passage lasts long enough to feel suspended"),
+					DriftTime >= Movement->FlightSettings.AirCatchHangSeconds - 2.f * DT - .001f
+					&& DriftTime <= Movement->FlightSettings.AirCatchHangSeconds + DT + .001f);
+				TestTrue(TEXT("Continued holding rises after hover and the gradual thrust ramp"), Movement->Velocity.Z > 800. * Scale);
 				TestEqual(TEXT("Air catch preserves lateral movement"), FVector(Movement->Velocity.X, Movement->Velocity.Y, 0), FVector(100, 40, 0));
 				if (FPS == 60 && Scale == 1.f && FallSpeed == 3250.)
 				{
-					AddInfo(FString::Printf(TEXT("Terminal-speed catch: stopped within %.3f s, lost %.1f cm, velocity at 0.3 s %.1f cm/s"), StopTime, Drop, Movement->Velocity.Z));
+					AddInfo(FString::Printf(TEXT("Terminal-speed catch: slow drift within %.3f s, lost %.1f cm, first rise at %.3f s, low-speed passage %.3f s, velocity at 1 s %.1f cm/s"), BrakeTime, Drop, RiseTime, DriftTime, Movement->Velocity.Z));
 				}
 				for (int32 Cycle = 0; Cycle < 3; ++Cycle)
 				{
@@ -242,6 +254,12 @@ bool FMiningAirCatchTest::RunTest(const FString& Parameters)
 					Movement->SetFlightInputHeld(true);
 					TestTrue(TEXT("Repeated airborne catches do not depend on the double-tap window"), Movement->IsFlightThrustActive());
 					for (int32 Frame = 0; Frame < FMath::CeilToInt(.3f * FPS); ++Frame)
+					{
+						Movement->UpdateFlightState(DT);
+						Movement->Velocity = Movement->NewFallVelocity(Movement->Velocity, Gravity, DT);
+					}
+					TestTrue(TEXT("Every repeated catch eases through low speed before strong ascent"), FMath::Abs(Movement->Velocity.Z) < 80. * Scale);
+					for (int32 Frame = 0; Frame < FMath::CeilToInt(.7f * FPS); ++Frame)
 					{
 						Movement->UpdateFlightState(DT);
 						Movement->Velocity = Movement->NewFallVelocity(Movement->Velocity, Gravity, DT);
@@ -268,6 +286,50 @@ bool FMiningAirCatchTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningCatchHoverInterruptTest, "BrainMining.Flight.CatchHoverInterruptions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMiningCatchHoverInterruptTest::RunTest(const FString& Parameters)
+{
+	auto* Movement = NewObject<UMiningCharacterMovementComponent>();
+	Movement->FlightSettings.bEnabled = true;
+	Movement->UpdatedComponent = NewObject<USceneComponent>();
+	Movement->MovementMode = MOVE_Falling;
+	Movement->Velocity = FVector(80, 20, -1700);
+	const auto Step = [Movement](int32 Frames)
+	{
+		for (int32 Frame = 0; Frame < Frames; ++Frame)
+		{
+			Movement->UpdateFlightState(1.f / 60.f);
+			Movement->UpdateJetpackHeat(1.f / 60.f, Movement->IsFlightThrustActive());
+			Movement->Velocity = Movement->NewFallVelocity(Movement->Velocity, FVector(0, 0, -980), 1.f / 60.f);
+		}
+	};
+	Movement->SetFlightInputHeld(true);
+	Step(18);
+	TestTrue(TEXT("Catch reaches slow downward drift while still consuming fuel"), Movement->Velocity.Z > -60. && Movement->Velocity.Z < 0. && Movement->JetpackHeat > .1f);
+	Movement->SetFlightInputHeld(false);
+	for (int32 Frame = 0; Frame < 36; ++Frame)
+	{
+		Step(1);
+		TestTrue(TEXT("Releasing during catch hover cancels every queued upward step"), Movement->Velocity.Z <= 0.);
+	}
+	TestTrue(TEXT("Releasing during downward drift resumes a fast fall"), Movement->Velocity.Z < -700);
+	Movement->SetFlightInputHeld(true);
+	Step(18);
+	TestTrue(TEXT("Repressing after an interrupted drift starts a fresh low-speed catch"), FMath::Abs(Movement->Velocity.Z) < 60.);
+	Movement->UpdateJetpackHeat(Movement->FlightSettings.HeatUpSeconds, true);
+	Step(40);
+	TestTrue(TEXT("Overheat cancels catch hover and its queued rise"), Movement->IsJetpackOverheated() && Movement->Velocity.Z < -1000);
+	Movement->ResetFlightInput();
+	Movement->JetpackHeat = Movement->JetpackOverheatRemaining = 0.f;
+	Movement->MovementMode = MOVE_Walking;
+	Movement->Velocity = FVector::ZeroVector;
+	Movement->SetFlightInputHeld(true);
+	Movement->UpdateFlightState(.23f);
+	const double GroundLift = Movement->NewFallVelocity(FVector::ZeroVector, FVector(0, 0, -980), .1f).Z;
+	TestTrue(TEXT("Reset removes catch recovery and keeps the normal ground ignition"), GroundLift > 0. && GroundLift < 50.);
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningFlightSettingsTest, "BrainMining.Flight.EditableSettings", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FMiningFlightSettingsTest::RunTest(const FString& Parameters)
 {
@@ -278,6 +340,8 @@ bool FMiningFlightSettingsTest::RunTest(const FString& Parameters)
 	Invalid.LiftAcceleration = std::numeric_limits<float>::infinity();
 	Invalid.FallGravityMultiplier = 0;
 	Invalid.SpoolUpSeconds = 0;
+	Invalid.AirCatchHangSeconds = std::numeric_limits<float>::quiet_NaN();
+	Invalid.AirCatchRiseSeconds = 0;
 	Invalid.ReleaseHangSeconds = std::numeric_limits<float>::quiet_NaN();
 	Invalid.HangDrag = 0;
 	const FMiningFlightSettings Safe = Invalid.Sanitized();
@@ -287,6 +351,8 @@ bool FMiningFlightSettingsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Invalid acceleration defaults"), Safe.LiftAcceleration, 1500.f);
 	TestEqual(TEXT("Gravity cannot be accidentally disabled"), Safe.FallGravityMultiplier, 0.1f);
 	TestEqual(TEXT("Spool cannot divide by zero"), Safe.SpoolUpSeconds, .05f);
+	TestEqual(TEXT("Invalid catch hover duration defaults"), Safe.AirCatchHangSeconds, .30f);
+	TestEqual(TEXT("Catch rise ramp cannot divide by zero"), Safe.AirCatchRiseSeconds, .05f);
 	TestEqual(TEXT("Invalid hover duration defaults"), Safe.ReleaseHangSeconds, .5f);
 	TestEqual(TEXT("Hang drag cannot divide by zero"), Safe.HangDrag, 1.f);
 	UMiningCharacterMovementComponent* Movement = NewObject<UMiningCharacterMovementComponent>();

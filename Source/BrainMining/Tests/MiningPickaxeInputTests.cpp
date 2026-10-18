@@ -4,6 +4,7 @@
 #include "DiggableRock.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/InputComponent.h"
+#include "Components/BoxComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
@@ -18,6 +19,7 @@ class FPickaxeShortClickCommand : public IAutomationLatentCommand
     AMiningEncounterPlayerController* Controller = nullptr;
     UMiningComponent* Mining = nullptr;
     ADiggableRock* Rock = nullptr;
+    AActor* Obstruction = nullptr;
     int32 Phase = 0;
     int32 Strike = 0;
     int32 ReleasedCuts = 0;
@@ -73,12 +75,18 @@ public:
             Controller->SetupInputComponent();
             Controller->SpawnPlayerCameraManager();
             if (!Test->TestNotNull(TEXT("Controller input fixture has a camera"), Controller->PlayerCameraManager.Get())) return true;
+            // There is no ULocalPlayer in this isolated world. Otherwise UpdateCamera
+            // skips its work and GetPlayerViewPoint uses the pawn's unrotated root.
+            Controller->PlayerCameraManager->bUseClientSideCameraUpdates = false;
             Controller->SetControlRotation(FRotator::ZeroRotator);
             Controller->SetViewTarget(Pawn);
             Controller->PlayerCameraManager->UpdateCamera(.05f);
             Mining->TickComponent(0, LEVELTICK_All, nullptr);
             if (!Test->TestTrue(TEXT("Controller input fixture aims at rock"), Mining->TargetRock == Rock)) return true;
         }
+        // This synthetic world has no normal player-camera tick; update it
+        // before timers resolve a strike after a test changes control rotation.
+        Controller->PlayerCameraManager->UpdateCamera(.05f);
         World->Tick(LEVELTICK_All, .05f);
         Mining->TickComponent(.05f, LEVELTICK_All, nullptr);
         Elapsed += .05f;
@@ -136,6 +144,63 @@ public:
         case 6:
             if (Elapsed < .8f) break;
             Test->TestEqual(TEXT("Released input never resumes repeated mining"), Rock->SuccessfulCuts, ReleasedCuts);
+            Rock->ResetRock();
+            Controller->GetPawn()->SetActorLocation(FVector(-750, 499, 0));
+            Controller->SetControlRotation(FRotator::ZeroRotator);
+            Controller->PlayerCameraManager->UpdateCamera(.05f);
+            Mining->TickComponent(0, LEVELTICK_All, nullptr);
+            Test->TestTrue(TEXT("Narrow edge is aimed at when the swing starts"), Mining->TargetRock == Rock);
+            Key(IE_Pressed); Key(IE_Released);
+            Controller->SetControlRotation(FRotator(0, 1, 0));
+            Controller->PlayerCameraManager->UpdateCamera(.05f);
+            Next(7);
+            break;
+        case 7:
+            if (Elapsed < .8f) break;
+            Test->TestEqual(TEXT("Small aim drift during windup retains the verified edge contact"), Rock->SuccessfulCuts, 1);
+            Rock->ResetRock();
+            Controller->SetControlRotation(FRotator::ZeroRotator);
+            Controller->PlayerCameraManager->UpdateCamera(.05f);
+            Key(IE_Pressed); Key(IE_Released);
+            Controller->SetControlRotation(FRotator(0, 15, 0));
+            Controller->PlayerCameraManager->UpdateCamera(.05f);
+            Next(8);
+            break;
+        case 8:
+            if (Elapsed < .8f) break;
+            {
+                FVector Eye; FRotator View;
+                Controller->GetPlayerViewPoint(Eye, View);
+                Test->TestTrue(TEXT("Fixture actually turns its rendered view away"), FMath::IsNearlyEqual(View.Yaw, 15.0, .01));
+            }
+            Test->TestEqual(TEXT("Deliberately looking away still misses the original rock"), Rock->SuccessfulCuts, 0);
+            Controller->SetControlRotation(FRotator::ZeroRotator);
+            Controller->PlayerCameraManager->UpdateCamera(.05f);
+            Key(IE_Pressed); Key(IE_Released);
+            Obstruction = World->SpawnActor<AActor>();
+            {
+                auto* Box = NewObject<UBoxComponent>(Obstruction);
+                Obstruction->SetRootComponent(Box); Obstruction->AddInstanceComponent(Box);
+                Box->SetBoxExtent(FVector(10, 100, 150));
+                Box->SetCollisionProfileName(TEXT("BlockAll")); Box->RegisterComponent();
+                Obstruction->SetActorLocation(FVector(-650, 499, 64));
+            }
+            Controller->SetControlRotation(FRotator(0, 1, 0));
+            Next(9);
+            break;
+        case 9:
+            if (Elapsed < .8f) break;
+            Test->TestEqual(TEXT("New obstruction blocks both direct and retained contact"), Rock->SuccessfulCuts, 0);
+            Obstruction->Destroy();
+            Controller->SetControlRotation(FRotator::ZeroRotator);
+            Controller->PlayerCameraManager->UpdateCamera(.05f);
+            Key(IE_Pressed); Key(IE_Released);
+            Controller->GetPawn()->SetActorLocation(FVector(-1900, 499, 0));
+            Next(10);
+            break;
+        case 10:
+            if (Elapsed < .8f) break;
+            Test->TestEqual(TEXT("Retained contact cannot extend mining reach"), Rock->SuccessfulCuts, 0);
             return true;
         }
         return false;

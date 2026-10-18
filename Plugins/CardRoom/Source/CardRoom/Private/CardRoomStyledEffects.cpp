@@ -188,6 +188,5 @@ void ACardRoomStage::TickStyledEffects()
     // Each authored burst has a bounded lifetime; source pack loops cannot leak
     // into the next hand or into exploration after collecting the reward.
     if(Resolve && T>2.6f)for(int32 I=0;I<StyledFX.Num();++I)if(I!=5)StyledFX[I]->Deactivate();
-    if(Run.Phase==ECardRoomPhase::Victory)
-        Energy(Reward,Reward->GetRelativeLocation(),FVector(.30f*S),Cyan,.75f);
+    // The reward is the player's physical drill; keep its authored materials.
 }

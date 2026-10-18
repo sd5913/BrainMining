@@ -150,10 +150,18 @@ void ABrainMiningCharacter::RefreshPickaxeVisual(int32 PickaxeLevel)
 {
 	if (!PickaxeModel) return;
 	const int32 Level = FMath::Clamp(PickaxeLevel, 0, 4);
-	if (!PickaxeLevelMeshes.IsValidIndex(Level)) return;
-	if (UStaticMesh* NewPickaxeMesh = PickaxeLevelMeshes[Level].LoadSynchronous())
+	if (!ResidentPickaxeMeshes.IsValidIndex(Level)) return;
+	if (UStaticMesh* NewPickaxeMesh = ResidentPickaxeMeshes[Level])
 	{
-		PickaxeModel->SetStaticMesh(NewPickaxeMesh);
+		if (PickaxeModel->GetStaticMesh() != NewPickaxeMesh)
+		{
+			// Restore the new mesh's own materials when upgrading inside the echo passage.
+			if (MiningToolEffects) MiningToolEffects->PreparePickaxeMeshChange();
+			PickaxeModel->SetStaticMesh(NewPickaxeMesh);
+			if (MiningToolEffects && PresentedPickaxeLevel != INDEX_NONE && Level > PresentedPickaxeLevel)
+				MiningToolEffects->PlayPickaxeUpgrade();
+		}
+		PresentedPickaxeLevel = Level;
 	}
 }
 
@@ -163,6 +171,25 @@ void ABrainMiningCharacter::PostInitializeComponents()
 	if (GetWorld() && GetWorld()->IsGameWorld() && !bPlayerScaleInitialized)
 	{
 		bPlayerScaleInitialized = true;
+		ResidentPickaxeMeshes.Reset();
+		for (const auto& Asset : PickaxeLevelMeshes)
+		{
+			UStaticMesh* LevelMesh = Asset.LoadSynchronous();
+			ResidentPickaxeMeshes.Add(LevelMesh);
+			if (!LevelMesh || GetNetMode() == NM_DedicatedServer) continue;
+			// Prepare material pipelines and texture residency during level loading too:
+			// loading the mesh alone can still defer its first visible render proxy.
+			auto* WarmModel = NewObject<UStaticMeshComponent>(this);
+			AddInstanceComponent(WarmModel);
+			WarmModel->SetupAttachment(PickaxeMount);
+			WarmModel->SetStaticMesh(LevelMesh);
+			WarmModel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			WarmModel->SetCastShadow(false);
+			WarmModel->SetHiddenInGame(true);
+			WarmModel->RegisterComponent();
+			WarmModel->SetTextureForceResidentFlag(true);
+			WarmModel->PrecachePSOs();
+		}
 		InitializePlayerMining();
 		InitializePlayerScale();
 		InitializePlayerFlight();

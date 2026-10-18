@@ -27,7 +27,7 @@ AActor* AMiningCollectionField::MakeProp(FVector P,FVector Size,FLinearColor Col
 
 void AMiningCollectionField::SpawnDeepField()
 {
-    Ants.Reset(); Birds.Reset(); BirdPath.Reset(); ResidentBird.Reset(); Clues.Reset();
+    Ants.Reset(); AntTrails.Reset(); Birds.Reset(); BirdPath.Reset(); ResidentBird.Reset(); Clues.Reset();
     FlockBursts=0; AmbientAntCount=0; AmbientTime=0; FlightTime=-1; NextFlockCheck=0; BirdObservedCuts=INDEX_NONE;
     ActiveSeed=RandomSeed>0?RandomSeed:FMath::RandRange(1,MAX_int32-1); FRandomStream Random(ActiveSeed);
     const float Depth=FMath::Clamp(ExcavationDepth,650.f,1800.f),Front=460,RoomX=Front+Depth+250,Length=Depth+600;
@@ -85,24 +85,7 @@ void AMiningCollectionField::SpawnDeepField()
             MakeProp(FVector(Front-2,Y,36),FVector(5,44,48),FLinearColor(.015f,.017f,.013f),true);
             // A narrow initial bore lets moving ants disappear into a genuine hole.
             Rock->MineSphere(FVector(Front+2,Y,32),24);
-            for(int Group=0;Group<2;++Group) for(int i=0;i<9;++i)
-            {
-                auto* Root=GetWorld()->SpawnActor<AActor>(); Root->Tags.Add(TEXT("CollectionAmbientAnt")); Spawned.Add(Root);
-                auto* Scene=NewObject<USceneComponent>(Root); Root->SetRootComponent(Scene); Root->AddInstanceComponent(Scene); Scene->RegisterComponent();
-                FCollectionAnt Ant; Ant.Actor=Root; Ant.Start=FVector(Group==0?210:RoomX-210,Y,Group==0?5:15); Ant.Length=Group==0?280:260; Ant.Phase=i/9.f;
-                for(int j=0;j<3;++j)
-                {
-                    auto* Part=MakeProp(FVector(-6+j*6,0,3),FVector(j==0?9:6,5,5),FLinearColor(.055f,.02f,.008f),true);
-                    Part->AttachToActor(Root,FAttachmentTransformRules::KeepRelativeTransform);
-                }
-                for(int Side:{-1,1}) for(int j=0;j<3;++j)
-                {
-                    auto* Leg=Cast<AStaticMeshActor>(MakeProp(FVector(-5+j*5,Side*5,1),FVector(2,10,1.6),FLinearColor(.035f,.012f,.008f)));
-                    Leg->AttachToActor(Root,FAttachmentTransformRules::KeepRelativeTransform); Ant.Legs.Add(Leg->GetStaticMeshComponent());
-                }
-                Ants.Add(Ant);
-            }
-            AmbientAntCount=Ants.Num();
+            SpawnAntTrail(Rock,FVector(210,Y,95),FVector(RoomX+15,Y,95));
         }
         else if(Id==2)
         {
@@ -194,10 +177,32 @@ void AMiningCollectionField::TickAmbient(float Dt)
 {
     AmbientTime+=Dt;
     TickClues(Dt);
+    UpdateAntTrails();
     for(FCollectionAnt& Ant:Ants) if(Ant.Actor.IsValid())
     {
         const float T=FMath::Fmod(AmbientTime*32/Ant.Length+Ant.Phase,1.f);
-        if(Ant.Actor->ActorHasTag(TEXT("CampaignWallAnt")))
+        if(AntTrails.IsValidIndex(Ant.TrailIndex))
+        {
+            const auto& Trail=AntTrails[Ant.TrailIndex];
+            if(Trail.Points.Num()<2)continue;
+            const float Along=T*(Trail.Points.Num()-1);const int I=FMath::Min(FMath::FloorToInt(Along),Trail.Points.Num()-2);const float Blend=Along-I;
+            const bool Visible=Trail.Exposed[I]&&Trail.Exposed[I+1];
+            if(Ant.Actor->IsHidden()==Visible)
+            {
+                Ant.Actor->SetActorHiddenInGame(!Visible);
+                TArray<AActor*> Parts;Ant.Actor->GetAttachedActors(Parts);
+                for(AActor* Part:Parts)Part->SetActorHiddenInGame(!Visible);
+            }
+            Ant.Actor->SetActorLocation(FMath::Lerp(Trail.Points[I],Trail.Points[I+1],Blend));
+            if(Visible)
+            {
+                const FVector N=FMath::Lerp(Trail.Normals[I],Trail.Normals[I+1],Blend).GetSafeNormal();
+                const FVector Heading=FVector::VectorPlaneProject(Trail.End-Trail.Start,N).GetSafeNormal();
+                Ant.Actor->SetActorLocation(FMath::Lerp(Trail.Points[I],Trail.Points[I+1],Blend)+N*.25f);
+                Ant.Actor->SetActorRotation(FRotationMatrix::MakeFromXZ(Heading,N).ToQuat());
+            }
+        }
+        else if(Ant.Actor->ActorHasTag(TEXT("CampaignWallAnt")))
         {
             auto* Surface=Cast<ADiggableRock>(Ant.Actor->GetOwner());FHitResult Hit;
             const FVector Local=Ant.Start+FVector(0,T*Ant.Length,FMath::Sin(T*PI*4+Ant.Phase)*4);

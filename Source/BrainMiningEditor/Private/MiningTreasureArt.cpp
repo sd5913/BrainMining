@@ -127,6 +127,31 @@ bool UMiningDesignerLibrary::BuildCrystalClueMesh()
     return UPackage::SavePackage(Package,Mesh,*FPackageName::LongPackageNameToFilename(PackageName,FPackageName::GetAssetPackageExtension()),Args);
 }
 
+bool UMiningDesignerLibrary::BuildCollectionNumberMesh()
+{
+    MiningTreasureArt::FMineral Mineral(41027);
+    auto Box=[&](FVector P,FVector Half)
+    {
+        FVector V[8];for(int I=0;I<8;++I)V[I]=P+FVector((I&1)?Half.X:-Half.X,(I&2)?Half.Y:-Half.Y,(I&4)?Half.Z:-Half.Z);
+        const int Faces[][4]={{0,4,6,2},{1,3,7,5},{0,1,5,4},{2,6,7,3},{0,2,3,1},{4,5,7,6}};
+        for(const auto& F:Faces)Mineral.Face({V[F[0]],V[F[1]],V[F[2]],V[F[3]]},P,0);
+    };
+    Box(FVector(0,1,0),FVector(1.5,1.8,12));
+    Box(FVector(0,-1.5,9.5),FVector(1.5,4.3,2.5));
+    Box(FVector(0,0,-10.5),FVector(1.5,6,1.5));
+    const FString Name=TEXT("SM_NumberFragment"),PackageName=TEXT("/Game/CollectionPrototype/Meshes/")+Name;
+    UPackage* Package=CreatePackage(*PackageName);
+    auto* Mesh=FindObject<UStaticMesh>(Package,*Name);const bool bNew=!Mesh;
+    if(!Mesh)Mesh=NewObject<UStaticMesh>(Package,*Name,RF_Public|RF_Standalone);
+    Mesh->GetStaticMaterials().Reset();Mesh->GetStaticMaterials().Add(FStaticMaterial(UMaterial::GetDefaultMaterial(MD_Surface),TEXT("Mineral")));
+    auto Description=Mineral.Build();Description.ReverseAllPolygonFacing();
+    UStaticMesh::FBuildMeshDescriptionsParams Build;Build.bAllowCpuAccess=true;Build.bBuildSimpleCollision=false;Build.bFastBuild=false;
+    Mesh->BuildFromMeshDescriptions({&Description},Build);
+    if(bNew)FAssetRegistryModule::AssetCreated(Mesh);Mesh->MarkPackageDirty();
+    FSavePackageArgs Args;Args.TopLevelFlags=RF_Public|RF_Standalone;
+    return UPackage::SavePackage(Package,Mesh,*FPackageName::LongPackageNameToFilename(PackageName,FPackageName::GetAssetPackageExtension()),Args);
+}
+
 bool UMiningDesignerLibrary::BuildTreasureMeshes()
 {
     using namespace MiningTreasureArt;

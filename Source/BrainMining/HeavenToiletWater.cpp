@@ -104,13 +104,14 @@ void AHeavenToiletWater::RefreshBreach()
     // Query only when terrain changes, using its real post-boolean mesh. A high
     // tunnel, blind pocket, or mere cut count must never trigger leakage.
     ObservedCuts.Reset();
-    const float Step=20, Y0=GetActorLocation().Y-CorridorHalfWidth;
+    const FVector RoomOrigin=SpillCoordinateFrame.InverseTransformPosition(GetActorLocation());
+    const float Step=20, Y0=RoomOrigin.Y-CorridorHalfWidth;
     const int NX=FMath::CeilToInt((InnerX-OuterX)/Step)+1,NY=FMath::CeilToInt(2*CorridorHalfWidth/Step)+1;
     if(NX<2 || NY<2 || NX*NY>20000) return;
     TArray<uint8> Air; Air.Init(1,NX*NY);
-    auto SurfaceZ=[&](float X) { return GetActorLocation().Z+WaterHeight; };
+    auto SurfaceZ=[&](float X) { return RoomOrigin.Z+WaterHeight; };
     // Test at the basin level; the short exterior sheet falls to the dry floor.
-    auto Point=[&](int X,int Y) { const float WX=OuterX+X*Step; return FVector(WX,Y0+Y*Step,SurfaceZ(WX)); };
+    auto Point=[&](int X,int Y) { const float WX=OuterX+X*Step; return SpillCoordinateFrame.TransformPosition(FVector(WX,Y0+Y*Step,SurfaceZ(WX))); };
     for(ADiggableRock* Rock:RetainingSoil)
     {
         ObservedCuts.Add(IsValid(Rock)?Rock->SuccessfulCuts:INDEX_NONE);
@@ -166,18 +167,18 @@ void AHeavenToiletWater::RefreshBreach()
         if(Wet[I] && Wet[I+1] && Wet[I+NY] && Wet[I+NY+1])
             Flow.Quad(Local(Point(X,Y)),Local(Point(X+1,Y)),Local(Point(X+1,Y+1)),Local(Point(X,Y+1)));
     }
-    const float ExitY=Point(0,Exit%NY).Y;
-    OutletSpray->SetWorldLocation(FVector(OuterX,ExitY,GetActorLocation().Z+WaterHeight+1));
+    const float ExitY=Y0+(Exit%NY)*Step;
+    OutletSpray->SetWorldLocation(SpillCoordinateFrame.TransformPosition(FVector(OuterX,ExitY,RoomOrigin.Z+WaterHeight+1)));
     if(OutletSpraySystem && !OutletSpray->IsActive()) OutletSpray->Activate(true);
     // Short descending sheet and a small persistent puddle, not a draining simulation.
     for(int i=0;i<12;++i)
     {
         const float X0=OuterX-i*15,X1=X0-15;
         const float W0=22+i*3,W1=W0+3;
-        const float Z0=GetActorLocation().Z+FMath::Lerp(WaterHeight,1.5f,float(i)/12),Z1=GetActorLocation().Z+FMath::Lerp(WaterHeight,1.5f,float(i+1)/12);
-        Flow.Quad(Local(FVector(X0,ExitY-W0,Z0)),Local(FVector(X1,ExitY-W1,Z1)),Local(FVector(X1,ExitY+W1,Z1)),Local(FVector(X0,ExitY+W0,Z0)));
+        const float Z0=RoomOrigin.Z+FMath::Lerp(WaterHeight,1.5f,float(i)/12),Z1=RoomOrigin.Z+FMath::Lerp(WaterHeight,1.5f,float(i+1)/12);
+        Flow.Quad(Local(SpillCoordinateFrame.TransformPosition(FVector(X0,ExitY-W0,Z0))),Local(SpillCoordinateFrame.TransformPosition(FVector(X1,ExitY-W1,Z1))),Local(SpillCoordinateFrame.TransformPosition(FVector(X1,ExitY+W1,Z1))),Local(SpillCoordinateFrame.TransformPosition(FVector(X0,ExitY+W0,Z0))));
     }
-    Flow.Disk(Local(FVector(OuterX-170,ExitY,GetActorLocation().Z+1.5)),110,85,10,64);
+    Flow.Disk(Local(SpillCoordinateFrame.TransformPosition(FVector(OuterX-170,ExitY,RoomOrigin.Z+1.5))),110,85,10,64);
     Flow.Apply(Spill);
 }
 

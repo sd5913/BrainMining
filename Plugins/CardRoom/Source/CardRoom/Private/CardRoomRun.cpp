@@ -39,7 +39,7 @@ void FCardRoomRun::Deal(int32 NewRound)
 bool FCardRoomRun::Collect()
 {
     if (Phase != ECardRoomPhase::Victory) return false;
-    SetPhase(ECardRoomPhase::Collected); Message = TEXT("已收藏「彗尾法球」。本版奖励仅在房间内展示。"); return true;
+    SetPhase(ECardRoomPhase::Collected); Message = TEXT("已拾取钻机。"); return true;
 }
 void FCardRoomRun::Restart() { *this = FCardRoomRun(); Seat(); }
 void FCardRoomRun::Tick(float DeltaSeconds)
@@ -70,7 +70,7 @@ void FCardRoomRun::Tick(float DeltaSeconds)
     if (PhaseTime >= (Round == 4 ? 4.1f : 4.6f))
     {
         if (Round < 4) Deal(Round + 1);
-        else { SetPhase(ECardRoomPhase::Victory); Hand.Reset(); Staged.Reset(); Message = TEXT("恭喜你获得胜利！桌上的彗尾法球属于你了。"); }
+        else { SetPhase(ECardRoomPhase::Victory); Hand.Reset(); Staged.Reset(); Message = TEXT("恭喜你获得胜利！拾取钻机以获得钻机能力。"); }
     }
 }
 FString FCardRoomRun::CardName(ERoomCard Card)

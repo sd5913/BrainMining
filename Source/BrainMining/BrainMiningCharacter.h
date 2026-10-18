@@ -71,6 +71,10 @@ class ABrainMiningCharacter : public ACharacter
 	/** First-person pickaxe meshes for levels 0..4: base, copper, silver, gold, max. */
 	UPROPERTY(EditDefaultsOnly, Category="Tools|Pickaxe")
 	TArray<TSoftObjectPtr<UStaticMesh>> PickaxeLevelMeshes;
+	/** Loaded with the pawn, retained across upgrades rather than loaded on purchase. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMesh>> ResidentPickaxeMeshes;
+	int32 PresentedPickaxeLevel = INDEX_NONE;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))
 	TObjectPtr<USceneComponent> DrillRightMount;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tools", meta=(AllowPrivateAccess="true"))

@@ -435,6 +435,8 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 	{
 		const APawn* Pawn = GetOwningPlayerPawn();
 		const UMiningComponent* Mining = Pawn ? Pawn->FindComponentByClass<UMiningComponent>() : nullptr;
+		AbilityV->SetAvailable(Mining && Mining->IsDrillUnlocked());
+		SetItemUnlocked(3, Mining && Mining->IsDrillUnlocked());
 		const float Cooldown = Mining ? Mining->GetDrillCooldownRemaining() : 0.f;
 		AbilityV->SetUsed(Cooldown > 0);
 		AbilityV->SetCooldownRemaining(Cooldown);

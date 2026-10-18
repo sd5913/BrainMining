@@ -1,0 +1,102 @@
+#include "MiningRoomEscape.h"
+#include "MiningCollection.h"
+#include "MiningCollectionEffects.h"
+#include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/SpotLightComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Components/PostProcessComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Engine/World.h"
+#include "EngineUtils.h"
+
+void AMiningRoomEscape::BuildExitStage()
+{
+    auto* Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube"));
+    auto* Cylinder=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cylinder"));
+    auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
+    auto Material=[&](FLinearColor Tint)
+    {
+        auto* M=UMaterialInstanceDynamic::Create(Base,this);M->SetVectorParameterValue(TEXT("Tint"),Tint);return M;
+    };
+    auto* Red=Material(FLinearColor(.38f,.008f,.025f));
+    auto* Pleat=Material(FLinearColor(.6f,.018f,.035f));
+    auto* Gold=Material(FLinearColor(.65f,.38f,.07f));
+    auto* Dark=Material(FLinearColor(.035f,.025f,.025f));
+    auto Shape=[&](FVector P,FVector Size,UMaterialInterface* M,FName Tag)
+    {
+        auto* C=NewObject<UStaticMeshComponent>(this);AddInstanceComponent(C);C->SetupAttachment(RootComponent);
+        C->SetStaticMesh(Cube);C->SetMaterial(0,M);C->SetMobility(EComponentMobility::Movable);
+        C->SetCollisionEnabled(ECollisionEnabled::NoCollision);C->ComponentTags.Add(Tag);
+        C->RegisterComponent();C->SetWorldLocation(P);C->SetWorldScale3D(Size/100);return C;
+    };
+    const FVector Deck(31900+SourceLevelOffset.X,ComputerEntry.Y,9900+SourceLevelOffset.Z);
+    auto* ExposureBounds=NewObject<UBoxComponent>(this);AddInstanceComponent(ExposureBounds);ExposureBounds->SetupAttachment(RootComponent);
+    ExposureBounds->SetBoxExtent(FVector(1500,1300,950));ExposureBounds->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    ExposureBounds->SetCollisionResponseToAllChannels(ECR_Ignore);ExposureBounds->SetGenerateOverlapEvents(false);
+    ExposureBounds->RegisterComponent();ExposureBounds->SetWorldLocation(Deck+FVector(0,0,450));
+    auto* Exposure=NewObject<UPostProcessComponent>(this);AddInstanceComponent(Exposure);Exposure->SetupAttachment(ExposureBounds);
+    Exposure->bUnbound=false;Exposure->Priority=21;Exposure->BlendRadius=100;
+    Exposure->Settings.bOverride_AutoExposureMethod=true;Exposure->Settings.AutoExposureMethod=AEM_Manual;
+    Exposure->Settings.bOverride_AutoExposureBias=true;Exposure->Settings.AutoExposureBias=-1.5f;
+    Exposure->Settings.bOverride_AutoExposureApplyPhysicalCameraExposure=true;Exposure->Settings.AutoExposureApplyPhysicalCameraExposure=false;
+    Exposure->Settings.bOverride_BloomIntensity=true;Exposure->Settings.BloomIntensity=.1f;
+    Exposure->Settings.bOverride_MotionBlurAmount=true;Exposure->Settings.MotionBlurAmount=0;Exposure->RegisterComponent();
+    // The red curtain is on the far side of the gentle ramp. It is intentionally walk-through.
+    const FVector Curtain(31070+SourceLevelOffset.X,ComputerEntry.Y,10470+SourceLevelOffset.Z);
+    for(float Side:{-1.f,1.f})
+    {
+        Shape(Curtain+FVector(0,Side*450,0),FVector(28,900,1140),Red,TEXT("EscapeStageCurtain"));
+        for(int J=0;J<14;++J)
+            Shape(Curtain+FVector(-20,Side*450-420+J*64,0),FVector(35,25,1120),Pleat,TEXT("EscapeStageCurtain"));
+        Shape(Curtain+FVector(0,Side*930,0),FVector(65,65,1200),Gold,TEXT("EscapeStageFrame"));
+        const FVector Cannon=Deck+FVector(75,Side*720,135);
+        auto* Barrel=Shape(Cannon,FVector(52,52,180),Gold,TEXT("CollectionRibbonCannon"));
+        Barrel->SetStaticMesh(Cylinder);Barrel->SetWorldRotation(FRotator(0,0,Side*35));
+        Shape(Cannon-FVector(0,0,82),FVector(135,135,24),Dark,TEXT("EscapeStageCannonBase"));
+        const FVector LampPosition=Deck+FVector(250,Side*580,1050);
+        Shape(LampPosition,FVector(100,90,65),Dark,TEXT("CollectionStageLight"));
+        auto* Spot=NewObject<USpotLightComponent>(this);AddInstanceComponent(Spot);Spot->SetupAttachment(RootComponent);
+        Spot->SetIntensityUnits(ELightUnits::Candelas);Spot->SetIntensity(1200);
+        Spot->SetAttenuationRadius(2500);Spot->SetOuterConeAngle(44);Spot->SetInnerConeAngle(25);
+        Spot->SetLightColor(Side<0?FLinearColor(1,.72f,.38f):FLinearColor(.42f,.65f,1));
+        Spot->SetCastShadows(false);Spot->RegisterComponent();Spot->SetWorldLocation(LampPosition-FVector(0,0,40));
+        Spot->SetWorldRotation((Deck+FVector(0,0,35)-LampPosition).Rotation());
+    }
+    Shape(Curtain+FVector(0,0,610),FVector(60,1940,140),Red,TEXT("EscapeStageCurtain"));
+    auto* CurtainLight=NewObject<UPointLightComponent>(this);AddInstanceComponent(CurtainLight);CurtainLight->SetupAttachment(RootComponent);
+    CurtainLight->SetIntensity(120000);CurtainLight->SetAttenuationRadius(1900);CurtainLight->SetLightColor(FLinearColor(1,.5f,.3f));
+    CurtainLight->SetCastShadows(false);CurtainLight->RegisterComponent();CurtainLight->SetWorldLocation(Curtain+FVector(-450,0,200));
+    // Same fixed pools, two cannon trajectories and collectible model as the collection theatre.
+    StageCelebration=GetWorld()->SpawnActor<AMiningCollectionEffects>(Deck-FVector(900,0,0),FRotator(0,-90,0));
+    StageCelebration->SetOwner(this);StageCelebration->SetActorScale3D(FVector(1.5));
+    StageCelebration->Initialize(3,nullptr,128);StageCelebration->SetActorTickEnabled(false);
+    GeneratedActors.Add(StageCelebration);
+    StageRibbon=GetWorld()->SpawnActor<AMiningCollectible>(Deck+FVector(0,0,14),FRotator(0,30,0));
+    StageRibbon->BuildModel(11);StageRibbon->bReleased=true;StageRibbon->Exposure=1;
+    StageRibbon->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);StageRibbon->SetOwner(this);
+    StageRibbon->Tags.Add(TEXT("CardEscapeStageRibbon"));GeneratedActors.Add(StageRibbon);
+}
+
+void AMiningRoomEscape::TickExitStage()
+{
+    if(Phase!=EMiningEscapePhase::Escaped || !StageCelebration || !StageRibbon)return;
+    StageCelebration->bStageActive=true;StageCelebration->SetActorTickEnabled(true);
+    if(!StageCollection.IsValid())
+    {
+        for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It){StageCollection=*It;break;}
+        if(!StageCollection.IsValid())
+        {
+            auto* Field=GetWorld()->SpawnActorDeferred<AMiningCollectionField>(AMiningCollectionField::StaticClass(),FTransform::Identity,this);
+            Field->bUseAuthoredPlacements=true;Field->bAreaManaged=true;Field->bSharedAbilities=true;
+            Field->bShowExplorationHUD=false;Field->CatalogueKey=EKeys::I;
+            Field->FinishSpawning(FTransform::Identity);StageCollection=Field;bOwnsStageCollection=true;GeneratedActors.Add(Field);
+        }
+    }
+    if(StageCollection->RegisterExternalCollectible(StageRibbon))
+    {
+        if(!StageCollection->IsAreaActive())StageCollection->SetAreaActive(true);
+        // The room does not announce unrelated collection-field tutorial text.
+        if(StageCollection->ToastRemaining>5)StageCollection->ToastRemaining=0;
+    }
+}

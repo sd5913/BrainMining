@@ -33,7 +33,7 @@ def tick(dt):
             w=ed.get_game_world()
             if not w:return
             f=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningCollectionField)[0]
-            if len(f.items)!=5:return
+            if len(f.items)!=(13 if f.expanded_collection else 5):return
             s.update(f=f,w=w,pawn=unreal.GameplayStatics.get_player_pawn(w,0),pc=unreal.GameplayStatics.get_player_controller(w,0))
             s['mining']=s['pawn'].get_component_by_class(unreal.MiningComponent)
             s['movement']=s['pawn'].get_component_by_class(unreal.MiningCharacterMovementComponent);s['movement'].disable_movement()
@@ -45,7 +45,7 @@ def tick(dt):
                     s['positions'][item.item_id]=item.get_actor_location()
                 else: check('Test tubes remain buried',not item.released)
                 aim(item,200);f.collect_target();check('Solid entrance blocks item '+str(item.item_id),not item.collected)
-            check('Ant trail actors exist',f.ambient_ant_count==18)
+            check('Ant trail actors exist',f.ambient_ant_count==42)
             ants=unreal.GameplayStatics.get_all_actors_with_tag(w,'CollectionAmbientAnt');s['ant']=ants[0];s['ant_pos']=s['ant'].get_actor_location()
             check('Birds stay inside sealed cave',f.flock_bursts==0)
             s['feathers']=unreal.GameplayStatics.get_all_actors_with_tag(w,'CollectionFeather')
@@ -110,14 +110,14 @@ def tick(dt):
             if s['attempts']>45:raise RuntimeError('Cannot reach item '+str(item.item_id)+' at '+str(item.get_actor_location())+' status='+s['mining'].status)
             s['next']=now+.34
         elif p==4:
-            f=s['f'];check('All four kinds collected',all(n>0 for n in f.inventory))
+            f=s['f'];check('All four kinds collected',all(n>0 for n in f.inventory[:4]))
             check('Opening actual passage triggers one flock',f.flock_bursts==1)
             f.set_editor_property('random_seed',9137);f.reset_collection()
             first=[(i.item_id,str(i.get_actor_location())) for i in f.items]
             f.reset_collection();second=[(i.item_id,str(i.get_actor_location())) for i in f.items]
             check('Fixed seed still reproduces deep layout',first==second)
             check('Reset clears inventory and rearms bird event',sum(f.inventory)==0 and f.flock_bursts==0)
-            check('Reset does not duplicate ants',len(unreal.GameplayStatics.get_all_actors_with_tag(s['w'],'CollectionAmbientAnt'))==18)
+            check('Reset does not duplicate ants',len(unreal.GameplayStatics.get_all_actors_with_tag(s['w'],'CollectionAmbientAnt'))==42)
             levels.editor_request_end_play();s['phase']=5;s['next']=now+1
         elif p==5:
             if ed.get_game_world():return

@@ -51,6 +51,11 @@ private:
 	float ReleaseCoastWeight = 0.f;
 	bool bJetpackEngaged = false;
 	bool bJetpackUsedInAir = false;
+	bool bAirCatchRecovery = false;
+	// Negative during slow drift; advances once the fall enters the low-speed band.
+	float AirCatchRecoveryTime = 0.f;
+	float AirCatchLiftWeight = 1.f;
+	void ResetAirCatchRecovery();
 	void IgniteJetpack();
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Player Flight")

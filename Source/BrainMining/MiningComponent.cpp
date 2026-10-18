@@ -14,6 +14,8 @@
 #include "InputAction.h"
 #include "InputMappingContext.h"
 #include "TimerManager.h"
+#include "MiningWalletSubsystem.h"
+#include "Engine/GameInstance.h"
 
 UMiningComponent::UMiningComponent()
 {
@@ -103,7 +105,7 @@ void UMiningComponent::SetDrillMode(bool bNewDrillMode)
 
 bool UMiningComponent::ActivateDrill()
 {
-	if (!GetWorld() || bInputSuspended || IsEncounterBlocked()) return false;
+	if (!GetWorld() || bInputSuspended || IsEncounterBlocked() || !IsDrillUnlocked()) return false;
 	UpdateDrillSession();
 	if (bUseDrillEnergy && bDrillMode)
 	{
@@ -129,6 +131,37 @@ void UMiningComponent::SelectPickaxe()
 {
 	CancelMining();
 	SetDrillMode(false);
+}
+
+bool UMiningComponent::IsDrillUnlocked() const
+{
+	const auto* GI=GetOwner()?GetOwner()->GetGameInstance():nullptr;
+	const auto* Wallet=GI?GI->GetSubsystem<UMiningWalletSubsystem>():nullptr;
+	return !Wallet || !Wallet->bDrillSkillRequiresUnlock || Wallet->bDrillSkillUnlocked;
+}
+void UMiningComponent::RequireDrillUnlock()
+{
+	if(auto* GI=GetOwner()?GetOwner()->GetGameInstance():nullptr)
+		if(auto* Wallet=GI->GetSubsystem<UMiningWalletSubsystem>())Wallet->bDrillSkillRequiresUnlock=true;
+	if(!IsDrillUnlocked())SelectPickaxe();
+}
+void UMiningComponent::UnlockDrill()
+{
+	if(auto* GI=GetOwner()?GetOwner()->GetGameInstance():nullptr)
+		if(auto* Wallet=GI->GetSubsystem<UMiningWalletSubsystem>())Wallet->bDrillSkillUnlocked=true;
+}
+bool UMiningComponent::MineTelevision(const FHitResult& Hit)
+{
+	auto* Rock=Cast<ADiggableRock>(Hit.GetActor());
+	if(!Rock || !Rock->ActorHasTag(TEXT("CardEscapeTelevision")))return false;
+	// Keep the original smooth CRT cutter. Mining-balance changes elsewhere must not
+	// replace it with shallow, jagged pickaxe cavities that trap the player capsule.
+	const float CutRadius=FMath::Max(220.f,GetMiningRadius());
+	LastMinedRock=Rock;
+	const bool Cut=Rock->MineSphere(Hit.ImpactPoint-Hit.ImpactNormal*CutRadius*.3f-FVector(0,0,40),CutRadius);
+	Status=Rock->LastStatus;
+	if(Cut)OnMiningHit.Broadcast(Hit);
+	return Cut;
 }
 
 float UMiningComponent::GetDrillUseRemaining() const
@@ -245,11 +278,13 @@ bool UMiningComponent::TryMine()
 	}
 	if (!bDrillMode)
 	{
+		PickaxeSwingTarget = TargetHit;
 		GetWorld()->GetTimerManager().SetTimer(PickaxeImpactTimer, this, &UMiningComponent::ResolvePickaxeStrike, GetPickaxeImpactDelay(), false);
 		return true;
 	}
 	LastMinedRock = TargetRock;
 	const FHitResult MiningHit = TargetHit;
+	if(TargetRock->ActorHasTag(TEXT("CardEscapeTelevision")))return MineTelevision(MiningHit);
 	FTransform Frame;
 	FVector HalfSize;
 	BuildPickaxeCut(MiningHit, Frame, HalfSize);
@@ -301,6 +336,7 @@ void UMiningComponent::StopMining()
 void UMiningComponent::CancelMining()
 {
 	StopMining();
+	PickaxeSwingTarget = FHitResult();
 	if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(PickaxeImpactTimer);
 }
 
@@ -318,6 +354,7 @@ void UMiningComponent::TogglePreview()
 
 void UMiningComponent::ResetField()
 {
+    if(!bFieldResetEnabled)return;
     if(IsEncounterBlocked())return;
 	CancelMining();
 	ClearPickaxeDamage();

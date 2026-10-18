@@ -173,7 +173,7 @@ def tick(dt):
             w=ed.get_game_world()
             if not w:return
             field=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningCollectionField)[0]
-            check('Original collection field still spawns all five items',len(field.items)==5 and not field.use_authored_placements)
+            check('Original collection field still spawns all five items',len([item for item in field.items if item.item_id<4])==5 and not field.use_authored_placements)
             finish(True)
     except Exception:
         finish(False,traceback.format_exc())

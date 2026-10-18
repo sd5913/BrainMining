@@ -19,6 +19,8 @@ void AMiningRoomEscape::BuildStudyLayout()
     auto* Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
     auto* Surface=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_CardRoomSurface.M_CardRoomSurface"));
     auto* Glow=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_CardRoomGlow.M_CardRoomGlow"));
+    if(!Surface)Surface=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint.M_CollectionTint"));
+    if(!Glow)Glow=Surface;
     auto Material=[&](FLinearColor Color,bool Emissive=false)
     {
         auto* M=UMaterialInstanceDynamic::Create(Emissive?Glow:Surface,this);

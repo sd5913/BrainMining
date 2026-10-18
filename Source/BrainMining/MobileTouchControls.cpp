@@ -37,14 +37,28 @@ FVector2D SMobileTouchControls::GetButtonCenter(EButton Button, const FVector2D&
     const float Scale = GetUiScale(Size);
     const float Right = Size.X - 88.f * Scale;
     const float Left = Size.X - 206.f * Scale;
+    const float FarLeft = Size.X - 324.f * Scale;
+    const float Extra = Size.X - 442.f * Scale;
     const float Lower = Size.Y - 88.f * Scale;
     const float Upper = Size.Y - 204.f * Scale;
+    const float Upper2 = Size.Y - 320.f * Scale;
+    const float Upper3 = Size.Y - 436.f * Scale;
     switch (Button)
     {
     case EButton::Mine: return FVector2D(Right, Lower);
     case EButton::Bomb: return FVector2D(Right, Upper);
     case EButton::Drill: return FVector2D(Left, Lower);
-    case EButton::Upgrade: return FVector2D(Left, Upper);
+    case EButton::Jetpack: return FVector2D(Left, Upper);
+    case EButton::Interact: return FVector2D(FarLeft, Lower);
+    case EButton::Primary: return FVector2D(Extra, Lower);
+    case EButton::Confirm: return FVector2D(FarLeft, Upper);
+    case EButton::Reset: return FVector2D(Extra, Upper);
+    case EButton::ThoughtLeft: return FVector2D(FarLeft, Upper2);
+    case EButton::ThoughtRight: return FVector2D(Extra, Upper2);
+    case EButton::Map: return FVector2D(FarLeft, Upper3);
+    case EButton::Catalogue: return FVector2D(Extra, Upper3);
+    case EButton::Back: return FVector2D(Right, Upper2);
+    case EButton::Edit: return FVector2D(Right, Upper3);
     default: return FVector2D::ZeroVector;
     }
 }
@@ -56,7 +70,17 @@ SMobileTouchControls::EPointerAction SMobileTouchControls::GetButtonAction(EButt
     case EButton::Mine: return EPointerAction::Mine;
     case EButton::Bomb: return EPointerAction::Bomb;
     case EButton::Drill: return EPointerAction::Drill;
-    case EButton::Upgrade: return EPointerAction::Upgrade;
+    case EButton::Jetpack: return EPointerAction::Jetpack;
+    case EButton::Interact: return EPointerAction::Interact;
+    case EButton::Primary: return EPointerAction::Primary;
+    case EButton::Confirm: return EPointerAction::Confirm;
+    case EButton::Reset: return EPointerAction::Reset;
+    case EButton::ThoughtLeft: return EPointerAction::ThoughtLeft;
+    case EButton::ThoughtRight: return EPointerAction::ThoughtRight;
+    case EButton::Map: return EPointerAction::Map;
+    case EButton::Catalogue: return EPointerAction::Catalogue;
+    case EButton::Back: return EPointerAction::Back;
+    case EButton::Edit: return EPointerAction::Edit;
     default: return EPointerAction::None;
     }
 }
@@ -68,7 +92,17 @@ int32& SMobileTouchControls::GetButtonPointer(EButton Button)
     case EButton::Mine: return MinePointer;
     case EButton::Bomb: return BombPointer;
     case EButton::Drill: return DrillPointer;
-    case EButton::Upgrade: return UpgradePointer;
+    case EButton::Jetpack: return JetpackPointer;
+    case EButton::Interact: return InteractPointer;
+    case EButton::Primary: return PrimaryPointer;
+    case EButton::Confirm: return ConfirmPointer;
+    case EButton::Reset: return ResetPointer;
+    case EButton::ThoughtLeft: return ThoughtLeftPointer;
+    case EButton::ThoughtRight: return ThoughtRightPointer;
+    case EButton::Map: return MapPointer;
+    case EButton::Catalogue: return CataloguePointer;
+    case EButton::Back: return BackPointer;
+    case EButton::Edit: return EditPointer;
     default: return MinePointer;
     }
 }
@@ -80,7 +114,17 @@ const int32& SMobileTouchControls::GetButtonPointer(EButton Button) const
     case EButton::Mine: return MinePointer;
     case EButton::Bomb: return BombPointer;
     case EButton::Drill: return DrillPointer;
-    case EButton::Upgrade: return UpgradePointer;
+    case EButton::Jetpack: return JetpackPointer;
+    case EButton::Interact: return InteractPointer;
+    case EButton::Primary: return PrimaryPointer;
+    case EButton::Confirm: return ConfirmPointer;
+    case EButton::Reset: return ResetPointer;
+    case EButton::ThoughtLeft: return ThoughtLeftPointer;
+    case EButton::ThoughtRight: return ThoughtRightPointer;
+    case EButton::Map: return MapPointer;
+    case EButton::Catalogue: return CataloguePointer;
+    case EButton::Back: return BackPointer;
+    case EButton::Edit: return EditPointer;
     default: return MinePointer;
     }
 }
@@ -92,7 +136,7 @@ bool SMobileTouchControls::IsInsideButton(EButton Button, const FVector2D& Posit
 
 bool SMobileTouchControls::IsJoystickZone(const FVector2D& Position, const FVector2D& Size) const
 {
-    return JoystickPointer == -1 && Position.X < Size.X * .55f && Position.Y > Size.Y * .34f;
+    return JoystickPointer == -1 && Position.X < Size.X * .42f && Position.Y > Size.Y * .34f;
 }
 
 bool SMobileTouchControls::IsButtonPressed(EButton Button) const
@@ -100,18 +144,85 @@ bool SMobileTouchControls::IsButtonPressed(EButton Button) const
     return GetButtonPointer(Button) != -1;
 }
 
+bool SMobileTouchControls::IsButtonVisible(EButton Button) const
+{
+    if (!OwnerController.IsValid()) return false;
+    switch (Button)
+    {
+    case EButton::Primary: return OwnerController->IsMobileActionVisible();
+    case EButton::Confirm: return OwnerController->IsMobileConfirmVisible();
+    case EButton::Reset:
+    case EButton::Map:
+    case EButton::Catalogue: return false;
+    case EButton::ThoughtLeft:
+    case EButton::ThoughtRight: return OwnerController->IsMobileThoughtVisible();
+    case EButton::Back: return OwnerController->IsMobileBackVisible();
+    case EButton::Edit: return OwnerController->IsMobileEditVisible();
+    default: return true;
+    }
+}
+
+FString SMobileTouchControls::GetButtonLabel(EButton Button) const
+{
+    switch (Button)
+    {
+    case EButton::Primary: return OwnerController.IsValid() ? OwnerController->GetMobileActionLabel() : TEXT("TAP");
+    case EButton::Confirm: return TEXT("OK");
+    case EButton::Reset: return TEXT("RST");
+    case EButton::ThoughtLeft: return TEXT("Q");
+    case EButton::ThoughtRight: return TEXT("R");
+    case EButton::Map: return TEXT("MAP");
+    case EButton::Catalogue: return TEXT("BOOK");
+    case EButton::Back: return TEXT("BACK");
+    case EButton::Edit: return TEXT("EDIT");
+    case EButton::Mine: return TEXT("MINE");
+    case EButton::Bomb: return TEXT("BOMB");
+    case EButton::Drill: return TEXT("DRILL");
+    case EButton::Jetpack: return TEXT("UP");
+    case EButton::Interact: return TEXT("E");
+    default: return TEXT("");
+    }
+}
+
+FLinearColor SMobileTouchControls::GetButtonColor(EButton Button) const
+{
+    switch (Button)
+    {
+    case EButton::Mine: return FLinearColor(.08f, .72f, .88f, 1.f);
+    case EButton::Bomb: return FLinearColor(.92f, .45f, .12f, 1.f);
+    case EButton::Drill: return FLinearColor(.12f, .78f, .56f, 1.f);
+    case EButton::Jetpack: return FLinearColor(.64f, .36f, .92f, 1.f);
+    case EButton::Interact: return FLinearColor(.96f, .78f, .24f, 1.f);
+    case EButton::Primary: return FLinearColor(.95f, .55f, .22f, 1.f);
+    case EButton::Confirm: return FLinearColor(.34f, .88f, .48f, 1.f);
+    case EButton::Reset: return FLinearColor(.95f, .32f, .28f, 1.f);
+    case EButton::ThoughtLeft:
+    case EButton::ThoughtRight: return FLinearColor(.92f, .28f, .46f, 1.f);
+    case EButton::Map:
+    case EButton::Catalogue: return FLinearColor(.32f, .68f, .95f, 1.f);
+    case EButton::Back:
+    case EButton::Edit: return FLinearColor(.74f, .72f, .62f, 1.f);
+    default: return FLinearColor::White;
+    }
+}
+
 FReply SMobileTouchControls::HandlePointerStarted(const FGeometry& MyGeometry, int32 PointerIndex, const FVector2D& LocalPosition)
 {
     if (!OwnerController.IsValid()) return FReply::Unhandled();
     const FVector2D Size = MyGeometry.GetLocalSize();
-    const EButton Buttons[] = { EButton::Mine, EButton::Bomb, EButton::Drill, EButton::Upgrade };
+    const EButton Buttons[] = { EButton::Mine, EButton::Bomb, EButton::Drill, EButton::Jetpack, EButton::Interact,
+        EButton::Primary, EButton::Confirm, EButton::Reset, EButton::ThoughtLeft, EButton::ThoughtRight,
+        EButton::Map, EButton::Catalogue, EButton::Back, EButton::Edit };
     for (const EButton Button : Buttons)
     {
         int32& ButtonPointer = GetButtonPointer(Button);
-        if (ButtonPointer == -1 && IsInsideButton(Button, LocalPosition, Size))
+        if (ButtonPointer == -1 && IsButtonVisible(Button) && IsInsideButton(Button, LocalPosition, Size))
         {
             ButtonPointer = PointerIndex;
+            ButtonLastPositions.Add(PointerIndex, LocalPosition);
             SetButtonPressed(Button, true);
+            // Do not capture the whole touch stream for a button. A second finger
+            // must still be able to enter the look zone while this button is held.
             return FReply::Handled().CaptureMouse(SharedThis(this));
         }
     }
@@ -129,7 +240,7 @@ FReply SMobileTouchControls::HandlePointerStarted(const FGeometry& MyGeometry, i
         return FReply::Handled().CaptureMouse(SharedThis(this));
     }
 
-    if (LookPointer == -1)
+    if (LookPointer == -1 && LocalPosition.X >= Size.X * .58f)
     {
         LookPointer = PointerIndex;
         LastLookPosition = LocalPosition;
@@ -153,10 +264,20 @@ FReply SMobileTouchControls::HandlePointerMoved(const FGeometry& MyGeometry, int
         OwnerController->HandleMobileLook(Delta);
         return FReply::Handled();
     }
-    if (PointerIndex == MinePointer || PointerIndex == BombPointer || PointerIndex == DrillPointer || PointerIndex == UpgradePointer)
-    {
-        return FReply::Handled();
-    }
+    const EButton Buttons[] = { EButton::Mine, EButton::Bomb, EButton::Drill, EButton::Jetpack, EButton::Interact,
+        EButton::Primary, EButton::Confirm, EButton::Reset, EButton::ThoughtLeft, EButton::ThoughtRight,
+        EButton::Map, EButton::Catalogue, EButton::Back, EButton::Edit };
+    for (const EButton Button : Buttons)
+        if (GetButtonPointer(Button) == PointerIndex)
+        {
+            if (const FVector2D* LastPosition = ButtonLastPositions.Find(PointerIndex))
+            {
+                const FVector2D Delta = LocalPosition - *LastPosition;
+                *ButtonLastPositions.Find(PointerIndex) = LocalPosition;
+                OwnerController->HandleMobileLook(Delta);
+            }
+            return FReply::Handled();
+        }
     return FReply::Unhandled();
 }
 
@@ -172,14 +293,17 @@ FReply SMobileTouchControls::HandlePointerEnded(int32 PointerIndex)
         LookPointer = -1;
         return FReply::Handled().ReleaseMouseCapture();
     }
-    const EButton Buttons[] = { EButton::Mine, EButton::Bomb, EButton::Drill, EButton::Upgrade };
+    const EButton Buttons[] = { EButton::Mine, EButton::Bomb, EButton::Drill, EButton::Jetpack, EButton::Interact,
+        EButton::Primary, EButton::Confirm, EButton::Reset, EButton::ThoughtLeft, EButton::ThoughtRight,
+        EButton::Map, EButton::Catalogue, EButton::Back, EButton::Edit };
     for (const EButton Button : Buttons)
     {
         if (GetButtonPointer(Button) == PointerIndex)
         {
             GetButtonPointer(Button) = -1;
+            ButtonLastPositions.Remove(PointerIndex);
             SetButtonPressed(Button, false);
-            return FReply::Handled().ReleaseMouseCapture();
+            return FReply::Handled();
         }
     }
     return FReply::Unhandled();
@@ -217,8 +341,38 @@ void SMobileTouchControls::SetButtonPressed(EButton Button, bool bPressed)
     case EButton::Drill:
         if (bPressed) OwnerController->HandleMobileDrill();
         break;
-    case EButton::Upgrade:
-        if (bPressed) OwnerController->HandleMobileUpgrade();
+    case EButton::Jetpack:
+        OwnerController->HandleMobileJump(bPressed);
+        break;
+    case EButton::Interact:
+        if (bPressed) OwnerController->HandleMobileInteract();
+        break;
+    case EButton::Primary:
+        if (bPressed) OwnerController->HandleMobilePrimary();
+        break;
+    case EButton::Confirm:
+        if (bPressed) OwnerController->HandleMobileConfirm();
+        break;
+    case EButton::Reset:
+        if (bPressed) OwnerController->HandleMobileReset();
+        break;
+    case EButton::ThoughtLeft:
+        if (bPressed) OwnerController->HandleMobileThoughtLeft();
+        break;
+    case EButton::ThoughtRight:
+        if (bPressed) OwnerController->HandleMobileThoughtRight();
+        break;
+    case EButton::Map:
+        if (bPressed) OwnerController->HandleMobileMap();
+        break;
+    case EButton::Catalogue:
+        if (bPressed) OwnerController->HandleMobileCatalogue();
+        break;
+    case EButton::Back:
+        if (bPressed) OwnerController->HandleMobileBack();
+        break;
+    case EButton::Edit:
+        if (bPressed) OwnerController->HandleMobileEdit();
         break;
     default:
         break;
@@ -228,6 +382,11 @@ void SMobileTouchControls::SetButtonPressed(EButton Button, bool bPressed)
 FReply SMobileTouchControls::OnTouchStarted(const FGeometry& MyGeometry, const FPointerEvent& Event)
 {
     return HandlePointerStarted(MyGeometry, static_cast<int32>(Event.GetPointerIndex()), MyGeometry.AbsoluteToLocal(Event.GetScreenSpacePosition()));
+}
+
+FReply SMobileTouchControls::OnTouchFirstMove(const FGeometry& MyGeometry, const FPointerEvent& Event)
+{
+    return HandlePointerMoved(MyGeometry, static_cast<int32>(Event.GetPointerIndex()), MyGeometry.AbsoluteToLocal(Event.GetScreenSpacePosition()));
 }
 
 FReply SMobileTouchControls::OnTouchMoved(const FGeometry& MyGeometry, const FPointerEvent& Event)
@@ -288,11 +447,16 @@ void SMobileTouchControls::DrawButton(FSlateWindowElementList& OutDrawElements, 
     const FVector2D Center = GetButtonCenter(Button, Size);
     const float PressScale = IsButtonPressed(Button) ? .9f : 1.f;
     const float DrawRadius = Radius * PressScale;
-    const FLinearColor FillColor = Color.CopyWithNewOpacity(Color.A * (bParentEnabled ? .88f : .35f));
-    FSlateRoundedBoxBrush Brush(FillColor, DrawRadius);
+    const FLinearColor OuterColor = Color.CopyWithNewOpacity(Color.A * (bParentEnabled ? .30f : .12f));
+    const FLinearColor InnerColor = Color.CopyWithNewOpacity(Color.A * (bParentEnabled ? .78f : .25f));
+    FSlateRoundedBoxBrush Brush(OuterColor, DrawRadius);
     FSlateDrawElement::MakeBox(OutDrawElements, LayerId, Geometry.ToPaintGeometry(
         FVector2D(DrawRadius * 2.f), FSlateLayoutTransform(Center - FVector2D(DrawRadius))), &Brush);
-    const float TextSize = 15.f * GetUiScale(Size);
+    FSlateRoundedBoxBrush InnerBrush(InnerColor, DrawRadius * .42f);
+    const float InnerRadius = DrawRadius * .42f;
+    FSlateDrawElement::MakeBox(OutDrawElements, LayerId + 1, Geometry.ToPaintGeometry(
+        FVector2D(InnerRadius * 2.f), FSlateLayoutTransform(Center - FVector2D(InnerRadius))), &InnerBrush);
+    const float TextSize = 13.f * GetUiScale(Size);
     DrawText(OutDrawElements, Geometry, LayerId + 1, Label,
         Center - FVector2D(Label.Len() * TextSize * .28f, TextSize * .55f), FMath::RoundToInt(TextSize), FLinearColor(.02f, .02f, .02f, 1.f));
 }
@@ -303,22 +467,10 @@ int32 SMobileTouchControls::OnPaint(const FPaintArgs& Args, const FGeometry& All
 {
     const FVector2D Size = AllottedGeometry.GetLocalSize();
     int32 CurrentLayer = LayerId;
-    if (JoystickOpacity > .01f)
-    {
-        const float Radius = GetJoystickRadius(Size) * (.86f + .14f * JoystickOpacity);
-        const FLinearColor OuterColor = FLinearColor(.12f, .82f, .92f, .28f * JoystickOpacity);
-        const FLinearColor InnerColor = FLinearColor(.35f, .95f, 1.f, .75f * JoystickOpacity);
-        FSlateRoundedBoxBrush OuterBrush(OuterColor, Radius);
-        FSlateRoundedBoxBrush InnerBrush(InnerColor, Radius * .42f);
-        FSlateDrawElement::MakeBox(OutDrawElements, ++CurrentLayer, AllottedGeometry.ToPaintGeometry(
-            FVector2D(Radius * 2.f), FSlateLayoutTransform(JoystickOrigin - FVector2D(Radius))), &OuterBrush);
-        const float ThumbRadius = Radius * .36f;
-        FSlateDrawElement::MakeBox(OutDrawElements, ++CurrentLayer, AllottedGeometry.ToPaintGeometry(
-            FVector2D(ThumbRadius * 2.f), FSlateLayoutTransform(JoystickPosition - FVector2D(ThumbRadius))), &InnerBrush);
-    }
-    DrawButton(OutDrawElements, AllottedGeometry, ++CurrentLayer, EButton::Mine, TEXT("MINE"), FLinearColor(.08f, .72f, .88f, 1.f), bParentEnabled);
-    DrawButton(OutDrawElements, AllottedGeometry, ++CurrentLayer, EButton::Bomb, TEXT("BOMB"), FLinearColor(.92f, .45f, .12f, 1.f), bParentEnabled);
-    DrawButton(OutDrawElements, AllottedGeometry, ++CurrentLayer, EButton::Drill, TEXT("DRILL"), FLinearColor(.12f, .78f, .56f, 1.f), bParentEnabled);
-    DrawButton(OutDrawElements, AllottedGeometry, ++CurrentLayer, EButton::Upgrade, TEXT("UP"), FLinearColor(.64f, .36f, .92f, 1.f), bParentEnabled);
+    const EButton Buttons[] = { EButton::Mine, EButton::Bomb, EButton::Drill, EButton::Jetpack, EButton::Interact,
+        EButton::Primary, EButton::Confirm, EButton::Reset, EButton::ThoughtLeft, EButton::ThoughtRight,
+        EButton::Map, EButton::Catalogue, EButton::Back, EButton::Edit };
+    for (const EButton Button : Buttons)
+        if (IsButtonVisible(Button)) DrawButton(OutDrawElements, AllottedGeometry, ++CurrentLayer, Button, GetButtonLabel(Button), GetButtonColor(Button), bParentEnabled);
     return CurrentLayer;
 }

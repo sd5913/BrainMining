@@ -34,7 +34,8 @@ def post_finish(name,code,priority,bridge=False):
     inputs=[]
     for key in bindings:
         inp=unreal.CustomInput();inp.set_editor_property('input_name',key);inputs.append(inp)
-    custom.set_editor_property('inputs',inputs);custom.set_editor_property('code',code)
+    custom.set_editor_property('inputs',inputs)
+    custom.set_editor_property('code','#if PLATFORM_ANDROID\nreturn SC.rgb;\n#else\n'+code+'\n#endif')
     for key,(node,output) in bindings.items():assert finish_lib.connect_material_expressions(node,output,custom,key)
     assert finish_lib.connect_material_property(custom,'',unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     finish_lib.recompile_material(m);assert unreal.EditorAssetLibrary.save_loaded_asset(m)

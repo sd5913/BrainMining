@@ -11,6 +11,7 @@ class UUserWidget;
 class UMiningGUIHUDWidget;
 class UMiningInteractionHUDWidget;
 class SWidget;
+class SMobileTouchControls;
 
 /**
  *  Simple first person Player Controller
@@ -34,7 +35,27 @@ public:
     void HandleMobileMine(bool bPressed);
     void HandleMobileBomb();
     void HandleMobileDrill();
-    void HandleMobileUpgrade();
+    void HandleMobileJump(bool bPressed);
+    void HandleMobileInteract();
+    void HandleMobilePrimary();
+    void HandleMobileConfirm();
+    void HandleMobileReset();
+    void HandleMobileThoughtLeft();
+    void HandleMobileThoughtRight();
+    void HandleMobileMap();
+    void HandleMobileCatalogue();
+    void HandleMobileBack();
+    void HandleMobileEdit();
+    bool IsMobileActionVisible() const;
+    bool IsMobileConfirmVisible() const;
+    bool IsMobileResetVisible() const;
+    bool IsMobileThoughtVisible() const;
+    bool IsMobileMapVisible() const;
+    bool IsMobileCatalogueVisible() const;
+    bool IsMobileBackVisible() const;
+    bool IsMobileEditVisible() const;
+    FString GetMobileActionLabel() const;
+    bool IsUsingTouchControls() const { return ShouldUseTouchControls(); }
  UFUNCTION(BlueprintCallable, Category="Mining GUI")
  void SetMiningGUIEnabled(bool bEnabled);
  bool IsMiningGUIEnabled() const { return bMiningGUIEnabled; }
@@ -89,6 +110,7 @@ protected:
  bool bMiningGUIEnabled = true;
 	FDelegateHandle ApplicationActivationHandle;
 	TSharedPtr<SWidget> AudioSettingsPanel;
+	TSharedPtr<SMobileTouchControls> MobileTouchControls;
 	bool bAudioPausedWorld = false;
 	bool bAudioPreviousMiningSuspended = false;
 	EMouseCaptureMode PreviousMouseCaptureMode = EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown;
@@ -96,4 +118,7 @@ protected:
 
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;
+	void SetMobileVirtualKey(const FKey& Key, bool bPressed);
+	void TriggerMobileKey(const FKey& Key);
+	TSet<FKey> MobileVirtualKeys;
 };

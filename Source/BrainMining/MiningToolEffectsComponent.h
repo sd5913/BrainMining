@@ -187,6 +187,7 @@ private:
 	float EquipElapsed = 1;
 	int32 LastPresentedTool = 0;
 	bool bPendingDrillImpact = false;
+	double LastDrillContactEffectTime = -BIG_NUMBER;
 	bool bUsesCharacterComponents = false;
 	static constexpr float SourceSwingDuration = 13.f / 30.f;
 

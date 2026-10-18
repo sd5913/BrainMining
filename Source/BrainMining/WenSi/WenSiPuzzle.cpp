@@ -265,9 +265,12 @@ void AWenSiPuzzle::BeginPlay()
   InitialObjectTransforms.Add(Object->GetActorTransform());
   InitialObjectRules.Add(Object->Rule);
  }
- for(TActorIterator<AWenSiCircuitMechanism> It(GetWorld());It;++It) {Circuit=*It;break;}
- for(TActorIterator<AWenSiResetButton> It(GetWorld());It;++It) {ResetButton=*It;break;}
- for(TActorIterator<APlayerStart> It(GetWorld());It;++It) {PlayerResetTransform=It->GetActorTransform();break;}
+ TActorIterator<AWenSiCircuitMechanism> CircuitIt(GetWorld());
+ if(CircuitIt)Circuit=*CircuitIt;
+ TActorIterator<AWenSiResetButton> ResetIt(GetWorld());
+ if(ResetIt)ResetButton=*ResetIt;
+ TActorIterator<APlayerStart> PlayerStartIt(GetWorld());
+ if(PlayerStartIt)PlayerResetTransform=PlayerStartIt->GetActorTransform();
  if (bAreaManaged && !AreaPlayerStart.Equals(FTransform::Identity)) PlayerResetTransform=AreaPlayerStart;
  auto PC=GetWorld()->GetFirstPlayerController();
  if (PC)
@@ -282,6 +285,13 @@ void AWenSiPuzzle::SetAreaActive(bool bActive)
  if (!bActive && bEditing) ToggleEdit();
  bAreaActive = bActive;
  if (UI) UI->SetVisibility(bActive ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+}
+bool AWenSiPuzzle::HandleInteractionInput(APlayerController* PC)
+{
+ if(!PC || (bAreaManaged && !bAreaActive) || bEditing)return false;
+ if(bAimReset){ResetPuzzle();return true;}
+ if(!bComplete && Aim!=INDEX_NONE){Think();return true;}
+ return false;
 }
 void AWenSiPuzzle::Tick(float Dt)
 {
@@ -309,7 +319,6 @@ void AWenSiPuzzle::Tick(float Dt)
    bAimReset=AimedResetButton!=nullptr;
    if (!bComplete && Obj && bNearby && CanThinkAbout(Obj)) Aim=Objects.IndexOfByKey(Obj);
   }
-  if (PC->WasInputKeyJustPressed(EKeys::E)) {if(bAimReset)ResetPuzzle();else if(!bComplete)Think();}
   if (PC->WasInputKeyJustPressed(EKeys::Q)) CloseThought(0);
   if (PC->WasInputKeyJustPressed(EKeys::R)) CloseThought(1);
  }

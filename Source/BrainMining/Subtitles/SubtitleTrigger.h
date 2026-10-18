@@ -15,6 +15,7 @@ public:
 	ASubtitleTrigger();
 
 	void SetSegmentId(FName InSegmentId);
+	bool HasPlayed() const { return bPlayed; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, Category="字幕")

@@ -1,4 +1,5 @@
 #include "MiningProgressionComponent.h"
+#include "Subtitles/SubtitleLibrary.h"
 #include "BrainMiningCharacter.h"
 #include "MiningComponent.h"
 #include "MiningCharacterMovementComponent.h"
@@ -122,6 +123,7 @@ bool UMiningProgressionComponent::Purchase(int32 TrackIndex, int32 RequestedLeve
         if (!Wallet->SpendMinerals(UMiningPickaxeSettings::ResolveLevel(RequestedLevel).MaterialCosts)) return false;
         Wallet->UpgradeLevels[0] = RequestedLevel;
         ApplyUpgrades();
+        USubtitleLibrary::PlayMainGameSubtitle(this,FName(*FString::Printf(TEXT("镐子升级%d"),RequestedLevel)));
         return true;
     }
     if (TrackIndex == 2)
@@ -134,6 +136,7 @@ bool UMiningProgressionComponent::Purchase(int32 TrackIndex, int32 RequestedLeve
         if (!Wallet->Spend(UMiningPickaxeSettings::ResolveLevel(RequestedLevel).Price)) return false;
         Wallet->UpgradeLevels[0] = RequestedLevel;
         ApplyUpgrades();
+        USubtitleLibrary::PlayMainGameSubtitle(this,FName(*FString::Printf(TEXT("镐子升级%d"),RequestedLevel)));
         return true;
     }
     const auto& Steps = Tracks[TrackIndex].Steps;

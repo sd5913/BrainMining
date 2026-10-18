@@ -2,6 +2,7 @@
 #include "MiningAudioSettings.h"
 
 #include "Subtitles/SubtitleSegment.h"
+#include "Subtitles/SubtitleSettings.h"
 #include "Subtitles/SubtitleWidget.h"
 #include "Subtitles/SubtitleVoice.h"
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -82,6 +83,8 @@ void USubtitleSubsystem::PlaySegment(FName SegmentId)
 void USubtitleSubsystem::PlayStatusLine(FText Text, float Duration)
 {
 	if(Text.IsEmpty() || !GetWorld())return;
+	// Brief matching/status messages must not erase an authored narrative queue.
+	if(bPlaying && ActiveSegment && ActiveSegment->SegmentId != TEXT("GameplayStatus")) return;
 	StopAll();
 	auto* Segment=NewObject<USubtitleSegment>(this);
 	Segment->SegmentId=TEXT("GameplayStatus");
@@ -174,6 +177,7 @@ void USubtitleSubsystem::ShowCurrentLine()
 	EnsureWidget();
 	if (Widget)
 	{
+		Widget->SetVisibility(ESlateVisibility::HitTestInvisible);
 		Widget->SetLine(Line.Text);
 	}
 
@@ -224,7 +228,15 @@ void USubtitleSubsystem::Advance()
 		FinishCurrent();
 		return;
 	}
-	ShowCurrentLine();
+	StopLineAudio(ActiveAudio);
+	ActiveGeneratedVoice = nullptr;
+	if (Widget) Widget->SetVisibility(ESlateVisibility::Hidden);
+	const float Gap = FMath::Clamp(GetDefault<USubtitleSettings>()->LineGap, 0.f, 2.f);
+	if (Gap > 0.f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(LineTimer, this, &USubtitleSubsystem::ShowCurrentLine, Gap, false);
+	}
+	else ShowCurrentLine();
 }
 
 void USubtitleSubsystem::FinishCurrent()

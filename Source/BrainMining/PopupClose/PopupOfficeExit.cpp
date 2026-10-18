@@ -1,4 +1,5 @@
 #include "PopupClose/PopupOfficeExit.h"
+#include "Subtitles/SubtitleLibrary.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "PopupClose/PopupCloseStage.h"
 #include "PopupClose/PopupCloseOffice.h"
@@ -225,6 +226,7 @@ bool FPopupOfficeExit::Collect(APlayerController* PC)
 void FPopupOfficeExit::OfferBomb()
 {
  if(Phase!=0)return;Phase=1;Age=0;Pickup->SetVisibility(true);
+ USubtitleLibrary::PlayMainGameSubtitle(&Owner,TEXT("电脑弹窗玩法3"));
  UMiningRoomAudioSubsystem::Emit(&Owner,TEXT("S_BombOffer"),.65f);
  if(auto Body=Cast<USphereComponent>(Pickup->GetAttachParent()))
  {
@@ -265,7 +267,7 @@ void FPopupOfficeExit::Tick()
  }
  if(Phase==2 && Owner.bAreaActive && Owner.View==APopupCloseStage::EView::Free)
  {
-  if(CanCollect(PC)){Owner.ShowPrompt(PC,TEXT("E 获取炸弹技能"));if(PC->WasInputKeyJustPressed(EKeys::E))Collect(PC);}
+  if(CanCollect(PC))Owner.ShowPrompt(PC,TEXT("E 获取炸弹技能"));
  }
  if(Pawn && Phase<5)
  {
@@ -339,6 +341,7 @@ void FPopupOfficeExit::TickExitTurn(float Dt)
 void FPopupOfficeExit::SealRoom()
 {
  Phase=5;Age=EmissionDebt=0;Shutter->SetVisibility(true);Shutter->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);ReturnGrille->SetVisibility(true);
+ USubtitleLibrary::PlayMainGameSubtitle(&Owner,TEXT("电脑弹窗玩法4"));
  UMiningRoomAudioSubsystem::Emit(Shutter.Get(),TEXT("S_Seal"),.7f,true);
  UMiningRoomAudioSubsystem::StopSource(&Owner);
  Bombs->SetVisibility(true);CSV_EVENT(OfficeFinale,TEXT("BombEruptionStart"));

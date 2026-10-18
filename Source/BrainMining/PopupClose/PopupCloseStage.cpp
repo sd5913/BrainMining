@@ -1,4 +1,5 @@
 #include "PopupClose/PopupCloseStage.h"
+#include "Subtitles/SubtitleLibrary.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "HAL/IConsoleManager.h"
 #include "PopupClose/PopupCloseContent.h"
@@ -307,8 +308,22 @@ FString APopupCloseStage::GetInteractionAction(APlayerController* PC) const
  if (!bAreaActive) return FString();
  auto* Device = FocusedDevice(PC);
  if (!Device) return FString();
- if (Phase == EPhase::Idle) return TEXT("开始办公");
+ if (Phase == EPhase::Idle) return FString();
  return Device->IsPrinter() ? FString::Printf(TEXT("处理文件 · %d 张"), Device->Pending()) : TEXT("使用电脑");
+}
+bool APopupCloseStage::HandleInteractionInput(APlayerController* PC)
+{
+ if(!PC || !bAreaActive)return false;
+ if(View==EView::InScreen){ExitScreen();return true;}
+ if(View!=EView::Free)return false;
+ if(Exit && Exit->IsWaitingForBomb() && Exit->CanCollect(PC))return Exit->Collect(PC);
+ if(auto Device=FocusedDevice(PC)){HandleInteraction(PC,Device);return true;}
+ return false;
+}
+bool APopupCloseStage::HandleMobilePrimary(APlayerController* PC)
+{
+	if (!PC || !bAreaActive || View != EView::InScreen || !ActiveComputer) return false;
+	return ActiveComputer->ClickReplyForMobile();
 }
 
 void APopupCloseStage::ShowPrompt(APlayerController* PC,const FString& Message)
@@ -327,6 +342,7 @@ void APopupCloseStage::StartOfficeRound()
 {
  if(Phase!=EPhase::Idle)return;
  Phase=EPhase::Running;RoundTime=0;SlowPhaseScheduledIssues=0;
+ USubtitleLibrary::PlayMainGameSubtitle(this,TEXT("电脑弹窗玩法1"));
  // Randomize the initial order, with separated time slots instead of four immediate problems.
  int32 Order[]={0,1,2,3};
  for(int32 I=3;I>0;--I)Swap(Order[I],Order[FMath::RandRange(0,I)]);
@@ -393,8 +409,7 @@ void APopupCloseStage::TickView(float Dt)
  }
  else if(View==EView::InScreen)
  {
-  if(PC && PC->WasInputKeyJustPressed(EKeys::E))ExitScreen();
-  else if(ActiveComputer)ActiveComputer->TickScreen(Dt,PC);
+  if(ActiveComputer)ActiveComputer->TickScreen(Dt,PC);
  }
  else if(View==EView::Exiting && ViewTime>=ScreenExitSeconds)
  {
@@ -431,12 +446,10 @@ void APopupCloseStage::Tick(float Dt)
  }
  if(auto Device=FocusedDevice(PC))
  {
-  ShowPrompt(PC,Phase==EPhase::Idle?TEXT("按 E 开始办公"):
+  ShowPrompt(PC,Phase==EPhase::Idle?TEXT(""):
    Device->IsPrinter()?FString::Printf(TEXT("按 E 处理文件  ·  %d 张"),Device->Pending()):TEXT("按 E 使用电脑"));
-  if(PC && PC->WasInputKeyJustPressed(EKeys::E))HandleInteraction(PC,Device);
  }
- else ShowPrompt(PC,bStartOnAreaEntry && Phase==EPhase::Running && View==EView::Free && RoundTime<10.f
-  ?TEXT("办公已开始 · 靠近电脑或打印机，瞄准后按 E 处理") :TEXT(""));
+ else ShowPrompt(PC,TEXT(""));
 }
 void APopupCloseStage::TickIssues(float Dt)
 {
@@ -476,6 +489,7 @@ void APopupCloseStage::BeginBurst()
 {
  if(Phase!=EPhase::Running)return;
  Phase=EPhase::Spraying;SprayTime=0;SprayDebt=0;
+ USubtitleLibrary::PlayMainGameSubtitle(this,TEXT("电脑弹窗玩法2"));
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_OfficePanic"),.65f);
  bForcedExit=View==EView::Entering || View==EView::InScreen;
  // Disable every reply before releasing any shared Slate pointer capture.

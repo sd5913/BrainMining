@@ -49,7 +49,12 @@ namespace
   {
    AActor* Actor=*It;if(!Actor)continue;
    const FVector Local=PuzzleTransform.InverseTransformPosition(Actor->GetActorLocation());
-   const FString Label=Actor->GetActorLabel();
+   const FString Label=
+#if WITH_EDITOR
+    Actor->GetActorLabel();
+#else
+    FString();
+#endif
    const bool bPocketCap=Label.Contains(TEXT("LiftPocketCeiling")) ||
     (FMath::Abs(Local.X-650.f)<85.f && FMath::Abs(Local.Y)<145.f && FMath::Abs(Local.Z-430.f)<35.f);
    if(bPocketCap)
@@ -449,7 +454,8 @@ void AWenSiMirrorPuzzle::BeginPlay()
  Super::BeginPlay();
  TuneCampaignMirrorGeometry(GetWorld(),GetActorTransform(),bAreaManaged);
  for(TActorIterator<AWenSiMirrorExhibit> It(GetWorld());It;++It){Exhibits.Add(*It);InitialTransforms.Add(It->GetActorTransform());InitialWords.Add(It->Word);}
- for(TActorIterator<APlayerStart> It(GetWorld());It;++It){StartTransform=It->GetActorTransform();break;}
+ TActorIterator<APlayerStart> PlayerStartIt(GetWorld());
+ if(PlayerStartIt)StartTransform=PlayerStartIt->GetActorTransform();
  for(TActorIterator<AActor> It(GetWorld());It;++It)
  {
   if(It->ActorHasTag(TEXT("MirrorRewardShutter")))RewardShutter=*It;
@@ -476,6 +482,13 @@ void AWenSiMirrorPuzzle::Think()
  if(!Aim.IsValid() || bComplete || IsSwapping())return;RefreshSelfThoughts();
  for(int32 I=0;I<2;++I)if(Thoughts[I]==Aim || (IsSelf(Thoughts[I].Get()) && IsSelf(Aim.Get())))return;
  for(int32 I=0;I<2;++I)if(!Thoughts[I].IsValid()){Thoughts[I]=Aim;UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Thought"),.45f);break;}
+}
+bool AWenSiMirrorPuzzle::HandleInteractionInput(APlayerController* PC)
+{
+ if(!PC || !bAreaActive || bEditing || PC->IsPaused())return false;
+ if(bAimReset){ResetPuzzle();return true;}
+ if(Aim.IsValid() && !bComplete){Think();return true;}
+ return false;
 }
 void AWenSiMirrorPuzzle::CloseThought(int32 Index){CancelSwap();if(Index>=0&&Index<2 && Thoughts[Index].IsValid()){Thoughts[Index].Reset();UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Close"),.25f);}if(UI)UI->Refresh();}
 void AWenSiMirrorPuzzle::CloseThoughts()
@@ -615,7 +628,6 @@ void AWenSiMirrorPuzzle::Tick(float Dt)
    const bool Nearby=PC->GetPawn() && FVector::Dist(PC->GetPawn()->GetActorLocation(),Hit.ImpactPoint)<280.f;
    if(Nearby){bAimReset=Cast<AWenSiResetButton>(Hit.GetActor())!=nullptr;if(Exhibit && Exhibit->bThinkingEnabled && !bComplete)Aim=Exhibit;}
   }
-  if(PC->WasInputKeyJustPressed(EKeys::E)){if(bAimReset)ResetPuzzle();else Think();}
   if(PC->WasInputKeyJustPressed(EKeys::Q))CloseThoughts();
  }
  if(PC->WasInputKeyJustPressed(EKeys::R))SwapThoughts();

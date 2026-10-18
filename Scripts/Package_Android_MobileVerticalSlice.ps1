@@ -1,10 +1,13 @@
 param(
     [string]$EngineRoot = "E:\UE5\UE_5.8",
     [string]$ArchiveDirectory = "",
-    [string]$MapPath = "/Game/Campaign/Maps/Lvl_FullJourney",
+    [string]$MapPath = "/Game/MainGame/Maps/Lvl_MainGame",
     [string]$AndroidSdkRoot = "",
     [string]$NdkRoot = "",
     [string]$JavaHome = "",
+    [string]$TargetPlatform = "Android",
+    [string]$AdditionalCookerOptions = "",
+    [string]$CookFlavor = "",
     [switch]$SkipCook,
     [switch]$SkipBuild,
     [switch]$Distribution
@@ -86,7 +89,7 @@ $Arguments = @(
     "-noP4",
     "-utf8output",
     "-platform=Android",
-    "-targetplatform=Android",
+    "-targetplatform=$TargetPlatform",
     "-clientconfig=Shipping",
     "-stage",
     "-package",
@@ -107,6 +110,14 @@ if ($SkipCook) {
 }
 if (-not $SkipBuild) {
     $Arguments = @($Arguments[0..6] + "-build" + $Arguments[7..($Arguments.Count - 1)])
+}
+
+if (-not [string]::IsNullOrWhiteSpace($CookFlavor)) {
+    $Arguments += "-cookflavor=$CookFlavor"
+}
+
+if (-not [string]::IsNullOrWhiteSpace($AdditionalCookerOptions)) {
+    $Arguments += "-AdditionalCookerOptions=$AdditionalCookerOptions"
 }
 
 if ($Distribution) {

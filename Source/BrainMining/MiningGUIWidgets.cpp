@@ -391,6 +391,7 @@ void UMiningGUIHUDWidget::ForwardLevel(int32 Index, int32 Level) { OnLevelChange
 void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 {
 	Super::NativeTick(Geometry, DeltaTime);
+	const auto* TouchController = GetOwningPlayer<ABrainMiningPlayerController>();
 	const APawn* AimPawn = GetOwningPlayerPawn();
 	const auto* AimMining = AimPawn ? AimPawn->FindComponentByClass<UMiningComponent>() : nullptr;
 	const auto* AimBomb = AimPawn ? AimPawn->FindComponentByClass<UMiningBombToolComponent>() : nullptr;
@@ -445,6 +446,11 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 			AbilityV->SetCooldownRemaining(0.f);
 			AbilityV->SetUsed(!Mining->bInfiniteDrillEnergy && Mining->DrillEnergy <= UE_SMALL_NUMBER);
 		}
+	}
+	if (TouchController && TouchController->IsUsingTouchControls())
+	{
+		if (AbilityG) AbilityG->SetVisibility(ESlateVisibility::Collapsed);
+		if (AbilityV) AbilityV->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	PlusSpring.Step(DeltaTime, 420.f, 19.f);
 	Scale(PlusContent, PlusSpring.Value);

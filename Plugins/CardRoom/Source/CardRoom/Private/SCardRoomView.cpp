@@ -161,6 +161,32 @@ FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& 
     }
     return FReply::Handled().SetUserFocus(SharedThis(this));
 }
+FReply SCardRoomView::OnTouchStarted(const FGeometry& G,const FPointerEvent& E)
+{
+    using namespace CardRoomUI;
+    if(!Owner.IsValid()||!Owner->Stage) return FReply::Unhandled();
+    Mouse=ToVirtual(G,E.GetScreenSpacePosition()); auto& R=Owner->Stage->Run;
+    if(R.Phase==ECardRoomPhase::Exploring) return FReply::Unhandled();
+    if(R.Phase==ECardRoomPhase::Seated&&In(Mouse,Match)) R.Match();
+    if(R.Phase==ECardRoomPhase::Victory&&In(Mouse,Collect)) { Owner->Interact();return FReply::Handled(); }
+    if(R.Phase==ECardRoomPhase::Choosing)
+    {
+        if(In(Mouse,Confirm)) Owner->ConfirmCards();
+        else if(R.Round==4&&In(Mouse,All))
+        {
+            const bool Clear=R.CanConfirm();
+            for(int32 i=0;i<R.Hand.Num();++i) { if(Clear) R.Unstage(i); else R.Stage(i); }
+            if(Owner->Stage->AudioOverride.IsBound())Owner->Stage->Sound(TEXT("S_CardSelect"),.3f);
+        }
+        else for(int32 i=R.Hand.Num()-1;i>=0;--i) if(In(Mouse,CardRect(i,R)))
+        {
+            if(R.Staged.Contains(i)) R.Unstage(i); else R.Stage(i);
+            if(Owner->Stage->AudioOverride.IsBound())Owner->Stage->Sound(TEXT("S_CardSelect"),.3f);
+            break;
+        }
+    }
+    return FReply::Handled().SetUserFocus(SharedThis(this));
+}
 FReply SCardRoomView::OnMouseButtonUp(const FGeometry& G,const FPointerEvent& E) { return FReply::Unhandled(); }
 FReply SCardRoomView::OnMouseMove(const FGeometry& G,const FPointerEvent& E) { Mouse=ToVirtual(G,E.GetScreenSpacePosition()); return FReply::Unhandled(); }
 

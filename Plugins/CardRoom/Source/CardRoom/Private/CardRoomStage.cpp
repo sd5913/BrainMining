@@ -361,7 +361,10 @@ void ACardRoomStage::Tick(float DeltaSeconds)
         PlayedCards[i]->SetRelativeScale3D(FVector(.38,.26,.006)*CardVisualScale*Fade);
         const auto Type=Run.Hand[i];
         // Symbol meshes carry their own layered palette, matching the hand icons.
-        CardMarks[i]->SetStaticMesh(SymbolMeshes[static_cast<int32>(Type)]);
+        if(CardFaceMaterials.IsValidIndex(static_cast<int32>(Type)))
+            CardMarks[i]->SetMaterial(0,CardFaceMaterials[static_cast<int32>(Type)]);
+        else
+            CardMarks[i]->SetStaticMesh(SymbolMeshes[static_cast<int32>(Type)]);
     }
     if(Phase==ECardRoomPhase::Arrival) Offset.Z+=FMath::Square(1-FMath::Clamp(T/1.0f,0.f,1.f))*430;
     if(bResolve && T>=1 && T<1.7f) { Offset.Y+=FMath::Sin(T*60)*7; Spin.Pitch=FMath::Sin(T*45)*8; }

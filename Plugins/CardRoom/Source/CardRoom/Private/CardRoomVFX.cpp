@@ -1,5 +1,7 @@
 #include "CardRoomStage.h"
 #include "CardRoomSymbols.h"
+#include "CardRoomUISettings.h"
+#include "Engine/Texture2D.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Components/PointLightComponent.h"
@@ -91,6 +93,23 @@ void ACardRoomStage::InitializeEffectMeshes()
         SymbolMeshes.Add(BuildFacetMesh(this,Faces,true));
     }
     for(const auto& Mark:CardMarks) Mark->EmptyOverrideMaterials();
+    // Use the same authored artwork as the hand UI, including future UI asset swaps.
+    CardFaceMaterials.Reset();
+    auto* FaceBase=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_PlayedCardFace.M_PlayedCardFace"));
+    if(FaceBase && UISettings)
+    {
+        for(UTexture2D* Art:{UISettings->CardLaserArt.Get(),UISettings->CardPoisonArt.Get(),UISettings->CardFireArt.Get()})
+        {
+            auto* Face=UMaterialInstanceDynamic::Create(FaceBase,this);
+            Face->SetTextureParameterValue(TEXT("CardArt"),Art);
+            CardFaceMaterials.Add(Face);
+        }
+        for(const auto& Mark:CardMarks)
+        {
+            Mark->SetStaticMesh(Plane);
+            Mark->SetRelativeScale3D(FVector(.98f,.98f,1));
+        }
+    }
 }
 
 void ACardRoomStage::TickEffects()

@@ -12,7 +12,7 @@
   ],
   "keep_entrance_blockage": true,
   "bonus_wall_deposits_per_area": 10,
-  "expected_deposits": 101,
+  "expected_deposits": 102,
   "fixed_corridor_lights": false,
   "material": {
     "stone_dark": [

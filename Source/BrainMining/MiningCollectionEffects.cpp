@@ -27,7 +27,7 @@ AMiningCollectionEffects::AMiningCollectionEffects()
 void AMiningCollectionEffects::Initialize(int32 EffectKind, AMiningCollectible* Item, int32 ConfettiPerColor)
 {
     Kind=EffectKind; SourceItem=Item;
-    const FLinearColor Colors[]={FLinearColor(1,.35,.04),FLinearColor(.1,1,.25),FLinearColor(.95,.05,.22),FLinearColor(.12,.55,1),FLinearColor(.9,.7,.08)};
+    const FLinearColor Colors[]={FLinearColor(1,.08,.42),FLinearColor(.65,.18,1),FLinearColor(1,.30,.65),FLinearColor(.12,.55,1),FLinearColor(.95,.55,.85)};
     const bool Spark=Kind==2 || Kind==4;
     for(int32 C=0;C<(Kind==3?5:Spark?2:1);++C)
     {

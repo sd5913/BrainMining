@@ -13,6 +13,9 @@
 #include "MiningCollectionEffects.h"
 #include "CardRoomPlayer.h"
 #include "CardRoomStage.h"
+#include "CardRoomUISettings.h"
+#include "Engine/Texture2D.h"
+#include "Materials/MaterialInterface.h"
 #include "EchoPassagePlayer.h"
 #include "DiggableRock.h"
 #include "Components/DynamicMeshComponent.h"
@@ -106,6 +109,21 @@ public:
             else for(int32 i=0;i<Stage->Run.Hand.Num();++i)Stage->Run.Stage(i);
             PC->CardInteraction->ConfirmCards();
             Test->TestTrue(TEXT("Confirm plays the selected hand"),Stage->Run.Phase==ECardRoomPhase::Resolving);
+            Stage->Tick(.05f);
+            TArray<UStaticMeshComponent*> CardParts;Stage->GetComponents(CardParts);
+            int32 FaceCount=0;
+            for(auto* Face:CardParts)
+            {
+                if(!Face->GetName().StartsWith(TEXT("CardMark")) || !Face->IsVisible())continue;
+                const int32 Index=FCString::Atoi(*Face->GetName().RightChop(8));
+                if(!Stage->Run.Hand.IsValidIndex(Index))continue;
+                UTexture* Texture=nullptr;
+                const bool HasArt=Face->GetMaterial(0) && Face->GetMaterial(0)->GetTextureParameterValue(FMaterialParameterInfo(TEXT("CardArt")),Texture);
+                const UTexture2D* Art[]={Stage->UISettings->CardLaserArt.Get(),Stage->UISettings->CardPoisonArt.Get(),Stage->UISettings->CardFireArt.Get()};
+                Test->TestTrue(TEXT("Played face uses the current hand artwork for its card type"),HasArt && Texture==Art[static_cast<int32>(Stage->Run.Hand[Index])]);
+                ++FaceCount;
+            }
+            Test->TestEqual(TEXT("Every played card has the updated face"),FaceCount,Stage->Run.Hand.Num());
             Stage->Tick(2.8f);
             if(Round==3)
             {

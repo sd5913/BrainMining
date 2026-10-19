@@ -8,7 +8,7 @@ class UStaticMeshComponent;
 class USceneComponent;
 class UNiagaraComponent;
 
-/** Independent preview prop: proximity opens the original lid before real water starts. */
+/** A continuously running fountain with bounded, colliding rubber-duck bursts. */
 UCLASS()
 class BRAINMINING_API AHeavenToilet : public AActor
 {
@@ -36,6 +36,8 @@ public:
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0.1")) float DuckFlightSeconds=1.35f;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0")) float DuckGravity=620.f;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0.001")) float DuckScale=0.18f;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|Water") bool bContinuousSpray=true;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="1")) float DuckBurstInterval=3.2f;
  UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Toilet|State") float LidOpenAmount=0.f;
  UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Toilet|State") bool bPlayerNearby=false;
  UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Toilet|State") bool bWaterRunning=false;
@@ -43,7 +45,9 @@ private:
  void ApplyLidPose();
  void LaunchDuck();
  void ResetDuck();
- FVector DuckVelocity=FVector::ZeroVector;
- float DuckFlightAge=0.f;
- bool bDuckInFlight=false;
+ UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> DuckPool;
+ struct FDuckMotion { FVector Velocity=FVector::ZeroVector; float Age=0; bool Flying=false; };
+ TArray<FDuckMotion> DuckMotion;
+ float BurstAge=0.f;
+ int32 NextDuck=0;
 };

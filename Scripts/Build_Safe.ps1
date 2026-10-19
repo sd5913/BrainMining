@@ -1,4 +1,4 @@
-param([string]$EngineRoot = '')
+param([string]$EngineRoot = '', [ValidateRange(1,32)][int]$MaxParallelActions = 12)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'ResourceGuard.ps1')
 Assert-MiningLaunchResources -MinimumPhysicalGB 6 -MinimumCommitGB 8
@@ -18,7 +18,7 @@ if (-not $dotnet) { throw 'Bundled win-x64 .NET runtime not found.' }
 $arguments = @(
     (Join-Path $EngineRoot 'Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll'),
     'BrainMiningEditor', 'Win64', 'Development', "-Project=$projectRoot\BrainMining.uproject",
-    '-WaitMutex', '-NoHotReloadFromIDE', '-MaxParallelActions=12', '-NoUBA', '-NoXGE', '-NoFASTBuild', '-NoSNDBS'
+    '-WaitMutex', '-NoHotReloadFromIDE', "-MaxParallelActions=$MaxParallelActions", '-NoUBA', '-NoXGE', '-NoFASTBuild', '-NoSNDBS'
 )
 $reportPath = Join-Path $projectRoot ('Saved\Performance\build-resources-{0}.csv' -f (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
 Start-MiningGuardedProcess -Executable $dotnet.FullName -Arguments $arguments -ReportPath $reportPath -BelowNormal -MaximumSeconds 1800

@@ -65,9 +65,9 @@ void AMiningDrillDustBurst::Initialize(UStaticMesh* Plane, UMaterialInterface* D
 		Puff.Position = GetActorLocation() + Normal * FMath::FRandRange(8.f, 20.f) + Radial * FMath::FRandRange(0.f, 26.f) * Scale;
 		Puff.Velocity = Normal * FMath::FRandRange(35.f, 85.f) + Radial * FMath::FRandRange(15.f, 65.f) + FVector::UpVector * FMath::FRandRange(12.f, 35.f);
 		Puff.Size = FMath::FRandRange(32.f, 56.f) * Scale * FMath::Clamp(Settings.DustSize, .25f, 3.f);
-		Puff.Lifetime = FMath::FRandRange(0.8f, 1.35f) * LifetimeScale;
+		Puff.Lifetime = FMath::FRandRange(0.45f, 0.8f) * LifetimeScale;
 		Puff.Rotation = FMath::FRandRange(-PI, PI);
-		Puff.Opacity = FMath::FRandRange(0.28f, 0.4f) * FMath::Clamp(Settings.DustStrength, 0.f, 2.f);
+		Puff.Opacity = FMath::FRandRange(0.08f, 0.14f) * FMath::Clamp(Settings.DustStrength, 0.f, 2.f);
 		Puffs.Add(Puff);
 		Sprites->AddInstance(FTransform(FQuat::Identity, Puff.Position, FVector(Puff.Size / 100.f)), true);
 		const int32 Tile = FMath::RandRange(0, 3);
@@ -87,9 +87,9 @@ void AMiningDrillDustBurst::Initialize(UStaticMesh* Plane, UMaterialInterface* D
 			FPuff Puff;
 			Puff.Position = GetActorLocation() + Normal * FMath::FRandRange(15.f,35.f) + FMath::VRand()*12;
 			Puff.Velocity = Normal*FMath::FRandRange(30.f,55.f) + FVector::UpVector*FMath::FRandRange(24.f,45.f) + FMath::VRand()*15;
-			Puff.Size = FMath::FRandRange(55.f,85.f)*Scale*FMath::Clamp(Settings.SmokeSize,.25f,3.f);
-			Puff.Lifetime = FMath::FRandRange(1.1f,1.6f)*LifetimeScale;
-			Puff.Opacity = FMath::FRandRange(.32f,.5f)*FMath::Clamp(Settings.SmokeStrength,0.f,2.f);
+			Puff.Size = FMath::FRandRange(35.f,55.f)*Scale*FMath::Clamp(Settings.SmokeSize,.25f,3.f);
+			Puff.Lifetime = FMath::FRandRange(.55f,.85f)*LifetimeScale;
+			Puff.Opacity = FMath::FRandRange(.07f,.12f)*FMath::Clamp(Settings.SmokeStrength,0.f,2.f);
 			Puff.Rotation=FMath::FRandRange(-.65f,.65f);
 			Smoke.Add(Puff);
 			SmokeSprites->AddInstance(FTransform(FQuat::Identity,Puff.Position,FVector(Puff.Size/100)),true);

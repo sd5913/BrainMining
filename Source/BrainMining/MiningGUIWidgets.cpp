@@ -1,5 +1,6 @@
 #include "MiningGUIWidgets.h"
 #include "BrainMiningFonts.h"
+#include "MiningGamepadSubsystem.h"
 #include "MiningBombToolComponent.h"
 #include "MiningComponent.h"
 #include "MiningAudioComponent.h"
@@ -633,6 +634,6 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
         }
     }
     const bool bReady = Progression->CanUpgradePickaxe();
-    SetText(PickaxeUpgradeHint, FText::FromString(Level >= 4 ? TEXT("已满级") : TEXT("[ Tab ] 升级")));
+    SetText(PickaxeUpgradeHint, FText::FromString(Level >= 4 ? TEXT("已满级") : (UMiningGamepadSubsystem::UsesGamepad(GetOwningPlayer()) ? TEXT("[ LT ] 升级") : TEXT("[ Tab ] 升级"))));
     PickaxeUpgradeHint->SetColorAndOpacity(bReady ? FLinearColor(.42f,.95f,.65f) : FLinearColor(.82f,.85f,.83f));
 }

@@ -1,5 +1,8 @@
 #if WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS
 #include "MiningGamepadSubsystem.h"
+#include "MiningGamepadHints.h"
+#include "Misc/Paths.h"
+#include "HAL/FileManager.h"
 #include "MiningComponent.h"
 #include "MiningEncounterPlayer.h"
 #include "MiningCollection.h"
@@ -32,6 +35,14 @@ bool FMiningGamepadDeadZoneTest::RunTest(const FString&)
     EMiningInputAction Action;
     TestTrue(TEXT("RT has a primary action"), UMiningGamepadSubsystem::MapButton(EKeys::Gamepad_RightTrigger, Action));
     TestTrue(TEXT("RT is independent of the reset key"), Action == EMiningInputAction::Primary);
+    TestTrue(TEXT("LT maps to upgrade"), UMiningGamepadSubsystem::MapButton(EKeys::Gamepad_LeftTrigger, Action) && Action == EMiningInputAction::Upgrade);
+    TestFalse(TEXT("View no longer opens a map"), UMiningGamepadSubsystem::MapButton(EKeys::Gamepad_Special_Left, Action));
+    TestTrue(TEXT("D-pad right only navigates"), UMiningGamepadSubsystem::MapButton(EKeys::Gamepad_DPad_Right, Action) && Action == EMiningInputAction::Next);
+    for (int32 Index = 1; Index < static_cast<int32>(EMiningGamepadGlyph::Count); ++Index)
+    {
+        const FString Icon = FPaths::ProjectContentDir() / TEXT("UI/Gamepad") / (FString(MiningGamepadGlyphName(static_cast<EMiningGamepadGlyph>(Index))) + TEXT(".svg"));
+        TestTrue(*FString::Printf(TEXT("Controller glyph exists: %s"), *Icon), IFileManager::Get().FileExists(*Icon));
+    }
     TestFalse(TEXT("Keyboard keys are not treated as controller buttons"), UMiningGamepadSubsystem::MapButton(EKeys::R, Action));
     return true;
 }
@@ -89,9 +100,9 @@ bool FMiningGamepadContextTest::RunTest(const FString&)
     TestTrue(TEXT("Reconnect accepts a new press"), UMiningGamepadSubsystem::ReadJumpHeld(Controller));
     Input->HandleButton(EKeys::Gamepad_LeftTrigger, true);
     Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, false);
-    TestTrue(TEXT("Releasing A preserves a held auxiliary flight trigger"), UMiningGamepadSubsystem::ReadJumpHeld(Controller));
+    TestFalse(TEXT("LT cannot keep flight active after A is released"), UMiningGamepadSubsystem::ReadJumpHeld(Controller));
     Input->HandleButton(EKeys::Gamepad_LeftTrigger, false);
-    TestFalse(TEXT("Flight stops after both aliases release"), UMiningGamepadSubsystem::ReadJumpHeld(Controller));
+    TestFalse(TEXT("Releasing LT does not restart flight"), UMiningGamepadSubsystem::ReadJumpHeld(Controller));
     Input->HandleButton(EKeys::Gamepad_RightTrigger, true);
     auto* Cards = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
     Cards->Stage = World->SpawnActor<ACardRoomStage>();
@@ -143,40 +154,57 @@ bool FMiningGamepadContextTest::RunTest(const FString&)
     Pawn->AddInstanceComponent(Progression);
     TestTrue(TEXT("Fixture initializes the complete progression components"), Progression->InitializeProgression());
     TestTrue(TEXT("Fixture can afford the next upgrade"), Progression->CanUpgradePickaxe());
+    TestTrue(TEXT("Exploration hints show LT upgrade"), Input->GetHint().Contains(TEXT("LT 升级")));
+    TestFalse(TEXT("Exploration hints no longer offer a map"), Input->GetHint().Contains(TEXT("地图")));
     Input->HandleButton(EKeys::Gamepad_DPad_Right, true);
-    TestTrue(TEXT("Upgrade button opens an explicit purchase panel"), Input->IsUpgradeOpen());
-    TestEqual(TEXT("Opening the panel never purchases"), Progression->GetLevel(0), 0);
-    TestTrue(TEXT("Upgrade panel suspends mining"), Mining->IsInputSuspended());
     Input->HandleButton(EKeys::Gamepad_DPad_Right, false);
+    Input->HandleButton(EKeys::Gamepad_Special_Left, true);
+    Input->HandleButton(EKeys::Gamepad_Special_Left, false);
+    TestEqual(TEXT("Old upgrade and map buttons never purchase"), Progression->GetLevel(0), 0);
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, true);
+    TestEqual(TEXT("LT immediately purchases one level"), Progression->GetLevel(0), 1);
+    TestTrue(TEXT("Upgrade leaves exploration active"), Input->GetContext() == EMiningInputContext::Exploration);
+    TestFalse(TEXT("Upgrade never pauses the world"), Controller->IsPaused());
+    TestFalse(TEXT("Upgrade never opens a cursor"), Controller->bShowMouseCursor);
+    TestFalse(TEXT("Upgrade never suspends mining"), Mining->IsInputSuspended());
+    TestFalse(TEXT("Upgrade never locks movement"), Controller->IsMoveInputIgnored());
+    TestFalse(TEXT("Upgrade never locks the camera"), Controller->IsLookInputIgnored());
+    TestFalse(TEXT("LT upgrade never starts flight"), UMiningGamepadSubsystem::ReadJumpHeld(Controller));
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, true, true);
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, true);
+    Input->HandleAxis(EKeys::Gamepad_LeftTriggerAxis, 1.f);
+    TestEqual(TEXT("Held LT and analog samples never buy again"), Progression->GetLevel(0), 1);
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, false);
+    Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, true);
+    Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, false);
+    TestEqual(TEXT("A remains jump, not purchase confirmation"), Progression->GetLevel(0), 1);
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, true);
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, false);
+    TestEqual(TEXT("A fresh LT press purchases the next level"), Progression->GetLevel(0), 2);
     Input->HandleButton(EKeys::Gamepad_Special_Right, true);
     Input->HandleButton(EKeys::Gamepad_Special_Right, false);
-    TestTrue(TEXT("Pause owns routing over an open upgrade panel"), Input->GetContext() == EMiningInputContext::Menu);
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, true);
     Input->HandleButton(EKeys::Gamepad_FaceButton_Right, true);
     Input->HandleButton(EKeys::Gamepad_FaceButton_Right, false);
-    TestTrue(TEXT("Back from pause preserves the upgrade panel"), Input->IsUpgradeOpen() && Input->GetContext() == EMiningInputContext::Upgrade);
-    TestTrue(TEXT("Upgrade movement lock survives pause"), Controller->IsMoveInputIgnored());
-    TestTrue(TEXT("Upgrade mining suspension survives pause"), Mining->IsInputSuspended());
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, true);
-    TestEqual(TEXT("A purchases exactly one level"), Progression->GetLevel(0), 1);
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, true, true);
-    TestEqual(TEXT("Holding confirmation does not buy more levels"), Progression->GetLevel(0), 1);
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, false);
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Right, true);
-    TestFalse(TEXT("B closes the upgrade panel"), Input->IsUpgradeOpen());
-    TestFalse(TEXT("Closing restores mining suspension"), Mining->IsInputSuspended());
-    TestFalse(TEXT("Closing restores movement lock"), Controller->IsMoveInputIgnored());
-    TestFalse(TEXT("Closing restores look lock"), Controller->IsLookInputIgnored());
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, true, true);
+    TestEqual(TEXT("LT held through pause cannot purchase on return"), Progression->GetLevel(0), 2);
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, false);
+    Catalogue->bCatalogueOpen = true;
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, true);
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, false);
+    TestEqual(TEXT("Catalogue zoom cannot purchase upgrades"), Progression->GetLevel(0), 2);
+    Catalogue->bCatalogueOpen = false;
+    Wallet->Minerals.Empty();
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, true);
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, false);
+    TestEqual(TEXT("Insufficient resources preserve the current level"), Progression->GetLevel(0), 2);
+    TestTrue(TEXT("Failed purchase gives inline feedback"), Input->GetHint().Contains(TEXT("资源不足")));
     Input->ResetDevice();
-    Input->HandleButton(EKeys::Gamepad_DPad_Right, true);
-    TestTrue(TEXT("Upgrade can be reopened before a possession change"), Input->IsUpgradeOpen());
     auto* ReplacementPawn = World->SpawnActor<ACharacter>();
     Controller->Possess(ReplacementPawn);
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, true);
-    TestEqual(TEXT("Possession change cannot buy for the old pawn"), Progression->GetLevel(0), 1);
-    Input->TickInput(.01f);
-    TestFalse(TEXT("Possession change closes the stale upgrade panel"), Input->IsUpgradeOpen());
-    TestFalse(TEXT("Possession change releases the panel's movement lock"), Controller->IsMoveInputIgnored());
-    TestFalse(TEXT("Possession change releases the panel's look lock"), Controller->IsLookInputIgnored());
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, true);
+    TestEqual(TEXT("A replacement pawn never buys for the previous pawn"), Progression->GetLevel(0), 2);
+    Input->HandleButton(EKeys::Gamepad_LeftTrigger, false);
     Controller->Possess(Pawn);
     auto* Opening = World->SpawnActor<AMiningOpening>();
     Controller->bShowMouseCursor = true;

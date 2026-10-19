@@ -11,16 +11,17 @@ class UMiningComponent;
 class APlayerController;
 class APawn;
 class APopupCloseStage;
+struct FMiningGamepadHint;
 
 enum class EMiningInputAction : uint8
 {
     Primary, Jump, Interact, Back, Tool, Bomb, ClearThought,
-    Map, Catalogue, Upgrade, Pause, Reset, Previous, Next, Up, Down
+    Catalogue, Upgrade, Pause, Reset, Previous, Next, Up, Down
 };
 
 enum class EMiningInputContext : uint8
 {
-    Exploration, Cards, Office, Thoughts, Catalogue, Menu, Upgrade, Blocked
+    Exploration, Cards, Office, Thoughts, Catalogue, Menu, Blocked
 };
 
 UCLASS(Config=Game)
@@ -49,8 +50,7 @@ public:
     bool CanReceiveInput(int32 UserIndex) const;
     EMiningInputContext GetContext() const;
     FString GetHint() const;
-    void ToggleUpgrade();
-    bool IsUpgradeOpen() const { return UpgradePanel.IsValid(); }
+    TArray<FMiningGamepadHint> GetHintEntries() const;
     bool IsSyntheticPointer() const { return bSyntheticPointer; }
     bool IsSyntheticCursorPosition(FVector2D Position) const { return bHasSyntheticCursor && FVector2D::Distance(Position, SyntheticCursor) < 1.; }
 
@@ -58,7 +58,6 @@ public:
     UPROPERTY(Config, EditAnywhere, Category="Gamepad") float LookDegreesPerSecond = 135.f;
     UPROPERTY(Config, EditAnywhere, Category="Gamepad") float CursorPixelsPerSecond = 900.f;
     UPROPERTY(Config, EditAnywhere, Category="Gamepad") bool bInvertLookY = false;
-    UPROPERTY(Config, EditAnywhere, Category="Gamepad") bool bLeftTriggerFlight = true;
     UPROPERTY(Config, EditAnywhere, Category="Gamepad") float ResetHoldSeconds = .8f;
 
 private:
@@ -70,22 +69,17 @@ private:
     void Navigate(int32 Direction);
     void PointerButton(bool bPressed);
     void MovePointer(FVector2D Axis, float DeltaSeconds);
-    void CloseUpgrade();
     void PurchaseUpgrade();
-    FText UpgradeDescription() const;
     void UpdateContext();
     TSharedPtr<IInputProcessor> Processor;
-    TSharedPtr<SWidget> UpgradePanel;
     TSharedPtr<SWidget> Hints;
     TWeakObjectPtr<APlayerController> LastController;
     TWeakObjectPtr<APawn> LastPawn;
-    TWeakObjectPtr<APlayerController> UpgradeController;
-    TWeakObjectPtr<APawn> UpgradePawn;
-    TWeakObjectPtr<UMiningComponent> UpgradeMining;
     TWeakObjectPtr<UMiningComponent> HeldMining;
     TWeakObjectPtr<APawn> JumpPawn;
     TWeakObjectPtr<APopupCloseStage> HeldOffice;
     FText UpgradeFeedback;
+    float UpgradeFeedbackRemaining = 0;
     bool bMenuPointer = false;
 
     FVector2D MoveStick = FVector2D::ZeroVector;
@@ -99,7 +93,6 @@ private:
     TSet<FKey> HeldButtons;
     EMiningInputContext LastContext = EMiningInputContext::Blocked;
     int32 LastArea = INDEX_NONE;
-    int32 UpgradeTrack = 0;
     bool bGamepad = false;
     bool bJumpHeld = false;
     bool bPointerHeld = false;
@@ -108,8 +101,6 @@ private:
     FVector2D SyntheticCursor = FVector2D::ZeroVector;
     bool bResetHeld = false;
     bool bResetFired = false;
-    bool bUpgradePaused = false;
-    bool bUpgradeMiningSuspended = false;
     FDelegateHandle ActivationHandle;
     FDelegateHandle ConnectionHandle;
     FDelegateHandle CleanupHandle;

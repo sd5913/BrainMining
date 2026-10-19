@@ -58,11 +58,6 @@ namespace
         virtual bool HandleKeyDownEvent(FSlateApplication&, const FKeyEvent& Event) override
         {
             if (!Owner.IsValid() || Owner->IsSyntheticPointer() || !Owner->CanReceiveInput(Event.GetUserIndex())) return false;
-            if (Event.GetKey() == EKeys::Escape && Owner->IsUpgradeOpen())
-            {
-                if (!Event.IsRepeat()) Owner->Dispatch(EMiningInputAction::Back, true);
-                return true;
-            }
             if (!Event.GetKey().IsGamepadKey()) { Owner->MarkKeyboardMouse(); return false; }
             return Owner->HandleButton(Event.GetKey(), true, Event.IsRepeat());
         }
@@ -109,7 +104,6 @@ void UMiningGamepadSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     {
         if (LastController.IsValid() && LastController->GetWorld() == World)
         {
-            CloseUpgrade();
             ReleaseInputs();
             if (Hints.IsValid() && World->GetGameViewport()) World->GetGameViewport()->RemoveViewportWidgetContent(Hints.ToSharedRef());
             Hints.Reset();
@@ -121,7 +115,6 @@ void UMiningGamepadSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UMiningGamepadSubsystem::Deinitialize()
 {
-    CloseUpgrade();
     ReleaseInputs();
     if (Hints.IsValid() && LastController.IsValid() && LastController->GetWorld()->GetGameViewport())
         LastController->GetWorld()->GetGameViewport()->RemoveViewportWidgetContent(Hints.ToSharedRef());
@@ -192,18 +185,18 @@ bool UMiningGamepadSubsystem::ReadJumpPressed(const APlayerController* Player)
 bool UMiningGamepadSubsystem::MapButton(FKey Key, EMiningInputAction& Action)
 {
     if (Key == EKeys::Gamepad_RightTrigger) Action = EMiningInputAction::Primary;
-    else if (Key == EKeys::Gamepad_FaceButton_Bottom || Key == EKeys::Gamepad_LeftTrigger) Action = EMiningInputAction::Jump;
+    else if (Key == EKeys::Gamepad_FaceButton_Bottom) Action = EMiningInputAction::Jump;
+    else if (Key == EKeys::Gamepad_LeftTrigger) Action = EMiningInputAction::Upgrade;
     else if (Key == EKeys::Gamepad_FaceButton_Right) Action = EMiningInputAction::Back;
     else if (Key == EKeys::Gamepad_FaceButton_Left) Action = EMiningInputAction::Interact;
     else if (Key == EKeys::Gamepad_FaceButton_Top) Action = EMiningInputAction::Tool;
     else if (Key == EKeys::Gamepad_RightShoulder) Action = EMiningInputAction::Bomb;
     else if (Key == EKeys::Gamepad_LeftShoulder) Action = EMiningInputAction::ClearThought;
-    else if (Key == EKeys::Gamepad_Special_Left) Action = EMiningInputAction::Map;
     else if (Key == EKeys::Gamepad_Special_Right) Action = EMiningInputAction::Pause;
     else if (Key == EKeys::Gamepad_DPad_Up) Action = EMiningInputAction::Catalogue;
     else if (Key == EKeys::Gamepad_DPad_Down) Action = EMiningInputAction::Reset;
     else if (Key == EKeys::Gamepad_DPad_Left) Action = EMiningInputAction::Previous;
-    else if (Key == EKeys::Gamepad_DPad_Right) Action = EMiningInputAction::Upgrade;
+    else if (Key == EKeys::Gamepad_DPad_Right) Action = EMiningInputAction::Next;
     else return false;
     return true;
 }
@@ -228,7 +221,6 @@ EMiningInputContext UMiningGamepadSubsystem::GetContext() const
     UWorld* World = Player->GetWorld();
     auto* Menu = World->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();
     if (Menu && Menu->IsMenuOpen()) return EMiningInputContext::Menu;
-    if (IsUpgradeOpen()) return EMiningInputContext::Upgrade;
     if (FindGamepadContextActor<AMiningCollectionField>(World, [](auto* Field) { return Field->bCatalogueOpen; })) return EMiningInputContext::Catalogue;
     const auto* MiningPlayer = Cast<ABrainMiningPlayerController>(Player);
     const auto* Hall = AMiningExhibitHall::Find(World);
@@ -251,6 +243,7 @@ void UMiningGamepadSubsystem::UpdateContext()
     if (LastController.Get() != Player || LastPawn.Get() != (Player ? Player->GetPawn() : nullptr) || Context != LastContext || Area != LastArea)
     {
         ReleaseInputs();
+        UpgradeFeedbackRemaining = 0;
         LastController = Player;
         LastPawn = Player ? Player->GetPawn() : nullptr;
         LastContext = Context;
@@ -265,7 +258,6 @@ bool UMiningGamepadSubsystem::HandleButton(FKey Key, bool bPressed, bool bRepeat
     if (!Key.IsGamepadKey()) return false;
     UpdateContext();
     bGamepad = true;
-    if (Key == EKeys::Gamepad_LeftTrigger && (!bLeftTriggerFlight || GetContext() != EMiningInputContext::Exploration)) return true;
     EMiningInputAction Action;
     if (!MapButton(Key, Action)) return true;
     if (bPressed)

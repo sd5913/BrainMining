@@ -5,6 +5,7 @@
 #include "Editor.h"
 #include "EngineUtils.h"
 #include "StartRoom/MiningOpening.h"
+#include "MainGameStartMenuWidget.h"
 #include "StartRoom/MiningStartRoom.h"
 #include "Components/WidgetComponent.h"
 #include "Components/Button.h"
@@ -58,7 +59,8 @@ class FPublishedOpeningChecks : public IAutomationLatentCommand
 {
     FAutomationTestBase* Test;double Deadline=FPlatformTime::Seconds()+90;bool Started=false;
 public:
-    explicit FPublishedOpeningChecks(FAutomationTestBase* T):Test(T){}
+    bool bUseAlternateMenu = false;
+    explicit FPublishedOpeningChecks(FAutomationTestBase* T, bool bAlternateMenu = false):Test(T),bUseAlternateMenu(bAlternateMenu){}
     bool Update() override
     {
         if(FPlatformTime::Seconds()>Deadline){Test->AddError(TEXT("Opening timed out"));return true;}
@@ -78,7 +80,20 @@ public:
             Widgets[0]->WidgetTree->ForEachWidget([&](UWidget* Widget){if(auto* B=Cast<UButton>(Widget)){if(!StartButton)StartButton=B;++Buttons;}});
             Test->TestEqual(TEXT("Start and Quit are built and visible"),Buttons,2);
             if(!Test->TestNotNull(TEXT("Actual Start button exists"),StartButton))return true;
-            StartButton->OnClicked.Broadcast();Started=true;return false;
+            if (bUseAlternateMenu)
+            {
+                auto* AlternateMenu = CreateWidget<UMainGameStartMenuWidget>(PC);
+                AlternateMenu->AddToViewport(600);
+                auto* AlternateStart = Cast<UButton>(AlternateMenu->WidgetTree->FindWidget(TEXT("MainGameStartButton")));
+                if (!Test->TestNotNull(TEXT("Alternate Start button exists"), AlternateStart)) return true;
+                AlternateStart->OnClicked.Broadcast();
+                Test->TestTrue(TEXT("Alternate Start launches the existing wall-title animation"), Opening->bStarted);
+                Test->TestTrue(TEXT("Alternate menu records successful start"), AlternateMenu->bGameStarted);
+                Test->TestFalse(TEXT("Alternate overlay leaves the world title visible"), AlternateMenu->IsInViewport());
+            }
+            else
+                StartButton->OnClicked.Broadcast();
+            Started=true;return false;
         }
         if(!Opening->bFinished)return false;
         Test->TestTrue(TEXT("Started exactly once"),Opening->bStarted);
@@ -111,7 +126,7 @@ bool FOpeningMenuTest::RunTest(const FString&)
     Opening->SeatEye=FVector(0,0,127);Opening->StandingLocation=FVector(0,90,98);
     Opening->DoorTitleLocation=FVector(466,0,168);
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
-    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FPublishedOpeningChecks>(this));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FPublishedOpeningChecks>(this, true));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
 }
 #endif

@@ -10,7 +10,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "MainGameDoor.h"
 #include "DiggableRock.h"
-#include "BrainMiningPlayerController.h"
+#include "StartRoom/MiningOpening.h"
 #include "Components/DynamicMeshComponent.h"
 
 namespace
@@ -76,10 +76,20 @@ void UMainGameStartMenuWidget::BuildWidgetTree()
 
 void UMainGameStartMenuWidget::HandleStartClicked()
 {
-	if (ABrainMiningPlayerController* Controller = Cast<ABrainMiningPlayerController>(GetOwningPlayer()))
-		Controller->StartMainGameFlow();
-	else
-		BeginGame();
+	if (GetWorld())
+	{
+		for (TActorIterator<AMiningOpening> Opening(GetWorld()); Opening; ++Opening)
+		{
+			Opening->StartGame();
+			if (Opening->bStarted || Opening->bFinished)
+			{
+				bGameStarted = true;
+				RemoveFromParent();
+			}
+			return;
+		}
+	}
+	BeginGame();
 }
 
 void UMainGameStartMenuWidget::BeginGame()

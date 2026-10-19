@@ -320,6 +320,13 @@ bool APopupCloseStage::HandleInteractionInput(APlayerController* PC)
  if(auto Device=FocusedDevice(PC)){HandleInteraction(PC,Device);return true;}
  return false;
 }
+bool APopupCloseStage::HandleGamepadPointer(bool bPressed)
+{
+    if (!ActiveComputer || (bPressed && View != EView::InScreen)) return false;
+    ActiveComputer->HandleGamepadPointer(bPressed);
+    return true;
+}
+
 bool APopupCloseStage::HandleMobilePrimary(APlayerController* PC)
 {
 	if (!PC || !bAreaActive || View != EView::InScreen || !ActiveComputer) return false;

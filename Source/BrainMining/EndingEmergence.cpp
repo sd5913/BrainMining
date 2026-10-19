@@ -1,3 +1,4 @@
+#include "MiningGamepadSubsystem.h"
 #include "EndingEmergence.h"
 #include "UObject/ConstructorHelpers.h"
 #include "BrainMiningFonts.h"
@@ -1100,7 +1101,7 @@ void AEndingEmergence::UpdateFilm(float Dt)
     {
         // Exponential damping is stable at different frame rates. Input changes velocity,
         // not position, so release visibly coasts. Bound the offset to protect composition.
-        const FVector Push(0,(Player->IsInputKeyDown(EKeys::D)?1:0)-(Player->IsInputKeyDown(EKeys::A)?1:0),0);
+        const FVector Push(0,UMiningGamepadSubsystem::ReadMove(Player).X,0);
         const double Decay=FMath::Exp(-2.2*Dt);
         const FVector Target=Push*3.5*W;
         DriftVelocity=DriftVelocity*Decay+Target*(1-Decay);
@@ -1632,9 +1633,9 @@ void AEndingEmergence::UpdatePulse(float Dt)
     if(GateIndex==1&&!bEnteringBrain)
     {
         const float T=Age-BloodAt;
-        BloodSpeed=FMath::FInterpTo(BloodSpeed,Player->IsInputKeyDown(EKeys::W)?950.f:480.f,Dt,3);
+        BloodSpeed=FMath::FInterpTo(BloodSpeed,FMath::Lerp(480.f,950.f,FMath::Max(0.f,float(UMiningGamepadSubsystem::ReadMove(Player).Y))),Dt,3);
         VesselDistance=FMath::Min(VesselDistance+BloodSpeed*Dt,VesselDistances.Last());
-        BloodY=FMath::Clamp(BloodY+Dt*150*(float(Player->IsInputKeyDown(EKeys::D))-float(Player->IsInputKeyDown(EKeys::A))),-240.f,240.f);
+        BloodY=FMath::Clamp(BloodY+Dt*150*UMiningGamepadSubsystem::ReadMove(Player).X,-240.f,240.f);
         const float Z=BloodStartZ*(1-Ending::Ease(T/1.8f));
         const FRotator Frame=VesselRotation(VesselDistance);
         Camera->SetActorLocation(GetActorTransform().TransformPosition(VesselPoint(VesselDistance)+Frame.RotateVector(FVector(0,BloodY,Z))));
@@ -1701,7 +1702,7 @@ void AEndingEmergence::UpdatePulse(float Dt)
     }
     if(GateIndex==2&&TravellingToNeuron!=INDEX_NONE)
     {
-        if(Player->WasInputKeyJustPressed(EKeys::SpaceBar))BufferedJumpAt=Age;
+        if(UMiningGamepadSubsystem::ReadJumpPressed(Player))BufferedJumpAt=Age;
         const float T=FMath::Clamp((Age-PulseAt)/TransitDuration,0.f,1.f),Travel=Ending::Ease(T),Envelope=FMath::Square(FMath::Sin(PI*T));
         const FVector Position=FMath::Lerp(TransitStart,TransitEnd,Travel)+GetActorUpVector()*(110*FMath::Sin(PI*Travel));
         Camera->SetActorLocation(Position);
@@ -1728,7 +1729,7 @@ void AEndingEmergence::UpdatePulse(float Dt)
         Camera->SetActorRotation(Player->GetControlRotation());
         Camera->GetCameraComponent()->SetFieldOfView(94);TransitEffects(0);
         TargetNeuron=FindNeuronTarget(CurrentNeuron,Camera->GetActorLocation(),Camera->GetActorForwardVector());
-        if((Player->WasInputKeyJustPressed(EKeys::SpaceBar)||Age-BufferedJumpAt<=.3f)&&TargetNeuron!=INDEX_NONE)PossessNeuron(TargetNeuron);
+        if((UMiningGamepadSubsystem::ReadJumpPressed(Player)||Age-BufferedJumpAt<=.3f)&&TargetNeuron!=INDEX_NONE)PossessNeuron(TargetNeuron);
     }
     if(PulseTrail)PulseTrail->SetVisibility(TravellingToNeuron!=INDEX_NONE);
     const float EntryReveal=GateIndex>=5?1.f:(GateIndex==2||bEnteringBrain)?Ending::Ease((Age-BrainEntryAt-.9f)/1.1f):0.f;
@@ -1829,7 +1830,7 @@ void AEndingEmergence::Tick(float Dt)
         const bool Pulling=Shot>=1&&Shot<=6;
         // W is intentionally absent: the sequence always moves outward. S boosts
         // the rail clock, increasingly at larger scales, with a short inertial release.
-        const float TargetBoost=Pulling&&Player->IsInputKeyDown(EKeys::S)?1.f:0.f;
+        const float TargetBoost=Pulling?FMath::Max(0.f,float(-UMiningGamepadSubsystem::ReadMove(Player).Y)):0.f;
         PullbackBoost=FMath::Lerp(PullbackBoost,TargetBoost,1-FMath::Exp(-2.4f*Dt));
         const float ScalePhase=Pulling?FMath::Clamp((Shot-1+ShotTime/Duration(Shot))/6,0.f,1.f):0;
         PullbackRate=Shot>=0&&Shot<=6?1.5f*(1+PullbackBoost*(1.4f+2.6f*ScalePhase*ScalePhase)):1;

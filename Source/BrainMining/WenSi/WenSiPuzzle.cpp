@@ -1,3 +1,4 @@
+#include "MiningGamepadSubsystem.h"
 #include "WenSi/WenSiPuzzle.h"
 #include "MiningInteractionTrace.h"
 #include "Camera/CameraComponent.h"
@@ -243,10 +244,10 @@ void AWenSiPawn::Tick(float Dt)
  if (!PC || PC->IsMoveInputIgnored()) return;
  float X=0,Y=0; PC->GetInputMouseDelta(X,Y);
  AddControllerYawInput(X); AddControllerPitchInput(-Y);
- AddMovementInput(GetActorForwardVector(),float(PC->IsInputKeyDown(EKeys::W))-float(PC->IsInputKeyDown(EKeys::S)));
- AddMovementInput(GetActorRightVector(),float(PC->IsInputKeyDown(EKeys::D))-float(PC->IsInputKeyDown(EKeys::A)));
- if(!PC->IsInputKeyDown(EKeys::SpaceBar)) bFlightNeedsRelease=false;
- if(PC->IsInputKeyDown(EKeys::SpaceBar) && !bFlightNeedsRelease)
+ AddMovementInput(GetActorForwardVector(),UMiningGamepadSubsystem::ReadMove(PC).Y);
+ AddMovementInput(GetActorRightVector(),UMiningGamepadSubsystem::ReadMove(PC).X);
+ if(!UMiningGamepadSubsystem::ReadJumpHeld(PC)) bFlightNeedsRelease=false;
+ if(UMiningGamepadSubsystem::ReadJumpHeld(PC) && !bFlightNeedsRelease)
  {
   auto Movement=GetCharacterMovement();
   if(Movement->IsMovingOnGround()) Movement->SetMovementMode(MOVE_Falling);

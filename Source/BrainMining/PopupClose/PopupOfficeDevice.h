@@ -57,6 +57,7 @@ public:
  void CleanupOnePopup();
  void SetScreenInteractive(bool bEnabled);
  void TickScreen(float Dt,APlayerController* PC);
+ void HandleGamepadPointer(bool bPressed);
  void FitCamera();
  bool ClickReplyForValidation();
 	bool ClickReplyForMobile();

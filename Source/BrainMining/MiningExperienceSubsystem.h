@@ -1,12 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/EngineBaseTypes.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "MiningExperienceSubsystem.generated.h"
 
 class IInputProcessor;
 class SWidget;
 class APlayerController;
+class APawn;
 class UMiningComponent;
 
 UCLASS()
@@ -35,6 +37,8 @@ public:
     static TArray<FString> MapPaths();
 private:
     bool BuildMenu(bool bDeveloper);
+    void CaptureMenuInput(APlayerController* Controller);
+    void RestoreMenuInput(APlayerController* Controller);
     void OnWorldCleanup(UWorld* World, bool bSessionEnded, bool bCleanupResources);
     FDelegateHandle WorldCleanupHandle;
     TWeakObjectPtr<UWorld> MenuWorld;
@@ -43,6 +47,16 @@ private:
     bool bPauseMenu = false;
     TSharedPtr<IInputProcessor> Shortcuts;
     TSharedPtr<SWidget> Menu;
+    TWeakPtr<SWidget> PreviousMenuFocus;
+    TSharedPtr<SWidget> ResumeButton;
+    TSharedPtr<SWidget> CancelQuitButton;
+    TWeakObjectPtr<APawn> MenuPawn;
+    EMouseCaptureMode PreviousMenuCapture = EMouseCaptureMode::CapturePermanently;
+    EMouseLockMode PreviousMenuLock = EMouseLockMode::LockOnCapture;
+    bool bPreviousMenuCursor = false;
+    bool bPreviousMenuUIOnly = false;
+    bool bPreviousMenuGameAndUI = false;
+    bool bPreviousMenuHideCursor = true;
     TWeakObjectPtr<APlayerController> MenuController;
     TWeakObjectPtr<UMiningComponent> MenuMining;
     bool bPreviousMiningSuspended = false;

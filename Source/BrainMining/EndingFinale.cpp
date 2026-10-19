@@ -1,3 +1,4 @@
+#include "MiningGamepadSubsystem.h"
 #include "EndingEmergence.h"
 #include "DiggableRock.h"
 #include "EndingComicRock.h"
@@ -411,12 +412,12 @@ void AEndingEmergence::UpdateFinale(float Dt)
     }
     else if(Shot==9)
     {
-        const float Boost=Player->IsInputKeyDown(EKeys::W)?1.7f:1;
+        const float Boost=FMath::Lerp(1.f,1.7f,FMath::Max(0.f,float(UMiningGamepadSubsystem::ReadMove(Player).Y)));
         FinaleDrillSpeed=FMath::FInterpTo(FinaleDrillSpeed,Finale::Pace(DrillDistance)*Boost,Dt,4);
         Mining->DrillIntervalMultiplier=.27f*260/(Finale::Pace(DrillDistance)*Boost);
         if(!Mining->IsMiningActive())Mining->BeginMiningInput();
         const float Progress=DrillDistance/Finale::DrillEnd,Roll=bComfortMode?FMath::Sin(Progress*PI)*7:1080*FMath::Square(FMath::Max(0.f,(Progress-.18f)/.82f));
-        const float Steering=(Player->IsInputKeyDown(EKeys::D)?1.f:0.f)-(Player->IsInputKeyDown(EKeys::A)?1.f:0.f);
+        const float Steering=UMiningGamepadSubsystem::ReadMove(Player).X;
         FinaleSideSpeed=FMath::FInterpTo(FinaleSideSpeed,Steering*45,Dt,7);
         FinaleSide=FMath::Clamp(FinaleSide+FinaleSideSpeed*Dt,-55.f,55.f);
         FinaleSideVector=FRotator(0,0,Roll).RotateVector(FVector(0,FinaleSide,0));

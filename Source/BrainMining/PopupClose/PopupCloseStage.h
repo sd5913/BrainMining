@@ -68,6 +68,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category="PopupClose") void StartOfficeRound();
 	bool HandleInteractionInput(APlayerController* PC);
 	bool HandleMobilePrimary(APlayerController* PC);
+    bool HandleGamepadPointer(bool bPressed);
 
 	UFUNCTION(BlueprintPure, Category="PopupClose") FTransform GetPlayerSpawnTransform() const;
 

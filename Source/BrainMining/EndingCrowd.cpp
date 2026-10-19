@@ -7,6 +7,8 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "GameFramework/Actor.h"
+#include "CrowdInstancer.h"
+#include "OverCrowdDataAsset.h"
 
 namespace
 {
@@ -31,6 +33,20 @@ FTransform HeadBind(USkeletalMesh* Mesh)
     FTransform T=FTransform::Identity;
     while(B!=INDEX_NONE){T=T*R.GetRefBonePose()[B];B=R.GetParentIndex(B);}
     return T;
+}
+
+UHierarchicalInstancedStaticMeshComponent* OverCrowdBatch(ACrowdInstancer* Owner, UStaticMesh* Mesh, int32 Index)
+{
+    if(!Owner||!Mesh)return nullptr;
+    const FGameplayTag WardrobeID=FGameplayTag::RequestGameplayTag(FName("OverCrowd.Wardrobe.Default"));
+    UVatStaticMesh* Pair=NewObject<UVatStaticMesh>(Owner,*FString::Printf(TEXT("EndingVatPair_%d"),Index));
+    Pair->VatStaticMesh=Mesh;
+    Pair->BodyPart=FGameplayTag::RequestGameplayTag(FName("OverCrowd.BodyPart.Body"));
+    FWardrobe Wardrobe;Wardrobe.WardrobeID=WardrobeID;
+    Owner->AddHISMComponent(Pair,Wardrobe);
+    if(const FDataHISMLookUp* Lookup=Owner->HISMLookupWithWardrobeID.Find(WardrobeID))
+        if(const FHISMData* Data=Lookup->HISMLookup.Find(Pair))return Data->HISM;
+    return nullptr;
 }
 }
 
@@ -121,6 +137,7 @@ void UEndingCrowdComponent::UpdateCrowd(bool bActive,float DeltaTime)
     if(!Batches.IsEmpty())
     {
         if(bCrowdActive!=bActive){bCrowdActive=bActive;SetVisibility(bActive,true);}
+        if(OverCrowdInstancer)OverCrowdInstancer->SetActorHiddenInGame(!bActive);
         if(!bActive){TravelTime=0;return;}
         TravelTime+=DeltaTime;
         for(int32 B=0;B<Batches.Num()-1;++B)
@@ -156,10 +173,21 @@ void UEndingCrowdComponent::UpdateCrowd(bool bActive,float DeltaTime)
 bool UEndingCrowdComponent::BuildBaked(UEndingCrowdAssets* Assets)
 {
     for(auto Mesh:Assets->BakedWalkers)if(!Mesh)return false;
+    AActor* Owner=GetOwner();
+    if(!Owner||!Owner->GetWorld())return false;
+    FActorSpawnParameters SpawnInfo;SpawnInfo.Owner=Owner;SpawnInfo.Name=TEXT("EndingOverCrowdInstancer");
+    // The crowd component is attached to the city set (Sets[1]); spawn the
+    // OverCrowd HISM owner at that component transform so its local lanes land
+    // in the same street space as the JapaneseCity replacement.
+    OverCrowdInstancer=Owner->GetWorld()->SpawnActor<ACrowdInstancer>(ACrowdInstancer::StaticClass(),GetComponentTransform(),SpawnInfo);
+    if(!OverCrowdInstancer)return false;
+    OverCrowdInstancer->SetActorEnableCollision(false);
+    OverCrowdInstancer->SetActorHiddenInGame(true);
     for(int32 I=0;I<9;++I)
     {
-        auto* C=Part<UInstancedStaticMeshComponent>(GetOwner(),this);
-        C->SetStaticMesh(I==8?Assets->BakedHero:Assets->BakedWalkers[I]);
+        UStaticMesh* Mesh=I==8?Assets->BakedHero:Assets->BakedWalkers[I];
+        auto* C=OverCrowdBatch(OverCrowdInstancer,Mesh,I);
+        if(!C){OverCrowdInstancer->Destroy();OverCrowdInstancer=nullptr;return false;}
         C->NumCustomDataFloats=2;CheapMesh(C);C->SetBoundsScale(1.25f);
         Batches.Add(C);BatchTransforms.AddDefaulted();BatchOrigins.AddDefaulted();BatchVelocities.AddDefaulted();
     }
@@ -184,5 +212,6 @@ bool UEndingCrowdComponent::BuildBaked(UEndingCrowdAssets* Assets)
     Batches[8]->SetCustomDataValue(0,1,1,true);++BakedCount;
     for(auto B:Batches){B->MarkRenderStateDirty();B->PrecachePSOs();}
     SetVisibility(false,true);bCrowdActive=false;
+    UE_LOG(LogTemp, Display, TEXT("ENDING_OVERCROWD_HISM_READY: batches=%d instances=%d"), Batches.Num(), BakedCount);
     return true;
 }

@@ -59,7 +59,12 @@ void ACrowdInstancer::AddHISMComponent(UVatMeshPairing* VatAsset, const FWardrob
 	UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>
 		(AddComponentByClass(UHierarchicalInstancedStaticMeshComponent::StaticClass(), false, FTransform::Identity, false));
 
-	HISM->SetupAttachment(RootComponent);
+	// AddComponentByClass registers the component immediately, so SetupAttachment
+	// would trigger an ensure in a running game. Attach it with runtime-safe rules.
+	if (RootComponent && RootComponent != HISM)
+	{
+		HISM->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	}
 	HISM->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 	HISM->SetLODDistanceScale(LODDistanceScale);
 	HISM->SetNumCustomDataFloats(NumPerInstanceCustomData);

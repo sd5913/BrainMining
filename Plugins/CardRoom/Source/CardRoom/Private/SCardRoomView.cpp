@@ -36,9 +36,9 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
     const FVector2D Origin=(Size-FVector2D(1600,900)*S)*.5;
     int32 L=Layer;
     auto Geo=[&](float X,float Y,float W,float H){return G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(Origin+FVector2D(X,Y)*S)));};
-    auto Art=[&](const FString& Name,float X,float Y,float W,float H){
+    auto Art=[&](const FString& Name,float X,float Y,float W,float H,FLinearColor Tint=FLinearColor::White){
         FSlateBrush B;B.DrawAs=ESlateBrushDrawType::Image;B.SetResourceObject(CardResource(Name));
-        FSlateDrawElement::MakeBox(Out,++L,Geo(X,Y,W,H),&B,ESlateDrawEffect::None,FLinearColor::White);
+        FSlateDrawElement::MakeBox(Out,++L,Geo(X,Y,W,H),&B,ESlateDrawEffect::None,Tint);
     };
     auto Box=[&](float X,float Y,float W,float H,FLinearColor Color,float Radius){
         FSlateRoundedBoxBrush B(FLinearColor::White,Radius*S);
@@ -46,11 +46,30 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
     };
     if(R.Round>0)
     {
+        auto Clip=[&](float X,float Y,float W,float H){
+            const FVector2D Min=G.LocalToAbsolute(Origin+FVector2D(X,Y)*S);
+            const FVector2D Max=G.LocalToAbsolute(Origin+FVector2D(X+W,Y+H)*S);
+            Out.PushClip(FSlateClippingZone(FSlateRect(Min.X,Min.Y,Max.X,Max.Y)));
+        };
         auto Health=[&](bool Player,float HP,float Y){
-            const float X=46,W=330,H=52;
-            Art(Player?TEXT("M_Health_Player"):TEXT("M_Health_Opponent"),X,Y,W,H);
+            const float X=46, BarX=X+55, BarY=Y+13, BarW=273, BarH=26;
+            const FLinearColor Color=Player?FLinearColor(.64f,.43f,.13f):FLinearColor(.58f,.16f,.12f);
+            // Retain only the portrait; the old segmented strip is never painted outside this clip.
+            Clip(X,Y,48,52);
+            Art(Player?TEXT("M_Health_Player"):TEXT("M_Health_Opponent"),X,Y,330,52,
+                Player?FLinearColor(.64f,.62f,1.f):FLinearColor(.58f,.85f,.75f));
+            Out.PopClip();
+            Box(BarX,BarY+3,BarW,BarH,FLinearColor(.025f,.018f,.012f,.35f),13.f);
+            Box(BarX,BarY,BarW,BarH,FLinearColor(.39f,.30f,.21f,.88f),13.f);
+            Box(BarX+2,BarY+2,BarW-4,BarH-4,FLinearColor(.055f,.038f,.026f,.95f),11.f);
             const float Fill=FMath::Clamp(HP/100.f,0.f,1.f);
-            if(Fill<1.f) Box(X+W*.17f+W*.814f*Fill,Y+6,W*.814f*(1-Fill),H-12,FLinearColor(.015f,.018f,.02f,.78f),4.f);
+            if(Fill>0.f)
+            {
+                // Clip the continuous fill, so zero HP is empty and damage cannot cover the frame or portrait.
+                Clip(BarX+3,BarY+3,(BarW-6)*Fill,BarH-6);
+                Box(BarX+3,BarY+3,BarW-6,BarH-6,Color,10.f);
+                Out.PopClip();
+            }
         };
         Health(false,R.RivalHP,110); Health(true,R.PlayerHP,755);
     }

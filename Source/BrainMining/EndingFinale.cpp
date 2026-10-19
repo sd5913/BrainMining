@@ -1,4 +1,5 @@
 #include "MiningGamepadSubsystem.h"
+#include "MiningHapticsSubsystem.h"
 #include "EndingEmergence.h"
 #include "DiggableRock.h"
 #include "EndingComicRock.h"
@@ -263,6 +264,7 @@ void AEndingEmergence::FinaleDrillHit(const FHitResult& Hit)
 {
     if(!bFinaleDrilling||!FinaleRocks.Contains(Cast<ADiggableRock>(Hit.GetActor())))return;
     ++FinaleDrillCuts;FinaleKick=Finale::Impact(DrillDistance);
+    UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::FinaleHit, bComfortMode ? .4f : 1.f);
     Sound(TEXT("DrillHit_01"),.28f,.90f+(FinaleDrillCuts%4)*.045f);
     if(FinaleDrillCuts%4==0)Sound(TEXT("DrillDebris_01"),.20f,.92f+(FinaleDrillCuts%3)*.04f);
     FinaleImpactOrigins[FinaleImpactSlot]=GetActorTransform().InverseTransformPosition(Hit.ImpactPoint)-Finale::Tunnel;
@@ -271,6 +273,7 @@ void AEndingEmergence::FinaleDrillHit(const FHitResult& Hit)
 
 void AEndingEmergence::UpdateFinaleDrillEffects(float Dt,float Boost)
 {
+    UMiningHapticsSubsystem::FinaleThrust(this, true, bComfortMode);
     const float Progress=DrillDistance/Finale::DrillEnd;
     // Keep readable, chunky fragments even at low speed. Only the opening's
     // emission strength is softened; camera recoil retains its gentler curve.
@@ -330,6 +333,7 @@ void AEndingEmergence::PoseFinaleTools()
 
 void AEndingEmergence::EndFinaleDrill(bool KeepVisuals)
 {
+    UMiningHapticsSubsystem::FinaleThrust(this, false, bComfortMode);
     if(bFinaleDrilling&&Mining)
     {
         APawn* Pawn=Player?Player->GetPawn():nullptr;

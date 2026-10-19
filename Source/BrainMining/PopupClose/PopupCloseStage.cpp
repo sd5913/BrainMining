@@ -1,4 +1,5 @@
 #include "PopupClose/PopupCloseStage.h"
+#include "MiningHapticsSubsystem.h"
 #include "Subtitles/SubtitleLibrary.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "HAL/IConsoleManager.h"
@@ -487,6 +488,7 @@ void APopupCloseStage::TickIssues(float Dt)
  if(RoundTime>=PanicSeconds && !bPanic)
  {
   bPanic=true;
+  UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::OfficeWarning);
   UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Warning"),.35f);
   UE_LOG(LogPopupClose,Display,TEXT("Rapid acceleration begins at %.2f s; independent schedules preserved, slow-phase issues=%.0f"),RoundTime,SlowPhaseScheduledIssues);
  }
@@ -520,6 +522,7 @@ void APopupCloseStage::BeginBurst()
  if(Phase!=EPhase::Running)return;
  Phase=EPhase::Spraying;SprayTime=0;SprayDebt=0;
  USubtitleLibrary::PlayMainGameSubtitle(this,TEXT("电脑弹窗玩法2"));
+ UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::OfficeWarning);
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_OfficePanic"),.65f);
  bForcedExit=View==EView::Entering || View==EView::InScreen;
  // Disable every reply before releasing any shared Slate pointer capture.

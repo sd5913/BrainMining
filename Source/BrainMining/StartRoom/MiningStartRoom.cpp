@@ -1,4 +1,5 @@
 #include "StartRoom/MiningStartRoom.h"
+#include "MiningHapticsSubsystem.h"
 #include "MiningInteractionTrace.h"
 #include "MiningAudioComponent.h"
 #include "MiningComponent.h"
@@ -115,6 +116,7 @@ bool AMiningStartRoom::Interact(APlayerController* Controller)
         if (bOwnFlightBlock) { Flight->PopFlightBlock(); bOwnFlightBlock = false; }
     }
     Pickup->Collect();
+    UMiningHapticsSubsystem::Emit(Controller, EMiningHapticCue::Equipment);
     if (auto* Audio = Controller->GetPawn()->FindComponentByClass<UMiningAudioComponent>())
         Audio->PlayStarterPickup(Pickup->Equipment == EMiningStarterEquipment::Jetpack);
     return true;

@@ -1,4 +1,5 @@
 #include "MiningBombActor.h"
+#include "MiningHapticsSubsystem.h"
 #include "MiningAudioComponent.h"
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -113,6 +114,7 @@ void AMiningBombActor::Contact(UPrimitiveComponent*, AActor* Other, UPrimitiveCo
 	// Latch before stopping physics because one physics step may report several
 	// contacts. Do not restart the fuse: it still counts from the throw.
 	bStuck = true;
+    UMiningHapticsSubsystem::EmitAt(this, EMiningHapticCue::BombStick, GetActorLocation(), 1600.f);
 	PlayBombSound(TEXT("S_BombStick"), .55f);
 	SetActorTickEnabled(false);
 	StuckAt = GetWorld()->GetTimeSeconds();
@@ -197,6 +199,7 @@ void AMiningBombActor::Explode()
 	Model->SetVisibility(false);
 	Collision->SetSimulatePhysics(false);
 	Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	UMiningHapticsSubsystem::EmitAt(this, EMiningHapticCue::Explosion, Location, FMath::Clamp(Settings.BlastRadius, 50.f, 3000.f) * 2.f);
 	ApplyShockwave(Location);
 	ExcavateTerrain(Location);
 	FMiningBombSettings Presentation = Settings;

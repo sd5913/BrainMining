@@ -26,6 +26,12 @@ public:
     UFUNCTION(BlueprintCallable) void LeaveSeat();
     UFUNCTION(BlueprintCallable) void ConfirmCards();
     UFUNCTION(BlueprintCallable) void ToggleCardSelection(int32 Index);
+    void NavigateCard(int32 Direction);
+    int32 GetFocusedCardIndex() const;
+    bool HasCardInputFocus(int32 UserIndex) const;
+    void SelectAllCards();
+    void ClearCardSelection();
+    bool bGamepadInput = false;
     UPROPERTY(BlueprintReadOnly) TObjectPtr<ACardRoomStage> Stage;
     APawn* GetPawn() const;
 private:
@@ -37,6 +43,7 @@ private:
     FRotator EntryRotation;
     uint8 EntryMovementMode=0,EntryCustomMode=0;
     bool bSeated=false,bEntryCollision=true;
+    int32 FocusedCard = 0, FocusedRound = INDEX_NONE;
 };
 UCLASS()
 class CARDROOM_API ACardRoomGameMode : public AGameModeBase { GENERATED_BODY() };

@@ -232,10 +232,14 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     Text(TEXT("点击选牌 / 再点取消     空格出牌"),Hint.Left,Hint.Top,12,Cream);
     return L;
 }
+FReply SCardRoomView::OnTouchStarted(const FGeometry& G,const FPointerEvent& E)
+{
+    return OnMouseButtonDown(G,E);
+}
 FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& E)
 {
     using namespace CardRoomUI;
-    if(!Owner.IsValid()||!Owner->Stage||E.GetEffectingButton()!=EKeys::LeftMouseButton) return FReply::Unhandled();
+    if(!Owner.IsValid()||!Owner->Stage||(!E.IsTouchEvent() && E.GetEffectingButton()!=EKeys::LeftMouseButton)) return FReply::Unhandled();
     Mouse=ToVirtual(G,E.GetScreenSpacePosition()); auto& R=Owner->Stage->Run;
     const UCardRoomUISettings* UI=Owner->Stage->UISettings;
     auto UIBox=[&](const FCardRoomUIBox& B,const FSlateRect& Fallback)->FSlateRect { return UI&&B.Size.X>0.f&&B.Size.Y>0.f?FSlateRect(B.Position.X,B.Position.Y,B.Position.X+B.Size.X,B.Position.Y+B.Size.Y):Fallback; };

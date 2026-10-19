@@ -14,7 +14,7 @@
 | 细胞移动先后不一致 | 移除外围细胞随机启动延迟，中心与外围共同使用同一进度和缓动。 |
 | 桌面石头出现太早 | 石头抬起从镜头 4.85 秒开始，与“唉算了，涌现不出来了，我们去吃饭吧。”共用触发时刻。 |
 
-资源写入脚本 `Scripts/apply_optimization_round3.py` 先备份，再保存 MainGame 与 P2。新尘埃使用已有 `M_DrillDust` 材质，并将其加入打包容器的必要资源检查，总计 32 项。
+资源写入脚本 `Scripts/apply_optimization_round3.py` 先备份，再保存 MainGame 与 P2。新尘埃使用已有 `M_DrillDust` 材质，并将其加入打包容器的必要资源检查，合并远端更新后还检查主菜单三张图片与卡牌 UI 设置，总计 36 项。
 
 ## 验证
 
@@ -25,3 +25,7 @@
 - 原生回归入口 `Scripts/verify_optimization_round3.ps1` 包括 Office、Card、Ending、Scale、Finale；结果见 `Saved/Validation/OptimizationRound3`。
 
 检查包含自动化交互、碰撞扫掠和画面复核，不等同于完整人工通关。Shipping 包启动、容器清单与压缩包校验记录保存在本轮验证目录。
+
+五组原生回归均通过，零测试错误；Ending 的一条警告为外部 HTTP 连通性请求超时。合并远端 UI 与美术更新后，补齐 MainGame/UI 的显式烘焙目录，并复查受影响的卡牌与办公室流程。
+
+合并时修复远端缺失的 `StartMainGameFlow` 调用（接入现有 `AMiningOpening::StartGame`）和卡牌触屏回调定义；新主菜单的入口查找改用已保存的运行时标签，避免 Shipping 依赖编辑器 ActorLabel。

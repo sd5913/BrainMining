@@ -35,7 +35,7 @@ public:
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0")) float DuckUpSpeed=260.f;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0.1")) float DuckFlightSeconds=1.35f;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0")) float DuckGravity=620.f;
- UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0.001")) float DuckScale=0.18f;
+ UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="0.001")) float DuckScale=0.54f;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|Water") bool bContinuousSpray=true;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Toilet|SprayDuck",meta=(ClampMin="1")) float DuckBurstInterval=3.2f;
  UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Toilet|State") float LidOpenAmount=0.f;

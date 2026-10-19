@@ -17,6 +17,8 @@ $reports['fit_scene_polish_heaven.py']='heaven_fit.json'
 $reports['repair_scene_polish_mineral.py']='heaven_mineral.json'
 $reports['finish_scene_polish_heaven_entry.py']='heaven_entry.json'
 $reports['finish_scene_polish_heaven_outer.py']='heaven_outer.json'
+$reports['apply_scene_feedback.py']='../SceneFeedback/authoring.json'
+$reports['verify_scene_polish.py']='../SceneFeedback/runtime.json'
 if($reports.ContainsKey($Script)){
  $resultPath=Join-Path $report $reports[$Script]
  if(!(Test-Path -LiteralPath $resultPath) -or (Get-Item -LiteralPath $resultPath).LastWriteTime -lt $started){throw "No fresh report: $resultPath"}

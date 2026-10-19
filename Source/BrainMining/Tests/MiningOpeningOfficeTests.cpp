@@ -57,7 +57,7 @@ public:
         if(!Opening)return false;
         if(!Started)
         {
-            if(!PC->bShowMouseCursor || !Opening->WorldTitle->IsVisible())return false;
+            if(!PC->bShowMouseCursor)return false;
             Test->TestTrue(TEXT("Seated menu locks movement"),PC->IsMoveInputIgnored());
             Test->TestTrue(TEXT("Title uses supplied image"),Opening->TitleTexture!=nullptr);
             Test->TestTrue(TEXT("Camera starts on the bed"),PC->GetViewTarget()!=PC->GetPawn());
@@ -71,8 +71,8 @@ public:
         }
         if(!Opening->bFinished)return false;
         Test->TestTrue(TEXT("Started exactly once"),Opening->bStarted);
-        Test->TestFalse(TEXT("Title has not flown to the wall before opening the door"),Opening->HasTitleLanded());
-        Test->TestNull(TEXT("No wall decal until the player opens the door"),Opening->FindComponentByClass<UDecalComponent>());
+        Test->TestFalse(TEXT("Title remains hidden before picking up the pickaxe"),Opening->HasTitleLanded());
+        Test->TestNull(TEXT("No wall decal until the player picks up the pickaxe"),Opening->FindComponentByClass<UDecalComponent>());
         Test->TestTrue(TEXT("Standing pawn returned to player"),PC->GetViewTarget()==PC->GetPawn());
         Test->TestFalse(TEXT("Movement unlocked after standing"),PC->IsMoveInputIgnored());
         Test->TestFalse(TEXT("Look unlocked after standing"),PC->IsLookInputIgnored());

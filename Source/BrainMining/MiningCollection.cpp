@@ -58,6 +58,7 @@ bool AMiningCollectionField::InitializePlayer()
     if(!Input||!Mining||!Player->GetLocalPlayer()) return false;
     auto* Subsystem=Player->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
     if(!Subsystem) return false;
+    CatalogueKey=EKeys::C;
     CollectionContext=NewObject<UInputMappingContext>(this);
     auto Bind=[&](FKey Key,auto Callback)
     {
@@ -79,7 +80,7 @@ bool AMiningCollectionField::InitializePlayer()
     Mining->FallResetDistance=0;
     Inventory.Init(0,FMath::Max(4,CatalogueIds().IsEmpty()?4:CatalogueIds().Last()+1));
     if(auto* Edge=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionSilhouette"))) HighlightPostProcess->Settings.AddBlendable(Edge,1);
-    if(ActorHasTag(TEXT("BM_MainGame_Collections")) || bCatalogueOnly)
+    if(ActorHasTag(TEXT("BM_MainGame_Collections")) || ActorHasTag(TEXT("BM_MainGame_SystemIntegration")) || bCatalogueOnly)
         if(auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>(); Session && !Session->CampaignCollection.IsEmpty())Inventory=Session->CampaignCollection;
     if(!bCatalogueOnly) SpawnField();
     PreviewTexture=NewObject<UTextureRenderTarget2D>(this); PreviewTexture->ClearColor=FLinearColor(0,0,0,1);
@@ -307,6 +308,7 @@ bool AMiningCollectionField::TryCollectTarget()
     if(bCatalogueOpen||!Player || (bAreaManaged && !bAreaActive)) return false;
     RefreshTarget();
     if(!IsValid(Target)||!Inventory.IsValidIndex(Target->ItemId)) return false;
+    const bool bFirstCollection=UniqueCount()==0;
     AMiningCollectible* Item=Target; Item->SetHighlighted(false); Item->bCollected=true;
     Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);
     if(IsValid(Item->PresentationActor)) { Item->PresentationActor->Destroy(); Item->PresentationActor=nullptr; }
@@ -316,7 +318,8 @@ bool AMiningCollectionField::TryCollectTarget()
     // All collectibles, including the room-owned stage ribbon, reach this
     // successful pickup path. Queue the editable segment only after collection.
     USubtitleLibrary::PlaySubtitleSegment(this,FName(*FString::Printf(TEXT("收集物拾取_%02d"),Item->ItemId)));
-    if(ActorHasTag(TEXT("BM_MainGame_Collections")))if(auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>())Session->CampaignCollection=Inventory;
+    if(bFirstCollection)USubtitleLibrary::PlaySubtitleSegment(this,TEXT("首次收藏提示"));
+    if(ActorHasTag(TEXT("BM_MainGame_Collections")) || ActorHasTag(TEXT("BM_MainGame_SystemIntegration")))if(auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>())Session->CampaignCollection=Inventory;
     SelectedId=Item->ItemId; Target=nullptr;
     Toast=FString::Printf(TEXT("已收集 · %s     [ %s ] 打开图鉴"),*AMiningCollectible::ItemName(Item->ItemId),*CatalogueKey.GetDisplayName().ToString()); ToastRemaining=5;
     return true;
@@ -325,7 +328,9 @@ int32 AMiningCollectionField::UniqueCount() const { int32 N=0; for(int32 Count:I
 TArray<int32> AMiningCollectionField::CatalogueIds() const
 {
     TArray<int32> Result;
-    if(bCatalogueOnly){for(int32 I=0;I<AMiningCollectible::ItemTypeCount;++I)Result.Add(I);return Result;}
+    // MainGame's shared interaction field also accepts room-owned collectibles;
+    // an empty spawn list must still show the full locked catalogue.
+    if(bCatalogueOnly || (bUseAuthoredPlacements && AuthoredPlacements.IsEmpty())){for(int32 I=0;I<AMiningCollectible::ItemTypeCount;++I)Result.Add(I);return Result;}
     if(bUseAuthoredPlacements)
     {
         for(const auto& Placement:AuthoredPlacements)
@@ -361,7 +366,7 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         {
             if(View)View->SetVisibility(EVisibility::Collapsed);
             CatalogueWidget->SetVisibility(ESlateVisibility::Visible);
-            CatalogueWidget->RevealCollection();Mode.SetWidgetToFocus(CatalogueWidget->TakeWidget());
+            Mode.SetWidgetToFocus(CatalogueWidget->TakeWidget());
         }
         else if(View){View->SetVisibility(EVisibility::Visible);Mode.SetWidgetToFocus(View);}
         Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);Player->SetInputMode(Mode);
@@ -369,6 +374,7 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         if(!Inventory.IsValidIndex(SelectedId)||Inventory[SelectedId]==0) { SelectedId=INDEX_NONE; for(int i=0;i<Inventory.Num();++i) if(Inventory[i]>0) { SelectedId=i; break; } }
         if(SelectedId==INDEX_NONE){const auto Ids=CatalogueIds();if(!Ids.IsEmpty())SelectedId=Ids[0];}
         SelectItem(SelectedId);
+        if(CatalogueWidget)CatalogueWidget->RevealCollection();
     }
     else
     {

@@ -1,4 +1,5 @@
 #include "MiningGUIWidgets.h"
+#include "StartRoom/MiningStartRoom.h"
 #include "BrainMiningFonts.h"
 #include "MiningGamepadSubsystem.h"
 #include "MiningBombToolComponent.h"
@@ -118,25 +119,16 @@ void UMiningGUIAbilityWidget::SetRechargeState(bool bRecharging, float Progress)
 {
 	SetUsed(bRecharging);
 	SetCooldownRemaining(0.f);
-	if (AbilityIcon) AbilityIcon->SetColorAndOpacity(bRecharging ? FLinearColor(1.f,.16f,.12f,1.f) : FLinearColor::White);
-	if (!RechargeBar && AbilityContent && WidgetTree)
-	{
-		RechargeBar = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("BombRecharge"));
-		RechargeBar->SetBarFillType(EProgressBarFillType::BottomToTop);
-		FProgressBarStyle Style;
-		Style.SetBackgroundImage(FSlateColorBrush(FLinearColor(.08f,.012f,.012f,.9f)));
-		Style.SetFillImage(FSlateColorBrush(FLinearColor::White));
-		RechargeBar->SetWidgetStyle(Style);
-		RechargeBar->SetFillColorAndOpacity(FLinearColor(1.f,.12f,.07f,1.f));
-		auto* BarSlot = AbilityContent->AddChildToCanvas(RechargeBar);
-		BarSlot->SetPosition(FVector2D(104.f,0.f));
-		BarSlot->SetSize(FVector2D(9.f,100.f));
-	}
-	if (RechargeBar)
-	{
-		RechargeBar->SetPercent(FMath::IsFinite(Progress) ? FMath::Clamp(Progress,0.f,1.f) : 0.f);
-		RechargeBar->SetVisibility(bRecharging ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-	}
+    if (RechargeBar) RechargeBar->SetVisibility(ESlateVisibility::Collapsed);
+    if (AbilityIcon)
+    {
+        AbilityIcon->SetColorAndOpacity(FLinearColor::White);
+        if(auto* Material=AbilityIcon->GetDynamicMaterial())
+        {
+            Material->SetScalarParameterValue(TEXT("RechargeActive"),bRecharging?1.f:0.f);
+            Material->SetScalarParameterValue(TEXT("RechargeProgress"),FMath::IsFinite(Progress)?FMath::Clamp(Progress,0.f,1.f):0.f);
+        }
+    }
 }
 void UMiningGUIAbilityWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 {
@@ -603,6 +595,8 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
         PickaxeUpgradeHint = AddLabel(Pickaxe, TEXT("PickaxeTabUpgrade"), TEXT(""),
             FVector2D(146,138), FVector2D(178,26), 17);
     }
+    const auto* StartRoom=AMiningStartRoom::Find(GetWorld());
+    MineralPanel->SetVisibility(!StartRoom||StartRoom->bPickaxeUnlocked?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
     const auto SetText = [](UTextBlock* Label, const FText& Text)
     { if (Label && !Label->GetText().EqualTo(Text)) Label->SetText(Text); };
     for (int32 I = 0; I < 4; ++I) SetText(MineralCounts[I], FText::AsNumber(Wallet->GetMineralCount(Types[I])));

@@ -306,6 +306,7 @@ APopupOfficeDevice* APopupCloseStage::FocusedDevice(APlayerController* PC) const
 FString APopupCloseStage::GetInteractionAction(APlayerController* PC) const
 {
  if (!bAreaActive) return FString();
+ if(Exit && Exit->IsWaitingForBomb() && Exit->CanCollect(PC))return TEXT("炸弹");
  auto* Device = FocusedDevice(PC);
  if (!Device) return FString();
  if (Phase == EPhase::Idle) return FString();
@@ -471,7 +472,7 @@ void APopupCloseStage::Tick(float Dt)
   // The pickup prompt is useful before collection. Once the skill is owned,
   // the bomb remains a normal gameplay ability and does not show a tutorial
   // hint over the office scene.
-  ShowPrompt(PC,Exit->CanCollect(PC)?TEXT("E 获取炸弹技能"):TEXT(""));
+  ShowPrompt(PC,TEXT(""));
   return;
  }
  if(auto Device=FocusedDevice(PC))

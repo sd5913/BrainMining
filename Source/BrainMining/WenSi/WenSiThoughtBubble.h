@@ -87,7 +87,7 @@ namespace WenSiThoughtBubble
     const auto& Child=Flat[I];
     const FVector2D Size=Child.Geometry.GetLocalSize();
     const FVector2D Offset=Geometry.AbsoluteToLocal(Child.Geometry.LocalToAbsolute(FVector2D::ZeroVector));
-    const double X=Start+Offset.X*Fit,Y=120.+(Offset.Y-GetDesiredSize().Y*.5)*Fit;
+    const double X=Start+Offset.X*Fit,Y=150.+(Offset.Y-GetDesiredSize().Y*.5)*Fit;
     const FVector2D P=Project(X,Y);
     const FVector2D DX=(Project(X+.01,Y)-P)*(Fit/.01);
     const FVector2D DY=(Project(X,Y+.01)-P)*(Fit/.01);

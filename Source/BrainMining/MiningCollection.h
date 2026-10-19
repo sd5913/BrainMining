@@ -109,7 +109,7 @@ public:
     AMiningCollectionField();
     bool bCatalogueOnly=false;
     UPROPERTY(EditAnywhere, Category="Collection") bool bAreaManaged = false;
-    UPROPERTY(EditAnywhere, Category="Collection") FKey CatalogueKey = EKeys::Tab;
+    UPROPERTY(EditAnywhere, Category="Collection") FKey CatalogueKey = EKeys::C;
     // Kept for the existing catalogue UMG's authored material slots.
     UPROPERTY(EditAnywhere, Category="Collection|UI") TArray<TObjectPtr<class UMaterialInterface>> CatalogueArtwork;
     UPROPERTY(EditAnywhere, Category="Collection") bool bSharedAbilities = false;

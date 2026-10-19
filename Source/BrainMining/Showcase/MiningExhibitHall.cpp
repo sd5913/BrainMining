@@ -80,7 +80,7 @@ bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
         // I is part of the museum's hidden SKIP chord. Consume that press so
         // it cannot open the catalogue while the three other keys are held.
         if (Params.Key==EKeys::I && Params.Event==IE_Pressed && Hall->IsMuseumSkipChordCandidate()) return true;
-        if (Params.Key==EKeys::I) { if(Params.Event==IE_Pressed) Hall->ToggleCatalogue(); return true; }
+        if (Params.Key==EKeys::I || Params.Key==EKeys::C) { if(Params.Event==IE_Pressed) Hall->ToggleCatalogue(); return true; }
         if (!IsPaused() && Hall->HandleMirrorInput(Params)) return true;
         if (Params.Key==EKeys::F6) { if(Params.Event==IE_Pressed) Hall->ReturnToLobby(); return true; }
         if (Params.Key==EKeys::F7) { if(Params.Event==IE_Pressed) Hall->SkipCurrentRoom(); return true; }

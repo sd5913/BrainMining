@@ -13,6 +13,7 @@
 #include "MainGameStartMenuWidget.h"
 #include "StartRoom/MiningStartRoom.h"
 #include "Components/WidgetComponent.h"
+#include "Components/DecalComponent.h"
 #include "Components/Button.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Blueprint/WidgetTree.h"
@@ -75,7 +76,7 @@ public:
         if(!Opening)return false;
         if(!Started)
         {
-            if(!PC->bShowMouseCursor || !Opening->WorldTitle->IsVisible())return false;
+            if(!PC->bShowMouseCursor)return false;
             Test->TestTrue(TEXT("Seated menu locks movement"),PC->IsMoveInputIgnored());
             Test->TestTrue(TEXT("Title uses supplied image"),Opening->TitleTexture!=nullptr);
             Test->TestTrue(TEXT("Camera starts on the bed"),PC->GetViewTarget()!=PC->GetPawn());
@@ -104,7 +105,7 @@ public:
         Test->TestTrue(TEXT("Started exactly once"),Opening->bStarted);
         if(!Opened)
         {
-            Test->TestFalse(TEXT("Starting keeps the title in the HUD until E opens the door"),Opening->HasTitleLanded());
+            Test->TestFalse(TEXT("Title stays absent until the pickaxe is collected"),Opening->HasTitleLanded());
             for(TActorIterator<AMainGameDoor> It(W);It;++It){Door=*It;break;}
             if(!Door.IsValid())
             {
@@ -119,10 +120,25 @@ public:
             Test->TestTrue(TEXT("Authored door is targeted at the actual streamed location"),AMainGameDoor::FindInteractionTarget(PC)==Door.Get());
             PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E,IE_Pressed,1.f));
             if(!Test->TestTrue(TEXT("Real E input opens the door"),Door->bIsOpen))return true;
+            Test->TestFalse(TEXT("Opening the door does not reveal the title"),Opening->HasTitleLanded());
+            auto* Room=AMiningStartRoom::Find(W);
+            if(Room)
+            {
+                AMiningStarterPickup* Pickaxe=nullptr;
+                for(TActorIterator<AMiningStarterPickup> It(W);It;++It)if(It->Equipment==EMiningStarterEquipment::Pickaxe){Pickaxe=*It;break;}
+                if(!Test->TestNotNull(TEXT("Starter pickaxe exists"),Pickaxe))return true;
+                const FVector Target=Pickaxe->GetActorLocation();
+                const FVector PickupEye=Target+FVector(-100,0,70);
+                PC->GetPawn()->SetActorLocation(PickupEye-(PC->GetPawn()->GetPawnViewLocation()-PC->GetPawn()->GetActorLocation()));
+                PC->SetControlRotation((Target-PickupEye).Rotation());PC->PlayerCameraManager->UpdateCamera(.05f);
+                Test->TestTrue(TEXT("Real E interaction collects pickaxe"),Room->Interact(PC));
+                Test->TestTrue(TEXT("Pickaxe unlock state changed"),Room->bPickaxeUnlocked);
+            }
+            else Opening->BeginTitleToWall(nullptr);
             Opened=true;return false;
         }
         if(!Opening->HasTitleLanded())return false;
-        Test->TestTrue(TEXT("Door opening sends title to the mineable wall"),Opening->WorldTitle->GetComponentLocation().Equals(Opening->DoorTitleLocation,1));
+        Test->TestNotNull(TEXT("Pickaxe pickup projects the title onto the mineable wall"),Opening->FindComponentByClass<UDecalComponent>());
         Test->TestFalse(TEXT("Floating title becomes a wall decal"),Opening->WorldTitle->IsVisible());
         Test->TestTrue(TEXT("Standing pawn returned to player"),PC->GetViewTarget()==PC->GetPawn());
         Test->TestFalse(TEXT("Movement unlocked after standing"),PC->IsMoveInputIgnored());

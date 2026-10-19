@@ -72,7 +72,7 @@ void AMainGameDoor::OpenDoor()
 	DoorMesh->SetRenderCustomDepth(false);if(Highlight)Highlight->bEnabled=false;
 	AnimationTime = 0.0f;
 	if (DoorMesh) DoorMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	for(TActorIterator<AMiningOpening> It(GetWorld());It;++It)It->BeginTitleToWall(this);
+
 }
 
 void AMainGameDoor::Tick(float DeltaSeconds)

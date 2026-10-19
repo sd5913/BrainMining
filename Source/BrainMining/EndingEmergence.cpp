@@ -101,6 +101,13 @@ public:
         const float Fade=D->OverlayAlpha();
         if(Fade>0)FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,FLinearColor(0,0,0,Fade));
         if(Fade>.995f)return L;
+        if(D->Shot<0 && D->GateIndex==2)
+        {
+            const FString Hint=TEXT("空格键 跃迁");
+            const auto Font=BrainMiningFonts::Body(FMath::Max(10,FMath::RoundToInt(14*S)));
+            const FVector2D TextSize=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Hint,Font);
+            FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(TextSize,FSlateLayoutTransform(FVector2D((Size.X-TextSize.X)*.5f,Size.Y-38*S))),Hint,Font,ESlateDrawEffect::None,FLinearColor(.85f,.88f,.83f,.8f));
+        }
         if(D->Shot<0&&D->GateIndex<5)
         {
             auto Rect=[&](float X,float Y,float W,float H,FLinearColor C){FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(X,Y))),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,C);};
@@ -767,6 +774,7 @@ void AEndingEmergence::BuildDemo()
 void AEndingEmergence::BeginPlay()
 {
     Super::BeginPlay();
+    if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->SuppressForWorld(GetWorld());
     if(CrowdAssets&&Sets.IsValidIndex(1))
     {
         StreetCrowd=NewObject<UEndingCrowdComponent>(this,TEXT("CitySamplePedestrians"));

@@ -9,6 +9,7 @@ class UTexture2D;
 class UWidgetComponent;
 class ACameraActor;
 class UButton;
+class UImage;
 
 UCLASS()
 class BRAINMINING_API UMiningOpeningTitle : public UUserWidget
@@ -30,6 +31,13 @@ public:
     UFUNCTION() void StartGame();
     UFUNCTION() void QuitGame();
     UPROPERTY(Transient) TObjectPtr<UButton> StartButton;
+    UPROPERTY(Transient) TObjectPtr<UButton> ExitButton;
+    UPROPERTY(Transient) TObjectPtr<UImage> TitleImage;
+protected:
+    virtual void NativeTick(const FGeometry& Geometry,float DeltaSeconds) override;
+    float TitleFade=1.f;
+    float StartScale=1.f;
+    float ExitScale=1.f;
 };
 
 /** MainGame opening; supports authored anchors or the shared StartRoom transform. */
@@ -74,8 +82,6 @@ private:
     bool bInputLocked = false;
     bool bOldCollision = true;
     bool bOldHUD = true;
-    bool bTitleFlying=false;
     bool bTitleLanded=false;
-    float TitleFlightTime=0;
     float InitialTitleScale=.07f;
 };

@@ -70,6 +70,7 @@ void UMiningAudioComponent::BeginPlay()
 		if (auto* Sound = LoadObject<USoundBase>(nullptr, *Path)) Sounds.Add(Name, Sound);
 		else UE_LOG(LogTemp, Warning, TEXT("Audio pilot asset missing: %s"), *Path);
 	}
+	LoadCollectibleSounds();
 	EffectsConcurrency = NewObject<USoundConcurrency>(this);
 	bMainGameAudio = IsMainGameWorld(GetWorld());
 	if (bMainGameAudio)

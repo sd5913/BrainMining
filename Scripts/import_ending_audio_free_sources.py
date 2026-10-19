@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import unreal
@@ -7,6 +8,11 @@ import unreal
 ROOT = Path(unreal.Paths.project_dir()).resolve()
 SOURCE = ROOT / "SourceAssets/EndingEmergence/AudioFreeSources"
 entries = json.loads((SOURCE / "manifest.json").read_text(encoding="utf-8"))
+selected_asset = os.environ.get('ENDING_AUDIO_ASSET')
+if selected_asset:
+    entries = [entry for entry in entries if entry['asset'] == selected_asset]
+    if not entries:
+        raise RuntimeError('Unknown ending audio asset: ' + selected_asset)
 classes = {name: unreal.load_asset("/Game/Audio/Mix/SC_" + name) for name in ("Music", "Effects", "Ambience")}
 if not all(classes.values()):
     raise RuntimeError("Audio mix classes are missing; run import_audio_pilot.py first")

@@ -160,6 +160,7 @@ public:
     float ToastRemaining = 0;
 private:
     bool InitializePlayer();
+    friend class FCollectionPickupAudioTest;
     void SpawnField();
     void SpawnAuthoredClues(const FMiningCollectionPlacement& Placement);
     void SpawnAuthoredPresentation(AMiningCollectible* Item,const FMiningCollectionPlacement& Placement);

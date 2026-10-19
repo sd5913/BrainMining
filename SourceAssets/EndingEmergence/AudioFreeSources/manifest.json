@@ -518,5 +518,41 @@
       "target_peak": 0.38
     },
     "sha256": "115534f88b1aabcb46b91121141adc24bacd64310ef380d6effb7a4824100a42"
+  },
+  {
+    "asset": "M_EE_LightThought_Loop",
+    "file": "SourceAssets/EndingEmergence/Audio/M_EE_LightThought_Loop.wav",
+    "import_file": "Wav/M_EE_LightThought_Loop.wav",
+    "category": "Music",
+    "loop": true,
+    "channels": 2,
+    "sample_rate": 48000,
+    "seconds": 150.2,
+    "peak": 0.7,
+    "rms": 0.09693963707906676,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/Light Thought var 1.mp3",
+        "sha256": "648957823d64878102177d5af952135da6f0d675e41adca5c1003333c2c9ce97",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": 152.0,
+        "mono": false,
+        "source_rate": 44100,
+        "author": "Kevin MacLeod",
+        "title": "Light Thought var 1",
+        "source_url": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200006",
+        "license": "CC BY 4.0",
+        "license_url": "https://creativecommons.org/licenses/by/4.0/",
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 1.8,
+      "target_peak": 0.7,
+      "seam_fade_seconds": 0.005
+    },
+    "sha256": "e55e1741ed325ca070671cd0041a8ccaece795f169e52a774ed91a240893ec81"
   }
 ]

@@ -28,6 +28,8 @@ public:
 	void PlayPanel(bool bOpen);
 	void PlayPurchase(bool bSuccess);
 	void PlayCollect();
+	void PlayCollectible(int32 ItemId);
+	static FName CollectibleSoundName(int32 ItemId);
 	void PlayStarterPickup(bool bJetpack);
 	UFUNCTION() void StopTools();
 	int32 GetToolLoopCount() const { return ToolLoops.Num(); }
@@ -51,6 +53,7 @@ private:
 	void OnCoins(int64 Amount);
 	void Play(FName Name, float Gain = 1.f, float Pitch = 1.f, bool bUI = false);
 	void PlayVariant(const FString& Prefix, int32 Count, float Gain);
+	void LoadCollectibleSounds();
 	bool CanPlay() const;
 	bool IsMiningArea() const;
 	bool HasFootsteps() const;

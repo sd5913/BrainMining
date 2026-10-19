@@ -26,6 +26,9 @@ void AEndingEmergence::UpdateCredits()
         auto Rows=SNew(SVerticalBox);
         Rows->AddSlot().AutoHeight().Padding(0,0,0,30)[SNew(STextBlock).Text(FText::FromString(TEXT("感谢游玩"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",48)).Justification(ETextJustify::Center)];
         Rows->AddSlot().AutoHeight().Padding(0,0,0,48)[SNew(STextBlock).Text(FText::FromString(TEXT("开发者\n\nSeven   ·   Rasimet   ·   空空道人   ·   铁皮辣妹"))).Font(FCoreStyle::GetDefaultFontStyle("Regular",22)).Justification(ETextJustify::Center)];
+        Rows->AddSlot().AutoHeight().Padding(0,0,0,20)[SNew(STextBlock)
+            .Text(FText::FromString(TEXT("Music: Light Thought var 1 — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — https://creativecommons.org/licenses/by/4.0/\nSource: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200006\nLoop edit: trimmed, crossfaded, resampled and normalized.")))
+            .Font(FCoreStyle::GetDefaultFontStyle("Regular",14)).Justification(ETextJustify::Center)];
         auto Button=[&](const TCHAR* Text,TFunction<FReply()> Action)
         {Rows->AddSlot().AutoHeight().Padding(40,8)[SNew(SBox).HeightOverride(58)[SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center).OnClicked_Lambda(MoveTemp(Action))[SNew(STextBlock).Text(FText::FromString(Text)).Font(FCoreStyle::GetDefaultFontStyle("Regular",24))]]];};
         Button(TEXT("收集"),[this](){if(EndingCatalogue){EndingCatalogue->ToggleCatalogue();if(EndingCatalogue->bCatalogueOpen)Credits->SetVisibility(EVisibility::Hidden);}return FReply::Handled();});

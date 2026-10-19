@@ -938,16 +938,23 @@ void AEndingEmergence::SetAmbience(const TCHAR* Name,float Volume)
 
 void AEndingEmergence::SetMusic(const TCHAR* Name,float Volume)
 {
-    if(Music){Music->FadeOut(1.2f,0);Music->bAutoDestroy=true;Music=nullptr;}
     const FString AssetName(Name);
     const FString Path=FString(TEXT("/Game/EndingEmergence/Audio/M_EE_"))+AssetName;
     if(auto* S=LoadObject<USoundBase>(nullptr,*Path))
     {
-        Music=UGameplayStatics::CreateSound2D(this,S,0,1,0,nullptr,false,false);
-        if (Music && GetGameInstance())
+        if(Music && Music->Sound==S && Music->IsPlaying())
         {
-            Music->SoundClassOverride=GetGameInstance()->GetSubsystem<UMiningAudioSettings>()->GetClass(1);
-            Music->SetVolumeMultiplier(Volume);Music->Play();
+            Music->SetVolumeMultiplier(Volume);
+            return;
+        }
+        if(Music){Music->Stop();Music->DestroyComponent();Music=nullptr;}
+        Music=UGameplayStatics::CreateSound2D(this,S,0,1,0,nullptr,false,false);
+        if (Music)
+        {
+            if(GetGameInstance())
+                if(auto* Settings=GetGameInstance()->GetSubsystem<UMiningAudioSettings>())Music->SoundClassOverride=Settings->GetClass(1);
+            Music->bIsUISound=true;
+            Music->SetVolumeMultiplier(Volume);Music->FadeIn(.8f,1.f);
             UE_LOG(LogTemp,Display,TEXT("ENDING_MUSIC_PLAY %s volume=%.2f duration=%.2f"),*Path,Volume,S->GetDuration());
         }
     }
@@ -986,6 +993,8 @@ void AEndingEmergence::RestartDemo()
     if(auto* C=Player->GetPawn()->FindComponentByClass<UCameraComponent>()){C->SetFieldOfView(90);if(FisheyeMaterial)C->AddOrUpdateBlendable(FisheyeMaterial,0);}
     Player->SetViewTarget(Player->GetPawn());Mining->SetInputSuspended(false);Mining->SetInputContextEnabled(true);
     bFinalResolvePlayed=false;UpdatePainterly();UpdateNerves();SetAmbience(TEXT("Cell_Loop"),.26f);
+    if(Music){Music->Stop();Music->DestroyComponent();Music=nullptr;}
+    SetMusic(TEXT("LightThought_Loop"),.45f);
 }
 
 void AEndingEmergence::PreviewFilm()

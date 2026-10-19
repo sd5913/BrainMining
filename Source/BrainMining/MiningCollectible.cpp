@@ -102,20 +102,20 @@ AMiningCollectible::AMiningCollectible()
 
 FString AMiningCollectible::ItemName(int32 Id)
 {
-    const TCHAR* Names[]={TEXT("天堂马桶"),TEXT("蚂蚁的电脑"),TEXT("化学试管架"),TEXT("歪头肉鸽"),TEXT("不等式计算器"),TEXT("旧磁带"),TEXT("音符雕塑"),TEXT("记忆相框"),TEXT("喷涌可乐"),TEXT("GPT 小花"),TEXT("萤火虫罐子"),TEXT("庆祝彩带")};
+    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("同步闪光的萤火虫"),TEXT("散落的彩带")};
     return Id>=0&&Id<ItemTypeCount?Names[Id]:TEXT("未知藏品");
 }
 FString AMiningCollectible::Description(int32 Id)
 {
-    const TCHAR* Lines[]={TEXT("藏在洞穴深处的白瓷马桶，\n像一小片安静的天堂。"),TEXT("蚂蚁们偷偷收藏的旧电脑，\n屏幕还在发出温柔的绿光。"),TEXT("四种颜色，四个未知答案。\n小心摆放，暂时别混在一起。"),TEXT("鸟群飞远了，它却留在巢里，\n歪着脑袋，认真地看着你。"),
-        TEXT("屏幕上固执地写着 1+1＞2。\n也许相遇本来就不只是相加。"),
-        TEXT("倒带，再听一遍。\n有些声音一直留在磁带里。"),
-        TEXT("一枚凝固在空气里的音符。\n安静的时候，也像在歌唱。"),
-        TEXT("两个人，几笔安静的线条。\n那天，我们站在一起。"),
-        TEXT("拉环已经打开，气泡仍不停上涌。\n这罐快乐似乎永远喝不完。"),
-        TEXT("地上开着几朵微光小花，\n地下藏着千丝万缕的思考。"),
-        TEXT("小小的玻璃罐里，\n装着一整个闪亮的夏夜。"),
-        TEXT("舞台落幕前接住的一根彩带。\n这一刻，掌声也属于你。")};
+    const TCHAR* Lines[]={TEXT("不觉得这很神圣吗？"),TEXT("一台正在运行一个游戏的电脑……这是什么游戏？"),TEXT("加点这个……再加点那个……"),TEXT("好肥的鸟！"),
+        TEXT("这个年代计算器也有自我意识了吗？"),
+        TEXT("小时候最喜欢的一集。"),
+        TEXT("长得很像蝌蚪，它会变成青蛙吗？"),
+        TEXT("记忆是很宝贵的。"),
+        TEXT("曼妥思VS可乐，你们知道吗？"),
+        TEXT("AI大人牛逼。"),
+        TEXT("科学小知识，最具教育意义的一集。"),
+        TEXT("恭喜！")};
     return Id>=0&&Id<ItemTypeCount?Lines[Id]:FString();
 }
 FString AMiningCollectible::Clue(int32 Id)

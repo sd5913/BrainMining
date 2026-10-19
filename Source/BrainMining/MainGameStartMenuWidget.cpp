@@ -78,9 +78,15 @@ void UMainGameStartMenuWidget::HandleStartClicked()
 {
 	if (GetWorld())
 	{
-		for (TActorIterator<AMiningOpening> It(GetWorld()); It; ++It)
+		for (TActorIterator<AMiningOpening> Opening(GetWorld()); Opening; ++Opening)
 		{
-			if (!It->bFinished) { It->StartGame(); break; }
+			Opening->StartGame();
+			if (Opening->bStarted || Opening->bFinished)
+			{
+				bGameStarted = true;
+				RemoveFromParent();
+			}
+			return;
 		}
 	}
 	BeginGame();

@@ -1,3 +1,4 @@
+#include "MiningGamepadSubsystem.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
 #include "BrainMiningFonts.h"
 #include "MiningInteractionTrace.h"
@@ -389,10 +390,10 @@ void AWenSiMirrorPawn::Tick(float Dt)
 {
  Super::Tick(Dt);auto PC=Cast<APlayerController>(Controller);if(!PC || PC->IsMoveInputIgnored())return;
  float X=0,Y=0;PC->GetInputMouseDelta(X,Y);AddControllerYawInput(X);AddControllerPitchInput(-Y);
- AddMovementInput(GetActorForwardVector(),float(PC->IsInputKeyDown(EKeys::W))-float(PC->IsInputKeyDown(EKeys::S)));
- AddMovementInput(GetActorRightVector(),float(PC->IsInputKeyDown(EKeys::D))-float(PC->IsInputKeyDown(EKeys::A)));
- if(!PC->IsInputKeyDown(EKeys::SpaceBar))bRequireFlightRelease=false;
- if((PC->IsInputKeyDown(EKeys::SpaceBar)&&!bRequireFlightRelease)||Word==EWenSiMirrorWord::Floating)
+ AddMovementInput(GetActorForwardVector(),UMiningGamepadSubsystem::ReadMove(PC).Y);
+ AddMovementInput(GetActorRightVector(),UMiningGamepadSubsystem::ReadMove(PC).X);
+ if(!UMiningGamepadSubsystem::ReadJumpHeld(PC))bRequireFlightRelease=false;
+ if((UMiningGamepadSubsystem::ReadJumpHeld(PC)&&!bRequireFlightRelease)||Word==EWenSiMirrorWord::Floating)
  {auto Movement=GetCharacterMovement();if(Movement->IsMovingOnGround())Movement->SetMovementMode(MOVE_Falling);Movement->Velocity.Z=FMath::Min(350.f,Movement->Velocity.Z+(1700.f+FMath::Abs(GetWorld()->GetGravityZ()))*Dt);}
 }
 AWenSiMirrorGameMode::AWenSiMirrorGameMode(){DefaultPawnClass=AWenSiMirrorPawn::StaticClass();}

@@ -88,6 +88,7 @@ void UCardRoomInteractionComponent::Interact()
 void UCardRoomInteractionComponent::LeaveSeat()
 {
     if((!bRoomActive && !bSeated) || !Stage || Stage->Run.Phase==ECardRoomPhase::Exploring) return;
+    bConfirmLeave=false;FocusedCard=0;
     Stage->Run=FCardRoomRun(); Stage->RestartEncounter(); Stage->Run=FCardRoomRun();
     RestoreSeat();
     Player()->bShowMouseCursor=false;Player()->SetInputMode(FInputModeGameOnly());
@@ -122,4 +123,49 @@ void UCardRoomInteractionComponent::ReleaseForExploration()
     RestoreSeat();SetRoomActive(false);
     if(Player()){Player()->bShowMouseCursor=false;Player()->SetInputMode(FInputModeGameOnly());}
     if(FSlateApplication::IsInitialized())FSlateApplication::Get().SetAllUserFocusToGameViewport();
+}
+
+void UCardRoomInteractionComponent::NavigateCards(int32 Direction)
+{
+    bGamepadNavigation = true;
+    bConfirmLeave = false;
+    if (bRoomActive && Stage && Stage->Run.Phase == ECardRoomPhase::Choosing && !Stage->Run.Hand.IsEmpty())
+        FocusedCard = (FocusedCard + Direction + Stage->Run.Hand.Num()) % Stage->Run.Hand.Num();
+}
+
+void UCardRoomInteractionComponent::ToggleFocusedCard()
+{
+    bGamepadNavigation = true;
+    bConfirmLeave = false;
+    if (!bRoomActive || !Stage || Stage->Run.Phase != ECardRoomPhase::Choosing || !Stage->Run.Hand.IsValidIndex(FocusedCard)) return;
+    if (Stage->Run.Staged.Contains(FocusedCard)) Stage->Run.Unstage(FocusedCard);
+    else Stage->Run.Stage(FocusedCard);
+    if (Stage->AudioOverride.IsBound()) Stage->Sound(TEXT("S_CardSelect"), .3f);
+}
+
+void UCardRoomInteractionComponent::ToggleAllCards()
+{
+    bGamepadNavigation = true;
+    bConfirmLeave = false;
+    if (!bRoomActive || !Stage || Stage->Run.Phase != ECardRoomPhase::Choosing || Stage->Run.Round != 4) return;
+    const bool bClear = Stage->Run.CanConfirm();
+    for (int32 Index = 0; Index < Stage->Run.Hand.Num(); ++Index)
+        if (bClear) Stage->Run.Unstage(Index); else Stage->Run.Stage(Index);
+}
+
+void UCardRoomInteractionComponent::ConfirmFocusedAction()
+{
+    bGamepadNavigation = true;
+    if (!bRoomActive || !Stage) return;
+    if (bConfirmLeave) { bConfirmLeave = false; LeaveSeat(); return; }
+    if (Stage->Run.Phase == ECardRoomPhase::Seated) Stage->Run.Match();
+    else if (Stage->Run.Phase == ECardRoomPhase::Choosing) ConfirmCards();
+    else if (Stage->Run.Phase == ECardRoomPhase::Victory) Interact();
+}
+
+void UCardRoomInteractionComponent::CancelFocusedAction()
+{
+    bGamepadNavigation = true;
+    if (!bRoomActive || !Stage || Stage->Run.Phase == ECardRoomPhase::Exploring || Stage->Run.Phase == ECardRoomPhase::Collected) return;
+    bConfirmLeave = !bConfirmLeave;
 }

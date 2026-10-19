@@ -7,6 +7,7 @@
 #include "MiningCharacterMovementComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "Framework/Application/IInputProcessor.h"
 #include "Framework/Application/SlateApplication.h"
@@ -137,6 +138,7 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
     if (!Controller || !Controller->IsLocalController() || !Viewport || Controller->IsPaused() ||
         Controller->IsMoveInputIgnored() || Controller->IsLookInputIgnored() || Controller->bShowMouseCursor) return false;
     MenuController = Controller;
+    CaptureMenuInput(Controller);
     MenuWorld = World;
     bDeveloperMenu = bDeveloper;
     MenuError.Empty();
@@ -225,6 +227,48 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
     return true;
 }
 
+void UMiningExperienceSubsystem::CaptureMenuInput(APlayerController* Controller)
+{
+    auto* Viewport = GetGameInstance()->GetGameViewportClient();
+    MenuPawn = Controller->GetPawn();
+    bPreviousMenuCursor = Controller->bShowMouseCursor;
+    bPreviousMenuUIOnly = Viewport->IgnoreInput();
+    PreviousMenuCapture = Viewport->GetMouseCaptureMode();
+    PreviousMenuLock = Viewport->GetMouseLockMode();
+    bPreviousMenuHideCursor = Viewport->HideCursorDuringCapture();
+    bPreviousMenuGameAndUI = !bPreviousMenuUIOnly && !Controller->ShouldFlushKeysWhenViewportFocusChanges();
+    PreviousMenuFocus.Reset();
+    if (FSlateApplication::IsInitialized() && Controller->GetLocalPlayer())
+        PreviousMenuFocus = FSlateApplication::Get().GetUserFocusedWidget(Controller->GetLocalPlayer()->GetControllerId());
+}
+
+void UMiningExperienceSubsystem::RestoreMenuInput(APlayerController* Controller)
+{
+    auto* Viewport = GetGameInstance()->GetGameViewportClient();
+    const bool bSamePawn = MenuPawn.IsValid() && Controller->GetPawn() == MenuPawn.Get();
+    const auto Focus = PreviousMenuFocus.Pin();
+    if (bSamePawn && bPreviousMenuUIOnly)
+    {
+        FInputModeUIOnly Mode;
+        Mode.SetWidgetToFocus(Focus).SetLockMouseToViewportBehavior(PreviousMenuLock);
+        Controller->SetInputMode(Mode);
+    }
+    else if (bSamePawn && bPreviousMenuGameAndUI)
+    {
+        FInputModeGameAndUI Mode;
+        Mode.SetWidgetToFocus(Focus).SetLockMouseToViewportBehavior(PreviousMenuLock).SetHideCursorDuringCapture(bPreviousMenuHideCursor);
+        Controller->SetInputMode(Mode);
+    }
+    else Controller->SetInputMode(FInputModeGameOnly());
+    Controller->bShowMouseCursor = bSamePawn && bPreviousMenuCursor;
+    if (Viewport && bSamePawn)
+    {
+        Viewport->SetMouseCaptureMode(PreviousMenuCapture);
+        Viewport->SetMouseLockMode(PreviousMenuLock);
+        Viewport->SetHideCursorDuringCapture(bPreviousMenuHideCursor);
+    }
+}
+
 void UMiningExperienceSubsystem::CloseMenu()
 {
     if (!Menu) return;
@@ -234,10 +278,13 @@ void UMiningExperienceSubsystem::CloseMenu()
         if (bPausedByMenu) Controller->SetPause(false);
         Controller->SetIgnoreMoveInput(false);
         Controller->SetIgnoreLookInput(false);
-        Controller->SetInputMode(FInputModeGameOnly());
-        Controller->bShowMouseCursor = false;
+        RestoreMenuInput(Controller);
     }
     Menu.Reset();
+    ResumeButton.Reset();
+    CancelQuitButton.Reset();
+    PreviousMenuFocus.Reset();
+    MenuPawn.Reset();
     if (MenuMining.IsValid()) MenuMining->SetInputSuspended(bPreviousMiningSuspended);
     MenuMining.Reset();
     bPausedByMenu = false;

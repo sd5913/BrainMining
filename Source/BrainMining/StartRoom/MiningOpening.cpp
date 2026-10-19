@@ -73,7 +73,7 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
         auto* Text=WidgetTree->ConstructWidget<UTextBlock>();Text->SetText(FText::FromString(Label));
         Text->SetFont(BrainMiningFonts::Body(24));Text->SetColorAndOpacity(FSlateColor(FLinearColor(1,.79f,.4f)));
         Button->AddChild(Text);
-        if(Start)Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);
+        if(Start){StartButton=Button;Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);}
         else Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);
     };
     AddButton(TEXT("开始游戏"),true);AddButton(TEXT("退出游戏"),false);
@@ -118,7 +118,7 @@ void AMiningOpening::Prepare(APlayerController* Controller)
     InitialRotation=(Facing+FRotator(0,180,0)).Quaternion();
     WorldTitle->SetWorldLocationAndRotation(InitialTitle,InitialRotation);WorldTitle->SetWorldScale3D(FVector(.19f));WorldTitle->SetVisibility(true);
     Menu=CreateWidget<UMiningOpeningMenu>(Controller);Menu->Opening=this;Menu->SetIsFocusable(true);Menu->AddToViewport(500);
-    Controller->bShowMouseCursor=true;FInputModeUIOnly Mode;Mode.SetWidgetToFocus(Menu->TakeWidget());Controller->SetInputMode(Mode);
+    Controller->bShowMouseCursor=true;FInputModeUIOnly Mode;Mode.SetWidgetToFocus(Menu->StartButton ? Menu->StartButton->TakeWidget() : Menu->TakeWidget());Controller->SetInputMode(Mode);
 }
 void AMiningOpening::StartGame()
 {

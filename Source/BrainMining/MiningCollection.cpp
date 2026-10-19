@@ -325,7 +325,12 @@ TArray<int32> AMiningCollectionField::CatalogueIds() const
     Result.Sort();
     return Result;
 }
-void AMiningCollectionField::ToggleCatalogue() { if(bInitialized) SetCatalogueOpen(!bCatalogueOpen); }
+void AMiningCollectionField::ToggleCatalogue()
+{
+    // A pause-menu catalogue may be created and opened before its first tick.
+    if(!bInitialized)bInitialized=InitializePlayer();
+    if(bInitialized)SetCatalogueOpen(!bCatalogueOpen);
+}
 void AMiningCollectionField::SetCatalogueOpen(bool Open)
 {
     if(Open==bCatalogueOpen||!Player||!Player->GetPawn()) return;

@@ -2,6 +2,7 @@
 import unreal,time,json,traceback
 from pathlib import Path
 ROOT=Path(unreal.Paths.project_dir());OUT=ROOT/'Saved/Validation/PackagePlaytest'
+OUT.mkdir(parents=True,exist_ok=True)
 ed=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem);levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 helper=unreal.MiningGUIEditorLibrary;s={'phase':0,'next':0,'start':time.monotonic(),'checks':[]}
 unreal.EditorPythonScripting.set_keep_python_script_alive(True)
@@ -33,10 +34,42 @@ def tick(dt):
             if not s['pc'] or not s['pc'].get_controlled_pawn() or unreal.GameplayStatics.get_time_seconds(w)<5:return
             check('Ending uses the exact MainGame pawn',s['pc'].get_controlled_pawn().get_class().get_name()=='BP_SharedMiningCharacter_C')
             shot('ending_shared_pickaxe')
+            check('Ending initially has no collection field',not unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningCollectionField))
+            instance=unreal.GameplayStatics.get_game_instance(w)
+            s['menu']=next(o for o in unreal.ObjectIterator(unreal.MiningExperienceSubsystem) if o.get_outer()==instance)
+            s['owned']=[0,1,0,0,0,1,0,0,0,1,0,0]
+            # Seed through the editor fixture, holding the credits tick until
+            # the pause path has exercised a world without any catalogue.
+            s['ending']=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.EndingEmergence)[0]
+            s['ending'].set_actor_tick_enabled(False)
+            check('Fixture seeds ending inventory',helper.prepare_ending_credits_preview(s['pc'],s['owned']))
+            check('Fixture seeds campaign collection',list(s['menu'].campaign_collection)==s['owned'])
+            check('Ending pause opens',s['menu'].toggle_pause_menu())
+            s['menu'].open_pause_collection()
+            fields=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningCollectionField)
+            check('Pause creates exactly one catalogue',len(fields)==1)
+            s['field']=fields[0]
+            check('New catalogue opens on the same frame',s['field'].catalogue_open)
+            check('Pause catalogue restores campaign inventory',list(s['field'].inventory)==s['owned'])
+            check('Collection pauses the ending',unreal.GameplayStatics.is_game_paused(w))
+            s.update(phase=10,next=now+1);return
+        if s['phase']==10:
+            shot('ending_pause_collection')
+            helper.send_preview_focused_key(s['pc'],'Escape',True)
+            helper.send_preview_focused_key(s['pc'],'Escape',False)
+            check('Escape closes the focused ending catalogue',not s['field'].catalogue_open)
+            check('Closing pause collection resumes ending',not unreal.GameplayStatics.is_game_paused(w))
+            check('Closing restores movement and look',not s['pc'].is_move_input_ignored() and not s['pc'].is_look_input_ignored())
+            check('Ending pause reopens',s['menu'].toggle_pause_menu())
+            s['menu'].open_pause_collection()
+            check('Repeated pause reuses catalogue',len(unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningCollectionField))==1 and s['field'].catalogue_open)
+            s['field'].toggle_catalogue()
+            s['ending'].set_actor_tick_enabled(True)
             assert helper.prepare_ending_credits_preview(s['pc'],[0,1,0,0,0,1,0,0,0,1,0,0])
             s.update(phase=2,next=now+2);return
         if s['phase']==2:
             shot('ending_credits')
+            check('Credits reuse the pause catalogue',len(unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningCollectionField))==1)
             s['field']=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningCollectionField)[0]
             check('Credits retain all three owned collection entries',list(s['field'].inventory)==[0,1,0,0,0,1,0,0,0,1,0,0])
             s['field'].toggle_catalogue();s.update(phase=3,next=now+1);return

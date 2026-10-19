@@ -365,7 +365,8 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     {
         const float Fly=FMath::Clamp((T-1)/1.7f,0.f,1.f);
         const FVector DropAboveBench=RabbitLandingLocal+FVector(0.f,0.f,900.f);
-        Offset=FMath::Lerp(Offset,DropAboveBench,Fly);Offset.Z+=FMath::Sin(Fly*PI)*120;Spin.Roll=Fly*600;
+        const FVector ExitTarget=RabbitSkeletalMesh && !bUseRobotOpponent ? DropAboveBench : OpponentExitLocal;
+        Offset=FMath::Lerp(Offset,ExitTarget,Fly);Offset.Z+=FMath::Sin(Fly*PI)*120;Spin.Roll=Fly*600;
         Offset-=Spin.RotateVector(OpponentExitCenterOffset*ToyRoot->GetRelativeScale3D())*Fly;
         if(Fly>=.78f && !bUseRobotOpponent) TriggerRabbitPhysicsDrop();
         bReachedWall=Fly>=1;

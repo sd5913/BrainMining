@@ -32,12 +32,14 @@ void UMiningAudioSettings::SetVolume(int32 Channel, float Value)
     Apply();
 }
 
-void UMiningAudioSettings::RestoreDefaults() { Volumes = {1.f, 1.f, .85f, .8f, 1.f}; Apply(); }
+void UMiningAudioSettings::RestoreDefaults() { Volumes = {1.f, 1.f, .85f, .8f, 1.f}; LookSensitivity=1.f; Apply(); }
 
 void UMiningAudioSettings::LoadVolumes(const FString& Filename)
 {
     FConfigFile Config;
     Config.Read(Filename);
+    float Sensitivity=1.f;
+    if(Config.GetFloat(TEXT("BrainMining.Controls"),TEXT("LookSensitivity"),Sensitivity)) SetLookSensitivity(Sensitivity);
     for (int32 Channel = 0; Channel < 5; ++Channel)
     {
         float Value = Volumes[Channel];
@@ -50,6 +52,7 @@ void UMiningAudioSettings::SaveVolumes(const FString& Filename) const
 {
     FConfigFile Config;
     Config.Read(Filename);
+    Config.SetFloat(TEXT("BrainMining.Controls"),TEXT("LookSensitivity"),LookSensitivity);
     for (int32 Channel = 0; Channel < 5; ++Channel)
         Config.SetFloat(TEXT("BrainMining.Audio"), ChannelNames[Channel], Volumes[Channel]);
     IFileManager::Get().MakeDirectory(*FPaths::GetPath(Filename), true);

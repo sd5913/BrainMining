@@ -57,7 +57,7 @@ bool UMiningExperienceSubsystem::TogglePauseMenu()
     ResumeButton=Button(TEXT("继续游戏"),[this](){CloseMenu();},false);
     auto CollectionButton=Button(TEXT("收集界面"),[this](){OpenPauseCollection();},false);
     CollectionButton->SetEnabled(bFromGameplay);
-    auto AudioButton=Button(TEXT("声音与震动"),[this]()
+    auto AudioButton=Button(TEXT("设置"),[this]()
     {
         auto* Controller=Cast<ABrainMiningPlayerController>(MenuController.Get());
         CloseMenu();

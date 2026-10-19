@@ -33,6 +33,8 @@ class BRAINMINING_API AMiningStartRoom : public AActor
     GENERATED_BODY()
 public:
     AMiningStartRoom();
+    virtual void Tick(float DeltaSeconds) override;
+    FName GetViewedProp(APlayerController* Controller) const;
     static AMiningStartRoom* Find(UWorld* World);
     void InitializePlayer(APawn* Pawn);
     void UnlockDeveloperEquipment();
@@ -43,6 +45,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Start Room", meta=(ClampMin="50",ClampMax="500")) float InteractionReach = 260.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Start Room") bool bPickaxeUnlocked = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Start Room") bool bJetpackUnlocked = false;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Start Room") bool bHeadlampUnlocked = false;
 private:
     void ReleasePlayer();
     TWeakObjectPtr<APawn> Player;

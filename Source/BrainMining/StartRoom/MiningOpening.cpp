@@ -10,6 +10,7 @@
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Components/SizeBox.h"
+#include "Components/ScaleBox.h"
 #include "Components/WidgetComponent.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
@@ -67,26 +68,49 @@ TSharedRef<SWidget> UMiningOpeningTitle::RebuildWidget()
 TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
 {
     auto* Canvas=WidgetTree->ConstructWidget<UCanvasPanel>();WidgetTree->RootWidget=Canvas;
+    auto* Fit=WidgetTree->ConstructWidget<UScaleBox>();Fit->SetStretch(EStretch::ScaleToFit);
+    auto* TitleSlot=Canvas->AddChildToCanvas(Fit);TitleSlot->SetAnchors(FAnchors(.045f,.08f,.47f,.53f));TitleSlot->SetOffsets(FMargin(0));
+    TitleImage=WidgetTree->ConstructWidget<UImage>();Fit->AddChild(TitleImage);
+    if(Opening.IsValid())TitleImage->SetBrushFromTexture(Opening->TitleTexture);
+    Fit->SetRenderShear(FVector2D(-4,-5));Fit->SetRenderTransformAngle(-3.f);
     auto* Column=WidgetTree->ConstructWidget<UVerticalBox>();
     auto* CanvasSlot=Canvas->AddChildToCanvas(Column);
-    CanvasSlot->SetAnchors(FAnchors(.5f,.72f));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
+    CanvasSlot->SetAnchors(FAnchors(.81f,.65f));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
+    Column->SetRenderShear(FVector2D(-4,-4));Column->SetRenderTransformAngle(-4.f);
     auto AddButton=[&](const TCHAR* Label,bool Start)
     {
-        auto* Box=WidgetTree->ConstructWidget<USizeBox>();Box->SetWidthOverride(280);Box->SetHeightOverride(56);
-        auto* Row=Column->AddChildToVerticalBox(Box);Row->SetPadding(FMargin(0,6));
+        auto* Box=WidgetTree->ConstructWidget<USizeBox>();Box->SetWidthOverride(240);Box->SetHeightOverride(62);
+        auto* Row=Column->AddChildToVerticalBox(Box);Row->SetPadding(FMargin(0,12));
         auto* Button=WidgetTree->ConstructWidget<UButton>();Box->AddChild(Button);
-        FButtonStyle Style=Button->GetStyle();
-        Style.Normal.TintColor=FSlateColor(FLinearColor(.025f,.035f,.035f,.92f));
-        Style.Hovered.TintColor=FSlateColor(FLinearColor(.32f,.23f,.09f,1));
-        Style.Pressed.TintColor=FSlateColor(FLinearColor(.5f,.35f,.1f,1));Button->SetStyle(Style);
+        FButtonStyle Style;
+        FSlateBrush Empty;Empty.DrawAs=ESlateBrushDrawType::NoDrawType;
+        Style.SetNormal(Empty).SetHovered(Empty).SetPressed(Empty);
+        Style.SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));Button->SetStyle(Style);
+        Button->SetRenderTransformPivot(FVector2D(.5f,.5f));
         auto* Text=WidgetTree->ConstructWidget<UTextBlock>();Text->SetText(FText::FromString(Label));
-        Text->SetFont(BrainMiningFonts::Body(24));Text->SetColorAndOpacity(FSlateColor(FLinearColor(1,.79f,.4f)));
+        Text->SetFont(BrainMiningFonts::Title(34));Text->SetColorAndOpacity(FSlateColor(FLinearColor(.94f,.95f,.91f)));
         Button->AddChild(Text);
         if(Start){StartButton=Button;Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);}
-        else Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);
+        else {ExitButton=Button;Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);}
     };
     AddButton(TEXT("开始游戏"),true);AddButton(TEXT("退出游戏"),false);
     return Super::RebuildWidget();
+}
+void UMiningOpeningMenu::NativeTick(const FGeometry& Geometry,float Dt)
+{
+    Super::NativeTick(Geometry,Dt);
+    const bool bStarting=Opening.IsValid()&&Opening->bStarted;
+    StartScale=FMath::FInterpTo(StartScale,StartButton&&(StartButton->IsHovered()||StartButton->HasKeyboardFocus())?1.07f:1.f,Dt,10.f);
+    ExitScale=FMath::FInterpTo(ExitScale,ExitButton&&(ExitButton->IsHovered()||ExitButton->HasKeyboardFocus())?1.07f:1.f,Dt,10.f);
+    if(StartButton)StartButton->SetRenderScale(FVector2D(StartScale));
+    if(ExitButton)ExitButton->SetRenderScale(FVector2D(ExitScale));
+    if(bStarting)
+    {
+        if(StartButton)StartButton->SetVisibility(ESlateVisibility::Collapsed);
+        if(ExitButton)ExitButton->SetVisibility(ESlateVisibility::Collapsed);
+        TitleFade=FMath::Max(0.f,TitleFade-Dt/.75f);
+        if(TitleImage)TitleImage->SetRenderOpacity(FMath::SmoothStep(0.f,1.f,TitleFade));
+    }
 }
 void UMiningOpeningMenu::StartGame(){if(Opening.IsValid())Opening->StartGame();}
 void UMiningOpeningMenu::QuitGame(){UKismetSystemLibrary::QuitGame(this,GetOwningPlayer(),EQuitPreference::Quit,false);}
@@ -125,31 +149,21 @@ void AMiningOpening::Prepare(APlayerController* Controller)
     auto* Title=CreateWidget<UMiningOpeningTitle>(Controller);Title->Texture=TitleTexture;WorldTitle->SetWidget(Title);
     InitialTitle=SeatEye+Facing.Vector()*240+Facing.RotateVector(FVector(0,0,40));
     InitialRotation=(Facing+FRotator(0,180,0)).Quaternion();
-    WorldTitle->SetWorldLocationAndRotation(InitialTitle,InitialRotation);WorldTitle->SetWorldScale3D(FVector(.19f));WorldTitle->SetVisibility(true);
+    WorldTitle->SetWorldLocationAndRotation(InitialTitle,InitialRotation);WorldTitle->SetWorldScale3D(FVector(.19f));WorldTitle->SetVisibility(false);
     Menu=CreateWidget<UMiningOpeningMenu>(Controller);Menu->Opening=this;Menu->SetIsFocusable(true);Menu->AddToViewport(500);
     Controller->bShowMouseCursor=true;FInputModeUIOnly Mode;Mode.SetWidgetToFocus(Menu->StartButton ? Menu->StartButton->TakeWidget() : Menu->TakeWidget());Controller->SetInputMode(Mode);
 }
 void AMiningOpening::StartGame()
 {
     if(!bPrepared || bStarted || bFinished)return;
-    bStarted=true;Elapsed=0;if(Menu)Menu->RemoveFromParent();
-    CornerTitle=CreateWidget<UMiningOpeningTitle>(Player.Get());CornerTitle->Texture=TitleTexture;CornerTitle->bCornerLayout=true;
-    CornerTitle->SetVisibility(ESlateVisibility::HitTestInvisible);CornerTitle->AddToViewport(490);
+    bStarted=true;Elapsed=0;
+    if(Menu)Menu->SetVisibility(ESlateVisibility::HitTestInvisible);
     WorldTitle->SetVisibility(false);
     if(Player.IsValid()){Player->bShowMouseCursor=false;Player->SetInputMode(FInputModeGameOnly());}
 }
 void AMiningOpening::Tick(float Dt)
 {
     Super::Tick(Dt);
-    if(bTitleFlying)
-    {
-        TitleFlightTime+=Dt;const float A=FMath::SmoothStep(0.f,1.f,FMath::Clamp(TitleFlightTime/.95f,0.f,1.f));
-        const FVector Logo=FMath::Lerp(InitialTitle,DoorTitleLocation,A)+FVector(0,0,FMath::Sin(A*PI)*32);
-        WorldTitle->SetWorldLocationAndRotation(Logo,FQuat::Slerp(InitialRotation,DoorTitleRotation.Quaternion(),A));
-        WorldTitle->SetWorldScale3D(FVector(FMath::Lerp(InitialTitleScale,.205f,A)));
-        if(A>=1){EnsureTitleOnWall();bTitleFlying=false;bTitleLanded=true;UMiningHapticsSubsystem::Emit(Player.Get(), EMiningHapticCue::TitleLanded);SetActorTickEnabled(false);}
-        return;
-    }
     if(bFinished)return;
     if(!bPrepared)
     {
@@ -158,7 +172,8 @@ void AMiningOpening::Tick(float Dt)
         return;
     }
     if(!bStarted || !Player.IsValid() || !Camera)return;
-    Elapsed+=Dt;const float T=FMath::Clamp(Elapsed/Duration,0.f,1.f);const float A=FMath::SmoothStep(0.f,1.f,T);
+    Elapsed+=Dt;if(Menu&&Elapsed>=.8f){Menu->RemoveFromParent();Menu=nullptr;}
+    const float T=FMath::Clamp(Elapsed/Duration,0.f,1.f);const float A=FMath::SmoothStep(0.f,1.f,T);
     const FVector Eye=StandingEye;
     if(APawn* Pawn=Player->GetPawn())Pawn->SetActorLocation(FMath::Lerp(SeatPawnLocation,StandingLocation,A));
     // Lean forward, lift from the mattress, then settle beside the bed.
@@ -173,23 +188,10 @@ void AMiningOpening::Tick(float Dt)
 }
 void AMiningOpening::BeginTitleToWall(AMainGameDoor* Door)
 {
-    if(!bFinished || bTitleFlying || bTitleLanded || !Player.IsValid() || !Door)return;
-    // Start the flight exactly where the upper-left HUD title is painted.
-    const float DPI=UWidgetLayoutLibrary::GetViewportScale(Player.Get());
-    FVector Origin,Direction,LeftOrigin,LeftDirection,RightOrigin,RightDirection;
-    FVector Eye;FRotator View;Player->GetPlayerViewPoint(Eye,View);
-    InitialTitle=Eye+View.RotateVector(FVector(240,-160,85));InitialTitleScale=.07f;
-    if(Player->DeprojectScreenPositionToWorld(176*DPI,112*DPI,Origin,Direction) &&
-       Player->DeprojectScreenPositionToWorld(36*DPI,112*DPI,LeftOrigin,LeftDirection) &&
-       Player->DeprojectScreenPositionToWorld(316*DPI,112*DPI,RightOrigin,RightDirection))
-    {
-        InitialTitle=Origin+Direction*240;
-        InitialTitleScale=FVector::Distance(LeftOrigin+LeftDirection*240,RightOrigin+RightDirection*240)/1024.f;
-    }
-    InitialRotation=(View+FRotator(0,180,0)).Quaternion();
-    if(CornerTitle)CornerTitle->RemoveFromParent();
-    WorldTitle->SetWorldLocationAndRotation(InitialTitle,InitialRotation);WorldTitle->SetWorldScale3D(FVector(InitialTitleScale));
-    WorldTitle->SetVisibility(true);bTitleFlying=true;TitleFlightTime=0;SetActorTickEnabled(true);
+    if(bTitleLanded)return;
+    EnsureTitleOnWall();bTitleLanded=true;
+    UMiningHapticsSubsystem::Emit(Player.Get(), EMiningHapticCue::TitleLanded);
+
 }
 void AMiningOpening::EnsureTitleOnWall()
 {
@@ -201,7 +203,7 @@ void AMiningOpening::EnsureTitleOnWall()
     auto* Decal=NewObject<UDecalComponent>(this,TEXT("MineableWallTitle"));
     AddInstanceComponent(Decal);Decal->SetupAttachment(RootComponent);
     Decal->SetDecalMaterial(Material);Decal->DecalSize=FVector(18.f,61.5f,104.96f);
-    Decal->SetFadeScreenSize(0.f);Decal->RegisterComponent();
+    Decal->SetFadeScreenSize(0.f);Decal->RegisterComponent();Decal->SetFadeIn(0.f,.9f);
     // Decal UVs use local Z for horizontal and local Y for vertical. Rotate
     // the projection frame from the widget frame so the projected bitmap is
     // upright instead of rotated 90 degrees on the wall.

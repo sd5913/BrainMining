@@ -343,7 +343,7 @@ void ABrainMiningPlayerController::HandleMobileMap()
 
 void ABrainMiningPlayerController::HandleMobileCatalogue()
 {
-	if (AMiningExhibitHall::Find(GetWorld())) TriggerMobileKey(EKeys::I);
+	if (AMiningExhibitHall::Find(GetWorld())) TriggerMobileKey(EKeys::C);
 	else TriggerMobileKey(EKeys::Tab);
 }
 
@@ -474,6 +474,21 @@ bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 		return true;
 	}
 	if (IsAudioSettingsOpen()) return true;
+    if(Params.Key==EKeys::C && !IsPaused() && !bShowMouseCursor && !IsLookInputIgnored() && !IsMoveInputIgnored())
+    {
+        if(Params.Event==IE_Pressed)
+        {
+            AMiningCollectionField* Field=nullptr;
+            for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It){Field=*It;if(It->bUseAuthoredPlacements)break;}
+            if(!Field)
+            {
+                Field=GetWorld()->SpawnActorDeferred<AMiningCollectionField>(AMiningCollectionField::StaticClass(),FTransform::Identity);
+                if(Field){Field->bCatalogueOnly=true;Field->bSharedAbilities=true;Field->bUseAuthoredPlacements=true;Field->bShowExplorationHUD=false;Field->FinishSpawning(FTransform::Identity);}
+            }
+            if(Field)Field->ToggleCatalogue();
+        }
+        return true;
+    }
 	if (Params.Key == EKeys::E && Params.Event == IE_Pressed && !bUpgradeMenuHeld)
 	{
 		if(auto* Door=AMainGameDoor::FindInteractionTarget(this)){Door->OpenDoor();return true;}
@@ -600,6 +615,16 @@ void ABrainMiningPlayerController::EndPlay(const EEndPlayReason::Type Reason)
 	Super::EndPlay(Reason);
 }
 
+void ABrainMiningPlayerController::AddYawInput(float Value)
+{
+    const auto* Settings=GetGameInstance()?GetGameInstance()->GetSubsystem<UMiningAudioSettings>():nullptr;
+    Super::AddYawInput(Value*(Settings?Settings->GetLookSensitivity():1.f));
+}
+void ABrainMiningPlayerController::AddPitchInput(float Value)
+{
+    const auto* Settings=GetGameInstance()?GetGameInstance()->GetSubsystem<UMiningAudioSettings>():nullptr;
+    Super::AddPitchInput(Value*(Settings?Settings->GetLookSensitivity():1.f));
+}
 void ABrainMiningPlayerController::ToggleAudioSettings()
 {
 	auto* Viewport = GetWorld() ? GetWorld()->GetGameViewport() : nullptr;
@@ -631,7 +656,7 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 	bAudioPausedWorld = SetPause(true);
 	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
     Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 20)[SNew(STextBlock).Font(BrainMiningFonts::Style("Bold", 22))
-        .Text_Lambda([this]() { return FText::FromString(UMiningGamepadSubsystem::UsesGamepad(this) ? TEXT("声音与震动 · B 返回") : TEXT("声音与震动 · F8 / Esc 关闭")); })];
+        .Text_Lambda([this]() { return FText::FromString(UMiningGamepadSubsystem::UsesGamepad(this) ? TEXT("设置 · B 返回") : TEXT("设置 · F8 / Esc 关闭")); })];
     TSharedPtr<SSlider> FirstSlider;
 	const TCHAR* Labels[] = {TEXT("总音量"), TEXT("音乐"), TEXT("音效"), TEXT("环境声"), TEXT("语音")};
 	TWeakObjectPtr<UMiningAudioSettings> WeakSettings(Settings);
@@ -648,17 +673,23 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 			.OnValueChanged_Lambda([WeakSettings, Channel](float Value) { if (WeakSettings.IsValid()) WeakSettings->SetVolume(Channel, Value); })];
         if (!FirstSlider) FirstSlider = Slider;
 	}
+	Rows->AddSlot().AutoHeight().Padding(0,16,0,8)[SNew(STextBlock).Font(BrainMiningFonts::Title(20)).Text(FText::FromString(TEXT("灵敏度")))];
+    Rows->AddSlot().AutoHeight().Padding(0,0,0,8)[SNew(STextBlock).Font(BrainMiningFonts::Body(14)).Text_Lambda([WeakSettings]()
+    { return FText::FromString(FString::Printf(TEXT("镜头移动   %.2f ×"),WeakSettings.IsValid()?WeakSettings->GetLookSensitivity():1.f)); })];
+    Rows->AddSlot().AutoHeight()[SNew(SSlider)
+        .Value_Lambda([WeakSettings](){return WeakSettings.IsValid()?(WeakSettings->GetLookSensitivity()-.2f)/2.8f:2.f/7.f;})
+        .OnValueChanged_Lambda([WeakSettings](float Value){if(WeakSettings.IsValid())WeakSettings->SetLookSensitivity(.2f+Value*2.8f);})];
     if (auto* Haptics = UMiningHapticsSubsystem::Find(this)) Rows->AddSlot().AutoHeight()[Haptics->MakeSettingsWidget()];
 	Rows->AddSlot().AutoHeight().Padding(0, 12)[SNew(SButton).HAlign(HAlign_Center).ContentPadding(FMargin(12, 8)).OnClicked_Lambda([WeakSettings]()
 	{
 		if (WeakSettings.IsValid()) WeakSettings->RestoreDefaults();
 		return FReply::Handled();
-	})[SNew(STextBlock).Font(BrainMiningFonts::Style("Regular", 16)).Text(FText::FromString(TEXT("恢复默认音量")))]];
+	})[SNew(STextBlock).Font(BrainMiningFonts::Style("Regular", 16)).Text(FText::FromString(TEXT("恢复默认设置")))]];
 	Rows->AddSlot().AutoHeight()[SNew(SButton).HAlign(HAlign_Center).ContentPadding(FMargin(12, 8)).OnClicked_Lambda([this]() { ToggleAudioSettings(); return FReply::Handled(); })
 		[SNew(STextBlock).Font(BrainMiningFonts::Style("Regular", 16)).Text(FText::FromString(TEXT("保存并返回游戏")))]];
 	AudioSettingsPanel = SNew(SOverlay)
-		+ SOverlay::Slot()[SNew(SBorder).BorderBackgroundColor(FLinearColor(0, 0, 0, .85f))]
-		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(SBox).WidthOverride(540).MaxDesiredHeight(720)[SNew(SBorder).Padding(28)[SNew(SScrollBox).ScrollWhenFocusChanges(EScrollWhenFocusChanges::InstantScroll) + SScrollBox::Slot()[Rows]]]];
+		+ SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0, 0, 0, .72f))]
+		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(SBox).WidthOverride(540).MaxDesiredHeight(720)[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.025f,.035f,.04f,.96f)).Padding(28)[SNew(SScrollBox).ScrollWhenFocusChanges(EScrollWhenFocusChanges::InstantScroll) + SScrollBox::Slot()[Rows]]]];
 	Viewport->AddViewportWidgetContent(AudioSettingsPanel.ToSharedRef(), 1000);
 	bShowMouseCursor = true;
 	FInputModeGameAndUI Mode;

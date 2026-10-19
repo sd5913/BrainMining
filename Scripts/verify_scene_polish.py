@@ -61,6 +61,8 @@ def tick(dt):
     for c in a.get_components_by_class(unreal.MeshComponent):
      assert not any(m and m.get_name().endswith('_Relief') for m in c.get_materials()),'Unwanted relief still assigned: '+a.get_actor_label()
    check(True,'Original wall materials restored throughout start room and first mine')
+   bindings={'StaticMeshActor_2':'StartRoomView_Robot','SkeletalMeshActor_3':'StartRoomView_Computer','StaticMeshActor_191':'StartRoomView_Book','StaticMeshActor_100':'StartRoomView_Book','StaticMeshActor_129':'StartRoomView_Book'}
+   check(sum(1 for a in aa if '/StartRoom/Maps/' in a.get_level().get_path_name() and a.get_name() in bindings and a.actor_has_tag(bindings[a.get_name()]))==5,'Remote start-room subtitle interaction bindings retained')
    for height in [300,1400,3200]:
     start=center+unreal.Vector(0,0,height)
     for angle in range(0,360,30):

@@ -103,7 +103,7 @@ AMiningCollectible::AMiningCollectible()
 
 FString AMiningCollectible::ItemName(int32 Id)
 {
-    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("同步闪光的萤火虫"),TEXT("散落的彩带")};
+    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("罐子里的萤火虫"),TEXT("散落的彩带")};
     return Id>=0&&Id<ItemTypeCount?Names[Id]:TEXT("未知藏品");
 }
 FString AMiningCollectible::Description(int32 Id)
@@ -309,6 +309,7 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
             const float A=Flies.FRandRange(0,2*PI),Radius=Flies.FRandRange(2,21);
             const FVector P(FMath::Cos(A)*Radius,FMath::Sin(A)*Radius,Flies.FRandRange(-32,30));
             B.Ellipsoid(P,FVector(Flies.FRandRange(.55,1.25)),9,8,5);
+            B.Ellipsoid(P,FVector(2.7f),10,12,8);
             if(I%4==0) B.Ellipsoid(P+FVector(0,0,1.5),FVector(.5,.7,1),1,6,4);
         }
     }
@@ -347,6 +348,8 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
         if(auto* Glow=LoadObject<UMaterialInterface>(nullptr,Path)) Model->SetMaterial(9,Glow);
         if(Edge) { Outline->SetMaterial(8,Edge); Outline->SetMaterial(9,Edge); }
     }
+    if(ItemId==10)
+        if(auto* Halo=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionFireflyHalo")))Model->SetMaterial(10,Halo);
     if(ItemId==10)
         if(auto* Glass=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionGlass"))) Model->SetMaterial(8,Glass);
 }

@@ -118,18 +118,18 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
     for (TActorIterator<AMiningCollectionField> Collection(GetWorld()); Collection; ++Collection)
         if (Collection->IsAreaActive() && !Collection->bCatalogueOpen && IsValid(Collection->Target)
             && !Collection->Target->bCollected && Collection->Target->bReleased)
-            return TEXT("收集 · ") + AMiningCollectible::ItemName(Collection->Target->ItemId);
+            return AMiningCollectible::ItemName(Collection->Target->ItemId);
     for (TActorIterator<AMiningTreasureField> Treasure(GetWorld()); Treasure; ++Treasure)
         if (Treasure->IsAreaActive() && IsValid(Treasure->Target) && !Treasure->Target->bCollected
             && AMiningTreasure::IsExposureEligible(Treasure->Target->Exposure))
-            return TEXT("领取 · ") + Treasure->Target->TreasureName.ToString();
+            return Treasure->Target->TreasureName.ToString();
     if (auto* Reward = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
         Reward && Reward->bRoomActive && IsValid(Reward->Stage) && Reward->Stage->Run.Phase == ECardRoomPhase::Victory)
-        return TEXT("拾取 · 钻机");
+        return TEXT("钻机");
     if (auto* Cards = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
         Cards && Cards->bRoomActive && IsValid(Cards->Stage) && Cards->Stage->Run.Phase == ECardRoomPhase::Exploring
         && Cards->Stage->IsPlayerNear(Controller->GetPawn()->GetActorLocation()))
-        return TEXT("入座 · 开始牌局");
+        return TEXT("入座");
     if (auto* Hall = AMiningExhibitHall::Find(GetWorld()); Hall && Hall->bReady && Hall->ActiveArea == INDEX_NONE && !Hall->IsInteractionOpen())
         for (int32 Index = 0; Index < Hall->Areas.Num(); ++Index)
         {

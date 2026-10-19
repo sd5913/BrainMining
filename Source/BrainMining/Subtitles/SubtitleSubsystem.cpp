@@ -38,6 +38,7 @@ void USubtitleSubsystem::Deinitialize()
 	StopAll();
 	Super::Deinitialize();
 }
+void USubtitleSubsystem::SuppressForWorld(UWorld* World) { StopAll(); SuppressedWorld=World; }
 
 void USubtitleSubsystem::StopAll()
 {
@@ -60,6 +61,7 @@ void USubtitleSubsystem::StopAll()
 
 void USubtitleSubsystem::PlaySegment(FName SegmentId)
 {
+    if(GetWorld() && SuppressedWorld.Get()==GetWorld())return;
 	if (SegmentId.IsNone())
 	{
 		return;
@@ -82,6 +84,7 @@ void USubtitleSubsystem::PlaySegment(FName SegmentId)
 
 void USubtitleSubsystem::PlayStatusLine(FText Text, float Duration)
 {
+    if(GetWorld() && SuppressedWorld.Get()==GetWorld())return;
 	if(Text.IsEmpty() || !GetWorld())return;
 	// Brief matching/status messages must not erase an authored narrative queue.
 	if(bPlaying && ActiveSegment && ActiveSegment->SegmentId != TEXT("GameplayStatus")) return;

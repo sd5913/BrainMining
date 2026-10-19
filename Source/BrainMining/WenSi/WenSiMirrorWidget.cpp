@@ -197,7 +197,7 @@ void UWenSiMirrorWidget::Refresh()
    Rows[I]->ClearChildren();WordWidgets[I].Reset(); if (!Obj) continue;
    WenSiThoughtBubble::AddText(Rows[I],TEXT("这是一个"),ThoughtFont(26));
    Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SAssignNew(WordWidgets[I],SThoughtWord).ThoughtIndex(I).Word(Obj->Adjective()).Puzzle(Puzzle)];
-   WenSiThoughtBubble::AddText(Rows[I],TEXT("的")+Obj->Noun()+TEXT("。"),ThoughtFont(26));
+   WenSiThoughtBubble::AddText(Rows[I],TEXT("的")+Obj->Noun(),ThoughtFont(26));
   }
  }
  for(int32 Index=0;Index<2;++Index)

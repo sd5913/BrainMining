@@ -435,8 +435,7 @@ void AEndingEmergence::BuildCity()
 
 void AEndingEmergence::ApplyCityBuildings()
 {
-    const bool bJapaneseCityReplacement=CityBuildingMeshes.Num()==4&&CityBuildingMeshes[0]&&CityBuildingMeshes[0]->GetPathName().StartsWith(TEXT("/Game/JapaneseCity/"));
-    if(bEditableScenery&&!bJapaneseCityReplacement){UE_LOG(LogTemp,Display,TEXT("ENDING_SCENERY_PROTECTED: edit the saved scenery actors; city generation skipped."));return;}
+    if(bEditableScenery){UE_LOG(LogTemp,Display,TEXT("ENDING_SCENERY_PROTECTED: edit the saved scenery actors; city generation skipped."));return;}
     if(CityBuildingMeshes.Num()!=4||CityBuildingMeshes.Contains(nullptr)||!Sets.IsValidIndex(1))return;
     TArray<UInstancedStaticMeshComponent*> Existing;GetComponents(Existing);
     for(auto* C:Existing)

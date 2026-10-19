@@ -60,11 +60,7 @@ void UMiningGamepadSubsystem::Primary(bool bPressed)
     auto* Player = Controller();
     if (!Player || !Player->GetPawn()) return;
     const auto Context = GetContext();
-    if (Context == EMiningInputContext::Cards)
-    {
-        if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>()) Cards->ToggleFocusedCard();
-        return;
-    }
+    if (Context == EMiningInputContext::Cards) return;
     if (Context == EMiningInputContext::Office || Context == EMiningInputContext::Menu || Context == EMiningInputContext::Thoughts || Context == EMiningInputContext::Upgrade)
     {
         PointerButton(true);
@@ -105,7 +101,7 @@ void UMiningGamepadSubsystem::Interact()
     }
     if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>(); Cards && Cards->bRoomActive && Cards->Stage)
     {
-        if (Cards->Stage->Run.Phase == ECardRoomPhase::Choosing) { Cards->ToggleFocusedCard(); return; }
+        if (Cards->Stage->Run.Phase == ECardRoomPhase::Choosing) return;
         if (Cards->Stage->Run.Phase == ECardRoomPhase::Victory || Cards->Stage->IsPlayerNear(Player->GetPawn()->GetActorLocation())) { Cards->Interact(); return; }
     }
     for (TActorIterator<AMiningCollectionField> Field(World); Field; ++Field) if (Field->TryCollectTarget()) return;
@@ -147,6 +143,8 @@ void UMiningGamepadSubsystem::Dispatch(EMiningInputAction Action, bool bPressed)
         if (auto* Menu = Player->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()) Menu->TogglePauseMenu();
         return;
     }
+    // The seated card encounter uses mouse selection and Space only. Pause remains available.
+    if (Context == EMiningInputContext::Cards) return;
     if (Action == EMiningInputAction::Previous || Action == EMiningInputAction::Next || Action == EMiningInputAction::Up || Action == EMiningInputAction::Down)
     {
         if (Context == EMiningInputContext::Menu)
@@ -185,16 +183,6 @@ void UMiningGamepadSubsystem::Dispatch(EMiningInputAction Action, bool bPressed)
     if (Context == EMiningInputContext::Office)
     {
         if (Action == EMiningInputAction::Jump) PointerButton(true);
-        return;
-    }
-    if (Context == EMiningInputContext::Cards)
-    {
-        auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>();
-        if (Cards && Cards->Stage)
-        {
-            if (Action == EMiningInputAction::Jump) Cards->ConfirmFocusedAction();
-            if (Action == EMiningInputAction::Tool) Cards->ToggleAllCards();
-        }
         return;
     }
     auto* Mirror = FindGamepadActionActor<AWenSiMirrorPuzzle>(Player->GetWorld(), [](auto* Puzzle) { return Puzzle->bAreaActive; });
@@ -271,7 +259,6 @@ void UMiningGamepadSubsystem::Back()
         return;
     }
     if (auto* Puzzle = FindGamepadActionActor<AWenSiPuzzle>(World, [](auto* Candidate) { return Candidate->bAreaActive && Candidate->bEditing; })) { Puzzle->ToggleEdit(); return; }
-    if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>(); Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase != ECardRoomPhase::Exploring) Cards->CancelFocusedAction();
 }
 
 void UMiningGamepadSubsystem::ResetContext()
@@ -309,7 +296,6 @@ void UMiningGamepadSubsystem::Navigate(int32 Direction)
         if (!Ids.IsEmpty()) Field->SelectItem(Ids[(FMath::Max(0, Ids.IndexOfByKey(Field->SelectedId)) + Direction + Ids.Num()) % Ids.Num()]);
         return;
     }
-    if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>(); Cards && GetContext() == EMiningInputContext::Cards) { Cards->NavigateCards(Direction); return; }
     if (GetContext() == EMiningInputContext::Menu && FSlateApplication::IsInitialized())
     {
         TGuardValue<bool> Synthetic(bSyntheticPointer, true);

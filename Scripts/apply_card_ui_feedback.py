@@ -25,7 +25,7 @@ for name,bounds in [('Laser',(227,58,856,1007)),('Poison',(239,55,868,1007)),('F
     rgb=lib.create_material_expression(m,unreal.MaterialExpressionCustom);rgb.set_editor_property('output_type',unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     rgb.set_editor_property('inputs',[inp('UV'),inp('Art')])
     x,y,x2,y2=bounds
-    rgb.set_editor_property('code',f'float2 p=float2({x/1080},{y/1080})+UV*float2({(x2-x)/1080},{(y2-y)/1080}); float3 c=Texture2DSample(Art,ArtSampler,p).rgb; float l=dot(c,float3(.2126,.7152,.0722)); return lerp(l.xxx,c,.68)*float3(1.,.97,.91);')
+    rgb.set_editor_property('code',f'float2 p=float2({x/1080},{y/1080})+UV*float2({(x2-x)/1080},{(y2-y)/1080}); float3 c=Texture2DSample(Art,ArtSampler,p).rgb; float l=dot(c,float3(.2126,.7152,.0722)); return lerp(l.xxx,c,.8)*float3(1.,.97,.91);')
     lib.connect_material_expressions(uv,'',rgb,'UV');lib.connect_material_expressions(tex,'',rgb,'Art');lib.connect_material_property(rgb,'',unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     mask=lib.create_material_expression(m,unreal.MaterialExpressionCustom);mask.set_editor_property('output_type',unreal.CustomMaterialOutputType.CMOT_FLOAT1)
     mask.set_editor_property('inputs',[inp('UV')]);mask.set_editor_property('code','float2 q=abs((UV-.5)*float2(1.,1.5))-float2(.44,.69); float d=length(max(q,0))+min(max(q.x,q.y),0)-.06; return saturate(.5-d/max(fwidth(d),.001));')

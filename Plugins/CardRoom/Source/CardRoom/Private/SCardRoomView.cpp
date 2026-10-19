@@ -76,26 +76,19 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
             F.OutlineSettings.OutlineSize=1;F.OutlineSettings.OutlineColor=FLinearColor(.12f,.1f,.08f,.8f);
             const FString Name=R.Hand.Num()>5 && N==0 ? TEXT("激\n光") : Names[N];
             FSlateDrawElement::MakeText(Out,++L,Geo(B.Left+9,B.Top+12,W-18,50),Name,F,ESlateDrawEffect::None,FLinearColor(.98f,.94f,.83f));
-            if(Owner->bGamepadNavigation && Owner->FocusedCard==I) Box(B.Left+4,B.Bottom+5,W-8,4,FLinearColor(1,.8f,.3f),2.f);
         }
     }
     return L;
 }
-FReply SCardRoomView::OnTouchStarted(const FGeometry& G,const FPointerEvent& E)
-{
-    return OnMouseButtonDown(G,E);
-}
 FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& E)
 {
     if(!Owner.IsValid() || !Owner->Stage || (!E.IsTouchEvent() && E.GetEffectingButton()!=EKeys::LeftMouseButton))return FReply::Unhandled();
-    Owner->bGamepadNavigation=false;Owner->bConfirmLeave=false;
     Mouse=ToVirtual(G,E.GetScreenSpacePosition());auto& R=Owner->Stage->Run;
     if(R.Phase==ECardRoomPhase::Exploring)return FReply::Unhandled();
     if(R.Phase==ECardRoomPhase::Choosing)
         for(int32 I=R.Hand.Num()-1;I>=0;--I)if(In(Mouse,CardRect(I,R)))
         {
-            if(R.Staged.Contains(I))R.Unstage(I);else R.Stage(I);
-            if(Owner->Stage->AudioOverride.IsBound())Owner->Stage->Sound(TEXT("S_CardSelect"),.3f);
+            Owner->ToggleCardSelection(I);
             break;
         }
     return FReply::Handled().SetUserFocus(SharedThis(this));

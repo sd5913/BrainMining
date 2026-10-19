@@ -84,7 +84,6 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
     if (auto* Cards = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
         Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing)
     {
-        if(Cards->bConfirmLeave) return TEXT("离座");
         const auto& Run = Cards->Stage->Run;
         if (Run.Round == 4 && !Run.CanConfirm()) return TEXT("全选");
         return Run.CanConfirm() ? TEXT("出牌") : FString();
@@ -202,12 +201,12 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
         const auto* Cards = GetOwningPlayer()->FindComponentByClass<UCardRoomInteractionComponent>();
         const bool bPlayCard = Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing;
         const bool bGamepad = UMiningGamepadSubsystem::UsesGamepad(GetOwningPlayer());
-        const float HalfKey = bPlayCard && !bGamepad ? 35.f : 17.f;
+        const float HalfKey = bPlayCard ? 35.f : 17.f;
         Text(InteractionAction, FVector2D(1, 39), 20, FLinearColor(0, 0, 0, .85f), true);
         Text(InteractionAction, FVector2D(0, 38), 20, FLinearColor::White, true);
         Box(FVector2D(-HalfKey, 73), FVector2D(HalfKey*2, 34), Key, FLinearColor(.015f, .02f, .025f, .85f));
         Box(FVector2D(-HalfKey+2, 74), FVector2D(HalfKey*2-4, 30), Key, FLinearColor(.96f, .95f, .89f));
-        Text(bPlayCard ? (bGamepad ? TEXT("A") : TEXT("空格")) : (bGamepad ? TEXT("X") : TEXT("E")), FVector2D(0, 77), 19, FLinearColor(.04f, .045f, .05f), true);
+        Text(bPlayCard ? TEXT("空格") : (bGamepad ? TEXT("X") : TEXT("E")), FVector2D(0, 77), 19, FLinearColor(.04f, .045f, .05f), true);
     }
     if (CoinFeedback.IsVisible())
     {

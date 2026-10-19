@@ -25,14 +25,7 @@ public:
     UFUNCTION(BlueprintCallable) void Interact();
     UFUNCTION(BlueprintCallable) void LeaveSeat();
     UFUNCTION(BlueprintCallable) void ConfirmCards();
-    void NavigateCards(int32 Direction);
-    void ToggleFocusedCard();
-    void ToggleAllCards();
-    void ConfirmFocusedAction();
-    void CancelFocusedAction();
-    int32 FocusedCard = 0;
-    bool bGamepadNavigation = false;
-    bool bConfirmLeave = false;
+    UFUNCTION(BlueprintCallable) void ToggleCardSelection(int32 Index);
     UPROPERTY(BlueprintReadOnly) TObjectPtr<ACardRoomStage> Stage;
     APawn* GetPawn() const;
 private:

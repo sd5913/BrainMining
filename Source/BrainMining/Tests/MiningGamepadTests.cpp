@@ -102,30 +102,27 @@ bool FMiningGamepadContextTest::RunTest(const FString&)
     Run.Hand = {ERoomCard::Laser};
     Input->HandleButton(EKeys::Gamepad_FaceButton_Left, true);
     TestFalse(TEXT("Entering cards releases the previous mining hold"), Mining->IsMiningActive());
-    TestTrue(TEXT("X selects the focused card"), Run.Staged.Contains(0));
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Left, true, true);
-    TestTrue(TEXT("Button repeat does not toggle selection twice"), Run.Staged.Contains(0));
+    TestTrue(TEXT("X cannot select cards"), Run.Staged.IsEmpty());
     Input->HandleButton(EKeys::Gamepad_FaceButton_Left, false);
+    TestTrue(TEXT("Card game has no controller hint strip"), Input->GetHint().IsEmpty());
+    Cards->ToggleCardSelection(0);
+    TestTrue(TEXT("Mouse selection action stages the chosen card"), Run.Staged.Contains(0));
     Input->HandleButton(EKeys::Gamepad_Special_Right, true);
     Input->HandleButton(EKeys::Gamepad_Special_Right, false);
     TestTrue(TEXT("Menu pauses over cards"), Instance->GetSubsystem<UMiningExperienceSubsystem>()->IsMenuOpen());
     TestTrue(TEXT("Pause owns routing over the seated card game"), Input->GetContext() == EMiningInputContext::Menu);
-    TestFalse(TEXT("Menu never requests leaving the card game"), Cards->bConfirmLeave);
     Input->HandleButton(EKeys::Gamepad_FaceButton_Right, true);
     Input->HandleButton(EKeys::Gamepad_FaceButton_Right, false);
     TestTrue(TEXT("Back resumes the existing card selection"), Input->GetContext() == EMiningInputContext::Cards && Run.Staged.Contains(0));
-    TestFalse(TEXT("Back from pause never requests leaving cards"), Cards->bConfirmLeave);
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Right, true);
-    TestTrue(TEXT("B requests leave confirmation"), Cards->bConfirmLeave);
-    TestTrue(TEXT("Requesting leave preserves the current hand"), Run.Phase == ECardRoomPhase::Choosing && Run.Staged.Contains(0));
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Right, false);
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Right, true);
-    TestFalse(TEXT("Second B cancels leave"), Cards->bConfirmLeave);
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Right, false);
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, true);
-    TestTrue(TEXT("A confirms cards through encounter rules"), Run.Phase == ECardRoomPhase::Resolving);
+    for (const FKey Key : {EKeys::Gamepad_FaceButton_Right, EKeys::Gamepad_FaceButton_Bottom, EKeys::Gamepad_FaceButton_Top, EKeys::Gamepad_DPad_Right})
+    {
+        Input->HandleButton(Key, true);
+        Input->HandleButton(Key, false);
+        TestTrue(TEXT("Controller buttons preserve mouse-selected hand"), Run.Phase == ECardRoomPhase::Choosing && Run.Staged.Contains(0));
+    }
+    Cards->ConfirmCards();
+    TestTrue(TEXT("Space confirmation resolves mouse-selected cards"), Run.Phase == ECardRoomPhase::Resolving);
     TestFalse(TEXT("Card confirmation does not start flight"), UMiningGamepadSubsystem::ReadJumpHeld(Controller));
-    Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, false);
     Cards->bRoomActive = false;
     auto* Catalogue = World->SpawnActor<AMiningCollectionField>();
     Catalogue->bCatalogueOpen = true;

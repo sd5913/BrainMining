@@ -191,7 +191,7 @@ if not unreal.EditorAssetLibrary.does_asset_exist(path):
         i = unreal.CustomInput(); i.set_editor_property('input_name', n); ins.append(i)
     custom.set_editor_property('inputs', ins)
     custom.set_editor_property('code', '''
-#if PLATFORM_ANDROID
+#if SHADING_PATH_MOBILE
     return SC.rgb;
 #else
     float2 p=UV-.5;

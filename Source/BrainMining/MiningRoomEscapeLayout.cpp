@@ -19,6 +19,8 @@ void AMiningRoomEscape::BuildStudyLayout()
     auto* Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
     auto* Surface=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_CardRoomSurface.M_CardRoomSurface"));
     auto* Glow=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_CardRoomGlow.M_CardRoomGlow"));
+    if(!Surface)Surface=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint.M_CollectionTint"));
+    if(!Glow)Glow=Surface;
     auto Material=[&](FLinearColor Color,bool Emissive=false)
     {
         auto* M=UMaterialInstanceDynamic::Create(Emissive?Glow:Surface,this);
@@ -169,7 +171,8 @@ void AMiningRoomEscape::BuildStudyLayout()
     else
     {
         BuildTelevisionModel(false);
-        ScreenMaterial=Material(FLinearColor::Black,true);
+        ScreenMaterial=Material(FLinearColor(.06f,.38f,.23f),true);
+        if(auto* CRT=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_EscapeCRTScreen")))ScreenMaterial=UMaterialInstanceDynamic::Create(CRT,this);
         TelevisionScreen=Rock(ComputerEntry+FVector(-308,0,0),FVector(100,1100,840),ScreenMaterial,FRotator::ZeroRotator);
     }
     ComputerRocks.Add(TelevisionScreen);
@@ -201,6 +204,8 @@ void AMiningRoomEscape::BuildStudyLayout()
     Exposure->Settings.bOverride_BloomIntensity=true;Exposure->Settings.BloomIntensity=.15f;
     Exposure->Settings.bOverride_SceneFringeIntensity=true;Exposure->Settings.SceneFringeIntensity=0;
     Exposure->RegisterComponent();
+    // A continuous sill bridges the cabinet face to the tunnel floor.
+    Shape(TunnelPoint(FVector(-240,0,-H-30)),FVector(480,W*2,60),Interior,true,Rotation);
     Shape(TunnelPoint(FVector(ShellLength*.5f,0,-H-30)),FVector(ShellLength+200,W*2+120,60),Interior,true,Rotation);
     Shape(TunnelPoint(FVector(ShellLength*.5f,0,H+30)),FVector(ShellLength+200,W*2+120,60),Interior,true,Rotation);
     for(float Side:{-1.f,1.f})

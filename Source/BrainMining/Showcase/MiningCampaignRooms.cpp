@@ -219,9 +219,13 @@ void AMiningExhibitGameMode::InitGame(const FString& MapName, const FString& Opt
     Super::InitGame(MapName, Options, ErrorMessage);
     auto* Hall=AMiningExhibitHall::Find(GetWorld());
     if(!Hall || !Hall->bContinuousCampaign) return;
-    // MainGame already owns bombs; retain the office pickup and breach sequence.
-    if(Hall->ActorHasTag(TEXT("BM_MainGame_RoomsLinked")))
-        if(auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>()) Wallet->bBombSkillUnlocked=true;
+    // Gate campaign abilities before pawn input and room initialization.
+    // Only the office bomb and card-room drill pickups grant ownership.
+    if(auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>())
+    {
+        Wallet->bBombSkillRequiresUnlock=true;
+        Wallet->bDrillSkillRequiresUnlock=true;
+    }
     // Always-loaded source levels are available before actor initialization/BeginPlay.
     // Overrides belong to this campaign instance; the source maps stay independently playable.
     for(const auto& Area:Hall->Areas)

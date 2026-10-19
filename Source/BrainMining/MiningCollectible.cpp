@@ -127,7 +127,7 @@ FString AMiningCollectible::Clue(int32 Id)
 void AMiningCollectible::BuildModel(int32 Id,bool Flying)
 {
     ItemId=FMath::Clamp(Id,0,ItemTypeCount-1);
-    Body->SetBoxExtent(ItemId==9?FVector(165,165,220):ItemId==11?FVector(12,54,9):FVector(49,45,61));
+    Body->SetBoxExtent(ItemId==9?FVector(190,190,330):ItemId==11?FVector(12,54,9):FVector(49,45,61));
     FCollectibleMesh B;
     // Ivory, charcoal, turquoise, purple, gold, timber, pigeon-grey, coral.
     const FLinearColor Colors[]={{.85f,.87f,.77f},{.035f,.06f,.07f},{.06f,.65f,.43f},{.48f,.12f,.65f},{.95f,.59f,.07f},{.3f,.12f,.045f},{.36f,.44f,.54f},{.86f,.27f,.15f}};
@@ -287,18 +287,18 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
         // Unequal, tapered cubic curves with branches growing from the parent curve.
         for(int R=0;R<15;++R)
         {
-            const float Angle=Roots.FRandRange(0,2*PI),Reach=Roots.FRandRange(38,83);
+            const float Angle=Roots.FRandRange(0,2*PI),Reach=Roots.FRandRange(55,115);
             const FVector A(Roots.FRandRange(-5,5),Roots.FRandRange(-5,5),12);
-            const FVector End(FMath::Cos(Angle)*Reach,FMath::Sin(Angle)*Reach,Roots.FRandRange(-122,-74));
-            const FVector C1=A+FVector(Roots.FRandRange(-25,25),Roots.FRandRange(-25,25),-40);
-            const FVector C2=End+FVector(Roots.FRandRange(-23,23),Roots.FRandRange(-23,23),Roots.FRandRange(22,58));
+            const FVector End(FMath::Cos(Angle)*Reach,FMath::Sin(Angle)*Reach,Roots.FRandRange(-245,-165));
+            const FVector C1=A+FVector(Roots.FRandRange(-25,25),Roots.FRandRange(-25,25),-80);
+            const FVector C2=End+FVector(Roots.FRandRange(-23,23),Roots.FRandRange(-23,23),Roots.FRandRange(45,95));
             B.Curve(A,C1,C2,End,Roots.FRandRange(2.5,4.6),5,26);
             for(int J=0;J<5;++J)
             {
                 const float T=Roots.FRandRange(.28,.85),S=1-T;
                 const FVector P=S*S*S*A+3*S*S*T*C1+3*S*T*T*C2+T*T*T*End;
                 FVector Tip=P+FVector(Roots.FRandRange(-30,30),Roots.FRandRange(-30,30),Roots.FRandRange(-38,-12));
-                Tip.X=FMath::Clamp(Tip.X,-94.,94.);Tip.Y=FMath::Clamp(Tip.Y,-94.,94.);Tip.Z=FMath::Max(Tip.Z,-132.);
+                Tip.X=FMath::Clamp(Tip.X,-94.,94.);Tip.Y=FMath::Clamp(Tip.Y,-94.,94.);Tip.Z=FMath::Max(Tip.Z,-270.);
                 B.Curve(P,P+FVector(Roots.FRandRange(-12,12),Roots.FRandRange(-12,12),-7),Tip+FVector(8,-5,12),Tip,Roots.FRandRange(.8,1.7),5,15);
             }
         }
@@ -350,6 +350,12 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
         }
     }
     FMeshNormals::InitializeOverlayToPerTriangleNormals(B.Mesh.Attributes()->PrimaryNormals());
+    if(ItemId==9)
+    {
+        FVector Extent=FVector::ZeroVector;
+        for(int V:B.Mesh.VertexIndicesItr())Extent=Extent.ComponentMax(FVector(B.Mesh.GetVertex(V)).GetAbs());
+        Body->SetBoxExtent(Extent+FVector(2));
+    }
     Model->SetMesh(FDynamicMesh3(B.Mesh)); Outline->SetMesh(MoveTemp(B.Mesh));
     auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
     auto* Edge=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionOutline"));
@@ -399,10 +405,10 @@ float AMiningCollectible::MeasureExposure() const
     if(!IsValid(HostRock)||HostRock->TriangleCount==0) return 1;
     if(ItemId==9)
     {
-        // Uncover the root crown to lift the plant; fine roots need not all be excavated.
+        // Sample the crown and deep root mass: exposing only the flowers is insufficient.
         TArray<FVector> Crown;
-        for(int X=-1;X<=1;++X)for(int Y=-1;Y<=1;++Y)
-            Crown.Add(GetActorTransform().TransformPosition(FVector(X*30,Y*30,-12)));
+        for(int Z=0;Z<6;++Z)for(int X=-1;X<=1;++X)for(int Y=-1;Y<=1;++Y)
+            Crown.Add(GetActorTransform().TransformPosition(FVector(X*60,Y*60,-35-Z*55)));
         TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints({HostRock},Crown,Covered);
         int Free=0;for(bool Solid:Covered)Free+=!Solid;
         return float(Free)/Crown.Num();
@@ -421,14 +427,14 @@ float AMiningCollectible::MeasureExposure() const
 }
 bool AMiningCollectible::CanRelease(float Threshold) const
 {
-    return !bReleased&&!bCollected&&Exposure>=FMath::Clamp(Threshold,.1f,1.f);
+    return !bReleased&&!bCollected&&Exposure>=FMath::Clamp(Threshold,ItemId==9?.8f:.1f,1.f);
 }
 void AMiningCollectible::Release()
 {
     if(bReleased||bCollected) return;
     if(ItemId==4 || ItemId==9)
     {
-        if(MeasureExposure()<.65f)return;
+        if(MeasureExposure()<(ItemId==9?.8f:.65f))return;
         // Keep the excavated calculator facing the player, with no Chaos impulse
         // that can throw it through a terrain chunk awaiting collision cooking.
         bReleased=true;

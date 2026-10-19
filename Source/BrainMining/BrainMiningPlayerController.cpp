@@ -39,6 +39,8 @@
 #include "MiningCellUniverse.h"
 #include "EndingEmergence.h"
 #include "Showcase/MiningExhibitHall.h"
+#include "Showcase/MiningTreasure.h"
+#include "CardRoomPlayer.h"
 #include "InputKeyEventArgs.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GameFramework/Pawn.h"
@@ -193,10 +195,15 @@ void ABrainMiningPlayerController::HandleMobileMove(const FVector2D& Axis)
 
 void ABrainMiningPlayerController::HandleMobileMine(bool bPressed)
 {
-	if (IsPaused() || IsMoveInputIgnored() || IsLookInputIgnored()) return;
-	if (auto* Mining=GetPawn()?GetPawn()->FindComponentByClass<UMiningComponent>():nullptr)
+	if (auto* Mining = GetPawn() ? GetPawn()->FindComponentByClass<UMiningComponent>() : nullptr)
 	{
-		if (bPressed) Mining->BeginMiningInput(); else Mining->EndMiningInput();
+		if (!bPressed)
+		{
+			Mining->EndMobileMiningInput();
+			return;
+		}
+		if (IsPaused() || IsMoveInputIgnored() || IsLookInputIgnored()) return;
+		Mining->BeginMobileMiningInput();
 	}
 }
 
@@ -243,6 +250,23 @@ void ABrainMiningPlayerController::HandleMobileInteract()
 			return;
 		}
 	}
+    for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It)
+        if (It->HandleInteractionInput(this)) return;
+    for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It)
+        if (It->HandleInteractionInput(this)) return;
+    if (auto* Cards = FindComponentByClass<UCardRoomInteractionComponent>(); Cards && Cards->bRoomActive
+        && Cards->Stage
+        && (Cards->Stage->Run.Phase == ECardRoomPhase::Exploring || Cards->Stage->Run.Phase == ECardRoomPhase::Victory)
+        && (Cards->Stage->Run.Phase == ECardRoomPhase::Victory
+            || Cards->Stage->IsPlayerNear(GetPawn() ? GetPawn()->GetActorLocation() : FVector::ZeroVector)))
+    {
+        Cards->Interact();
+        return;
+    }
+    for (TActorIterator<AMiningCollectionField> It(GetWorld()); It; ++It)
+        if (It->TryCollectTarget()) return;
+    for (TActorIterator<AMiningTreasureField> It(GetWorld()); It; ++It)
+        if (It->IsAreaActive() && It->CollectTarget(this)) return;
 	if (IsPaused() || IsMoveInputIgnored() || IsLookInputIgnored() || bUpgradeMenuHeld) return;
 	InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E, IE_Pressed, 1.f));
 }
@@ -309,6 +333,23 @@ void ABrainMiningPlayerController::HandleMobileEdit()
 	TriggerMobileKey(EKeys::G);
 }
 
+void ABrainMiningPlayerController::HandleMobileUpgrade()
+{
+	if (!MiningGUI || !bMiningGUIEnabled || IsPaused() || IsMoveInputIgnored() || IsLookInputIgnored()) return;
+	if (auto* Progression = GetPawn() ? GetPawn()->FindComponentByClass<UMiningProgressionComponent>() : nullptr)
+	{
+		if (!Progression->bInitialized) Progression->InitializeProgression();
+		if (Progression->UsesMineralInventory())
+		{
+			const bool bUpgraded = Progression->Purchase(0, Progression->GetLevel(0) + 1);
+			if (auto* Audio = GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPurchase(bUpgraded);
+			if (bUpgraded) MiningGUI->RefreshMineralProgression();
+			return;
+		}
+	}
+	SetUpgradeMenuHeld(!bUpgradeMenuHeld);
+}
+
 void ABrainMiningPlayerController::SetMobileVirtualKey(const FKey& Key, bool bPressed)
 {
 	const bool bWasPressed = MobileVirtualKeys.Contains(Key);
@@ -330,6 +371,11 @@ bool ABrainMiningPlayerController::IsMobileActionVisible() const
 	for (TActorIterator<AEchoPassageStage> It(GetWorld()); It; ++It) if (It->bLanded && !It->bCompleted) return true;
 	for (TActorIterator<APopupCloseStage> It(GetWorld()); It; ++It) if (It->IsSessionActive()) return true;
 	return false;
+}
+
+bool ABrainMiningPlayerController::IsMobileInteractVisible() const
+{
+    return true;
 }
 
 bool ABrainMiningPlayerController::IsMobileConfirmVisible() const
@@ -384,6 +430,11 @@ bool ABrainMiningPlayerController::IsMobileEditVisible() const
 	return false;
 }
 
+bool ABrainMiningPlayerController::IsMobileUpgradeVisible() const
+{
+	return MiningGUI && bMiningGUIEnabled;
+}
+
 FString ABrainMiningPlayerController::GetMobileActionLabel() const
 {
 	for (TActorIterator<AEchoPassageStage> It(GetWorld()); It; ++It) if (It->bLanded && !It->bCompleted) return TEXT("HIT");
@@ -407,6 +458,19 @@ bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 			if (It->HandleInteractionInput(this)) return true;
 		for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It)
 			if (It->HandleInteractionInput(this)) return true;
+        if (auto* Cards = FindComponentByClass<UCardRoomInteractionComponent>(); Cards && Cards->bRoomActive
+            && Cards->Stage
+            && (Cards->Stage->Run.Phase == ECardRoomPhase::Exploring || Cards->Stage->Run.Phase == ECardRoomPhase::Victory)
+            && (Cards->Stage->Run.Phase == ECardRoomPhase::Victory
+                || Cards->Stage->IsPlayerNear(GetPawn() ? GetPawn()->GetActorLocation() : FVector::ZeroVector)))
+		{
+			Cards->Interact();
+			return true;
+		}
+		for (TActorIterator<AMiningCollectionField> It(GetWorld()); It; ++It)
+			if (It->TryCollectTarget()) return true;
+		for (TActorIterator<AMiningTreasureField> It(GetWorld()); It; ++It)
+			if (It->IsAreaActive() && It->CollectTarget(this)) return true;
 	}
     auto* Progression = GetPawn() ? GetPawn()->FindComponentByClass<UMiningProgressionComponent>() : nullptr;
     if (Params.Key == EKeys::Tab && Progression && Progression->UsesMineralInventory())
@@ -446,7 +510,7 @@ bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 void ABrainMiningPlayerController::SetUpgradeMenuHeld(bool bHeld)
 {
     if (GetPawn()) if (auto* Progression = GetPawn()->FindComponentByClass<UMiningProgressionComponent>(); Progression && Progression->UsesMineralInventory()) return;
-	if (!bOwnsDesktopGUIInput || !MiningGUI || bUpgradeMenuHeld == bHeld) return;
+    if ((!bOwnsDesktopGUIInput && !ShouldUseTouchControls()) || !MiningGUI || bUpgradeMenuHeld == bHeld) return;
  if (bHeld && (!bMiningGUIEnabled || IsMoveInputIgnored() || IsLookInputIgnored() || IsPaused())) return;
 	bUpgradeMenuHeld = bHeld;
 	SetIgnoreLookInput(bHeld);

@@ -1,4 +1,6 @@
 #include "MiningCollection.h"
+#include "MiningExperienceSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "MiningInteractionTrace.h"
 #include "BrainMiningPlayerController.h"
 #include "SMiningCollectionView.h"
@@ -63,7 +65,7 @@ bool AMiningCollectionField::InitializePlayer()
     Bind(CatalogueKey,&AMiningCollectionField::ToggleCatalogue);
     if(!bUseAuthoredPlacements) Bind(EKeys::R,&AMiningCollectionField::ResetCollection);
     Subsystem->AddMappingContext(CollectionContext,50);
-    if(!bAreaManaged)
+    if(!bAreaManaged && !bCatalogueOnly)
     {
         if (auto* Controller = Cast<ABrainMiningPlayerController>(Player)) Controller->SetMiningGUIEnabled(false);
         if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->FlightSettings.bEnabled=true; Move->FlightSettings.bEnableHeat=false; }
@@ -74,7 +76,9 @@ bool AMiningCollectionField::InitializePlayer()
     Mining->FallResetDistance=0;
     Inventory.Init(0,FMath::Max(4,CatalogueIds().IsEmpty()?4:CatalogueIds().Last()+1));
     if(auto* Edge=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionSilhouette"))) HighlightPostProcess->Settings.AddBlendable(Edge,1);
-    SpawnField();
+    if(ActorHasTag(TEXT("BM_MainGame_Collections")) || bCatalogueOnly)
+        if(auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>(); Session && !Session->CampaignCollection.IsEmpty())Inventory=Session->CampaignCollection;
+    if(!bCatalogueOnly) SpawnField();
     PreviewTexture=NewObject<UTextureRenderTarget2D>(this); PreviewTexture->ClearColor=FLinearColor(0,0,0,1);
     PreviewTexture->InitAutoFormat(1536,1024); Capture->TextureTarget=PreviewTexture;
     if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionCataloguePreview.M_CollectionCataloguePreview")))
@@ -284,19 +288,27 @@ bool AMiningCollectionField::RegisterExternalCollectible(AMiningCollectible* Ite
 }
 void AMiningCollectionField::CollectTarget()
 {
-    if(bCatalogueOpen||!Player || (bAreaManaged && !bAreaActive)) return;
+    TryCollectTarget();
+}
+bool AMiningCollectionField::TryCollectTarget()
+{
+    if(bCatalogueOpen||!Player || (bAreaManaged && !bAreaActive)) return false;
     RefreshTarget();
-    if(!IsValid(Target)||!Inventory.IsValidIndex(Target->ItemId)) return;
+    if(!IsValid(Target)||!Inventory.IsValidIndex(Target->ItemId)) return false;
     AMiningCollectible* Item=Target; Item->SetHighlighted(false); Item->bCollected=true;
     Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);
     if(IsValid(Item->PresentationActor)) { Item->PresentationActor->Destroy(); Item->PresentationActor=nullptr; }
-    ++Inventory[Item->ItemId]; SelectedId=Item->ItemId; Target=nullptr;
+    ++Inventory[Item->ItemId];
+    if(ActorHasTag(TEXT("BM_MainGame_Collections")))if(auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>())Session->CampaignCollection=Inventory;
+    SelectedId=Item->ItemId; Target=nullptr;
     Toast=FString::Printf(TEXT("已收集 · %s     [ %s ] 打开图鉴"),*AMiningCollectible::ItemName(Item->ItemId),*CatalogueKey.GetDisplayName().ToString()); ToastRemaining=5;
+    return true;
 }
 int32 AMiningCollectionField::UniqueCount() const { int32 N=0; for(int32 Count:Inventory) N+=Count>0; return N; }
 TArray<int32> AMiningCollectionField::CatalogueIds() const
 {
     TArray<int32> Result;
+    if(bCatalogueOnly){for(int32 I=0;I<AMiningCollectible::ItemTypeCount;++I)Result.Add(I);return Result;}
     if(bUseAuthoredPlacements)
     {
         for(const auto& Placement:AuthoredPlacements)
@@ -346,18 +358,18 @@ void AMiningCollectionField::SelectItem(int32 Id)
     if(Owned) Preview->BuildModel(Id);
     ResetPreview();
 }
-void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=SelectedId==9?680:330; RotatePreview(0,0); }
+void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=SelectedId==9?850:330; RotatePreview(0,0); }
 void AMiningCollectionField::RotatePreview(float Yaw,float Pitch)
 {
     if(!Preview) return;
     PreviewYaw=FRotator::NormalizeAxis(PreviewYaw+Yaw); PreviewPitch=FMath::Clamp(PreviewPitch+Pitch,-80.f,80.f);
     Preview->SetActorRotation(FRotator(PreviewPitch,PreviewYaw,0));
     if(PreviewToilet)PreviewToilet->SetActorRotation(FRotator(PreviewPitch,PreviewYaw+90,0));
-    Capture->SetWorldLocation(FVector(-PreviewDistance,0,-9990)); Capture->SetWorldRotation(FRotator(0,0,0));
+    Capture->SetWorldLocation(FVector(-PreviewDistance,0,SelectedId==9?-10125:-9990)); Capture->SetWorldRotation(FRotator(0,0,0));
     Capture->CaptureScene();
     PreviewRefreshFrames=3;
 }
-void AMiningCollectionField::ZoomPreview(float Steps) { PreviewDistance=FMath::Clamp(PreviewDistance-Steps*22,SelectedId==9?450.f:270.f,SelectedId==9?950.f:550.f); RotatePreview(0,0); }
+void AMiningCollectionField::ZoomPreview(float Steps) { PreviewDistance=FMath::Clamp(PreviewDistance-Steps*22,SelectedId==9?650.f:270.f,SelectedId==9?1200.f:550.f); RotatePreview(0,0); }
 void AMiningCollectionField::ResetCollection()
 {
     if(bUseAuthoredPlacements) return; // Campaign retries must never erase global inventory.

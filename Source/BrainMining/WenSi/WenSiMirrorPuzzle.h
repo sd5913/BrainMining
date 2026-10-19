@@ -171,6 +171,8 @@ private:
  UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> Lamps;
  UPROPERTY() TObjectPtr<AActor> RewardShutter;
  UPROPERTY() TObjectPtr<AActor> Reward;
+ UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> CableMaterials;
+ TArray<bool> CablePressure;
  void UpdateMechanism();
  void CancelSwap();
  float SwapAge=-1.f;

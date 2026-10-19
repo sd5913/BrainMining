@@ -34,8 +34,14 @@ void AMiningRoomEscape::BeginPlay()
 {
     Super::BeginPlay();
     ClearTelevisionPreview();
+    InitializeRuntime();
+}
+
+void AMiningRoomEscape::InitializeRuntime()
+{
+    if (bRuntimeInitialized) return;
     Player=Cast<AMiningEncounterPlayerController>(GetWorld()->GetFirstPlayerController());
-    if(!Player.IsValid() || !CardStage || !Entrance){SetActorTickEnabled(false);return;}
+    if(!Player.IsValid() || !CardStage || !Entrance)return;
     Checkpoint+=SourceLevelOffset;ComputerEntry+=SourceLevelOffset;
     ComputerCheckpointPosition+=SourceLevelOffset;TunnelEnd+=SourceLevelOffset;Exit+=SourceLevelOffset;
     WaterStartZ+=SourceLevelOffset.Z;WaterEndZ+=SourceLevelOffset.Z;TableWaterZ+=SourceLevelOffset.Z;
@@ -53,6 +59,7 @@ void AMiningRoomEscape::BeginPlay()
     if(GEngine && GEngine->GameViewport){SAssignNew(View,SMiningEscapeView).Owner(this);GEngine->GameViewport->AddViewportWidgetContent(View.ToSharedRef(),60);}
     ResetJourney();
     if (bAreaManaged) SetAreaActive(false);
+    bRuntimeInitialized=true;
 }
 void AMiningRoomEscape::SetAreaActive(bool bActive)
 {
@@ -196,7 +203,7 @@ void AMiningRoomEscape::UpdateWater()
     const bool Signal=Visible && WaterZ>=TableWaterZ-100 && Phase!=EMiningEscapePhase::Escaped;
     // The restored dark green CRT must keep its tone under the local tunnel
     // exposure, rather than becoming a flat lime panel as the player approaches.
-    if(ScreenMaterial)ScreenMaterial->SetVectorParameterValue(TEXT("Color"),Signal?FLinearColor(.08f,.30f,.24f)*(.18f+.035f*FMath::Sin(Elapsed*5)):FLinearColor(.001f,.001f,.001f));
+    if(ScreenMaterial)ScreenMaterial->SetVectorParameterValue(TEXT("Color"),FLinearColor(.06f,.38f,.23f)*(Signal?1.1f+.08f*FMath::Sin(Elapsed*2):.7f));
     if(Beacon)Beacon->SetVisibility(Signal);
     for(const auto& Light:InteriorLights)if(Light)Light->SetVisibility(Signal || bEnteredComputer);
     for(int32 i=0;i<FloatingProps.Num();++i)
@@ -214,7 +221,13 @@ void AMiningRoomEscape::UpdateWater()
 }
 void AMiningRoomEscape::Tick(float DeltaSeconds)
 {
-    Super::Tick(DeltaSeconds);if((bAreaManaged && !bAreaActive) || !Player.IsValid() || !Player->GetPawn())return;
+    Super::Tick(DeltaSeconds);
+    if (!bRuntimeInitialized)
+    {
+        InitializeRuntime();
+        return;
+    }
+    if((bAreaManaged && !bAreaActive) || !Player.IsValid() || !Player->GetPawn())return;
     TickPresentation(DeltaSeconds);const float PreviousPhaseTime=PhaseTime;PhaseTime+=DeltaSeconds;
     if(Phase==EMiningEscapePhase::Warning && PreviousPhaseTime<.45f && PhaseTime>=.45f)
         UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Warning"),.5f);

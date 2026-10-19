@@ -211,7 +211,7 @@ void UWenSiMirrorWidget::Refresh()
   if(WordWidgets[Index].IsValid())WordWidgets[Index]->SetRenderOpacity(Puzzle->IsSwapping() && !Puzzle->HasSwapCommitted()?0.f:1.f);
  }
  FString Message;
- if(Puzzle->MousePortal && Puzzle->MousePortal->IsEntering()) Message=TEXT("正在进入画中的细胞……");
+ if(Puzzle->MousePortal && Puzzle->MousePortal->IsEntering()) Message=TEXT("");
  else if(Puzzle->MousePortal && Puzzle->MousePortal->IsFocused()) Message=FString();
  else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("E 重置谜题");
  else if (!Puzzle->bComplete)

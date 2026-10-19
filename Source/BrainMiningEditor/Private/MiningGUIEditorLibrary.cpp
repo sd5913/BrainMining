@@ -1,4 +1,8 @@
 #include "MiningGUIEditorLibrary.h"
+#include "EndingEmergence.h"
+#include "MiningExperienceSubsystem.h"
+#include "Engine/GameInstance.h"
+#include "EngineUtils.h"
 #include "BrainMiningFonts.h"
 #include "MiningGUIWidgets.h"
 #include "WidgetBlueprint.h"
@@ -31,6 +35,19 @@
 #include "Widgets/SWindow.h"
 #include "PlayInEditorDataTypes.h"
 #include "Settings/LevelEditorPlaySettings.h"
+
+bool UMiningGUIEditorLibrary::PrepareEndingCreditsPreview(APlayerController* Controller, const TArray<int32>& Inventory)
+{
+    UWorld* World=Controller?Controller->GetWorld():nullptr;
+    if(!World || World->WorldType!=EWorldType::PIE)return false;
+    auto* Session=World->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();
+    for(TActorIterator<AEndingEmergence> It(World);It;++It)
+    {
+        if(!Session)return false;
+        Session->CampaignCollection=Inventory;It->bComplete=true;return true;
+    }
+    return false;
+}
 
 namespace MiningGUIEditor
 {

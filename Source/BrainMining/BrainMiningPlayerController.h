@@ -46,7 +46,9 @@ public:
     void HandleMobileCatalogue();
     void HandleMobileBack();
     void HandleMobileEdit();
+    void HandleMobileUpgrade();
     bool IsMobileActionVisible() const;
+    bool IsMobileInteractVisible() const;
     bool IsMobileConfirmVisible() const;
     bool IsMobileResetVisible() const;
     bool IsMobileThoughtVisible() const;
@@ -54,6 +56,7 @@ public:
     bool IsMobileCatalogueVisible() const;
     bool IsMobileBackVisible() const;
     bool IsMobileEditVisible() const;
+    bool IsMobileUpgradeVisible() const;
     FString GetMobileActionLabel() const;
     bool IsUsingTouchControls() const { return ShouldUseTouchControls(); }
  UFUNCTION(BlueprintCallable, Category="Mining GUI")

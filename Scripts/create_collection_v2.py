@@ -21,7 +21,7 @@ if not unreal.EditorAssetLibrary.does_asset_exist(path):
         i=unreal.CustomInput();i.set_editor_property('input_name',name);inputs.append(i)
     custom.set_editor_property('inputs',inputs)
     custom.set_editor_property('code','''
-#if PLATFORM_ANDROID
+#if SHADING_PATH_MOBILE
 return Base.rgb;
 #else
 float2 uv = GetDefaultSceneTextureUV(Parameters, 13);

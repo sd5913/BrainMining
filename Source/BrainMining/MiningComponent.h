@@ -64,6 +64,8 @@ public:
     bool IsInputContextEnabled() const { return bInputContextEnabled; }
     void BeginMiningInput() { StartMining(); }
     void EndMiningInput() { StopMining(); }
+    void BeginMobileMiningInput() { bMobileMiningInput = true; StartMining(); }
+    void EndMobileMiningInput() { StopMining(); bMobileMiningInput = false; }
     UPROPERTY(BlueprintAssignable, Category="Mining") FMiningResetEvent OnFieldReset;
     void PushEncounterBlock();
     void PopEncounterBlock();
@@ -181,6 +183,8 @@ private:
 	FHitResult TargetHit;
 	double NextMineTime = 0.0;
 	bool bMiningHeld = false;
+    bool bMineQueued = false;
+	bool bMobileMiningInput = false;
 	bool bInputSuspended = false;
 	bool bHasInitialTransform = false;
 	double DrillUseEnds = 0;

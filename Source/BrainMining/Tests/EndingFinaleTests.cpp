@@ -226,7 +226,17 @@ public:
             Test->TestTrue(TEXT("No click is required to run the real mining component"),M->IsMiningActive()&&M->bDrillMode&&M->bInfiniteDrillEnergy);
             Test->TestEqual(TEXT("Energy remains full"),M->DrillEnergy,M->MaxDrillEnergy);
             Test->TestEqual(TEXT("Both stylized drill models are equipped"),D->FinaleDrills.Num(),2);
-            for(auto Drill:D->FinaleDrills)Test->TestTrue(TEXT("Drill uses the ending-only painted material"),Drill->GetMaterial(0)->GetMaterial()->GetName().Contains(TEXT("M_EE_ComicDrill")));
+            for(auto Drill:D->FinaleDrills)
+            {
+                Test->TestTrue(TEXT("Drill uses the ending-only painted material"),Drill->GetMaterial(0)->GetMaterial()->GetName().Contains(TEXT("M_EE_ComicDrill")));
+                Test->TestTrue(TEXT("Cinematic drill mesh is present and visible"),Drill->GetStaticMesh() && Drill->IsVisible() && !Drill->bHiddenInGame);
+                const FVector InCamera=D->Camera->GetActorTransform().InverseTransformPosition(Drill->Bounds.Origin);
+                UE_LOG(LogTemp,Display,TEXT("ENDING_DRILL_VIEW pawn=%s mesh=%s location=%s scale=%s cameraBounds=%s"),*P->GetPawn()->GetClass()->GetName(),*GetNameSafe(Drill->GetStaticMesh()),*Drill->GetRelativeLocation().ToString(),*Drill->GetRelativeScale3D().ToString(),*InCamera.ToString());
+                Test->TestTrue(TEXT("Cinematic drill stays in front of the camera"),InCamera.X>10 && InCamera.X<180);
+                Test->TestTrue(TEXT("Cinematic drill remains in the lower half of the view"),InCamera.Z<0);
+                auto* Mat=Cast<UMaterialInstanceDynamic>(Drill->GetMaterial(0));
+                Test->TestTrue(TEXT("Cinematic drill is fully opaque while mining"),Mat && Mat->K2_GetScalarParameterValue(TEXT("Fade"))>.99f);
+            }
             Test->TestEqual(TEXT("Original drill reach is restored for the half-length first-person model"),M->Reach,420.f);
             // The spin transform translates the pivot around the bit axis. Its
             // raw X is not the mount position; review framing in the screenshot.
@@ -357,6 +367,8 @@ public:
         }
         else if(Step==12)
         {
+            Test->TestTrue(TEXT("Real video completion opens the credits screen"),D->Credits.IsValid());
+            Capture(TEXT("paper-completed-credits"));
             Key(P,EKeys::R,false);M->ResetField();
             Test->TestEqual(TEXT("R cannot restart the completed ending"),D->Shot,13);
             Test->TestTrue(TEXT("Disabled shared reset preserves the completed scene"),D->bComplete&&D->PaperCaveScene->IsVisible());

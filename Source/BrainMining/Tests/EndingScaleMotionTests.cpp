@@ -168,6 +168,7 @@ public:
         else if(Step==7&&D->Age-At>.5f)
         {
             Test->TestEqual(TEXT("Nebula passage now lasts 35 seconds"),D->Duration(4),35.f);
+            Test->TestEqual(TEXT("Earth holds one extra second before the nebula cut"),D->Duration(3),11.f);
             Test->TestFalse(TEXT("Cell anatomy stays hidden even late in the nebula passage"),D->Cell->IsVisible());
             Test->TestFalse(TEXT("Other cells cannot intrude early"),D->OtherCells->IsVisible());
             Capture(TEXT("nebula-uninterrupted"));At=D->Age;Step=8;

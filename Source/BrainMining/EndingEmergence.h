@@ -289,6 +289,12 @@ private:
     UPROPERTY(Transient) TObjectPtr<UMaterialInterface> FisheyeMaterial;
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> TransitMaterial;
     TSharedPtr<SEmergenceEndingView> View;
+    TSharedPtr<class SWidget> Credits;
+    UPROPERTY(Transient) TObjectPtr<class AMiningCollectionField> EndingCatalogue;
+    void UpdateCredits();
+    void RemoveCredits();
+    int32 LastPaperSubtitle=-1;
+    bool bMealSubtitle=false;
     bool bReady = false;
     bool bFinalResolvePlayed = false;
     void WarmStreetRendering();

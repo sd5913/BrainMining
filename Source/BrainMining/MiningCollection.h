@@ -107,6 +107,7 @@ class BRAINMINING_API AMiningCollectionField : public AActor
     GENERATED_BODY()
 public:
     AMiningCollectionField();
+    bool bCatalogueOnly=false;
     UPROPERTY(EditAnywhere, Category="Collection") bool bAreaManaged = false;
     UPROPERTY(EditAnywhere, Category="Collection") FKey CatalogueKey = EKeys::Tab;
     // Kept for the existing catalogue UMG's authored material slots.
@@ -143,6 +144,7 @@ public:
     UPROPERTY() TObjectPtr<USceneCaptureComponent2D> Capture;
     UPROPERTY() TObjectPtr<AHeavenToilet> PreviewToilet;
     UPROPERTY() TObjectPtr<UPostProcessComponent> HighlightPostProcess;
+    bool TryCollectTarget();
     UFUNCTION(BlueprintCallable) void CollectTarget();
     // Register a room-owned reward with the existing inventory and pickup path.
     bool RegisterExternalCollectible(AMiningCollectible* Item);

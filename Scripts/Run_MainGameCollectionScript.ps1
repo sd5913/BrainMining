@@ -16,6 +16,12 @@ $collectionReportName=switch($Script){
     'promote_main_game_collections.py' {'promotion.json'}
     default {''}
 }
+if($Script -eq 'verify_restored_drill_pose.py'){
+    $poseReport=Get-Item -LiteralPath "$collectionRoot/Saved/Validation/MainGameDrill/runtime.json"
+    $poseResult=Get-Content -LiteralPath $poseReport.FullName -Raw | ConvertFrom-Json
+    if($poseReport.LastWriteTime -lt $collectionRunStarted -or -not $poseResult.passed){throw 'MainGame drill pose/input validation failed.'}
+    Write-Host 'MainGame drill pose and locked-reward input checks passed.'
+}
 if($collectionReportName){
     $collectionReport=Get-Item -LiteralPath "$collectionRoot\Saved\Validation\MainGameCollections\$collectionReportName"
     if($collectionReport.LastWriteTime -lt $collectionRunStarted){throw 'MainGame collection run did not produce a fresh report.'}

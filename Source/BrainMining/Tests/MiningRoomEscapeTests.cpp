@@ -240,7 +240,7 @@ public:
         Test->TestNotNull(TEXT("Stage celebration exists"),E->StageCelebration.Get());
         E->StageCelebration->Tick(.1f);
         Test->TestTrue(TEXT("Approaching stage opens its curtain"),E->StageCelebration->bCurtainOpen);
-        Test->TestFalse(TEXT("Leaving the television does not fire confetti early"),E->StageCelebration->bStageActive);
+        Test->TestTrue(TEXT("Confetti starts immediately with the curtain"),E->StageCelebration->bStageActive);
         Test->TestTrue(TEXT("Collectible ribbon waits inside its cannon"),E->StageRibbon->IsHidden() && !E->StageRibbon->bReleased);
         Pawn->SetActorLocation(E->Exit+FVector(650,0,0));E->StageCelebration->Tick(.1f);
         Test->TestTrue(TEXT("Walking forward onto stage fires confetti"),E->StageCelebration->bStageActive);

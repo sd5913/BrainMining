@@ -40,6 +40,7 @@ private:
         Drill,
         Jetpack,
         Interact,
+        Upgrade,
         Primary,
         Confirm,
         Reset,
@@ -58,6 +59,7 @@ private:
         Drill,
         Jetpack,
         Interact,
+        Upgrade,
         Primary,
         Confirm,
         Reset,
@@ -77,6 +79,7 @@ private:
     int32 DrillPointer = -1;
     int32 JetpackPointer = -1;
     int32 InteractPointer = -1;
+    int32 UpgradePointer = -1;
     int32 PrimaryPointer = -1;
     int32 ConfirmPointer = -1;
     int32 ResetPointer = -1;
@@ -96,6 +99,7 @@ private:
     float GetUiScale(const FVector2D& Size) const;
     float GetJoystickRadius(const FVector2D& Size) const;
     float GetButtonRadius(const FVector2D& Size) const;
+    float GetButtonHitRadius(EButton Button, const FVector2D& Size) const;
     FVector2D GetButtonCenter(EButton Button, const FVector2D& Size) const;
     EPointerAction GetButtonAction(EButton Button) const;
     int32& GetButtonPointer(EButton Button);

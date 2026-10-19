@@ -1,7 +1,7 @@
 param(
     [string]$EngineRoot = "E:\UE5\UE_5.8",
     [string]$ArchiveDirectory = "",
-    [string]$MapPath = "/Game/MainGame/Maps/Lvl_MainGame",
+    [string]$MapPath = "/Game/MainGame/Maps/Lvl_MainGame+/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo",
     [string]$AndroidSdkRoot = "",
     [string]$NdkRoot = "",
     [string]$JavaHome = "",
@@ -83,6 +83,7 @@ if ([string]::IsNullOrWhiteSpace($ArchiveDirectory)) {
 
 New-Item -ItemType Directory -Force -Path $ArchiveDirectory | Out-Null
 $ProjectFile = Join-Path $ProjectRoot "BrainMining.uproject"
+$StartupMap = ($MapPath -split '\+')[0]
 $Arguments = @(
     "BuildCookRun",
     "-project=$ProjectFile",
@@ -98,7 +99,8 @@ $Arguments = @(
     "-compressed",
     "-nodebuginfo",
     "-skipeditorcontent",
-    "-map=$MapPath",
+    "-map=$StartupMap",
+    "-MapsToCook=$MapPath",
     "-archive",
     "-archivedirectory=$ArchiveDirectory"
 )

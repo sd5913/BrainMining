@@ -201,7 +201,11 @@ void AEndingEmergence::PrepareFinaleRocks()
         Pivot->SetRelativeLocationAndRotation(FVector(Left?95:85,Left?-28:28,3),FRotator(14,Left?18:-18,0));
         Pivot->RegisterComponent();FinaleDrillPivots.Add(Pivot);
         auto* Mesh=NewObject<UStaticMeshComponent>(this,NAME_None,RF_Transient);Mesh->SetupAttachment(Pivot);Mesh->SetStaticMesh(Part->GetStaticMesh());
-        Mesh->SetRelativeTransform(Part->GetRelativeTransform());Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);Mesh->SetCastShadow(false);Mesh->SetVisibleInRayTracing(false);
+        // Keep the original cinematic framing. The shared gameplay pawn has a
+        // different model offset; copying it lifts both drills across the lens.
+        Mesh->SetRelativeTransform(FTransform(FRotator(-10,0,0),
+            FVector(Left?-31.280714:-21.432637,0,Left?-14.638632:-16.375114),FVector(.72,Left?-.72:.72,.72)));
+        Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);Mesh->SetCastShadow(false);Mesh->SetVisibleInRayTracing(false);
         auto* ToolMat=UMaterialInstanceDynamic::Create(ComicDrill?ComicDrill:Part->GetMaterial(0),Mesh);
         ToolMat->SetScalarParameterValue(TEXT("Fade"),1);ToolMat->SetScalarParameterValue(TEXT("InkExit"),0);FinaleDrillMaterials.Add(ToolMat);
         for(int M=0;M<Part->GetNumMaterials();++M)Mesh->SetMaterial(M,ToolMat);
@@ -230,6 +234,14 @@ void AEndingEmergence::BeginFinaleDrill()
     Mining->SetInputSuspended(false);if(!Mining->bDrillMode)Mining->ActivateDrill();
     Mining->OnMiningHit.AddDynamic(this,&AEndingEmergence::FinaleDrillHit);
     PrepareFinaleRocks();
+    // Prepared tools may retain the exit fade after a preview or shot seek.
+    // Every mining entrance must restore opaque, coloured drills.
+    for(auto Mat:FinaleDrillMaterials)
+    {
+        Mat->SetScalarParameterValue(TEXT("Fade"),1);
+        Mat->SetScalarParameterValue(TEXT("InkExit"),0);
+        Mat->SetScalarParameterValue(TEXT("WhiteInk"),0);
+    }
     for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(false);
     FinaleEntrancePreview->SetVisibility(false,true);
     for(auto Pivot:FinaleDrillPivots)Pivot->SetVisibility(true,true);
@@ -319,7 +331,8 @@ void AEndingEmergence::EndFinaleDrill(bool KeepVisuals)
 {
     if(bFinaleDrilling&&Mining)
     {
-        if(auto* Effects=Player->GetPawn()->FindComponentByClass<UMiningToolEffectsComponent>())
+        APawn* Pawn=Player?Player->GetPawn():nullptr;
+        if(auto* Effects=Pawn?Pawn->FindComponentByClass<UMiningToolEffectsComponent>():nullptr)
         {
             Effects->bEnabled=SavedEffectsEnabled;
             Effects->DrillSmokeStrength=SavedDrillSmoke;Effects->DrillDustStrength=SavedDrillDust;Effects->DrillSparkStrength=SavedDrillSparks;

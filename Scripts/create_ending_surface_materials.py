@@ -78,7 +78,7 @@ def make(name,code,textures,scalars={},translucent=False,post=False,vectors={}):
     for key,_,_ in bindings:
         i=unreal.CustomInput();i.set_editor_property('input_name',key);inputs.append(i)
     custom.set_editor_property('inputs',inputs)
-    custom.set_editor_property('code',('#if PLATFORM_ANDROID\nreturn float4(SC.rgb,1);\n#else\n'+code+'\n#endif') if post else code)
+    custom.set_editor_property('code',('#if SHADING_PATH_MOBILE\nreturn float4(SC.rgb,1);\n#else\n'+code+'\n#endif') if post else code)
     for key,n,output in bindings:assert lib.connect_material_expressions(n,output,custom,key),key
     rgb=node(unreal.MaterialExpressionComponentMask);rgb.set_editor_property('r',True);rgb.set_editor_property('g',True);rgb.set_editor_property('b',True)
     assert lib.connect_material_expressions(custom,'',rgb,'');lib.connect_material_property(rgb,'',unreal.MaterialProperty.MP_EMISSIVE_COLOR)

@@ -549,7 +549,8 @@ void AMiningTreasure::UpdateGlow(float DeltaSeconds, bool bAllowLight)
             CrystalClueMaterial->SetScalarParameterValue(TEXT("Metallic"),.12f*CrystalClueBrightness);
         }
     }
-    BuriedGlow->SetVisibility(bAllowLight && HintAmount>.001f);
+    // A missing cooked material must never expose Unreal's default rectangular decal.
+    BuriedGlow->SetVisibility(bAllowLight && HintAmount>.001f && IsValid(BuriedGlow->GetDecalMaterial()));
     GlowLight->SetVisibility(bAllowLight && !bCollected && Exposure > .02f);
     GlowLight->SetIntensity(28*FMath::Clamp(Exposure,0.f,1.f));
 }

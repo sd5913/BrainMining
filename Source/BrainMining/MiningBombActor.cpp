@@ -9,6 +9,7 @@
 #include "GeneratedMiningRock.h"
 #include "MiningDebrisBurst.h"
 #include "MiningDrillDustBurst.h"
+#include "MobileRuntimeSettings.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "EngineUtils.h"
@@ -43,7 +44,8 @@ AMiningBombActor::AMiningBombActor()
 	BounceMaterial = CreateDefaultSubobject<UPhysicalMaterial>(TEXT("BombBounceMaterial"));
 	BounceMaterial->Friction = .45f;
 	BounceMaterial->Restitution = 0.f;
-	Collision->SetPhysMaterialOverride(BounceMaterial);
+	// Applying this material updates physics and must wait until Launch: the
+	// class default object is constructed before GEngine exists during cook.
 	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BombModel"));
 	Model->SetupAttachment(Collision);
 	Model->SetCollisionProfileName(TEXT("NoCollision"));
@@ -58,8 +60,11 @@ void AMiningBombActor::Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMining
 	Explosion = Effect;
 	SourceTool = Tool;
 	Model->SetStaticMesh(Mesh);
-	Model->SetRelativeLocation(-Mesh->GetBounds().Origin);
+	constexpr float ThrownModelScale=1.4f;
+	Model->SetRelativeScale3D(FVector(ThrownModelScale));
+	Model->SetRelativeLocation(-Mesh->GetBounds().Origin*ThrownModelScale);
 	Collision->SetSphereRadius(FMath::Clamp(Settings.CollisionRadius, 1.f, 50.f));
+	Collision->SetPhysMaterialOverride(BounceMaterial);
 	Collision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	Collision->SetMassOverrideInKg(NAME_None, FMath::Clamp(Settings.Mass, .1f, 100.f), true);
@@ -135,11 +140,15 @@ void AMiningBombActor::Contact(UPrimitiveComponent*, AActor* Other, UPrimitiveCo
 
 void AMiningBombActor::ApplyShockwave(const FVector& Location)
 {
+	const bool bMobile = UMobileRuntimeSettings::IsMobileRuntime();
 	const float Radius = FMath::Clamp(Settings.BlastRadius, 50.f, 3000.f);
 	FCollisionObjectQueryParams Types;
 	Types.AddObjectTypesToQuery(ECC_Pawn);
-	Types.AddObjectTypesToQuery(ECC_PhysicsBody);
-	Types.AddObjectTypesToQuery(ECC_WorldDynamic);
+	if (!bMobile)
+	{
+		Types.AddObjectTypesToQuery(ECC_PhysicsBody);
+		Types.AddObjectTypesToQuery(ECC_WorldDynamic);
+	}
 	TArray<FOverlapResult> Hits;
 	FCollisionQueryParams Query(SCENE_QUERY_STAT(BombBlast), false, this);
 	GetWorld()->OverlapMultiByObjectType(Hits, Location, FQuat::Identity, Types, FCollisionShape::MakeSphere(Radius), Query);
@@ -187,14 +196,24 @@ void AMiningBombActor::Explode()
 	Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ApplyShockwave(Location);
 	ExcavateTerrain(Location);
+	FMiningBombSettings Presentation = Settings;
+	if (UMobileRuntimeSettings::IsMobileRuntime())
+	{
+		Presentation.ExplosionScale = FMath::Min(Presentation.ExplosionScale, .9f);
+		Presentation.DebrisCount = FMath::Min(Presentation.DebrisCount, 24);
+		Presentation.FireStrength *= .55f;
+		Presentation.SmokeStrength *= .45f;
+		Presentation.DustStrength = 0;
+	}
 	if (auto* Burst = GetWorld()->SpawnActor<AMiningBombExplosion>(Location, FRotator::ZeroRotator))
-		Burst->Initialize(Explosion, Settings);
+		Burst->Initialize(Explosion, Presentation);
 	if (SourceTool.IsValid()) SourceTool->RecordExplosion(Location);
 	Destroy();
 }
 
 void AMiningBombActor::ExcavateTerrain(const FVector& Location)
 {
+	const bool bMobile = UMobileRuntimeSettings::IsMobileRuntime();
 	const float Radius = FMath::Clamp(Settings.ExcavationRadius, 100.f, 2000.f);
 	const float Reach = Radius * 1.45f;
 	AGeneratedMiningRock::PrepareTerrainAt(GetWorld(), Location, Reach + 1.f);
@@ -205,9 +224,10 @@ void AMiningBombActor::ExcavateTerrain(const FVector& Location)
 	Query.AddIgnoredActor(GetOwner());
 	// Sample before removing the rock, from the final physical bomb location.
 	// Fibonacci directions cover floor, walls and roof without a forward-only bias.
-	for (int32 Index = 0; Index < 96; ++Index)
+	const int32 SampleCount = bMobile ? 48 : 96;
+	for (int32 Index = 0; Index < SampleCount; ++Index)
 	{
-		const double Z = 1. - 2. * (Index + .5) / 96.;
+		const double Z = 1. - 2. * (Index + .5) / SampleCount;
 		const double Angle = Index * 2.399963229728653;
 		const double R = FMath::Sqrt(1.-Z*Z);
 		const FVector Direction(R*FMath::Cos(Angle), R*FMath::Sin(Angle), Z);
@@ -246,7 +266,7 @@ void AMiningBombActor::ExcavateTerrain(const FVector& Location)
 			return Surface.Material == Other.Material && FVector::DistSquared(Surface.Hit.ImpactPoint, Other.Hit.ImpactPoint) < 150*150;
 		})) continue;
 		Patches.Add(Surface);
-		if (Patches.Num() == 8) break;
+		if (Patches.Num() == (bMobile ? 3 : 8)) break;
 	}
 	TArray<TObjectPtr<UStaticMesh>> Meshes;
 	TArray<TObjectPtr<UStaticMesh>> CaveMeshes;
@@ -256,7 +276,7 @@ void AMiningBombActor::ExcavateTerrain(const FVector& Location)
 			if (auto* Mesh = LoadObject<UStaticMesh>(nullptr, *FString::Printf(TEXT("/Game/Debris/Meshes/SM_Debris_Concrete_%s_%d.SM_Debris_Concrete_%s_%d"), Size,I,Size,I))) Meshes.Add(Mesh);
 			if (auto* Mesh = LoadObject<UStaticMesh>(nullptr, *FString::Printf(TEXT("/Game/Bomb/FX/SM_Debris_Concrete_%s_%d_CaveUV.SM_Debris_Concrete_%s_%d_CaveUV"), Size,I,Size,I))) CaveMeshes.Add(Mesh);
 		}
-	const int32 Total = FMath::Clamp(Settings.DebrisCount, 0, 96);
+	const int32 Total = FMath::Clamp(bMobile ? FMath::Min(Settings.DebrisCount, 24) : Settings.DebrisCount, 0, 96);
 	for (int32 Index=0; Index<Patches.Num(); ++Index)
 	{
 		FSurface& Surface = Patches[Index];
@@ -302,7 +322,7 @@ void AMiningBombActor::ExcavateTerrain(const FVector& Location)
 				Debris->InitializeBlast(bCaveUV ? CaveMeshes : Meshes,Material,Surface.Hit.ImpactNormal,Radius,Count,Settings.DebrisLifetime);
 				if (SourceTool.IsValid()) SourceTool->LastDebrisCount += Debris->ChunkCount;
 			}
-		if (Settings.DustStrength > 0)
+		if (!bMobile && Settings.DustStrength > 0)
 			if (auto* Dust = GetWorld()->SpawnActor<AMiningDrillDustBurst>(Position,FRotator::ZeroRotator,Spawn))
 			{
 				Dust->Tags.AddUnique(TEXT("BM_PlayerEffect"));

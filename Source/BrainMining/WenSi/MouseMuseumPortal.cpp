@@ -13,6 +13,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Subtitles/SubtitleSubsystem.h"
 
 AMouseMuseumPortal::AMouseMuseumPortal()
 {
@@ -93,6 +94,7 @@ void AMouseMuseumPortal::RefreshFocus()
   const FVector Local=Pawn->GetActorLocation()-GetActorLocation();
   if(Local.X>2210 && Local.X<2440 && FMath::Abs(Local.Y+350)<125 && Local.Z<200)
   {
+   if(!bGalleryHintShown){bGalleryHintShown=true;if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("这画上好像有个奇怪的圆圈")),4.f);}}
    FVector Eye;FRotator R;PC->GetPlayerViewPoint(Eye,R);const FVector D=R.Vector(),Center=CellCenter();
    if(D.X>.05f)
    {
@@ -119,6 +121,7 @@ bool AMouseMuseumPortal::TryEnter()
  EntryPawn=Pawn;bPawnWasHidden=Pawn->IsHidden();Pawn->SetActorHiddenInGame(true);
  PreviousMovementMode=Pawn->GetCharacterMovement()->MovementMode;PreviousCustomMode=Pawn->GetCharacterMovement()->CustomMovementMode;
  Pawn->GetCharacterMovement()->StopMovementImmediately();Pawn->GetCharacterMovement()->DisableMovement();
+ if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("再想想，比如说生命的涌现呢？")),5.f);}
  EntryAge=0;bFocused=false;bTravelRequested=false;return true;
 }
 

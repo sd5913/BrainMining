@@ -16,6 +16,7 @@ class BRAINMINING_API UMiningExperienceSubsystem : public UGameInstanceSubsystem
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
+    UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly) TArray<int32> CampaignCollection;
     bool ToggleMenu();
     bool ToggleDeveloperMenu();
     UFUNCTION(BlueprintCallable) bool TogglePauseMenu();

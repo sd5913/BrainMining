@@ -15,6 +15,8 @@ public static class BrainMiningResourceProbe
     }
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool GlobalMemoryStatusEx(ref MemoryStatus status);
+    [DllImport("psapi.dll", SetLastError = true)]
+    public static extern bool EmptyWorkingSet(IntPtr process);
     public static MemoryStatus Read()
     {
         MemoryStatus status = new MemoryStatus();
@@ -71,6 +73,7 @@ function Start-MiningGuardedProcess {
         [Parameter(Mandatory)][string]$ReportPath,
         [switch]$EditorSession,
         [switch]$BelowNormal,
+        [switch]$TrimCookWorkingSet,
         [int]$MaximumSeconds = 0
     )
     if (-not $EditorSession) {
@@ -86,6 +89,7 @@ function Start-MiningGuardedProcess {
     $started = [DateTime]::UtcNow
     $lowSamples = 0
     $stopReason = ''
+    $lastTrim = [DateTime]::MinValue
     Write-Host "Resource report: $ReportPath"
     try {
         if ($BelowNormal -and -not $process.HasExited) { $process.PriorityClass = 'BelowNormal' }
@@ -93,6 +97,21 @@ function Start-MiningGuardedProcess {
             $snapshot = Get-MiningResourceSnapshot
             $process.Refresh()
             if ($process.HasExited) { break }
+            if ($TrimCookWorkingSet -and $snapshot.AvailablePhysicalGB -lt 3.5 -and $snapshot.AvailableCommitGB -gt 8 -and ([DateTime]::UtcNow - $lastTrim).TotalSeconds -ge 10) {
+                $cookChildren = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($process.Id) AND Name = 'UnrealEditor-Cmd.exe'" | Where-Object { $_.CommandLine -match '(?i)-run=Cook\b' })
+                foreach ($child in $cookChildren) {
+                    $cookProcess = Get-Process -Id $child.ProcessId -ErrorAction SilentlyContinue
+                    if ($cookProcess -and $cookProcess.WorkingSet64 -gt 1GB) {
+                        try {
+                            if ([BrainMiningResourceProbe]::EmptyWorkingSet($cookProcess.Handle)) {
+                                Write-Host "Released pageable cook working-set pages (PID $($cookProcess.Id)); resource limits remain active."
+                            }
+                        } catch { Write-Warning "Could not trim the launched cook process: $_" }
+                    }
+                }
+                $lastTrim = [DateTime]::UtcNow
+                $snapshot = Get-MiningResourceSnapshot
+            }
             [pscustomobject]@{
                 Time = $snapshot.Time
                 ElapsedSeconds = ([DateTime]::UtcNow - $started).TotalSeconds

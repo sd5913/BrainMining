@@ -1,4 +1,17 @@
 #include "MobileTouchControls.h"
+#include "MobileUIWidgets.h"
+#include "MiningComponent.h"
+#include "MiningBombToolComponent.h"
+#include "MiningCharacterMovementComponent.h"
+#include "MiningExperienceSubsystem.h"
+#include "MiningWalletSubsystem.h"
+#include "MiningInteractionHUDWidget.h"
+#include "StartRoom/MiningOpening.h"
+#include "Engine/GameInstance.h"
+#include "GameFramework/Pawn.h"
+#include "Fonts/FontMeasure.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Rendering/SlateRenderer.h"
 #include "BrainMiningFonts.h"
 
 #include "BrainMiningPlayerController.h"
@@ -20,7 +33,7 @@ FVector2D SMobileTouchControls::ComputeDesiredSize(float LayoutScaleMultiplier) 
 
 float SMobileTouchControls::GetUiScale(const FVector2D& Size) const
 {
-    return FMath::Clamp(FMath::Min(Size.X, Size.Y) / 720.f, .8f, 1.6f);
+    return MiningMobileUI::Scale(Size);
 }
 
 float SMobileTouchControls::GetJoystickRadius(const FVector2D& Size) const
@@ -28,28 +41,28 @@ float SMobileTouchControls::GetJoystickRadius(const FVector2D& Size) const
     return 78.f * GetUiScale(Size);
 }
 
-float SMobileTouchControls::GetButtonRadius(const FVector2D& Size) const
+float SMobileTouchControls::GetButtonRadius(EButton Button, const FVector2D& Size) const
 {
-    return 62.f * GetUiScale(Size);
+    return (Button == EButton::Mine || Button == EButton::Primary ? 76.f : 52.f) * GetUiScale(Size);
 }
 
 float SMobileTouchControls::GetButtonHitRadius(EButton Button, const FVector2D& Size) const
 {
-    const float BaseRadius = Button == EButton::Mine ? 84.f : 66.f;
+    const float BaseRadius = Button == EButton::Mine || Button == EButton::Primary ? 84.f : 58.f;
     return BaseRadius * GetUiScale(Size);
 }
 
 FVector2D SMobileTouchControls::GetButtonCenter(EButton Button, const FVector2D& Size) const
 {
     const float Scale = GetUiScale(Size);
-    const float Right = Size.X - 88.f * Scale;
-    const float Left = Size.X - 206.f * Scale;
-    const float FarLeft = Size.X - 324.f * Scale;
-    const float Extra = Size.X - 442.f * Scale;
-    const float Lower = Size.Y - 88.f * Scale;
-    const float Upper = Size.Y - 204.f * Scale;
-    const float Upper2 = Size.Y - 320.f * Scale;
-    const float Upper3 = Size.Y - 436.f * Scale;
+    const float Right = Size.X - 152.f * Scale;
+    const float Left = Size.X - 316.f * Scale;
+    const float FarLeft = Size.X - 462.f * Scale;
+    const float Extra = Size.X - 610.f * Scale;
+    const float Lower = Size.Y - 140.f * Scale;
+    const float Upper = Size.Y - 315.f * Scale;
+    const float Upper2 = Size.Y - 440.f * Scale;
+    const float Upper3 = Size.Y - 570.f * Scale;
     switch (Button)
     {
     case EButton::Mine: return FVector2D(Right, Lower);
@@ -58,15 +71,15 @@ FVector2D SMobileTouchControls::GetButtonCenter(EButton Button, const FVector2D&
     case EButton::Jetpack: return FVector2D(Left, Upper);
     case EButton::Interact: return FVector2D(FarLeft, Lower);
     case EButton::Upgrade: return FVector2D(Extra, Upper);
-    case EButton::Primary: return FVector2D(Extra, Lower);
-    case EButton::Confirm: return FVector2D(FarLeft, Upper);
+    case EButton::Primary: return FVector2D(Right, Lower);
+    case EButton::Confirm: return FVector2D(Right, Lower);
     case EButton::Reset: return FVector2D(Extra, Upper);
-    case EButton::ThoughtLeft: return FVector2D(FarLeft, Upper2);
-    case EButton::ThoughtRight: return FVector2D(Extra, Upper2);
+    case EButton::ThoughtLeft: return FVector2D(Extra, Upper);
+    case EButton::ThoughtRight: return FVector2D(FarLeft, Upper);
     case EButton::Map: return FVector2D(FarLeft, Upper3);
     case EButton::Catalogue: return FVector2D(Extra, Upper3);
     case EButton::Back: return FVector2D(Right, Upper2);
-    case EButton::Edit: return FVector2D(Right, Upper3);
+    case EButton::Edit: return FVector2D(FarLeft, Upper2);
     default: return FVector2D::ZeroVector;
     }
 }
@@ -157,67 +170,49 @@ bool SMobileTouchControls::IsButtonPressed(EButton Button) const
 
 bool SMobileTouchControls::IsButtonVisible(EButton Button) const
 {
-    if (!OwnerController.IsValid()) return false;
+    if (!OwnerController.IsValid() || !OwnerController->GetPawn()) return false;
+    if (AMiningOpening::IsOpening(OwnerController->GetWorld())) return false;
+    const auto* Menu = OwnerController->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();
+    if ((Menu && Menu->IsMenuOpen()) || OwnerController->IsAudioSettingsOpen()) return false;
+    const bool bExploring = !OwnerController->IsPaused() && !OwnerController->IsMoveInputIgnored()
+        && !OwnerController->IsLookInputIgnored() && !OwnerController->bShowMouseCursor;
     switch (Button)
     {
-    case EButton::Primary: return OwnerController->IsMobileActionVisible();
-    case EButton::Confirm: return OwnerController->IsMobileConfirmVisible();
-    case EButton::Reset:
-    case EButton::Map:
-    case EButton::Catalogue: return false;
-    case EButton::Interact: return true;
-    case EButton::Upgrade: return OwnerController->IsMobileUpgradeVisible();
+    case EButton::Mine:
+    case EButton::Bomb:
+    case EButton::Drill:
+        return bExploring && OwnerController->IsMiningGUIEnabled() && !OwnerController->IsMobileActionVisible() && !OwnerController->IsMobileConfirmVisible();
+    case EButton::Jetpack: return bExploring;
+    case EButton::Primary: return !OwnerController->IsPaused() && OwnerController->IsMobileActionVisible();
+    case EButton::Confirm: return !OwnerController->IsPaused() && OwnerController->IsMobileConfirmVisible();
+    case EButton::Interact: return !OwnerController->IsPaused();
     case EButton::ThoughtLeft:
-    case EButton::ThoughtRight: return OwnerController->IsMobileThoughtVisible();
+    case EButton::ThoughtRight: return !OwnerController->IsPaused() && OwnerController->IsMobileThoughtVisible();
+    case EButton::Edit: return !OwnerController->IsPaused() && OwnerController->IsMobileEditVisible();
     case EButton::Back: return OwnerController->IsMobileBackVisible();
-    case EButton::Edit: return OwnerController->IsMobileEditVisible();
-    default: return true;
+    default: return false;
     }
 }
 
-FString SMobileTouchControls::GetButtonLabel(EButton Button) const
+FName SMobileTouchControls::GetButtonIcon(EButton Button) const
 {
     switch (Button)
     {
-    case EButton::Primary: return OwnerController.IsValid() ? OwnerController->GetMobileActionLabel() : TEXT("TAP");
-    case EButton::Confirm: return TEXT("OK");
-    case EButton::Reset: return TEXT("RST");
-    case EButton::ThoughtLeft: return TEXT("Q");
-    case EButton::ThoughtRight: return TEXT("R");
-    case EButton::Map: return TEXT("MAP");
-    case EButton::Catalogue: return TEXT("BOOK");
-    case EButton::Back: return TEXT("BACK");
-    case EButton::Edit: return TEXT("EDIT");
-    case EButton::Mine: return TEXT("MINE");
-    case EButton::Bomb: return TEXT("BOMB");
-    case EButton::Drill: return TEXT("DRILL");
-    case EButton::Jetpack: return TEXT("UP");
-    case EButton::Interact: return TEXT("E");
-    case EButton::Upgrade: return TEXT("UPG");
-    default: return TEXT("");
-    }
-}
-
-FLinearColor SMobileTouchControls::GetButtonColor(EButton Button) const
-{
-    switch (Button)
-    {
-    case EButton::Mine: return FLinearColor(.08f, .72f, .88f, 1.f);
-    case EButton::Bomb: return FLinearColor(.92f, .45f, .12f, 1.f);
-    case EButton::Drill: return FLinearColor(.12f, .78f, .56f, 1.f);
-    case EButton::Jetpack: return FLinearColor(.64f, .36f, .92f, 1.f);
-    case EButton::Interact: return FLinearColor(.96f, .78f, .24f, 1.f);
-    case EButton::Upgrade: return FLinearColor(.98f, .62f, .18f, 1.f);
-    case EButton::Primary: return FLinearColor(.95f, .55f, .22f, 1.f);
-    case EButton::Confirm: return FLinearColor(.34f, .88f, .48f, 1.f);
-    case EButton::Reset: return FLinearColor(.95f, .32f, .28f, 1.f);
-    case EButton::ThoughtLeft:
-    case EButton::ThoughtRight: return FLinearColor(.92f, .28f, .46f, 1.f);
-    case EButton::Map:
-    case EButton::Catalogue: return FLinearColor(.32f, .68f, .95f, 1.f);
-    case EButton::Back:
-    case EButton::Edit: return FLinearColor(.74f, .72f, .62f, 1.f);
-    default: return FLinearColor::White;
+    case EButton::Mine:
+        if (const auto* Mining = OwnerController.IsValid() && OwnerController->GetPawn() ? OwnerController->GetPawn()->FindComponentByClass<UMiningComponent>() : nullptr)
+            if (Mining->bDrillMode) return TEXT("drill");
+        return TEXT("pick");
+    case EButton::Bomb: return TEXT("bomb");
+    case EButton::Drill: return TEXT("drill");
+    case EButton::Jetpack: return TEXT("jet");
+    case EButton::Interact: return OwnerController.IsValid() && OwnerController->GetMobileActionLabel() == TEXT("CLICK") ? TEXT("back") : TEXT("hand");
+    case EButton::Primary: return OwnerController.IsValid() && OwnerController->GetMobileActionLabel() == TEXT("HIT") ? TEXT("knock") : TEXT("cursor");
+    case EButton::Confirm: return TEXT("check");
+    case EButton::ThoughtLeft: return TEXT("left");
+    case EButton::ThoughtRight: return TEXT("right");
+    case EButton::Back: return TEXT("back");
+    case EButton::Edit: return TEXT("edit");
+    default: return TEXT("hand");
     }
 }
 
@@ -242,6 +237,7 @@ FReply SMobileTouchControls::HandlePointerStarted(const FGeometry& MyGeometry, i
         }
     }
 
+    if (OwnerController->IsPaused() || OwnerController->IsMoveInputIgnored() || OwnerController->IsLookInputIgnored() || OwnerController->bShowMouseCursor) return FReply::Unhandled();
     if (IsJoystickZone(LocalPosition, Size))
     {
         const float Radius = GetJoystickRadius(Size);
@@ -437,6 +433,22 @@ FReply SMobileTouchControls::OnMouseButtonUp(const FGeometry& MyGeometry, const 
 void SMobileTouchControls::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
     SLeafWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
+    if (OwnerController.IsValid() && OwnerController->IsPaused()) ResetInput();
+    if (OwnerController.IsValid() && (OwnerController->IsMoveInputIgnored() || OwnerController->IsLookInputIgnored() || OwnerController->bShowMouseCursor))
+    {
+        ReleaseJoystick();
+        LookPointer = -1;
+    }
+    for (const EButton Button : {EButton::Mine, EButton::Jetpack})
+    {
+        int32& Pointer = GetButtonPointer(Button);
+        if (Pointer != -1 && !IsButtonVisible(Button))
+        {
+            ButtonLastPositions.Remove(Pointer);
+            Pointer = -1;
+            SetButtonPressed(Button, false);
+        }
+    }
     if (JoystickPointer != -1)
     {
         JoystickOpacity = FMath::FInterpTo(JoystickOpacity, 1.f, InDeltaTime, 12.f);
@@ -449,6 +461,16 @@ void SMobileTouchControls::Tick(const FGeometry& AllottedGeometry, const double 
     Invalidate(EInvalidateWidgetReason::Paint);
 }
 
+void SMobileTouchControls::ResetInput()
+{
+    if (JoystickPointer != -1) ReleaseJoystick();
+    LookPointer = -1;
+    TArray<int32> Pointers;
+    ButtonLastPositions.GetKeys(Pointers);
+    for (const int32 Pointer : Pointers) HandlePointerEnded(Pointer);
+    ButtonLastPositions.Reset();
+}
+
 void SMobileTouchControls::DrawText(FSlateWindowElementList& OutDrawElements, const FGeometry& Geometry, int32 LayerId,
     const FString& Text, const FVector2D& Position, int32 FontSize, const FLinearColor& Color) const
 {
@@ -458,37 +480,102 @@ void SMobileTouchControls::DrawText(FSlateWindowElementList& OutDrawElements, co
 }
 
 void SMobileTouchControls::DrawButton(FSlateWindowElementList& OutDrawElements, const FGeometry& Geometry, int32 LayerId,
-    EButton Button, const FString& Label, const FLinearColor& Color, bool bParentEnabled) const
+    EButton Button, bool bParentEnabled) const
 {
+    using namespace MiningMobileUI;
     const FVector2D Size = Geometry.GetLocalSize();
-    const float Radius = GetButtonRadius(Size);
+    const float Scale = GetUiScale(Size);
+    const float Radius = GetButtonRadius(Button, Size) * (IsButtonPressed(Button) ? .94f : 1.f);
     const FVector2D Center = GetButtonCenter(Button, Size);
-    const float PressScale = IsButtonPressed(Button) ? .9f : 1.f;
-    const float DrawRadius = Radius * PressScale;
-    const FLinearColor OuterColor = Color.CopyWithNewOpacity(Color.A * (bParentEnabled ? .30f : .12f));
-    const FLinearColor InnerColor = Color.CopyWithNewOpacity(Color.A * (bParentEnabled ? .78f : .25f));
-    FSlateRoundedBoxBrush Brush(OuterColor, DrawRadius);
-    FSlateDrawElement::MakeBox(OutDrawElements, LayerId, Geometry.ToPaintGeometry(
-        FVector2D(DrawRadius * 2.f), FSlateLayoutTransform(Center - FVector2D(DrawRadius))), &Brush);
-    FSlateRoundedBoxBrush InnerBrush(InnerColor, DrawRadius * .42f);
-    const float InnerRadius = DrawRadius * .42f;
-    FSlateDrawElement::MakeBox(OutDrawElements, LayerId + 1, Geometry.ToPaintGeometry(
-        FVector2D(InnerRadius * 2.f), FSlateLayoutTransform(Center - FVector2D(InnerRadius))), &InnerBrush);
-    const float TextSize = 13.f * GetUiScale(Size);
-    DrawText(OutDrawElements, Geometry, LayerId + 1, Label,
-        Center - FVector2D(Label.Len() * TextSize * .28f, TextSize * .55f), FMath::RoundToInt(TextSize), FLinearColor(.02f, .02f, .02f, 1.f));
+    const APawn* Pawn = OwnerController.IsValid() ? OwnerController->GetPawn() : nullptr;
+    const auto* Mining = Pawn ? Pawn->FindComponentByClass<UMiningComponent>() : nullptr;
+    const auto* Bomb = Pawn ? Pawn->FindComponentByClass<UMiningBombToolComponent>() : nullptr;
+    const auto* Flight = Pawn ? Pawn->FindComponentByClass<UMiningCharacterMovementComponent>() : nullptr;
+    bool bAvailable = bParentEnabled;
+    if (Button == EButton::Drill) bAvailable &= Mining && Mining->IsDrillUnlocked() && (Mining->bInfiniteDrillEnergy || Mining->DrillEnergy > 0);
+    if (Button == EButton::Bomb) bAvailable &= Bomb && Bomb->IsSkillUnlocked() && (!Bomb->bUseInventory || Bomb->BombCount > 0);
+    const bool bHighlighted = Button == EButton::Mine || Button == EButton::Primary || Button == EButton::Confirm
+        || (Button == EButton::Drill && Mining && Mining->bDrillMode)
+        || (Button == EButton::Interact && OwnerController.IsValid() && OwnerController->InteractionHUD && !OwnerController->InteractionHUD->InteractionAction.IsEmpty());
+    FLinearColor Surface = bHighlighted ? Gold() : Ink();
+    if (IsButtonPressed(Button)) Surface = Gold() * .78f;
+    Surface.A = bAvailable ? .92f : .55f;
+    const FLinearColor Foreground = (bHighlighted || IsButtonPressed(Button) ? Ink() : Cream()).CopyWithNewOpacity(bAvailable ? 1.f : .4f);
+    const auto Box = [&](int32 Layer, FName Name, FVector2D Position, FVector2D Extent, FLinearColor Color)
+    {
+        FSlateDrawElement::MakeBox(OutDrawElements, Layer, Geometry.ToPaintGeometry(Extent, FSlateLayoutTransform(Position)), Brush(Name), ESlateDrawEffect::None, Color);
+    };
+    Box(LayerId, TEXT("plate"), Center - FVector2D(Radius), FVector2D(Radius * 2), Surface);
+    Box(LayerId + 1, TEXT("rim"), Center - FVector2D(Radius), FVector2D(Radius * 2), Cream().CopyWithNewOpacity(bAvailable ? .9f : .3f));
+    const float IconExtent = Radius * 1.04f;
+    Box(LayerId + 2, GetButtonIcon(Button), Center - FVector2D(IconExtent * .5f), FVector2D(IconExtent), Foreground);
+    FString Status;
+    if (Button == EButton::Bomb && Bomb && Bomb->bUseInventory) Status = FString::Printf(TEXT("%d / %d"), Bomb->BombCount, Bomb->MaxBombs);
+    if (Button == EButton::Drill && Mining) Status = Mining->bInfiniteDrillEnergy ? TEXT("∞") : FString::Printf(TEXT("%d%%"), FMath::RoundToInt(100 * Mining->DrillEnergy / FMath::Max(1.f, Mining->MaxDrillEnergy)));
+    if (!Status.IsEmpty())
+    {
+        const int32 FontSize = FMath::Max(10, FMath::RoundToInt(17 * Scale));
+        const FVector2D Extent = FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Status, BrainMiningFonts::Style("Medium", FontSize));
+        DrawText(OutDrawElements, Geometry, LayerId + 3, Status, Center + FVector2D(-Extent.X * .5f, Radius + 8 * Scale), FontSize, Cream());
+    }
+    if (Button == EButton::Jetpack && Flight)
+    {
+        const FVector2D Position = Center + FVector2D(-35, 67) * Scale;
+        FSlateDrawElement::MakeBox(OutDrawElements, LayerId + 3, Geometry.ToPaintGeometry(FVector2D(70, 5) * Scale, FSlateLayoutTransform(Position)), FCoreStyle::Get().GetBrush("WhiteBrush"), ESlateDrawEffect::None, Ink());
+        const float Remaining = FMath::Clamp(1.f - Flight->JetpackHeat, 0.f, 1.f);
+        FSlateDrawElement::MakeBox(OutDrawElements, LayerId + 4, Geometry.ToPaintGeometry(FVector2D(70 * Remaining, 5) * Scale, FSlateLayoutTransform(Position)), FCoreStyle::Get().GetBrush("WhiteBrush"), ESlateDrawEffect::None, Flight->IsJetpackOverheated() ? FLinearColor(.8f,.13f,.06f) : Teal());
+    }
 }
 
 int32 SMobileTouchControls::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,
     const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId,
     const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
 {
+    using namespace MiningMobileUI;
     const FVector2D Size = AllottedGeometry.GetLocalSize();
+    const float Scale = GetUiScale(Size);
     int32 CurrentLayer = LayerId;
-    const EButton Buttons[] = { EButton::Mine, EButton::Bomb, EButton::Drill, EButton::Jetpack, EButton::Interact, EButton::Upgrade,
-        EButton::Primary, EButton::Confirm, EButton::Reset, EButton::ThoughtLeft, EButton::ThoughtRight,
-        EButton::Map, EButton::Catalogue, EButton::Back, EButton::Edit };
+    const auto* Player = OwnerController.Get();
+    const auto* Menu = Player && Player->GetGameInstance() ? Player->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>() : nullptr;
+    if (!Player || (Menu && Menu->IsMenuOpen()) || Player->IsAudioSettingsOpen()) return CurrentLayer;
+    if (AMiningOpening::IsOpening(Player->GetWorld())) return CurrentLayer;
+    const bool bExploring = !Player->IsPaused() && !Player->IsMoveInputIgnored() && !Player->IsLookInputIgnored() && !Player->bShowMouseCursor;
+    if (bExploring)
+    {
+        const FVector2D Origin = JoystickPointer == -1 ? FVector2D(164 * Scale, Size.Y - 150 * Scale) : JoystickOrigin;
+        const float Radius = GetJoystickRadius(Size);
+        const FSlateRoundedBoxBrush Ring(FLinearColor::White, Radius, Cream().CopyWithNewOpacity(.35f), 2 * Scale);
+        const FSlateRoundedBoxBrush Disc(FLinearColor::White, 35 * Scale);
+        FSlateDrawElement::MakeBox(OutDrawElements, ++CurrentLayer, AllottedGeometry.ToPaintGeometry(FVector2D(Radius * 2), FSlateLayoutTransform(Origin - FVector2D(Radius))), &Ring, ESlateDrawEffect::None, Ink().CopyWithNewOpacity(.28f));
+        const FVector2D Thumb = JoystickPointer == -1 ? Origin : JoystickPosition;
+        FSlateDrawElement::MakeBox(OutDrawElements, ++CurrentLayer, AllottedGeometry.ToPaintGeometry(FVector2D(70 * Scale), FSlateLayoutTransform(Thumb - FVector2D(35 * Scale))), &Disc, ESlateDrawEffect::None, Cream().CopyWithNewOpacity(JoystickPointer == -1 ? .45f : .82f));
+    }
+    if (bExploring && Player->IsMiningGUIEnabled())
+    {
+        const auto* Wallet = Player->GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
+        if (Wallet)
+        {
+            const FVector2D Position(48 * Scale, 32 * Scale);
+            FSlateDrawElement::MakeBox(OutDrawElements, ++CurrentLayer, AllottedGeometry.ToPaintGeometry(FVector2D(Wallet->UsesMineralInventory() ? 400 : 190, 64) * Scale, FSlateLayoutTransform(Position)), Brush(TEXT("panel")), ESlateDrawEffect::None, Ink().CopyWithNewOpacity(.8f));
+            const EMiningMineral Types[] = {EMiningMineral::Copper, EMiningMineral::Iron, EMiningMineral::Malachite, EMiningMineral::Diamond};
+            const FLinearColor Colors[] = {FLinearColor::FromSRGBColor(FColor(223,161,117)), FLinearColor::FromSRGBColor(FColor(185,183,173)), Teal(), FLinearColor::FromSRGBColor(FColor(167,212,222))};
+            const int32 Count = Wallet->UsesMineralInventory() ? 4 : 1;
+            for (int32 Index = 0; Index < Count; ++Index)
+            {
+                const FVector2D Offset = Position + FVector2D(12 + 96 * Index, 17) * Scale;
+                FSlateDrawElement::MakeBox(OutDrawElements, ++CurrentLayer, AllottedGeometry.ToPaintGeometry(FVector2D(30 * Scale), FSlateLayoutTransform(Offset)), Brush(Wallet->UsesMineralInventory() ? TEXT("gem") : TEXT("coin")), ESlateDrawEffect::None, Colors[Index]);
+                const FString Amount = FText::AsNumber(Wallet->UsesMineralInventory() ? int64(Wallet->GetMineralCount(Types[Index])) : Wallet->Balance).ToString();
+                DrawText(OutDrawElements, AllottedGeometry, ++CurrentLayer, Amount, Offset + FVector2D(38, 2) * Scale, FMath::Max(10, FMath::RoundToInt(19 * Scale)), Cream());
+            }
+        }
+    }
+    const EButton Buttons[] = { EButton::Mine, EButton::Bomb, EButton::Drill, EButton::Jetpack, EButton::Interact,
+        EButton::Primary, EButton::Confirm, EButton::ThoughtLeft, EButton::ThoughtRight, EButton::Back, EButton::Edit };
     for (const EButton Button : Buttons)
-        if (IsButtonVisible(Button)) DrawButton(OutDrawElements, AllottedGeometry, ++CurrentLayer, Button, GetButtonLabel(Button), GetButtonColor(Button), bParentEnabled);
+    {
+        if (!IsButtonVisible(Button)) continue;
+        DrawButton(OutDrawElements, AllottedGeometry, CurrentLayer + 1, Button, bParentEnabled);
+        CurrentLayer += 6;
+    }
     return CurrentLayer;
 }

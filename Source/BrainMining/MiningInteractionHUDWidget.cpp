@@ -198,7 +198,8 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
         Box(FVector2D(-3, -3), FVector2D(6, 6), Circle, FLinearColor(.015f, .02f, .025f, .85f));
         Box(FVector2D(-2, -2), FVector2D(4, 4), Circle, FLinearColor::White);
     }
-    if (!InteractionAction.IsEmpty())
+    const auto* TouchController = GetOwningPlayer<ABrainMiningPlayerController>();
+    if (!InteractionAction.IsEmpty() && !(TouchController && TouchController->IsUsingTouchControls()))
     {
         const auto* Cards = GetOwningPlayer()->FindComponentByClass<UCardRoomInteractionComponent>();
         const bool bPlayCard = Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing;

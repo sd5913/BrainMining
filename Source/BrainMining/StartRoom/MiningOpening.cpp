@@ -1,6 +1,7 @@
 #include "StartRoom/MiningOpening.h"
 #include "MiningHapticsSubsystem.h"
 #include "BrainMiningFonts.h"
+#include "BrainMiningPlayerController.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -33,7 +34,8 @@ AMiningOpening* AMiningOpening::EnsureMainGameOpening(AMiningExhibitHall* Hall)
     UWorld* World=Hall->GetWorld();
     if(!World || !World->GetMapName().EndsWith(TEXT("Lvl_MainGame")))return nullptr;
     // Keep any explicitly authored opening. This also makes repeated calls safe.
-    for(TActorIterator<AMiningOpening> It(World);It;++It)return *It;
+    TActorIterator<AMiningOpening> ExistingOpening(World);
+    if(ExistingOpening)return *ExistingOpening;
     auto* Room=AMiningStartRoom::Find(World);if(!Room)return nullptr;
     auto* Title=LoadObject<UTexture2D>(nullptr,TEXT("/Game/StartRoom/UI/T_OpeningTitle.T_OpeningTitle"));
     if(!Title)return nullptr;
@@ -134,7 +136,8 @@ void AMiningOpening::StartGame()
     if(!bPrepared || bStarted || bFinished)return;
     bStarted=true;Elapsed=0;if(Menu)Menu->RemoveFromParent();
     CornerTitle=CreateWidget<UMiningOpeningTitle>(Player.Get());CornerTitle->Texture=TitleTexture;CornerTitle->bCornerLayout=true;
-    CornerTitle->SetVisibility(ESlateVisibility::HitTestInvisible);CornerTitle->AddToViewport(490);
+    const auto* TouchPlayer=Cast<ABrainMiningPlayerController>(Player.Get());
+    CornerTitle->SetVisibility(TouchPlayer&&TouchPlayer->IsUsingTouchControls()?ESlateVisibility::Collapsed:ESlateVisibility::HitTestInvisible);CornerTitle->AddToViewport(490);
     WorldTitle->SetVisibility(false);
     if(Player.IsValid()){Player->bShowMouseCursor=false;Player->SetInputMode(FInputModeGameOnly());}
 }

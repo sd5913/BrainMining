@@ -1,0 +1,30 @@
+{
+  "revision": "icon-only",
+  "visibleText": {
+    "hud": [
+      "12",
+      "08",
+      "03",
+      "01",
+      "82%",
+      "3 / 3"
+    ],
+    "pause": [],
+    "upgrade": [
+      "2 → 3",
+      "12 / 8",
+      "8 / 4"
+    ],
+    "contexts": []
+  },
+  "svgFilesValidated": 24,
+  "renderedScreens": 4,
+  "liveBrowserChecks": [
+    "preview refreshed",
+    "pause page opened",
+    "control settings opened",
+    "settings closed",
+    "returned to HUD"
+  ],
+  "gameRuntimeChanged": false
+}

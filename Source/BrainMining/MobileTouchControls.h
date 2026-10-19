@@ -8,12 +8,15 @@ class ABrainMiningPlayerController;
 
 class SMobileTouchControls : public SLeafWidget
 {
+    friend class FMiningMobileLayoutTest;
+    friend class FMiningMobileLifecycleTest;
 public:
     SLATE_BEGIN_ARGS(SMobileTouchControls) {}
         SLATE_ARGUMENT(TWeakObjectPtr<ABrainMiningPlayerController>, OwnerController)
     SLATE_END_ARGS()
 
     void Construct(const FArguments& InArgs);
+    void ResetInput();
 
     virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,
         const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId,
@@ -98,7 +101,7 @@ private:
 
     float GetUiScale(const FVector2D& Size) const;
     float GetJoystickRadius(const FVector2D& Size) const;
-    float GetButtonRadius(const FVector2D& Size) const;
+    float GetButtonRadius(EButton Button, const FVector2D& Size) const;
     float GetButtonHitRadius(EButton Button, const FVector2D& Size) const;
     FVector2D GetButtonCenter(EButton Button, const FVector2D& Size) const;
     EPointerAction GetButtonAction(EButton Button) const;
@@ -108,8 +111,7 @@ private:
     bool IsJoystickZone(const FVector2D& Position, const FVector2D& Size) const;
     bool IsButtonPressed(EButton Button) const;
     bool IsButtonVisible(EButton Button) const;
-    FString GetButtonLabel(EButton Button) const;
-    FLinearColor GetButtonColor(EButton Button) const;
+    FName GetButtonIcon(EButton Button) const;
 
     FReply HandlePointerStarted(const FGeometry& MyGeometry, int32 PointerIndex, const FVector2D& LocalPosition);
     FReply HandlePointerMoved(const FGeometry& MyGeometry, int32 PointerIndex, const FVector2D& LocalPosition);
@@ -118,7 +120,7 @@ private:
     void ReleaseJoystick();
     void SetButtonPressed(EButton Button, bool bPressed);
     void DrawButton(FSlateWindowElementList& OutDrawElements, const FGeometry& Geometry, int32 LayerId,
-        EButton Button, const FString& Label, const FLinearColor& Color, bool bParentEnabled) const;
+        EButton Button, bool bParentEnabled) const;
     void DrawText(FSlateWindowElementList& OutDrawElements, const FGeometry& Geometry, int32 LayerId,
         const FString& Text, const FVector2D& Position, int32 FontSize, const FLinearColor& Color) const;
 };

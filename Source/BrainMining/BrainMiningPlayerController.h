@@ -22,6 +22,7 @@ UCLASS(abstract, config="Game")
 class BRAINMINING_API ABrainMiningPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+    friend class FMiningMobileLifecycleTest;
 	
 public:
 
@@ -48,6 +49,9 @@ public:
     void HandleMobileBack();
     void HandleMobileEdit();
     void HandleMobileUpgrade();
+    void HandleMobilePause();
+    void ResetMobileInput();
+    UPROPERTY(Config, EditAnywhere, Category="Input|Touch Controls") float MobileLookSensitivity = .09f;
     bool IsMobileActionVisible() const;
     bool IsMobileInteractVisible() const;
     bool IsMobileConfirmVisible() const;
@@ -115,6 +119,8 @@ protected:
 	FDelegateHandle ApplicationActivationHandle;
 	TSharedPtr<SWidget> AudioSettingsPanel;
 	TSharedPtr<SMobileTouchControls> MobileTouchControls;
+    TSharedPtr<SWidget> MobileToolbar;
+    TSharedPtr<SWidget> MobileTouchLayer;
 	bool bAudioPausedWorld = false;
 	bool bAudioPreviousMiningSuspended = false;
 	EMouseCaptureMode PreviousMouseCaptureMode = EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown;

@@ -183,6 +183,23 @@ bool UEndingCrowdComponent::BuildBaked(UEndingCrowdAssets* Assets)
     if(!OverCrowdInstancer)return false;
     OverCrowdInstancer->SetActorEnableCollision(false);
     OverCrowdInstancer->SetActorHiddenInGame(true);
+    // JapaneseCity uses lit surface materials, while the original ending
+    // street was built from emissive materials. Provide a cheap two-light rig
+    // for the imported city; shadows stay off to keep the preview lightweight.
+    auto* KeyLight=Part<UDirectionalLightComponent>(Owner,this);
+    KeyLight->SetRelativeRotation(FRotator(-48.f,-35.f,0.f));
+    KeyLight->SetMobility(EComponentMobility::Movable);
+    KeyLight->SetIntensity(4.5f);
+    KeyLight->SetLightColor(FLinearColor(1.f,.92f,.82f));
+    KeyLight->SetCastShadows(false);
+    Lights.Add(KeyLight);
+    auto* FillLight=Part<UDirectionalLightComponent>(Owner,this);
+    FillLight->SetRelativeRotation(FRotator(-25.f,145.f,0.f));
+    FillLight->SetMobility(EComponentMobility::Movable);
+    FillLight->SetIntensity(1.8f);
+    FillLight->SetLightColor(FLinearColor(.55f,.7f,1.f));
+    FillLight->SetCastShadows(false);
+    Lights.Add(FillLight);
     for(int32 I=0;I<9;++I)
     {
         UStaticMesh* Mesh=I==8?Assets->BakedHero:Assets->BakedWalkers[I];
@@ -212,6 +229,6 @@ bool UEndingCrowdComponent::BuildBaked(UEndingCrowdAssets* Assets)
     Batches[8]->SetCustomDataValue(0,1,1,true);++BakedCount;
     for(auto B:Batches){B->MarkRenderStateDirty();B->PrecachePSOs();}
     SetVisibility(false,true);bCrowdActive=false;
-    UE_LOG(LogTemp, Display, TEXT("ENDING_OVERCROWD_HISM_READY: batches=%d instances=%d"), Batches.Num(), BakedCount);
+    UE_LOG(LogTemp, Display, TEXT("ENDING_OVERCROWD_HISM_READY: batches=%d instances=%d origin=%s"), Batches.Num(), BakedCount, *GetComponentLocation().ToString());
     return true;
 }

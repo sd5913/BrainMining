@@ -84,6 +84,7 @@ void UCardRoomInteractionComponent::Interact()
     Player()->bShowMouseCursor=true;
     FInputModeGameAndUI Mode; Mode.SetWidgetToFocus(View); Mode.SetHideCursorDuringCapture(false); Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); Player()->SetInputMode(Mode);
     Player()->SetMouseLocation(int32(GEngine->GameViewport->Viewport->GetSizeXY().X*.5f),int32(GEngine->GameViewport->Viewport->GetSizeXY().Y*.6f));
+    Stage->Run.Match();
 }
 void UCardRoomInteractionComponent::LeaveSeat()
 {
@@ -97,7 +98,14 @@ void UCardRoomInteractionComponent::LeaveSeat()
 void UCardRoomInteractionComponent::ConfirmCards()
 {
     if(bRoomActive && Stage && Stage->Run.Phase==ECardRoomPhase::Choosing)
+    {
+        if(Stage->Run.Round==4 && !Stage->Run.CanConfirm())
+        {
+            for(int32 Index=0;Index<Stage->Run.Hand.Num();++Index) Stage->Run.Stage(Index);
+            return;
+        }
         if(!Stage->Run.Confirm() && Stage->AudioOverride.IsBound())Stage->Sound(TEXT("S_Reject"),.3f);
+    }
 }
 void UCardRoomInteractionComponent::RestoreSeat()
 {

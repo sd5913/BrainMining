@@ -27,6 +27,7 @@ public:
 
 	/** Constructor */
 	ABrainMiningPlayerController();
+    virtual void PlayerTick(float DeltaTime) override;
 	void UseInputDefaultsFrom(const ABrainMiningPlayerController* Defaults);
     // Touch controls call these small controller-side adapters so the same
     // mining components are used on desktop and mobile input paths.

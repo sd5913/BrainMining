@@ -7,6 +7,9 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Engine/World.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Rendering/SlateRenderer.h"
+#include "Fonts/FontMeasure.h"
 int32 SMiningEscapeView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRect&,FSlateWindowElementList& Out,int32 Layer,const FWidgetStyle&,bool) const
 {
     if(!Owner.IsValid() || Owner->Phase==EMiningEscapePhase::Idle || Owner->Phase==EMiningEscapePhase::Escaped)return Layer;
@@ -18,8 +21,10 @@ int32 SMiningEscapeView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSla
     if(E->Phase==EMiningEscapePhase::Failed)
     {
         FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),Brush,ESlateDrawEffect::None,FLinearColor(.22f,.005f,.02f,.56f));
-        Box(410,340,800,150,Dark);
-        Text(E->FailureReason,450,365,30,White,true);Text(E->bComputerCheckpoint?TEXT("正在回到电视屏幕前……无需重跑攀升路线"):TEXT("正在回到涨水检查点……无需重新打牌"),450,422,21,Gold);return L;
+        const FString Message=TEXT("被水淹没没关系，再来一次吧！");
+        const auto Font=BrainMiningFonts::Body(FMath::RoundToInt(30*S));
+        const float Width=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Message,Font).X/S;
+        Text(Message,(1600-Width)*.5f,420,30,White);return L;
     }
     if (!UMiningInteractionHUDWidget::IsActiveFor(E->GetWorld()->GetFirstPlayerController())) Box(797,447,6,6,White);
     auto* PC=E->GetWorld()->GetFirstPlayerController();if(!PC)return L;

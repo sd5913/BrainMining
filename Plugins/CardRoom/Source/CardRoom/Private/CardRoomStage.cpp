@@ -277,14 +277,14 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     if(Phase!=LastPhase)
     {
         PreviousAudioTime=0;
-        if(SubtitleOverride.IsBound() && Phase==ECardRoomPhase::Matching)SubtitleOverride.Execute(TEXT("正在匹配中……"),2.2f);
+        if(SubtitleOverride.IsBound() && Phase==ECardRoomPhase::Matching)SubtitleOverride.Execute(TEXT("正在匹配中"),2.2f);
         if(SubtitleOverride.IsBound() && Phase==ECardRoomPhase::Arrival)SubtitleOverride.Execute(TEXT("匹配成功！"),1.4f);
         if(Phase==ECardRoomPhase::Arrival) Sound(TEXT("S_Arrival"));
         if(Phase==ECardRoomPhase::Choosing) Sound(TEXT("S_Draw"),.3f);
         if(Phase==ECardRoomPhase::Seated && AudioOverride.IsBound()) Sound(TEXT("S_Seat"),.4f);
         if(Phase==ECardRoomPhase::Matching && AudioOverride.IsBound()) Sound(TEXT("S_Confirm"),.35f);
         if(Phase==ECardRoomPhase::Resolving) { Sound(Run.Round==2?TEXT("S_Poison"):Run.Round==4?TEXT("S_Finale"):TEXT("S_Laser")); if(AudioOverride.IsBound())Sound(TEXT("S_CardPlace"),.35f); bReplySound=false; }
-        if(Phase==ECardRoomPhase::Victory && !bWinSent) { bWinSent=true; Sound(TEXT("S_Victory")); if(SubtitleOverride.IsBound())SubtitleOverride.Execute(TEXT("恭喜你获得胜利！"),3.f); OnRoomCompleted.Broadcast(RoomId); }
+        if(Phase==ECardRoomPhase::Victory && !bWinSent) { bWinSent=true; Sound(TEXT("S_Victory")); OnRoomCompleted.Broadcast(RoomId); }
         LastPhase=Phase;
     }
     const float T=Run.PhaseTime;
@@ -292,6 +292,12 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     const bool bResolve=Phase==ECardRoomPhase::Resolving;
     if(AudioOverride.IsBound() && bResolve && PreviousAudioTime<1.f && T>=1.f)
         Sound(Run.Round==3?TEXT("S_CardFire"):Run.Round==2?TEXT("S_CardPoison"):TEXT("S_Impact"),Run.Round==3?.7f:.3f);
+    if(SubtitleOverride.IsBound() && bResolve && PreviousAudioTime<1.f && T>=1.f)
+    {
+        if(Run.Round==2) SubtitleOverride.Execute(TEXT("呕——好臭臭"),2.4f);
+        if(Run.Round==3) SubtitleOverride.Execute(TEXT("啊啊啊！我的眉毛！"),2.4f);
+        if(Run.Round==4) SubtitleOverride.Execute(TEXT("我一定会回来的！——"),3.f);
+    }
     PreviousAudioTime=T;
     const bool bGhost=Phase==ECardRoomPhase::Seated || Phase==ECardRoomPhase::Matching || Phase==ECardRoomPhase::Victory || Phase==ECardRoomPhase::Collected;
     for(const auto& Dot:GhostDots) Dot->SetVisibility(bGhost);

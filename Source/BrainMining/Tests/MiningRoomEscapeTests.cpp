@@ -8,6 +8,7 @@
 #include "MiningEncounterPlayer.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningComponent.h"
+#include "MiningGUIWidgets.h"
 #include "MiningCollection.h"
 #include "MiningCollectionEffects.h"
 #include "CardRoomPlayer.h"
@@ -91,12 +92,21 @@ public:
         }
         Pawn->SetActorLocation(Stage->GetApproachLocation()+FVector(0,0,100));
         PC->CardInteraction->SetRoomActive(true);PC->CardInteraction->Interact();
-        Stage->Run.Match();
+        Test->TestTrue(TEXT("Taking the seat automatically starts matchmaking"),Stage->Run.Phase==ECardRoomPhase::Matching);
+        PC->PlayerTick(.01f);
+        if(PC->MiningGUI)Test->TestFalse(TEXT("Mining HUD is hidden during the card encounter"),PC->MiningGUI->IsVisible());
         Stage->Tick(2.3f);Stage->Tick(1.5f);
         for(int32 Round=0;Round<4;++Round)
         {
-            for(int32 i=0;i<Stage->Run.Hand.Num();++i)Stage->Run.Stage(i);
-            Stage->Run.Confirm();Stage->Tick(2.8f);
+            if(Round==3)
+            {
+                PC->CardInteraction->ConfirmCards();
+                Test->TestTrue(TEXT("First final-round Space selects all cards without playing"),Stage->Run.CanConfirm() && Stage->Run.Phase==ECardRoomPhase::Choosing);
+            }
+            else for(int32 i=0;i<Stage->Run.Hand.Num();++i)Stage->Run.Stage(i);
+            PC->CardInteraction->ConfirmCards();
+            Test->TestTrue(TEXT("Confirm plays the selected hand"),Stage->Run.Phase==ECardRoomPhase::Resolving);
+            Stage->Tick(2.8f);
             if(Round==3)
             {
                 TArray<USceneComponent*> Parts;Stage->GetComponents(Parts);

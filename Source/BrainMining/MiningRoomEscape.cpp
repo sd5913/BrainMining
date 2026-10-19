@@ -53,7 +53,7 @@ void AMiningRoomEscape::InitializeRuntime()
     if(auto* GI=GetGameInstance())GI->GetSubsystem<UMiningWalletSubsystem>()->bDrillSkillRequiresUnlock=true;
     if(auto* Mine=Player->GetPawn()?Player->GetPawn()->FindComponentByClass<UMiningComponent>():nullptr)Mine->RequireDrillUnlock();
     CardStage->SubtitleOverride.BindWeakLambda(this,[this](const FString& Text,float Duration)
-    {if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayStatusLine(FText::FromString(Text),Duration);});
+    {if(auto* Subtitles=USubtitleSubsystem::Get(this)){Subtitles->StopAll();Subtitles->PlayStatusLine(FText::FromString(Text),Duration);}});
     Player->EchoInteraction->RestartOverride.BindUObject(this,&AMiningRoomEscape::HandleRestart);
     Player->EchoInteraction->OnRestarted.AddUObject(this,&AMiningRoomEscape::ResetJourney);
     if(GEngine && GEngine->GameViewport){SAssignNew(View,SMiningEscapeView).Owner(this);GEngine->GameViewport->AddViewportWidgetContent(View.ToSharedRef(),60);}

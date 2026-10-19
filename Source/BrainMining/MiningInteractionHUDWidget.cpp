@@ -81,6 +81,13 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
 {
     auto* Controller = GetOwningPlayer();
     if (!Controller || !Controller->GetPawn()) return FString();
+    if (auto* Cards = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
+        Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing)
+    {
+        const auto& Run = Cards->Stage->Run;
+        if (Run.Round == 4 && !Run.CanConfirm()) return TEXT("全选");
+        return Run.CanConfirm() ? TEXT("出牌") : FString();
+    }
     if (auto* Room = AMiningStartRoom::Find(GetWorld()))
     {
         const FString Action = Room->GetInteractionAction(Controller);
@@ -143,6 +150,8 @@ void UMiningInteractionHUDWidget::NativeTick(const FGeometry& Geometry, float De
     const auto* Cards = Controller ? Controller->FindComponentByClass<UCardRoomInteractionComponent>() : nullptr;
     const bool bCardReward = Cards && Cards->bRoomActive && IsValid(Cards->Stage) && Cards->Stage->Run.Phase == ECardRoomPhase::Victory && !Controller->IsPaused();
     bExplorationVisible |= bCardReward;
+    const bool bCardChoosing = Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing && !Controller->IsPaused();
+    bExplorationVisible |= bCardChoosing;
     InteractionAction = bExplorationVisible ? ResolveInteractionAction() : FString();
 }
 
@@ -189,11 +198,15 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
     }
     if (!InteractionAction.IsEmpty())
     {
+        const auto* Cards = GetOwningPlayer()->FindComponentByClass<UCardRoomInteractionComponent>();
+        const bool bPlayCard = Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing;
+        const bool bGamepad = UMiningGamepadSubsystem::UsesGamepad(GetOwningPlayer());
+        const float HalfKey = bPlayCard ? 35.f : 17.f;
         Text(InteractionAction, FVector2D(1, 39), 20, FLinearColor(0, 0, 0, .85f), true);
         Text(InteractionAction, FVector2D(0, 38), 20, FLinearColor::White, true);
-        Box(FVector2D(-17, 73), FVector2D(34, 34), Key, FLinearColor(.015f, .02f, .025f, .85f));
-        Box(FVector2D(-15, 74), FVector2D(30, 30), Key, FLinearColor(.96f, .95f, .89f));
-        Text(UMiningGamepadSubsystem::UsesGamepad(GetOwningPlayer()) ? TEXT("X") : TEXT("E"), FVector2D(0, 77), 19, FLinearColor(.04f, .045f, .05f), true);
+        Box(FVector2D(-HalfKey, 73), FVector2D(HalfKey*2, 34), Key, FLinearColor(.015f, .02f, .025f, .85f));
+        Box(FVector2D(-HalfKey+2, 74), FVector2D(HalfKey*2-4, 30), Key, FLinearColor(.96f, .95f, .89f));
+        Text(bPlayCard ? TEXT("空格") : (bGamepad ? TEXT("X") : TEXT("E")), FVector2D(0, 77), 19, FLinearColor(.04f, .045f, .05f), true);
     }
     if (CoinFeedback.IsVisible())
     {

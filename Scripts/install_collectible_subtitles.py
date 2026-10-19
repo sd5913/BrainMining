@@ -20,7 +20,7 @@ PICKUP_LINES = [
     (8, '喷发中的可乐', '将曼妥思投入可乐……'),
     (9, '「GPT」之花', 'AI的思考就如同不断向下延伸的根'),
     (10, '同步闪光的萤火虫', '萤火虫的同步闪烁：随机中怎样涌现出秩序？'),
-    (11, '散落的彩带', '漫天的彩带 喷出来了'),
+    (11, '散落的彩带', '好漂亮的彩带'),
 ]
 
 assert not unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_game_world(), 'Stop PIE first'

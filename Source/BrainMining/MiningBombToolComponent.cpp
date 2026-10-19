@@ -73,8 +73,8 @@ bool UMiningBombToolComponent::UnlockSkill()
 
 bool UMiningBombToolComponent::ToggleEquipped()
 {
-	if (!CanUse()) return false;
 	if (bEquipped) { Stow(); return true; }
+	if (!CanUse()) return false;
 	GetOwner()->FindComponentByClass<UMiningComponent>()->SelectPickaxe();
 	bEquipped = true;
 	return true;

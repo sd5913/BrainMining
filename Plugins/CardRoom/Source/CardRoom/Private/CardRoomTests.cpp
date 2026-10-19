@@ -1,6 +1,41 @@
 #include "CardRoomRun.h"
 #include "Misc/AutomationTest.h"
+#include "CardRoomPlayer.h"
+#include "CardRoomStage.h"
+#include "SCardRoomView.h"
+#include "Engine/World.h"
 #if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCardRoomMouseTest,"CardRoom.Input.MouseAndSpace",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FCardRoomMouseTest::RunTest(const FString& Parameters)
+{
+    UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+    auto* Cards=NewObject<UCardRoomInteractionComponent>();
+    Cards->Stage=World->SpawnActor<ACardRoomStage>();
+    auto& Run=Cards->Stage->Run;
+    Run.Phase=ECardRoomPhase::Choosing;Run.Round=1;Run.Hand={ERoomCard::Laser};
+    const auto View=SNew(SCardRoomView).Owner(Cards);
+    const FGeometry Geometry=FGeometry::MakeRoot(FVector2D(1600,900),FSlateLayoutTransform());
+    auto Click=[&](FVector2D Position)
+    {
+        View->OnMouseButtonDown(Geometry,FPointerEvent(0,Position,Position,TSet<FKey>{EKeys::LeftMouseButton},EKeys::LeftMouseButton,0,FModifierKeysState()));
+    };
+    Click(FVector2D(800,760));TestTrue(TEXT("Mouse click selects a card"),Run.Staged.Contains(0));
+    Click(FVector2D(800,760));TestTrue(TEXT("Second mouse click deselects"),Run.Staged.IsEmpty());
+    View->OnKeyDown(Geometry,FKeyEvent(EKeys::Right,FModifierKeysState(),0,false,0,0));
+    TestTrue(TEXT("Arrow keys do not select cards"),Run.Staged.IsEmpty());
+    Click(FVector2D(800,760));
+    View->OnKeyDown(Geometry,FKeyEvent(EKeys::SpaceBar,FModifierKeysState(),0,false,0,0));
+    TestTrue(TEXT("Space plays the mouse-selected card"),Run.Phase==ECardRoomPhase::Resolving);
+    Run.Phase=ECardRoomPhase::Choosing;Run.Round=4;Run.Staged.Reset();Run.Hand.Init(ERoomCard::Laser,17);
+    Click(FVector2D(1100,760));
+    TestTrue(TEXT("Overlapping cards select the visually topmost card"),Run.Staged.Num()==1 && Run.Staged.Contains(16));
+    View->OnKeyDown(Geometry,FKeyEvent(EKeys::SpaceBar,FModifierKeysState(),0,false,0,0));
+    TestTrue(TEXT("First Space selects all seventeen"),Run.Phase==ECardRoomPhase::Choosing && Run.Staged.Num()==17);
+    View->OnKeyDown(Geometry,FKeyEvent(EKeys::SpaceBar,FModifierKeysState(),0,false,0,0));
+    TestTrue(TEXT("Second Space plays the full hand"),Run.Phase==ECardRoomPhase::Resolving);
+    World->DestroyWorld(false);
+    return true;
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCardRoomFlowTest,"CardRoom.Rules.FullEncounter",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FCardRoomFlowTest::RunTest(const FString& Parameters)
 {

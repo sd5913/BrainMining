@@ -44,11 +44,6 @@ void UMiningGamepadSubsystem::TickInput(float DeltaSeconds)
         Player->GetWorld()->GetGameViewport()->AddViewportWidgetContent(Hints.ToSharedRef(), 2000);
     }
     const auto Context = GetContext();
-    if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>())
-    {
-        Cards->bGamepadNavigation = bGamepad;
-        if (Cards->Stage) Cards->FocusedCard = FMath::Clamp(Cards->FocusedCard, 0, FMath::Max(0, Cards->Stage->Run.Hand.Num() - 1));
-    }
     const FVector2D Move = ApplyDeadZone(MoveStick, StickDeadZone);
     const FVector2D Look = ApplyDeadZone(LookStick, StickDeadZone);
     if (Context == EMiningInputContext::Exploration)
@@ -84,7 +79,7 @@ void UMiningGamepadSubsystem::TickInput(float DeltaSeconds)
     {
         if (!Look.IsNearlyZero()) { bMenuPointer = true; MovePointer(Look, Step); }
     }
-    const bool bNavigate = Context == EMiningInputContext::Cards || Context == EMiningInputContext::Menu || Context == EMiningInputContext::Catalogue || Context == EMiningInputContext::Upgrade;
+    const bool bNavigate = Context == EMiningInputContext::Menu || Context == EMiningInputContext::Catalogue || Context == EMiningInputContext::Upgrade;
     int32 Direction = 0;
     if (bNavigate && Move.SizeSquared() > .25f)
         Direction = FMath::Abs(Move.X) > FMath::Abs(Move.Y) ? (Move.X > 0 ? 1 : 2) : (Move.Y > 0 ? 3 : 4);
@@ -247,7 +242,7 @@ FString UMiningGamepadSubsystem::GetHint() const
 {
     const auto Context = GetContext();
     if (Context == EMiningInputContext::Blocked || Context == EMiningInputContext::Upgrade) return FString();
-    if (Context == EMiningInputContext::Cards) return TEXT("方向键 选牌   X 选择/取消   A 确认   Y 末轮全选   B 离座");
+    if (Context == EMiningInputContext::Cards) return FString();
     if (Context == EMiningInputContext::Office) return TEXT("右摇杆 光标   LT 精调   A / RT 点击   B 离开电脑");
     if (Context == EMiningInputContext::Catalogue) return TEXT("LB / RB 切换藏品   右摇杆 旋转   LT / RT 缩放   Y 复位   B 返回");
     if (Context == EMiningInputContext::Menu) return TEXT("方向键 导航   A 确认   右摇杆 光标   RT 点击   B 返回");

@@ -328,8 +328,6 @@ void UMiningGamepadSubsystem::ReleaseInputs()
 void UMiningGamepadSubsystem::MarkKeyboardMouse()
 {
     if (bGamepad) ReleaseInputs();
-    if (auto* Player = Controller())
-        if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>()) { Cards->bConfirmLeave = false; Cards->bGamepadNavigation = false; }
     bGamepad = false;
 }
 

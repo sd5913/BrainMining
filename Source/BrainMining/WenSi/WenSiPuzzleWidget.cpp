@@ -146,7 +146,7 @@ void UWenSiPuzzleWidget::Refresh()
    Rows[I]->ClearChildren(); if (!Obj) continue;
    WenSiThoughtBubble::AddText(Rows[I],TEXT("这是一个"),PuzzleThoughtFont(26));
    Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(SPuzzleThoughtWord).ThoughtIndex(I).Word(Obj->Adjective()).Puzzle(Puzzle)];
-   WenSiThoughtBubble::AddText(Rows[I],TEXT("的")+Obj->Noun()+TEXT("。"),PuzzleThoughtFont(26));
+   WenSiThoughtBubble::AddText(Rows[I],TEXT("的")+Obj->Noun(),PuzzleThoughtFont(26));
   }
  }
  FString Message;

@@ -1,4 +1,8 @@
 #include "MiningGUIEditorLibrary.h"
+#include "MiningCollection.h"
+#include "Components/BoxComponent.h"
+#include "UObject/UnrealType.h"
+
 #include "EndingEmergence.h"
 #include "MiningExperienceSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -36,6 +40,28 @@
 #include "PlayInEditorDataTypes.h"
 #include "Settings/LevelEditorPlaySettings.h"
 
+UObject* UMiningGUIEditorLibrary::ReadPreviewObject(UObject* Object,FName PropertyName)
+{
+    if(!Object || !Object->GetWorld() || Object->GetWorld()->WorldType!=EWorldType::PIE)return nullptr;
+    const auto* Property=FindFProperty<FObjectPropertyBase>(Object->GetClass(),PropertyName);
+    return Property?Property->GetObjectPropertyValue_InContainer(Object):nullptr;
+}
+bool UMiningGUIEditorLibrary::WritePreviewState(UObject* Object,FName PropertyName,const FString& Value)
+{
+    if(!Object || !Object->GetWorld() || Object->GetWorld()->WorldType!=EWorldType::PIE)return false;
+    auto* Property=FindFProperty<FProperty>(Object->GetClass(),PropertyName);
+    return Property && Property->ImportText_Direct(*Value,Property->ContainerPtrToValuePtr<void>(Object),Object,PPF_None)!=nullptr;
+}
+AMiningCollectible* UMiningGUIEditorLibrary::SpawnPreviewCollectible(AMiningCollectionField* Field,int32 ItemId,FVector Location)
+{
+    if(!Field || Field->GetWorld()->WorldType!=EWorldType::PIE || ItemId<0 || ItemId>=AMiningCollectible::ItemTypeCount)return nullptr;
+    auto* Item=Field->GetWorld()->SpawnActor<AMiningCollectible>(Location,FRotator::ZeroRotator);
+    if(!Item)return nullptr;
+    Item->BuildModel(ItemId);Item->bReleased=true;Item->Exposure=1;
+    Item->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    if(!Field->RegisterExternalCollectible(Item)){Item->Destroy();return nullptr;}
+    return Item;
+}
 bool UMiningGUIEditorLibrary::PrepareEndingCreditsPreview(APlayerController* Controller, const TArray<int32>& Inventory)
 {
     UWorld* World=Controller?Controller->GetWorld():nullptr;

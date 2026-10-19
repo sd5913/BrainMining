@@ -9,6 +9,10 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "InputKeyEventArgs.h"
+#include "StartRoom/MiningOpening.h"
+#include "Subtitles/SubtitleLibrary.h"
+#include "DiggableRock.h"
+#include "Components/LightComponent.h"
 
 AMiningStarterPickup::AMiningStarterPickup()
 {
@@ -37,7 +41,42 @@ void AMiningStarterPickup::Collect()
 
 AMiningStartRoom::AMiningStartRoom()
 {
+    PrimaryActorTick.bCanEverTick=true;
+    PrimaryActorTick.TickInterval=.1f;
     SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
+}
+void AMiningStartRoom::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    if(!Player.IsValid() || bHeadlampUnlocked)return;
+    const FTransform Frame=GetActorTransform();
+    for(TActorIterator<ADiggableRock> Rock(GetWorld());Rock;++Rock)
+        if(Rock->ActorHasTag(TEXT("BM_StartRoom_ExitBlocker")) && Rock->SuccessfulCuts>0)
+        {
+            FHitResult Hit;
+            FCollisionQueryParams Q(SCENE_QUERY_STAT(StartRoomBreach),true,Player.Get());
+            const bool bBlocked=GetWorld()->LineTraceSingleByChannel(Hit,Frame.TransformPosition(FVector(425,0,95)),Frame.TransformPosition(FVector(650,0,95)),ECC_Visibility,Q);
+            if(!bBlocked || Frame.InverseTransformPosition(Player->GetActorLocation()).X>650)bHeadlampUnlocked=true;
+            break;
+        }
+    TArray<ULightComponent*> Lights;Player->GetComponents(Lights);
+    for(auto* Light:Lights)
+        if(Light->GetFName()==TEXT("MiningLight") || Light->GetFName()==TEXT("MiningFillLight"))Light->SetVisibility(bHeadlampUnlocked);
+}
+
+FName AMiningStartRoom::GetViewedProp(APlayerController* Controller) const
+{
+    if(!Controller || !Controller->GetPawn() || Controller->GetPawn()!=Player.Get() || Controller->IsPaused() || Controller->bShowMouseCursor)return NAME_None;
+    FVector Eye;FRotator View;Controller->GetPlayerViewPoint(Eye,View);
+    const auto Segment=[](AActor* Actor)->FName
+    {
+        for(;Actor;Actor=Actor->GetAttachParentActor())
+            for(FName Tag:Actor->Tags)if(Tag.ToString().StartsWith(TEXT("StartRoomView_")))return Tag;
+        return NAME_None;
+    };
+    FHitResult Hit;
+    if(MiningInteraction::Trace(GetWorld(),Hit,Eye,View,InteractionReach,FCollisionQueryParams(SCENE_QUERY_STAT(StartRoomView),true,Controller->GetPawn()),[&](const FHitResult& H){return !Segment(H.GetActor()).IsNone();}))return Segment(Hit.GetActor());
+    return NAME_None;
 }
 
 AMiningStartRoom* AMiningStartRoom::Find(UWorld* World)
@@ -60,6 +99,24 @@ void AMiningStartRoom::InitializePlayer(APawn* Pawn)
     if (!Pawn || Player.Get() == Pawn) return;
     ReleasePlayer();
     Player = Pawn;
+    // The skeletal computer has no reliable complex trace surface. A query-only
+    // target follows its visible bounds and never blocks the player or physics.
+    for(TActorIterator<AActor> Actor(GetWorld());Actor;++Actor)
+        if(Actor->ActorHasTag(TEXT("StartRoomView_Computer")) && !Actor->FindComponentByClass<UBoxComponent>())
+        {
+            const FBox Bounds=Actor->GetComponentsBoundingBox(true);
+            Actor->SetActorEnableCollision(true);
+            if(!Bounds.IsValid)continue;
+            auto* Target=NewObject<UBoxComponent>(*Actor,TEXT("StartRoomComputerViewTarget"));
+            Actor->AddInstanceComponent(Target);Target->SetupAttachment(Actor->GetRootComponent());
+            Target->SetBoxExtent(Bounds.GetExtent().ComponentMax(FVector(3)));
+            Target->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+            Target->SetCollisionResponseToAllChannels(ECR_Ignore);
+            Target->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);
+            Target->SetGenerateOverlapEvents(false);Target->SetCanEverAffectNavigation(false);
+            Target->RegisterComponent();Target->SetWorldScale3D(FVector::OneVector);
+            Target->SetWorldLocationAndRotation(Bounds.GetCenter(),FQuat::Identity);
+        }
     Mining = Pawn->FindComponentByClass<UMiningComponent>();
     Flight = Pawn->FindComponentByClass<UMiningCharacterMovementComponent>();
     Effects = Pawn->FindComponentByClass<UMiningToolEffectsComponent>();
@@ -93,18 +150,25 @@ AMiningStarterPickup* AMiningStartRoom::GetTarget(APlayerController* Controller)
 FString AMiningStartRoom::GetInteractionAction(APlayerController* Controller) const
 {
     if (const auto* Pickup = GetTarget(Controller))
-        return Pickup->Equipment == EMiningStarterEquipment::Pickaxe ? TEXT("拿起镐子 · 解锁挖掘") : TEXT("穿戴喷气背包 · 解锁飞行");
+        return Pickup->Equipment == EMiningStarterEquipment::Pickaxe ? TEXT("镐子") : TEXT("喷气背包");
+    if(!GetViewedProp(Controller).IsNone())return TEXT("查看");
     return FString();
 }
 
 bool AMiningStartRoom::Interact(APlayerController* Controller)
 {
     auto* Pickup = GetTarget(Controller);
+    if(!Pickup && Controller && !Controller->bShowMouseCursor)
+    {
+        const FName Segment=GetViewedProp(Controller);
+        if(!Segment.IsNone()){USubtitleLibrary::PlaySubtitleSegment(this,Segment);return true;}
+    }
     if (!Pickup || Controller->bShowMouseCursor) return false;
     if (Pickup->Equipment == EMiningStarterEquipment::Pickaxe)
     {
         if (bPickaxeUnlocked || !Mining.IsValid()) return false;
         bPickaxeUnlocked = true;
+        for(TActorIterator<AMiningOpening> Opening(GetWorld());Opening;++Opening)Opening->BeginTitleToWall(nullptr);
         if (bOwnMiningBlock) { Mining->PopEncounterBlock(); bOwnMiningBlock = false; }
         Mining->SelectPickaxe();
         if (Effects.IsValid()) Effects->bEnabled = bPreviousEffectsEnabled;
@@ -127,7 +191,12 @@ void AMiningStartRoom::UnlockDeveloperEquipment()
     if (bOwnMiningBlock && Mining.IsValid()) { Mining->PopEncounterBlock(); bOwnMiningBlock = false; }
     if (bOwnFlightBlock && Flight.IsValid()) { Flight->PopFlightBlock(); bOwnFlightBlock = false; }
     if (Effects.IsValid()) Effects->bEnabled = bPreviousEffectsEnabled;
-    bPickaxeUnlocked = bJetpackUnlocked = true;
+    bPickaxeUnlocked = bJetpackUnlocked = bHeadlampUnlocked = true;
+    if(Player.IsValid())
+    {
+        TArray<ULightComponent*> Lights;Player->GetComponents(Lights);
+        for(auto* Light:Lights)if(Light->GetFName()==TEXT("MiningLight")||Light->GetFName()==TEXT("MiningFillLight"))Light->SetVisibility(true);
+    }
     for (TActorIterator<AMiningStarterPickup> Pickup(GetWorld()); Pickup; ++Pickup)
         if (!Pickup->bCollected) Pickup->Collect();
 }

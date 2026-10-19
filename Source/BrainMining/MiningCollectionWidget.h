@@ -45,4 +45,5 @@ private:
     UFUNCTION() void Next();
     float RevealElapsed=0;
     bool bRevealing=false;
+    int32 CurrentPage=0;
 };

@@ -25,6 +25,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="字幕")
 	void StopAll();
+    void SuppressForWorld(UWorld* World);
 
 	virtual void Deinitialize() override;
 
@@ -52,4 +53,5 @@ private:
 	int32 LineIndex = 0;
 	FTimerHandle LineTimer;
 	bool bPlaying = false;
+    TWeakObjectPtr<UWorld> SuppressedWorld;
 };

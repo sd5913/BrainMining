@@ -243,6 +243,12 @@ void APopupOfficeDevice::SetScreenInteractive(bool bEnabled)
  Pointer->ReleasePointerKey(EKeys::LeftMouseButton);Pointer->bEnableHitTesting=bEnabled && !bLocked;
  Aim->SetCollisionEnabled(!bLocked && !bEnabled?ECollisionEnabled::QueryOnly:ECollisionEnabled::NoCollision);
 }
+void APopupOfficeDevice::HandleGamepadPointer(bool bPressed)
+{
+ if(!Pointer)return;
+ if(bPressed && !bLocked && Pointer->bEnableHitTesting)Pointer->PressPointerKey(EKeys::LeftMouseButton);
+ else Pointer->ReleasePointerKey(EKeys::LeftMouseButton);
+}
 void APopupOfficeDevice::TickScreen(float Dt,APlayerController* PC)
 {
  if(bLocked || !PC)return;

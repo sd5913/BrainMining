@@ -1,4 +1,5 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "MiningGamepadSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "MiningInteractionTrace.h"
 #include "WenSi/MouseMuseumPortal.h"
@@ -150,12 +151,12 @@ void AWenSiMirrorExhibit::Configure()
   Shape(0,FVector(0,0,130),FVector(200,200,10));Shape(1,FVector(94,0,0),FVector(12,200,260));
   Shape(2,FVector(0,-94,0),FVector(200,12,260));Shape(3,FVector(0,94,0),FVector(200,12,260));
   Shape(4,FVector(-94,-67.5,0),FVector(12,65,260));Shape(5,FVector(-94,67.5,0),FVector(12,65,260));
-  Shape(6,FVector(-94,0,-57.5),FVector(12,70,15));
+  Shape(6,FVector(-94,0,-32.5),FVector(12,70,15));
   Shape(7,FVector(-94,0,85),FVector(12,70,90));
-  Shape(8,FVector(-94,0,-5),FVector(3,70,90));
-  // Preserve the original 40 x 65 cm maintenance hatch below the new window.
-  Shape(9,FVector(-94,-27.5,-97.5),FVector(12,15,65));
-  Shape(10,FVector(-94,27.5,-97.5),FVector(12,15,65));break;
+  Shape(8,FVector(-94,0,7.5),FVector(3,70,65));
+  // 60 x 90 cm clear opening fits the shrunken player, including floor clearance.
+  Shape(9,FVector(-94,-32.5,-85),FVector(12,5,90));
+  Shape(10,FVector(-94,32.5,-85),FVector(12,5,90));break;
  case 8:Shape(0,FVector::ZeroVector,FVector(38,42,56));break;
  case 9:Shape(0,FVector::ZeroVector,FVector(72),Sphere);break;
  case 10:
@@ -235,13 +236,6 @@ void AWenSiMirrorExhibit::BeginPlay()
 {
  Super::BeginPlay();Rest=GetActorLocation();Configure();
  if(Kind==3){Rest.Z+=195;SetActorLocation(Rest);}
- if(Kind==7)
- {
-  auto Label=NewObject<UWidgetComponent>(this,TEXT("PreciousExhibitWarning"));AddInstanceComponent(Label);Label->SetupAttachment(RootComponent);
-  Label->SetRelativeLocation(FVector(-102,0,-58));Label->SetRelativeRotation(FRotator(0,180,0));Label->SetRelativeScale3D(FVector(.16f));
-  Label->SetDrawSize(FVector2D(900,100));Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);Label->SetTwoSided(true);
-  Label->SetSlateWidget(SNew(STextBlock).Text(FText::FromString(TEXT("内有珍品"))).Font(BrainMiningFonts::Style("Bold",70)).ColorAndOpacity(FLinearColor(.08f,.035f,.01f)).Justification(ETextJustify::Center));Label->RegisterComponent();
- }
  const FBox InitialBounds=ExhibitBounds(this);
  if(InitialBounds.IsValid){RestBoundsMinZ=InitialBounds.Min.Z;bRestBoundsInitialized=true;}
  if(Kind==2)
@@ -396,10 +390,10 @@ void AWenSiMirrorPawn::Tick(float Dt)
 {
  Super::Tick(Dt);auto PC=Cast<APlayerController>(Controller);if(!PC || PC->IsMoveInputIgnored())return;
  float X=0,Y=0;PC->GetInputMouseDelta(X,Y);AddControllerYawInput(X);AddControllerPitchInput(-Y);
- AddMovementInput(GetActorForwardVector(),float(PC->IsInputKeyDown(EKeys::W))-float(PC->IsInputKeyDown(EKeys::S)));
- AddMovementInput(GetActorRightVector(),float(PC->IsInputKeyDown(EKeys::D))-float(PC->IsInputKeyDown(EKeys::A)));
- if(!PC->IsInputKeyDown(EKeys::SpaceBar))bRequireFlightRelease=false;
- if((PC->IsInputKeyDown(EKeys::SpaceBar)&&!bRequireFlightRelease)||Word==EWenSiMirrorWord::Floating)
+ AddMovementInput(GetActorForwardVector(),UMiningGamepadSubsystem::ReadMove(PC).Y);
+ AddMovementInput(GetActorRightVector(),UMiningGamepadSubsystem::ReadMove(PC).X);
+ if(!UMiningGamepadSubsystem::ReadJumpHeld(PC))bRequireFlightRelease=false;
+ if((UMiningGamepadSubsystem::ReadJumpHeld(PC)&&!bRequireFlightRelease)||Word==EWenSiMirrorWord::Floating)
  {auto Movement=GetCharacterMovement();if(Movement->IsMovingOnGround())Movement->SetMovementMode(MOVE_Falling);Movement->Velocity.Z=FMath::Min(350.f,Movement->Velocity.Z+(1700.f+FMath::Abs(GetWorld()->GetGravityZ()))*Dt);}
 }
 AWenSiMirrorGameMode::AWenSiMirrorGameMode(){DefaultPawnClass=AWenSiMirrorPawn::StaticClass();}
@@ -607,7 +601,7 @@ void AWenSiMirrorPuzzle::UpdateMechanism()
  if(bPressure!=WasPressure)UMiningRoomAudioSubsystem::Emit(Block,bPressure?TEXT("S_Pressure"):TEXT("S_PowerOff"),.6f,true);
  if(bPower!=WasPower)UMiningRoomAudioSubsystem::Emit(Ball,bPower?TEXT("S_Power"):TEXT("S_PowerOff"),.6f,true);
  if(bPressure && bPower && !bRewardUnlocked){bRewardUnlocked=true;UMiningRoomAudioSubsystem::Emit(RewardShutter,TEXT("S_RewardDoor"),.6f,true);UE_LOG(LogWenSiMirror,Display,TEXT("Both physical locks active; mouse museum hatch unlocked"));}
- if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,FMath::FInterpConstantTo(RewardShutter->GetActorLocation().Z-GetActorLocation().Z,bRewardUnlocked?128.f:40.f,GetWorld()->GetDeltaSeconds(),90.f))));
+ if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,FMath::FInterpConstantTo(RewardShutter->GetActorLocation().Z-GetActorLocation().Z,bRewardUnlocked?138.f:45.f,GetWorld()->GetDeltaSeconds(),90.f))));
  for(int32 I=0;I<CableMaterials.Num();++I)CableMaterials[I]->SetScalarParameterValue(TEXT("Powered"),(CablePressure[I]?bPressure:bPower)?1.f:0.f);
  for(int32 I=0;I<Lamps.Num();++I){const bool On=I?bPower:bPressure;Lamps[I]->SetVectorParameterValue(TEXT("Tint"),On?FLinearColor(.12,.75,.2):FLinearColor(.55,.025,.015));if(auto Overlay=Cast<UMaterialInstanceDynamic>(LampMeshes[I]->GetOverlayMaterial())){Overlay->SetVectorParameterValue(TEXT("Tint"),On?FLinearColor(.35,1,.45):FLinearColor(.5,.04,.025));Overlay->SetScalarParameterValue(TEXT("Strength"),On?2.f:.45f);}}
 }
@@ -660,7 +654,7 @@ void AWenSiMirrorPuzzle::ResetPuzzle()
  if(PC){PC->ResetIgnoreInputFlags();PC->SetControlRotation(StartTransform.Rotator());PC->SetInputMode(FInputModeGameOnly());PC->bShowMouseCursor=false;}
  for(int32 I=0;I<Exhibits.Num();++I){Exhibits[I]->Word=InitialWords[I];Exhibits[I]->bBallLanded=false;Exhibits[I]->SetActorTransform(InitialTransforms[I]);Exhibits[I]->Rest=InitialTransforms[I].GetLocation();Exhibits[I]->Apply();}
  bComplete=false;bRewardUnlocked=false;bPressure=false;bPower=false;bSecondRoom=false;Thoughts[0].Reset();Thoughts[1].Reset();Aim.Reset();bAimReset=false;
- if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,40)));if(Reward)Reward->SetActorHiddenInGame(true);RefreshSelfThoughts();if(UI)UI->Refresh();
+ if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,45)));if(Reward)Reward->SetActorHiddenInGame(true);RefreshSelfThoughts();if(UI)UI->Refresh();
  UpdateMechanism();
  UE_LOG(LogWenSiMirror,Display,TEXT("Reset: all words, transforms, miner size, mirrors, ball, balance, locks and reward restored"));
 }
@@ -682,7 +676,7 @@ bool AWenSiMirrorPuzzle::SkipToReward()
  if(auto Ball=Find(9)){Ball->Word=EWenSiMirrorWord::Conductive;Ball->bBallLanded=true;Ball->Apply();Ball->SetActorLocation(RoomPoint(FVector(1900,120,80)));}
  bPressure=true;bPower=true;bRewardUnlocked=true;bSecondRoom=true;
  if(Reward){Reward->SetActorHiddenInGame(true);Reward->SetActorEnableCollision(false);}
- if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,128)));
+ if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,138)));
  // The tiny capsule is roughly 33 cm half-height; keep its feet just above
  // the alcove floor instead of dropping the scaled body into the slab.
  Pawn->SetActorLocation(RoomPoint(FVector(2230,-350,35)),false,nullptr,ETeleportType::TeleportPhysics);

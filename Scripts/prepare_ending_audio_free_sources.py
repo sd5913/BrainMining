@@ -16,6 +16,13 @@ WAV_ROOT = SOURCE_ROOT / "Wav"
 OUTPUT_ROOT = ROOT / "SourceAssets" / "EndingEmergence" / "Audio"
 RATE = 48000
 RECORDS = []
+LIGHT_THOUGHT_CREDIT = '\n'.join([
+    'Light Thought var 1 — Kevin MacLeod (incompetech.com)',
+    'Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200006',
+    'Licensed under Creative Commons: By Attribution 4.0 License',
+    'https://creativecommons.org/licenses/by/4.0/',
+    'Changes: first 152 seconds retained; 1.8-second loop crossfade; 5 ms seam fades; resampled to 48 kHz PCM16 and normalized.',
+])
 
 
 def read_source(relative_path, gain=1.0, start=0.0, end=None, mono=False):
@@ -46,7 +53,7 @@ def read_source(relative_path, gain=1.0, start=0.0, end=None, mono=False):
     )
 
 
-def render(name, sources, category, loop=False, target_peak=0.4, crossfade=0.12, duration=None):
+def render(name, sources, category, loop=False, target_peak=0.4, crossfade=0.12, duration=None, seam_fade=0.0):
     prepared = []
     channels = max(samples.shape[1] for samples, _, _ in sources)
     for samples, record, offset in sources:
@@ -74,6 +81,10 @@ def render(name, sources, category, loop=False, target_peak=0.4, crossfade=0.12,
         if fade > 1:
             mixed[:fade] *= np.linspace(0.0, 1.0, fade)[:, None]
             mixed[-fade:] *= np.linspace(1.0, 0.0, fade)[:, None]
+    if loop and seam_fade > 0:
+        fade = min(round(seam_fade * RATE), len(mixed) // 8)
+        mixed[:fade] *= np.linspace(0.0, 1.0, fade)[:, None]
+        mixed[-fade:] *= np.linspace(1.0, 0.0, fade)[:, None]
     peak = float(np.max(np.abs(mixed)))
     if not np.isfinite(mixed).all() or peak <= 1e-7:
         raise ValueError(f"invalid rendered audio: {name}")
@@ -97,7 +108,8 @@ def render(name, sources, category, loop=False, target_peak=0.4, crossfade=0.12,
             peak=float(np.max(np.abs(mixed))),
             rms=float(np.sqrt(np.mean(mixed * mixed))),
             sources=[dict(record, offset=offset) for _, record, offset in sources],
-            processing=dict(resample_to=RATE, crossfade_seconds=crossfade if loop else 0, target_peak=target_peak),
+            processing=dict(resample_to=RATE, crossfade_seconds=crossfade if loop else 0, target_peak=target_peak,
+                            **({'seam_fade_seconds': seam_fade} if seam_fade else {})),
             sha256=hashlib.sha256(output.read_bytes()).hexdigest(),
         )
     )
@@ -108,8 +120,18 @@ def one(name, source, category, loop=False, target_peak=0.4, crossfade=0.12, dur
     render(name, [(samples, record, 0.0)], category, loop, target_peak, crossfade, duration)
 
 
+def prepare_light_thought():
+    samples, record = read_source('Light Thought var 1.mp3', end=152.0)
+    record.update(author='Kevin MacLeod', title='Light Thought var 1',
+                  source_url='https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200006',
+                  license='CC BY 4.0', license_url='https://creativecommons.org/licenses/by/4.0/')
+    render('M_EE_LightThought_Loop', [(samples, record, 0.0)], 'Music',
+           loop=True, target_peak=0.70, crossfade=1.8, seam_fade=.005)
+
+
 def main():
     WAV_ROOT.mkdir(parents=True, exist_ok=True)
+    prepare_light_thought()
     one("M_EE_Main_Loop", "DST-MindStream.mp3", "Music", loop=True, target_peak=0.30, crossfade=3.0, duration=120.0)
     one("M_EE_Cosmic_Loop", "S31-Tunnel-Drilling.ogg", "Music", loop=True, target_peak=0.24, crossfade=2.0, duration=84.0)
     one("M_EE_Inner_Loop", "EndingAmbiencePack/The_Surreal_Truth.mp3", "Music", loop=True, target_peak=0.20, crossfade=2.0)
@@ -132,9 +154,10 @@ def main():
     manifest = SOURCE_ROOT / "manifest.json"
     manifest.write_text(json.dumps(RECORDS, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     credits = [
-        "Ending Emergence free audio selection — 2026-10-18",
+        "Ending Emergence free audio selection — 2026-10-19",
         "Processing: resampled to 48 kHz PCM16, normalized, trimmed where needed, and crossfaded for loops.",
         "All source files are retained under AudioFreeSources/Originals for auditability.",
+        LIGHT_THOUGHT_CREDIT,
         "",
         "OpenGameArt sources:",
         "MindStream — DST — CC0 — https://opengameart.org/content/mindstream",
@@ -153,4 +176,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if '--light-thought-only' in sys.argv:
+        manifest = SOURCE_ROOT / 'manifest.json'
+        RECORDS.extend(entry for entry in json.loads(manifest.read_text(encoding='utf-8'))
+                       if entry['asset'] != 'M_EE_LightThought_Loop')
+        prepare_light_thought()
+        manifest.write_text(json.dumps(RECORDS, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        credits_path = SOURCE_ROOT / 'CREDITS.txt'
+        credits = credits_path.read_text(encoding='utf-8')
+        credit_start = credits.find('Light Thought var 1 — Kevin MacLeod (incompetech.com)')
+        if credit_start >= 0:
+            credit_end = credits.find('\n\n', credit_start)
+            credits = credits[:credit_start] + (credits[credit_end:] if credit_end >= 0 else '')
+        if LIGHT_THOUGHT_CREDIT not in credits:
+            credits_path.write_text(credits.rstrip() + '\n\n' + LIGHT_THOUGHT_CREDIT + '\n', encoding='utf-8')
+        print(json.dumps(RECORDS[-1], ensure_ascii=False, indent=2))
+    else:
+        main()

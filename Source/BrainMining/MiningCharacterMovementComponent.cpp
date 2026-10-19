@@ -1,4 +1,5 @@
 #include "MiningCharacterMovementComponent.h"
+#include "MiningGamepadSubsystem.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
@@ -254,7 +255,7 @@ FVector UMiningCharacterMovementComponent::NewFallVelocity(const FVector& Initia
 	if (bCreativeFlight)
 	{
 		const auto* Controller = CharacterOwner ? Cast<APlayerController>(CharacterOwner->GetController()) : nullptr;
-		const bool bDescend = Controller && Controller->IsInputKeyDown(EKeys::LeftControl) && !CharacterOwner->IsMoveInputIgnored();
+		const bool bDescend = Controller && UMiningGamepadSubsystem::ReadDescendHeld(Controller) && !CharacterOwner->IsMoveInputIgnored();
 		const double TargetSpeed = (bFlightInputHeld ? 1. : bDescend ? -1. : 0.) * Settings.AscentSpeed * FlightSizeScale;
 		return InitialVelocity + Up * (TargetSpeed - OldVerticalSpeed);
 	}

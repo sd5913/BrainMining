@@ -13,3 +13,9 @@ Paper sounds — OpenGameArt CC0 assets — retained with source filenames
 
 Kenney Sci-Fi Sounds — Kenney — CC0 — https://kenney.nl/assets/sci-fi-sounds
 Map/paper sounds are retained as their original OpenGameArt files and are only used as short effects.
+
+Light Thought var 1 — Kevin MacLeod (incompetech.com)
+Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200006
+Licensed under Creative Commons: By Attribution 4.0 License
+https://creativecommons.org/licenses/by/4.0/
+Changes: first 152 seconds retained; 1.8-second loop crossfade; 5 ms seam fades; resampled to 48 kHz PCM16 and normalized.

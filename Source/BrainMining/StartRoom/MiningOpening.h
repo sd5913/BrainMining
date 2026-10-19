@@ -8,6 +8,7 @@ class AMiningOpening;
 class UTexture2D;
 class UWidgetComponent;
 class ACameraActor;
+class UButton;
 
 UCLASS()
 class BRAINMINING_API UMiningOpeningTitle : public UUserWidget
@@ -27,6 +28,7 @@ public:
     virtual TSharedRef<SWidget> RebuildWidget() override;
     UFUNCTION() void StartGame();
     UFUNCTION() void QuitGame();
+    UPROPERTY(Transient) TObjectPtr<UButton> StartButton;
 };
 
 /** MainGame opening; supports authored anchors or the shared StartRoom transform. */

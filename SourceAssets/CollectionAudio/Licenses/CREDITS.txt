@@ -1,0 +1,12 @@
+BrainMining collectible pickup audio
+All source recordings: CC0 1.0.
+https://creativecommons.org/publicdomain/zero/1.0/
+Edits: excerpts, layering, playback-rate changes, reversal where recorded, mono conversion,
+48 kHz PCM16 resampling, 4.5 kHz low-pass, fades and conservative loudness matching.
+
+Casino Audio · Kenney — Kenney — https://kenney.nl/assets/casino-audio
+Impact Sounds · Kenney — Kenney — https://kenney.nl/assets/impact-sounds
+Interface Sounds · Kenney — Kenney — https://kenney.nl/assets/interface-sounds
+RPG Audio — Kenney — https://kenney.nl/assets/rpg-audio
+Sci-fi Sounds · Kenney — Kenney — https://kenney.nl/assets/sci-fi-sounds
+40 CC0 water / splash / slime SFX | OpenGameArt.org — rubberduck — https://opengameart.org/content/40-cc0-water-splash-slime-sfx

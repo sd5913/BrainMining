@@ -28,16 +28,15 @@ FVector AMouseMuseumPortal::CellCenter() const
 void AMouseMuseumPortal::Initialize(AWenSiMirrorPuzzle* OwnerPuzzle)
 {
  Puzzle=OwnerPuzzle;SetActorLocation(Puzzle->GetActorLocation());
- // The present Small word is .38 scale (66.9 cm tall), larger than the old
- // 64 cm hatch. Keep the top at 420 while raising the lower edge to 80 cm.
+ // Leave 90 cm clear for the actual 66.9 cm shrunken capsule plus floor clearance.
  for(TActorIterator<AActor> It(GetWorld());It;++It)
  {
-  if(It->GetActorLocation().Equals(Puzzle->RoomPoint(FVector(2190,-350,242)),1.f))
+  if(It->GetActorLocation().Equals(Puzzle->RoomPoint(FVector(2190,-350,242)),1.f) || It->GetActorLocation().Equals(Puzzle->RoomPoint(FVector(2190,-350,250)),1.f))
    if(auto Mesh=It->FindComponentByClass<UStaticMeshComponent>())
-   {auto Scale=Mesh->GetRelativeScale3D();Scale.Z=3.4f;Mesh->SetRelativeScale3D(Scale);It->SetActorLocation(Puzzle->RoomPoint(FVector(2190,-350,250)));}
+   {auto Scale=Mesh->GetRelativeScale3D();Scale.Z=3.3f;Mesh->SetRelativeScale3D(Scale);It->SetActorLocation(Puzzle->RoomPoint(FVector(2190,-350,255)));}
   if(It->ActorHasTag(TEXT("MirrorRewardShutter")))
    if(auto Mesh=It->FindComponentByClass<UStaticMeshComponent>())
-   {auto Scale=Mesh->GetRelativeScale3D();Scale.Z=.8f;Mesh->SetRelativeScale3D(Scale);}
+   {auto Scale=Mesh->GetRelativeScale3D();Scale.Z=.9f;Mesh->SetRelativeScale3D(Scale);}
  }
  auto Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
  auto Sphere=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Sphere.Sphere"));
@@ -88,13 +87,17 @@ void AMouseMuseumPortal::Initialize(AWenSiMirrorPuzzle* OwnerPuzzle)
 void AMouseMuseumPortal::RefreshFocus()
 {
  bFocused=false;
+ bool bInsideGallery=false;
  auto PC=GetWorld()->GetFirstPlayerController();auto Pawn=PC?PC->GetPawn():nullptr;
  if(Puzzle && Pawn && Painting && Puzzle->bAreaActive && Puzzle->bRewardUnlocked && !Puzzle->bEditing && !Puzzle->bComplete && !Puzzle->IsSwapping() && !IsEntering() && Puzzle->GetPlayerWord()==EWenSiMirrorWord::Small)
  {
   const FVector Local=Pawn->GetActorLocation()-GetActorLocation();
   if(Local.X>2210 && Local.X<2440 && FMath::Abs(Local.Y+350)<125 && Local.Z<200)
   {
-   if(!bGalleryHintShown){bGalleryHintShown=true;if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("这画上好像有个奇怪的圆圈")),4.f);}}
+   bInsideGallery=true;
+   if(GalleryEnteredAt<0)GalleryEnteredAt=GetWorld()->GetTimeSeconds();
+   if(!bGalleryHintShown && GetWorld()->GetTimeSeconds()-GalleryEnteredAt>=3.f)
+   {bGalleryHintShown=true;if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("这画上好像有个奇怪的圆圈")),4.f);}}
    FVector Eye;FRotator R;PC->GetPlayerViewPoint(Eye,R);const FVector D=R.Vector(),Center=CellCenter();
    if(D.X>.05f)
    {
@@ -107,6 +110,7 @@ void AMouseMuseumPortal::RefreshFocus()
    }
   }
  }
+ if(!bInsideGallery)GalleryEnteredAt=-1;
  if(Painting)Painting->SetScalarParameterValue(TEXT("Highlight"),bFocused?1.f:0.f);
 }
 

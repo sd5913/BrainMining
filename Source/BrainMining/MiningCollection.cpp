@@ -6,6 +6,7 @@
 #include "BrainMiningPlayerController.h"
 #include "SMiningCollectionView.h"
 #include "MiningComponent.h"
+#include "MiningAudioComponent.h"
 #include "MiningCharacterMovementComponent.h"
 #include "DiggableRock.h"
 #include "HeavenToilet.h"
@@ -300,6 +301,8 @@ bool AMiningCollectionField::TryCollectTarget()
     Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);
     if(IsValid(Item->PresentationActor)) { Item->PresentationActor->Destroy(); Item->PresentationActor=nullptr; }
     ++Inventory[Item->ItemId];
+    if(Player->GetPawn())
+        if(auto* Audio=Player->GetPawn()->FindComponentByClass<UMiningAudioComponent>())Audio->PlayCollectible(Item->ItemId);
     // All collectibles, including the room-owned stage ribbon, reach this
     // successful pickup path. Queue the editable segment only after collection.
     USubtitleLibrary::PlaySubtitleSegment(this,FName(*FString::Printf(TEXT("收集物拾取_%02d"),Item->ItemId)));

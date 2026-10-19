@@ -108,6 +108,7 @@ private:
     void UpdatePainterly();
     friend class FEndingTitleDrillPreview;
     friend class FEndingPaperMoviePreview;
+    friend class FEndingMusicContinuityCheck;
     friend class FEndingOrganicPreview;
     void BuildFinale();
     void BuildPaperFinale();

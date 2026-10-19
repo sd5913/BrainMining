@@ -62,7 +62,7 @@ public:
                 if(Field->GetName().StartsWith(TEXT("DeepStarField")))
                 {const int L=FMath::RoundToInt((-P.X-19000)/4300);Test->TestEqual(TEXT("Original star-field placement is restored"),float(P.Y),float((L%2?1:-1)*12500));++RestoredCount;}
                 else if(Field->GetName().StartsWith(TEXT("ParallaxNebula")))
-                {const int L=FMath::RoundToInt((-P.X-12500)/4300);Test->TestEqual(TEXT("Original nebula placement is restored"),float(P.Y),float((L%2?1:-1)*(6200+L*1400)));++RestoredCount;}
+                {const int L=FMath::RoundToInt((-P.X-16700)/4300);Test->TestEqual(TEXT("Receded nebula placement is restored"),float(P.Y),float((L%2?1:-1)*(6200+L*1400)));++RestoredCount;}
             }
             Test->TestEqual(TEXT("All original texture layers are present"),RestoredCount,7);
             if(bJumpMovie)
@@ -71,6 +71,9 @@ public:
                 FApp::SetUseFixedTimeStep(true);FApp::SetFixedDeltaTime(1.0/30);Step=100;return false;
             }
             D->PreviewFilm();D->FilmSpeed=1;Step=1;
+            D->SetShot(4);D->ShotTime=1;D->UpdateFilm(0);
+            const FVector SolarEye=D->GetActorTransform().InverseTransformPosition(D->Camera->GetActorLocation())-FVector(95000,0,0);
+            Test->TestTrue(TEXT("First nebula remains behind the solar camera for at least one second"),SolarEye.X>-16700);
         }
         if(Step==100)
         {

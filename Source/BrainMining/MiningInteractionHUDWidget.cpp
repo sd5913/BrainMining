@@ -1,4 +1,5 @@
 #include "MiningInteractionHUDWidget.h"
+#include "MiningGamepadSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningGUIWidgets.h"
@@ -192,7 +193,7 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
         Text(InteractionAction, FVector2D(0, 38), 20, FLinearColor::White, true);
         Box(FVector2D(-17, 73), FVector2D(34, 34), Key, FLinearColor(.015f, .02f, .025f, .85f));
         Box(FVector2D(-15, 74), FVector2D(30, 30), Key, FLinearColor(.96f, .95f, .89f));
-        Text(TEXT("E"), FVector2D(0, 77), 19, FLinearColor(.04f, .045f, .05f), true);
+        Text(UMiningGamepadSubsystem::UsesGamepad(GetOwningPlayer()) ? TEXT("X") : TEXT("E"), FVector2D(0, 77), 19, FLinearColor(.04f, .045f, .05f), true);
     }
     if (CoinFeedback.IsVisible())
     {

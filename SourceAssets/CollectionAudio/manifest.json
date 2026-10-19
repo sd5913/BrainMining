@@ -1,0 +1,638 @@
+[
+  {
+    "item_id": 0,
+    "label": "来自天堂的马桶",
+    "asset": "S_Collect_Toilet",
+    "file": "Wav/S_Collect_Toilet.wav",
+    "sha256": "c272bbac021060b2fe501ccbae5c1d8bc36a46dd996718bacdd742a12e0e8ca4",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.7252083333333333,
+    "peak": 0.48,
+    "rms": 0.03555653457706188,
+    "sources": [
+      {
+        "pack": "water",
+        "member": "splash_06.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/water/splash_06.ogg",
+        "sha256": "3581e5bee7307cbe6be17715714029259685ba283cb3423938378506b386afb4",
+        "gain": 0.7,
+        "offset": 0.0,
+        "speed": 0.85,
+        "start": 0.0,
+        "duration": 0.65,
+        "reverse": false
+      },
+      {
+        "pack": "impact",
+        "member": "Audio/impactBell_heavy_000.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/impact/impactBell_heavy_000.ogg",
+        "sha256": "94b8bb5f2d43ab65e4bcc32b28562416e9bc2c51d9fd4be1e333660ee52f977f",
+        "gain": 0.16,
+        "offset": 0.16,
+        "speed": 1.15,
+        "start": 0.0,
+        "duration": 0.65,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  },
+  {
+    "item_id": 1,
+    "label": "电脑里的蚂蚁窝",
+    "asset": "S_Collect_AntComputer",
+    "file": "Wav/S_Collect_AntComputer.wav",
+    "sha256": "8921d3ba16cc61de9625985b031e682347b3f549633b1c65761c8a2a6446188f",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.705875,
+    "peak": 0.19004641644136983,
+    "rms": 0.10999999999999999,
+    "sources": [
+      {
+        "pack": "scifi",
+        "member": "Audio/computerNoise_000.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/scifi/computerNoise_000.ogg",
+        "sha256": "1527944e16eb14b48ee03fe3e7ce6aae94262833a4e1f83928d451a7414fe4e1",
+        "gain": 0.45,
+        "offset": 0.0,
+        "speed": 0.85,
+        "start": 0.0,
+        "duration": 0.6,
+        "reverse": false
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/click_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/click_001.ogg",
+        "sha256": "ccfb7fa0cccdd9faec0eb16033c732b1e308d139d80f799161495d58f7adcdb9",
+        "gain": 0.25,
+        "offset": 0.1,
+        "speed": 1.0,
+        "start": 0.0,
+        "duration": null,
+        "reverse": false
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/click_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/click_001.ogg",
+        "sha256": "ccfb7fa0cccdd9faec0eb16033c732b1e308d139d80f799161495d58f7adcdb9",
+        "gain": 0.18,
+        "offset": 0.28,
+        "speed": 1.13,
+        "start": 0.0,
+        "duration": null,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  },
+  {
+    "item_id": 2,
+    "label": "化学试剂",
+    "asset": "S_Collect_Reagent",
+    "file": "Wav/S_Collect_Reagent.wav",
+    "sha256": "abed61bebd03b743476a7393ff015eb1948acb2a9d2136c2b54e091e671c4954",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.44035416666666666,
+    "peak": 0.4799999999999999,
+    "rms": 0.08089028108008098,
+    "sources": [
+      {
+        "pack": "impact",
+        "member": "Audio/impactGlass_light_000.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/impact/impactGlass_light_000.ogg",
+        "sha256": "d750cf88097d0c3e69920e6e14496e1444e1a9da01aa4cca8f5ec8cb44c57b4f",
+        "gain": 0.24,
+        "offset": 0.0,
+        "speed": 0.85,
+        "start": 0.0,
+        "duration": 0.3,
+        "reverse": false
+      },
+      {
+        "pack": "water",
+        "member": "bubble_02.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/water/bubble_02.ogg",
+        "sha256": "7992a1a4637ea727b177b3edbc086ec280167d67a8fad010bb8fb58893b2e2f2",
+        "gain": 0.65,
+        "offset": 0.08,
+        "speed": 1.0,
+        "start": 0.0,
+        "duration": 0.65,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  },
+  {
+    "item_id": 3,
+    "label": "肉鸽",
+    "asset": "S_Collect_Pigeon",
+    "file": "Wav/S_Collect_Pigeon.wav",
+    "sha256": "dedda9f595c922d07f38df50532198cb404226de76bcc1732fcb72ca4836b934",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.61,
+    "peak": 0.48,
+    "rms": 0.04930776360529228,
+    "sources": [
+      {
+        "pack": "rpg",
+        "member": "cloth1.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/rpg/cloth1.ogg",
+        "sha256": "ddb93a3671233f95da0e0b10367f082f7eb42fa6caaddcf776410aa8833c747d",
+        "gain": 0.8,
+        "offset": 0.0,
+        "speed": 0.85,
+        "start": 0.0,
+        "duration": 0.32,
+        "reverse": false
+      },
+      {
+        "pack": "rpg",
+        "member": "cloth1.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/rpg/cloth1.ogg",
+        "sha256": "ddb93a3671233f95da0e0b10367f082f7eb42fa6caaddcf776410aa8833c747d",
+        "gain": 0.55,
+        "offset": 0.22,
+        "speed": 1.1,
+        "start": 0.0,
+        "duration": 0.3,
+        "reverse": false
+      },
+      {
+        "pack": "rpg",
+        "member": "cloth1.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/rpg/cloth1.ogg",
+        "sha256": "ddb93a3671233f95da0e0b10367f082f7eb42fa6caaddcf776410aa8833c747d",
+        "gain": 0.28,
+        "offset": 0.41,
+        "speed": 1.2,
+        "start": 0.0,
+        "duration": 0.24,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  },
+  {
+    "item_id": 4,
+    "label": "奇怪的计算器",
+    "asset": "S_Collect_Calculator",
+    "file": "Wav/S_Collect_Calculator.wav",
+    "sha256": "6984dbca0f78a83570110d63f28998f1976ec3f02a0961e8e07220c225a7cbea",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.5520416666666667,
+    "peak": 0.4572770559680824,
+    "rms": 0.11,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/click_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/click_001.ogg",
+        "sha256": "ccfb7fa0cccdd9faec0eb16033c732b1e308d139d80f799161495d58f7adcdb9",
+        "gain": 0.3,
+        "offset": 0.0,
+        "speed": 1.0,
+        "start": 0.0,
+        "duration": null,
+        "reverse": false
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/click_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/click_001.ogg",
+        "sha256": "ccfb7fa0cccdd9faec0eb16033c732b1e308d139d80f799161495d58f7adcdb9",
+        "gain": 0.28,
+        "offset": 0.11,
+        "speed": 0.95,
+        "start": 0.0,
+        "duration": null,
+        "reverse": false
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/confirmation_001.ogg",
+        "sha256": "063564703b6094d70718a3e787a55cc9141611e4ecd6b6637f8828f79b4a8c3a",
+        "gain": 0.3,
+        "offset": 0.23,
+        "speed": 0.9,
+        "start": 0.0,
+        "duration": 0.4,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  },
+  {
+    "item_id": 5,
+    "label": "损坏的磁带",
+    "asset": "S_Collect_Cassette",
+    "file": "Wav/S_Collect_Cassette.wav",
+    "sha256": "1053439c41c31b4e158920fe040266847329d8a5970e26b711ba9840d6446241",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.5447291666666667,
+    "peak": 0.48,
+    "rms": 0.045212179148460735,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/switch_004.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/switch_004.ogg",
+        "sha256": "541c19cc1ab712a9efc5765df602e7d0da09d9cafdd297ce1e19b092289fd62f",
+        "gain": 0.4,
+        "offset": 0.0,
+        "speed": 0.8,
+        "start": 0.0,
+        "duration": 0.25,
+        "reverse": false
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/glitch_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/glitch_001.ogg",
+        "sha256": "da78c642bbd95da2c364ed0e991ebbfc5a4c0d281165d932b5819e0dd31a39d2",
+        "gain": 0.13,
+        "offset": 0.12,
+        "speed": 0.7,
+        "start": 0.0,
+        "duration": 0.2,
+        "reverse": false
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/close_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/close_001.ogg",
+        "sha256": "44af8249b933e0fd35ec957a638bb1a0b01f85b53fbe9674bf77bd3ca3168ef4",
+        "gain": 0.3,
+        "offset": 0.36,
+        "speed": 0.8,
+        "start": 0.0,
+        "duration": 0.25,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  },
+  {
+    "item_id": 6,
+    "label": "音符",
+    "asset": "S_Collect_Note",
+    "file": "Wav/S_Collect_Note.wav",
+    "sha256": "e58e3d7757a0393eb5e8971c77e346c2421a08bda5341d5435e6843de0b6785a",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.4510416666666667,
+    "peak": 0.4799999999999999,
+    "rms": 0.04644506391035112,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/pluck_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/pluck_001.ogg",
+        "sha256": "be97ec4893a02d6eccfb678daa76c83e34cb2583b834ec2593d2641def739fa4",
+        "gain": 0.65,
+        "offset": 0.0,
+        "speed": 0.75,
+        "start": 0.0,
+        "duration": 0.4,
+        "reverse": false
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/pluck_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/pluck_001.ogg",
+        "sha256": "be97ec4893a02d6eccfb678daa76c83e34cb2583b834ec2593d2641def739fa4",
+        "gain": 0.4,
+        "offset": 0.18,
+        "speed": 0.9375,
+        "start": 0.0,
+        "duration": 0.4,
+        "reverse": false
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/pluck_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/pluck_001.ogg",
+        "sha256": "be97ec4893a02d6eccfb678daa76c83e34cb2583b834ec2593d2641def739fa4",
+        "gain": 0.25,
+        "offset": 0.36,
+        "speed": 1.125,
+        "start": 0.0,
+        "duration": 0.4,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  },
+  {
+    "item_id": 7,
+    "label": "老旧的相片",
+    "asset": "S_Collect_Photo",
+    "file": "Wav/S_Collect_Photo.wav",
+    "sha256": "77086eacf9b727a8afb8fcd5c5ec400cbe473fcdb6498218aba3643afbbcff67",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.6875,
+    "peak": 0.4799999999999999,
+    "rms": 0.03097228893865999,
+    "sources": [
+      {
+        "pack": "casino",
+        "member": "Audio/card-slide-1.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/casino/card-slide-1.ogg",
+        "sha256": "006cf9822d15d7063f8899e56041f41646df30adb6fbd8b974ee5d5420012690",
+        "gain": 0.65,
+        "offset": 0.0,
+        "speed": 0.8,
+        "start": 0.0,
+        "duration": 0.55,
+        "reverse": false
+      },
+      {
+        "pack": "casino",
+        "member": "Audio/card-place-1.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/casino/card-place-1.ogg",
+        "sha256": "d8f26c33a665dcbdcc6f632f6050bc9dd548feb0d4942d4547615926d3926810",
+        "gain": 0.35,
+        "offset": 0.27,
+        "speed": 0.85,
+        "start": 0.0,
+        "duration": 0.3,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  },
+  {
+    "item_id": 8,
+    "label": "喷发中的可乐",
+    "asset": "S_Collect_Cola",
+    "file": "Wav/S_Collect_Cola.wav",
+    "sha256": "7bd6bd0174d7a071bdadb34f45635031d8a29dccff8d5cdd1daa59390fd8e48e",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.5111666666666667,
+    "peak": 0.48000000000000004,
+    "rms": 0.07077001424113241,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/switch_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/switch_001.ogg",
+        "sha256": "3b74efad87f1e69dbd1d05c5ad952ab90859b5a3d11da6ec5bd79b4f03b42afa",
+        "gain": 0.3,
+        "offset": 0.0,
+        "speed": 1.0,
+        "start": 0.0,
+        "duration": 0.12,
+        "reverse": false
+      },
+      {
+        "pack": "water",
+        "member": "bubble_02.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/water/bubble_02.ogg",
+        "sha256": "7992a1a4637ea727b177b3edbc086ec280167d67a8fad010bb8fb58893b2e2f2",
+        "gain": 0.65,
+        "offset": 0.06,
+        "speed": 1.1,
+        "start": 0.0,
+        "duration": 0.65,
+        "reverse": false
+      },
+      {
+        "pack": "water",
+        "member": "splash_06.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/water/splash_06.ogg",
+        "sha256": "3581e5bee7307cbe6be17715714029259685ba283cb3423938378506b386afb4",
+        "gain": 0.2,
+        "offset": 0.16,
+        "speed": 1.3,
+        "start": 0.0,
+        "duration": 0.65,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  },
+  {
+    "item_id": 9,
+    "label": "「GPT」之花",
+    "asset": "S_Collect_Flower",
+    "file": "Wav/S_Collect_Flower.wav",
+    "sha256": "07a58f8861e43742de314a2340d5f86e02e7bb51f8af2957eebc20cd3621d807",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.4405,
+    "peak": 0.48,
+    "rms": 0.0522481982710376,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/pluck_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/pluck_001.ogg",
+        "sha256": "be97ec4893a02d6eccfb678daa76c83e34cb2583b834ec2593d2641def739fa4",
+        "gain": 0.3,
+        "offset": 0.0,
+        "speed": 0.65,
+        "start": 0.0,
+        "duration": 0.3,
+        "reverse": true
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/pluck_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/pluck_001.ogg",
+        "sha256": "be97ec4893a02d6eccfb678daa76c83e34cb2583b834ec2593d2641def739fa4",
+        "gain": 0.5,
+        "offset": 0.32,
+        "speed": 0.85,
+        "start": 0.0,
+        "duration": 0.55,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  },
+  {
+    "item_id": 10,
+    "label": "同步闪光的萤火虫",
+    "asset": "S_Collect_Fireflies",
+    "file": "Wav/S_Collect_Fireflies.wav",
+    "sha256": "e89561d413055811f06dce6fc91011619071f167cf1f857cff44b55f560e6f81",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.5538125,
+    "peak": 0.48,
+    "rms": 0.05107369820149888,
+    "sources": [
+      {
+        "pack": "interface",
+        "member": "Audio/pluck_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/pluck_001.ogg",
+        "sha256": "be97ec4893a02d6eccfb678daa76c83e34cb2583b834ec2593d2641def739fa4",
+        "gain": 0.48,
+        "offset": 0.0,
+        "speed": 0.9,
+        "start": 0.0,
+        "duration": 0.18,
+        "reverse": false
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/pluck_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/pluck_001.ogg",
+        "sha256": "be97ec4893a02d6eccfb678daa76c83e34cb2583b834ec2593d2641def739fa4",
+        "gain": 0.4,
+        "offset": 0.22,
+        "speed": 0.9,
+        "start": 0.0,
+        "duration": 0.18,
+        "reverse": false
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/pluck_001.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/pluck_001.ogg",
+        "sha256": "be97ec4893a02d6eccfb678daa76c83e34cb2583b834ec2593d2641def739fa4",
+        "gain": 0.32,
+        "offset": 0.44,
+        "speed": 0.9,
+        "start": 0.0,
+        "duration": 0.25,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  },
+  {
+    "item_id": 11,
+    "label": "散落的彩带",
+    "asset": "S_Collect_Ribbon",
+    "file": "Wav/S_Collect_Ribbon.wav",
+    "sha256": "2071ef3cdd048e33b80ee90704ccf1bd635f1f93e376b4d53c06ee82e2378595",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.6948958333333334,
+    "peak": 0.48,
+    "rms": 0.09869442751134207,
+    "sources": [
+      {
+        "pack": "casino",
+        "member": "Audio/card-fan-1.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/casino/card-fan-1.ogg",
+        "sha256": "7a9758ccad8899baef1b9f60b4064e4baa724a548293832fdaea07e6e07e638d",
+        "gain": 0.6,
+        "offset": 0.0,
+        "speed": 0.85,
+        "start": 0.0,
+        "duration": 0.5,
+        "reverse": false
+      },
+      {
+        "pack": "interface",
+        "member": "Audio/confirmation_004.ogg",
+        "file": "SourceAssets/CollectionAudio/Originals/interface/confirmation_004.ogg",
+        "sha256": "568967a3d9f8a8f6af54ea01729c4882284308f2a27d78c07ffd7ee0d6951661",
+        "gain": 0.22,
+        "offset": 0.15,
+        "speed": 0.9,
+        "start": 0.0,
+        "duration": 0.55,
+        "reverse": false
+      }
+    ],
+    "processing": {
+      "lowpass_hz": 4500,
+      "peak_limit": 0.48,
+      "rms_target": 0.11,
+      "fade_out_seconds": 0.08
+    }
+  }
+]

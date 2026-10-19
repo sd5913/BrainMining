@@ -1,3 +1,4 @@
+#include "MiningGamepadSubsystem.h"
 #include "EndingEmergence.h"
 #include "DiggableRock.h"
 #include "EndingComicRock.h"
@@ -131,15 +132,14 @@ void AEndingEmergence::BuildFinale()
 void AEndingEmergence::UpdateCellTitle(float Alpha)
 {
     if(TitleBatches.Num()!=5||TitleTargets.IsEmpty())return;
-    const float Scale=FMath::Lerp(1.f,.17f,Alpha);
     TitleAnimatedCenters.SetNumUninitialized(TitleCenters.Num());
     TitleAnimatedScales.SetNumUninitialized(TitleCenters.Num());
     // Each cell owns 64 stars. Evaluate its drift once, not once per star.
     for(int OwnerCell=0;OwnerCell<TitleCenters.Num();++OwnerCell)
     {
         const float Phase=OwnerCell*2.39996f;
-        const float Seed=.5f+.5f*FMath::Sin(Phase*7.13f),Delay=Seed*.23f;
-        const float Progress=Finale::Ease((Alpha-Delay)/(1-Delay));
+        const float Seed=.5f+.5f*FMath::Sin(Phase*7.13f);
+        const float Progress=Finale::Ease(Alpha);
         const float Idle=Progress*(Shot==8?1-Finale::Ease(ShotTime/.95f):1);
         const float CellScale=FMath::Lerp(1.f,.17f,Progress)*(1+Idle*.045f*FMath::Sin(Age*1.2f+Phase));
         const float Rate=.12f+Seed*.18f;
@@ -170,8 +170,9 @@ void AEndingEmergence::UpdateCellTitle(float Alpha)
         TitleBatches[Batch]->BatchUpdateInstancesTransforms(0,Poses,false,true,true);
     }
     const FVector Main=TitleAnimatedCenters[0]+FVector(0,12000,0);
-    Cell->SetRelativeLocation(Main*Alpha);Cell->SetRelativeScale3D(FVector(32*Scale));
-    Universe->SetRelativeLocation(Main*Alpha);Universe->SetRelativeScale3D(FVector(Scale));
+    const float MainProgress=Finale::Ease(Alpha),MainScale=FMath::Lerp(1.f,.17f,MainProgress);
+    Cell->SetRelativeLocation(Main*MainProgress);Cell->SetRelativeScale3D(FVector(32*MainScale));
+    Universe->SetRelativeLocation(Main*MainProgress);Universe->SetRelativeScale3D(FVector(MainScale));
     bTitleRestored=false;
 }
 
@@ -411,12 +412,12 @@ void AEndingEmergence::UpdateFinale(float Dt)
     }
     else if(Shot==9)
     {
-        const float Boost=Player->IsInputKeyDown(EKeys::W)?1.7f:1;
+        const float Boost=FMath::Lerp(1.f,1.7f,FMath::Max(0.f,float(UMiningGamepadSubsystem::ReadMove(Player).Y)));
         FinaleDrillSpeed=FMath::FInterpTo(FinaleDrillSpeed,Finale::Pace(DrillDistance)*Boost,Dt,4);
         Mining->DrillIntervalMultiplier=.27f*260/(Finale::Pace(DrillDistance)*Boost);
         if(!Mining->IsMiningActive())Mining->BeginMiningInput();
         const float Progress=DrillDistance/Finale::DrillEnd,Roll=bComfortMode?FMath::Sin(Progress*PI)*7:1080*FMath::Square(FMath::Max(0.f,(Progress-.18f)/.82f));
-        const float Steering=(Player->IsInputKeyDown(EKeys::D)?1.f:0.f)-(Player->IsInputKeyDown(EKeys::A)?1.f:0.f);
+        const float Steering=UMiningGamepadSubsystem::ReadMove(Player).X;
         FinaleSideSpeed=FMath::FInterpTo(FinaleSideSpeed,Steering*45,Dt,7);
         FinaleSide=FMath::Clamp(FinaleSide+FinaleSideSpeed*Dt,-55.f,55.f);
         FinaleSideVector=FRotator(0,0,Roll).RotateVector(FVector(0,FinaleSide,0));

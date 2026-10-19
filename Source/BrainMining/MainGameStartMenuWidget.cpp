@@ -76,10 +76,20 @@ void UMainGameStartMenuWidget::BuildWidgetTree()
 
 void UMainGameStartMenuWidget::HandleStartClicked()
 {
-	BeginGame();
 	if (GetWorld())
-		for (TActorIterator<AMiningOpening> It(GetWorld()); It; ++It)
-			if (!It->bFinished) { It->StartGame(); break; }
+	{
+		for (TActorIterator<AMiningOpening> Opening(GetWorld()); Opening; ++Opening)
+		{
+			Opening->StartGame();
+			if (Opening->bStarted || Opening->bFinished)
+			{
+				bGameStarted = true;
+				RemoveFromParent();
+			}
+			return;
+		}
+	}
+	BeginGame();
 }
 
 void UMainGameStartMenuWidget::BeginGame()
@@ -105,7 +115,7 @@ void UMainGameStartMenuWidget::BeginTitleToEntrance(AMainGameDoor* Door)
 	{
 		for (TActorIterator<ADiggableRock> It(GetWorld()); It; ++It)
 		{
-			if (It->GetActorLabel().Contains(TEXT("STARTROOM_Junction_DiggableBlockage")))
+			if (It->ActorHasTag(TEXT("BM_MainGame_StartRoomJunction")))
 			{
 				EntranceTarget = *It;
 				break;

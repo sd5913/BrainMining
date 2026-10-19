@@ -165,7 +165,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
         const FSlateRect B=UI?FSlateRect(UI->SeatedPanel.Position.X,UI->SeatedPanel.Position.Y,UI->SeatedPanel.Position.X+UI->SeatedPanel.Size.X,UI->SeatedPanel.Position.Y+UI->SeatedPanel.Size.Y):FSlateRect(465,625,1135,710);
         Box(B.Left,B.Top,B.Right-B.Left,B.Bottom-B.Top,Dark); Text(R.Message,B.Left+35,B.Top+13,22,Cream);
         Text(TEXT("今晚的规则很简单：把你的好牌，全都打出去。"),B.Left+35,B.Top+53,14,Gold);
-        if(R.Phase==ECardRoomPhase::Seated) Button(MatchRect,TEXT("开始匹配     →"));
+        if(R.Phase==ECardRoomPhase::Seated) Button(MatchRect,Owner->bGamepadNavigation?TEXT("A   开始匹配"):TEXT("开始匹配     →"));
         else Text(R.Phase==ECardRoomPhase::Matching?TEXT("·   ·   ·"):TEXT("请注意头顶！"),B.Left+250,B.Bottom+35,24,Gold);
     }
     if(R.Phase==ECardRoomPhase::Choosing)
@@ -174,10 +174,24 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
         const FSlateRect PromptBox=UI?FSlateRect(UI->Prompt.Position.X,UI->Prompt.Position.Y,UI->Prompt.Position.X+UI->Prompt.Size.X,UI->Prompt.Position.Y+UI->Prompt.Size.Y):FSlateRect(48,596,958,651);
         Box(PromptBox.Left,PromptBox.Top,PromptBox.Right-PromptBox.Left,PromptBox.Bottom-PromptBox.Top,Dark);
         FString Prompt=R.CanConfirm()?FString::Printf(TEXT("已选 %d 张 · 按空格，甩向桌心！"),R.Staged.Num()):R.Round==3?TEXT("点击选中「火」和「激光弹」，空格打出组合技"):R.Round==4?TEXT("最后一搏！选中 17 张牌，空格全部甩出"):TEXT("点击手牌选中，再按空格打出");
+        if (Owner->bGamepadNavigation)
+            Prompt = R.CanConfirm() ? FString::Printf(TEXT("已选 %d 张 · A 出牌"), R.Staged.Num()) : TEXT("方向键选牌 · X 选择/取消 · A 出牌 · Y 末轮全选");
         Text(Prompt,PromptBox.Left+20,PromptBox.Top+13,19,Cream);
-        Button(ConfirmRect,R.CanConfirm()?TEXT("空格   打出选中的牌"):FString::Printf(TEXT("已选 %d / %d 张"),R.Staged.Num(),R.Hand.Num()),R.CanConfirm());
+        Button(ConfirmRect,R.CanConfirm()?(Owner->bGamepadNavigation?TEXT("A   打出选中的牌"):TEXT("空格   打出选中的牌")):FString::Printf(TEXT("已选 %d / %d 张"),R.Staged.Num(),R.Hand.Num()),R.CanConfirm());
         if(R.Round==4) Button(AllRect,R.CanConfirm()?TEXT("取消全选"):TEXT("全选 17 张"));
         for(int32 i=0;i<R.Hand.Num();++i) Card(i,CardRect(i,R));
+        if (Owner->bGamepadNavigation && R.Hand.IsValidIndex(Owner->FocusedCard))
+        {
+            const auto Focus = CardRect(Owner->FocusedCard, R);
+            Box(Focus.Left, Focus.Bottom + 5, Focus.Right - Focus.Left, 5, Gold);
+
+        }
+    }
+    if (Owner->bConfirmLeave)
+    {
+        Box(420, 460, 760, 100, Dark);
+        Text(TEXT("离座会重新开始本次对局"), 450, 477, 24, Cream);
+        Text(TEXT("A 确认离座 · B 继续对局"), 450, 520, 20, Gold);
     }
     // Opponent speech stays beside the face, never over the table.
     if(R.Phase==ECardRoomPhase::Arrival || R.Phase==ECardRoomPhase::Choosing || R.Phase==ECardRoomPhase::Resolving)
@@ -226,10 +240,10 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
         Box(B.Left,B.Top,B.Right-B.Left,B.Bottom-B.Top,Dark); Box(B.Left,B.Top,B.Right-B.Left,3,Gold);
         Text(R.Phase==ECardRoomPhase::Victory?TEXT("恭喜你获得胜利！"):TEXT("彗尾法球 · 已收藏"),B.Left+34,B.Top+24,32,Cream);
         Text(R.Phase==ECardRoomPhase::Victory?TEXT("超级人机已退场。属于你的星光，留在桌上。"):TEXT("本版奖励为房间内占位，不改变挖掘数值。"),B.Left+34,B.Top+93,18,Gold);
-        if(R.Phase==ECardRoomPhase::Victory) Button(Collect,TEXT("E   收集桌上的彗尾法球"));
+        if(R.Phase==ECardRoomPhase::Victory) Button(Collect,Owner->bGamepadNavigation?TEXT("X / A   收集桌上的彗尾法球"):TEXT("E   收集桌上的彗尾法球"));
     }
     const FSlateRect Hint=UI?UIBox(UI->BottomHint,FSlateRect(48,850,430,890)):FSlateRect(48,850,430,890);
-    Text(TEXT("点击选牌 / 再点取消     空格出牌"),Hint.Left,Hint.Top,12,Cream);
+    Text(Owner->bGamepadNavigation?TEXT("方向键选牌 · X 选择/取消 · A 确认 · B 离座"):TEXT("点击选牌 / 再点取消     空格出牌"),Hint.Left,Hint.Top,12,Cream);
     return L;
 }
 FReply SCardRoomView::OnTouchStarted(const FGeometry& G,const FPointerEvent& E)
@@ -240,6 +254,8 @@ FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& 
 {
     using namespace CardRoomUI;
     if(!Owner.IsValid()||!Owner->Stage||(!E.IsTouchEvent()&&E.GetEffectingButton()!=EKeys::LeftMouseButton)) return FReply::Unhandled();
+    Owner->bGamepadNavigation=false;
+    Owner->bConfirmLeave=false;
     Mouse=ToVirtual(G,E.GetScreenSpacePosition()); auto& R=Owner->Stage->Run;
     const UCardRoomUISettings* UI=Owner->Stage->UISettings;
     auto UIBox=[&](const FCardRoomUIBox& B,const FSlateRect& Fallback)->FSlateRect { return UI&&B.Size.X>0.f&&B.Size.Y>0.f?FSlateRect(B.Position.X,B.Position.Y,B.Position.X+B.Size.X,B.Position.Y+B.Size.Y):Fallback; };
@@ -266,6 +282,10 @@ FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& 
         }
     }
     return FReply::Handled().SetUserFocus(SharedThis(this));
+}
+FReply SCardRoomView::OnTouchStarted(const FGeometry& G,const FPointerEvent& E)
+{
+    return OnMouseButtonDown(G,E);
 }
 FReply SCardRoomView::OnMouseButtonUp(const FGeometry& G,const FPointerEvent& E) { return FReply::Unhandled(); }
 FReply SCardRoomView::OnMouseMove(const FGeometry& G,const FPointerEvent& E) { Mouse=ToVirtual(G,E.GetScreenSpacePosition()); return FReply::Unhandled(); }

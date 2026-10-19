@@ -42,6 +42,7 @@
 #include "Showcase/MiningTreasure.h"
 #include "CardRoomPlayer.h"
 #include "InputKeyEventArgs.h"
+#include "MiningGamepadSubsystem.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GameFramework/Pawn.h"
 #include "EngineUtils.h"
@@ -605,7 +606,9 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 	SetIgnoreLookInput(true);
 	bAudioPausedWorld = SetPause(true);
 	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
-	Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 20)[SNew(STextBlock).Font(BrainMiningFonts::Style("Bold", 22)).Text(FText::FromString(TEXT("音量设置 · F8 / Esc 关闭")))];
+    Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 20)[SNew(STextBlock).Font(BrainMiningFonts::Style("Bold", 22))
+        .Text_Lambda([this]() { return FText::FromString(UMiningGamepadSubsystem::UsesGamepad(this) ? TEXT("音量设置 · B 返回") : TEXT("音量设置 · F8 / Esc 关闭")); })];
+    TSharedPtr<SSlider> FirstSlider;
 	const TCHAR* Labels[] = {TEXT("总音量"), TEXT("音乐"), TEXT("音效"), TEXT("环境声"), TEXT("语音")};
 	TWeakObjectPtr<UMiningAudioSettings> WeakSettings(Settings);
 	for (int32 Channel = 0; Channel < 5; ++Channel)
@@ -615,9 +618,11 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 		{
 			return FText::FromString(FString::Printf(TEXT("%s   %d%%"), *Label, WeakSettings.IsValid() ? FMath::RoundToInt(100 * WeakSettings->GetVolume(Channel)) : 0));
 		})];
-		Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 8)[SNew(SSlider)
+        TSharedPtr<SSlider> Slider;
+        Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 8)[SAssignNew(Slider, SSlider)
 			.Value_Lambda([WeakSettings, Channel]() { return WeakSettings.IsValid() ? WeakSettings->GetVolume(Channel) : 0.f; })
 			.OnValueChanged_Lambda([WeakSettings, Channel](float Value) { if (WeakSettings.IsValid()) WeakSettings->SetVolume(Channel, Value); })];
+        if (!FirstSlider) FirstSlider = Slider;
 	}
 	Rows->AddSlot().AutoHeight().Padding(0, 12)[SNew(SButton).HAlign(HAlign_Center).ContentPadding(FMargin(12, 8)).OnClicked_Lambda([WeakSettings]()
 	{
@@ -632,7 +637,7 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 	Viewport->AddViewportWidgetContent(AudioSettingsPanel.ToSharedRef(), 1000);
 	bShowMouseCursor = true;
 	FInputModeGameAndUI Mode;
-	Mode.SetWidgetToFocus(AudioSettingsPanel).SetHideCursorDuringCapture(false).SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	Mode.SetWidgetToFocus(FirstSlider).SetHideCursorDuringCapture(false).SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	SetInputMode(Mode);
 	Viewport->SetMouseCaptureMode(EMouseCaptureMode::NoCapture);
 }

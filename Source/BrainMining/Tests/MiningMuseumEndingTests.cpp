@@ -55,6 +55,7 @@ class FMuseumRewardTravel : public IAutomationLatentCommand
  TWeakObjectPtr<AWenSiMirrorPuzzle> Puzzle;
  int32 Step=0;
  double Started=FPlatformTime::Seconds(),Next=0,EntryStarted=0;
+ double HintCheckStarted=-1;
 public:
  explicit FMuseumRewardTravel(FAutomationTestBase* InTest):Test(InTest){}
  bool Update() override
@@ -128,11 +129,25 @@ public:
   }
   else if(Step==4)
   {
+   if(HintCheckStarted<0)
+   {
+    HintCheckStarted=World->GetTimeSeconds();
+    Test->TestFalse(TEXT("Gallery hint does not appear immediately on entry"),Puzzle->MousePortal->HasShownGalleryHint());
+   }
+   if(World->GetTimeSeconds()-HintCheckStarted<3.1)return false;
+   Test->TestTrue(TEXT("Gallery hint appears after three seconds inside"),Puzzle->MousePortal->HasShownGalleryHint());
    if(!Test->TestTrue(TEXT("Standing at the former egg does not complete or travel"),Puzzle.IsValid() && !Puzzle->bComplete && !Puzzle->MousePortal->IsEntering()))return true;
    FHitResult Obstruction;FCollisionQueryParams Q;Q.AddIgnoredActor(Pawn);
    const auto Capsule=Pawn->GetCapsuleComponent();
    const bool Blocked=World->SweepSingleByChannel(Obstruction,Puzzle->RoomPoint(FVector(2150,-350,35)),Puzzle->RoomPoint(FVector(2260,-350,35)),FQuat::Identity,ECC_Pawn,FCollisionShape::MakeCapsule(Capsule->GetScaledCapsuleRadius(),Capsule->GetScaledCapsuleHalfHeight()),Q);
    Test->TestFalse(TEXT("The actual .38-scale capsule fits the open mouse hatch"),Blocked);
+   if(auto* Cover=Puzzle->Find(7))
+   {
+    const FVector Start=Cover->GetActorTransform().TransformPosition(FVector(-150,0,-95)),End=Cover->GetActorTransform().TransformPosition(FVector(-65,0,-95));
+    const bool CoverBlocked=World->SweepSingleByChannel(Obstruction,Start,End,FQuat::Identity,ECC_Pawn,FCollisionShape::MakeCapsule(Capsule->GetScaledCapsuleRadius(),Capsule->GetScaledCapsuleHalfHeight()),Q);
+    if(CoverBlocked)Test->AddInfo(FString::Printf(TEXT("Cover hatch obstruction: actor=%s component=%s point=%s cover=%s radius=%.2f halfheight=%.2f"),*GetNameSafe(Obstruction.GetActor()),*GetNameSafe(Obstruction.GetComponent()),*Obstruction.ImpactPoint.ToString(),*Cover->GetActorTransform().ToString(),Capsule->GetScaledCapsuleRadius(),Capsule->GetScaledCapsuleHalfHeight()));
+    Test->TestFalse(TEXT("Shrunken capsule also fits the exhibit cover hatch"),CoverBlocked);
+   }
    Pawn->SetActorLocation(Puzzle->RoomPoint(FVector(2230,-350,35)));
    PC->PlayerCameraManager->UpdateCamera(.016f);
    FVector Eye;FRotator Look;PC->GetPlayerViewPoint(Eye,Look);

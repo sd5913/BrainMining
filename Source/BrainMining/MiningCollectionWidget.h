@@ -16,8 +16,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Collection") void SelectCollectionItem(int32 Id);
     UFUNCTION(BlueprintCallable, Category="Collection") void TurnCollectionPage(int32 Direction);
     UFUNCTION(BlueprintCallable, Category="Collection") void CloseCollection();
+    UFUNCTION(BlueprintCallable, Category="Collection") void RevealCollection();
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|Animation", meta=(ClampMin="0.05")) float PanelSlideDuration=.38f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|Animation", meta=(ClampMin="0")) float PanelSlideDistance=600.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|Animation", meta=(ClampMin="0")) float BackgroundBlurStrength=12.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|Animation", meta=(ClampMin="0",ClampMax="1")) float BackgroundDimOpacity=.48f;
 protected:
     virtual void NativeConstruct() override;
+    virtual void NativeTick(const FGeometry&,float) override;
     virtual FReply NativeOnMouseButtonDown(const FGeometry&,const FPointerEvent&) override;
     virtual FReply NativeOnMouseButtonUp(const FGeometry&,const FPointerEvent&) override;
     virtual FReply NativeOnMouseButtonDoubleClick(const FGeometry&,const FPointerEvent&) override;
@@ -37,4 +43,6 @@ private:
     UFUNCTION() void Select3();
     UFUNCTION() void Previous();
     UFUNCTION() void Next();
+    float RevealElapsed=0;
+    bool bRevealing=false;
 };

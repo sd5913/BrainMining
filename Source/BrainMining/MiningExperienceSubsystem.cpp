@@ -74,6 +74,10 @@ namespace MiningExperiences
             if (Event.GetKey() == EKeys::Escape)
             {
                 if(Owner->IsMenuOpen()) { if(Owner->bQuitConfirmation)Owner->CancelQuitConfirmation();else Owner->CloseMenu();return true; }
+                // Handle the UMG catalogue before editor/game viewport shortcuts
+                // so Escape consistently returns to gameplay, including in PIE.
+                if(Owner->GetWorld())for(TActorIterator<AMiningCollectionField> Field(Owner->GetWorld());Field;++Field)
+                    if(Field->bCatalogueOpen){Field->ToggleCatalogue();return true;}
                 auto* Viewport=Owner->GetWorld()?Owner->GetWorld()->GetGameViewport():nullptr;
                 auto Widget=Viewport?Viewport->GetGameViewportWidget():nullptr;
                 if(Widget&&(Widget->HasKeyboardFocus()||Widget->HasFocusedDescendants()))return Owner->TogglePauseMenu();

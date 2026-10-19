@@ -5,6 +5,7 @@
 #include "MiningInteractionTrace.h"
 #include "BrainMiningPlayerController.h"
 #include "SMiningCollectionView.h"
+#include "MiningCollectionWidget.h"
 #include "MiningComponent.h"
 #include "MiningAudioComponent.h"
 #include "MiningCharacterMovementComponent.h"
@@ -83,7 +84,7 @@ bool AMiningCollectionField::InitializePlayer()
     if(!bCatalogueOnly) SpawnField();
     PreviewTexture=NewObject<UTextureRenderTarget2D>(this); PreviewTexture->ClearColor=FLinearColor(0,0,0,1);
     PreviewTexture->InitAutoFormat(1536,1024); Capture->TextureTarget=PreviewTexture;
-    if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionCataloguePreview.M_CollectionCataloguePreview")))
+    if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/UI/Redesign/M_CollectionPreview.M_CollectionPreview")))
     {PreviewMaterial=UMaterialInstanceDynamic::Create(Material,this);PreviewMaterial->SetTextureParameterValue(TEXT("Preview"),PreviewTexture);}
     Preview=GetWorld()->SpawnActor<AMiningCollectible>(FVector(0,0,-10000),FRotator::ZeroRotator);
     Preview->BuildModel(0); Preview->SetActorHiddenInGame(true); Capture->ShowOnlyActors.Add(Preview);
@@ -105,6 +106,15 @@ bool AMiningCollectionField::InitializePlayer()
     {
         SAssignNew(View,SMiningCollectionView).Owner(this); View->SetVisibility(EVisibility::HitTestInvisible);
         GEngine->GameViewport->AddViewportWidgetContent(View.ToSharedRef(),30);
+    }
+    if(auto* Class=LoadClass<UMiningCollectionWidget>(nullptr,TEXT("/Game/CollectionPrototype/UI/WBP_CollectionInspect.WBP_CollectionInspect_C")))
+    {
+        CatalogueWidget=CreateWidget<UMiningCollectionWidget>(Player,Class);
+        if(CatalogueWidget)
+        {
+            CatalogueWidget->SetCollection(this);CatalogueWidget->AddToViewport(80);
+            CatalogueWidget->SetVisibility(ESlateVisibility::Collapsed);
+        }
     }
     Toast=bUseAuthoredPlacements?FString::Printf(TEXT("沿水管或矿道寻找藏品，挖开覆盖层后瞄准按 E 收集；%s 打开图鉴。"),*CatalogueKey.GetDisplayName().ToString()):TEXT("先试试左侧已露出的试管架：瞄准它，按 E 收集"); ToastRemaining=10;
     if(bExpandedCollection && !bUseAuthoredPlacements) { Toast=TEXT("右侧通道通往新展区：陈列藏品、四种挖掘线索和红幕布舞台"); ToastRemaining=12; }
@@ -346,15 +356,25 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->ResetFlightInput(); Move->StopMovementImmediately(); }
         Player->GetPawn()->DisableInput(Player);
         Player->SetPause(true);
-        if(View) { View->SetVisibility(EVisibility::Visible); FInputModeUIOnly Mode; Mode.SetWidgetToFocus(View); Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); Player->SetInputMode(Mode); }
+        FInputModeUIOnly Mode;
+        if(CatalogueWidget)
+        {
+            if(View)View->SetVisibility(EVisibility::Collapsed);
+            CatalogueWidget->SetVisibility(ESlateVisibility::Visible);
+            CatalogueWidget->RevealCollection();Mode.SetWidgetToFocus(CatalogueWidget->TakeWidget());
+        }
+        else if(View){View->SetVisibility(EVisibility::Visible);Mode.SetWidgetToFocus(View);}
+        Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);Player->SetInputMode(Mode);
         Player->bShowMouseCursor=true;
         if(!Inventory.IsValidIndex(SelectedId)||Inventory[SelectedId]==0) { SelectedId=INDEX_NONE; for(int i=0;i<Inventory.Num();++i) if(Inventory[i]>0) { SelectedId=i; break; } }
+        if(SelectedId==INDEX_NONE){const auto Ids=CatalogueIds();if(!Ids.IsEmpty())SelectedId=Ids[0];}
         SelectItem(SelectedId);
     }
     else
     {
         Player->SetPause(false); Player->ResetIgnoreLookInput(); Player->ResetIgnoreMoveInput();
         Player->GetPawn()->EnableInput(Player); Player->bShowMouseCursor=false; Player->SetInputMode(FInputModeGameOnly());
+        if(CatalogueWidget)CatalogueWidget->SetVisibility(ESlateVisibility::Collapsed);
         if(View) View->SetVisibility(EVisibility::HitTestInvisible);
         if(Preview) Preview->SetActorHiddenInGame(true);
         if(PreviewToilet)PreviewToilet->SetActorHiddenInGame(true);
@@ -369,6 +389,7 @@ void AMiningCollectionField::SelectItem(int32 Id)
     if(PreviewToilet)PreviewToilet->SetActorHiddenInGame(!Owned || Id!=0);
     if(Owned) Preview->BuildModel(Id);
     ResetPreview();
+    if(CatalogueWidget)CatalogueWidget->RefreshCollection();
 }
 void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=SelectedId==9?850:330; RotatePreview(0,0); }
 void AMiningCollectionField::RotatePreview(float Yaw,float Pitch)
@@ -397,6 +418,7 @@ void AMiningCollectionField::ResetCollection()
 void AMiningCollectionField::EndPlay(const EEndPlayReason::Type Reason)
 {
     if(bCatalogueOpen) SetCatalogueOpen(false);
+    if(CatalogueWidget){CatalogueWidget->RemoveFromParent();CatalogueWidget=nullptr;}
     if(Player&&Player->GetLocalPlayer()) if(auto* S=Player->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>()) S->RemoveMappingContext(CollectionContext);
     if(View&&GEngine&&GEngine->GameViewport) GEngine->GameViewport->RemoveViewportWidgetContent(View.ToSharedRef());
     View.Reset(); Super::EndPlay(Reason);

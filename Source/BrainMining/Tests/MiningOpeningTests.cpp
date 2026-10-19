@@ -6,6 +6,8 @@
 #include "EngineUtils.h"
 #include "StartRoom/MiningOpening.h"
 #include "MainGameDoor.h"
+#include "MiningGamepadSubsystem.h"
+#include "Engine/LocalPlayer.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Camera/PlayerCameraManager.h"
@@ -65,7 +67,8 @@ class FPublishedOpeningChecks : public IAutomationLatentCommand
     FAutomationTestBase* Test;double Deadline=FPlatformTime::Seconds()+90;bool Started=false;bool Opened=false;TWeakObjectPtr<AMainGameDoor> Door;
 public:
     bool bUseAlternateMenu = false;
-    explicit FPublishedOpeningChecks(FAutomationTestBase* T, bool bAlternateMenu = false):Test(T),bUseAlternateMenu(bAlternateMenu){}
+    bool bUseGamepad = false;
+    explicit FPublishedOpeningChecks(FAutomationTestBase* T, bool bAlternateMenu = false, bool bGamepad = false):Test(T),bUseAlternateMenu(bAlternateMenu),bUseGamepad(bGamepad){}
     bool Update() override
     {
         if(FPlatformTime::Seconds()>Deadline){Test->AddError(TEXT("Opening timed out"));return true;}
@@ -104,8 +107,9 @@ public:
         Test->TestTrue(TEXT("Started exactly once"),Opening->bStarted);
         if(!Opened)
         {
-            Test->TestFalse(TEXT("Starting keeps the title in the HUD until E opens the door"),Opening->HasTitleLanded());
+            Test->TestFalse(TEXT("Starting keeps the title in the HUD until the door opens"),Opening->HasTitleLanded());
             for(TActorIterator<AMainGameDoor> It(W);It;++It){Door=*It;break;}
+            if (bUseGamepad && !Test->TestTrue(TEXT("Published map supplies the starting bedroom door"), Door.IsValid())) return true;
             if(!Door.IsValid())
             {
                 Door=W->SpawnActor<AMainGameDoor>(FVector(440,0,125),FRotator::ZeroRotator);
@@ -117,8 +121,42 @@ public:
             PC->GetPawn()->SetActorLocation(Eye-(PC->GetPawn()->GetPawnViewLocation()-PC->GetPawn()->GetActorLocation()));
             PC->SetControlRotation(FRotator::ZeroRotator);PC->PlayerCameraManager->UpdateCamera(.05f);
             Test->TestTrue(TEXT("Authored door is targeted at the actual streamed location"),AMainGameDoor::FindInteractionTarget(PC)==Door.Get());
-            PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E,IE_Pressed,1.f));
-            if(!Test->TestTrue(TEXT("Real E input opens the door"),Door->bIsOpen))return true;
+            if (bUseGamepad)
+            {
+                auto* Input = PC->GetLocalPlayer()->GetSubsystem<UMiningGamepadSubsystem>();
+                if (!Test->TestNotNull(TEXT("Gamepad input subsystem exists"), Input)) return true;
+                const auto PressInteract = [&]()
+                {
+                    Input->HandleButton(EKeys::Gamepad_FaceButton_Left, true);
+                    Input->HandleButton(EKeys::Gamepad_FaceButton_Left, false);
+                };
+                PC->SetControlRotation(FRotator(0, 180, 0));
+                PC->PlayerCameraManager->UpdateCamera(.05f);
+                PressInteract();
+                Test->TestFalse(TEXT("X cannot open the door while looking away"), Door->bIsOpen);
+                PC->SetControlRotation(FRotator::ZeroRotator);
+                PC->PlayerCameraManager->UpdateCamera(.05f);
+                PC->SetIgnoreLookInput(true);
+                PressInteract();
+                Test->TestFalse(TEXT("X cannot open the door while interaction is locked"), Door->bIsOpen);
+                PC->SetIgnoreLookInput(false);
+                const FVector NearLocation = PC->GetPawn()->GetActorLocation();
+                PC->GetPawn()->SetActorLocation(NearLocation - FVector(1000, 0, 0));
+                PC->PlayerCameraManager->UpdateCamera(.05f);
+                PressInteract();
+                Test->TestFalse(TEXT("X cannot open the door from outside interaction range"), Door->bIsOpen);
+                PC->GetPawn()->SetActorLocation(NearLocation);
+                PC->PlayerCameraManager->UpdateCamera(.05f);
+                PressInteract();
+                if (!Test->TestTrue(TEXT("Gamepad X opens the starting bedroom door"), Door->bIsOpen)) return true;
+                PressInteract();
+                Test->TestTrue(TEXT("Repeated X leaves the door open"), Door->bIsOpen);
+            }
+            else
+            {
+                PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E,IE_Pressed,1.f));
+                if(!Test->TestTrue(TEXT("Real E input opens the door"),Door->bIsOpen))return true;
+            }
             Opened=true;return false;
         }
         if(!Opening->HasTitleLanded())return false;
@@ -140,6 +178,14 @@ bool FPublishedMainOpeningTest::RunTest(const FString&)
     AutomationOpenMap(TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FPublishedOpeningChecks>(this));
+    ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGamepadStartRoomDoorTest,"BrainMining.Gamepad.StartRoomDoor",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FGamepadStartRoomDoorTest::RunTest(const FString&)
+{
+    AutomationOpenMap(TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
+    ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FPublishedOpeningChecks>(this, false, true));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FOpeningMenuTest,"BrainMining.Opening.MenuLifecycle",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)

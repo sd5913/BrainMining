@@ -14,6 +14,7 @@
 #include "Showcase/MiningExhibitHall.h"
 #include "Showcase/MiningTreasure.h"
 #include "StartRoom/MiningStartRoom.h"
+#include "MainGameDoor.h"
 #include "PopupClose/PopupCloseStage.h"
 #include "WenSi/WenSiPuzzle.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
@@ -88,6 +89,7 @@ void UMiningGamepadSubsystem::Interact()
     if (!Player || !Player->GetPawn() || Player->IsPaused()) return;
     UWorld* World = Player->GetWorld();
     if (auto* Room = AMiningStartRoom::Find(World); Room && Room->Interact(Player)) return;
+    if (auto* Door = AMainGameDoor::FindInteractionTarget(Player)) { Door->OpenDoor(); return; }
     for (TActorIterator<APopupCloseStage> Office(World); Office; ++Office) if (Office->HandleInteractionInput(Player)) return;
     for (TActorIterator<AWenSiPuzzle> Puzzle(World); Puzzle; ++Puzzle) if (Puzzle->HandleInteractionInput(Player)) return;
     for (TActorIterator<AWenSiMirrorPuzzle> Puzzle(World); Puzzle; ++Puzzle)
@@ -143,8 +145,24 @@ void UMiningGamepadSubsystem::Dispatch(EMiningInputAction Action, bool bPressed)
         if (auto* Menu = Player->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()) Menu->TogglePauseMenu();
         return;
     }
-    // The seated card encounter uses mouse selection and Space only. Pause remains available.
-    if (Context == EMiningInputContext::Cards) return;
+    if (Context == EMiningInputContext::Cards)
+    {
+        auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>();
+        if (!Cards || !Cards->Stage) return;
+        if (Cards->Stage->Run.Phase == ECardRoomPhase::Victory)
+        {
+            if (Action == EMiningInputAction::Interact || Action == EMiningInputAction::Jump) Cards->Interact();
+        }
+        else if (Cards->Stage->Run.Phase == ECardRoomPhase::Choosing)
+        {
+            if (Action == EMiningInputAction::Jump) Cards->ToggleCardSelection(Cards->GetFocusedCardIndex());
+            else if (Action == EMiningInputAction::Interact) Cards->ConfirmCards();
+            else if (Action == EMiningInputAction::Tool) Cards->SelectAllCards();
+            else if (Action == EMiningInputAction::Previous || Action == EMiningInputAction::ClearThought) Cards->NavigateCard(-1);
+            else if (Action == EMiningInputAction::Next || Action == EMiningInputAction::Bomb) Cards->NavigateCard(1);
+        }
+        return;
+    }
     if (Action == EMiningInputAction::Previous || Action == EMiningInputAction::Next || Action == EMiningInputAction::Up || Action == EMiningInputAction::Down)
     {
         if (Context == EMiningInputContext::Menu)
@@ -241,6 +259,11 @@ void UMiningGamepadSubsystem::Back()
         if (MiningPlayer->bUpgradeMenuHeld) { MiningPlayer->SetUpgradeMenuHeld(false); return; }
     }
     if (auto* Hall = AMiningExhibitHall::Find(World); Hall && Hall->IsMapOpen()) { Hall->CloseMap(); return; }
+    if (GetContext() == EMiningInputContext::Cards)
+    {
+        if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>()) Cards->ClearCardSelection();
+        return;
+    }
 
     if (auto* Office = FindGamepadActionActor<APopupCloseStage>(World, [](auto* Candidate) { return Candidate->bAreaActive && Candidate->IsSessionActive(); })) { Office->HandleInteractionInput(Player); return; }
     if (auto* Mirror = FindGamepadActionActor<AWenSiMirrorPuzzle>(World, [](auto* Puzzle) { return Puzzle->bAreaActive; }))

@@ -1,4 +1,5 @@
 #include "StartRoom/MiningOpening.h"
+#include "MiningHapticsSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
@@ -146,7 +147,7 @@ void AMiningOpening::Tick(float Dt)
         const FVector Logo=FMath::Lerp(InitialTitle,DoorTitleLocation,A)+FVector(0,0,FMath::Sin(A*PI)*32);
         WorldTitle->SetWorldLocationAndRotation(Logo,FQuat::Slerp(InitialRotation,DoorTitleRotation.Quaternion(),A));
         WorldTitle->SetWorldScale3D(FVector(FMath::Lerp(InitialTitleScale,.205f,A)));
-        if(A>=1){EnsureTitleOnWall();bTitleFlying=false;bTitleLanded=true;SetActorTickEnabled(false);}
+        if(A>=1){EnsureTitleOnWall();bTitleFlying=false;bTitleLanded=true;UMiningHapticsSubsystem::Emit(Player.Get(), EMiningHapticCue::TitleLanded);SetActorTickEnabled(false);}
         return;
     }
     if(bFinished)return;

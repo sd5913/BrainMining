@@ -1,4 +1,5 @@
 #include "MiningBombToolComponent.h"
+#include "MiningHapticsSubsystem.h"
 #include "MiningBombActor.h"
 #include "MiningComponent.h"
 #include "MiningWalletSubsystem.h"
@@ -67,6 +68,7 @@ bool UMiningBombToolComponent::UnlockSkill()
 		BombCount = FMath::Max(BombCount, FMath::Max(1, MaxBombs));
 		RechargeProgress = 0;
 		OnSkillUnlocked.Broadcast();
+        UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::SkillUnlocked);
 	}
 	return true;
 }
@@ -77,11 +79,13 @@ bool UMiningBombToolComponent::ToggleEquipped()
 	if (!CanUse()) return false;
 	GetOwner()->FindComponentByClass<UMiningComponent>()->SelectPickaxe();
 	bEquipped = true;
+    UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::BombEquip);
 	return true;
 }
 
 void UMiningBombToolComponent::Stow()
 {
+    if (bEquipped) UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::BombEquip);
 	bEquipped = false;
 	if (auto* Character = Cast<ABrainMiningCharacter>(GetOwner())) Character->GetBombModel()->SetVisibility(false);
 }
@@ -121,6 +125,7 @@ bool UMiningBombToolComponent::ThrowBomb()
 	ThrownBombs.RemoveAll([](const auto& Entry) { return !Entry.IsValid(); });
 	ThrownBombs.Add(Bomb);
 	Stow();
+    UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::BombThrow);
 	return true;
 }
 

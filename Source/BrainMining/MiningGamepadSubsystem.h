@@ -43,7 +43,7 @@ public:
     bool HandleAxis(FKey Key, float Value);
     void Dispatch(EMiningInputAction Action, bool bPressed);
     void TickInput(float DeltaSeconds);
-    void ReleaseInputs();
+    void ReleaseInputs(bool bStopFeedback = true);
     void MarkKeyboardMouse();
     void ResetDevice();
     void SendUIKey(FKey Key, bool bPressed);

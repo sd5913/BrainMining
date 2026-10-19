@@ -1,4 +1,5 @@
 #include "MiningComponent.h"
+#include "MiningHapticsSubsystem.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningBombToolComponent.h"
 #include "MiningTunnelGenerator.h"
@@ -153,8 +154,13 @@ void UMiningComponent::RequireDrillUnlock()
 }
 void UMiningComponent::UnlockDrill()
 {
-	if(auto* GI=GetOwner()?GetOwner()->GetGameInstance():nullptr)
-		if(auto* Wallet=GI->GetSubsystem<UMiningWalletSubsystem>())Wallet->bDrillSkillUnlocked=true;
+    if (auto* Instance = GetOwner() ? GetOwner()->GetGameInstance() : nullptr)
+        if (auto* Wallet = Instance->GetSubsystem<UMiningWalletSubsystem>())
+        {
+            const bool bNew = !Wallet->bDrillSkillUnlocked;
+            Wallet->bDrillSkillUnlocked = true;
+            if (bNew) UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::SkillUnlocked);
+        }
 }
 bool UMiningComponent::MineTelevision(const FHitResult& Hit)
 {
@@ -185,7 +191,7 @@ bool UMiningComponent::MineTelevision(const FHitResult& Hit)
 		Cut|=It->MineSphere(Center,CutRadius);
 	}
 	Status=Rock->LastStatus;
-	if(Cut)OnMiningHit.Broadcast(Hit);
+	if(Cut) { OnMiningHit.Broadcast(Hit); UMiningHapticsSubsystem::MiningContact(this); }
 	return Cut;
 }
 
@@ -303,7 +309,11 @@ bool UMiningComponent::TryMine()
 	RefreshTarget();
 	if (!IsValid(TargetRock))
 	{
-		if (TargetHit.bBlockingHit) OnMiningBlocked.Broadcast(TargetHit);
+		if (TargetHit.bBlockingHit)
+        {
+            OnMiningBlocked.Broadcast(TargetHit);
+            UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::BlockedContact);
+        }
 		Status = TEXT("Aim at rock within reach");
 		return false;
 	}
@@ -337,7 +347,7 @@ bool UMiningComponent::TryMine()
 		bResult |= TargetRock->MinePickaxe(DepthFrame, HalfSize, Seed, ShapeRoughness);
 	}
 	Status = TargetRock->LastStatus;
-	if (bResult) OnMiningHit.Broadcast(MiningHit);
+	if (bResult) { OnMiningHit.Broadcast(MiningHit); UMiningHapticsSubsystem::MiningContact(this); }
 	return bResult;
 }
 

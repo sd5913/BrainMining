@@ -1,4 +1,5 @@
 #include "MiningGamepadSubsystem.h"
+#include "MiningHapticsSubsystem.h"
 #include "BrainMiningCharacter.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningComponent.h"
@@ -208,8 +209,10 @@ bool UMiningGamepadSubsystem::CanReceiveInput(int32 UserIndex) const
     if (UserIndex != GetLocalPlayer()->GetControllerId()) return false;
     const auto* Viewport = Player->GetWorld()->GetGameViewport();
     const auto Widget = Viewport ? Viewport->GetGameViewportWidget() : nullptr;
+    const auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>();
     return FSlateApplication::Get().IsActive() && Widget.IsValid()
-        && (Widget->HasUserFocus(UserIndex).IsSet() || Widget->HasUserFocusedDescendants(UserIndex));
+        && (Widget->HasUserFocus(UserIndex).IsSet() || Widget->HasUserFocusedDescendants(UserIndex)
+            || (Cards && Cards->HasCardInputFocus(UserIndex)));
 }
 
 EMiningInputContext UMiningGamepadSubsystem::GetContext() const
@@ -242,7 +245,7 @@ void UMiningGamepadSubsystem::UpdateContext()
     const int32 Area = Hall ? Hall->ActiveArea : INDEX_NONE;
     if (LastController.Get() != Player || LastPawn.Get() != (Player ? Player->GetPawn() : nullptr) || Context != LastContext || Area != LastArea)
     {
-        ReleaseInputs();
+        ReleaseInputs(false);
         UpgradeFeedbackRemaining = 0;
         LastController = Player;
         LastPawn = Player ? Player->GetPawn() : nullptr;
@@ -258,6 +261,8 @@ bool UMiningGamepadSubsystem::HandleButton(FKey Key, bool bPressed, bool bRepeat
     if (!Key.IsGamepadKey()) return false;
     UpdateContext();
     bGamepad = true;
+    if (auto* Player = Controller())
+        if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>()) Cards->bGamepadInput = true;
     EMiningInputAction Action;
     if (!MapButton(Key, Action)) return true;
     if (bPressed)
@@ -282,7 +287,12 @@ bool UMiningGamepadSubsystem::HandleAxis(FKey Key, float Value)
     if (!Key.IsGamepadKey()) return false;
     UpdateContext();
     Value = FMath::IsFinite(Value) ? FMath::Clamp(Value, -1.f, 1.f) : 0.f;
-    if (FMath::Abs(Value) > FMath::Max(.2f, StickDeadZone)) bGamepad = true;
+    if (FMath::Abs(Value) > FMath::Max(.2f, StickDeadZone))
+    {
+        bGamepad = true;
+        if (auto* Player = Controller())
+            if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>()) Cards->bGamepadInput = true;
+    }
     if (Key == EKeys::Gamepad_LeftX) MoveStick.X = Value;
     else if (Key == EKeys::Gamepad_LeftY) MoveStick.Y = Value;
     else if (Key == EKeys::Gamepad_RightX) LookStick.X = Value;
@@ -292,8 +302,9 @@ bool UMiningGamepadSubsystem::HandleAxis(FKey Key, float Value)
     return true;
 }
 
-void UMiningGamepadSubsystem::ReleaseInputs()
+void UMiningGamepadSubsystem::ReleaseInputs(bool bStopFeedback)
 {
+    if (bStopFeedback) if (auto* Haptics = UMiningHapticsSubsystem::Find(Controller())) Haptics->Stop();
     if (HeldMining.IsValid()) HeldMining->CancelMining();
     HeldMining.Reset();
     if (auto* Character = Cast<ABrainMiningCharacter>(JumpPawn.Get())) Character->DoJumpEnd();
@@ -321,6 +332,8 @@ void UMiningGamepadSubsystem::MarkKeyboardMouse()
 {
     if (bGamepad) ReleaseInputs();
     bGamepad = false;
+    if (auto* Player = Controller())
+        if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>()) Cards->bGamepadInput = false;
 }
 
 void UMiningGamepadSubsystem::ResetDevice()
@@ -328,6 +341,8 @@ void UMiningGamepadSubsystem::ResetDevice()
     ReleaseInputs();
     HeldButtons.Reset();
     bGamepad = false;
+    if (auto* Player = Controller())
+        if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>()) Cards->bGamepadInput = false;
 }
 
 void UMiningGamepadSubsystem::SendUIKey(FKey Key, bool bPressed)

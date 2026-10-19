@@ -24,7 +24,8 @@ FSlateRect SCardRoomView::CardRect(int32 Index,const FCardRoomRun& Run) const
     const bool Many=Run.Hand.Num()>5;
     const float W=Many?120.f:138.f,H=Many?180.f:208.f,Step=Many?43.f:160.f;
     const float X=800.f-(W+(Run.Hand.Num()-1)*Step)*.5f+Index*Step;
-    const float Y=(Many?698.f:672.f)-(Run.Staged.Contains(Index)?30.f:0.f);
+    const bool Focused = Owner.IsValid() && Owner->bGamepadInput && Owner->GetFocusedCardIndex() == Index;
+    const float Y=(Many?698.f:672.f)-(Run.Staged.Contains(Index)?30.f:0.f)-(Focused?20.f:0.f);
     return FSlateRect(X,Y,X+W,Y+H);
 }
 int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRect&,FSlateWindowElementList& Out,int32 Layer,const FWidgetStyle&,bool) const
@@ -103,12 +104,17 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
         UObject* Font=CachedFont.Get();
         const TCHAR* Names[]={TEXT("激光"),TEXT("毒"),TEXT("火")};
         const TCHAR* Materials[]={TEXT("M_Card_Laser"),TEXT("M_Card_Poison"),TEXT("M_Card_Fire")};
-        for(int32 I=0;I<R.Hand.Num();++I)
+        const int32 Focused = Owner->bGamepadInput ? Owner->GetFocusedCardIndex() : INDEX_NONE;
+        TArray<int32> DrawOrder;
+        for (int32 Index = 0; Index < R.Hand.Num(); ++Index) if (Index != Focused) DrawOrder.Add(Index);
+        if (Focused != INDEX_NONE) DrawOrder.Add(Focused);
+        for (const int32 I : DrawOrder)
         {
             const auto B=CardRect(I,R);const float W=B.Right-B.Left,H=B.Bottom-B.Top;
             const bool Selected=R.Staged.Contains(I);
             Box(B.Left+4,B.Top+7,W,H,FLinearColor(0,0,0,.4f),9.f);
-            Box(B.Left-2,B.Top-2,W+4,H+4,Selected?FLinearColor(.95f,.78f,.4f):FLinearColor(.55f,.5f,.4f),10.f);
+            const float Border = I == Focused ? 4.f : 2.f;
+            Box(B.Left-Border,B.Top-Border,W+Border*2,H+Border*2,I == Focused ? FLinearColor(.4f,.95f,1.f) : (Selected?FLinearColor(.95f,.78f,.4f):FLinearColor(.55f,.5f,.4f)),10.f);
             Art(Materials[static_cast<int32>(R.Hand[I])],B.Left,B.Top,W,H);
             // The name sits at the exposed upper-left edge even in the 17-card fan.
             const int32 N=static_cast<int32>(R.Hand[I]);
@@ -123,6 +129,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
 FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& E)
 {
     if(!Owner.IsValid() || !Owner->Stage || (!E.IsTouchEvent() && E.GetEffectingButton()!=EKeys::LeftMouseButton))return FReply::Unhandled();
+    Owner->bGamepadInput = false;
     Mouse=ToVirtual(G,E.GetScreenSpacePosition());auto& R=Owner->Stage->Run;
     if(R.Phase==ECardRoomPhase::Exploring)return FReply::Unhandled();
     if(R.Phase==ECardRoomPhase::Choosing)
@@ -143,7 +150,7 @@ FReply SCardRoomView::OnMouseMove(const FGeometry& G,const FPointerEvent& E) { M
 FReply SCardRoomView::OnKeyDown(const FGeometry& G,const FKeyEvent& E)
 {
     if(!Owner.IsValid()) return FReply::Unhandled();
-    if(E.GetKey()==EKeys::SpaceBar) { Owner->ConfirmCards(); return FReply::Handled(); }
+    if(E.GetKey()==EKeys::SpaceBar) { Owner->bGamepadInput = false; Owner->ConfirmCards(); return FReply::Handled(); }
     if(E.GetKey()==EKeys::E) { Owner->Interact(); return FReply::Handled(); }
     return FReply::Unhandled();
 }

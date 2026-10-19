@@ -1,4 +1,5 @@
 #include "WenSi/WenSiPuzzle.h"
+#include "MiningHapticsSubsystem.h"
 #include "MiningCharacterMovementComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -215,6 +216,7 @@ void AWenSiPuzzle::UpdateCircuitProgress()
  if(!bComplete && bPressure && bElectricity)
  {
   bComplete=true;if(bEditing)ToggleEdit();Thoughts[0].Reset();Thoughts[1].Reset();
+  UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleComplete);
  }
  Circuit->SetState(bPressure,bElectricity,bComplete);
 }

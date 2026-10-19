@@ -1,4 +1,5 @@
 #include "MiningComponent.h"
+#include "MiningHapticsSubsystem.h"
 #include "DiggableRock.h"
 #include "GeneratedMiningRock.h"
 #include "MiningBombToolComponent.h"
@@ -236,6 +237,7 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 		HalfSize.Z *= Stage.WidthPercent * .01f;
 	}
 	OnPickaxeContact.Broadcast(Hit, Request.Strikes);
+	UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PickaxeContact, FMath::Min(1.f, .75f + Request.Strikes * .08f));
 	const bool bAccepted = Rock->MinePickaxe(Frame, HalfSize, Request.Seed, Request.Roughness);
 	Status = Rock->LastStatus;
 	bLastPickaxeBreak = bAccepted && Request.Strikes == RequiredStrikes;
@@ -263,7 +265,11 @@ void UMiningComponent::InvalidatePickaxePatches(TWeakObjectPtr<ADiggableRock> Ro
 		{
 			const FVector Anchor = Rock->GetActorTransform().TransformPosition(Patch.LocalPoint);
 			if (Bounds.ComputeSquaredDistanceToPoint(Anchor) > FMath::Square(Patch.HalfSize.Size() * 1.12)) continue;
-			if (Patch.bPending && Patch.Strikes >= Patch.Stages.Num()) OnPickaxeBreak.Broadcast(Anchor);
+			if (Patch.bPending && Patch.Strikes >= Patch.Stages.Num())
+            {
+                OnPickaxeBreak.Broadcast(Anchor);
+                UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PickaxeBreak);
+            }
 			const FTransform Frame = Patch.LocalFrame * Rock->GetActorTransform();
 			const FVector Direction = Frame.GetUnitAxis(EAxis::X);
 			FHitResult Surface;

@@ -205,10 +205,13 @@ void AEchoPassageStage::ResetPassage()
         for(int i=0;i<4;++i) M->SetScalarParameterValue(*FString::Printf(TEXT("Start%d"),i),-1000);
     }
 }
+FEchoPassageFeedback AEchoPassageStage::OnFeedback;
+
 void AEchoPassageStage::Collapse()
 {
     if(bCollapsed) return;
     bCollapsed=true; TrapFloor->SetVisibility(false);TrapFloor->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    OnFeedback.Broadcast(this, TEXT("Collapse"), GetActorLocation());
     if(AudioOverride.IsBound()) AudioOverride.Execute(TEXT("S_Crumble"),GetActorLocation(),.65f);
     else if(auto* S=LoadObject<USoundBase>(nullptr,TEXT("/Game/Passages/Echo/Audio/S_Crumble.S_Crumble"))) UGameplayStatics::PlaySound2D(this,S,.65f);
 }
@@ -217,6 +220,7 @@ void AEchoPassageStage::EmitEcho(FVector Location,bool Landing)
     const float Now=GetWorld()->GetTimeSeconds();
     if((bCompleted && !bRoomInSameLevel) || (!Landing && (Now-LastEcho<KnockCooldown || !bLanded))) return;
     LastEcho=Now;
+    OnFeedback.Broadcast(this, Landing ? TEXT("Landing") : TEXT("Knock"), Location);
     if(Landing) {bLanded=true;LandingTime=Now;} else ++KnockCount;
     for(auto* M:{EchoMaterial.Get(),RockMaterial.Get()}) if(M)
     {
@@ -233,6 +237,7 @@ void AEchoPassageStage::Complete()
 {
     if(bCompleted) return;
     bCompleted=true; OnPassageCompleted.Broadcast(PassageId);
+    OnFeedback.Broadcast(this, TEXT("Complete"), GetActorLocation());
     if(AudioOverride.IsBound())AudioOverride.Execute(TEXT("S_Exit"),GetActorLocation(),.55f);
     else if(auto* S=LoadObject<USoundBase>(nullptr,TEXT("/Game/Passages/Echo/Audio/S_Exit.S_Exit"))) UGameplayStatics::PlaySound2D(this,S,.55f);
 }

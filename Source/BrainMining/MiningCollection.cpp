@@ -1,4 +1,5 @@
 #include "MiningCollection.h"
+#include "MiningHapticsSubsystem.h"
 #include "MiningExperienceSubsystem.h"
 #include "Subtitles/SubtitleLibrary.h"
 #include "Engine/GameInstance.h"
@@ -311,6 +312,7 @@ bool AMiningCollectionField::TryCollectTarget()
     Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);
     if(IsValid(Item->PresentationActor)) { Item->PresentationActor->Destroy(); Item->PresentationActor=nullptr; }
     ++Inventory[Item->ItemId];
+    UMiningHapticsSubsystem::Emit(Player, EMiningHapticCue::Collectible);
     if(Player->GetPawn())
         if(auto* Audio=Player->GetPawn()->FindComponentByClass<UMiningAudioComponent>())Audio->PlayCollectible(Item->ItemId);
     // All collectibles, including the room-owned stage ribbon, reach this

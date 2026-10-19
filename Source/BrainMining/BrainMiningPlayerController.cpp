@@ -2,6 +2,8 @@
 
 
 #include "BrainMiningPlayerController.h"
+#include "MiningHapticsSubsystem.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "MainGameDoor.h"
 #include "BrainMiningFonts.h"
 #include "MiningAudioSettings.h"
@@ -629,7 +631,7 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 	bAudioPausedWorld = SetPause(true);
 	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
     Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 20)[SNew(STextBlock).Font(BrainMiningFonts::Style("Bold", 22))
-        .Text_Lambda([this]() { return FText::FromString(UMiningGamepadSubsystem::UsesGamepad(this) ? TEXT("音量设置 · B 返回") : TEXT("音量设置 · F8 / Esc 关闭")); })];
+        .Text_Lambda([this]() { return FText::FromString(UMiningGamepadSubsystem::UsesGamepad(this) ? TEXT("声音与震动 · B 返回") : TEXT("声音与震动 · F8 / Esc 关闭")); })];
     TSharedPtr<SSlider> FirstSlider;
 	const TCHAR* Labels[] = {TEXT("总音量"), TEXT("音乐"), TEXT("音效"), TEXT("环境声"), TEXT("语音")};
 	TWeakObjectPtr<UMiningAudioSettings> WeakSettings(Settings);
@@ -646,6 +648,7 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 			.OnValueChanged_Lambda([WeakSettings, Channel](float Value) { if (WeakSettings.IsValid()) WeakSettings->SetVolume(Channel, Value); })];
         if (!FirstSlider) FirstSlider = Slider;
 	}
+    if (auto* Haptics = UMiningHapticsSubsystem::Find(this)) Rows->AddSlot().AutoHeight()[Haptics->MakeSettingsWidget()];
 	Rows->AddSlot().AutoHeight().Padding(0, 12)[SNew(SButton).HAlign(HAlign_Center).ContentPadding(FMargin(12, 8)).OnClicked_Lambda([WeakSettings]()
 	{
 		if (WeakSettings.IsValid()) WeakSettings->RestoreDefaults();
@@ -655,7 +658,7 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 		[SNew(STextBlock).Font(BrainMiningFonts::Style("Regular", 16)).Text(FText::FromString(TEXT("保存并返回游戏")))]];
 	AudioSettingsPanel = SNew(SOverlay)
 		+ SOverlay::Slot()[SNew(SBorder).BorderBackgroundColor(FLinearColor(0, 0, 0, .85f))]
-		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(SBox).WidthOverride(540)[SNew(SBorder).Padding(28)[Rows]]];
+		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(SBox).WidthOverride(540).MaxDesiredHeight(720)[SNew(SBorder).Padding(28)[SNew(SScrollBox).ScrollWhenFocusChanges(EScrollWhenFocusChanges::InstantScroll) + SScrollBox::Slot()[Rows]]]];
 	Viewport->AddViewportWidgetContent(AudioSettingsPanel.ToSharedRef(), 1000);
 	bShowMouseCursor = true;
 	FInputModeGameAndUI Mode;

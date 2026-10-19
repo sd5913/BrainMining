@@ -1,4 +1,5 @@
 #include "MiningGamepadSubsystem.h"
+#include "MiningHapticsSubsystem.h"
 #include "MiningGamepadHints.h"
 #include "MiningGUIWidgets.h"
 #include "BrainMiningCharacter.h"
@@ -46,6 +47,12 @@ void UMiningGamepadSubsystem::TickInput(float DeltaSeconds)
         Player->GetWorld()->GetGameViewport()->AddViewportWidgetContent(Hints.ToSharedRef(), 2000);
     }
     const auto Context = GetContext();
+    if (Hints.IsValid())
+    {
+        const auto HintBox = StaticCastSharedPtr<SBox>(Hints);
+        HintBox->SetVAlign(Context == EMiningInputContext::Cards ? VAlign_Top : VAlign_Bottom);
+        HintBox->SetPadding(FMargin(20, 24, 20, 24));
+    }
     const FVector2D Move = ApplyDeadZone(MoveStick, StickDeadZone);
     const FVector2D Look = ApplyDeadZone(LookStick, StickDeadZone);
     if (Context == EMiningInputContext::Exploration)
@@ -83,7 +90,8 @@ void UMiningGamepadSubsystem::TickInput(float DeltaSeconds)
     }
     const bool bNavigate = Context == EMiningInputContext::Menu || Context == EMiningInputContext::Catalogue;
     int32 Direction = 0;
-    if (bNavigate && Move.SizeSquared() > .25f)
+    if (Context == EMiningInputContext::Cards && FMath::Abs(Move.X) > .5f) Direction = Move.X > 0 ? 1 : 2;
+    else if (bNavigate && Move.SizeSquared() > .25f)
         Direction = FMath::Abs(Move.X) > FMath::Abs(Move.Y) ? (Move.X > 0 ? 1 : 2) : (Move.Y > 0 ? 3 : 4);
     NavigationRemaining -= Step;
     if (Direction && (Direction != NavigationDirection || NavigationRemaining <= 0))
@@ -163,6 +171,7 @@ void UMiningGamepadSubsystem::PurchaseUpgrade()
     const bool bPurchased = Progression->Purchase(0, Progression->GetLevel(0) + 1);
     UpgradeFeedback = FText::FromString(bPurchased ? TEXT("升级成功") : TEXT("暂时无法升级：资源不足或已满级"));
     UpgradeFeedbackRemaining = 2.5f;
+    UMiningHapticsSubsystem::Emit(Player, bPurchased ? EMiningHapticCue::UpgradeSuccess : EMiningHapticCue::UpgradeRejected);
     if (auto* Audio = Player->GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPurchase(bPurchased);
     if (bPurchased && Player->MiningGUI) Player->MiningGUI->RefreshMineralProgression();
 }
@@ -171,7 +180,16 @@ TArray<FMiningGamepadHint> UMiningGamepadSubsystem::GetHintEntries() const
 {
     using Glyph = EMiningGamepadGlyph;
     const auto Context = GetContext();
-    if (Context == EMiningInputContext::Blocked || Context == EMiningInputContext::Cards) return {};
+    if (Context == EMiningInputContext::Blocked) return {};
+    if (Context == EMiningInputContext::Cards)
+    {
+        const auto* Cards = Controller()->FindComponentByClass<UCardRoomInteractionComponent>();
+        if (Cards && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing)
+            return {{Glyph::DPad, TEXT("左右选牌")}, {Glyph::A, TEXT("选中/取消")}, {Glyph::Y, TEXT("全选/清空")}, {Glyph::B, TEXT("清空")}, {Glyph::X, Cards->Stage->Run.Round == 4 && !Cards->Stage->Run.CanConfirm() ? TEXT("全选") : FString::Printf(TEXT("出牌 %d/%d"), Cards->Stage->Run.Staged.Num(), Cards->Stage->Run.Hand.Num())}, {Glyph::Menu, TEXT("暂停")}};
+        if (Cards && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Victory)
+            return {{Glyph::X, TEXT("领取钻机"), Glyph::A}, {Glyph::Menu, TEXT("暂停")}};
+        return {{Glyph::Menu, TEXT("暂停 · 等待牌局演出")}};
+    }
     if (Context == EMiningInputContext::Office)
         return {{Glyph::RightStick, TEXT("光标")}, {Glyph::LT, TEXT("精调")}, {Glyph::A, TEXT("点击"), Glyph::RT}, {Glyph::B, TEXT("离开电脑")}};
     if (Context == EMiningInputContext::Catalogue)

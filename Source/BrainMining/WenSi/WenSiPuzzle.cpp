@@ -1,4 +1,5 @@
 #include "WenSi/WenSiPuzzle.h"
+#include "MiningHapticsSubsystem.h"
 #include "MiningGamepadSubsystem.h"
 #include "MiningInteractionTrace.h"
 #include "Camera/CameraComponent.h"
@@ -334,6 +335,7 @@ void AWenSiPuzzle::Tick(float Dt)
  if (!bCircuitPuzzle && !bComplete && PC->GetPawn() && GetActorTransform().InverseTransformPosition(PC->GetPawn()->GetActorLocation()).X>(bExtendedPuzzle ? 1350.f : 510.f))
  {
   bComplete=true; if (bEditing) ToggleEdit(); Thoughts[0].Reset(); Thoughts[1].Reset();
+  UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleComplete);
  }
  if (UI) UI->Refresh();
  for(int32 I=0;I<Objects.Num();++I) Objects[I]->SetInteractionHighlight(I==Aim,!bComplete);
@@ -371,8 +373,9 @@ void AWenSiPuzzle::SwapRules(int32 From,int32 To)
  const ACharacter* Character=Cast<ACharacter>(Pawn);
  const FBox PawnBounds=Character ? Character->GetCapsuleComponent()->Bounds.GetBox() : (Pawn ? Pawn->GetComponentsBoundingBox(true) : FBox(ForceInit));
  for (int32 I=0;I<2;++I)
-  if (Pawn && Thoughts[I]->Rule==EWenSiRule::Intangible && Thoughts[1-I]->Rule!=EWenSiRule::Intangible && Thoughts[I]->GetComponentsBoundingBox(true).Intersect(PawnBounds)) return;
+  if (Pawn && Thoughts[I]->Rule==EWenSiRule::Intangible && Thoughts[1-I]->Rule!=EWenSiRule::Intangible && Thoughts[I]->GetComponentsBoundingBox(true).Intersect(PawnBounds)) { UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleRejected); return; }
  Swap(Thoughts[From]->Rule,Thoughts[To]->Rule); Thoughts[From]->ApplyRule(); Thoughts[To]->ApplyRule();
+ UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleSwap);
  if (UI) UI->Refresh();
 }
 void AWenSiPuzzle::EndPlay(const EEndPlayReason::Type Reason)

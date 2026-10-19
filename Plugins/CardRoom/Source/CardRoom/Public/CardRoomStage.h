@@ -89,6 +89,7 @@ private:
     UPROPERTY() TObjectPtr<UPointLightComponent> SpellLight;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> FxShards;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMesh>> SymbolMeshes;
+    UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInterface>> CardFaceMaterials;
     void InitializeEffectMeshes();
     void TickEffects();
     void InitializeStyledEffects();

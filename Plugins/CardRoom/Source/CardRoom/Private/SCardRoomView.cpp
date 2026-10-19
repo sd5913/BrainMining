@@ -246,10 +246,6 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
     Text(Owner->bGamepadNavigation?TEXT("方向键选牌 · X 选择/取消 · A 确认 · B 离座"):TEXT("点击选牌 / 再点取消     空格出牌"),Hint.Left,Hint.Top,12,Cream);
     return L;
 }
-FReply SCardRoomView::OnTouchStarted(const FGeometry& G,const FPointerEvent& E)
-{
-    return OnMouseButtonDown(G,E);
-}
 FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& E)
 {
     using namespace CardRoomUI;

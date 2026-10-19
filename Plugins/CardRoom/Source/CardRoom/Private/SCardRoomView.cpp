@@ -110,10 +110,6 @@ FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& 
         }
     return FReply::Handled().SetUserFocus(SharedThis(this));
 }
-FReply SCardRoomView::OnTouchStarted(const FGeometry& G,const FPointerEvent& E)
-{
-    return OnMouseButtonDown(G,E);
-}
 FReply SCardRoomView::OnMouseButtonUp(const FGeometry& G,const FPointerEvent& E) { return FReply::Unhandled(); }
 FReply SCardRoomView::OnMouseMove(const FGeometry& G,const FPointerEvent& E) { Mouse=ToVirtual(G,E.GetScreenSpacePosition()); return FReply::Unhandled(); }
 

@@ -3,6 +3,8 @@
 #include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Components/BackgroundBlur.h"
+#include "Engine/Texture2D.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
 void UMiningCollectionWidget::NativeConstruct()
@@ -18,6 +20,27 @@ void UMiningCollectionWidget::NativeConstruct()
     RefreshCollection();
 }
 void UMiningCollectionWidget::SetCollection(AMiningCollectionField* Field){Collection=Field;RefreshCollection();}
+void UMiningCollectionWidget::RevealCollection()
+{
+    bDragging=false;RevealElapsed=0;bRevealing=true;
+    if(auto* Panel=GetWidgetFromName(TEXT("InfoPanel")))Panel->SetRenderTranslation(FVector2D(PanelSlideDistance,0));
+    if(auto* Blur=Cast<UBackgroundBlur>(GetWidgetFromName(TEXT("SceneBlur"))))Blur->SetBlurStrength(0);
+    if(auto* Dim=GetWidgetFromName(TEXT("SceneDim")))Dim->SetRenderOpacity(0);
+    RefreshCollection();
+}
+void UMiningCollectionWidget::NativeTick(const FGeometry& G,float Dt)
+{
+    Super::NativeTick(G,Dt);
+    if(!bRevealing)return;
+    RevealElapsed+=Dt;
+    const float T=FMath::Clamp(RevealElapsed/FMath::Max(.05f,PanelSlideDuration),0.f,1.f);
+    const float Ease=1-FMath::Pow(1-T,3.f);
+    // Render translation preserves the panel's position authored in UMG.
+    if(auto* Panel=GetWidgetFromName(TEXT("InfoPanel")))Panel->SetRenderTranslation(FVector2D(PanelSlideDistance*(1-Ease),0));
+    if(auto* Blur=Cast<UBackgroundBlur>(GetWidgetFromName(TEXT("SceneBlur"))))Blur->SetBlurStrength(BackgroundBlurStrength*Ease);
+    if(auto* Dim=GetWidgetFromName(TEXT("SceneDim")))Dim->SetRenderOpacity(BackgroundDimOpacity*Ease);
+    bRevealing=T<1;
+}
 void UMiningCollectionWidget::RefreshCollection()
 {
     if(!IsValid(Collection))return;
@@ -39,11 +62,13 @@ void UMiningCollectionWidget::RefreshCollection()
         const bool Has=Collection->Inventory.IsValidIndex(Item)&&Collection->Inventory[Item]>0;
         if(auto* Image=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemArt%d"),I)))))
         {
-            const int32 Art=Has?(Item==2?3:4):2;
-            if(Collection->CatalogueArtwork.IsValidIndex(Art)&&Collection->CatalogueArtwork[Art])Image->SetBrushFromMaterial(Collection->CatalogueArtwork[Art]);
+            const TCHAR* Art=Has?TEXT("/Game/CollectionPrototype/UI/Redesign/T_CollectionSelected"):TEXT("/Game/CollectionPrototype/UI/Redesign/T_CollectionUnknown");
+            if(auto* Texture=LoadObject<UTexture2D>(nullptr,Art))Image->SetBrushFromTexture(Texture);
+            Image->SetColorAndOpacity(Has&&Id!=Item?FLinearColor(.45f,.55f,.42f):FLinearColor::White);
         }
-        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetText(FText::FromString(Has&&Item!=2?AMiningCollectible::ItemName(Item):FString()));
+        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):FString()));
         if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I))))W->SetVisibility(Id==Item?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+        if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemButton%d"),I))))W->SetVisibility(Item==INDEX_NONE?ESlateVisibility::Hidden:ESlateVisibility::Visible);
     }
 }
 void UMiningCollectionWidget::SelectCollectionItem(int32 Id){if(IsValid(Collection))Collection->SelectItem(Id);}
@@ -51,7 +76,10 @@ void UMiningCollectionWidget::TurnCollectionPage(int32 Direction)
 {
     if(!IsValid(Collection))return;
     const auto Ids=Collection->CatalogueIds(); if(Ids.IsEmpty())return;
-    SelectCollectionItem(Ids[(FMath::Max(0,Ids.IndexOfByKey(Collection->SelectedId))+Direction+Ids.Num())%Ids.Num()]);
+    const int32 Index=FMath::Max(0,Ids.IndexOfByKey(Collection->SelectedId));
+    const int32 Pages=FMath::DivideAndRoundUp(Ids.Num(),4);
+    const int32 Page=(Index/4+(Direction<0?-1:1)+Pages)%Pages;
+    SelectCollectionItem(Ids[FMath::Min(Page*4+Index%4,Ids.Num()-1)]);
     RefreshCollection();
 }
 void UMiningCollectionWidget::CloseCollection(){bDragging=false;if(IsValid(Collection)&&Collection->bCatalogueOpen)Collection->ToggleCatalogue();}
@@ -98,7 +126,7 @@ FReply UMiningCollectionWidget::NativeOnMouseWheel(const FGeometry& G,const FPoi
 }
 FReply UMiningCollectionWidget::NativeOnKeyDown(const FGeometry& G,const FKeyEvent& E)
 {
-    if(E.GetKey()==EKeys::Escape){CloseCollection();return FReply::Handled();}
+    if(E.GetKey()==EKeys::Escape||(IsValid(Collection)&&E.GetKey()==Collection->CatalogueKey)){CloseCollection();return FReply::Handled();}
     if(E.GetKey()==EKeys::F&&IsValid(Collection)){Collection->ResetPreview();return FReply::Handled();}
     if(E.GetKey()==EKeys::Left){Previous();return FReply::Handled();}
     if(E.GetKey()==EKeys::Right){Next();return FReply::Handled();}

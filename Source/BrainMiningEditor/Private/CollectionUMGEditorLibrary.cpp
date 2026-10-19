@@ -25,6 +25,7 @@
 #include "UObject/SavePackage.h"
 #include "Styling/CoreStyle.h"
 #include "Engine/World.h"
+#include "Engine/Texture2D.h"
 #include "Input/Events.h"
 
 namespace CollectionUMG
@@ -61,46 +62,78 @@ UButton* Button(UWidgetBlueprint* BP,UCanvasPanel* Parent,const FString& Name,fl
     B->SetStyle(Style);B->IsFocusable=false;B->SetVisibility(ESlateVisibility::Visible);Place(Parent,B,X,Y,W,H);return B;
 }
 }
-bool UCollectionUMGEditorLibrary::CreateCollectionInspectWidget()
+static bool BuildCollectionInspectWidget(bool bReplace)
 {
     using namespace CollectionUMG;
+    // This is an explicit editor authoring command, never a runtime rebuild.
     const FString PackageName=TEXT("/Game/CollectionPrototype/UI/WBP_CollectionInspect");
-    if(LoadObject<UWidgetBlueprint>(nullptr,*(PackageName+TEXT(".WBP_CollectionInspect"))))return true;
-    auto* Package=CreatePackage(*PackageName);auto* Factory=NewObject<UWidgetBlueprintFactory>();Factory->ParentClass=UMiningCollectionWidget::StaticClass();
-    auto* BP=Cast<UWidgetBlueprint>(Factory->FactoryCreateNew(UWidgetBlueprint::StaticClass(),Package,TEXT("WBP_CollectionInspect"),RF_Public|RF_Standalone,nullptr,GWarn));if(!BP)return false;
-    auto* Overlay=Make<UOverlay>(BP,TEXT("ScreenRoot"));BP->WidgetTree->RootWidget=Overlay;
-    auto* Blur=Make<UBackgroundBlur>(BP,TEXT("SceneBlur"));Blur->SetBlurStrength(10);Overlay->AddChildToOverlay(Blur)->SetHorizontalAlignment(HAlign_Fill);CastChecked<UOverlaySlot>(Blur->Slot)->SetVerticalAlignment(VAlign_Fill);
-    auto* Fit=Make<UScaleBox>(BP,TEXT("ResponsiveScale"));Fit->SetStretch(EStretch::ScaleToFit);auto* FitSlot=Overlay->AddChildToOverlay(Fit);FitSlot->SetHorizontalAlignment(HAlign_Fill);FitSlot->SetVerticalAlignment(VAlign_Fill);
+    auto* BP=LoadObject<UWidgetBlueprint>(nullptr,*(PackageName+TEXT(".WBP_CollectionInspect")));
+    if(BP&&!bReplace)return true;
+    UPackage* Package=BP?BP->GetOutermost():CreatePackage(*PackageName);
+    if(!BP)
+    {
+        auto* Factory=NewObject<UWidgetBlueprintFactory>();Factory->ParentClass=UMiningCollectionWidget::StaticClass();
+        BP=Cast<UWidgetBlueprint>(Factory->FactoryCreateNew(UWidgetBlueprint::StaticClass(),Package,TEXT("WBP_CollectionInspect"),RF_Public|RF_Standalone,nullptr,GWarn));
+        if(!BP)return false;FAssetRegistryModule::AssetCreated(BP);
+    }
+    else
+    {
+        if(BP->WidgetTree)BP->WidgetTree->Rename(nullptr,GetTransientPackage(),REN_DontCreateRedirectors|REN_DoNotDirty);
+        BP->WidgetTree=NewObject<UWidgetTree>(BP,TEXT("WidgetTree"),RF_Transactional);
+        BP->WidgetVariableNameToGuidMap.Reset();
+    }
+    const auto Art=[](const TCHAR* Name){return LoadObject<UTexture2D>(nullptr,*(FString(TEXT("/Game/CollectionPrototype/UI/Redesign/T_Collection"))+Name));};
+    const auto Picture=[&](UCanvasPanel* Parent,const FString& Name,float X,float Y,float W,float H,const TCHAR* Skin)
+    {auto* I=Image(BP,Parent,Name,X,Y,W,H);I->SetBrushFromTexture(Art(Skin));return I;};
+    const auto IconButton=[&](UCanvasPanel* Parent,const TCHAR* Name,float X,float Y,float W,float H,const TCHAR* Skin,bool Mirror=false)
+    {
+        auto* B=Button(BP,Parent,Name,X,Y,W,H);FButtonStyle Style;
+        FSlateBrush Normal;Normal.SetResourceObject(Art(Skin));Normal.DrawAs=ESlateBrushDrawType::Image;Normal.ImageSize=FVector2D(W,H);
+        if(Mirror)Normal.Mirroring=ESlateBrushMirrorType::Horizontal;
+        FSlateBrush Hover=Normal,Pressed=Normal;
+        Hover.TintColor=FLinearColor(1.4f,1.8f,.8f);Pressed.TintColor=FLinearColor(2.2f,3.f,.65f);
+        Style.SetNormal(Normal).SetHovered(Hover).SetPressed(Pressed).SetDisabled(Normal);
+        Style.SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));B->SetStyle(Style);return B;
+    };
+    auto* Overlay=Make<UOverlay>(BP,TEXT("ScreenRoot"));BP->WidgetTree->RootWidget=Overlay;Overlay->SetClipping(EWidgetClipping::ClipToBounds);
+    auto* Blur=Make<UBackgroundBlur>(BP,TEXT("SceneBlur"));Blur->SetBlurStrength(12);
+    auto* BlurSlot=Overlay->AddChildToOverlay(Blur);BlurSlot->SetHorizontalAlignment(HAlign_Fill);BlurSlot->SetVerticalAlignment(VAlign_Fill);
+    auto* Dim=Make<UImage>(BP,TEXT("SceneDim"));Dim->SetColorAndOpacity(FLinearColor::Black);Dim->SetRenderOpacity(.48f);Dim->SetVisibility(ESlateVisibility::HitTestInvisible);
+    auto* DimSlot=Overlay->AddChildToOverlay(Dim);DimSlot->SetHorizontalAlignment(HAlign_Fill);DimSlot->SetVerticalAlignment(VAlign_Fill);
+    auto* Fit=Make<UScaleBox>(BP,TEXT("ResponsiveScale"));Fit->SetStretch(EStretch::ScaleToFit);
+    auto* FitSlot=Overlay->AddChildToOverlay(Fit);FitSlot->SetHorizontalAlignment(HAlign_Fill);FitSlot->SetVerticalAlignment(VAlign_Fill);
     auto* Size=Make<USizeBox>(BP,TEXT("DesignSize1600x900"));Size->SetWidthOverride(1600);Size->SetHeightOverride(900);Fit->AddChild(Size);
     auto* Canvas=Make<UCanvasPanel>(BP,TEXT("LayoutCanvas"));Size->AddChild(Canvas);
-    Image(BP,Canvas,TEXT("SceneDim"),0,0,1600,900,nullptr,FLinearColor(0,0,0,.48f));
-    auto* Info=Make<UCanvasPanel>(BP,TEXT("InfoPanel"));Place(Canvas,Info,1170,0,430,900);
-    auto* Background=Image(BP,Info,TEXT("InfoBackground"),0,0,600,900,nullptr,FLinearColor(0,0,0,.94f));Background->SetRenderShear(FVector2D(-.18f,0));
-    Text(BP,Info,TEXT("ItemName"),TEXT("天堂马桶"),74,373,326,54,32)->SetJustification(ETextJustify::Center);
-    Image(BP,Info,TEXT("DescriptionDivider"),90,438,118,1);
-    auto* Description=Text(BP,Info,TEXT("ItemDescription"),TEXT("收集藏品后在这里显示介绍。\n可在设计器中调整文字位置。"),90,466,310,190,17,FLinearColor(.62f,.69f,.66f));Description->SetAutoWrapText(true);
-    auto* PreviewPanel=Make<UBorder>(BP,TEXT("PreviewPanel"));PreviewPanel->SetBrushColor(FLinearColor::Transparent);PreviewPanel->SetPadding(FMargin(0));PreviewPanel->SetVisibility(ESlateVisibility::Visible);Place(Canvas,PreviewPanel,40,80,1030,650);
-    auto* PreviewImage=Make<UImage>(BP,TEXT("PreviewImage"));PreviewImage->SetBrushFromMaterial(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionCataloguePreview")));PreviewImage->SetVisibility(ESlateVisibility::HitTestInvisible);PreviewPanel->AddChild(PreviewImage);
-    Image(BP,Canvas,TEXT("TitleImage"),40,28,320,48,TEXT("/Game/CollectionPrototype/UI/MI_CatalogueTitle"));
-    auto* Close=Button(BP,Canvas,TEXT("CloseButton"),1508,25,72,75);auto* Back=Make<UImage>(BP,TEXT("BackImage"));Back->SetBrushFromMaterial(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/UI/MI_CatalogueBack")));Back->SetVisibility(ESlateVisibility::HitTestInvisible);Content(Close,Back);
-    auto* Help=Text(BP,Canvas,TEXT("PreviewHelp"),TEXT("拖动旋转   滚轮缩放   双击复位"),280,698,550,24,13,FLinearColor(.7f,.74f,.72f));Help->SetJustification(ETextJustify::Center);
-    auto* Bar=Make<UCanvasPanel>(BP,TEXT("CollectionBar"));Place(Canvas,Bar,40,720,1030,110);
+    auto* PreviewPanel=Make<UBorder>(BP,TEXT("PreviewPanel"));PreviewPanel->SetBrushColor(FLinearColor::Transparent);PreviewPanel->SetPadding(FMargin(0));PreviewPanel->SetVisibility(ESlateVisibility::Visible);Place(Canvas,PreviewPanel,70,92,990,620);
+    auto* PreviewImage=Make<UImage>(BP,TEXT("PreviewImage"));PreviewImage->SetVisibility(ESlateVisibility::HitTestInvisible);PreviewPanel->AddChild(PreviewImage);
+    Text(BP,Canvas,TEXT("CollectionTitle"),TEXT("奇物收藏"),60,30,300,50,22,FLinearColor(.9f,.92f,.86f));
+    auto* Info=Make<UCanvasPanel>(BP,TEXT("InfoPanel"));Place(Canvas,Info,1072,0,528,900);
+    Picture(Info,TEXT("InfoBackground"),0,0,528,900,TEXT("Info"));
+    Text(BP,Info,TEXT("ItemName"),TEXT("化学试剂"),182,363,320,70,32,FLinearColor(.91f,.93f,.86f));
+    Image(BP,Info,TEXT("DescriptionDivider"),190,441,118,1,nullptr,FLinearColor(.58f,.62f,.59f));
+    auto* Description=Text(BP,Info,TEXT("ItemDescription"),TEXT("加点这个……再加点那个……"),190,465,300,185,15,FLinearColor(.61f,.68f,.64f));Description->SetAutoWrapText(true);
+    IconButton(Info,TEXT("CloseButton"),438,42,44,35,TEXT("Back"));
+    auto* Help=Text(BP,Canvas,TEXT("PreviewHelp"),TEXT("拖动旋转   滚轮缩放   双击复位"),285,695,540,24,12,FLinearColor(.64f,.69f,.65f));Help->SetJustification(ETextJustify::Center);
+    auto* Bar=Make<UCanvasPanel>(BP,TEXT("CollectionBar"));Place(Canvas,Bar,50,728,1010,100);
     for(int32 I=0;I<4;++I)
     {
-        auto* B=Button(BP,Bar,FString::Printf(TEXT("ItemButton%d"),I),61+I*228,4,222,98);
-        auto* SlotCanvas=Make<UCanvasPanel>(BP,FString::Printf(TEXT("ItemContent%d"),I));Content(B,SlotCanvas);
-        auto* Selected=Image(BP,SlotCanvas,FString::Printf(TEXT("ItemSelected%d"),I),-2,-2,226,102);Selected->SetRenderShear(FVector2D(-.15f,0));if(I!=0)Selected->SetVisibility(ESlateVisibility::Hidden);
-        Image(BP,SlotCanvas,FString::Printf(TEXT("ItemArt%d"),I),0,0,222,98,TEXT("/Game/CollectionPrototype/UI/MI_CatalogueUnknown"));
-        Text(BP,SlotCanvas,FString::Printf(TEXT("ItemLabel%d"),I),FString(),6,31,205,38,23,FLinearColor(.005f,.01f,.005f))->SetJustification(ETextJustify::Center);
+        auto* B=Button(BP,Bar,FString::Printf(TEXT("ItemButton%d"),I),51+I*228,0,222,98);
+        auto* C=Make<UCanvasPanel>(BP,FString::Printf(TEXT("ItemContent%d"),I));Content(B,C);
+        Picture(C,FString::Printf(TEXT("ItemArt%d"),I),0,0,222,98,TEXT("Unknown"));
+        auto* Selected=Picture(C,FString::Printf(TEXT("ItemSelected%d"),I),0,0,222,98,TEXT("Selected"));if(I!=0)Selected->SetVisibility(ESlateVisibility::Hidden);
+        auto* Label=Text(BP,C,FString::Printf(TEXT("ItemLabel%d"),I),FString(),16,24,190,64,18,FLinearColor(.025f,.045f,.025f));Label->SetAutoWrapText(true);Label->SetJustification(ETextJustify::Center);
     }
-    auto Arrow=[&](const TCHAR* Name,const TCHAR* Label,float X){auto* B=Button(BP,Bar,Name,X,22,50,57);auto* T=Make<UTextBlock>(BP,FString(Name)+TEXT("Label"));T->SetText(FText::FromString(Label));T->SetFont(BrainMiningFonts::Body(32));T->SetJustification(ETextJustify::Center);T->SetColorAndOpacity(FLinearColor(.6f,.62f,.62f));T->SetVisibility(ESlateVisibility::HitTestInvisible);Content(B,T);};
-    Arrow(TEXT("PreviousButton"),TEXT("❮"),5);Arrow(TEXT("NextButton"),TEXT("❯"),975);
-    FAssetRegistryModule::AssetCreated(BP);FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);FKismetEditorUtilities::CompileBlueprint(BP);
+    IconButton(Bar,TEXT("PreviousButton"),7,29,32,34,TEXT("Arrow"),true);
+    IconButton(Bar,TEXT("NextButton"),975,29,32,34,TEXT("Arrow"));
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);FKismetEditorUtilities::CompileBlueprint(BP);
     if(BP->Status==BS_Error||!BP->GeneratedClass)return false;
     auto* Defaults=CastChecked<UUserWidget>(BP->GeneratedClass->GetDefaultObject());Defaults->DesignTimeSize=FVector2D(1600,900);Defaults->DesignSizeMode=EDesignPreviewSizeMode::Custom;
     BP->MarkPackageDirty();FSavePackageArgs Args;Args.TopLevelFlags=RF_Public|RF_Standalone;Args.SaveFlags=SAVE_NoError;
     return UPackage::SavePackage(Package,BP,*FPackageName::LongPackageNameToFilename(PackageName,FPackageName::GetAssetPackageExtension()),Args);
 }
+
+bool UCollectionUMGEditorLibrary::CreateCollectionInspectWidget(){return BuildCollectionInspectWidget(false);}
+bool UCollectionUMGEditorLibrary::ApplyCollectionInspectRedesign(){return BuildCollectionInspectWidget(true);}
 
 bool UCollectionUMGEditorLibrary::ExerciseInspectPointer(UMiningCollectionWidget* Widget,bool bZoom)
 {

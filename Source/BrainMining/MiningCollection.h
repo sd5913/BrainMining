@@ -199,6 +199,9 @@ private:
     float PreviewPitch = 0;
     float PreviewDistance = 235;
     FTransform StartTransform;
+public:
+    UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, Category="Collection|UI")
+    TObjectPtr<class UMiningCollectionWidget> CatalogueWidget;
 };
 
 UCLASS()

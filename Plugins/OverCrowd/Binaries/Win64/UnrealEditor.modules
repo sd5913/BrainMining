@@ -1,0 +1,8 @@
+{
+	"BuildId": "55116800",
+	"Modules": 
+	{
+		"OverCrowd": "UnrealEditor-OverCrowd.dll",
+		"OverCrowdEditor": "UnrealEditor-OverCrowdEditor.dll"
+	}
+}

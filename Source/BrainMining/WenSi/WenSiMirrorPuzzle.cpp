@@ -1,5 +1,5 @@
-#include "MiningGamepadSubsystem.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "MiningGamepadSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "MiningInteractionTrace.h"
 #include "WenSi/MouseMuseumPortal.h"

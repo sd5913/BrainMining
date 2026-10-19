@@ -1,5 +1,5 @@
-#include "MiningGamepadSubsystem.h"
 #include "MiningInteractionHUDWidget.h"
+#include "MiningGamepadSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningGUIWidgets.h"

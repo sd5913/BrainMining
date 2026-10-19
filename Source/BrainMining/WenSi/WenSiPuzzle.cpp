@@ -1,5 +1,5 @@
-#include "MiningGamepadSubsystem.h"
 #include "WenSi/WenSiPuzzle.h"
+#include "MiningGamepadSubsystem.h"
 #include "MiningInteractionTrace.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"

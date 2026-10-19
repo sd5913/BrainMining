@@ -1,5 +1,5 @@
-#include "MiningGamepadSubsystem.h"
 #include "EndingEmergence.h"
+#include "MiningGamepadSubsystem.h"
 #include "UObject/ConstructorHelpers.h"
 #include "BrainMiningFonts.h"
 #include "MiningAudioSettings.h"

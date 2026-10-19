@@ -1,6 +1,7 @@
 param(
     [string]$EngineRoot = '',
     [string]$OutputDirectory = '',
+    [string]$ZenServer = '',
     [switch]$SkipBuild,
     [switch]$SkipCook
 )
@@ -39,6 +40,7 @@ $argsUat = @(
     '-UbtArgs=-MaxParallelActions=2 -NoUBA -NoXGE -NoFASTBuild -NoSNDBS',
     "-AdditionalCookerOptions=-LocalDataCachePath=$projectRoot/Saved/DerivedDataCache -corelimit=4 -asyncassetcompilationmaxconcurrency=1 -asynctexturecompilationmaxconcurrency=1 -ini:Engine:[DevOptions.Shaders]:NumUnusedShaderCompilingThreads=2 -ini:Editor:[CookSettings]:MemoryMinFreePhysical=4096"
 )
+if ($ZenServer) { $argsUat += "-NoZenAutoLaunch=$ZenServer" }
 if ($SkipBuild) { $argsUat += '-skipbuild' } else { $argsUat += '-build' }
 if ($SkipCook) { $argsUat += '-skipcook' } else { $argsUat += '-cook' }
 @{output=$OutputDirectory;started=(Get-Date).ToString('o');configuration='Shipping';arguments=$argsUat} | ConvertTo-Json -Depth 4 | Set-Content "$report/request.json" -Encoding UTF8

@@ -78,11 +78,12 @@ def tick(dt):
         if p==16:cap('11-robot-farewell');step(17,3);return
         if p==17:cap('12-victory-no-panel');s['cards'].interact();step(18,6);return
         if p==18:
+            cap('13-water-target')
             escape=actors(unreal.MiningRoomEscape)[0];loc=s['pawn'].get_actor_location();loc.z=escape.get_editor_property('water_start_z')-500
             s['pawn'].set_actor_location(loc,False,True);step(19,.35);return
         if p==19:
             check(actors(unreal.MiningRoomEscape)[0].phase==unreal.MiningEscapePhase.FAILED,'Drowning reaches the simplified failure screen')
-            cap('13-drowning');finish(True)
+            cap('14-drowning');finish(True)
     except Exception:finish(False,traceback.format_exc())
     finally:s['busy']=False
 unreal.EditorPythonScripting.set_keep_python_script_alive(True)

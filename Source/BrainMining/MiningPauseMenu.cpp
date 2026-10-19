@@ -100,7 +100,20 @@ void UMiningExperienceSubsystem::OpenPauseCollection()
     AMiningCollectionField* Field=nullptr;
     for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It)if(It->bUseAuthoredPlacements){Field=*It;break;}
     if(!Field)for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It){Field=*It;break;}
-    CloseMenu();if(Field)Field->ToggleCatalogue();
+    // The ending has no placed collection field before its credits begin.
+    // Create a catalogue without spawning collectibles or resetting the player.
+    if(!Field)
+    {
+        Field=GetWorld()->SpawnActorDeferred<AMiningCollectionField>(AMiningCollectionField::StaticClass(),FTransform::Identity);
+        if(Field)
+        {
+            Field->bCatalogueOnly=true;Field->bSharedAbilities=true;
+            Field->bUseAuthoredPlacements=true;Field->bShowExplorationHUD=false;
+            Field->FinishSpawning(FTransform::Identity);
+        }
+    }
+    if(!Field)return;
+    CloseMenu();Field->ToggleCatalogue();
 }
 bool UMiningExperienceSubsystem::JumpToCollectible(int32 Id)
 {

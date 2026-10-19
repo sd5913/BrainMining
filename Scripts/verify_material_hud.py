@@ -42,11 +42,16 @@ def verify_rows(level, amounts):
         color=row.get_editor_property('color_and_opacity').get_editor_property('specified_color')
         green=color.g>.9 and color.r<.5 and color.b<.7
         check(green==(owned>=required), 'Each material turns green independently '+str(index))
-    if level==4:
-        heading=next(label for label in labels if label.get_name()=='PickaxeRecipeTitle')
-        check(heading.get_visibility() in (unreal.SlateVisibility.COLLAPSED,unreal.SlateVisibility.HIDDEN), 'Maximum level hides recipe heading')
+    check(not any(str(label.get_text()) in ('矿石背包','矿镐','升级材料') for label in labels),'HUD omits the three redundant headings')
     hint=next(label for label in labels if label.get_name()=='PickaxeTabUpgrade')
     check('材料不足' not in str(hint.get_text()),'Upgrade hint omits insufficient-material tutorial')
+    check(str(hint.get_text())==('已满级' if level==4 else '[ Tab ] 升级'),'Upgrade hint uses the concise label')
+    panels={w.get_name():w for w in unreal.ObjectIterator(unreal.CanvasPanel) if w.get_path_name().startswith(gui.get_path_name())}
+    inventory=panels['MineralInventoryPanel']; pickaxe=panels['PickaxeSummaryPanel']
+    check(inventory.slot.get_anchors().minimum==unreal.Vector2D(0,0) and inventory.slot.get_position().x>0,'Inventory anchors to the top left')
+    check(pickaxe.slot.get_anchors().minimum==unreal.Vector2D(1,0) and pickaxe.slot.get_position().x<0,'Upgrade anchors to the top right')
+    check(inventory.get_editor_property('RenderTransform').shear.y>0 and pickaxe.get_editor_property('RenderTransform').shear.y<0,'Opposite perspective shears point inward')
+    check(gui.pickaxe_upgrade.get_editor_property('RenderTransform').scale.x<.7,'Pickaxe disc is smaller')
     images=[image for image in unreal.ObjectIterator(unreal.Image) if image.get_path_name().startswith(gui.get_path_name())]
     for name in ['MineralInventoryBackplate','PickaxeSummaryBackplate']:
         plate=next(image for image in images if image.get_name()==name)

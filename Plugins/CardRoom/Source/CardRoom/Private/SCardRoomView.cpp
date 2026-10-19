@@ -81,6 +81,10 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
     }
     return L;
 }
+FReply SCardRoomView::OnTouchStarted(const FGeometry& G,const FPointerEvent& E)
+{
+    return OnMouseButtonDown(G,E);
+}
 FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& E)
 {
     if(!Owner.IsValid() || !Owner->Stage || (!E.IsTouchEvent() && E.GetEffectingButton()!=EKeys::LeftMouseButton))return FReply::Unhandled();

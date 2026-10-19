@@ -5,6 +5,8 @@
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/GameInstance.h"
+#include "Engine/World.h"
+#include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -20,9 +22,19 @@ void AEndingEmergence::UpdateCredits()
     const bool NeedFocus=!Credits.IsValid() || Credits->GetVisibility()!=EVisibility::Visible;
     if(!Credits.IsValid())
     {
-        EndingCatalogue=GetWorld()->SpawnActor<AMiningCollectionField>();
-        EndingCatalogue->bCatalogueOnly=true;EndingCatalogue->bSharedAbilities=true;
-        EndingCatalogue->bUseAuthoredPlacements=true;EndingCatalogue->bShowExplorationHUD=false;
+        // Reuse the catalogue previously opened from the ending's pause menu.
+        for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It)
+            if(It->bCatalogueOnly){EndingCatalogue=*It;break;}
+        if(!EndingCatalogue)
+        {
+            EndingCatalogue=GetWorld()->SpawnActorDeferred<AMiningCollectionField>(AMiningCollectionField::StaticClass(),FTransform::Identity);
+            if(EndingCatalogue)
+            {
+                EndingCatalogue->bCatalogueOnly=true;EndingCatalogue->bSharedAbilities=true;
+                EndingCatalogue->bUseAuthoredPlacements=true;EndingCatalogue->bShowExplorationHUD=false;
+                EndingCatalogue->FinishSpawning(FTransform::Identity);
+            }
+        }
         auto Rows=SNew(SVerticalBox);
         Rows->AddSlot().AutoHeight().Padding(0,0,0,30)[SNew(STextBlock).Text(FText::FromString(TEXT("感谢游玩"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",48)).Justification(ETextJustify::Center)];
         Rows->AddSlot().AutoHeight().Padding(0,0,0,48)[SNew(STextBlock).Text(FText::FromString(TEXT("开发者\n\nSeven   ·   Rasimet   ·   空空道人   ·   铁皮辣妹"))).Font(FCoreStyle::GetDefaultFontStyle("Regular",22)).Justification(ETextJustify::Center)];

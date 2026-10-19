@@ -40,7 +40,7 @@ void UMiningComponent::ResolvePickaxeStrike()
 	if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); Bomb && Bomb->bEquipped) return;
 	ADiggableRock* SwingRock = Cast<ADiggableRock>(SwingTarget.GetActor());
 	RefreshTarget();
-	if (IsValid(TargetRock) && (!IsValid(SwingRock) || TargetRock == SwingRock)) { ApplyPickaxeHit(TargetHit); return; }
+	if (IsValid(TargetRock)) { ApplyPickaxeHit(TargetHit); return; }
 	// Keep an already-started strike on a narrow edge through a few centimetres
 	// of camera sway. Re-trace from the current eye: never use stale terrain,
 	// mine through another object, extend reach, or stick to a deliberate turn.
@@ -65,11 +65,6 @@ void UMiningComponent::ResolvePickaxeStrike()
 			{
 				ApplyPickaxeHit(Verified); return;
 			}
-		}
-		if (SwingTarget.bBlockingHit && SwingTarget.Distance <= Reach)
-		{
-			ApplyPickaxeHit(SwingTarget);
-			return;
 		}
 	}
 	Status = TEXT("Aim at rock within reach");
@@ -116,12 +111,12 @@ void UMiningComponent::BuildPickaxeCut(const FHitResult& Hit, FTransform& Frame,
 	{
 		const float FrontDepth = CutRadius * (1.f - Inset);
 		const float FinalDepth = GetPickaxeDepth(Cast<ADiggableRock>(Hit.GetActor()));
-		Frame = FTransform(Rotation, Hit.ImpactPoint + Direction * ((FinalDepth - FrontDepth) * .5f) + TangentOffset.GetClampedToMaxSize(CutRadius * .8));
+		Frame = FTransform(Rotation, Hit.ImpactPoint + Direction * ((FinalDepth - FrontDepth) * .5f) + TangentOffset.GetClampedToMaxSize(CutRadius * .25));
 		HalfSize = FVector((FinalDepth + FrontDepth) * .5f, CutRadius, CutRadius);
 		return;
 	}
 	const float AxialOffset = FMath::Clamp(FVector::DotProduct(Offset, Direction), -CutRadius * .5, CutRadius * (1 - Inset) * .8);
-	const FVector Center = Hit.ImpactPoint + Direction * (CutRadius * Inset + ExtraDepth * .5f + AxialOffset) + TangentOffset.GetClampedToMaxSize(CutRadius * .8);
+	const FVector Center = Hit.ImpactPoint + Direction * (CutRadius * Inset + ExtraDepth * .5f + AxialOffset) + TangentOffset.GetClampedToMaxSize(CutRadius * .25);
 	Frame = FTransform(Rotation, Center);
 	HalfSize = FVector(CutRadius + ExtraDepth * .5f, CutRadius, CutRadius);
 }

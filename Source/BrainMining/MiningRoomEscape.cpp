@@ -12,6 +12,7 @@
 #include "EchoPassagePlayer.h"
 #include "SMiningEscapeView.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "GameFramework/Character.h"
@@ -77,6 +78,8 @@ void AMiningRoomEscape::SetAreaActive(bool bActive)
 void AMiningRoomEscape::OnWallImpact(FName RoomId)
 {
     if(!CardStage || RoomId!=CardStage->RoomId || bWallBroken || !BreachWall)return;
+    for(TActorIterator<AActor> It(GetWorld());It;++It)
+        if(It->ActorHasTag(TEXT("CardSeatGuide"))){It->SetActorHiddenInGame(true);It->SetActorEnableCollision(false);}
     bWallBroken=BreachWall->MineSphere(BreachWall->GetActorLocation(),1150);
     if(bWallBroken)UMiningRoomAudioSubsystem::Emit(BreachWall,TEXT("S_DoorBreak"),.8f,true);
     BreachBurstTime=0;

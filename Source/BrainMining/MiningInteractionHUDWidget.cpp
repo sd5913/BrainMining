@@ -1,4 +1,5 @@
 #include "MiningInteractionHUDWidget.h"
+#include "MainGameDoor.h"
 #include "MiningGamepadSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "BrainMiningPlayerController.h"
@@ -81,6 +82,7 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
 {
     auto* Controller = GetOwningPlayer();
     if (!Controller || !Controller->GetPawn()) return FString();
+    if(AMainGameDoor::FindInteractionTarget(Controller))return TEXT("开门");
     if (auto* Cards = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
         Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing)
     {

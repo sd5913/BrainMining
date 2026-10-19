@@ -5,6 +5,11 @@
 #include "Editor.h"
 #include "EngineUtils.h"
 #include "StartRoom/MiningOpening.h"
+#include "MainGameDoor.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Camera/PlayerCameraManager.h"
+#include "InputKeyEventArgs.h"
 #include "MainGameStartMenuWidget.h"
 #include "StartRoom/MiningStartRoom.h"
 #include "Components/WidgetComponent.h"
@@ -57,7 +62,7 @@ namespace
 {
 class FPublishedOpeningChecks : public IAutomationLatentCommand
 {
-    FAutomationTestBase* Test;double Deadline=FPlatformTime::Seconds()+90;bool Started=false;
+    FAutomationTestBase* Test;double Deadline=FPlatformTime::Seconds()+90;bool Started=false;bool Opened=false;TWeakObjectPtr<AMainGameDoor> Door;
 public:
     bool bUseAlternateMenu = false;
     explicit FPublishedOpeningChecks(FAutomationTestBase* T, bool bAlternateMenu = false):Test(T),bUseAlternateMenu(bAlternateMenu){}
@@ -97,7 +102,28 @@ public:
         }
         if(!Opening->bFinished)return false;
         Test->TestTrue(TEXT("Started exactly once"),Opening->bStarted);
-        Test->TestTrue(TEXT("Title landed on the doorway"),Opening->WorldTitle->GetComponentLocation().Equals(Opening->DoorTitleLocation,1));
+        if(!Opened)
+        {
+            Test->TestFalse(TEXT("Starting keeps the title in the HUD until E opens the door"),Opening->HasTitleLanded());
+            for(TActorIterator<AMainGameDoor> It(W);It;++It){Door=*It;break;}
+            if(!Door.IsValid())
+            {
+                Door=W->SpawnActor<AMainGameDoor>(FVector(440,0,125),FRotator::ZeroRotator);
+                Door->DoorMesh->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube")));
+                Door->DoorMesh->SetWorldScale3D(FVector(.2f,2.3f,2.46f));
+            }
+            const FVector Center=Door->DoorMesh->Bounds.Origin;
+            const FVector Eye=Center-FVector(220,0,0);
+            PC->GetPawn()->SetActorLocation(Eye-(PC->GetPawn()->GetPawnViewLocation()-PC->GetPawn()->GetActorLocation()));
+            PC->SetControlRotation(FRotator::ZeroRotator);PC->PlayerCameraManager->UpdateCamera(.05f);
+            Test->TestTrue(TEXT("Authored door is targeted at the actual streamed location"),AMainGameDoor::FindInteractionTarget(PC)==Door.Get());
+            PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E,IE_Pressed,1.f));
+            if(!Test->TestTrue(TEXT("Real E input opens the door"),Door->bIsOpen))return true;
+            Opened=true;return false;
+        }
+        if(!Opening->HasTitleLanded())return false;
+        Test->TestTrue(TEXT("Door opening sends title to the mineable wall"),Opening->WorldTitle->GetComponentLocation().Equals(Opening->DoorTitleLocation,1));
+        Test->TestFalse(TEXT("Floating title becomes a wall decal"),Opening->WorldTitle->IsVisible());
         Test->TestTrue(TEXT("Standing pawn returned to player"),PC->GetViewTarget()==PC->GetPawn());
         Test->TestFalse(TEXT("Movement unlocked after standing"),PC->IsMoveInputIgnored());
         Test->TestFalse(TEXT("Look unlocked after standing"),PC->IsLookInputIgnored());
@@ -120,7 +146,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FOpeningMenuTest,"BrainMining.Opening.MenuLifec
 bool FOpeningMenuTest::RunTest(const FString&)
 {
     UWorld* World=FAutomationEditorCommonUtils::CreateNewMap();
-    World->GetWorldSettings()->DefaultGameMode=AGameModeBase::StaticClass();
+    World->GetWorldSettings()->DefaultGameMode=AMiningStartRoomGameMode::StaticClass();
     auto* Opening=World->SpawnActor<AMiningOpening>();
     Opening->TitleTexture=LoadObject<UTexture2D>(nullptr,TEXT("/Game/StartRoom/UI/T_OpeningTitle.T_OpeningTitle"));
     Opening->SeatEye=FVector(0,0,127);Opening->StandingLocation=FVector(0,90,98);

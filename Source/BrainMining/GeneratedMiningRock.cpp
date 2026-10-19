@@ -685,13 +685,13 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, co
 	LastTouchedChunks = 0;
 	const FVector Scale = GetActorScale3D();
 	if (WorldCenter.ContainsNaN() || !FMath::IsFinite(WorldRadius) || WorldRadius <= 0 ||
-		Scale.X <= UE_SMALL_NUMBER || !FMath::IsNearlyEqual(Scale.X, Scale.Y) || !FMath::IsNearlyEqual(Scale.X, Scale.Z))
+		Scale.ContainsNaN() || Scale.GetMin() <= UE_SMALL_NUMBER)
 	{
-		LastStatus = TEXT("Use positive uniform scale and a valid radius");
+		LastStatus = TEXT("Use positive scale and a valid radius");
 		return false;
 	}
 	const FVector3d Center(GetActorTransform().InverseTransformPosition(WorldCenter));
-	const double Radius = WorldRadius / Scale.X;
+	const double Radius = WorldRadius / Scale.GetMin();
 	PrepareRuntimeGeometry(WorldCenter, WorldRadius + 1.f);
 	if (ChunkCutter.TriangleCount() == 0)
 	{
@@ -706,7 +706,7 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, co
 	FDynamicMesh3 Cutter = WorldCutter ? *WorldCutter : ChunkCutter;
 	for (int32 Vertex : Cutter.VertexIndicesItr()) Cutter.SetVertex(Vertex, WorldCutter
 		? FVector3d(GetActorTransform().InverseTransformPosition(FVector(Cutter.GetVertex(Vertex))))
-		: Cutter.GetVertex(Vertex) * Radius + Center);
+		: FVector3d(GetActorTransform().InverseTransformPosition(WorldCenter + FVector(Cutter.GetVertex(Vertex)) * WorldRadius)));
 	if (GetWorld()->IsGameWorld() && HasActorBegunPlay())
 	{
 		if (!Chunks.ContainsByPredicate([&](const FMiningRockChunk& Chunk)
@@ -830,7 +830,7 @@ void AGeneratedMiningRock::StartDeferredCut()
 	Work->Generation=MeshGeneration;
 	Work->Dirty=FBox::BuildAABB(Request->Center,FVector(Request->Radius+1.f));
 	const FVector Local=GetActorTransform().InverseTransformPosition(Request->Center);
-	const double Radius=Request->Radius/GetActorScale3D().X;
+	const double Radius=Request->Radius/GetActorScale3D().GetMin();
 	TArray<FDynamicMesh3> Initial;
 	TArray<FBox> Bounds;
 	for(int32 I=0;I<Chunks.Num();++I)

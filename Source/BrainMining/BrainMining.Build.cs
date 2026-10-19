@@ -32,6 +32,8 @@ public class BrainMining : ModuleRules
         RuntimeDependencies.Add("$(ProjectDir)/Content/UI/Gamepad/*.svg", StagedFileType.NonUFS);
 		PrivateDependencyModuleNames.Add("AudioMixer");
 		PrivateDependencyModuleNames.Add("MediaAssets");
+		PrivateDependencyModuleNames.Add("OverCrowd");
+		PrivateDependencyModuleNames.Add("GameplayTags");
 		PrivateDependencyModuleNames.AddRange(new[] { "GeometryAlgorithms", "AssetRegistry" });
 		if (Target.bBuildEditor) PrivateDependencyModuleNames.AddRange(new[] { "UnrealEd", "MeshConversion", "MeshDescription", "StaticMeshDescription" });
 

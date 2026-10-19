@@ -28,9 +28,9 @@ void AMiningCavernMotes::BeginPlay()
     for(int I=0;I<FMath::Clamp(ParticleCount,32,800);++I)
     {
         RestPositions.Add(FVector(R.FRandRange(-1,1),R.FRandRange(-1,1),R.FRandRange(-1,1))*HalfExtent);
-        Sizes.Add(R.FRandRange(.65f,2.1f));
+        Sizes.Add(R.FRandRange(8,17));
         Motes->AddInstance(FTransform(FQuat::Identity,RestPositions.Last(),FVector(Sizes.Last()/100)));
-        Motes->SetCustomDataValue(I,0,R.FRandRange(.12f,.30f));
+        Motes->SetCustomDataValue(I,0,R.FRandRange(.38f,.68f));
         Motes->SetCustomDataValue(I,1,(I%2)*.5f);Motes->SetCustomDataValue(I,2,((I/2)%2)*.5f);
     }
     Motes->MarkRenderStateDirty();

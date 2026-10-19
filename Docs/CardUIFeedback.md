@@ -6,6 +6,6 @@
 
 原始卡图保存在 `SourceAssets/CardRoom/Feedback`，未经位图重绘或裁剪；裁切区域、饱和度 0.8 与圆角在 `/Game/Rooms/CardDuel/UI/Refined` 的 UI 材质中处理。
 
-房间新版回溯按用户后续指示暂停。StartRoom 本轮只修改墙面英文标牌，不替换房间布局。后续调查需包含 chenhongfan 新增的子房间、桌面和电脑，以及天堂马桶版本及主流程副本。
+房间新版回溯按用户后续指示暂停。合并 main 时保留 CHEN526-f 刚提交的 StartRoom（7125879），本轮仅清理墙面标牌，不重建布局。后续调查仍需核对新增子房间、桌面和电脑，以及天堂马桶版本及主流程副本。
 
-验证记录位于 `Saved/Validation/CardUIFeedback`，完整四回合与电视逃生自动化位于 `Saved/Validation/OptimizationRound3/Card`。交付前还需确认渲染截图、手柄回归、Shipping 打包和启动结果。
+验证：Editor 编译通过；11 项输入、卡牌、盲人房及 MainGame 四回合与电视逃生回归通过（`Saved/Validation/Gamepad/20261019-180603`）；13 张渲染截图及正常退出通过（`Saved/Validation/CardUIFeedback`）。卡牌缓存随界面释放，避免静态对象晚于引擎释放。Windows 包由已提交版本的独立工作区构建，启动与压缩校验记录在交付目录。

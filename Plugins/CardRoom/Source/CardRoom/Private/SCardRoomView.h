@@ -1,6 +1,7 @@
 #pragma once
 #include "Widgets/SLeafWidget.h"
 #include "CardRoomRun.h"
+#include "UObject/StrongObjectPtr.h"
 class UCardRoomInteractionComponent;
 class SCardRoomView : public SLeafWidget
 {
@@ -17,6 +18,8 @@ public:
     virtual FReply OnKeyDown(const FGeometry&,const FKeyEvent&) override;
 private:
     TWeakObjectPtr<UCardRoomInteractionComponent> Owner;
+    mutable TMap<FString,TStrongObjectPtr<UObject>> Resources;
+    UObject* CardResource(const FString& Name) const;
     FVector2D Mouse;
     FVector2D ToVirtual(const FGeometry&,const FVector2D&) const;
     FSlateRect CardRect(int32 Index,const FCardRoomRun& Run) const;

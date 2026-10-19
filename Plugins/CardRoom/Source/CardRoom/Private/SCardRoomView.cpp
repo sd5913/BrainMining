@@ -8,15 +8,11 @@
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "UObject/StrongObjectPtr.h"
 
-namespace
+UObject* SCardRoomView::CardResource(const FString& Name) const
 {
-    UObject* CardResource(const FString& Name)
-    {
-        static TMap<FString,TStrongObjectPtr<UObject>> Cache;
-        auto& Resource=Cache.FindOrAdd(Name);
-        if(!Resource.IsValid()) Resource.Reset(LoadObject<UMaterialInterface>(nullptr,*(TEXT("/Game/Rooms/CardDuel/UI/Refined/")+Name+TEXT(".")+Name)));
-        return Resource.Get();
-    }
+    auto& Resource=Resources.FindOrAdd(Name);
+    if(!Resource.IsValid()) Resource.Reset(LoadObject<UMaterialInterface>(nullptr,*(TEXT("/Game/Rooms/CardDuel/UI/Refined/")+Name+TEXT(".")+Name)));
+    return Resource.Get();
 }
 FVector2D SCardRoomView::ToVirtual(const FGeometry& G,const FVector2D& P) const
 {
@@ -60,7 +56,9 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
     }
     if(R.Phase==ECardRoomPhase::Choosing)
     {
-        static TStrongObjectPtr<UFont> Font(LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_SourceHanSansCN_Medium.F_SourceHanSansCN_Medium")));
+        auto& CachedFont=Resources.FindOrAdd(TEXT("CardFont"));
+        if(!CachedFont.IsValid()) CachedFont.Reset(LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_SourceHanSansCN_Medium.F_SourceHanSansCN_Medium")));
+        UObject* Font=CachedFont.Get();
         const TCHAR* Names[]={TEXT("激光"),TEXT("毒"),TEXT("火")};
         const TCHAR* Materials[]={TEXT("M_Card_Laser"),TEXT("M_Card_Poison"),TEXT("M_Card_Fire")};
         for(int32 I=0;I<R.Hand.Num();++I)
@@ -72,7 +70,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
             Art(Materials[static_cast<int32>(R.Hand[I])],B.Left,B.Top,W,H);
             // The name sits at the exposed upper-left edge even in the 17-card fan.
             const int32 N=static_cast<int32>(R.Hand[I]);
-            FSlateFontInfo F(Font.Get(),FMath::Max(9,FMath::RoundToInt((R.Hand.Num()>5?18:22)*S)),TEXT("Medium"));
+            FSlateFontInfo F(Font,FMath::Max(9,FMath::RoundToInt((R.Hand.Num()>5?18:22)*S)),TEXT("Medium"));
             F.OutlineSettings.OutlineSize=1;F.OutlineSettings.OutlineColor=FLinearColor(.12f,.1f,.08f,.8f);
             const FString Name=R.Hand.Num()>5 && N==0 ? TEXT("激\n光") : Names[N];
             FSlateDrawElement::MakeText(Out,++L,Geo(B.Left+9,B.Top+12,W-18,50),Name,F,ESlateDrawEffect::None,FLinearColor(.98f,.94f,.83f));

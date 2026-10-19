@@ -4,6 +4,7 @@ from pathlib import Path
 out=Path(unreal.Paths.project_saved_dir())/'Validation/CardUIFeedback';out.mkdir(parents=True,exist_ok=True)
 ed=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem);levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem);helper=unreal.MiningGUIEditorLibrary
 report={'passed':False,'checks':[]};s={'phase':0,'start':time.monotonic(),'next':0,'busy':False}
+(out/'runtime.json').write_text(json.dumps(report),encoding='utf8')
 def actors(cls):return unreal.GameplayStatics.get_all_actors_of_class(s['w'],cls)
 def check(ok,msg):
     assert ok,msg

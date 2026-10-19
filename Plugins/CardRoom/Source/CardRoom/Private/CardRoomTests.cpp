@@ -9,7 +9,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCardRoomMouseTest,"CardRoom.Input.MouseAndSpac
 bool FCardRoomMouseTest::RunTest(const FString& Parameters)
 {
     UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
-    World->InitializeNewWorld(UWorld::InitializationValues().AllowAudioPlayback(false).CreatePhysicsScene(false).ShouldSimulatePhysics(false));
     auto* Cards=NewObject<UCardRoomInteractionComponent>();
     Cards->Stage=World->SpawnActor<ACardRoomStage>();
     auto& Run=Cards->Stage->Run;

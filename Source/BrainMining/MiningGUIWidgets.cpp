@@ -19,6 +19,7 @@
 #include "GameFramework/Pawn.h"
 #include "MiningCharacterMovementComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 
 namespace
 {
@@ -474,6 +475,16 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
     const auto* Wallet = Progression ? Progression->GetWallet() : nullptr;
     if (!Wallet || !Wallet->UsesMineralInventory()) return;
     const EMiningMineral Types[] = {EMiningMineral::Copper, EMiningMineral::Iron, EMiningMineral::Malachite, EMiningMineral::Diamond};
+    const auto SetMineralIcon = [](UImage* Image, EMiningMineral Type)
+    {
+        if (!Image) return;
+        const FLinearColor Colors[] = {
+            FLinearColor(.9f,.43f,.19f), FLinearColor(.72f,.09f,.045f),
+            FLinearColor(.16f,.78f,.43f), FLinearColor(.4f,.88f,1.f)};
+        const int32 Index = Type == EMiningMineral::Copper ? 0 : Type == EMiningMineral::Iron ? 1 : Type == EMiningMineral::Malachite ? 2 : 3;
+        FSlateBrush Brush; Brush.DrawAs = ESlateBrushDrawType::Box; Brush.ImageSize = FVector2D(24,24);
+        Brush.TintColor = Colors[Index]; Image->SetBrush(Brush); Image->SetRenderTransformAngle(45.f);
+    };
     if (!MineralPanel)
     {
         auto* Root = Cast<UCanvasPanel>(WidgetTree->RootWidget);
@@ -482,79 +493,142 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
         bUpgradePanelOpen = false;
         if (auto* Currency = GetWidgetFromName(TEXT("CurrencyPanel"))) Currency->SetVisibility(ESlateVisibility::Collapsed);
         UpgradePanel->SetVisibility(ESlateVisibility::Collapsed);
-        MineralPanel = WidgetTree->ConstructWidget<UCanvasPanel>();
+        MineralPanel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("MineralHUD"));
         MineralPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
         auto* PanelSlot = Root->AddChildToCanvas(MineralPanel);
         PanelSlot->SetAnchors(FAnchors(1,0)); PanelSlot->SetAlignment(FVector2D(1,0));
-        PanelSlot->SetPosition(FVector2D(-32,24)); PanelSlot->SetSize(FVector2D(280,570));
-        const auto AddLabel = [&](const FString& Text, FVector2D Position, FVector2D Size, int32 FontSize, bool bTitle = false)
+        PanelSlot->SetPosition(FVector2D(-32,32)); PanelSlot->SetSize(FVector2D(440,522));
+
+        const auto AddPanel = [&](const TCHAR* Name, FVector2D Position, FVector2D Size)
         {
-            auto* Label = WidgetTree->ConstructWidget<UTextBlock>();
-            auto Font = BrainMiningFonts::Restyle(CoinText->GetFont(), bTitle); Font.Size = FontSize;
-            Label->SetFont(Font); Label->SetText(FText::FromString(Text));
-            Label->SetColorAndOpacity(FLinearColor(.94f,.97f,1));
-            Label->SetShadowOffset(FVector2D(1,2)); Label->SetShadowColorAndOpacity(FLinearColor(0,0,0,.9f));
-            auto* LabelSlot = MineralPanel->AddChildToCanvas(Label); LabelSlot->SetPosition(Position); LabelSlot->SetSize(Size);
+            auto* Panel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), Name);
+            Panel->SetVisibility(ESlateVisibility::HitTestInvisible);
+            Panel->SetRenderTransformPivot(FVector2D(1,0));
+            // Contents and frame share the same restrained inward perspective.
+            Panel->SetRenderShear(FVector2D(0,-2.f));
+            auto* Slot = MineralPanel->AddChildToCanvas(Panel);
+            Slot->SetPosition(Position); Slot->SetSize(Size);
+            return Panel;
+        };
+        auto* Inventory = AddPanel(TEXT("MineralInventoryPanel"), FVector2D::ZeroVector, FVector2D(440,220));
+        auto* Pickaxe = AddPanel(TEXT("PickaxeSummaryPanel"), FVector2D(0,238), FVector2D(440,284));
+        const auto AddImage = [&](UCanvasPanel* Parent, const TCHAR* Name, const TCHAR* Art, FVector2D Position, FVector2D Size, int32 Z = 0)
+        {
+            auto* Image = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), Name);
+            Image->SetVisibility(ESlateVisibility::HitTestInvisible);
+            auto* Slot = Parent->AddChildToCanvas(Image);
+            Slot->SetPosition(Position); Slot->SetSize(Size); Slot->SetZOrder(Z);
+            return Image;
+        };
+        MineralBackplate = AddImage(Inventory, TEXT("MineralInventoryBackplate"), TEXT(""),
+            FVector2D::ZeroVector, FVector2D(440,220), -10);
+        PickaxeBackplate = AddImage(Pickaxe, TEXT("PickaxeSummaryBackplate"), TEXT(""),
+            FVector2D::ZeroVector, FVector2D(440,284), -10);
+        for (auto* Plate : {MineralBackplate.Get(), PickaxeBackplate.Get()})
+        {
+            if (auto* Material = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/UI/MiningGUI/Immersive/MI_UpgradeBackplate.MI_UpgradeBackplate"))) Plate->SetBrushFromMaterial(Material);
+            if (auto* Material = Plate->GetDynamicMaterial())
+            {
+                Material->SetVectorParameterValue(TEXT("PanelSize"), FLinearColor(440,Plate == MineralBackplate ? 220 : 284,0,0));
+                Material->SetScalarParameterValue(TEXT("OuterSide"), 1.f);
+                Material->SetScalarParameterValue(TEXT("BackdropOpacity"), .58f);
+            }
+        }
+        const auto AddRule = [&](UCanvasPanel* Parent, const TCHAR* Name, FVector2D Position, FVector2D Size)
+        {
+            auto* Rule = AddImage(Parent, Name, TEXT(""), Position, Size);
+            FSlateBrush Brush; Brush.TintColor = FLinearColor(.72f,.78f,.73f,.25f); Rule->SetBrush(Brush);
+        };
+        AddRule(Inventory, TEXT("MineralTitleRule"), FVector2D(26,58), FVector2D(386,1));
+        AddRule(Pickaxe, TEXT("PickaxeColumnRule"), FVector2D(188,26), FVector2D(1,232));
+        AddRule(Pickaxe, TEXT("PickaxeTabRule"), FVector2D(212,220), FVector2D(202,1));
+        const auto AddLabel = [&](UCanvasPanel* Parent, FName Name, const FString& Text, FVector2D Position, FVector2D Size, int32 FontSize, bool bTitle = false)
+        {
+            auto* Label = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), Name);
+            Label->SetFont(bTitle ? BrainMiningFonts::Title(FontSize) : BrainMiningFonts::Body(FontSize));
+            Label->SetText(FText::FromString(Text));
+            Label->SetColorAndOpacity(FLinearColor(.94f,.95f,.92f));
+            Label->SetShadowOffset(FVector2D(0,1));
+            Label->SetShadowColorAndOpacity(FLinearColor(0,0,0,.45f));
+            Label->SetVisibility(ESlateVisibility::HitTestInvisible);
+            auto* Slot = Parent->AddChildToCanvas(Label);
+            Slot->SetPosition(Position); Slot->SetSize(Size);
             return Label;
         };
-        AddLabel(TEXT("矿石背包"), FVector2D(0,0), FVector2D(280,28), 20, true);
-        const FLinearColor Colors[] = {FLinearColor(.9f,.43f,.19f), FLinearColor(.72f,.09f,.045f), FLinearColor(.16f,.78f,.43f), FLinearColor(.4f,.88f,1)};
+        AddLabel(Inventory, TEXT("MineralInventoryTitle"), TEXT("矿石背包"), FVector2D(26,18), FVector2D(360,30), 20, true);
         for (int32 I = 0; I < 4; ++I)
         {
-            // A small faceted crystal glyph, independent of platform emoji fonts.
-            for (int32 Facet = 0; Facet < 2; ++Facet)
-            {
-                auto* Icon = WidgetTree->ConstructWidget<UImage>();
-                FSlateBrush Brush; Brush.TintColor = Facet == 0 ? Colors[I] : Colors[I] * 1.35f;
-                Icon->SetBrush(Brush); Icon->SetRenderTransformAngle(45);
-                auto* IconSlot = MineralPanel->AddChildToCanvas(Icon);
-                IconSlot->SetPosition(FVector2D(Facet == 0 ? 7 : 10, 42+I*34));
-                IconSlot->SetSize(Facet == 0 ? FVector2D(16,16) : FVector2D(6,6));
-            }
-            AddLabel(FMiningMineralCost::Name(Types[I]), FVector2D(36,36+I*34), FVector2D(150,30), 20);
-            auto* Count = AddLabel(TEXT("0"), FVector2D(198,36+I*34), FVector2D(75,30), 20);
-            Count->SetJustification(ETextJustify::Right); MineralCounts.Add(Count);
+            auto* Icon = AddImage(Inventory, *FString::Printf(TEXT("InventoryMineralIcon%d"), I), TEXT(""),
+                FVector2D(30,76+I*34), FVector2D(18,18));
+            SetMineralIcon(Icon, Types[I]);
+            AddLabel(Inventory, *FString::Printf(TEXT("InventoryMineralName%d"), I), FMiningMineralCost::Name(Types[I]),
+                FVector2D(66,66+I*34), FVector2D(190,30), 20);
+            auto* Count = AddLabel(Inventory, *FString::Printf(TEXT("InventoryMineralCount%d"), I), TEXT("0"),
+                FVector2D(270,66+I*34), FVector2D(140,30), 20);
+            Count->SetJustification(ETextJustify::Right);
+            MineralCounts.Add(Count);
         }
+        AddLabel(Pickaxe, TEXT("PickaxeSummaryTitle"), TEXT("矿镐"), FVector2D(28,20), FVector2D(150,30), 20, true);
         PickaxeUpgrade->RemoveFromParent();
-        auto* CardSlot = MineralPanel->AddChildToCanvas(PickaxeUpgrade);
-        CardSlot->SetPosition(FVector2D(66,190)); CardSlot->SetSize(FVector2D(148,160));
-        PickaxeUpgrade->bPreviewUpgrades = false; PickaxeUpgrade->SetInteractionAllowed(false);
-        PickaxeUpgrade->SetUnlocked(true); PickaxeUpgrade->CoinButton->SetVisibility(ESlateVisibility::Collapsed);
-        PickaxeLevelLabel = AddLabel(TEXT(""), FVector2D(0,355), FVector2D(280,32), 22);
+        auto* CardSlot = Pickaxe->AddChildToCanvas(PickaxeUpgrade);
+        CardSlot->SetPosition(FVector2D(24,64)); CardSlot->SetSize(FVector2D(148,148));
+        PickaxeUpgrade->bPreviewUpgrades = false;
+        PickaxeUpgrade->SetInteractionAllowed(false);
+        PickaxeUpgrade->SetUnlocked(true);
+        PickaxeUpgrade->CoinButton->SetVisibility(ESlateVisibility::Collapsed);
+        PickaxeLevelLabel = AddLabel(Pickaxe, TEXT("PickaxeCurrentLevel"), TEXT(""),
+            FVector2D(24,228), FVector2D(148,32), 20, true);
         PickaxeLevelLabel->SetJustification(ETextJustify::Center);
-        PickaxeUpgradeHint = AddLabel(TEXT(""), FVector2D(0,391), FVector2D(280,30), 18);
-        PickaxeUpgradeHint->SetJustification(ETextJustify::Center);
-        PickaxeRequirements = AddLabel(TEXT("升级材料"), FVector2D(20,427), FVector2D(250,24), 17);
-        PickaxeRequirements->SetJustification(ETextJustify::Center);
-        for (int32 Row=0; Row<4; ++Row)
+        PickaxeRequirements = AddLabel(Pickaxe, TEXT("PickaxeRecipeTitle"), TEXT("升级材料"),
+            FVector2D(212,20), FVector2D(202,30), 18, true);
+        for (int32 Row = 0; Row < 4; ++Row)
         {
-            auto* Requirement=AddLabel(TEXT(""), FVector2D(20,451+Row*25), FVector2D(250,24), 17);
-            Requirement->SetJustification(ETextJustify::Center);
+            auto* Icon = AddImage(Pickaxe, *FString::Printf(TEXT("PickaxeRequirementIcon%d"), Row), TEXT(""),
+                FVector2D(214,74+Row*36), FVector2D(18,18));
+            SetMineralIcon(Icon, Types[Row]);
+            PickaxeRequirementIcons.Add(Icon);
+            auto* Requirement = AddLabel(Pickaxe, *FString::Printf(TEXT("PickaxeRequirementName%d"), Row), TEXT(""),
+                FVector2D(248,64+Row*36), FVector2D(90,30), 18);
             PickaxeRequirementRows.Add(Requirement);
+            auto* Count = AddLabel(Pickaxe, *FString::Printf(TEXT("PickaxeRequirementCount%d"), Row), TEXT(""),
+                FVector2D(340,64+Row*36), FVector2D(74,30), 18);
+            Count->SetJustification(ETextJustify::Right);
+            PickaxeRequirementCounts.Add(Count);
         }
+        PickaxeUpgradeHint = AddLabel(Pickaxe, TEXT("PickaxeTabUpgrade"), TEXT(""),
+            FVector2D(212,230), FVector2D(202,30), 18);
     }
     const auto SetText = [](UTextBlock* Label, const FText& Text)
     { if (Label && !Label->GetText().EqualTo(Text)) Label->SetText(Text); };
     for (int32 I = 0; I < 4; ++I) SetText(MineralCounts[I], FText::AsNumber(Wallet->GetMineralCount(Types[I])));
-    const int32 Level = FMath::Max(0, Progression->GetLevel(0));
+    const int32 Level = FMath::Clamp(Progression->GetLevel(0), 0, 4);
     PickaxeUpgrade->SetUpgradeLevel(Level, true);
     SetText(PickaxeLevelLabel, FText::FromString(FString::Printf(TEXT("等级 %d"), Level)));
-    PickaxeRequirements->SetVisibility(Level<4 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-    const auto Costs=UMiningPickaxeSettings::ResolveLevel(Level+1).MaterialCosts;
-    for (int32 Row=0; Row<PickaxeRequirementRows.Num(); ++Row)
+    Visible(PickaxeRequirements, Level < 4);
+    const auto Costs = UMiningPickaxeSettings::ResolveLevel(Level+1).MaterialCosts;
+    for (int32 Row = 0; Row < PickaxeRequirementRows.Num(); ++Row)
     {
-        UTextBlock* Label=PickaxeRequirementRows[Row].Get();
-        if (!Label) continue;
-        if (Level<4 && Costs.IsValidIndex(Row))
+        const bool bHasCost = Level < 4 && Costs.IsValidIndex(Row);
+        auto* Label = PickaxeRequirementRows[Row].Get();
+        auto* Count = PickaxeRequirementCounts[Row].Get();
+        auto* Icon = PickaxeRequirementIcons[Row].Get();
+        Visible(Label, bHasCost); Visible(Count, bHasCost); Visible(Icon, bHasCost);
+        if (bHasCost)
         {
-            const auto& Cost=Costs[Row];
-            const int32 Owned=Wallet->GetMineralCount(Cost.Mineral);
-            SetText(Label,FText::FromString(FString::Printf(TEXT("%s  %d / %d"),*FMiningMineralCost::Name(Cost.Mineral),Owned,Cost.Count)));
-            Label->SetColorAndOpacity(Owned>=Cost.Count ? FLinearColor(.25f,1.f,.45f) : FLinearColor(.82f,.85f,.9f));
+            const auto& Cost = Costs[Row];
+            const int32 Owned = Wallet->GetMineralCount(Cost.Mineral);
+            SetMineralIcon(Icon, Cost.Mineral);
+            SetText(Label, FText::FromString(FMiningMineralCost::Name(Cost.Mineral)));
+            SetText(Count, FText::FromString(FString::Printf(TEXT("%d / %d"), Owned, Cost.Count)));
+            Count->SetColorAndOpacity(Owned >= Cost.Count ? FLinearColor(.42f,.95f,.65f) : FLinearColor(.89f,.9f,.87f));
         }
-        else SetText(Label,FText::GetEmpty());
+        else
+        {
+            SetText(Label, FText::GetEmpty());
+            SetText(Count, FText::GetEmpty());
+        }
     }
     const bool bReady = Progression->CanUpgradePickaxe();
-    SetText(PickaxeUpgradeHint, FText::FromString(Level >= 4 ? TEXT("矿镐已满级") : bReady ? TEXT("[ Tab ] 升级矿镐") : TEXT("[ Tab ] 升级 · 材料不足")));
-    PickaxeUpgradeHint->SetColorAndOpacity(bReady ? FLinearColor(.35f,1,.65f) : FLinearColor(.85f,.87f,.9f));
+    SetText(PickaxeUpgradeHint, FText::FromString(Level >= 4 ? TEXT("矿镐已满级") : TEXT("[ Tab ] 升级矿镐")));
+    PickaxeUpgradeHint->SetColorAndOpacity(bReady ? FLinearColor(.42f,.95f,.65f) : FLinearColor(.82f,.85f,.83f));
 }

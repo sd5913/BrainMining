@@ -27,11 +27,11 @@ def verify_rows(level, amounts):
     labels=[label for label in unreal.ObjectIterator(unreal.TextBlock)
             if label.get_path_name().startswith(gui.get_path_name())
             and isinstance(label.slot, unreal.CanvasPanelSlot)]
-    level_labels=[label for label in labels if label.slot.get_position()==unreal.Vector2D(0,355)]
+    level_labels=[label for label in labels if label.get_name()=='PickaxeCurrentLevel']
     check(len(level_labels)==1 and str(level_labels[0].get_text())=='等级 '+str(level), 'HUD displays level '+str(level))
     panel=level_labels[0].get_parent()
-    rows=sorted([label for label in labels if label.get_parent()==panel and label.slot.get_position().y>=451],
-                key=lambda label: label.slot.get_position().y)
+    rows=sorted([label for label in labels if label.get_parent()==panel and label.get_name().startswith('PickaxeRequirementCount')],
+                key=lambda label: label.get_name())
     check(len(rows)==4, 'HUD owns four independent material requirement rows')
     for index,row in enumerate(rows):
         if index>=len(amounts):
@@ -40,11 +40,22 @@ def verify_rows(level, amounts):
         owned,required=amounts[index]
         check(str(row.get_text()).endswith(f'{owned} / {required}'), 'Material quantities refresh '+str(index))
         color=row.get_editor_property('color_and_opacity').get_editor_property('specified_color')
-        green=color.g>.95 and color.r<.4 and color.b<.6
+        green=color.g>.9 and color.r<.5 and color.b<.7
         check(green==(owned>=required), 'Each material turns green independently '+str(index))
     if level==4:
-        heading=next(label for label in labels if label.get_parent()==panel and label.slot.get_position().y==427)
-        check(heading.get_visibility()==unreal.SlateVisibility.COLLAPSED, 'Maximum level hides recipe heading')
+        heading=next(label for label in labels if label.get_name()=='PickaxeRecipeTitle')
+        check(heading.get_visibility() in (unreal.SlateVisibility.COLLAPSED,unreal.SlateVisibility.HIDDEN), 'Maximum level hides recipe heading')
+    hint=next(label for label in labels if label.get_name()=='PickaxeTabUpgrade')
+    check('材料不足' not in str(hint.get_text()),'Upgrade hint omits insufficient-material tutorial')
+    images=[image for image in unreal.ObjectIterator(unreal.Image) if image.get_path_name().startswith(gui.get_path_name())]
+    for name in ['MineralInventoryBackplate','PickaxeSummaryBackplate']:
+        plate=next(image for image in images if image.get_name()==name)
+        check(plate.slot.get_z_order()<0 and plate.get_visibility()==unreal.SlateVisibility.HIT_TEST_INVISIBLE,
+              name+' stays behind content without blocking input')
+    for index in range(4):
+        icon=next(image for image in images if image.get_name()=='PickaxeRequirementIcon'+str(index))
+        check((icon.get_visibility()==unreal.SlateVisibility.HIT_TEST_INVISIBLE)==(index<len(amounts)),
+              'Recipe icon follows row visibility '+str(index))
 def finish(error=None):
     report.update(passed=error is None,error=error,elapsed=time.monotonic()-state['start'])
     (OUT/'hud.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')

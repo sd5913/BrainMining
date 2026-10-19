@@ -67,6 +67,7 @@ void UCardRoomInteractionComponent::Interact()
     if(!bRoomActive || !Stage || !GetPawn()) return;
     if(Stage->Run.Phase==ECardRoomPhase::Victory) { if(Stage->CollectReward())ReleaseForExploration(); return; }
     if(!Stage->IsPlayerNear(GetPawn()->GetActorLocation()) || !Stage->BeginEncounter()) return;
+    FocusedCard = 0; FocusedRound = INDEX_NONE;
     EntryLocation=GetPawn()->GetActorLocation(); EntryRotation=Player()->GetControlRotation();
     bSeated=true;SetRoomActive(true);SeatedPawn=GetPawn();bEntryCollision=GetPawn()->GetActorEnableCollision();
     Player()->SetIgnoreMoveInput(true);Player()->SetIgnoreLookInput(true);
@@ -135,7 +136,43 @@ void UCardRoomInteractionComponent::ReleaseForExploration()
 void UCardRoomInteractionComponent::ToggleCardSelection(int32 Index)
 {
     if (!bRoomActive || !Stage || Stage->Run.Phase != ECardRoomPhase::Choosing || !Stage->Run.Hand.IsValidIndex(Index)) return;
+    FocusedCard = Index; FocusedRound = Stage->Run.Round;
     if (Stage->Run.Staged.Contains(Index)) Stage->Run.Unstage(Index);
     else Stage->Run.Stage(Index);
+    if (Stage->AudioOverride.IsBound()) Stage->Sound(TEXT("S_CardSelect"), .3f);
+}
+
+int32 UCardRoomInteractionComponent::GetFocusedCardIndex() const
+{
+    if (!bRoomActive || !Stage || Stage->Run.Phase != ECardRoomPhase::Choosing || Stage->Run.Hand.IsEmpty()) return INDEX_NONE;
+    return FocusedRound == Stage->Run.Round ? FMath::Clamp(FocusedCard, 0, Stage->Run.Hand.Num() - 1) : 0;
+}
+
+bool UCardRoomInteractionComponent::HasCardInputFocus(int32 UserIndex) const
+{
+    return bRoomActive && Stage && Stage->Run.Phase != ECardRoomPhase::Exploring && View.IsValid()
+        && (View->HasUserFocus(UserIndex).IsSet() || View->HasUserFocusedDescendants(UserIndex));
+}
+
+void UCardRoomInteractionComponent::NavigateCard(int32 Direction)
+{
+    const int32 Current = GetFocusedCardIndex();
+    if (Current == INDEX_NONE || Direction == 0) return;
+    FocusedCard = (Current + (Direction > 0 ? 1 : -1) + Stage->Run.Hand.Num()) % Stage->Run.Hand.Num();
+    FocusedRound = Stage->Run.Round;
+}
+
+void UCardRoomInteractionComponent::SelectAllCards()
+{
+    if (GetFocusedCardIndex() == INDEX_NONE) return;
+    if (Stage->Run.CanConfirm()) { ClearCardSelection(); return; }
+    for (int32 Index = 0; Index < Stage->Run.Hand.Num(); ++Index) Stage->Run.Stage(Index);
+    if (Stage->AudioOverride.IsBound()) Stage->Sound(TEXT("S_CardSelect"), .3f);
+}
+
+void UCardRoomInteractionComponent::ClearCardSelection()
+{
+    if (GetFocusedCardIndex() == INDEX_NONE || Stage->Run.Staged.IsEmpty()) return;
+    Stage->Run.Staged.Reset();
     if (Stage->AudioOverride.IsBound()) Stage->Sound(TEXT("S_CardSelect"), .3f);
 }

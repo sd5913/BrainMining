@@ -1,5 +1,7 @@
 #if WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS
 #include "MiningGamepadSubsystem.h"
+#include "MiningHapticsSubsystem.h"
+#include "Framework/Application/SlateApplication.h"
 #include "MiningGamepadHints.h"
 #include "Misc/Paths.h"
 #include "HAL/FileManager.h"
@@ -70,6 +72,10 @@ bool FMiningGamepadContextTest::RunTest(const FString&)
     Controller->Possess(Pawn);
     Controller->EncounterPolicy->SetMiningAllowed(true);
     auto* Input = LocalPlayer->GetSubsystem<UMiningGamepadSubsystem>();
+    auto* Haptics = LocalPlayer->GetSubsystem<UMiningHapticsSubsystem>();
+    Haptics->bEnabled = true; Haptics->Strength = .75f;
+    const bool WasActive = FSlateApplication::Get().IsActive();
+    FSlateApplication::Get().ProcessApplicationActivationEvent(true);
     ON_SCOPE_EXIT
     {
         LocalPlayer->PlayerRemoved();
@@ -78,6 +84,7 @@ bool FMiningGamepadContextTest::RunTest(const FString&)
         Instance->Shutdown();
         GEngine->DestroyWorldContext(World);
         World->DestroyWorld(false);
+        FSlateApplication::Get().ProcessApplicationActivationEvent(WasActive);
     };
     if (!TestNotNull(TEXT("Local player owns the input router"), Input)) return false;
     if (!TestTrue(TEXT("Fixture local player resolves its registered controller"), LocalPlayer->GetPlayerController(World) == Controller)) return false;
@@ -115,7 +122,7 @@ bool FMiningGamepadContextTest::RunTest(const FString&)
     TestFalse(TEXT("Entering cards releases the previous mining hold"), Mining->IsMiningActive());
     TestTrue(TEXT("X cannot select cards"), Run.Staged.IsEmpty());
     Input->HandleButton(EKeys::Gamepad_FaceButton_Left, false);
-    TestTrue(TEXT("Card game has no controller hint strip"), Input->GetHint().IsEmpty());
+    TestTrue(TEXT("Card game displays selection and play hints"), Input->GetHint().Contains(TEXT("A 选中/取消")) && Input->GetHint().Contains(TEXT("X 出牌")));
     Cards->ToggleCardSelection(0);
     TestTrue(TEXT("Mouse selection action stages the chosen card"), Run.Staged.Contains(0));
     Input->HandleButton(EKeys::Gamepad_Special_Right, true);
@@ -125,14 +132,16 @@ bool FMiningGamepadContextTest::RunTest(const FString&)
     Input->HandleButton(EKeys::Gamepad_FaceButton_Right, true);
     Input->HandleButton(EKeys::Gamepad_FaceButton_Right, false);
     TestTrue(TEXT("Back resumes the existing card selection"), Input->GetContext() == EMiningInputContext::Cards && Run.Staged.Contains(0));
-    for (const FKey Key : {EKeys::Gamepad_FaceButton_Right, EKeys::Gamepad_FaceButton_Bottom, EKeys::Gamepad_FaceButton_Top, EKeys::Gamepad_DPad_Right})
-    {
-        Input->HandleButton(Key, true);
-        Input->HandleButton(Key, false);
-        TestTrue(TEXT("Controller buttons preserve mouse-selected hand"), Run.Phase == ECardRoomPhase::Choosing && Run.Staged.Contains(0));
-    }
-    Cards->ConfirmCards();
-    TestTrue(TEXT("Space confirmation resolves mouse-selected cards"), Run.Phase == ECardRoomPhase::Resolving);
+    Input->HandleButton(EKeys::Gamepad_FaceButton_Right, true);
+    Input->HandleButton(EKeys::Gamepad_FaceButton_Right, false);
+    TestTrue(TEXT("B clears selection without leaving the encounter"), Run.Phase == ECardRoomPhase::Choosing && Run.Staged.IsEmpty());
+    Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, true);
+    Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, true, true);
+    TestTrue(TEXT("A selects once despite repeat events"), Run.Staged.Contains(0));
+    Input->HandleButton(EKeys::Gamepad_FaceButton_Bottom, false);
+    Input->HandleButton(EKeys::Gamepad_FaceButton_Left, true);
+    Input->HandleButton(EKeys::Gamepad_FaceButton_Left, false);
+    TestTrue(TEXT("X confirms the selected hand"), Run.Phase == ECardRoomPhase::Resolving);
     TestFalse(TEXT("Card confirmation does not start flight"), UMiningGamepadSubsystem::ReadJumpHeld(Controller));
     Cards->bRoomActive = false;
     auto* Catalogue = World->SpawnActor<AMiningCollectionField>();
@@ -163,6 +172,7 @@ bool FMiningGamepadContextTest::RunTest(const FString&)
     TestEqual(TEXT("Old upgrade and map buttons never purchase"), Progression->GetLevel(0), 0);
     Input->HandleButton(EKeys::Gamepad_LeftTrigger, true);
     TestEqual(TEXT("LT immediately purchases one level"), Progression->GetLevel(0), 1);
+    TestTrue(TEXT("Successful LT purchase emits reward vibration"), Haptics->IsCueActive(EMiningHapticCue::UpgradeSuccess));
     TestTrue(TEXT("Upgrade leaves exploration active"), Input->GetContext() == EMiningInputContext::Exploration);
     TestFalse(TEXT("Upgrade never pauses the world"), Controller->IsPaused());
     TestFalse(TEXT("Upgrade never opens a cursor"), Controller->bShowMouseCursor);
@@ -199,6 +209,7 @@ bool FMiningGamepadContextTest::RunTest(const FString&)
     Input->HandleButton(EKeys::Gamepad_LeftTrigger, false);
     TestEqual(TEXT("Insufficient resources preserve the current level"), Progression->GetLevel(0), 2);
     TestTrue(TEXT("Failed purchase gives inline feedback"), Input->GetHint().Contains(TEXT("资源不足")));
+    TestTrue(TEXT("Rejected LT purchase emits distinct vibration"), Haptics->IsCueActive(EMiningHapticCue::UpgradeRejected));
     Input->ResetDevice();
     auto* ReplacementPawn = World->SpawnActor<ACharacter>();
     Controller->Possess(ReplacementPawn);

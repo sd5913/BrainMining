@@ -1,4 +1,5 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "MiningHapticsSubsystem.h"
 #include "MiningGamepadSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "MiningInteractionTrace.h"
@@ -572,12 +573,13 @@ bool AWenSiMirrorPuzzle::SwapWords(int32 From,int32 To)
    auto* Part=Pair.Key->Parts[PartIndex].Get();
    if(!Part->IsVisible() || !Part->GetStaticMesh() || (Pair.Key->Kind==3 && PartIndex>0))continue;
    if(Part->OverlapComponent(ProbePosition,Pawn->GetActorQuat(),ProbeShape))
-   {UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);return false;}
+   {UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleRejected);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f); return false;}
   }
  }
  const EWenSiMirrorWord OldA=A->Word,OldB=B->Word;
- if(IsSelf(A)&&!SetPlayerWord(OldB)){UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);return false;}if(IsSelf(B)&&!SetPlayerWord(OldA)){UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);return false;}
+ if(IsSelf(A)&&!SetPlayerWord(OldB)){UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleRejected);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f); return false;}if(IsSelf(B)&&!SetPlayerWord(OldA)){UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleRejected);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f); return false;}
  A->Word=OldB;B->Word=OldA;if(!IsSelf(A))A->Apply();if(!IsSelf(B))B->Apply();RefreshSelfThoughts();
+ UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleSwap);
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Swap"),.45f);
  for(auto Exhibit:{A,B})
  {
@@ -600,7 +602,7 @@ void AWenSiMirrorPuzzle::UpdateMechanism()
  bPower=Ball && Ball->bBallLanded && Ball->Word==EWenSiMirrorWord::Conductive && FMath::Abs(Ball->GetActorLocation().Z-RoomPoint(FVector(0,0,80)).Z)<1.f;
  if(bPressure!=WasPressure)UMiningRoomAudioSubsystem::Emit(Block,bPressure?TEXT("S_Pressure"):TEXT("S_PowerOff"),.6f,true);
  if(bPower!=WasPower)UMiningRoomAudioSubsystem::Emit(Ball,bPower?TEXT("S_Power"):TEXT("S_PowerOff"),.6f,true);
- if(bPressure && bPower && !bRewardUnlocked){bRewardUnlocked=true;UMiningRoomAudioSubsystem::Emit(RewardShutter,TEXT("S_RewardDoor"),.6f,true);UE_LOG(LogWenSiMirror,Display,TEXT("Both physical locks active; mouse museum hatch unlocked"));}
+ if(bPressure && bPower && !bRewardUnlocked){bRewardUnlocked=true;UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleComplete);UMiningRoomAudioSubsystem::Emit(RewardShutter,TEXT("S_RewardDoor"),.6f,true);UE_LOG(LogWenSiMirror,Display,TEXT("Both physical locks active; mouse museum hatch unlocked"));}
  if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,FMath::FInterpConstantTo(RewardShutter->GetActorLocation().Z-GetActorLocation().Z,bRewardUnlocked?138.f:45.f,GetWorld()->GetDeltaSeconds(),90.f))));
  for(int32 I=0;I<CableMaterials.Num();++I)CableMaterials[I]->SetScalarParameterValue(TEXT("Powered"),(CablePressure[I]?bPressure:bPower)?1.f:0.f);
  for(int32 I=0;I<Lamps.Num();++I){const bool On=I?bPower:bPressure;Lamps[I]->SetVectorParameterValue(TEXT("Tint"),On?FLinearColor(.12,.75,.2):FLinearColor(.55,.025,.015));if(auto Overlay=Cast<UMaterialInstanceDynamic>(LampMeshes[I]->GetOverlayMaterial())){Overlay->SetVectorParameterValue(TEXT("Tint"),On?FLinearColor(.35,1,.45):FLinearColor(.5,.04,.025));Overlay->SetScalarParameterValue(TEXT("Strength"),On?2.f:.45f);}}

@@ -2,6 +2,8 @@
 
 
 #include "BrainMiningPlayerController.h"
+#include "MiningHapticsSubsystem.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "MainGameDoor.h"
 #include "BrainMiningFonts.h"
 #include "MiningAudioSettings.h"
@@ -677,6 +679,7 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
     Rows->AddSlot().AutoHeight()[SNew(SSlider)
         .Value_Lambda([WeakSettings](){return WeakSettings.IsValid()?(WeakSettings->GetLookSensitivity()-.2f)/2.8f:2.f/7.f;})
         .OnValueChanged_Lambda([WeakSettings](float Value){if(WeakSettings.IsValid())WeakSettings->SetLookSensitivity(.2f+Value*2.8f);})];
+    if (auto* Haptics = UMiningHapticsSubsystem::Find(this)) Rows->AddSlot().AutoHeight()[Haptics->MakeSettingsWidget()];
 	Rows->AddSlot().AutoHeight().Padding(0, 12)[SNew(SButton).HAlign(HAlign_Center).ContentPadding(FMargin(12, 8)).OnClicked_Lambda([WeakSettings]()
 	{
 		if (WeakSettings.IsValid()) WeakSettings->RestoreDefaults();
@@ -686,7 +689,7 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 		[SNew(STextBlock).Font(BrainMiningFonts::Style("Regular", 16)).Text(FText::FromString(TEXT("保存并返回游戏")))]];
 	AudioSettingsPanel = SNew(SOverlay)
 		+ SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0, 0, 0, .72f))]
-		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(SBox).WidthOverride(540)[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.025f,.035f,.04f,.96f)).Padding(28)[Rows]]];
+		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(SBox).WidthOverride(540).MaxDesiredHeight(720)[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.025f,.035f,.04f,.96f)).Padding(28)[SNew(SScrollBox).ScrollWhenFocusChanges(EScrollWhenFocusChanges::InstantScroll) + SScrollBox::Slot()[Rows]]]];
 	Viewport->AddViewportWidgetContent(AudioSettingsPanel.ToSharedRef(), 1000);
 	bShowMouseCursor = true;
 	FInputModeGameAndUI Mode;

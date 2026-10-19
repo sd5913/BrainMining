@@ -84,6 +84,7 @@ namespace
             FVector Prev=A;
             for(int I=1;I<=Steps;++I) { const float T=float(I)/Steps,S=1-T; const FVector P=S*S*S*A+3*S*S*T*ControlA+3*S*T*T*ControlB+T*T*T*End; Rod(Prev,P,FMath::Lerp(Radius,.22f,T),Mat); Prev=P; }
         }
+        #include "MiningCollectibleDetails.inl"
     };
 }
 
@@ -130,7 +131,15 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
     Body->SetBoxExtent(ItemId==9?FVector(190,190,330):ItemId==11?FVector(12,54,9):FVector(49,45,61));
     FCollectibleMesh B;
     // Ivory, charcoal, turquoise, purple, gold, timber, pigeon-grey, coral.
-    const FLinearColor Colors[]={{.85f,.87f,.77f},{.035f,.06f,.07f},{.06f,.65f,.43f},{.48f,.12f,.65f},{.95f,.59f,.07f},{.3f,.12f,.045f},{.36f,.44f,.54f},{.86f,.27f,.15f}};
+    FLinearColor Colors[]={{.85f,.87f,.77f},{.035f,.06f,.07f},{.06f,.65f,.43f},{.48f,.12f,.65f},{.95f,.59f,.07f},{.3f,.12f,.045f},{.36f,.44f,.54f},{.86f,.27f,.15f}};
+    if(ItemId==1 || ItemId==4 || ItemId==8)
+    {
+        Colors[0]=FLinearColor(.78f,.76f,.65f);Colors[1]=FLinearColor(.018f,.024f,.027f);
+        Colors[2]=ItemId==4?FLinearColor(.24f,.34f,.22f):FLinearColor(.035f,.19f,.12f);
+        Colors[5]=FLinearColor(.13f,.055f,.022f);Colors[6]=FLinearColor(.37f,.42f,.43f);
+        Colors[7]=FLinearColor(.63f,.018f,.035f);
+    }
+    if(ItemId==11){Colors[4]=FLinearColor(1,.045f,.35f);Colors[7]=FLinearColor(1,.35f,.65f);}
     if(ItemId==0)
     {
         B.Box(FVector(13,0,-44),FVector(23,24,10),0);
@@ -145,20 +154,7 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
     }
     else if(ItemId==1)
     {
-        B.Box(FVector(9,0,13),FVector(26,40,32),0);
-        B.Box(FVector(-19,0,14),FVector(3,33,25),1);
-        B.Box(FVector(-23,0,16),FVector(1,29,20),2);
-        // A nest cross-section: branching tunnels connect oval underground chambers.
-        const FVector2D Chambers[]={{0,30},{-17,20},{13,16},{-7,2},{19,0}};
-        for(const auto& P:Chambers) B.Ellipsoid(FVector(-25,P.X,P.Y),FVector(1,5.5,3.2),1,16,8);
-        auto Tunnel=[&](FVector2D A,FVector2D C) { B.Rod(FVector(-25,A.X,A.Y),FVector(-25,C.X,C.Y),1.3,1); };
-        Tunnel({0,35},Chambers[0]); Tunnel(Chambers[0],Chambers[1]); Tunnel(Chambers[0],Chambers[2]); Tunnel(Chambers[1],Chambers[3]); Tunnel(Chambers[2],Chambers[4]); Tunnel(Chambers[3],Chambers[4]);
-        for(int I=0;I<4;++I) for(int J=0;J<3;++J) B.Ellipsoid(FVector(-26,-17+I*11+J*.9,20-I*5),FVector(.5,.65,.5),0,6,4);
-        B.Box(FVector(7,0,-27),FVector(10,12,10),6);
-        B.Box(FVector(0,0,-38),FVector(24,30,4),0);
-        B.Box(FVector(-28,0,-49),FVector(20,42,6),6);
-        for(int r=0;r<3;++r) for(int c=0;c<8;++c) B.Box(FVector(-42+r*12,-33+c*9,-41),FVector(4,3,2),0);
-        B.Ellipsoid(FVector(-25,19,28),FVector(2,3,2),1,6,4);
+        B.DetailedComputer();
     }
     else if(ItemId==2)
     {
@@ -194,21 +190,7 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
     }
     else if(ItemId==4)
     {
-        B.Box(FVector::ZeroVector,FVector(13,40,57),1);
-        B.Box(FVector(-14,0,31),FVector(2,36,19),0);
-        B.Box(FVector(-17,0,31),FVector(1,33,15),2);
-        // Readable geometry, including the greater-than sign: 1 + 1 > 2.
-        auto Stroke=[&](float Y,float Z,float Y2,float Z2) { B.Rod(FVector(-19,Y,Z),FVector(-19,Y2,Z2),.85f,1); };
-        Stroke(-27,24,-27,38); Stroke(-29,36,-27,38);
-        Stroke(-18,31,-10,31); Stroke(-14,27,-14,35);
-        Stroke(-2,24,-2,38); Stroke(-4,36,-2,38);
-        Stroke(7,37,15,31); Stroke(15,31,7,25);
-        Stroke(22,38,30,38); Stroke(30,38,30,31); Stroke(30,31,22,31); Stroke(22,31,22,24); Stroke(22,24,30,24);
-        for(int R=0;R<4;++R) for(int C=0;C<4;++C)
-        {
-            B.Box(FVector(-15,-27+C*18,1-R*15),FVector(3,6,5),C==3?7:6);
-            B.Box(FVector(-19,-27+C*18,2-R*15),FVector(.5,2,.8),0);
-        }
+        B.DetailedCalculator();
     }
     else if(ItemId==5)
     {
@@ -271,15 +253,7 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
     }
     else if(ItemId==8)
     {
-        B.Cylinder(FVector(0,0,-4),23,78,7);
-        B.Box(FVector(-24,0,-4),FVector(1,15,25),0);
-        for(int Z:{-43,35}) B.Ring(FVector(0,0,Z),FVector(21,21,0),2,6);
-        B.Ellipsoid(FVector(0,0,35),FVector(21,21,1),6,24,6);
-        B.Ellipsoid(FVector(-6,0,37),FVector(7,5,1),1);
-        B.Ring(FVector(6,0,38),FVector(5,3,0),1.5,0);
-        for(int J=0;J<4;++J) B.Rod(FVector(-26,-10,12-J*9),FVector(-26,10,17-J*9),1.5,7);
-        // A permanent sculpted jet also reads correctly in the paused catalogue.
-        for(int J=0;J<9;++J) B.Ellipsoid(FVector(-6+FMath::Sin(J*.7f)*3,0,40+J*2),FVector(4-J*.25f,4-J*.25f,3),5);
+        B.DetailedCola();
     }
     else if(ItemId==9)
     {
@@ -358,11 +332,14 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
         Body->SetBoxExtent(Extent+FVector(2));
     }
     Model->SetMesh(FDynamicMesh3(B.Mesh)); Outline->SetMesh(MoveTemp(B.Mesh));
-    auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
+    auto* Base=LoadObject<UMaterialInterface>(nullptr,(ItemId==1||ItemId==4||ItemId==8)?TEXT("/Game/MainGame/Materials/ScenePolish/M_CollectibleDetail"):TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
     auto* Edge=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionOutline"));
     for(int i=0;i<UE_ARRAY_COUNT(Colors);++i)
     {
-        if(Base) { auto* Mat=UMaterialInstanceDynamic::Create(Base,this); Mat->SetVectorParameterValue(TEXT("Tint"),Colors[i]); Model->SetMaterial(i,Mat); }
+        if(Base) { auto* Mat=UMaterialInstanceDynamic::Create(Base,this); Mat->SetVectorParameterValue(TEXT("Tint"),Colors[i]);
+            if(ItemId==8 && i==6){Mat->SetScalarParameterValue(TEXT("Metallic"),.82f);Mat->SetScalarParameterValue(TEXT("Roughness"),.28f);}
+            if(ItemId==1 && i==2){Mat->SetScalarParameterValue(TEXT("Glow"),.35f);Mat->SetScalarParameterValue(TEXT("Roughness"),.25f);}
+            Model->SetMaterial(i,Mat); }
         if(Edge) Outline->SetMaterial(i,Edge);
     }
     if(ItemId==9 || ItemId==10)

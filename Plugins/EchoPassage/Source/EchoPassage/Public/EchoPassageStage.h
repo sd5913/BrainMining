@@ -5,6 +5,8 @@
 class UInstancedStaticMeshComponent;
 class UStaticMeshComponent;
 class UMaterialInstanceDynamic;
+class AEchoPassageStage;
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FEchoPassageFeedback, AEchoPassageStage*, FName, FVector);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEchoPassageCompleted,FName,PassageId);
 DECLARE_DELEGATE_ThreeParams(FEchoPassageAudioOverride,FName,FVector,float);
 UCLASS()
@@ -14,6 +16,7 @@ class ECHOPASSAGE_API AEchoPassageStage : public AActor
 public:
     AEchoPassageStage();
     FEchoPassageAudioOverride AudioOverride;
+    static FEchoPassageFeedback OnFeedback;
     virtual void OnConstruction(const FTransform& Transform) override;
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;

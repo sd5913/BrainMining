@@ -1,4 +1,5 @@
 #include "PopupClose/PopupOfficeExit.h"
+#include "MiningHapticsSubsystem.h"
 #include "Subtitles/SubtitleLibrary.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "PopupClose/PopupCloseStage.h"
@@ -262,6 +263,7 @@ void FPopupOfficeExit::HandleExplosion(const FVector& WorldPosition)
  FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(OfficeBlastDoor),false,Tool->GetOwner());
  if(Owner.GetWorld()->LineTraceSingleByChannel(Hit,WorldPosition,Owner.GetActorTransform().TransformPosition(FVector(1000,Closest.Y,Closest.Z)),ECC_Visibility,Query) && Hit.GetComponent()!=Door.Get())return;
  Phase=4;Age=0;Door->SetVisibility(false,true);Door->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ UMiningHapticsSubsystem::EmitAt(&Owner, EMiningHapticCue::DoorBreak, WorldPosition, FMath::Clamp(Tool->Settings.BlastRadius,50.f,3000.f) * 2.f);
  UMiningRoomAudioSubsystem::Emit(Door.Get(),TEXT("S_DoorBreak"),.65f,true);
  for(int32 I=0;I<8;++I)DoorFragments->AddInstance(FTransform(FRotator(0,I*31.f,15),FVector(935-I*6,-85+I*24,7),FVector(.5f,.35f,.08f)));
  UE_LOG(LogOfficeExit,Display,TEXT("Exit door breached by a real player bomb explosion; blast=%s"),*P.ToString());
@@ -356,6 +358,7 @@ void FPopupOfficeExit::SealRoom()
 {
  Phase=5;Age=EmissionDebt=0;Shutter->SetVisibility(true);Shutter->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);ReturnGrille->SetVisibility(true);
  USubtitleLibrary::PlayMainGameSubtitle(&Owner,TEXT("电脑弹窗玩法4"));
+ UMiningHapticsSubsystem::EmitAt(&Owner, EMiningHapticCue::Seal, Shutter->GetComponentLocation(), 3000.f);
  UMiningRoomAudioSubsystem::Emit(Shutter.Get(),TEXT("S_Seal"),.7f,true);
  UMiningRoomAudioSubsystem::StopSource(&Owner);
  Bombs->SetVisibility(true);CSV_EVENT(OfficeFinale,TEXT("BombEruptionStart"));
@@ -406,6 +409,7 @@ void FPopupOfficeExit::SetInteriorVisible(bool Visible)
 void FPopupOfficeExit::Collapse()
 {
  Phase=6;Age=0;Bombs->ClearInstances();BombVisuals.Reset();if(Owner.Flood)Owner.Flood->ClearVisuals();
+ UMiningHapticsSubsystem::EmitAt(&Owner, EMiningHapticCue::Collapse, Owner.GetActorLocation(), 4000.f);
  UMiningRoomAudioSubsystem::Emit(&Owner,TEXT("S_Collapse"),.85f,true);
  Bombs->SetVisibility(false);CSV_EVENT(OfficeFinale,TEXT("BombEruptionEnd"));
  SetInteriorVisible(false);Shutter->SetVisibility(false);ReturnGrille->SetVisibility(false);

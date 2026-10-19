@@ -33,6 +33,26 @@ bool FCardRoomMouseTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("First Space selects all seventeen"),Run.Phase==ECardRoomPhase::Choosing && Run.Staged.Num()==17);
     View->OnKeyDown(Geometry,FKeyEvent(EKeys::SpaceBar,FModifierKeysState(),0,false,0,0));
     TestTrue(TEXT("Second Space plays the full hand"),Run.Phase==ECardRoomPhase::Resolving);
+    Run.Phase=ECardRoomPhase::Choosing;Run.Round=3;Run.Hand={ERoomCard::Fire,ERoomCard::Laser};Run.Staged.Reset();
+    Cards->bGamepadInput=true;
+    TestEqual(TEXT("New round focus starts at first card"),Cards->GetFocusedCardIndex(),0);
+    Cards->NavigateCard(-1);
+    TestEqual(TEXT("Focus wraps to last card"),Cards->GetFocusedCardIndex(),1);
+    Click(FVector2D(720,760));
+    TestFalse(TEXT("Mouse selection returns to pointer presentation"),Cards->bGamepadInput);
+    TestTrue(TEXT("Mouse selects the first card after controller navigation"),Run.Staged.Contains(0));
+    TestEqual(TEXT("Mouse selection updates focus for next controller input"),Cards->GetFocusedCardIndex(),0);
+    Cards->SelectAllCards();TestEqual(TEXT("All-select fills combination hand"),Run.Staged.Num(),2);
+    Cards->ClearCardSelection();TestTrue(TEXT("Clear selection preserves choosing phase"),Run.Staged.IsEmpty() && Run.Phase==ECardRoomPhase::Choosing);
+    Cards->NavigateCard(1);
+    Run.Round=4;Run.Hand.Init(ERoomCard::Laser,17);
+    TestEqual(TEXT("Round transition resets focus"),Cards->GetFocusedCardIndex(),0);
+    Cards->NavigateCard(-1);Cards->ToggleCardSelection(Cards->GetFocusedCardIndex());
+    TestTrue(TEXT("Seventeenth card can be selected without mouse targeting"),Run.Staged.Contains(16));
+    Cards->SelectAllCards();Cards->ConfirmCards();
+    Cards->ClearCardSelection();Cards->SelectAllCards();Cards->NavigateCard(1);
+    TestTrue(TEXT("Resolution locks selection actions"),Run.Phase==ECardRoomPhase::Resolving && Run.Staged.Num()==17);
+    TestEqual(TEXT("No focus outside selection phase"),Cards->GetFocusedCardIndex(),INDEX_NONE);
     World->DestroyWorld(false);
     return true;
 }

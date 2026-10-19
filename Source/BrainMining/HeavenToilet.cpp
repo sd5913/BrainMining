@@ -8,6 +8,7 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Engine/World.h"
 
 AHeavenToilet::AHeavenToilet()
 {
@@ -43,23 +44,33 @@ void AHeavenToilet::OnConstruction(const FTransform& Transform)
 }
 void AHeavenToilet::BeginPlay()
 {
- Super::BeginPlay();LidOpenAmount=0.f;bPlayerNearby=bWaterRunning=false;
- if(SprayDuck&&!SprayDuck->GetStaticMesh()) SprayDuck->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/HeavenPreview/Meshes/SM_DarkDuck.SM_DarkDuck")));
+ Super::BeginPlay();LidOpenAmount=bContinuousSpray?1.f:0.f;bPlayerNearby=bWaterRunning=false;
+ if(SprayDuck&&!SprayDuck->GetStaticMesh()) SprayDuck->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/MainGame/Meshes/SM_HeavenRubberDuck.SM_HeavenRubberDuck")));
+ DuckPool.Add(SprayDuck);
+ for(int32 I=1;I<8;++I)
+ {
+  auto* Duck=NewObject<UStaticMeshComponent>(this);AddInstanceComponent(Duck);Duck->SetupAttachment(Body);
+  Duck->SetStaticMesh(SprayDuck->GetStaticMesh());Duck->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  Duck->SetRelativeScale3D(FVector(DuckScale));Duck->RegisterComponent();DuckPool.Add(Duck);
+ }
+ DuckMotion.SetNum(DuckPool.Num());
  WaterJet->DeactivateImmediate();OpeningSplash->DeactivateImmediate();ResetDuck();ApplyLidPose();
+ if(bContinuousSpray){WaterJet->Activate(true);OpeningSplash->Activate(true);bWaterRunning=true;LaunchDuck();}
 }
 void AHeavenToilet::ResetDuck()
 {
- bDuckInFlight=false;DuckFlightAge=0.f;DuckVelocity=FVector::ZeroVector;
- if(SprayDuck){SprayDuck->SetVisibility(false);SprayDuck->SetWorldLocation(WaterOutlet?WaterOutlet->GetComponentLocation():GetActorLocation());}
+ for(int32 I=0;I<DuckPool.Num();++I){DuckPool[I]->SetVisibility(false);DuckMotion[I]=FDuckMotion();}
+ BurstAge=0.f;NextDuck=0;
 }
 void AHeavenToilet::LaunchDuck()
 {
  if(!SprayDuck||!SprayDuck->GetStaticMesh()||!WaterOutlet)return;
- SprayDuck->SetWorldLocation(WaterOutlet->GetComponentLocation());
- SprayDuck->SetWorldRotation(WaterOutlet->GetComponentRotation());
- SprayDuck->SetVisibility(true);
- DuckVelocity=WaterOutlet->GetForwardVector()*DuckForwardSpeed+FVector::UpVector*DuckUpSpeed;
- DuckFlightAge=0.f;bDuckInFlight=true;
+ if(DuckPool.IsEmpty())return;
+ auto* Duck=DuckPool[NextDuck].Get();auto& Motion=DuckMotion[NextDuck];
+ Duck->SetWorldLocation(WaterOutlet->GetComponentLocation());
+ Duck->SetWorldRotation(WaterOutlet->GetComponentRotation());Duck->SetVisibility(true);
+ Motion.Velocity=WaterOutlet->GetForwardVector()*DuckForwardSpeed+FVector::UpVector*DuckUpSpeed;
+ Motion.Age=0;Motion.Flying=true;NextDuck=(NextDuck+1)%DuckPool.Num();
 }
 void AHeavenToilet::Tick(float DeltaSeconds)
 {
@@ -67,23 +78,51 @@ void AHeavenToilet::Tick(float DeltaSeconds)
  const APawn* Player=UGameplayStatics::GetPlayerPawn(this,0);
  const float Distance=Player ? FVector::Distance(Player->GetActorLocation(),WaterOutlet->GetComponentLocation()) : BIG_NUMBER;
  bPlayerNearby=Player && Distance<(bPlayerNearby ? FMath::Max(OpenDistance,CloseDistance):OpenDistance);
- LidOpenAmount=FMath::FInterpConstantTo(LidOpenAmount,bPlayerNearby ? 1.f:0.f,DeltaSeconds,1.f/FMath::Max(.1f,bPlayerNearby ? OpenSeconds:CloseSeconds));
+ const bool Open=bContinuousSpray||bPlayerNearby;
+ LidOpenAmount=FMath::FInterpConstantTo(LidOpenAmount,Open ? 1.f:0.f,DeltaSeconds,1.f/FMath::Max(.1f,Open ? OpenSeconds:CloseSeconds));
  ApplyLidPose();
- const bool bStartWater=bPlayerNearby && LidOpenAmount>=.85f;
+ const bool bStartWater=Open && LidOpenAmount>=.85f;
  if(bStartWater && !bWaterRunning)
  {
   WaterJet->Activate(true);OpeningSplash->Activate(true);bWaterRunning=true;LaunchDuck();
  }
- else if(!bPlayerNearby && bWaterRunning)
+ else if(!Open && bWaterRunning)
  {
   // Finish the original droplets naturally instead of cutting the whole effect.
   WaterJet->Deactivate();OpeningSplash->Deactivate();bWaterRunning=false;
  }
- if(bDuckInFlight&&SprayDuck)
+ if(bWaterRunning)
  {
-  DuckFlightAge+=DeltaSeconds;DuckVelocity.Z-=DuckGravity*DeltaSeconds;
-  SprayDuck->AddWorldOffset(DuckVelocity*DeltaSeconds);
-  SprayDuck->AddLocalRotation(FRotator(260.f*DeltaSeconds,420.f*DeltaSeconds,180.f*DeltaSeconds));
-  if(DuckFlightAge>=DuckFlightSeconds)ResetDuck();
+  BurstAge+=DeltaSeconds;
+  if(BurstAge>=FMath::Max(1.f,DuckBurstInterval))
+  {BurstAge=0;OpeningSplash->Activate(true);LaunchDuck();}
+ }
+ for(int32 I=0;I<DuckPool.Num();++I)
+ {
+  auto* Duck=DuckPool[I].Get();auto& Motion=DuckMotion[I];if(!Duck->IsVisible())continue;
+  Motion.Age+=DeltaSeconds;
+  if(Motion.Age>24){Duck->SetVisibility(false);Motion.Flying=false;continue;}
+  if(!Motion.Flying)continue;
+  Motion.Velocity.Z-=DuckGravity*DeltaSeconds;
+  const FVector From=Duck->GetComponentLocation(),To=From+Motion.Velocity*DeltaSeconds;
+  FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(HeavenDuckLanding),false,this);
+  // The collectible's invisible selection box surrounds the nozzle as well.
+  if(GetOwner())Query.AddIgnoredActor(GetOwner());
+  if(Player)Query.AddIgnoredActor(Player);
+  const float Radius=FMath::Clamp(Duck->Bounds.SphereRadius*.35f,3.f,14.f);
+  if(GetWorld()->SweepSingleByChannel(Hit,From,To,FQuat::Identity,ECC_Visibility,FCollisionShape::MakeSphere(Radius),Query))
+  {
+   Duck->SetWorldLocation(Hit.Location+Hit.ImpactNormal*2);
+   if(Hit.ImpactNormal.Z>.45f)
+   {
+    // Preserve the authored pivot offset so the duck rests on, rather than in, the floor.
+    const auto Bounds=Duck->GetStaticMesh()->GetBoundingBox();
+    Duck->SetWorldRotation(FRotator(0,Duck->GetComponentRotation().Yaw,0));
+    FVector Rest=Hit.ImpactPoint;Rest.Z-=Bounds.Min.Z*Duck->GetComponentScale().Z;Rest.Z+=1;
+    Duck->SetWorldLocation(Rest);Motion.Flying=false;
+   }
+   else Motion.Velocity=Motion.Velocity.MirrorByVector(Hit.ImpactNormal)*.35f;
+  }
+  else {Duck->SetWorldLocation(To);Duck->AddLocalRotation(FRotator(80*DeltaSeconds,120*DeltaSeconds,35*DeltaSeconds));}
  }
 }

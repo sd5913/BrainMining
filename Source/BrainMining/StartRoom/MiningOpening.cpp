@@ -1,4 +1,5 @@
 #include "StartRoom/MiningOpening.h"
+#include "MiningHapticsSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
@@ -189,6 +190,7 @@ void AMiningOpening::BeginTitleToWall(AMainGameDoor* Door)
 {
     if(bTitleLanded)return;
     EnsureTitleOnWall();bTitleLanded=true;
+    UMiningHapticsSubsystem::Emit(Player.Get(), EMiningHapticCue::TitleLanded);
 
 }
 void AMiningOpening::EnsureTitleOnWall()

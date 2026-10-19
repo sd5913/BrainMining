@@ -17,6 +17,7 @@ class STextBlock;
 class AWenSiPuzzle;
 class AWenSiCircuitMechanism;
 class AWenSiResetButton;
+class APlayerController;
 
 UENUM()
 enum class EWenSiRule : uint8 { Heavy, Light, Intangible, Conductive };
@@ -93,6 +94,7 @@ public:
  UPROPERTY(EditAnywhere, Category="WenSi") bool bAreaManaged = false;
  bool bAreaActive = true;
  void SetAreaActive(bool bActive);
+	bool HandleInteractionInput(APlayerController* PC);
  UPROPERTY(EditAnywhere, Category="Integration") FTransform AreaPlayerStart;
  virtual void BeginPlay() override;
  virtual void Tick(float DeltaSeconds) override;

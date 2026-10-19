@@ -20,11 +20,10 @@ for handle in subsystem.k2_gather_subobject_data_for_blueprint(blueprint):
 components['PickaxeMount'].set_editor_property('relative_location', unreal.Vector(70, 25, -50))
 components['PickaxeModel'].set_editor_property('relative_location', unreal.Vector(-9.885566, -0.907176, 1.205274))
 components['PickaxeModel'].set_editor_property('relative_rotation', unreal.Rotator(pitch=-6.922544, yaw=5.243221, roll=-4.019591))
-for side, lateral in [('Right', 28), ('Left', -28)]:
-    components['Drill' + side + 'Mount'].set_editor_property('relative_location', unreal.Vector(80, lateral, -26))
-    model = components['Drill' + side + 'Model']
-    model.set_editor_property('relative_location', unreal.Vector())
-    model.set_editor_property('relative_rotation', unreal.Rotator())
+# Low hold calibrated to the shared camera; preserve the authored model pitch.
+for side,lateral in [('Right',28),('Left',-28)]:
+    components['Drill'+side+'Mount'].set_editor_property('relative_location',unreal.Vector(80,lateral,-32))
+    components['Drill'+side+'Model'].set_editor_property('relative_location',unreal.Vector())
 
 for name in ['PickaxeModel', 'DrillRightModel', 'DrillLeftModel']:
     components[name].set_editor_property('first_person_primitive_type', unreal.FirstPersonPrimitiveType.FIRST_PERSON)

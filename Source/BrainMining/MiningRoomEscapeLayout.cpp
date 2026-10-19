@@ -19,6 +19,8 @@ void AMiningRoomEscape::BuildStudyLayout()
     auto* Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
     auto* Surface=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_CardRoomSurface.M_CardRoomSurface"));
     auto* Glow=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_CardRoomGlow.M_CardRoomGlow"));
+    if(!Surface)Surface=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint.M_CollectionTint"));
+    if(!Glow)Glow=Surface;
     auto Material=[&](FLinearColor Color,bool Emissive=false)
     {
         auto* M=UMaterialInstanceDynamic::Create(Emissive?Glow:Surface,this);
@@ -114,24 +116,35 @@ void AMiningRoomEscape::BuildStudyLayout()
 
     // Hidden before the breach; appear with its water and float throughout the surge.
     // All their parts move together at the saved water height, including on checkpoint retry.
+    int32 FloatingPad=0;
     auto Floating=[&](FVector P,FVector Size,UMaterialInterface* M,FRotator R=FRotator::ZeroRotator)
     {
-        auto* C=Shape(P,Size,M,true,R);FloatingProps.Add(C);FloatingOffsets.Add(P.Z-SourceLevelOffset.Z);return C;
+        auto* C=Shape(P,Size,M,true,R);C->ComponentTags.Add(FName(*FString::Printf(TEXT("EscapeFloatingPad%d"),FloatingPad)));FloatingProps.Add(C);FloatingOffsets.Add(P.Z-SourceLevelOffset.Z);FloatingPadIndices.Add(FloatingPad);return C;
     };
-    const FVector Pads[]={FVector(13900,6500,80),FVector(15100,7800,80),FVector(16500,9000,80),
-        FVector(17900,10200,80),FVector(19400,11400,80),FVector(21100,11750,80)};
+    const FVector Pads[]={FVector(13900,6500,80),FVector(15100,7800,200),FVector(16500,9000,68.5f),
+        FVector(17900,10200,440),FVector(19400,11400,560),FVector(21100,11750,428.5f)};
     // Leave a forward ascent from the final box; no book directly below the TV shelf.
     for(int32 i=0;i<UE_ARRAY_COUNT(Pads);++i)
     {
+        FloatingPad=i;FloatingSinkElapsed.Add(-1);FloatingTopOffsets.Add(210.5f+i*120.f);
         const FVector P=Pads[i]+SourceLevelOffset;const FRotator R(0,i%2?12:-8,0);
         if(i==2 || i==5)
         {
-            Floating(P+FVector(0,0,160),FVector(1050,1000,430),Cardboard,R);
+            // Keep the stepped top, but extend the carton below the waterline.
+            const float Top=P.Z-SourceLevelOffset.Z+375;
+            Floating(FVector(P.X,P.Y,SourceLevelOffset.Z+(Top-65)*.5f),FVector(1050,1000,Top+65),Cardboard,R);
             Floating(P+FVector(0,0,378),FVector(1040,100,8),Paper,R);
         }
         else
         {
             auto* Cover=i==4?TealCover:(i%2?Red:Dark);
+            // A real stack supports the elevated top book, instead of hovering above the water.
+            if(i>0)
+            {
+                Floating(P-FVector(0,0,i*60.f+50),FVector(1060,965,i*120.f+100),Paper,R);
+                for(int Layer=1;Layer<=i;++Layer)Floating(P-FVector(0,0,Layer*120.f),FVector(1100,1000,20),Cover,R);
+            }
+            else Floating(P-FVector(0,0,55),FVector(1060,965,100),Paper,R);
             Floating(P,FVector(1100,1000,55),Cover,R);
             Floating(P+FVector(0,0,65),FVector(1060,965,80),Paper,R);
             Floating(P+FVector(0,0,118),FVector(1100,1000,25),Cover,R);
@@ -152,14 +165,18 @@ void AMiningRoomEscape::BuildStudyLayout()
     {
         TelevisionScreen=AuthoredTelevisionScreen;
         TelevisionScreen->ResetRock();
+        // The imported shell has no collision; this shelf is the same P1 landing surface.
+        Shape(ComputerEntry+FVector(-400,100,-750),FVector(1000,2100,100),Wood);
     }
     else
     {
         BuildTelevisionModel(false);
-        ScreenMaterial=Material(FLinearColor::Black,true);
+        ScreenMaterial=Material(FLinearColor(.06f,.38f,.23f),true);
+        if(auto* CRT=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_EscapeCRTScreen")))ScreenMaterial=UMaterialInstanceDynamic::Create(CRT,this);
         TelevisionScreen=Rock(ComputerEntry+FVector(-308,0,0),FVector(100,1100,840),ScreenMaterial,FRotator::ZeroRotator);
     }
     ComputerRocks.Add(TelevisionScreen);
+    TelevisionScreen->Tags.AddUnique(TEXT("CardEscapeTelevision"));
     Beacon=Light(ComputerEntry+FVector(-500,0,400),180000,2200);
 
     auto* Interior=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_EscapeTVInterior.M_EscapeTVInterior"));
@@ -187,13 +204,18 @@ void AMiningRoomEscape::BuildStudyLayout()
     Exposure->Settings.bOverride_BloomIntensity=true;Exposure->Settings.BloomIntensity=.15f;
     Exposure->Settings.bOverride_SceneFringeIntensity=true;Exposure->Settings.SceneFringeIntensity=0;
     Exposure->RegisterComponent();
+    // A continuous sill bridges the cabinet face to the tunnel floor.
+    Shape(TunnelPoint(FVector(-240,0,-H-30)),FVector(480,W*2,60),Interior,true,Rotation);
     Shape(TunnelPoint(FVector(ShellLength*.5f,0,-H-30)),FVector(ShellLength+200,W*2+120,60),Interior,true,Rotation);
     Shape(TunnelPoint(FVector(ShellLength*.5f,0,H+30)),FVector(ShellLength+200,W*2+120,60),Interior,true,Rotation);
     for(float Side:{-1.f,1.f})
         Shape(TunnelPoint(FVector(ShellLength*.5f,Side*(W+30),0)),FVector(ShellLength+200,60,H*2),Interior,true,Rotation);
     // Seventy metres of touching solid fill: no curtains, recesses or empty shortcuts.
     for(int32 i=0;i<14;++i)
-        ComputerRocks.Add(Rock(TunnelPoint(FVector(250+i*500,0,0)),FVector(500,W*2,H*2),Interior,Rotation));
+    {
+        auto* Fill=Rock(TunnelPoint(FVector(250+i*500,0,0)),FVector(500,W*2,H*2),Interior,Rotation);
+        Fill->Tags.AddUnique(TEXT("CardEscapeTelevision"));ComputerRocks.Add(Fill);
+    }
     for(float Along:{120.f,800.f,1600.f,2400.f,3200.f,4000.f,4800.f,5600.f,6400.f})
     {
         auto* CircuitLight=Light(TunnelPoint(FVector(Along,0,H-70)),55000,1250);
@@ -212,7 +234,7 @@ void AMiningRoomEscape::BuildStudyLayout()
                 Shape(TunnelPoint((A+B)*.5f),FVector((B-A).Size(),10,10),GuideMaterial,false,Rotation.Quaternion().RotateVector(B-A).Rotation());
             }
     }
-    ComputerWater=Shape(TunnelPoint(FVector(-400,0,0)),FVector(35,W*2,H*2),WaterMat,false,Rotation);
+    // No water plane or electrical hazard is spawned inside the safe television tunnel.
     // The final face opens directly towards a bright doorway, never a closed luminous panel.
     for(float Side:{-1.f,1.f})
         Shape(TunnelPoint(FVector(7050,Side*(W-20),0)),FVector(30,35,H*2),Amber,false,Rotation);
@@ -234,8 +256,8 @@ void AMiningRoomEscape::BuildStudyLayout()
         Shape(Deck+FVector(0,Side*950,260),FVector(1800,60,400),Wood);
         Shape(Deck+FVector(0,Side*950,470),FVector(1800,65,25),Amber,false);
     }
-    Text(Deck+FVector(885,0,590),bWalkThroughConnections?TEXT("MINE 03"):TEXT("EXIT\nREST AREA"),90,FRotator(0,180,0));
-    Light(Deck+FVector(0,0,650),350000,2200);
+    BuildExitStage();
+    Light(Deck+FVector(0,0,650),8000,2200);
 }
 
 void AMiningRoomEscape::ClearTelevisionPreview()

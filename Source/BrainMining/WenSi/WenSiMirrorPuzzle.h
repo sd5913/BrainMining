@@ -15,6 +15,7 @@ class UNiagaraComponent;
 class AWenSiMirrorPuzzle;
 class SHorizontalBox;
 class STextBlock;
+class APlayerController;
 
 UENUM(BlueprintType)
 enum class EWenSiMirrorWord : uint8 { Ordinary, Heavy, Floating, Passable, Conductive, Big, Small };
@@ -27,6 +28,7 @@ public:
  AWenSiMirrorExhibit();
  virtual void BeginPlay() override;
  virtual void Tick(float Dt) override;
+ virtual void EndPlay(const EEndPlayReason::Type Reason) override;
  UPROPERTY(EditAnywhere, Category="WenSi") int32 Kind=0;
  UPROPERTY(EditAnywhere, Category="WenSi") EWenSiMirrorWord Word=EWenSiMirrorWord::Ordinary;
  UPROPERTY(EditAnywhere, Category="WenSi") FString DisplayNoun;
@@ -39,6 +41,9 @@ public:
  UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
  UPROPERTY() TObjectPtr<USceneCaptureComponent2D> Capture;
  UPROPERTY() TObjectPtr<UTextureRenderTarget2D> MirrorTarget;
+ UPROPERTY(Transient) TObjectPtr<AActor> MirrorPresence;
+ UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> PresenceParts;
+ UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> ConductiveArcs;
  void Configure();
  void Apply();
  void Highlight(bool bAimed);
@@ -49,9 +54,12 @@ public:
  bool bThinkingEnabled=true;
 private:
  float MirrorClock=0;
+ float ConductiveClock=0;
  float RestBoundsMinZ=0.f;
  bool bRestBoundsInitialized=false;
  void UpdateMirror();
+ void UpdateConductive(float Dt);
+ void BuildMirrorPresence();
 };
 
 UCLASS()
@@ -106,6 +114,7 @@ public:
  bool bAreaActive=true;
  FTransform AreaPlayerStart;
  void SetAreaActive(bool Active);
+	bool HandleInteractionInput(APlayerController* PC);
  EWenSiMirrorWord GetPlayerWord() const;
  bool SetPlayerWord(EWenSiMirrorWord Word);
  FVector RoomPoint(FVector Local) const { return Local+GetActorLocation(); }
@@ -122,6 +131,7 @@ public:
  bool bPressure=false;
  bool bPower=false;
  bool bRewardUnlocked=false;
+ UPROPERTY(Transient) TObjectPtr<class AMouseMuseumPortal> MousePortal;
  bool bComplete=false;
  bool bSecondRoom=false;
  void Think();
@@ -161,6 +171,8 @@ private:
  UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> Lamps;
  UPROPERTY() TObjectPtr<AActor> RewardShutter;
  UPROPERTY() TObjectPtr<AActor> Reward;
+ UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> CableMaterials;
+ TArray<bool> CablePressure;
  void UpdateMechanism();
  void CancelSwap();
  float SwapAge=-1.f;

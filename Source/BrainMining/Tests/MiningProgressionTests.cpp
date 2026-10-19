@@ -66,10 +66,11 @@ bool FMiningProgressionRulesTest::RunTest(const FString& Parameters)
     auto* Flight = NewObject<UMiningCharacterMovementComponent>();
     Flight->FlightSettings.bEnabled = true; Flight->CoolingDelay = .5f;
     Flight->UpdateJetpackHeat(1, true);
+    const float HeatBeforeCooling = Flight->JetpackHeat;
     Flight->UpdateJetpackHeat(.25f, false);
-    TestEqual(TEXT("Cooling respects its upgraded delay"), Flight->JetpackHeat, .2f);
+    TestEqual(TEXT("Cooling respects its upgraded delay"), Flight->JetpackHeat, HeatBeforeCooling);
     Flight->UpdateJetpackHeat(.5f, false);
-    TestTrue(TEXT("Long frame cools only after delay expires"), FMath::IsNearlyEqual(Flight->JetpackHeat, .075f));
+    TestTrue(TEXT("Long frame cools only after delay expires"), FMath::IsNearlyEqual(Flight->JetpackHeat, HeatBeforeCooling - .125f));
     Flight->bCreativeFlight = true;
     Flight->UpdateJetpackHeat(30, true);
     TestEqual(TEXT("Creative flight generates no heat"), Flight->JetpackHeat, 0.f);

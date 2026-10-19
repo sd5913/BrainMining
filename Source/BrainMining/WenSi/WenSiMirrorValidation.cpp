@@ -70,9 +70,9 @@ FString AWenSiMirrorPuzzle::ValidateMirrorPuzzle()
  Check(bPower && bRewardUnlocked && !bComplete,TEXT("conductive landed ball completes both locks but does not auto-collect reward"));
  Check(Sweep(RoomPoint(FVector(2150,-350,128)),RoomPoint(FVector(2260,-350,128)),1.45f),TEXT("big miner cannot bypass the reward aperture"));
  Exchange(10,8);Check(GetPlayerWord()==EWenSiMirrorWord::Small,TEXT("small word returns from metal block to miner"));
- if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,112)));
+ if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,128)));
  Check(!Sweep(RoomPoint(FVector(2150,-350,25)),RoomPoint(FVector(2260,-350,25)),.28f),TEXT("small miner fits the unlocked reward aperture"));
- Pawn->SetActorLocation(RoomPoint(FVector(2300,-350,25)));UpdateMechanism();Check(bComplete,TEXT("physical entry to prize alcove completes puzzle"));
+ Pawn->SetActorLocation(RoomPoint(FVector(2300,-350,25)));UpdateMechanism();Check(!bComplete,TEXT("entering the mouse museum never auto-collects or travels; the painted cell needs E"));
  ResetPuzzle();Settle();
  bool Restored=true;for(int32 I=0;I<Exhibits.Num();++I)Restored&=Exhibits[I]->Word==InitialWords[I]&&!Exhibits[I]->bBallLanded;
  Check(Restored && !bRewardUnlocked && !bComplete && GetPlayerWord()==EWenSiMirrorWord::Ordinary && !Thoughts[0].IsValid() && !Thoughts[1].IsValid(),TEXT("reset restores every word, size, phase, landing flag, thought and lock"));

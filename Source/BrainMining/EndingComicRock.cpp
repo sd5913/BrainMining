@@ -142,6 +142,17 @@ bool AEndingComicRock::MineSphere(FVector WorldCenter,float WorldRadius)
     return Cut;
 }
 
+bool AEndingComicRock::MinePickaxe(FTransform WorldFrame,FVector HalfSize,int32 Seed,float Roughness)
+{
+    if(!WorldFrame.IsValid()||HalfSize.ContainsNaN()||HalfSize.GetMin()<=0)return false;
+    // The shared drill now enters through MinePickaxe. Keep the ending's
+    // faceted cutter, seam propagation and freshly encoded ink overlays.
+    // Undo the balanced pickaxe's axial offset to preserve the drill contact.
+    const float Radius=FMath::Min(HalfSize.Y,HalfSize.Z);
+    const FVector Center=WorldFrame.GetLocation()+WorldFrame.GetUnitAxis(EAxis::X)*(Radius-HalfSize.X);
+    return MineSphere(Center,Radius);
+}
+
 bool AEndingComicRock::CutLocal(FVector WorldCenter,float WorldRadius,const FDynamicMesh3& Cutter)
 {
     if(!MineCutter(WorldCenter,WorldRadius*1.15f,&Cutter))return false;

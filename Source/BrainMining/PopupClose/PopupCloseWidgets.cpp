@@ -1,8 +1,8 @@
 #include "PopupClose/PopupCloseWidgets.h"
+#include "BrainMiningFonts.h"
 #include "PopupClose/PopupCloseContent.h"
 
 #include "Blueprint/WidgetLayoutLibrary.h"
-#include "Fonts/CompositeFont.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -20,30 +20,8 @@ namespace
 {
 	FSlateFontInfo PopupFont(float Size)
 	{
-		static TSharedPtr<const FCompositeFont> ChineseFont;
-		if (!ChineseFont)
-		{
-			const TCHAR* Candidates[] = {
-				TEXT("C:/Windows/Fonts/simhei.ttf"),
-				TEXT("C:/Windows/Fonts/msyh.ttc"),
-				TEXT("C:/Windows/Fonts/msyh.ttf")
-			};
-			for (const TCHAR* Path : Candidates)
-			{
-				if (FPaths::FileExists(Path))
-				{
-					ChineseFont = MakeShared<FStandaloneCompositeFont>(NAME_None, FString(Path), EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
-					break;
-				}
-			}
-		}
-
-		if (ChineseFont)
-		{
-			return FSlateFontInfo(ChineseFont, Size);
-		}
-		return FCoreStyle::GetDefaultFontStyle("Regular", Size);
-	}
+        return BrainMiningFonts::Body(Size);
+    }
 
 }
 
@@ -97,7 +75,7 @@ TSharedRef<SWidget> UPopupCloseDesktopWidget::RebuildWidget()
 		[
 			SNew(STextBlock).Visibility(EVisibility::HitTestInvisible)
 			.Text(FText::FromString(TEXT("工作台")))
-			.Font(PopupFont(32.f)).ColorAndOpacity(FLinearColor(.6f,.76f,.88f))
+			.Font(BrainMiningFonts::Title(32.f)).ColorAndOpacity(FLinearColor(.6f,.76f,.88f))
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
@@ -153,7 +131,7 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 					[
 						SNew(STextBlock)
 						.Text(FText::FromString(Copy.Title))
-						.Font(PopupFont(22.f))
+						.Font(BrainMiningFonts::Title(22.f))
 						.ColorAndOpacity(FLinearColor(0.08f, 0.08f, 0.1f))
 					]
 
@@ -223,7 +201,7 @@ TSharedRef<SWidget> UPopupCloseDesktopWidget::MakeArtPopup(int32 Id,int32 Varian
   Panel->AddSlot().Offset(FMargin(R.X*W,R.Y*H,R.Z*W,R.W*H)).Alignment(FVector2D(0,0)).ZOrder(1)
   [SNew(SVerticalBox).Visibility(EVisibility::HitTestInvisible)
    +SVerticalBox::Slot().AutoHeight().Padding(0,0,0,5)
-    [SNew(STextBlock).Text(FText::FromString(Copy.Title)).Font(PopupFont(Variant==2?(LineBreaks>2?13:16):18)).ColorAndOpacity(FLinearColor(.035f,.035f,.04f))]
+    [SNew(STextBlock).Text(FText::FromString(Copy.Title)).Font(BrainMiningFonts::Title(Variant==2?(LineBreaks>2?13:16):18)).ColorAndOpacity(FLinearColor(.035f,.035f,.04f))]
    +SVerticalBox::Slot().FillHeight(1)
     [SNew(STextBlock).Text(FText::FromString(Copy.Body)).Font(PopupFont(BodyFont)).AutoWrapText(true).ColorAndOpacity(FLinearColor(.035f,.035f,.04f))]];
  }

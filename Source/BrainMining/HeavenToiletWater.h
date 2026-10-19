@@ -35,6 +35,8 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Water") float OuterX=420;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Water") float MouthX=1260;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Water") float CorridorHalfWidth=170;
+    // Identity retains legacy world coordinates; copied rooms provide their placement frame.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Water") FTransform SpillCoordinateFrame;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Water") bool bSpilling=false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Water") int32 ConnectedCells=0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Water") int32 BreachCount=0;

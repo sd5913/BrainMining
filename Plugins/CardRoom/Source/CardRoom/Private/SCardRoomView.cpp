@@ -193,6 +193,12 @@ int32 SCardRoomView::OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSl
         else if(R.Round==2) Speech=R.PhaseTime<1?TEXT("这张绿牌……闻着不对。"):TEXT("呕——！这也算魔法？！");
         else if(R.Round==3) Speech=R.PhaseTime<1?TEXT("别点火！别点火！"):R.PhaseTime<1.8f?TEXT("啊啊啊！我的眉毛！"):TEXT("气死我了！吃我一拳！");
         else Speech=R.PhaseTime<1?TEXT("停！怎么能一次出这么多！"):TEXT("我还会回来的——！");
+        if(Owner->Stage->bUseRobotOpponent)
+        {
+            Speech.ReplaceInline(TEXT("我只是个玩偶"),TEXT("我只是个小机器人"));
+            Speech.ReplaceInline(TEXT("我的棉花都焦了"),TEXT("我的电路要过热了"));
+            Speech.ReplaceInline(TEXT("谁把窗户打开"),TEXT("散热风扇快转起来"));
+        }
         if(!(R.Phase==ECardRoomPhase::Resolving && R.Round==4 && R.PhaseTime>2.5f))
         {
             const FSlateRect D=UI?FSlateRect(UI->Dialogue.Position.X,UI->Dialogue.Position.Y,UI->Dialogue.Position.X+UI->Dialogue.Size.X,UI->Dialogue.Position.Y+UI->Dialogue.Size.Y):FSlateRect(1018,283,1518,371);

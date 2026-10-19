@@ -37,6 +37,12 @@ opt=unreal.FbxImportUI();opt.automated_import_should_detect_type=False;opt.mesh_
 summary=[]
 for info in manifest['meshes']:
  name=info['name'];mesh=imp(src/(name+'.fbx'),name,folder+'/Meshes',opt,True)
+ # Reimport otherwise preserves hulls from older furniture geometry, producing
+ # invisible walls well outside the current mesh in Close1 and MainGame.
+ if name in ('SM_OfficeDesk','SM_DeskChair','SM_Copier'):
+  collision=unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
+  assert collision.remove_collisions(mesh),name
+  assert collision.set_convex_decomposition_collisions(mesh,8,16,200000),name
  for i,slot in enumerate(mesh.get_editor_property('static_materials')):
   key=str(slot.get_editor_property('material_slot_name'))
   assert key in mats,(name,key,info['materials'])

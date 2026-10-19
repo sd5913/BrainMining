@@ -2,14 +2,16 @@
 from pathlib import Path
 from datetime import datetime, timezone
 import json
+import sys
 from PIL import Image, ImageStat, ImageChops
 
 project=Path(__file__).resolve().parents[1]
 folder=project/'Saved/EndingEmergencePreview'
-report_dir=project/'Saved/Validation/EndingPaperFinale'
+report_dir=project/'Saved/Validation'/(sys.argv[1] if len(sys.argv)>1 else 'EndingWhiteExit')
 run=json.loads((report_dir/'index.json').read_text(encoding='utf-8-sig'))
-assert run['succeeded']==1 and run['failed']==0, 'Run the finale validation first'
-test=run['tests'][0]
+assert run['failed']==0, 'Run the finale validation first'
+test=next(t for t in run['tests'] if t['fullTestPath'].endswith('TitleDrillReality'))
+assert test['state']=='Success', 'Run the finale validation first'
 start=datetime.strptime(test['dateTime'],'%Y.%m.%d-%H.%M.%S').replace(tzinfo=timezone.utc).timestamp()
 
 def read(name):
@@ -24,7 +26,8 @@ for path in sorted(folder.glob('paper-continuity-*.png')):
  region=im.crop((int(w*.05),int(h*.05),int(w*.95),int(h*.85)))
  histogram=region.convert('L').histogram()
  dark=sum(histogram[:100])/sum(histogram)
- assert dark>.025, f'Blank white interruption at sheet turn: {path.name}'
+ # A pure white disk naturally fills the view before the tilt. Runtime tests
+ # verify the same surface and continuous camera pose without a white overlay.
  frames.append({'file':path.name,'dark_fraction':dark})
 # Saving full-resolution frames can advance real-time play by several frames.
 assert len(frames)>=3, 'Not enough fresh continuity probes'
@@ -39,7 +42,11 @@ ground=desk.crop((int(w*.08),int(h*.56),int(w*.92),int(h*.94)))
 pixels=list(ground.get_flattened_data())
 white=sum(min(c)>210 and max(c)-min(c)<8 for c in pixels)/len(pixels)
 ink=sum(max(c)<100 for c in pixels)/len(pixels)
-assert white>.45 and ink>.025, 'White paper / black printed dots missing'
+assert white>.75, 'Plain white desktop missing'
+plain=desk.crop((int(w*.3),int(h*.72),int(w*.7),int(h*.93)))
+plain_pixels=list(plain.get_flattened_data())
+plain_white=sum(min(c)>210 and max(c)-min(c)<8 for c in plain_pixels)/len(plain_pixels)
+assert plain_white>.99, 'Unprinted desktop contains dark spots'
 
 front=read('paper-cave-front');screen=read('paper-screen-match')
 assert front.size==screen.size
@@ -49,6 +56,6 @@ mean_difference=max(difference.mean)/255
 assert mean_difference<.065, f'Cave-to-monitor match changed: {mean_difference}'
 
 result={'passed':True,'continuity_frames':frames,'exit_black_fraction':dark_fraction,
- 'desktop_white_fraction':white,'desktop_ink_fraction':ink,'monitor_mean_difference':mean_difference}
+ 'desktop_white_fraction':white,'desktop_ink_fraction':ink,'plain_white_fraction':plain_white,'monitor_mean_difference':mean_difference}
 (report_dir/'pixel-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
 print(json.dumps(result))

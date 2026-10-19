@@ -5,6 +5,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "Components/BoxComponent.h"
+#include "Components/PostProcessComponent.h"
 
 AEchoPassageStage::AEchoPassageStage()
 {
@@ -20,6 +22,7 @@ AEchoPassageStage::AEchoPassageStage()
     };
     Rock=Make(TEXT("CollisionRock"),true); Outlines=Make(TEXT("EchoContours"),false);
     WarmWood=Make(TEXT("WarmWood"),true); WarmGlow=Make(TEXT("WarmLight"),false);
+    EntranceRock=Make(TEXT("EntranceRock"),true);
     TrapFloor=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CollapsingFloor")); TrapFloor->SetupAttachment(RootComponent);
     TrapFloor->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube")));
     TrapFloor->SetRelativeLocation(FVector(10,0,888)); TrapFloor->SetRelativeScale3D(FVector(4.2,4,0.24));
@@ -46,7 +49,7 @@ void AEchoPassageStage::OutlineBox(FVector P,FVector S)
 void AEchoPassageStage::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
-    for(auto* M:{Rock.Get(),Outlines.Get(),WarmWood.Get(),WarmGlow.Get()}) M->ClearInstances();
+    for(auto* M:{Rock.Get(),Outlines.Get(),WarmWood.Get(),WarmGlow.Get(),EntranceRock.Get()}) M->ClearInstances();
     auto* Echo=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Passages/Echo/Materials/M_EchoContour.M_EchoContour"));
     auto* Wood=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Passages/Echo/Materials/M_WarmWood.M_WarmWood"));
     auto* Glow=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Passages/Echo/Materials/M_WarmGlow.M_WarmGlow"));
@@ -59,6 +62,8 @@ void AEchoPassageStage::OnConstruction(const FTransform& Transform)
         Outlines->SetMaterial(0,EchoMaterial); Rock->SetMaterial(0,RockMaterial);
     }
     if(Wood) {WarmWood->SetMaterial(0,Wood);TrapFloor->SetMaterial(0,Wood);}
+    auto* EntryMaterial=bWalkThroughConnections?LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/RoutesV5/M_BlueViolet.M_BlueViolet")):Wood;
+    if(EntryMaterial){EntranceRock->SetMaterial(0,EntryMaterial);TrapFloor->SetMaterial(0,EntryMaterial);}
     if(Glow) WarmGlow->SetMaterial(0,Glow);
     const auto Cells=EchoPassageLayout::Cells(bUseMaze);
     for(int32 i=0;i<Cells.Num();++i)
@@ -122,8 +127,8 @@ void AEchoPassageStage::OnConstruction(const FTransform& Transform)
     }
     Box(Rock,FVector(-212,0,450),FVector(24,400,900));
     // Small lit departure vestibule; the center floor collapses as the player steps onto it.
-    Box(WarmWood,FVector(-480,0,888),FVector(560,400,24));
-    for(int Side:{-1,1}) Box(WarmWood,FVector(-310,Side*222,1050),FVector(920,40,300));
+    Box(EntranceRock,FVector(-480,0,888),FVector(560,400,24));
+    for(int Side:{-1,1}) Box(EntranceRock,FVector(-310,Side*222,1050),FVector(920,40,300));
     if(!bWalkThroughConnections)
     {
         Box(WarmWood,FVector(-760,0,1050),FVector(30,440,300));
@@ -164,6 +169,31 @@ void AEchoPassageStage::BeginPlay()
     Super::BeginPlay();
     // Recreate per-session materials after loading a previously saved map.
     OnConstruction(GetActorTransform()); ResetPassage();
+    // Limit neutral grading to the lower echo maze. Source room post processes
+    // may be unbound, but must never tint or split the white echo wave into RGB.
+    FBox LocalBounds(ForceInit);
+    for(const FIntPoint Cell:EchoPassageLayout::Cells(bUseMaze))
+    {
+        const FVector Center(Cell.X*400,Cell.Y*400,180);
+        LocalBounds+=Center-FVector(210,210,230);
+        LocalBounds+=Center+FVector(210,210,230);
+    }
+    auto* Bounds=NewObject<UBoxComponent>(this,TEXT("EchoMonochromeBounds"));
+    AddInstanceComponent(Bounds);Bounds->SetupAttachment(RootComponent);
+    Bounds->SetRelativeLocation(LocalBounds.GetCenter());Bounds->SetBoxExtent(LocalBounds.GetExtent());
+    Bounds->SetCollisionEnabled(ECollisionEnabled::QueryOnly);Bounds->SetCollisionResponseToAllChannels(ECR_Ignore);
+    Bounds->SetGenerateOverlapEvents(false);Bounds->RegisterComponent();
+    auto* Neutral=NewObject<UPostProcessComponent>(this,TEXT("EchoMonochrome"));
+    AddInstanceComponent(Neutral);Neutral->SetupAttachment(Bounds);
+    Neutral->bUnbound=false;Neutral->Priority=100;Neutral->BlendRadius=0;Neutral->BlendWeight=1;
+    auto& S=Neutral->Settings;
+    S.bOverride_SceneFringeIntensity=true;S.SceneFringeIntensity=0;
+    S.bOverride_WhiteTemp=true;S.WhiteTemp=6500;
+    S.bOverride_WhiteTint=true;S.WhiteTint=0;
+    S.bOverride_ColorSaturation=true;S.ColorSaturation=FVector4(0,0,0,0);
+    S.bOverride_SceneColorTint=true;S.SceneColorTint=FLinearColor::White;
+    S.bOverride_ColorGradingIntensity=true;S.ColorGradingIntensity=0;
+    Neutral->RegisterComponent();
 }
 void AEchoPassageStage::ResetPassage()
 {

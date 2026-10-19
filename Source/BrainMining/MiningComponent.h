@@ -64,6 +64,8 @@ public:
     bool IsInputContextEnabled() const { return bInputContextEnabled; }
     void BeginMiningInput() { StartMining(); }
     void EndMiningInput() { StopMining(); }
+    void BeginMobileMiningInput() { bMobileMiningInput = true; StartMining(); }
+    void EndMobileMiningInput() { StopMining(); bMobileMiningInput = false; }
     UPROPERTY(BlueprintAssignable, Category="Mining") FMiningResetEvent OnFieldReset;
     void PushEncounterBlock();
     void PopEncounterBlock();
@@ -71,9 +73,15 @@ public:
 	/** Suspend held mouse mining while the upgrade UI owns the pointer. */
 	void SetInputSuspended(bool bSuspended);
     bool IsInputSuspended() const { return bInputSuspended; }
+    // Cinematic endings disable the shared R action without changing other rooms.
+    bool bFieldResetEnabled=true;
 	/** V equips/stows the energy drill; selecting it never starts mining. */
 	UFUNCTION(BlueprintCallable, Category="Mining|Drill")
 	bool ActivateDrill();
+	UFUNCTION(BlueprintPure, Category="Mining|Drill") bool IsDrillUnlocked() const;
+	UFUNCTION(BlueprintCallable, Category="Mining|Drill") void RequireDrillUnlock();
+	UFUNCTION(BlueprintCallable, Category="Mining|Drill") void UnlockDrill();
+	bool MineTelevision(const FHitResult& Hit);
 	/** Stow an active drill without clearing its existing use/cooldown deadlines. */
 	UFUNCTION(BlueprintCallable, Category="Mining|Tool") void SelectPickaxe();
 	UFUNCTION(BlueprintPure, Category="Mining|Drill")
@@ -153,6 +161,7 @@ private:
 	TMap<TWeakObjectPtr<ADiggableRock>, FDelegateHandle> PickaxeObservers;
 	int32 NextPickaxePatchId = 0;
 	FTimerHandle PickaxeImpactTimer;
+	FHitResult PickaxeSwingTarget;
 	void ResolvePickaxeStrike();
 	void ClearPickaxeDamage();
 	void InvalidatePickaxePatches(TWeakObjectPtr<ADiggableRock> Rock, const FBox& Bounds);
@@ -174,6 +183,8 @@ private:
 	FHitResult TargetHit;
 	double NextMineTime = 0.0;
 	bool bMiningHeld = false;
+    bool bMineQueued = false;
+	bool bMobileMiningInput = false;
 	bool bInputSuspended = false;
 	bool bHasInitialTransform = false;
 	double DrillUseEnds = 0;

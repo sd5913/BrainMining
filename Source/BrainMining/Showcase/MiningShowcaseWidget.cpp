@@ -1,7 +1,7 @@
 #include "Showcase/MiningShowcase.h"
+#include "BrainMiningFonts.h"
 #include "Showcase/MiningTreasure.h"
 #include "MiningInteractionHUDWidget.h"
-#include "Fonts/CompositeFont.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -15,10 +15,7 @@ namespace MiningShowcaseUI
 {
     FSlateFontInfo Font(int32 Size)
     {
-        static TSharedPtr<const FCompositeFont> ChineseFont;
-        const FString Path = TEXT("C:/Windows/Fonts/simhei.ttf");
-        if (!ChineseFont && FPaths::FileExists(Path)) ChineseFont = MakeShared<FStandaloneCompositeFont>(NAME_None, Path, EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
-        return ChineseFont ? FSlateFontInfo(ChineseFont, Size) : FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), Size);
+        return BrainMiningFonts::Body(Size);
     }
 }
 
@@ -50,7 +47,7 @@ TSharedRef<SWidget> UMiningShowcaseWidget::RebuildWidget()
                 [
                     SNew(SVerticalBox)
                     + SVerticalBox::Slot().AutoHeight()
-                    [SNew(STextBlock).Font(MiningShowcaseUI::Font(21)).ColorAndOpacity(FLinearColor(.3f,.95f,.82f))
+                    [SNew(STextBlock).Font(BrainMiningFonts::Title(21)).ColorAndOpacity(FLinearColor(.3f,.95f,.82f))
                         .Text_Lambda([this]() { return Director.IsValid() && Director->Exhibits.IsValidIndex(Director->ActiveIndex) ? Director->Exhibits[Director->ActiveIndex].Title : FText::FromString(TEXT("BRAIN MINING / 连续探索区")); })]
                     + SVerticalBox::Slot().AutoHeight().Padding(0,8)
                     [SNew(STextBlock).Font(MiningShowcaseUI::Font(14)).WrapTextAt(310)
@@ -81,7 +78,7 @@ TSharedRef<SWidget> UMiningShowcaseWidget::RebuildWidget()
                     SNew(SVerticalBox)
                     + SVerticalBox::Slot().AutoHeight()
                     [
-                        SNew(STextBlock).Font(MiningShowcaseUI::Font(21)).ColorAndOpacity(Exhibit.Color)
+                        SNew(STextBlock).Font(BrainMiningFonts::Title(21)).ColorAndOpacity(Exhibit.Color)
                         .Text_Lambda([this, Index, Exhibit]()
                         {
                             const FString Marker = Director.IsValid() && Director->Completed.Contains(Exhibit.Id) ? TEXT("  [已完成]") :
@@ -111,7 +108,7 @@ TSharedRef<SWidget> UMiningShowcaseWidget::RebuildWidget()
                 [
                     SNew(SVerticalBox)
                     + SVerticalBox::Slot().AutoHeight()
-                    [SNew(STextBlock).Font(MiningShowcaseUI::Font(19)).ColorAndOpacity(FLinearColor(0.25f, 0.9f, 0.8f)).Text_Lambda([this]()
+                    [SNew(STextBlock).Font(BrainMiningFonts::Title(19)).ColorAndOpacity(FLinearColor(0.25f, 0.9f, 0.8f)).Text_Lambda([this]()
                     {
                         if (!Director.IsValid()) return FText::GetEmpty();
                         if (Director->Exhibits.IsValidIndex(Director->ActiveIndex)) return Director->Exhibits[Director->ActiveIndex].Title;
@@ -143,7 +140,7 @@ TSharedRef<SWidget> UMiningShowcaseWidget::RebuildWidget()
                     [
                         SNew(SVerticalBox)
                         + SVerticalBox::Slot().AutoHeight()
-                        [SNew(STextBlock).Text(FText::FromString(TEXT("BRAIN MINING  /  功能展示馆"))).Font(MiningShowcaseUI::Font(30)).ColorAndOpacity(FLinearColor(0.3f, 0.95f, 0.82f))]
+                        [SNew(STextBlock).Text(FText::FromString(TEXT("BRAIN MINING  /  功能展示馆"))).Font(BrainMiningFonts::Title(30)).ColorAndOpacity(FLinearColor(0.3f, 0.95f, 0.82f))]
                         + SVerticalBox::Slot().AutoHeight().Padding(0, 12, 0, 14)
                         [SNew(STextBlock).Text(FText::FromString(TEXT("四个分支 · 十一个展区 · 同一世界按需加载\n每次进入重新体验；F5 重开当前展区，F8 返回大厅。"))).Font(MiningShowcaseUI::Font(17)).ColorAndOpacity(FLinearColor(0.7f, 0.8f, 0.86f))]
                         + SVerticalBox::Slot().FillHeight(1)

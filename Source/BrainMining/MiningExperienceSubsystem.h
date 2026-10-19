@@ -16,8 +16,15 @@ class BRAINMINING_API UMiningExperienceSubsystem : public UGameInstanceSubsystem
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
+    UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly) TArray<int32> CampaignCollection;
     bool ToggleMenu();
     bool ToggleDeveloperMenu();
+    UFUNCTION(BlueprintCallable) bool TogglePauseMenu();
+    UFUNCTION(BlueprintCallable) bool JumpToCollectible(int32 ItemId);
+    UFUNCTION(BlueprintCallable) void OpenPauseCollection();
+    UFUNCTION(BlueprintCallable) void RequestQuitConfirmation();
+    UFUNCTION(BlueprintCallable) void CancelQuitConfirmation();
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bQuitConfirmation=false;
     bool JumpToDeveloperArea(int32 Index);
     bool OpenDeveloperExperience(int32 Index);
     static TArray<FString> DeveloperMapPaths();
@@ -33,6 +40,7 @@ private:
     TWeakObjectPtr<UWorld> MenuWorld;
     FString MenuError;
     bool bDeveloperMenu = false;
+    bool bPauseMenu = false;
     TSharedPtr<IInputProcessor> Shortcuts;
     TSharedPtr<SWidget> Menu;
     TWeakObjectPtr<APlayerController> MenuController;

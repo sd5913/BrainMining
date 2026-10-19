@@ -1,4 +1,5 @@
 #include "MiningDeveloperMapComponent.h"
+#include "BrainMiningFonts.h"
 #include "MiningTunnelGenerator.h"
 #include "MiningTunnelRoute.h"
 #include "MiningRoutePlanner.h"
@@ -158,7 +159,7 @@ void UMiningDeveloperMapComponent::Draw(AHUD* HUD, UCanvas* Canvas)
 	const FLinearColor Accent(0.2f, 0.95f, 0.8f);
 	if (!bVisible)
 	{
-		HUD->DrawText(TEXT("M  Developer map"), Accent, FMath::Max(8.f, Canvas->ClipX - 160 * UiScale), Canvas->ClipY - 62 * UiScale, GEngine->GetSmallFont(), UiScale);
+		HUD->DrawText(TEXT("M  Developer map"), Accent, FMath::Max(8.f, Canvas->ClipX - 160 * UiScale), Canvas->ClipY - 62 * UiScale, BrainMiningFonts::Asset(), UiScale);
 		return;
 	}
 	if (CachedView != View || (View == EMiningMapView::Orbit3D && CachedRotation != OrbitRotation)) RefreshProjection();
@@ -173,9 +174,9 @@ void UMiningDeveloperMapComponent::Draw(AHUD* HUD, UCanvas* Canvas)
 		Value.ReplaceInline(TEXT("\n"), TEXT(" "));
 		Value = Value.Left(100);
 		const FString Original = Value;
-		while (!Value.IsEmpty() && Canvas->K2_TextSize(GEngine->GetSmallFont(), Value, FVector2D(UiScale)).X > Width) Value.LeftChopInline(1);
+		while (!Value.IsEmpty() && Canvas->K2_TextSize(BrainMiningFonts::Asset(), Value, FVector2D(UiScale)).X > Width) Value.LeftChopInline(1);
 		if (Value.Len() < Original.Len() && Value.Len() > 3) Value = Value.LeftChop(3) + TEXT("...");
-		HUD->DrawText(Value, Color, Position.X, Position.Y, GEngine->GetSmallFont(), UiScale);
+		HUD->DrawText(Value, Color, Position.X, Position.Y, BrainMiningFonts::Asset(), UiScale);
 	};
 	const auto Line = [Canvas](FVector2D Start, FVector2D Finish, const FLinearColor& Color, float Width)
 	{
@@ -283,7 +284,7 @@ void UMiningDeveloperMapComponent::Draw(AHUD* HUD, UCanvas* Canvas)
 		{
 			if (Regions[Index].Kind != EMiningMapRegionKind::Room && Regions[Index].Kind != EMiningMapRegionKind::Space) continue;
 			const FString Name = Regions[Index].Name.Left(22);
-			const FVector2D LabelSize = Canvas->K2_TextSize(GEngine->GetSmallFont(), Name, FVector2D(UiScale));
+			const FVector2D LabelSize = Canvas->K2_TextSize(BrainMiningFonts::Asset(), Name, FVector2D(UiScale));
 			const FVector2D Position = Screen(ProjectPoint(Regions[Index].Bounds.GetCenter())) - FVector2D(LabelSize.X * 0.5, 18 * UiScale);
 			const FBox2D LabelRect(Position, Position + LabelSize);
 			if (!Graph.IsInsideOrOn(LabelRect.Min) || !Graph.IsInsideOrOn(LabelRect.Max) || Labels.ContainsByPredicate([&LabelRect](const FBox2D& Other) { return Other.Intersect(LabelRect); })) continue;

@@ -1,4 +1,5 @@
 #include "MiningDeveloperMapComponent.h"
+#include "BrainMiningFonts.h"
 #include "MiningTunnelGenerator.h"
 #include "GeneratedMiningRock.h"
 #include "GameFramework/HUD.h"
@@ -198,7 +199,7 @@ void UMiningDeveloperMapComponent::Draw3D(UCanvas* Canvas, const FBox2D& Graph, 
 	{
 		const FVector2D Endpoint = Origin + ProjectPoint(Axes[Axis]) * 22 * UiScale;
 		Canvas->K2_DrawLine(Origin, Endpoint, 2 * UiScale, AxisColors[Axis]);
-		FCanvasTextItem Label(Endpoint + FVector2D(2, -5) * UiScale, FText::FromString(AxisNames[Axis]), GEngine->GetSmallFont(), AxisColors[Axis]);
+		FCanvasTextItem Label(Endpoint + FVector2D(2, -5) * UiScale, FText::FromString(AxisNames[Axis]), BrainMiningFonts::Asset(), AxisColors[Axis]);
 		Label.Scale = FVector2D(UiScale); Canvas->DrawItem(Label);
 	}
 }

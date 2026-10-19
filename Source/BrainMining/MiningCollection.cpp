@@ -1,4 +1,6 @@
 #include "MiningCollection.h"
+#include "MiningExperienceSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "MiningInteractionTrace.h"
 #include "BrainMiningPlayerController.h"
 #include "SMiningCollectionView.h"
@@ -63,7 +65,7 @@ bool AMiningCollectionField::InitializePlayer()
     Bind(CatalogueKey,&AMiningCollectionField::ToggleCatalogue);
     if(!bUseAuthoredPlacements) Bind(EKeys::R,&AMiningCollectionField::ResetCollection);
     Subsystem->AddMappingContext(CollectionContext,50);
-    if(!bAreaManaged)
+    if(!bAreaManaged && !bCatalogueOnly)
     {
         if (auto* Controller = Cast<ABrainMiningPlayerController>(Player)) Controller->SetMiningGUIEnabled(false);
         if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->FlightSettings.bEnabled=true; Move->FlightSettings.bEnableHeat=false; }
@@ -72,9 +74,11 @@ bool AMiningCollectionField::InitializePlayer()
     if (!bSharedAbilities) { Mining->Reach=400; Mining->Radius=115; Mining->DownwardOffset=25; }
     // The field owns fall recovery so inventory and excavation reset together.
     Mining->FallResetDistance=0;
-    Inventory.Init(0,4);
+    Inventory.Init(0,FMath::Max(4,CatalogueIds().IsEmpty()?4:CatalogueIds().Last()+1));
     if(auto* Edge=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionSilhouette"))) HighlightPostProcess->Settings.AddBlendable(Edge,1);
-    SpawnField();
+    if(ActorHasTag(TEXT("BM_MainGame_Collections")) || bCatalogueOnly)
+        if(auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>(); Session && !Session->CampaignCollection.IsEmpty())Inventory=Session->CampaignCollection;
+    if(!bCatalogueOnly) SpawnField();
     PreviewTexture=NewObject<UTextureRenderTarget2D>(this); PreviewTexture->ClearColor=FLinearColor(0,0,0,1);
     PreviewTexture->InitAutoFormat(1536,1024); Capture->TextureTarget=PreviewTexture;
     if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionCataloguePreview.M_CollectionCataloguePreview")))
@@ -101,6 +105,7 @@ bool AMiningCollectionField::InitializePlayer()
         GEngine->GameViewport->AddViewportWidgetContent(View.ToSharedRef(),30);
     }
     Toast=bUseAuthoredPlacements?FString::Printf(TEXT("沿水管或矿道寻找藏品，挖开覆盖层后瞄准按 E 收集；%s 打开图鉴。"),*CatalogueKey.GetDisplayName().ToString()):TEXT("先试试左侧已露出的试管架：瞄准它，按 E 收集"); ToastRemaining=10;
+    if(bExpandedCollection && !bUseAuthoredPlacements) { Toast=TEXT("右侧通道通往新展区：陈列藏品、四种挖掘线索和红幕布舞台"); ToastRemaining=12; }
     if(bAreaManaged) SetAreaActive(false);
     return true;
 }
@@ -126,10 +131,11 @@ void AMiningCollectionField::SpawnField()
     {
         for(const auto& Placement:AuthoredPlacements)
         {
-            if(Placement.ItemId<0 || Placement.ItemId>=4) continue;
+            if(Placement.ItemId<0 || Placement.ItemId>=AMiningCollectible::ItemTypeCount) continue;
             auto* Item=GetWorld()->SpawnActor<AMiningCollectible>(Placement.Transform.GetLocation(),Placement.Transform.Rotator());
             Item->Tags.Add(Placement.AreaTag);
             Item->BuildModel(Placement.ItemId);
+            Item->SetActorScale3D(Placement.Transform.GetScale3D());
             if(IsValid(Placement.PresentationActor))
             {
                 Item->PresentationActor=Placement.PresentationActor;
@@ -144,10 +150,11 @@ void AMiningCollectionField::SpawnField()
             }
             else { Item->bReleased=true; Item->Exposure=1; Item->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly); }
             Items.Add(Item); Spawned.Add(Item);
+            SpawnAuthoredPresentation(Item,Placement);
         }
         return;
     }
-    if(bDeepField) { SpawnDeepField(); RelocateGeneratedField(); return; }
+    if(bDeepField) { SpawnDeepField(); if(bExpandedCollection) SpawnExpandedCollection(); RelocateGeneratedField(); return; }
     ActiveSeed=RandomSeed>0?RandomSeed:FMath::RandRange(1,MAX_int32-1);
     FRandomStream Random(ActiveSeed);
     int Ids[4]={0,1,2,3};
@@ -216,6 +223,7 @@ void AMiningCollectionField::RelocateGeneratedField()
         if(IsValid(Actor) && !Actor->GetAttachParentActor()) Actor->AddActorWorldOffset(Offset,false,nullptr,ETeleportType::TeleportPhysics);
     for(AMiningCollectible* Item:Items) if(IsValid(Item)) Item->BuriedTransform.AddToTranslation(Offset);
     for(auto& Ant:Ants) Ant.Start+=Offset;
+    for(auto& Trail:AntTrails) { Trail.Start+=Offset;Trail.End+=Offset;Trail.ObservedCuts=INDEX_NONE; }
     for(auto& Clue:Clues) Clue.Support+=Offset;
 }
 
@@ -271,18 +279,48 @@ void AMiningCollectionField::RefreshTarget()
         if(IsValid(Target)) Target->SetHighlighted(true);
     }
 }
+bool AMiningCollectionField::RegisterExternalCollectible(AMiningCollectible* Item)
+{
+    if(!bInitialized || !IsValid(Item) || Item->ItemId<0 || Item->ItemId>=AMiningCollectible::ItemTypeCount)return false;
+    Items.AddUnique(Item);
+    if(Inventory.Num()<=Item->ItemId)Inventory.SetNumZeroed(Item->ItemId+1);
+    return true;
+}
 void AMiningCollectionField::CollectTarget()
 {
-    if(bCatalogueOpen||!Player || (bAreaManaged && !bAreaActive)) return;
+    TryCollectTarget();
+}
+bool AMiningCollectionField::TryCollectTarget()
+{
+    if(bCatalogueOpen||!Player || (bAreaManaged && !bAreaActive)) return false;
     RefreshTarget();
-    if(!IsValid(Target)||!Inventory.IsValidIndex(Target->ItemId)) return;
+    if(!IsValid(Target)||!Inventory.IsValidIndex(Target->ItemId)) return false;
     AMiningCollectible* Item=Target; Item->SetHighlighted(false); Item->bCollected=true;
     Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);
     if(IsValid(Item->PresentationActor)) { Item->PresentationActor->Destroy(); Item->PresentationActor=nullptr; }
-    ++Inventory[Item->ItemId]; SelectedId=Item->ItemId; Target=nullptr;
+    ++Inventory[Item->ItemId];
+    if(ActorHasTag(TEXT("BM_MainGame_Collections")))if(auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>())Session->CampaignCollection=Inventory;
+    SelectedId=Item->ItemId; Target=nullptr;
     Toast=FString::Printf(TEXT("已收集 · %s     [ %s ] 打开图鉴"),*AMiningCollectible::ItemName(Item->ItemId),*CatalogueKey.GetDisplayName().ToString()); ToastRemaining=5;
+    return true;
 }
 int32 AMiningCollectionField::UniqueCount() const { int32 N=0; for(int32 Count:Inventory) N+=Count>0; return N; }
+TArray<int32> AMiningCollectionField::CatalogueIds() const
+{
+    TArray<int32> Result;
+    if(bCatalogueOnly){for(int32 I=0;I<AMiningCollectible::ItemTypeCount;++I)Result.Add(I);return Result;}
+    if(bUseAuthoredPlacements)
+    {
+        for(const auto& Placement:AuthoredPlacements)
+            if(Placement.ItemId>=0 && Placement.ItemId<AMiningCollectible::ItemTypeCount) Result.AddUnique(Placement.ItemId);
+        // The authored TV room owns this reward; show its locked entry before escaping.
+        if(ActorHasTag(TEXT("BM_MainGame_Collections")))Result.AddUnique(11);
+    }
+    else for(int32 Id=0;Id<(bDeepField && bExpandedCollection?AMiningCollectible::ItemTypeCount:4);++Id) Result.Add(Id);
+    for(const auto& Item:Items)if(IsValid(Item))Result.AddUnique(Item->ItemId);
+    Result.Sort();
+    return Result;
+}
 void AMiningCollectionField::ToggleCatalogue() { if(bInitialized) SetCatalogueOpen(!bCatalogueOpen); }
 void AMiningCollectionField::SetCatalogueOpen(bool Open)
 {
@@ -298,7 +336,7 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         Player->SetPause(true);
         if(View) { View->SetVisibility(EVisibility::Visible); FInputModeUIOnly Mode; Mode.SetWidgetToFocus(View); Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock); Player->SetInputMode(Mode); }
         Player->bShowMouseCursor=true;
-        if(!Inventory.IsValidIndex(SelectedId)||Inventory[SelectedId]==0) { SelectedId=INDEX_NONE; for(int i=0;i<4;++i) if(Inventory[i]>0) { SelectedId=i; break; } }
+        if(!Inventory.IsValidIndex(SelectedId)||Inventory[SelectedId]==0) { SelectedId=INDEX_NONE; for(int i=0;i<Inventory.Num();++i) if(Inventory[i]>0) { SelectedId=i; break; } }
         SelectItem(SelectedId);
     }
     else
@@ -320,18 +358,18 @@ void AMiningCollectionField::SelectItem(int32 Id)
     if(Owned) Preview->BuildModel(Id);
     ResetPreview();
 }
-void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=330; RotatePreview(0,0); }
+void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=SelectedId==9?850:330; RotatePreview(0,0); }
 void AMiningCollectionField::RotatePreview(float Yaw,float Pitch)
 {
     if(!Preview) return;
     PreviewYaw=FRotator::NormalizeAxis(PreviewYaw+Yaw); PreviewPitch=FMath::Clamp(PreviewPitch+Pitch,-80.f,80.f);
     Preview->SetActorRotation(FRotator(PreviewPitch,PreviewYaw,0));
     if(PreviewToilet)PreviewToilet->SetActorRotation(FRotator(PreviewPitch,PreviewYaw+90,0));
-    Capture->SetWorldLocation(FVector(-PreviewDistance,0,-9990)); Capture->SetWorldRotation(FRotator(0,0,0));
+    Capture->SetWorldLocation(FVector(-PreviewDistance,0,SelectedId==9?-10125:-9990)); Capture->SetWorldRotation(FRotator(0,0,0));
     Capture->CaptureScene();
     PreviewRefreshFrames=3;
 }
-void AMiningCollectionField::ZoomPreview(float Steps) { PreviewDistance=FMath::Clamp(PreviewDistance-Steps*22,270.f,550.f); RotatePreview(0,0); }
+void AMiningCollectionField::ZoomPreview(float Steps) { PreviewDistance=FMath::Clamp(PreviewDistance-Steps*22,SelectedId==9?650.f:270.f,SelectedId==9?1200.f:550.f); RotatePreview(0,0); }
 void AMiningCollectionField::ResetCollection()
 {
     if(bUseAuthoredPlacements) return; // Campaign retries must never erase global inventory.
@@ -340,9 +378,9 @@ void AMiningCollectionField::ResetCollection()
     else Mining->CancelMining();
     Target=nullptr;
     for(AActor* A:Spawned) if(IsValid(A)) A->Destroy();
-    Spawned.Reset(); Items.Reset(); Inventory.Init(0,4); SelectedId=INDEX_NONE;
+    Spawned.Reset(); Items.Reset(); Inventory.Init(0,FMath::Max(4,CatalogueIds().IsEmpty()?4:CatalogueIds().Last()+1)); SelectedId=INDEX_NONE;
     SpawnField();
-    Toast=TEXT("已开始新一轮，收集进度清空；寻找墙面的四种线索"); ToastRemaining=6;
+    Toast=TEXT("已开始新一轮，收集进度清空；寻找墙面线索与新展区"); ToastRemaining=6;
 }
 void AMiningCollectionField::EndPlay(const EEndPlayReason::Type Reason)
 {

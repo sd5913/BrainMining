@@ -1,10 +1,13 @@
+#include "Subtitles/SubtitleSubsystem.h"
 #include "EndingEmergence.h"
+#include "EndingComicRock.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/DynamicMeshComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/AudioComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "DynamicMesh/DynamicMeshAttributeSet.h"
 #include "DynamicMesh/MeshNormals.h"
@@ -14,10 +17,16 @@
 #include "Components/SceneCaptureComponent2D.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "RenderingThread.h"
+#include "MediaPlayer.h"
+#include "MediaSource.h"
+#include "MediaTexture.h"
+#include "MediaSoundComponent.h"
+#include "GameFramework/PlayerController.h"
 
 namespace PaperEnding
 {
-    const FVector Origin(2209150,0,0),Desk(155000,0,0);
+    const FVector Origin(2209150,0,0);
+    constexpr float FlightSpeed=(6200.f-480.f)/6.6f;
     float Ease(float T){T=FMath::Clamp(T,0.f,1.f);return T*T*(3-2*T);}
     void Quad(UE::Geometry::FDynamicMesh3& Mesh,FVector A,FVector B,FVector C,FVector D,FVector4f Bounds=FVector4f(0,0,1,1))
     {
@@ -37,6 +46,7 @@ void AEndingEmergence::BuildPaperFinale()
     {
         auto* C=NewObject<UDynamicMeshComponent>(this,MakeUniqueObjectName(this,UDynamicMeshComponent::StaticClass(),Name),RF_Transient);
         C->SetupAttachment(Parent);C->SetCollisionEnabled(ECollisionEnabled::NoCollision);C->SetCastShadow(false);C->SetEnableRaytracing(false);C->SetVisibleInRayTracing(false);C->SetCanEverAffectNavigation(false);
+        if(!Mesh.HasAttributes())Mesh.EnableAttributes();
         UE::Geometry::FMeshNormals::InitializeOverlayToPerTriangleNormals(Mesh.Attributes()->PrimaryNormals());
         C->SetMesh(MoveTemp(Mesh));auto* M=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Materials/M_EE_"))+Material)),C);
         M->SetVectorParameterValue(TEXT("Tint"),Tint);C->SetMaterial(0,M);C->RegisterComponent();AddInstanceComponent(C);return M;
@@ -171,75 +181,94 @@ void AEndingEmergence::BuildPaperFinale()
     auto* PickMat=MeshPart(TEXT("OriginalDoodleGiantPickaxe"),MoveTemp(PickDrawing),PaperPickSwing,TEXT("PaperHeroDoodle"),FLinearColor::White);
     PickMat->SetTextureParameterValue(TEXT("Doodle"),LoadObject<UTexture2D>(nullptr,TEXT("/Game/EndingEmergence/PaperFinale/Doodles/T_EE_Doodle_pickaxe")));
 
-    // The model beyond the hole lives in the same world: no portal image swap.
-    PaperCaveScene=Group(TEXT("OrbitCaveStage"),PaperEnding::Origin+FVector(10500,0,0));
-    // Ending-only duplicate of the actual MainGame starting mine, sliced vertically.
-    auto* Mine=NewObject<UStaticMeshComponent>(this,TEXT("MainGameVerticalCutaway"),RF_Transient);
-    Mine->SetupAttachment(PaperCaveScene);Mine->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/EndingEmergence/PaperFinale/SM_EE_MainGameCutaway")));
-    Mine->SetCollisionEnabled(ECollisionEnabled::NoCollision);Mine->SetCastShadow(false);Mine->SetVisibleInRayTracing(false);
-    for(int Slot=0;Slot<FMath::Max(3,Mine->GetNumMaterials());++Slot)
+    // The same projected video is visible through the physical aperture before
+    // the camera crosses it, then fills the screen without a second scene/cut.
+    PaperCaveScene=Group(TEXT("FinaleVideoAperture"),PaperEnding::Origin+FVector(8002,0,240));
+    // Bound the display by the actual cut polygon. A full-screen sheet plus a
+    // world-position mask can expose the film outside the rock during shader
+    // preparation; physical geometry cannot leak beyond this opening.
+    UE::Geometry::FDynamicMesh3 VideoOpening;VideoOpening.EnableAttributes();
+    const int VideoCentre=VideoOpening.AppendVertex(FVector::ZeroVector);
+    TArray<int> VideoRim;
+    for(const FVector& Point:Inner)VideoRim.Add(VideoOpening.AppendVertex(Point-FVector(0,0,700)));
+    for(int I=0;I<Sides;++I)
     {
-        auto* Mat=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_PaperCaveSurface")),Mine);
-        Mat->SetVectorParameterValue(TEXT("Tint"),Slot==2?FLinearColor(.65f,.39f,.17f):(Slot==1?FLinearColor(.18f,.10f,.065f):FLinearColor(.29f,.16f,.08f)));
-        Mat->SetScalarParameterValue(TEXT("Seed"),Slot==2?1.f:0.f);
-        Mine->SetMaterial(Slot,Mat);
+        VideoOpening.AppendTriangle(VideoCentre,VideoRim[(I+1)%Sides],VideoRim[I]);
     }
-    Mine->RegisterComponent();AddInstanceComponent(Mine);
-    Shape(TEXT("CaveStageFloor"),FVector(0,0,-40),FVector(8000,8000,50),FLinearColor(.012f,.017f,.03f),TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
-    for(int Side:{-1,1})Shape(TEXT("CaveStageSide"),FVector(0,Side*3000,1500),FVector(6000,20,4000),Ink*.18f,TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
-    Shape(TEXT("CaveStageFar"),FVector(2800,0,1500),FVector(20,6000,4000),Ink*.18f,TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
-    Shape(TEXT("CaveStageTop"),FVector(0,0,3500),FVector(6000,6000,20),Ink*.18f,TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
-    PaperCaveSeal=Shape(TEXT("CaveStageEntrySeal"),FVector(-2300,0,1500),FVector(20,6000,4000),Ink*.18f,TEXT("Cube"),PaperCaveScene,TEXT("PaperCaveSurface"));
-    // A tiny readable miner gives the cutaway a sense of scale and keeps
-    // digging alive while the camera circles the cave entrance.
-    PaperCaveMiner=Group(TEXT("PaperCaveMiner"),FVector(-1550,0,150),PaperCaveScene);
-    Shape(TEXT("PaperCaveMinerBody"),FVector(0,0,95),FVector(70,45,130),FLinearColor(.08f,.11f,.18f),TEXT("Sphere"),PaperCaveMiner,TEXT("PaperCaveSurface"));
-    Shape(TEXT("PaperCaveMinerHead"),FVector(0,0,185),FVector(58),FLinearColor(.95f,.68f,.42f),TEXT("Sphere"),PaperCaveMiner,TEXT("PaperCaveSurface"));
-    Shape(TEXT("PaperCaveMinerLegL"),FVector(0,-22,25),FVector(28,24,85),FLinearColor(.05f,.06f,.10f),TEXT("Sphere"),PaperCaveMiner,TEXT("PaperCaveSurface"));
-    Shape(TEXT("PaperCaveMinerLegR"),FVector(0,22,25),FVector(28,24,85),FLinearColor(.05f,.06f,.10f),TEXT("Sphere"),PaperCaveMiner,TEXT("PaperCaveSurface"));
-    PaperCaveMinerPick=Group(TEXT("PaperCaveMinerPick"),FVector(0,0,130),PaperCaveMiner);
-    Shape(TEXT("PaperCaveMinerPickHandle"),FVector(70,0,0),FVector(18,18,150),FLinearColor(.28f,.16f,.08f),TEXT("Cylinder"),PaperCaveMinerPick,TEXT("PaperCaveSurface"));
-    Shape(TEXT("PaperCaveMinerPickHead"),FVector(140,0,65),FVector(24,120,24),FLinearColor(.62f,.65f,.70f),TEXT("Cube"),PaperCaveMinerPick,TEXT("PaperCaveSurface"));
-    PaperCaveTexture=NewObject<UTextureRenderTarget2D>(this);PaperCaveTexture->InitCustomFormat(1920,1080,PF_FloatRGBA,true);PaperCaveTexture->ClearColor=FLinearColor::Black;
-    PaperCaveCapture=NewObject<USceneCaptureComponent2D>(this,NAME_None,RF_Transient);PaperCaveCapture->SetupAttachment(PaperCaveScene);PaperCaveCapture->TextureTarget=PaperCaveTexture;
-    PaperCaveCapture->CaptureSource=ESceneCaptureSource::SCS_SceneColorHDR;PaperCaveCapture->bCaptureEveryFrame=false;PaperCaveCapture->bCaptureOnMovement=false;PaperCaveCapture->FOVAngle=55;
-    PaperCaveCapture->PrimitiveRenderMode=ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
-    TArray<USceneComponent*> CaveParts;PaperCaveScene->GetChildrenComponents(true,CaveParts);
-    for(auto* Part:CaveParts)if(auto* Primitive=Cast<UPrimitiveComponent>(Part))PaperCaveCapture->ShowOnlyComponent(Primitive);
-    PaperCaveCapture->RegisterComponent();AddInstanceComponent(PaperCaveCapture);
+    FinaleVideoMaterial=MeshPart(TEXT("FinaleVideoSurface"),MoveTemp(VideoOpening),PaperCaveScene,TEXT("VideoPortal"),FLinearColor::White);
     TArray<USceneComponent*> PaperParts;PaperScene->GetChildrenComponents(true,PaperParts);
     for(auto* Part:PaperParts)if(auto* Mesh=Cast<UMeshComponent>(Part))for(int I=0;I<Mesh->GetNumMaterials();++I)
         if(auto* M=Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(I)))PaperArtMaterials.AddUnique(M);
     ResetPaperFinale();PaperScene->SetVisibility(false,true);
 
-    FinaleReality=Group(TEXT("FinaleRealityDesk"),PaperEnding::Desk);
-    const FLinearColor Wood(.14f,.085f,.055f),Dark(.012f,.017f,.026f);
-    Shape(TEXT("FinaleDesktop"),FVector(45,0,78),FVector(460,420,12),Wood,TEXT("Cube"),FinaleReality,TEXT("PaperStock"));
-    Shape(TEXT("FinaleWall"),FVector(260,0,210),FVector(15,1000,460),FLinearColor(.13f,.16f,.21f),TEXT("Cube"),FinaleReality,TEXT("PaperStock"));
-    Shape(TEXT("FinaleMonitorBase"),FVector(108,0,88),FVector(42,64,7),Dark,TEXT("Cube"),FinaleReality,TEXT("PaperStock"));
-    Shape(TEXT("FinaleMonitorStem"),FVector(111,0,119),FVector(12,14,56),Dark,TEXT("Cube"),FinaleReality,TEXT("PaperStock"));
-    Shape(TEXT("FinaleMonitor"),FVector(108,0,159),FVector(9,136,84),FLinearColor(.025f,.033f,.045f),TEXT("Cube"),FinaleReality,TEXT("PaperStock"));
-    UE::Geometry::FDynamicMesh3 Screen;Screen.EnableAttributes();
-    PaperEnding::Quad(Screen,FVector(102,-62.5,123.84375),FVector(102,62.5,123.84375),FVector(102,62.5,194.15625),FVector(102,-62.5,194.15625));
-    CreditsScreenMaterial=MeshPart(TEXT("DeveloperCreditsScreen"),MoveTemp(Screen),FinaleReality,TEXT("DeveloperCredits"),FLinearColor::White);
-    CreditsScreenMaterial->SetTextureParameterValue(TEXT("CaveImage"),PaperCaveTexture);
-    Shape(TEXT("FinaleKeyboard"),FVector(32,-5,87),FVector(34,95,4),Dark,TEXT("Cube"),FinaleReality,TEXT("PaperStock"));
-    auto* Keys=Instances(TEXT("FinaleKeyboardKeys"),TEXT("Cube"),FLinearColor(.16f,.18f,.20f),FinaleReality,TEXT("PaperStock"));
-    for(int X=0;X<4;++X)for(int Y=0;Y<13;++Y)Keys->AddInstance(FTransform(FRotator::ZeroRotator,FVector(21+X*7,-46+Y*7,90),FVector(.05f,.05f,.02f)));
-    Shape(TEXT("FinaleMouse"),FVector(30,80,88),FVector(14,9,6),Dark,TEXT("Sphere"),FinaleReality,TEXT("PaperStock"));
-    Shape(TEXT("FinaleCup"),FVector(92,-105,102),FVector(22,22,35),Cream*.5f,TEXT("Cylinder"),FinaleReality,TEXT("PaperStock"));
-    Shape(TEXT("FinaleCoffee"),FVector(92,-105,120),FVector(20,20,1),Ink,TEXT("Cylinder"),FinaleReality,TEXT("PaperStock"));
-    for(int I=0;I<5;++I){auto* Note=Shape(TEXT("FinaleDeskNote"),FVector(5+I*8,-80,86+I*.3),FVector(35,40,.3),Cream,TEXT("Cube"),FinaleReality,TEXT("PaperStock"));Note->SetRelativeRotation(FRotator(0,I*13,0));}
-    CreditsScreenLight=NewObject<UPointLightComponent>(this,NAME_None,RF_Transient);CreditsScreenLight->SetupAttachment(FinaleReality);CreditsScreenLight->SetRelativeLocation(FVector(90,0,160));CreditsScreenLight->SetLightColor(FLinearColor(.55f,.73f,1));CreditsScreenLight->SetAttenuationRadius(300);CreditsScreenLight->SetCastShadows(false);CreditsScreenLight->SetIntensity(0);CreditsScreenLight->RegisterComponent();
-    FinaleReality->SetVisibility(false,true);
+    // The supplied film replaces the old ceiling/desk/developer geometry.
+}
+
+void AEndingEmergence::PrepareFinaleVideo()
+{
+    if(!FinaleVideoSource)FinaleVideoSource=LoadObject<UMediaSource>(nullptr,TEXT("/Game/EndingEmergence/PaperFinale/MS_EndingFinale"));
+    if(!FinaleVideoSource||FinaleVideoPlayer)return;
+    FinaleVideoPlayer=NewObject<UMediaPlayer>(this);
+    FinaleVideoPlayer->PlayOnOpen=false;FinaleVideoPlayer->SetLooping(false);
+    FinaleVideoPlayer->OnMediaOpened.AddDynamic(this,&AEndingEmergence::FinaleVideoOpened);
+    FinaleVideoPlayer->OnEndReached.AddDynamic(this,&AEndingEmergence::FinaleVideoEnded);
+    FinaleVideoTexture=NewObject<UMediaTexture>(this);
+    FinaleVideoTexture->NewStyleOutput=true;FinaleVideoTexture->AutoClear=false;
+    FinaleVideoTexture->SetMediaPlayer(FinaleVideoPlayer);FinaleVideoTexture->UpdateResource();
+    // Bind the decoder long before the rock appears. Keep the exact still frame
+    // on screen until real video samples arrive, without changing texture types
+    // (and preparing new shaders) during the final rush.
+    FinaleVideoMaterial->SetTextureParameterValue(TEXT("VideoFrame"),FinaleVideoTexture);
+    FinaleVideoMaterial->SetScalarParameterValue(TEXT("VideoBlend"),0);
+    FinaleVideoSound=NewObject<UMediaSoundComponent>(this,NAME_None,RF_Transient);
+    FinaleVideoSound->bIsUISound=true;FinaleVideoSound->SetMediaPlayer(FinaleVideoPlayer);
+    FinaleVideoSound->SetVolumeMultiplier(0);FinaleVideoSound->RegisterComponent();FinaleVideoSound->Start();
+    // Asynchronous preparation starts well before impact, never during the hit.
+    if(!FinaleVideoPlayer->OpenSource(FinaleVideoSource))
+        UE_LOG(LogTemp,Warning,TEXT("Ending video could not open; keeping the preview frame."));
+}
+
+void AEndingEmergence::FinaleVideoOpened(FString OpenedUrl)
+{
+    if(!FinaleVideoPlayer||!FinaleVideoMaterial)return;
+    const float Aspect=FinaleVideoPlayer->GetVideoTrackAspectRatio(INDEX_NONE,INDEX_NONE);
+    if(Aspect>0)FinaleVideoMaterial->SetScalarParameterValue(TEXT("VideoAspect"),Aspect);
+    // Decode a few samples silently, then park at frame zero while the player
+    // approaches. The imported exact first frame covers the aperture meanwhile.
+    FinaleVideoPlayer->Play();
+    if(bFinaleVideoRequested)StartFinaleVideo();
+}
+
+void AEndingEmergence::StartFinaleVideo()
+{
+    bFinaleVideoRequested=true;
+    if(FinaleVideoPlayer&&FinaleVideoPlayer->IsReady())
+    {
+        if(FinaleVideoSound)FinaleVideoSound->SetVolumeMultiplier(1);
+        if(Ambience)Ambience->AdjustVolume(.35f,0);
+        FinaleVideoPlayer->Play();
+    }
+}
+
+void AEndingEmergence::FinaleVideoEnded(){if(bFinaleVideoRequested)bComplete=true;}
+
+void AEndingEmergence::ResetFinaleVideo()
+{
+    if(FinaleVideoPlayer)FinaleVideoPlayer->Close();
+    if(FinaleVideoSound){FinaleVideoSound->Stop();FinaleVideoSound->DestroyComponent();}
+    FinaleVideoSound=nullptr;FinaleVideoPlayer=nullptr;FinaleVideoTexture=nullptr;bFinaleVideoRequested=false;
+    if(FinaleVideoMaterial)FinaleVideoMaterial->SetScalarParameterValue(TEXT("VideoBlend"),0);
+    if(FinaleVideoMaterial)if(auto* FirstFrame=LoadObject<UTexture2D>(nullptr,TEXT("/Game/EndingEmergence/PaperFinale/T_EndingFinaleFirstFrame")))FinaleVideoMaterial->SetTextureParameterValue(TEXT("VideoFrame"),FirstFrame);
 }
 
 void AEndingEmergence::ResetPaperFinale()
 {
+    ResetFinaleVideo();
+    if(PaperCaveScene)PaperCaveScene->SetRelativeLocation(PaperEnding::Origin+FVector(8002,0,240));
     if(PaperScene)PaperScene->SetRelativeRotation(FRotator(90,0,0));
     for(auto M:PaperArtMaterials)M->SetScalarParameterValue(TEXT("WhiteBlend"),0);
     if(PaperSurfaceMaterial){PaperSurfaceMaterial->SetScalarParameterValue(TEXT("DotsReveal"),0);PaperSurfaceMaterial->SetScalarParameterValue(TEXT("ApertureRadius"),35);}
-    bPaperRockBroken=false;
+    bPaperRockBroken=false;LastPaperSubtitle=-1;bMealSubtitle=false;
     if(PaperRock)PaperRock->SetRelativeRotation(FRotator(-90,0,0));
     if(PaperRockCap)PaperRockCap->SetVisibility(true,true);
     if(PaperPick)PaperPick->SetRelativeRotation(FRotator(-90,0,0));
@@ -257,6 +286,17 @@ void AEndingEmergence::ResetPaperFinale()
 
 void AEndingEmergence::UpdatePaperProps(float CameraX,float Dt)
 {
+    if(!bMealSubtitle)
+    {
+        const TCHAR* Captions[]={TEXT("马桶"),TEXT("警告"),TEXT("眼镜"),TEXT("卡牌"),TEXT("喷泉"),TEXT("思考"),TEXT("电脑"),TEXT("大脑"),TEXT("太阳系"),TEXT("蚂蚁"),TEXT("肉鸽")};
+        int32 Pair=LastPaperSubtitle;
+        for(int32 I=0;I+1<PaperCards.Num();I+=2)if(CameraX+600>PaperCards[I]->GetRelativeLocation().X)Pair=FMath::Max(Pair,I/2);
+        if(Pair!=LastPaperSubtitle)
+        {
+            LastPaperSubtitle=Pair;
+            if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(FString(Captions[(Pair*2)%11])+TEXT(" · ")+Captions[(Pair*2+1)%11]),.8f);}
+        }
+    }
     for(int I=0;I<PaperCards.Num();++I)
     {
         auto* Card=PaperCards[I].Get();float& PopAge=PaperPopAges[I];
@@ -279,18 +319,19 @@ void AEndingEmergence::UpdatePaperProps(float CameraX,float Dt)
     PaperPopStrokes->MarkRenderStateDirty();
 }
 
-void AEndingEmergence::CapturePaperCave()
-{
-    PaperCaveCapture->SetRelativeLocation(FVector(1343.5029,1343.5029,650));
-    PaperCaveCapture->SetRelativeRotation((FVector(0,0,350)-FVector(1343.5029,1343.5029,650)).Rotation());
-    PaperCaveCapture->PostProcessSettings=Camera->GetCameraComponent()->PostProcessSettings;
-    PaperCaveCapture->PostProcessSettings.WeightedBlendables.Array.Empty();
-    PaperCaveCapture->CaptureScene();
-    FlushRenderingCommands();
-}
-
 void AEndingEmergence::UpdatePaperFinale(float Dt)
 {
+    if(bFinaleVideoRequested&&FinaleVideoPlayer&&FinaleVideoPlayer->IsPlaying()&&FinaleVideoTexture&&FinaleVideoTexture->GetWidth()>0)
+        FinaleVideoMaterial->SetScalarParameterValue(TEXT("VideoBlend"),PaperEnding::Ease(float(FinaleVideoPlayer->GetTime().GetTotalSeconds()-.04)/.12f));
+    if(FinaleVideoPlayer&&!bFinaleVideoRequested&&FinaleVideoPlayer->IsPlaying()&&FinaleVideoPlayer->GetTime().GetTotalSeconds()>.08)
+    {
+        FinaleVideoPlayer->Pause();FinaleVideoPlayer->Seek(FTimespan::Zero());
+    }
+    if(FinaleVideoMaterial&&Player)
+    {
+        int32 Width=0,Height=0;Player->GetViewportSize(Width,Height);
+        if(Height>0)FinaleVideoMaterial->SetScalarParameterValue(TEXT("ViewportAspect"),float(Width)/Height);
+    }
     auto PaperPose=[&](FVector P,FVector Direction,float Fov,float Roll=0.f)
     {
         const FTransform T=PaperScene->GetRelativeTransform();Pose(T.TransformPosition(P),T.TransformPosition(P+Direction*1000),Fov,Roll);
@@ -298,21 +339,29 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
     if(Shot==10)
     {
         UpdateFinaleExit(Dt);
-        // The portal is present from the first frame. Its dots and aperture
-        // grow with distance so the approach never cuts through a white flash.
-        const float Approach=PaperEnding::Ease(ShotTime/2.8f);
-        PaperSurfaceMaterial->SetScalarParameterValue(TEXT("ApertureRadius"),FMath::Lerp(180.f,90000.f,FMath::Pow(Approach,3.2f)));
-        PaperSurfaceMaterial->SetScalarParameterValue(TEXT("DotsReveal"),PaperEnding::Ease((ShotTime-1.35f)/1.8f));
+        // First fly through black space to the same physical white disk that
+        // becomes the desktop. Only turn after the aperture fills the view.
+        const float Flight=FMath::Clamp(ShotTime/2.6f,0.f,1.f);
+        const float PaperTime=FMath::Max(0.f,ShotTime-2.6f);
+        const float T=FMath::Clamp(PaperTime/1.1f,0.f,1.f),Turn=PaperEnding::Ease(T);
+        // Approach the same 75 cm diameter disk until it covers the viewport.
+        // Extend its unseen edge gradually during the turn, never in a 40 ms jump.
+        PaperSurfaceMaterial->SetScalarParameterValue(TEXT("ApertureRadius"),37.5f+90000.f*FMath::Pow(T,4.f));
+        PaperSurfaceMaterial->SetScalarParameterValue(TEXT("DotsReveal"),0);
         if(!PaperScene->IsVisible())PaperScene->SetVisibility(true,true);
-        const float PaperTime=ShotTime,T=FMath::Clamp(PaperTime/3.2f,0.f,1.f),Turn=PaperEnding::Ease(PaperTime/2.6f);
-        if(Turn>.45f)
+        if(PaperTime>0&&PaperCards.Num()>0&&!PaperCards[0]->IsVisible())
         {
             TArray<USceneComponent*> PaperParts;PaperScene->GetChildrenComponents(true,PaperParts);
             for(auto* Part:PaperParts)if(Part!=PaperSurface)Part->SetVisibility(true,true);
         }
         PaperScene->SetRelativeRotation(FRotator(90*(1-Turn),0,0));
-        const float X=480*FMath::Pow(T,6),Z=FMath::Lerp(700.f,24.f,PaperEnding::Ease(PaperTime/2.4f)),Pitch=-HALF_PI*(1-Turn);
-        PaperPose(FVector(X,0,Z),FVector(FMath::Cos(Pitch),0,FMath::Sin(Pitch)),FMath::Lerp(94.f,108.f,Turn));
+        // Match the drilling endpoint at Z=1350 and the next flight at Z=90.
+        // The x rail ends at the next shot's exact position and forward speed.
+        const float FlightZ=PaperTime>0?FMath::Lerp(24.f,90.f,Turn):FMath::Lerp(1350.f,24.f,Flight);
+        const float ExitSpeed=(6200.f-480.f)/6.6f;
+        const float X=480*FMath::Pow(T,ExitSpeed*1.1f/480),Pitch=-HALF_PI*(1-Turn);
+        const float Side=FinaleSide*(1-PaperEnding::Ease(Flight));
+        PaperPose(FVector(X,Side,FlightZ),FVector(FMath::Cos(Pitch),0,FMath::Sin(Pitch)),FMath::Lerp(94.f,108.f,Turn));
         UpdatePaperProps(X,Dt);TransitEffects(0);
     }
     else if(Shot==11)
@@ -322,24 +371,30 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
         // Keep the flight at one height.  The paper rock is lowered to this
         // sightline, so the approach never has to pitch down or up to find it.
         FVector Eye(X,Y,90);
-        FVector Aim=FMath::Lerp(FVector(1,FMath::Cos(T*2*PI)*.025f,0).GetSafeNormal(),(FVector(8000,250,90)-Eye).GetSafeNormal(),FrameRock);
+        FVector Aim=FMath::Lerp(FVector(1,FMath::Cos(T*2*PI)*.025f,0).GetSafeNormal(),(FVector(8000,0,240)-Eye).GetSafeNormal(),FrameRock);
         PaperPose(Eye,Aim,108,bComfortMode?0:FMath::Sin(T*2*PI)*4.5f);
-        PaperRock->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.4f)/1.1f)),0,0));
-        PaperPick->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-5.35f)/1.15f)),0,0));
+        if(ShotTime>=4.85f && !bMealSubtitle)
+        {bMealSubtitle=true;if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("唉算了，涌现不出来了，我们去吃饭吧。")),5.f);}}
+        PaperRock->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.05f)/.70f)),0,0));
+        PaperPick->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.95f)/.65f)),0,0));
+        // Submit the film surface while the upright, unbroken rock still covers
+        // it. First-use shader preparation must finish before the cap flies away.
+        if(ShotTime>=4.75f&&!PaperCaveScene->IsVisible())PaperCaveScene->SetVisibility(true,true);
         UpdatePaperProps(X,Dt);
     }
     else if(Shot==12)
     {
-        const float T=FMath::Clamp(ShotTime/4.4f,0.f,1.f),Swing=PaperEnding::Ease(ShotTime/.75f);
+        const float T=FMath::Clamp(ShotTime/2.8f,0.f,1.f),Swing=PaperEnding::Ease(ShotTime/.75f);
         const float StrikeAngle=FMath::RadiansToDegrees(FMath::Atan2(800.f,1100.f)+FMath::Atan2(370.f,874.f));
         const float Recoil=PaperEnding::Ease((ShotTime-.86f)/1.1f);
         const float PickAngle=FMath::Lerp(FMath::Lerp(-35.f,StrikeAngle,Swing),-35.f,Recoil);
         PaperPickSwing->SetRelativeRotation(FQuat(FVector::ForwardVector,FMath::DegreesToRadians(PickAngle)));
         if(ShotTime>=.75f&&!bPaperRockBroken)
         {
+            if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("等一下！")),5.f);}
             bPaperRockBroken=true;PaperRockCap->SetVisibility(false,true);
             for(auto Chip:PaperRockChips)Chip->SetVisibility(true,true);
-            PaperCaveScene->SetVisibility(true,true);PaperCaveSeal->SetVisibility(false);
+            PaperCaveScene->SetVisibility(true,true);
             Sound(TEXT("Connect"),.8f,.55f);
         }
         const float ShardAge=FMath::Max(0.f,ShotTime-.75f);
@@ -350,45 +405,30 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
             PaperRockChips[I]->SetRelativeRotation(FRotator(ShardAge*(55+I*11),ShardAge*(I%2?90:-75),ShardAge*60));
             PaperRockChips[I]->SetRelativeScale3D(FVector(1-PaperEnding::Ease((ShardAge-1.2f)/.9f)));
         }
-        const float Entry=PaperEnding::Ease(T/.42f);
-        const float Orbit=PaperEnding::Ease((T-.42f)/.58f);
-        const FVector CaveCentre(10500,0,90);
-        FVector P(FMath::Lerp(6200.f,8500.f,Entry),0,90);
-        // Once through the cut, move sideways around the cave while keeping
-        // the eye and aim on the same horizontal plane.
-        if(Orbit>0)
-        {
-            const float Angle=FMath::Lerp(PI,HALF_PI,Orbit);
-            P=CaveCentre+FVector(FMath::Cos(Angle)*2000,FMath::Sin(Angle)*2000,0);
-        }
-        const FVector Target=CaveCentre;
-        const float Shake=bComfortMode?0:FMath::Exp(-ShardAge*8)*FMath::Sin(ShardAge*70)*(bPaperRockBroken?6:0);
-        P.Y+=Shake;
-        PaperPose(P,(Target-P).GetSafeNormal(),FMath::Lerp(108.f,65.f,PaperEnding::Ease(T)));
-        if(P.X>8300){PaperCaveSeal->SetVisibility(true);PaperScene->SetVisibility(false,true);}
-        UpdatePaperProps(10000,Dt);
+        // Continue the exact incoming forward speed, including through impact.
+        // The old ease-in restarted at zero here and looked like a hit-stop.
+        const float X=6200.f+PaperEnding::FlightSpeed*ShotTime;
+        const float Side=65*FMath::Sin((6.6f+ShotTime)*2*PI/6.6f)*(1-PaperEnding::Ease(ShotTime/1.2f));
+        const FVector Eye(X,Side,FMath::Lerp(90.f,240.f,PaperEnding::Ease(ShotTime/2.1f)));
+        const FVector ToHole=(FVector(8000,0,240)-Eye).GetSafeNormal();
+        const FVector Facing=FMath::Lerp(ToHole,FVector::ForwardVector,PaperEnding::Ease((ShotTime-1.1f)/.9f)).GetSafeNormal();
+        const float Roll=bComfortMode?0:FMath::Sin((6.6f+ShotTime)*2*PI/6.6f)*4.5f*(1-PaperEnding::Ease(ShotTime/1.2f));
+        PaperPose(Eye,Facing,108,Roll);
+        if(X>8005)PaperScene->SetVisibility(false,true);
+        // Keep the already screen-filling opening ahead of the near clip plane.
+        // Screen-space sampling makes this invisible; playback starts at the rim.
+        if(X>=7950)
+            PaperCaveScene->SetWorldLocation(Camera->GetActorLocation()+Camera->GetActorForwardVector()*50);
+        if(X>=8000&&!bFinaleVideoRequested)StartFinaleVideo();
+        UpdatePaperProps(X,Dt);
     }
-    else if(Shot==13)
+    else if(Shot>=13)
     {
-        const float T=PaperEnding::Ease(ShotTime/6.f),Angle=FMath::Lerp(PI,PI*.25f,T);
-        const FVector P=FVector(1900*FMath::Cos(Angle),1900*FMath::Sin(Angle),420+70*T);
-        const FVector Centre=PaperEnding::Origin+FVector(10500,0,0);
-        Pose(Centre+P,Centre+FVector(0,0,420),FMath::Lerp(65.f,55.f,T));
-        if(PaperCaveMiner)
-        {
-            const float MinerT=FMath::Clamp((ShotTime-.2f)/5.8f,0.f,1.f);
-            PaperCaveMiner->SetRelativeLocation(FVector(-1550+MinerT*2550,FMath::Sin(ShotTime*2.2f)*55,150));
-            if(PaperCaveMinerPick)PaperCaveMinerPick->SetRelativeRotation(FRotator(0,0,25.f+FMath::Sin(ShotTime*8.f)*38.f));
-        }
-    }
-    else if(Shot==14)
-    {
-        const float Back=PaperEnding::Ease(ShotTime/5.f);
-        // A 16:9 screen exactly fills the preceding 55 degree camera frustum.
-        const float MatchX=102-62.5f/FMath::Tan(FMath::DegreesToRadians(27.5f));
-        Pose(PaperEnding::Desk+FVector(FMath::Lerp(MatchX,-200.f,Back),0,159),PaperEnding::Desk+FVector(108,0,159),55);
-        CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),1);
-        CreditsScreenMaterial->SetScalarParameterValue(TEXT("CreditMix"),PaperEnding::Ease((ShotTime-5.8f)/1.6f));
-        CreditsScreenLight->SetIntensity(110);bComplete=ShotTime>=8;
+        // Once the aperture fills the view, keep the exact same video projection.
+        // No ceiling scene, new camera, seek or full-screen player is introduced.
+        PaperPose(FVector(6200.f+PaperEnding::FlightSpeed*Duration(12),0,240),FVector::ForwardVector,108);
+        PaperCaveScene->SetWorldLocation(Camera->GetActorLocation()+Camera->GetActorForwardVector()*50);
+        if(!FinaleVideoSource)bComplete=true;
+
     }
 }

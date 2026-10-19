@@ -29,6 +29,7 @@ private:
     UPROPERTY(Transient) TObjectPtr<AMiningCollectionField> Collection;
     bool bDragging=false;
     FVector2D LastMouse;
+    void SelectSlot(int32 SlotIndex);
     bool InPreview(const FVector2D& ScreenPosition) const;
     UFUNCTION() void Select0();
     UFUNCTION() void Select1();

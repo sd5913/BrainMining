@@ -1,5 +1,5 @@
 param(
-    [string]$EngineRoot = 'H:/UE_5.8',
+    [string]$EngineRoot = '',
     [string]$OutputDirectory = '',
     [switch]$SkipBuild,
     [switch]$SkipCook
@@ -8,6 +8,17 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'ResourceGuard.ps1')
 Assert-MiningLaunchResources -MinimumPhysicalGB 6 -MinimumCommitGB 8
 $projectRoot = Split-Path -Parent $PSScriptRoot
+if (-not $EngineRoot) {
+    foreach ($candidate in @($env:UE_ENGINE_ROOT, 'C:/UE_5.8', 'E:/UE5/UE_5.8', 'H:/UE_5.8')) {
+        if ($candidate -and (Test-Path -LiteralPath "$candidate/Engine/Binaries/DotNET/AutomationTool/AutomationTool.dll")) {
+            $EngineRoot = $candidate
+            break
+        }
+    }
+}
+if (-not $EngineRoot -or -not (Test-Path -LiteralPath "$EngineRoot/Engine/Binaries/DotNET/AutomationTool/AutomationTool.dll")) {
+    throw 'UE 5.8 AutomationTool was not found. Supply -EngineRoot.'
+}
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $projectRoot ('Builds/MainGame-Windows-' + (Get-Date -Format 'yyyyMMdd-HHmmss')) }
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 $report = Join-Path $projectRoot 'Saved/Validation/MainGamePackage'
@@ -43,4 +54,43 @@ try {
     [Environment]::SetEnvironmentVariable('uebp_LogFolder', $previousLogs, 'Process')
 }
 if (-not (Test-Path "$OutputDirectory/Windows/BrainMining.exe")) { throw "Packaged launcher missing: $OutputDirectory" }
+# Verify the actual container, not just source dependencies: native string loads are
+# invisible to map reference gathering and can otherwise disappear in Shipping.
+$containerList = "$report/container-files.csv"
+Start-MiningGuardedProcess -Executable "$EngineRoot/Engine/Binaries/Win64/UnrealPak.exe" -Arguments @(
+    "-ListContainer=$OutputDirectory/Windows/BrainMining/Content/Paks/*.utoc", "-Csv=$containerList"
+) -ReportPath "$report/container-resources.csv" -MaximumSeconds 120
+$containerText = Get-Content -LiteralPath $containerList -Raw
+$requiredAssets = @(
+    'MainGame/Maps/Lvl_MainGame.umap',
+    'MainGame/Blueprints/BP_MainGameCharacter.uasset',
+    'Showcase/Blueprints/BP_SharedMiningCharacter.uasset',
+    'Drill/Stylized/SM_DrillStylized.uasset',
+    'MainGame/Materials/M_BuriedMineralGlow.uasset',
+    'WenSi/Mirror/Materials/M_PoweredCable.uasset',
+    'Rooms/CardDuel/Materials/M_EscapeCRTScreen.uasset',
+    'CollectionPrototype/Materials/M_CollectionSilhouette.uasset',
+    'EndingEmergence/Materials/M_EE_Fisheye.uasset',
+    'EndingEmergence/Materials/M_EE_ScaleZoom.uasset',
+    'EndingEmergence/Materials/M_EE_PulseTransit.uasset',
+    'EndingEmergence/Materials/M_EE_WetLens.uasset',
+    'EndingEmergence/Materials/M_EE_Exhaustion.uasset',
+    'EndingEmergence/Materials/M_EE_StarlightSpark.uasset',
+    'EndingEmergence/Materials/M_EE_StarlightStream.uasset',
+    'EndingEmergence/Materials/M_EE_UniverseShard.uasset',
+    'Rooms/CardDuel/Robot/SM_Robot_Head.uasset',
+    'Rooms/CardDuel/Robot/SM_Robot_Body.uasset',
+    'Rooms/CardDuel/Robot/SM_Robot_FootL.uasset',
+    'Rooms/CardDuel/Robot/SM_Robot_FootR.uasset',
+    'PopupClose/Maps/_GENERATED/Lenovo/office_doors_Submesh_704FAA0D.uasset'
+)
+Get-ChildItem -LiteralPath "$projectRoot/Content/Passages/Echo/ArtP2/Collision" -Filter '*_Walkable.uasset' -File | ForEach-Object {
+    $requiredAssets += 'Passages/Echo/ArtP2/Collision/' + $_.Name
+}
+foreach ($asset in $requiredAssets) {
+    if (-not $containerText.Contains("../../../BrainMining/Content/$asset,")) {
+        throw "Required runtime asset missing from packaged container: $asset"
+    }
+}
+$requiredAssets | ConvertTo-Json | Set-Content "$report/required-container-assets.json" -Encoding UTF8
 Write-Host "MainGame Shipping package: $OutputDirectory/Windows/BrainMining.exe"

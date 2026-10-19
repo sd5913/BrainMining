@@ -59,6 +59,7 @@ public:
  void TickScreen(float Dt,APlayerController* PC);
  void FitCamera();
  bool ClickReplyForValidation();
+	bool ClickReplyForMobile();
  UPopupCloseDesktopWidget* GetDesktop() const { return Desktop; }
  UWidgetComponent* GetSurface() const { return Surface; }
 private:

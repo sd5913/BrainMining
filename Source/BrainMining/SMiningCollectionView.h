@@ -16,11 +16,14 @@ public:
     virtual FReply OnMouseMove(const FGeometry&, const FPointerEvent&) override;
     virtual FReply OnMouseWheel(const FGeometry&, const FPointerEvent&) override;
     virtual FReply OnKeyDown(const FGeometry&, const FKeyEvent&) override;
-    virtual void OnMouseCaptureLost(const FCaptureLostEvent&) override { bDragging=false; }
+    virtual void OnMouseCaptureLost(const FCaptureLostEvent&) override { bDragging=bListDragging=false; }
 private:
     TWeakObjectPtr<AMiningCollectionField> Owner;
     FSlateBrush PreviewBrush;
     bool bDragging = false;
+    bool bListDragging=false;
+    float ListScroll=0,ListDragStart=0;
+    FVector2D ListPress;
     FVector2D LastMouse;
     FVector2D ToVirtual(const FGeometry&, const FVector2D&) const;
 };

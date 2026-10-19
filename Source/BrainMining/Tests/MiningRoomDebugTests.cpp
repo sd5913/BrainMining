@@ -2,7 +2,9 @@
 #include "MiningExperienceSubsystem.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "StartRoom/MiningStartRoom.h"
+#include "StartRoom/MiningOpening.h"
 #include "MiningComponent.h"
+#include "MiningCollection.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningWalletSubsystem.h"
 #include "MiningRoomEscape.h"
@@ -57,6 +59,9 @@ namespace MiningRoomDebugTests
             auto* Menu = World->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();
             if (!Controller || !Controller->GetPawn() || !Menu) return false;
             auto* Hall = AMiningExhibitHall::Find(World);
+            // Entering or reloading MainGame shows the real opening menu first.
+            for(TActorIterator<AMiningOpening> Opening(World);Opening;++Opening)
+                if(!Opening->bFinished){Opening->StartGame();return false;}
             if (Step == 0)
             {
                 if (!Hall || !Hall->bReady) return false;
@@ -124,6 +129,29 @@ namespace MiningRoomDebugTests
                 }
                 Test->TestFalse(TEXT("Mining usable after returning to mine"), Mining->IsEncounterBlocked());
                 Test->TestTrue(TEXT("Jetpack usable after returning to mine"), Movement->IsFlightAvailable());
+                Test->TestTrue(TEXT("Escape pause opens"),Menu->TogglePauseMenu());
+                Test->TestTrue(TEXT("Pause owns input and time"),Controller->IsPaused()&&Mining->IsInputSuspended());
+                Menu->RequestQuitConfirmation();
+                Test->TestTrue(TEXT("Quit requires a second confirmation"),Menu->bQuitConfirmation&&Menu->IsMenuOpen());
+                Menu->CancelQuitConfirmation();
+                Test->TestTrue(TEXT("Cancel quit preserves pause menu"),!Menu->bQuitConfirmation&&Menu->IsMenuOpen());
+                Menu->OpenPauseCollection();
+                AMiningCollectionField* Collection=nullptr;
+                for(TActorIterator<AMiningCollectionField> It(World);It;++It)if(It->bUseAuthoredPlacements){Collection=*It;break;}
+                if(!Test->TestNotNull(TEXT("Shared collection exists"),Collection))return true;
+                Test->TestTrue(TEXT("Pause opens the real catalogue"),Collection->bCatalogueOpen&&!Menu->IsMenuOpen());
+                Collection->ToggleCatalogue();
+                Test->TestFalse(TEXT("Closing catalogue restores world"),Controller->IsPaused());
+                const TArray<int32> CollectedBefore=Collection->Inventory;
+                for(int32 Item=0;Item<12;++Item)
+                {
+                    Test->TestTrue(TEXT("Open collectible GM"),Menu->ToggleDeveloperMenu());
+                    const bool Jumped=Menu->JumpToCollectible(Item);
+                    Test->TestTrue(*FString::Printf(TEXT("GM reaches collectible %d"),Item),Jumped);
+                    if(!Jumped){Test->AddError(Menu->GetMenuError());Menu->CloseMenu();return true;}
+                    Test->TestFalse(TEXT("GM resumes controls"),Controller->IsPaused()||Controller->IsMoveInputIgnored()||Controller->IsLookInputIgnored());
+                    Test->TestTrue(TEXT("GM does not award collectibles"),Collection->Inventory==CollectedBefore);
+                }
                 Test->TestFalse(TEXT("Travel without debug menu rejected"), Menu->OpenDeveloperExperience(3));
                 Test->TestTrue(TEXT("Open before independent room travel"), Menu->ToggleDeveloperMenu());
                 Test->TestTrue(TEXT("Start independent card room travel"), Menu->OpenDeveloperExperience(3));

@@ -1,3 +1,4 @@
+#include "StartRoom/MiningOpening.h"
 #if WITH_EDITOR && WITH_DEV_AUTOMATION_TESTS
 #include "Showcase/MiningExhibitHall.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
@@ -33,6 +34,7 @@ public:
   AWenSiMirrorPuzzle* Museum=nullptr;
   for(TActorIterator<AWenSiMirrorPuzzle> It(World);It;++It)Museum=*It;
   if(!Test->TestNotNull(TEXT("Mirror keyboard target exists"),Museum))return true;
+  if(Step==0)for(TActorIterator<AMiningOpening> It(World);It;++It)if(!It->bFinished){It->StartGame();return false;}
   auto* Controller=World->GetFirstPlayerController();auto Pawn=Controller->GetPawn();
   if(FPlatformTime::Seconds()-LastStep<.2)return false;
   auto Key=[&](FKey Input,EInputEvent Event){Controller->InputKey(FInputKeyEventArgs::CreateSimulated(Input,Event,Event==IE_Pressed?1.f:0.f));};
@@ -153,9 +155,10 @@ public:
   Test->TestTrue(TEXT("Shared pawn can solve every translated mirror mechanism"),Museum->ValidateMirrorPuzzle().StartsWith(TEXT("PASS")));
   if(UMiningAudioComponent::IsMainGameWorld(World))
   {
+   // Entering the tiny gallery no longer completes the room; explicit painting interaction owns that transition.
    auto* RoomAudio=World->GetSubsystem<UMiningRoomAudioSubsystem>();
    if(Test->TestNotNull(TEXT("MainGame museum has room audio"),RoomAudio))
-    for(FName Cue:{FName(TEXT("S_Swap")),FName(TEXT("S_Pottery")),FName(TEXT("S_Pressure")),FName(TEXT("S_Power")),FName(TEXT("S_RewardDoor")),FName(TEXT("S_Complete")),FName(TEXT("S_Reset"))})
+    for(FName Cue:{FName(TEXT("S_Swap")),FName(TEXT("S_Pottery")),FName(TEXT("S_Pressure")),FName(TEXT("S_Power")),FName(TEXT("S_RewardDoor")),FName(TEXT("S_Reset"))})
      Test->TestTrue(*FString::Printf(TEXT("Physical museum solution triggers %s"),*Cue.ToString()),RoomAudio->EventCount(Cue)>0);
   }
   Pawn->SetActorLocation(Museum->RoomPoint(FVector(1150,80,89)));

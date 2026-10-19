@@ -112,9 +112,7 @@ namespace WenSiThoughtBubble
    [SNew(SOverlay)
     +SOverlay::Slot()[SNew(SImage).Image(Brush).Visibility(EVisibility::HitTestInvisible)]
     +SOverlay::Slot()[Perspective]
-    +SOverlay::Slot().HAlign(Side==0 ? HAlign_Left:HAlign_Right).VAlign(VAlign_Top).Padding(Side==0 ? FMargin(37,33,0,0):FMargin(0,33,37,0))
-     [SNew(SButton).IsFocusable(false).ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder")).ContentPadding(6).OnClicked(Close)
-      [SNew(STextBlock).Text(FText::FromString(TEXT("×"))).Font(FCoreStyle::GetDefaultFontStyle("Bold",20)).ColorAndOpacity(FLinearColor(.08,.08,.09))]]
+
    ];
  }
 }

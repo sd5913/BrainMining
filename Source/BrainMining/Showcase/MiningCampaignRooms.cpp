@@ -58,7 +58,16 @@ void LocalizeRoomExposure(AMiningExhibitHall* Hall, APostProcessVolume* Source, 
     else if(Area.Tag==TEXT("BM_Campaign_MainGameMuseum"))
     {Interior.Min.X=Area.Origin.X-910;Interior.Max.X=Area.Origin.X+2460;}
     else if(Area.Tag==TEXT("BM_Campaign_MainGameJourney"))
-    {Interior.Min.X=Area.Entry.GetLocation().X-220;Interior.Max.X=Area.Exit.X;}
+    {
+        // The journey contains the echo maze, card room and TV. A bounded
+        // source volume describes only its own room, not this entire journey.
+        if(!Source->bUnbound)
+        {
+            FVector Center,Extent;Source->GetActorBounds(false,Center,Extent);
+            Interior=FBox(Center-Extent,Center+Extent);
+        }
+        else {Interior.Min.X=Area.Entry.GetLocation().X-220;Interior.Max.X=Area.Exit.X;}
+    }
     Interior.Min-=FVector(0,200,200);Interior.Max+=FVector(0,200,200);
     auto* Exposure=CreateSpatialExposure(Hall,Interior,TEXT("BM_MainGame_LocalRoomExposure"),Source->Priority,150);
     Exposure->GetOwner()->Tags.Add(Area.Tag);Exposure->Settings=Source->Settings;Exposure->BlendWeight=Source->BlendWeight;
@@ -210,9 +219,13 @@ void AMiningExhibitGameMode::InitGame(const FString& MapName, const FString& Opt
     Super::InitGame(MapName, Options, ErrorMessage);
     auto* Hall=AMiningExhibitHall::Find(GetWorld());
     if(!Hall || !Hall->bContinuousCampaign) return;
-    // MainGame already owns bombs; retain the office pickup and breach sequence.
-    if(Hall->ActorHasTag(TEXT("BM_MainGame_RoomsLinked")))
-        if(auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>()) Wallet->bBombSkillUnlocked=true;
+    // Gate campaign abilities before pawn input and room initialization.
+    // Only the office bomb and card-room drill pickups grant ownership.
+    if(auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>())
+    {
+        Wallet->bBombSkillRequiresUnlock=true;
+        Wallet->bDrillSkillRequiresUnlock=true;
+    }
     // Always-loaded source levels are available before actor initialization/BeginPlay.
     // Overrides belong to this campaign instance; the source maps stay independently playable.
     for(const auto& Area:Hall->Areas)

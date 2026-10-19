@@ -1,5 +1,10 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "BrainMiningFonts.h"
 #include "MiningInteractionTrace.h"
+#include "WenSi/MouseMuseumPortal.h"
+#include "Components/WidgetComponent.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Styling/CoreStyle.h"
 #include "WenSi/WenSiExhibitArt.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "WenSi/WenSiMirrorMechanismLayout.h"
@@ -45,7 +50,12 @@ namespace
   {
    AActor* Actor=*It;if(!Actor)continue;
    const FVector Local=PuzzleTransform.InverseTransformPosition(Actor->GetActorLocation());
-   const FString Label=Actor->GetActorLabel();
+   const FString Label=
+#if WITH_EDITOR
+    Actor->GetActorLabel();
+#else
+    FString();
+#endif
    const bool bPocketCap=Label.Contains(TEXT("LiftPocketCeiling")) ||
     (FMath::Abs(Local.X-650.f)<85.f && FMath::Abs(Local.Y)<145.f && FMath::Abs(Local.Z-430.f)<35.f);
    if(bPocketCap)
@@ -129,7 +139,7 @@ void AWenSiMirrorExhibit::Configure()
   Shape(4,FVector(0,-14,-52),FVector(22,20,40));Shape(5,FVector(0,14,-52),FVector(22,20,40));
   Shape(6,FVector(0,0,-80),FVector(80,70,12));break;
  case 3:
-  Shape(0,FVector::ZeroVector,FVector(55,55,70),Sphere);Shape(1,FVector(0,0,-40),FVector(10),Cylinder);
+  Shape(0,FVector::ZeroVector,FVector(95,95,110),Sphere);Shape(1,FVector(0,0,-40),FVector(10),Cylinder);
   Shape(2,FVector(0,0,-66),FVector(1.5,1.5,46),Cylinder);break;
  case 4:
   for(int32 I=0;I<7;++I)Shape(I,FVector((I%3-1)*15,(I%2?1:-1)*12,I*10),FVector(40,40,40),Sphere);break;
@@ -139,8 +149,13 @@ void AWenSiMirrorExhibit::Configure()
  case 7:
   Shape(0,FVector(0,0,130),FVector(200,200,10));Shape(1,FVector(94,0,0),FVector(12,200,260));
   Shape(2,FVector(0,-94,0),FVector(200,12,260));Shape(3,FVector(0,94,0),FVector(200,12,260));
-  Shape(4,FVector(-94,-60,0),FVector(12,80,260));Shape(5,FVector(-94,60,0),FVector(12,80,260));
-  Shape(6,FVector(-94,0,33),FVector(12,40,194));break;
+  Shape(4,FVector(-94,-67.5,0),FVector(12,65,260));Shape(5,FVector(-94,67.5,0),FVector(12,65,260));
+  Shape(6,FVector(-94,0,-57.5),FVector(12,70,15));
+  Shape(7,FVector(-94,0,85),FVector(12,70,90));
+  Shape(8,FVector(-94,0,-5),FVector(3,70,90));
+  // Preserve the original 40 x 65 cm maintenance hatch below the new window.
+  Shape(9,FVector(-94,-27.5,-97.5),FVector(12,15,65));
+  Shape(10,FVector(-94,27.5,-97.5),FVector(12,15,65));break;
  case 8:Shape(0,FVector::ZeroVector,FVector(38,42,56));break;
  case 9:Shape(0,FVector::ZeroVector,FVector(72),Sphere);break;
  case 10:
@@ -165,7 +180,9 @@ void AWenSiMirrorExhibit::Apply()
   if(Word==EWenSiMirrorWord::Passable && !IsSelf(this)){Part->SetCollisionResponseToAllChannels(ECR_Ignore);Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);}
   if(Kind==3 && I>0){Part->SetCollisionResponseToAllChannels(ECR_Ignore);Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);}
   if(Kind==4 && Word!=EWenSiMirrorWord::Heavy){Part->SetCollisionResponseToAllChannels(ECR_Ignore);Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);}
-  UMaterialInterface* Use=(Word==EWenSiMirrorWord::Passable && !IsSelf(this))||Kind==4?Ghost:Kind==7&&I!=0?Glass:Parent;
+  UMaterialInterface* Use=(Word==EWenSiMirrorWord::Passable && !IsSelf(this))||Kind==4?Ghost:Parent;
+  // A clear pane exposes the prize visually while retaining the puzzle's thinking/collision barrier.
+  if(Kind==7 && I==8 && Word!=EWenSiMirrorWord::Passable && Glass)Use=Glass;
   if(Use)
   {
    auto Mat=UMaterialInstanceDynamic::Create(Use,this);Mat->SetVectorParameterValue(TEXT("Color"),FLinearColor(.68f,.72f,.78f,.2f));Mat->SetScalarParameterValue(TEXT("Opacity"),Kind==4?.18f:.15f);Part->SetMaterial(0,Mat);
@@ -190,11 +207,22 @@ void AWenSiMirrorExhibit::Apply()
   }
  }
  WenSiExhibitArt::Apply(ArtVisual,Parts,ArtModel,ArtRotation,bUniformArtScale,Word==EWenSiMirrorWord::Passable,Ghost,Rim);
+ if(Kind==7 && Word!=EWenSiMirrorWord::Passable && Parent)
+  for(int32 I=0;I<ArtVisual->GetNumMaterials();++I)ArtVisual->SetMaterial(I,Parent);
+ if(Kind==3 || Kind==7)
+ {
+  // The window and balloon tether are represented by the separate proxy parts.
+  // The tether stretches independently; a fixed authored string cannot follow the ceiling balloon.
+  ArtVisual->SetVisibility(false);
+  for(auto Part:Parts)if(Part->GetStaticMesh()){Part->SetRenderInMainPass(true);Part->SetRenderInDepthPass(true);Part->SetCastShadow(true);if(Kind==7 && Rim && !Part->GetOverlayMaterial())Part->SetOverlayMaterial(UMaterialInstanceDynamic::Create(Rim,this));}
+ }
  if(ConductiveFX)
  {
   ConductiveFX->SetVisibility(Word==EWenSiMirrorWord::Conductive);
   if(Word==EWenSiMirrorWord::Conductive)ConductiveFX->Activate(true);else ConductiveFX->Deactivate();
  }
+ for(auto Arc:ConductiveArcs)Arc->SetVisibility(Word==EWenSiMirrorWord::Conductive);
+ ConductiveClock=0;
  Highlight(false);
 }
 void AWenSiMirrorExhibit::Highlight(bool bAimed)
@@ -206,6 +234,14 @@ void AWenSiMirrorExhibit::Highlight(bool bAimed)
 void AWenSiMirrorExhibit::BeginPlay()
 {
  Super::BeginPlay();Rest=GetActorLocation();Configure();
+ if(Kind==3){Rest.Z+=195;SetActorLocation(Rest);}
+ if(Kind==7)
+ {
+  auto Label=NewObject<UWidgetComponent>(this,TEXT("PreciousExhibitWarning"));AddInstanceComponent(Label);Label->SetupAttachment(RootComponent);
+  Label->SetRelativeLocation(FVector(-102,0,-58));Label->SetRelativeRotation(FRotator(0,180,0));Label->SetRelativeScale3D(FVector(.16f));
+  Label->SetDrawSize(FVector2D(900,100));Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);Label->SetTwoSided(true);
+  Label->SetSlateWidget(SNew(STextBlock).Text(FText::FromString(TEXT("内有珍品"))).Font(BrainMiningFonts::Style("Bold",70)).ColorAndOpacity(FLinearColor(.08f,.035f,.01f)).Justification(ETextJustify::Center));Label->RegisterComponent();
+ }
  const FBox InitialBounds=ExhibitBounds(this);
  if(InitialBounds.IsValid){RestBoundsMinZ=InitialBounds.Min.Z;bRestBoundsInitialized=true;}
  if(Kind==2)
@@ -214,8 +250,9 @@ void AWenSiMirrorExhibit::BeginPlay()
  }
  if(IsSelf(this))
  {
-  MirrorTarget=NewObject<UTextureRenderTarget2D>(this);MirrorTarget->InitAutoFormat(24,36);MirrorTarget->Filter=TF_Bilinear;MirrorTarget->ClearColor=FLinearColor(.03f,.04f,.055f);
+  MirrorTarget=NewObject<UTextureRenderTarget2D>(this);MirrorTarget->InitAutoFormat(384,576);MirrorTarget->Filter=TF_Bilinear;MirrorTarget->ClearColor=FLinearColor(.03f,.04f,.055f);
   Capture->TextureTarget=MirrorTarget;Capture->HiddenActors.Add(this);Apply();
+  BuildMirrorPresence();
  }
 }
 void AWenSiMirrorExhibit::UpdateMirror()
@@ -224,11 +261,36 @@ void AWenSiMirrorExhibit::UpdateMirror()
  FVector Eye;FRotator Rot;PC->GetPlayerViewPoint(Eye,Rot);
  const FVector Normal=GetActorForwardVector();const FVector Plane=GetActorLocation()+Normal*3.f;
  const float Distance=FVector::DotProduct(Eye-Plane,Normal);
- if(Distance<=5.f || Distance>450.f)return;
+ if(Distance<=5.f || Distance>1800.f)return;
  const FVector Reflected=Eye-2.f*Distance*Normal;
- // A frosted reflection preserves the room's broad shapes without showing the miner.
- const FVector Forward=FMath::GetReflectionVector(Rot.Vector(),Normal);
- const FVector Up=FMath::GetReflectionVector(FRotationMatrix(Rot).GetUnitAxis(EAxis::Z),Normal);
+ // A capture-only glowing egg provides a presence for the first-person pawn.
+ if(MirrorPresence && PC->GetPawn())
+ {
+  MirrorPresence->SetActorLocation(PC->GetPawn()->GetActorLocation());
+  MirrorPresence->SetActorRotation(FRotator(0,Rot.Yaw,0));
+  MirrorPresence->SetActorScale3D(PC->GetPawn()->GetActorScale3D());
+  // Keep the light full and round, with a small, slow squash-and-stretch.
+  // Animate the two soft shells only; the held pickaxe stays steady.
+  const float Breath=FMath::Sin(GetWorld()->GetTimeSeconds()*2.4f);
+  const FVector Squash(1.f+Breath*.025f,1.f+Breath*.025f,1.f-Breath*.04f);
+  const FVector ShellSizes[]={FVector(1.04f,1.08f,1.20f),FVector(1.24f,1.28f,1.40f)};
+  for(int32 I=0;I<2 && I<PresenceParts.Num();++I)
+  {
+   PresenceParts[I]->SetRelativeScale3D(ShellSizes[I]*Squash);
+   PresenceParts[I]->SetRelativeLocation(FVector(0,0,-2.f+Breath*1.5f));
+  }
+ }
+ const FVector Forward=Normal,Up=GetActorUpVector();
+ const FVector Right=FVector::CrossProduct(Up,Forward).GetSafeNormal();
+ // Off-axis projection pins the rendered window to the physical mirror plane.
+ // A head-aimed symmetric camera otherwise makes the reflection follow the crosshair.
+ const FVector Center=Plane-Reflected;const double Width=125,Height=245;
+ FMatrix Projection=FMatrix::Identity;
+ Projection.M[0][0]=2*Distance/Width;Projection.M[1][1]=2*Distance/Height;
+ Projection.M[2][0]=-2*FVector::DotProduct(Center,Right)/Width;
+ Projection.M[2][1]=-2*FVector::DotProduct(Center,Up)/Height;
+ Projection.M[2][2]=0;Projection.M[2][3]=1;Projection.M[3][2]=1;Projection.M[3][3]=0;
+ Capture->bUseCustomProjectionMatrix=true;Capture->CustomProjectionMatrix=Projection;
  // Stock projects can have shader clip planes disabled. Exclude geometry behind
  // the mirror so the reflected camera cannot be occluded by the museum wall.
  Capture->HiddenActors.Reset();Capture->HiddenActors.Add(this);
@@ -250,6 +312,7 @@ void AWenSiMirrorExhibit::UpdateMirror()
 void AWenSiMirrorExhibit::Tick(float Dt)
 {
  Super::Tick(Dt);
+ UpdateConductive(Dt);
  if(IsSelf(this)){MirrorClock+=Dt;if(MirrorClock>.066f){MirrorClock=0;UpdateMirror();}return;}
  float Target=Rest.Z;
  if(Word==EWenSiMirrorWord::Floating)
@@ -259,8 +322,15 @@ void AWenSiMirrorExhibit::Tick(float Dt)
    for(TActorIterator<AWenSiMirrorExhibit> It(GetWorld());It;++It)
     if(It->Kind==1 && It->Word!=EWenSiMirrorWord::Passable)Target=FMath::Min(Target,It->GetActorLocation().Z+120.f-7.f-90.f-2.f);
  }
- if(Kind==3 && Word!=EWenSiMirrorWord::Floating)Target=Rest.Z-65.f;
+ if(Kind==3)
+ {
+  if(Word!=EWenSiMirrorWord::Floating)Target=Rest.Z-230.f;
+  const float Anchor=Rest.Z-301.f,Bottom=GetActorLocation().Z-55.f*GetActorScale3D().Z;
+  Parts[2]->SetWorldLocation(FVector(Rest.X,Rest.Y,(Anchor+Bottom)*.5f));
+  Parts[2]->SetWorldScale3D(FVector(.015f,.015f,FMath::Max(1.f,Bottom-Anchor)/100.f));
+ }
  if(Kind==6 && Word==EWenSiMirrorWord::Heavy)Target=Rest.Z-WenSiMuseumMechanisms::BalanceTravel;
+ if(Kind==6 && Word==EWenSiMirrorWord::Ordinary)Target=Rest.Z-WenSiMuseumMechanisms::BalanceTravel*WenSiMuseumMechanisms::InitialBalanceAlpha;
  if(Kind==9)
  {
   if(Word==EWenSiMirrorWord::Small || bBallLanded)Target=Rest.Z-177.f;
@@ -367,7 +437,7 @@ bool AWenSiMirrorPuzzle::SetPlayerWord(EWenSiMirrorWord NewWord)
 void AWenSiMirrorPuzzle::SetAreaActive(bool Active)
 {
  const bool WasActive=bAreaActive;bAreaActive=Active;
- if(!Active)CancelSwap();
+ if(!Active){CancelSwap();if(MousePortal)MousePortal->Cancel();}
  if(!Active && bEditing)ToggleEdit();
  if(UI)UI->SetVisibility(Active?ESlateVisibility::SelfHitTestInvisible:ESlateVisibility::Collapsed);
  if(!Active){Aim.Reset();bAimReset=false;for(auto Exhibit:Exhibits)Exhibit->Highlight(false);}
@@ -393,9 +463,14 @@ void AWenSiMirrorPuzzle::BeginPlay()
  Super::BeginPlay();
  TuneCampaignMirrorGeometry(GetWorld(),GetActorTransform(),bAreaManaged);
  for(TActorIterator<AWenSiMirrorExhibit> It(GetWorld());It;++It){Exhibits.Add(*It);InitialTransforms.Add(It->GetActorTransform());InitialWords.Add(It->Word);}
- for(TActorIterator<APlayerStart> It(GetWorld());It;++It){StartTransform=It->GetActorTransform();break;}
+ TActorIterator<APlayerStart> PlayerStartIt(GetWorld());
+ if(PlayerStartIt)StartTransform=PlayerStartIt->GetActorTransform();
  for(TActorIterator<AActor> It(GetWorld());It;++It)
  {
+  if(It->ActorHasTag(TEXT("WenSiPowerCable")) || It->ActorHasTag(TEXT("WenSiPlugSupplyCable")) || It->ActorHasTag(TEXT("WenSiBalanceCable")))
+   if(auto* Mesh=It->FindComponentByClass<UStaticMeshComponent>())
+    if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WenSi/Mirror/Materials/M_PoweredCable")))
+    {auto* Mat=UMaterialInstanceDynamic::Create(Base,this);Mesh->SetMaterial(0,Mat);CableMaterials.Add(Mat);CablePressure.Add(It->ActorHasTag(TEXT("WenSiBalanceCable")));}
   if(It->ActorHasTag(TEXT("MirrorRewardShutter")))RewardShutter=*It;
   if(It->ActorHasTag(TEXT("MirrorReward")))Reward=*It;
   for(int32 I=0;I<2;++I)if(It->ActorHasTag(I?TEXT("MirrorPowerLamp"):TEXT("MirrorPressureLamp")))
@@ -403,7 +478,11 @@ void AWenSiMirrorPuzzle::BeginPlay()
  }
  auto PC=GetWorld()->GetFirstPlayerController();if(PC){UI=CreateWidget<UWenSiMirrorWidget>(PC);UI->Puzzle=this;UI->AddToViewport(50);if(!bAreaManaged)PC->SetInputMode(FInputModeGameOnly());if(!bAreaManaged){PC->bShowMouseCursor=false;SetPlayerWord(EWenSiMirrorWord::Ordinary);}}
  if(bAreaManaged){StartTransform=AreaPlayerStart;bAreaActive=false;SetAreaActive(false);}
- if(Reward)Reward->SetActorHiddenInGame(true);
+ if(Reward){Reward->SetActorHiddenInGame(true);Reward->SetActorEnableCollision(false);}
+ MousePortal=GetWorld()->SpawnActor<AMouseMuseumPortal>();
+ MousePortal->Initialize(this);
+ for(TActorIterator<AActor> It(GetWorld());It;++It)
+  if(It->GetActorLocation().Equals(RoomPoint(FVector(2300,-350,8)),1.f)){It->SetActorHiddenInGame(true);It->SetActorEnableCollision(false);}
  UE_LOG(LogWenSiMirror,Display,TEXT("Initialized %d exhibits; realistic initial states; exterior thinking mirror"),Exhibits.Num());
 }
 void AWenSiMirrorPuzzle::RefreshSelfThoughts()
@@ -416,6 +495,13 @@ void AWenSiMirrorPuzzle::Think()
  if(!Aim.IsValid() || bComplete || IsSwapping())return;RefreshSelfThoughts();
  for(int32 I=0;I<2;++I)if(Thoughts[I]==Aim || (IsSelf(Thoughts[I].Get()) && IsSelf(Aim.Get())))return;
  for(int32 I=0;I<2;++I)if(!Thoughts[I].IsValid()){Thoughts[I]=Aim;UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Thought"),.45f);break;}
+}
+bool AWenSiMirrorPuzzle::HandleInteractionInput(APlayerController* PC)
+{
+ if(!PC || !bAreaActive || bEditing || PC->IsPaused())return false;
+ if(bAimReset){ResetPuzzle();return true;}
+ if(Aim.IsValid() && !bComplete){Think();return true;}
+ return false;
 }
 void AWenSiMirrorPuzzle::CloseThought(int32 Index){CancelSwap();if(Index>=0&&Index<2 && Thoughts[Index].IsValid()){Thoughts[Index].Reset();UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Close"),.25f);}if(UI)UI->Refresh();}
 void AWenSiMirrorPuzzle::CloseThoughts()
@@ -514,38 +600,33 @@ void AWenSiMirrorPuzzle::UpdateMechanism()
  float BalanceAlpha=Block?FMath::Clamp(float((Block->Rest.Z-Block->GetActorLocation().Z)/WenSiMuseumMechanisms::BalanceTravel),0.f,1.f):0.f;
  // The unassigned counterweight starts slightly heavy so the beam is visibly
  // out of balance before the pressure block is transferred.
- if(Block && Block->Word==EWenSiMirrorWord::Ordinary)BalanceAlpha=.18f;
+ if(Block && Block->Word==EWenSiMirrorWord::Ordinary)BalanceAlpha=WenSiMuseumMechanisms::InitialBalanceAlpha;
  WenSiMuseumMechanisms::UpdateBalance(GetWorld(),BalanceAlpha,GetActorLocation());
  bPressure=Block && Block->Word==EWenSiMirrorWord::Heavy && BalanceAlpha>=.99f;
  bPower=Ball && Ball->bBallLanded && Ball->Word==EWenSiMirrorWord::Conductive && FMath::Abs(Ball->GetActorLocation().Z-RoomPoint(FVector(0,0,80)).Z)<1.f;
  if(bPressure!=WasPressure)UMiningRoomAudioSubsystem::Emit(Block,bPressure?TEXT("S_Pressure"):TEXT("S_PowerOff"),.6f,true);
  if(bPower!=WasPower)UMiningRoomAudioSubsystem::Emit(Ball,bPower?TEXT("S_Power"):TEXT("S_PowerOff"),.6f,true);
- if(bPressure && bPower && !bRewardUnlocked){bRewardUnlocked=true;if(Reward)Reward->SetActorHiddenInGame(false);UMiningRoomAudioSubsystem::Emit(RewardShutter,TEXT("S_RewardDoor"),.6f,true);UE_LOG(LogWenSiMirror,Display,TEXT("Both physical locks active; reward hatch unlocked"));}
- if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,FMath::FInterpConstantTo(RewardShutter->GetActorLocation().Z-GetActorLocation().Z,bRewardUnlocked?112.f:32.f,GetWorld()->GetDeltaSeconds(),90.f))));
+ if(bPressure && bPower && !bRewardUnlocked){bRewardUnlocked=true;UMiningRoomAudioSubsystem::Emit(RewardShutter,TEXT("S_RewardDoor"),.6f,true);UE_LOG(LogWenSiMirror,Display,TEXT("Both physical locks active; mouse museum hatch unlocked"));}
+ if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,FMath::FInterpConstantTo(RewardShutter->GetActorLocation().Z-GetActorLocation().Z,bRewardUnlocked?128.f:40.f,GetWorld()->GetDeltaSeconds(),90.f))));
+ for(int32 I=0;I<CableMaterials.Num();++I)CableMaterials[I]->SetScalarParameterValue(TEXT("Powered"),(CablePressure[I]?bPressure:bPower)?1.f:0.f);
  for(int32 I=0;I<Lamps.Num();++I){const bool On=I?bPower:bPressure;Lamps[I]->SetVectorParameterValue(TEXT("Tint"),On?FLinearColor(.12,.75,.2):FLinearColor(.55,.025,.015));if(auto Overlay=Cast<UMaterialInstanceDynamic>(LampMeshes[I]->GetOverlayMaterial())){Overlay->SetVectorParameterValue(TEXT("Tint"),On?FLinearColor(.35,1,.45):FLinearColor(.5,.04,.025));Overlay->SetScalarParameterValue(TEXT("Strength"),On?2.f:.45f);}}
- auto PC=GetWorld()->GetFirstPlayerController();auto Pawn=PC?Cast<ACharacter>(PC->GetPawn()):nullptr;
- if(!bComplete && bRewardUnlocked && Pawn && GetPlayerWord()==EWenSiMirrorWord::Small && Pawn->GetActorLocation().X>RoomPoint(FVector(2210,0,0)).X && FVector::Dist2D(Pawn->GetActorLocation(),RoomPoint(FVector(2300,-350,0)))<58.f)
- {bComplete=true;if(bEditing)ToggleEdit();Thoughts[0].Reset();Thoughts[1].Reset();if(Reward)Reward->SetActorHiddenInGame(true);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Complete"),.7f);UE_LOG(LogWenSiMirror,Display,TEXT("Puzzle complete: small miner entered reward alcove and collected prize"));}
 }
 void AWenSiMirrorPuzzle::Tick(float Dt)
 {
  Super::Tick(Dt);auto PC=GetWorld()->GetFirstPlayerController();if(!PC || !bAreaActive || PC->IsPaused())return;
+ // Suction owns a look-input lock. Advance it before the hall interprets that
+ // lock as an open UI, otherwise the transition would suspend itself forever.
+ if(MousePortal && MousePortal->Advance(Dt)){if(UI)UI->Refresh();return;}
  if(auto Hall=AMiningExhibitHall::Find(GetWorld());Hall && !bEditing && Hall->IsInteractionOpen())return;
  AdvanceSwap(Dt);
  if(bAreaManaged && GetPlayerWord()==EWenSiMirrorWord::Floating && !bEditing)
   if(auto Character=Cast<ACharacter>(PC->GetPawn())){auto Move=Character->GetCharacterMovement();if(Move->IsMovingOnGround())Move->SetMovementMode(MOVE_Falling);Move->Velocity.Z=FMath::Min(350.f,Move->Velocity.Z+(1700.f+FMath::Abs(GetWorld()->GetGravityZ()))*Dt);}
- const bool WasComplete=bComplete;
  RefreshSelfThoughts();UpdateMechanism();Aim.Reset();bAimReset=false;
- // Only the campaign museum leads into the finale. Standalone puzzle maps
- // keep their completion/reset flow, including the mechanism validation tool.
- if(!WasComplete && bComplete && bAreaManaged)
-  if(auto Hall=AMiningExhibitHall::Find(GetWorld());Hall && Hall->Areas.IsValidIndex(Hall->ActiveArea)
-   && Hall->Areas[Hall->ActiveArea].Tag==TEXT("BM_Campaign_MainGameMuseum"))
-  {
-   UE_LOG(LogWenSiMirror,Display,TEXT("MainGame golden reward collected; travelling to Lvl_EndingEmergence_Demo"));
-   UGameplayStatics::OpenLevel(this,TEXT("/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo"),true);
-   return;
-  }
+ if(MousePortal)
+ {
+  MousePortal->RefreshFocus();
+  if(MousePortal->IsFocused() && PC->WasInputKeyJustPressed(EKeys::E) && MousePortal->TryEnter()){if(UI)UI->Refresh();return;}
+ }
  if(!bEditing)
  {
   FVector P;FRotator R;PC->GetPlayerViewPoint(P,R);FHitResult Hit;FCollisionQueryParams Q;Q.AddIgnoredActor(PC->GetPawn());
@@ -561,7 +642,6 @@ void AWenSiMirrorPuzzle::Tick(float Dt)
    const bool Nearby=PC->GetPawn() && FVector::Dist(PC->GetPawn()->GetActorLocation(),Hit.ImpactPoint)<280.f;
    if(Nearby){bAimReset=Cast<AWenSiResetButton>(Hit.GetActor())!=nullptr;if(Exhibit && Exhibit->bThinkingEnabled && !bComplete)Aim=Exhibit;}
   }
-  if(PC->WasInputKeyJustPressed(EKeys::E)){if(bAimReset)ResetPuzzle();else Think();}
   if(PC->WasInputKeyJustPressed(EKeys::Q))CloseThoughts();
  }
  if(PC->WasInputKeyJustPressed(EKeys::R))SwapThoughts();
@@ -570,6 +650,7 @@ void AWenSiMirrorPuzzle::Tick(float Dt)
 }
 void AWenSiMirrorPuzzle::ResetPuzzle()
 {
+ if(MousePortal)MousePortal->Cancel();
  CancelSwap();
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reset"),.4f);
  for(auto Exhibit:Exhibits)UMiningRoomAudioSubsystem::StopSource(Exhibit);
@@ -579,13 +660,13 @@ void AWenSiMirrorPuzzle::ResetPuzzle()
  if(PC){PC->ResetIgnoreInputFlags();PC->SetControlRotation(StartTransform.Rotator());PC->SetInputMode(FInputModeGameOnly());PC->bShowMouseCursor=false;}
  for(int32 I=0;I<Exhibits.Num();++I){Exhibits[I]->Word=InitialWords[I];Exhibits[I]->bBallLanded=false;Exhibits[I]->SetActorTransform(InitialTransforms[I]);Exhibits[I]->Rest=InitialTransforms[I].GetLocation();Exhibits[I]->Apply();}
  bComplete=false;bRewardUnlocked=false;bPressure=false;bPower=false;bSecondRoom=false;Thoughts[0].Reset();Thoughts[1].Reset();Aim.Reset();bAimReset=false;
- if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,32)));if(Reward)Reward->SetActorHiddenInGame(true);RefreshSelfThoughts();if(UI)UI->Refresh();
+ if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,40)));if(Reward)Reward->SetActorHiddenInGame(true);RefreshSelfThoughts();if(UI)UI->Refresh();
  UpdateMechanism();
  UE_LOG(LogWenSiMirror,Display,TEXT("Reset: all words, transforms, miner size, mirrors, ball, balance, locks and reward restored"));
 }
 bool AWenSiMirrorPuzzle::SkipToReward()
 {
- if(!bAreaManaged || !bAreaActive || bComplete)return false;
+ if(!bAreaManaged || !bAreaActive || bComplete || !MousePortal || MousePortal->IsEntering())return false;
  auto Hall=AMiningExhibitHall::Find(GetWorld());
  if(!Hall || !Hall->Areas.IsValidIndex(Hall->ActiveArea) ||
     Hall->Areas[Hall->ActiveArea].Tag!=TEXT("BM_Campaign_MainGameMuseum"))return false;
@@ -594,25 +675,25 @@ bool AWenSiMirrorPuzzle::SkipToReward()
  CancelSwap();
  if(bEditing)ToggleEdit();
  Thoughts[0].Reset();Thoughts[1].Reset();Aim.Reset();bAimReset=false;
- // Keep the same physical end state as a solved run, then put the tiny miner
- // at the reward aperture. The normal completion tick performs the existing
- // transition to the ending map, so the hidden command cannot bypass cleanup.
+ // Keep the remote hidden skip, but finish at the local mouse painting.
+ // The player still enters its cell with E through the normal suction path.
  if(!SetPlayerWord(EWenSiMirrorWord::Small))return false;
  if(auto Block=Find(6)){Block->Word=EWenSiMirrorWord::Heavy;Block->Apply();Block->SetActorLocation(Block->Rest-FVector(0,0,WenSiMuseumMechanisms::BalanceTravel));}
  if(auto Ball=Find(9)){Ball->Word=EWenSiMirrorWord::Conductive;Ball->bBallLanded=true;Ball->Apply();Ball->SetActorLocation(RoomPoint(FVector(1900,120,80)));}
  bPressure=true;bPower=true;bRewardUnlocked=true;bSecondRoom=true;
- if(Reward)Reward->SetActorHiddenInGame(false);
- if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,112)));
+ if(Reward){Reward->SetActorHiddenInGame(true);Reward->SetActorEnableCollision(false);}
+ if(RewardShutter)RewardShutter->SetActorLocation(RoomPoint(FVector(2190,-350,128)));
  // The tiny capsule is roughly 33 cm half-height; keep its feet just above
  // the alcove floor instead of dropping the scaled body into the slab.
- Pawn->SetActorLocation(RoomPoint(FVector(2300,-350,42)),false,nullptr,ETeleportType::TeleportPhysics);
+ Pawn->SetActorLocation(RoomPoint(FVector(2230,-350,35)),false,nullptr,ETeleportType::TeleportPhysics);
  if(auto Movement=Pawn->FindComponentByClass<UCharacterMovementComponent>())Movement->StopMovementImmediately();
- if(PC)PC->SetControlRotation((RoomPoint(FVector(2300,-350,80))-Pawn->GetActorLocation()).Rotation());
+ const auto ViewCamera=Pawn->FindComponentByClass<UCameraComponent>();
+ PC->SetControlRotation((MousePortal->CellCenter()-(ViewCamera?ViewCamera->GetComponentLocation():Pawn->GetPawnViewLocation())).Rotation());
  if(UI)UI->Refresh();
- UE_LOG(LogWenSiMirror,Display,TEXT("Hidden museum skip accepted: small miner moved to golden reward alcove"));
+ UE_LOG(LogWenSiMirror,Display,TEXT("Hidden museum skip accepted: small miner moved to mouse painting"));
  return true;
 }
-void AWenSiMirrorPuzzle::EndPlay(const EEndPlayReason::Type Reason){CancelSwap();if(bEditing)ToggleEdit();if(UI)UI->RemoveFromParent();Super::EndPlay(Reason);}
+void AWenSiMirrorPuzzle::EndPlay(const EEndPlayReason::Type Reason){if(MousePortal)MousePortal->Destroy();CancelSwap();if(bEditing)ToggleEdit();if(UI)UI->RemoveFromParent();Super::EndPlay(Reason);}
 FString AWenSiMirrorPuzzle::MirrorStatus()
 {
  auto PC=GetWorld()->GetFirstPlayerController();auto Pawn=PC?Cast<ACharacter>(PC->GetPawn()):nullptr;

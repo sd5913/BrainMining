@@ -7,6 +7,7 @@
 class USubtitleSegment;
 class USubtitleWidget;
 class UAudioComponent;
+class USoundWaveProcedural;
 
 UCLASS()
 class BRAINMINING_API USubtitleSubsystem : public UGameInstanceSubsystem
@@ -18,6 +19,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="字幕")
 	void PlaySegment(FName SegmentId);
+	// Time-sensitive gameplay status uses the same subtitle widget and styling.
+	UFUNCTION(BlueprintCallable, Category="字幕")
+	void PlayStatusLine(FText Text, float Duration);
 
 	UFUNCTION(BlueprintCallable, Category="字幕")
 	void StopAll();
@@ -40,6 +44,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> ActiveAudio;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USoundWaveProcedural> ActiveGeneratedVoice;
 
 	TArray<FName> Queue;
 	int32 LineIndex = 0;

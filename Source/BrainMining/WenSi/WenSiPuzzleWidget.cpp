@@ -1,8 +1,8 @@
 #include "WenSi/WenSiPuzzle.h"
+#include "BrainMiningFonts.h"
 #include "WenSi/WenSiThoughtBubble.h"
 #include "Engine/Texture2D.h"
 #include "MiningInteractionHUDWidget.h"
-#include "Fonts/CompositeFont.h"
 #include "Input/DragAndDrop.h"
 #include "InputCoreTypes.h"
 #include "Styling/CoreStyle.h"
@@ -17,14 +17,8 @@ namespace
 {
  FSlateFontInfo PuzzleThoughtFont(float Size)
  {
-  static TSharedPtr<const FCompositeFont> Font;
-  if (!Font)
-  {
-   FString Path=TEXT("C:/Windows/Fonts/simhei.ttf");
-   if (FPaths::FileExists(Path)) Font=MakeShared<FStandaloneCompositeFont>(NAME_None,Path,EFontHinting::Default,EFontLoadingPolicy::LazyLoad);
-  }
-  return Font ? FSlateFontInfo(Font,Size) : FCoreStyle::GetDefaultFontStyle(TEXT("Regular"),Size);
- }
+        return BrainMiningFonts::Body(Size);
+    }
  class FPuzzleThoughtDrag : public FDragDropOperation
  {
  public:
@@ -160,7 +154,7 @@ void UWenSiPuzzleWidget::Refresh()
  if(Puzzle->bAimReset && !Puzzle->bEditing) { if (!SharedHUD) Message=TEXT("E 重置谜题"); }
  else if (!Puzzle->bComplete)
  {
-  if (Puzzle->bEditing) Message=TEXT("拖动红词交换    G 返回    × 放下思考");
+  if (Puzzle->bEditing) Message=TEXT("拖动红词交换    G 返回    Q 放下思考");
   else
   {
    if (Puzzle->Aim!=INDEX_NONE && !SharedHUD) Message=TEXT("E 思考    ");

@@ -28,6 +28,12 @@ public:
 	/** Capture the PIE game viewport, rather than the editor's active viewport. */
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
 	static bool CapturePreview(APlayerController* Controller, const FString& Filename);
+	/** PIE-only test fixture: activate an area and optionally expose its completed TV stage. */
+	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
+	static bool PrepareCollectionPreviewArea(APlayerController* Controller, int32 AreaIndex, bool CompleteTelevision = false);
+	/** PIE-only fixture for credits and inventory; does not replace the real film end regression. */
+	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
+	static bool PrepareEndingCreditsPreview(APlayerController* Controller, const TArray<int32>& Inventory);
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Editor")
 	static bool RepairMissingGUIFonts();
 	/** Explicit asset edit for this prototype; not run automatically over user edits. */

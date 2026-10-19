@@ -43,7 +43,7 @@ for name in ['PaperStock','DeveloperCredits','DoodleInk']:
   power=lib.create_material_expression(mat,unreal.MaterialExpressionScalarParameter);power.set_editor_property('parameter_name','Power');power.set_editor_property('default_value',0.);bindings['Power']=(power,'')
   cave=lib.create_material_expression(mat,unreal.MaterialExpressionTextureSampleParameter2D);cave.set_editor_property('parameter_name','CaveImage');cave.set_editor_property('texture',linear_tex);cave.set_editor_property('sampler_type',unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_COLOR);bindings['Cave']=(cave,'RGB')
   mix=lib.create_material_expression(mat,unreal.MaterialExpressionScalarParameter);mix.set_editor_property('parameter_name','CreditMix');mix.set_editor_property('default_value',0.);bindings['CreditMix']=(mix,'')
-  source='return (Cave.rgb*(1-.55*CreditMix)+Image.rgb*CreditMix*1.25)*Power;'
+  source='return Image.rgb*1.25*Power;'
  else:
   mat.set_editor_property('blend_mode',unreal.BlendMode.BLEND_MASKED)
   mat.set_editor_property('opacity_mask_clip_value',.15)
@@ -90,14 +90,9 @@ def graphic(name,source,masked=False):
 
 graphic('PaperFloor',r'''
 float2 p=(UV-.5)*120000;
-float2 grid=p/180;
-grid.x+=fmod(floor(grid.y),2)*.5;
-float aa=max(length(fwidth(grid)),.001);
-float dots=1-smoothstep(.24-aa,.24+aa,length(frac(grid)-.5));
-dots*=1-smoothstep(.3,1.1,aa);
-float3 color=lerp(float3(2.4,2.4,2.4),float3(.003,.003,.003),dots*saturate(DotsReveal));
-return float4(color,step(length(p),ApertureRadius));
+return float4(2.4,2.4,2.4,step(length(p),ApertureRadius));
 ''',True)
+
 graphic('PaperHorizon',r'''
 float2 p=float2(frac(UV.x*2+.5)-.5,(1-UV.y)*6.8+.001);
 float angle=atan2(p.y,p.x);
@@ -118,8 +113,8 @@ float visible=1;
 // Before crossing the paper, the cave is seen only THROUGH its physical hole.
 if(Cam.x<2217150){
  float t=(2217150-Cam.x)/max(P.x-Cam.x,.01);
- float2 opening=lerp(Cam.yz,P.yz,t)-float2(0,700);
- visible=step(length(opening),440)*step(2217150,P.x);
+ float2 opening=lerp(Cam.yz,P.yz,t)-float2(0,240);
+ visible=step(length(opening),330)*step(2217150,P.x);
 }
 float light=saturate(dot(normalize(N),normalize(float3(.5,.65,1))));
 float shade=.48+.52*light;

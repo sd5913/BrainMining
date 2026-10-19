@@ -1,7 +1,10 @@
 #include "MiningInteractionHUDWidget.h"
+#include "BrainMiningFonts.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningGUIWidgets.h"
 #include "MiningCollection.h"
+#include "WenSi/WenSiMirrorPuzzle.h"
+#include "WenSi/MouseMuseumPortal.h"
 #include "MiningComponent.h"
 #include "DiggableRock.h"
 #include "MiningWalletSubsystem.h"
@@ -100,6 +103,8 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
                     return TEXT("思考 · ") + Object->Noun();
             }
         }
+    for (TActorIterator<AWenSiMirrorPuzzle> Mirror(GetWorld()); Mirror; ++Mirror)
+        if(Mirror->bAreaActive && Mirror->MousePortal && Mirror->MousePortal->IsFocused())return TEXT("进入画中的圆环");
     for (TActorIterator<AMiningCollectionField> Collection(GetWorld()); Collection; ++Collection)
         if (Collection->IsAreaActive() && !Collection->bCatalogueOpen && IsValid(Collection->Target)
             && !Collection->Target->bCollected && Collection->Target->bReleased)
@@ -108,6 +113,9 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
         if (Treasure->IsAreaActive() && IsValid(Treasure->Target) && !Treasure->Target->bCollected
             && AMiningTreasure::IsExposureEligible(Treasure->Target->Exposure))
             return TEXT("领取 · ") + Treasure->Target->TreasureName.ToString();
+    if (auto* Reward = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
+        Reward && Reward->bRoomActive && IsValid(Reward->Stage) && Reward->Stage->Run.Phase == ECardRoomPhase::Victory)
+        return TEXT("拾取 · 钻机");
     if (auto* Cards = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
         Cards && Cards->bRoomActive && IsValid(Cards->Stage) && Cards->Stage->Run.Phase == ECardRoomPhase::Exploring
         && Cards->Stage->IsPlayerNear(Controller->GetPawn()->GetActorLocation()))
@@ -131,6 +139,9 @@ void UMiningInteractionHUDWidget::NativeTick(const FGeometry& Geometry, float De
     bExplorationVisible = Controller && Controller->GetPawn() && !Controller->IsPaused()
         && !Controller->bShowMouseCursor && !Controller->IsLookInputIgnored()
         && Controller->GetViewTarget() == Controller->GetPawn();
+    const auto* Cards = Controller ? Controller->FindComponentByClass<UCardRoomInteractionComponent>() : nullptr;
+    const bool bCardReward = Cards && Cards->bRoomActive && IsValid(Cards->Stage) && Cards->Stage->Run.Phase == ECardRoomPhase::Victory && !Controller->IsPaused();
+    bExplorationVisible |= bCardReward;
     InteractionAction = bExplorationVisible ? ResolveInteractionAction() : FString();
 }
 
@@ -154,7 +165,7 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
     };
     auto Text = [&](const FString& Label, FVector2D Position, int32 FontSize, FLinearColor Color, bool bCentered)
     {
-        const auto Font = FCoreStyle::GetDefaultFontStyle("Bold", FMath::Max(8, FMath::RoundToInt(FontSize * Scale)));
+        const auto Font = BrainMiningFonts::Style("Medium", FMath::Max(8, FMath::RoundToInt(FontSize * Scale)));
         const FVector2D TextSize = FontMeasure->Measure(Label, Font);
         FVector2D Offset = Center + Position * Scale;
         if (bCentered) Offset.X -= TextSize.X * .5f;
@@ -188,7 +199,7 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
         const float Fade = FMath::Clamp((FMiningCoinFeedback::Duration - CoinFeedback.Age) / .35f, 0.f, 1.f);
         const float Pop = 1.f + .16f * FMath::Sin(FMath::Clamp(CoinFeedback.Age / .18f, 0.f, 1.f) * PI);
         const FString Amount = TEXT("+") + FText::AsNumber(CoinFeedback.Amount).ToString();
-        const auto Font = FCoreStyle::GetDefaultFontStyle("Bold", FMath::Max(8, FMath::RoundToInt(22 * Scale)));
+        const auto Font = BrainMiningFonts::Style("Medium", FMath::Max(8, FMath::RoundToInt(22 * Scale)));
         const float Width = 34.f + FontMeasure->Measure(Amount, Font).X / Scale;
         const float Left = -Width * .5f;
         const float Top = (InteractionAction.IsEmpty() ? 60.f : 142.f) - CoinFeedback.Age * 19.f;

@@ -38,6 +38,8 @@ public:
     UPROPERTY(EditAnywhere,Category="Escape") float TelevisionMineRadius=220;
     UPROPERTY(EditAnywhere,Category="Escape",meta=(ClampMin="0")) float TelevisionGuideRadius=900;
     UPROPERTY(EditAnywhere,Category="Escape") float RetrySeconds=2;
+    UPROPERTY(EditAnywhere,Category="Escape|Floating",meta=(ClampMin="0")) float FloatingSinkDelay=1.2f;
+    UPROPERTY(EditAnywhere,Category="Escape|Floating",meta=(ClampMin="0.1")) float FloatingSinkSeconds=2.6f;
     UPROPERTY(EditAnywhere,Category="Escape") float WaterStartZ=80;
     UPROPERTY(EditAnywhere,Category="Escape") float WaterEndZ=9000;
     UPROPERTY(EditAnywhere,Category="Escape") float RapidFillSeconds=4;
@@ -71,6 +73,9 @@ public:
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Escape|State") float CheckpointWaterZ=0;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Escape|State") float CheckpointElapsed=0;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Escape|State") TArray<TObjectPtr<class UStaticMeshComponent>> FloatingProps;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Escape|State") TArray<float> FloatingSinkElapsed;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Escape|State") TObjectPtr<class AMiningCollectionEffects> StageCelebration;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Escape|State") TObjectPtr<class AMiningCollectible> StageRibbon;
     UPROPERTY(VisibleAnywhere,Category="Escape|Actors") TObjectPtr<ADiggableRock> TelevisionScreen;
     UPROPERTY(VisibleAnywhere,Category="Escape|Actors") TObjectPtr<class UStaticMeshComponent> ExitRamp;
     FString FailureReason;
@@ -92,10 +97,18 @@ private:
     void SetTelevisionMining(bool Enabled);
     void UpdateWater();
     void BuildStudyLayout();
+    void BuildExitStage();
+    void TickExitStage();
+    void InitializeRuntime();
+    void TickFloatingProps(float DeltaSeconds);
     void BuildTelevisionModel(bool bEditorPreview);
     void ClearTelevisionPreview();
     void TickPresentation(float DeltaSeconds);
     TArray<float> FloatingOffsets;
+    TArray<int32> FloatingPadIndices;
+    TArray<float> FloatingTopOffsets;
+    TWeakObjectPtr<class AMiningCollectionField> StageCollection;
+    bool bOwnsStageCollection=false;
     UPROPERTY(Transient) TObjectPtr<class UMaterialInstanceDynamic> ScreenMaterial;
     UPROPERTY(Transient) TObjectPtr<class UPointLightComponent> Beacon;
     UPROPERTY(Transient) TArray<TObjectPtr<class UPointLightComponent>> InteriorLights;
@@ -108,6 +121,7 @@ private:
     float ComputerStartWaterZ=0;
     float VictoryHoldTime=0;
     bool bFailureLock=false;
+    bool bRuntimeInitialized=false;
     TWeakObjectPtr<class UMiningComponent> ScopedMiner;
     float SavedMineRadius=0;
     TWeakObjectPtr<AMiningEncounterPlayerController> Player;

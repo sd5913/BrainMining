@@ -1,0 +1,117 @@
+{
+  "version": 2,
+  "source_map": "/Game/MainGame/Maps/Lvl_MainGame",
+  "preview_map": "/Game/CollectionIntegration/Maps/Lvl_MainGame_CollectionsPreview",
+  "ownership_tag": "BM_MainGame_Collections",
+  "mines": [
+    {
+      "item_id": 2,
+      "area_tag": "BM_Campaign_MainGame01",
+      "route_fraction": 0.2,
+      "side": 1,
+      "depth_cm": 190,
+      "height_cm": 140
+    },
+    {
+      "item_id": 1,
+      "area_tag": "BM_Campaign_MainGame01",
+      "route_fraction": 0.47,
+      "side": -1,
+      "depth_cm": 480,
+      "height_cm": 165,
+      "branch": "Branch_02"
+    },
+    {
+      "item_id": 4,
+      "area_tag": "BM_Campaign_MainGame01",
+      "route_fraction": 0.74,
+      "side": 1,
+      "depth_cm": 530,
+      "height_cm": 130,
+      "branch": "Branch_04"
+    },
+    {
+      "item_id": 3,
+      "area_tag": "BM_Campaign_MainGame02",
+      "route_fraction": 0.3,
+      "side": 1,
+      "depth_cm": 440,
+      "height_cm": 240
+    },
+    {
+      "item_id": 9,
+      "area_tag": "BM_Campaign_MainGame02",
+      "route_fraction": 0.67,
+      "side": -1,
+      "depth_cm": 45,
+      "floor": true,
+      "branch": "Branch_02",
+      "authored_position_cm": [
+        -10273.788231,
+        -898.844428,
+        10141.609846
+      ]
+    },
+    {
+      "item_id": 0,
+      "area_tag": "BM_Campaign_MainGame03",
+      "route_fraction": 0.25,
+      "side": 1,
+      "room": "heaven"
+    },
+    {
+      "item_id": 8,
+      "area_tag": "BM_Campaign_MainGame03",
+      "route_fraction": 0.56,
+      "side": -1,
+      "depth_cm": 460,
+      "floor": true
+    },
+    {
+      "item_id": 10,
+      "area_tag": "BM_Campaign_MainGame03",
+      "route_fraction": 0.82,
+      "side": 1,
+      "depth_cm": 480,
+      "height_cm": 130,
+      "branch": "Branch_04"
+    }
+  ],
+  "echo": [
+    {
+      "item_id": 6,
+      "local_position": [
+        400,
+        -945,
+        100.8
+      ],
+      "yaw": -90,
+      "scale": 0.6
+    },
+    {
+      "item_id": 7,
+      "local_position": [
+        3600,
+        1455,
+        99.6
+      ],
+      "yaw": -90,
+      "scale": 0.6
+    }
+  ],
+  "cassette": {
+    "chair_label": "SM_KitchenChair_01a",
+    "local_position": [
+      0,
+      0,
+      60
+    ],
+    "scale": 0.25,
+    "yaw_offset": -90
+  },
+  "ribbon": {
+    "item_id": 11,
+    "provider": "MiningRoomEscape.TickExitStage",
+    "duplicate": false
+  }
+}

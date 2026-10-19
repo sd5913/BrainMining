@@ -14,6 +14,9 @@
 #include "InputAction.h"
 #include "InputMappingContext.h"
 #include "TimerManager.h"
+#include "MiningWalletSubsystem.h"
+#include "Engine/GameInstance.h"
+#include "Components/CapsuleComponent.h"
 
 UMiningComponent::UMiningComponent()
 {
@@ -77,10 +80,15 @@ void UMiningComponent::BindInput(UEnhancedInputComponent* Input)
 
 float UMiningComponent::GetMiningInterval() const
 {
-	if (!bDrillMode && bUsePickaxeBalance) return PickaxeBalance.Interval;
+	if (!bDrillMode && bUsePickaxeBalance)
+	{
+		const float BalancedInterval = FMath::Max(0.1f, PickaxeBalance.Interval);
+		return bMobileMiningInput ? FMath::Max(0.14f, BalancedInterval * .72f) : BalancedInterval;
+	}
 	const float Base = FMath::IsFinite(Interval) ? FMath::Max(0.1f, Interval) : 0.3f;
 	const float Multiplier = FMath::IsFinite(DrillIntervalMultiplier) ? FMath::Clamp(DrillIntervalMultiplier, 0.1f, 1.f) : 0.4f;
-	return bDrillMode ? FMath::Max(0.04f, Base * Multiplier) : Base;
+	if (bDrillMode) return FMath::Max(0.04f, Base * Multiplier);
+	return bMobileMiningInput ? FMath::Max(0.14f, Base * .72f) : Base;
 }
 
 float UMiningComponent::GetMiningRadius() const
@@ -103,7 +111,7 @@ void UMiningComponent::SetDrillMode(bool bNewDrillMode)
 
 bool UMiningComponent::ActivateDrill()
 {
-	if (!GetWorld() || bInputSuspended || IsEncounterBlocked()) return false;
+	if (!GetWorld() || bInputSuspended || IsEncounterBlocked() || !IsDrillUnlocked()) return false;
 	UpdateDrillSession();
 	if (bUseDrillEnergy && bDrillMode)
 	{
@@ -129,6 +137,56 @@ void UMiningComponent::SelectPickaxe()
 {
 	CancelMining();
 	SetDrillMode(false);
+}
+
+bool UMiningComponent::IsDrillUnlocked() const
+{
+	const auto* GI=GetOwner()?GetOwner()->GetGameInstance():nullptr;
+	const auto* Wallet=GI?GI->GetSubsystem<UMiningWalletSubsystem>():nullptr;
+	return !Wallet || !Wallet->bDrillSkillRequiresUnlock || Wallet->bDrillSkillUnlocked;
+}
+void UMiningComponent::RequireDrillUnlock()
+{
+	if(auto* GI=GetOwner()?GetOwner()->GetGameInstance():nullptr)
+		if(auto* Wallet=GI->GetSubsystem<UMiningWalletSubsystem>())Wallet->bDrillSkillRequiresUnlock=true;
+	if(!IsDrillUnlocked())SelectPickaxe();
+}
+void UMiningComponent::UnlockDrill()
+{
+	if(auto* GI=GetOwner()?GetOwner()->GetGameInstance():nullptr)
+		if(auto* Wallet=GI->GetSubsystem<UMiningWalletSubsystem>())Wallet->bDrillSkillUnlocked=true;
+}
+bool UMiningComponent::MineTelevision(const FHitResult& Hit)
+{
+	auto* Rock=Cast<ADiggableRock>(Hit.GetActor());
+	if(!Rock || !Rock->ActorHasTag(TEXT("CardEscapeTelevision")))return false;
+	// Keep the original smooth CRT cutter. Mining-balance changes elsewhere must not
+	// replace it with shallow, jagged pickaxe cavities that trap the player capsule.
+	const auto* Character=Cast<ACharacter>(GetOwner());
+	const auto* Capsule=Character?Character->GetCapsuleComponent():nullptr;
+	const float HalfHeight=Capsule?Capsule->GetScaledCapsuleHalfHeight():96.f;
+	const float CutRadius=FMath::Max(240.f,GetMiningRadius());
+	FVector Center=Hit.ImpactPoint-Hit.ImpactNormal*CutRadius*.3f-FVector(0,0,40);
+	if(bDrillMode && Character)
+	{
+		// Follow the player's feet, not just the elevated crosshair. Keep a
+		// shallow step beneath the capsule when drilling up the TV incline.
+		Center.Z=FMath::Min(Center.Z,Character->GetActorLocation().Z-HalfHeight+CutRadius*.72f);
+	}
+	LastMinedRock=Rock;
+	bool Cut=false;
+	// A stroke can cross the seam between two of the tunnel's solid chunks.
+	// Clear both sides in the same frame so the next chunk cannot catch the feet.
+	for(TActorIterator<ADiggableRock> It(GetWorld());It;++It)
+	{
+		if(!It->ActorHasTag(TEXT("CardEscapeTelevision")))continue;
+		FVector Origin,Extent;It->GetActorBounds(false,Origin,Extent);
+		if(FBox(Origin-Extent,Origin+Extent).ComputeSquaredDistanceToPoint(Center)>FMath::Square(CutRadius))continue;
+		Cut|=It->MineSphere(Center,CutRadius);
+	}
+	Status=Rock->LastStatus;
+	if(Cut)OnMiningHit.Broadcast(Hit);
+	return Cut;
 }
 
 float UMiningComponent::GetDrillUseRemaining() const
@@ -214,7 +272,7 @@ void UMiningComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 			DrawDebugBox(GetWorld(), Frame.GetLocation(), HalfSize, Frame.GetRotation(), FColor(60, 220, 210), false, -1.f, 0, .6f);
 		}
 	}
-	if (bMiningHeld && GetWorld()->GetTimeSeconds() >= NextMineTime)
+	if ((bMiningHeld || bMineQueued) && GetWorld()->GetTimeSeconds() >= NextMineTime)
 	{
 		TryMine();
 	}
@@ -228,10 +286,16 @@ bool UMiningComponent::TryMine()
 {
     if(IsEncounterBlocked() || !GetOwner() || !GetWorld())return false;
     if (const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>(); Bomb && Bomb->bEquipped) return false;
-	if (bInputSuspended || GetWorld()->GetTimeSeconds() < NextMineTime)
+	if (bInputSuspended)
 	{
 		return false;
 	}
+	if (GetWorld()->GetTimeSeconds() < NextMineTime)
+	{
+		bMineQueued = true;
+		return false;
+	}
+	bMineQueued = false;
 	if (!bDrillMode && GetWorld()->GetTimerManager().IsTimerActive(PickaxeImpactTimer)) return false;
 	const float MiningInterval = GetMiningInterval();
 	NextMineTime = GetWorld()->GetTimeSeconds() + MiningInterval;
@@ -245,11 +309,13 @@ bool UMiningComponent::TryMine()
 	}
 	if (!bDrillMode)
 	{
+		PickaxeSwingTarget = TargetHit;
 		GetWorld()->GetTimerManager().SetTimer(PickaxeImpactTimer, this, &UMiningComponent::ResolvePickaxeStrike, GetPickaxeImpactDelay(), false);
 		return true;
 	}
 	LastMinedRock = TargetRock;
 	const FHitResult MiningHit = TargetHit;
+	if(TargetRock->ActorHasTag(TEXT("CardEscapeTelevision")))return MineTelevision(MiningHit);
 	FTransform Frame;
 	FVector HalfSize;
 	BuildPickaxeCut(MiningHit, Frame, HalfSize);
@@ -285,6 +351,7 @@ void UMiningComponent::StartMining()
 		return;
 	}
 	bMiningHeld = true;
+	bMineQueued = true;
 	TryMine();
 }
 
@@ -296,11 +363,14 @@ FVector UMiningComponent::GetCutCenter() const
 void UMiningComponent::StopMining()
 {
 	bMiningHeld = false;
+	bMineQueued = false;
 }
 
 void UMiningComponent::CancelMining()
 {
 	StopMining();
+	bMineQueued = false;
+	PickaxeSwingTarget = FHitResult();
 	if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(PickaxeImpactTimer);
 }
 
@@ -318,6 +388,7 @@ void UMiningComponent::TogglePreview()
 
 void UMiningComponent::ResetField()
 {
+    if(!bFieldResetEnabled)return;
     if(IsEncounterBlocked())return;
 	CancelMining();
 	ClearPickaxeDamage();

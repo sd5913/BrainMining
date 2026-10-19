@@ -59,11 +59,16 @@ void AEndingEmergence::BuildFinale()
             const float A=U*2*PI,Ry=Glyph==2?135000:180000,Rz=Glyph==2?155000:240000;
             P+=FVector(0,FMath::Sin(A)*(Ry+Offset),FMath::Cos(A)*(Rz+Offset)+(Glyph==2?-85000:0));
         }
-        P.X=FMath::Sin(I*2.399f)*3500;TitleTargets.Add(P);
+        const float Lean[]={-.13f,.09f,-.065f,.12f,-.16f},Width[]={1.f,.90f,1.f,1.06f,.92f},Lift[]={-26000,20000,0,-14000,32000};
+        const FVector Centre(0,(Glyph-2)*445000.f,Glyph==2?-85000.f:0.f);
+        FVector Letter=P-Centre;Letter.Y*=Width[Glyph];
+        Letter=FQuat(FVector::ForwardVector,Lean[Glyph]).RotateVector(Letter);
+        P=Centre+Letter+FVector(FMath::Sin(I*2.399f)*3500,0,Lift[Glyph]);
+        TitleTargets.Add(P);TitleGlyphs.Add(Glyph);
     }
     // Neighbours choose different letters instead of moving as orderly rows.
     FRandomStream Gather(68237);
-    for(int I=TitleTargets.Num()-1;I>0;--I)TitleTargets.Swap(I,Gather.RandRange(0,I));
+    for(int I=TitleTargets.Num()-1;I>0;--I){const int J=Gather.RandRange(0,I);TitleTargets.Swap(I,J);TitleGlyphs.Swap(I,J);}
     // Actual faceted geometry carries the ink; the tunnel is not a tiled pattern.
     if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_ExitInk")))
     {ExitInkMaterial=UMaterialInstanceDynamic::Create(Base,this);Camera->GetCameraComponent()->AddOrUpdateBlendable(ExitInkMaterial,1);}
@@ -127,30 +132,44 @@ void AEndingEmergence::UpdateCellTitle(float Alpha)
 {
     if(TitleBatches.Num()!=5||TitleTargets.IsEmpty())return;
     const float Scale=FMath::Lerp(1.f,.17f,Alpha);
+    TitleAnimatedCenters.SetNumUninitialized(TitleCenters.Num());
+    TitleAnimatedScales.SetNumUninitialized(TitleCenters.Num());
+    // Each cell owns 64 stars. Evaluate its drift once, not once per star.
+    for(int OwnerCell=0;OwnerCell<TitleCenters.Num();++OwnerCell)
+    {
+        const float Phase=OwnerCell*2.39996f;
+        const float Seed=.5f+.5f*FMath::Sin(Phase*7.13f),Delay=Seed*.23f;
+        const float Progress=Finale::Ease((Alpha-Delay)/(1-Delay));
+        const float Idle=Progress*(Shot==8?1-Finale::Ease(ShotTime/.95f):1);
+        const float CellScale=FMath::Lerp(1.f,.17f,Progress)*(1+Idle*.045f*FMath::Sin(Age*1.2f+Phase));
+        const float Rate=.12f+Seed*.18f;
+        const FVector Float=FVector(
+            .65f*FMath::Sin(Age*Rate+Phase)+.35f*FMath::Sin(Age*Rate*.43f+Phase*3),
+            .65f*FMath::Sin(Age*Rate*.71f+Phase*1.3f)+.35f*FMath::Cos(Age*Rate*1.21f+Phase),
+            .65f*FMath::Cos(Age*Rate*.87f+Phase)+.35f*FMath::Sin(Age*Rate*.57f+Phase*2))*6500*FMath::Lerp(.55f,1.f,FMath::Square(1-Alpha));
+        const FVector Bend=FVector(FMath::Sin(Phase*1.7f)*.5f,FMath::Cos(Phase*.87f),FMath::Sin(Phase*1.31f))*(45000+Seed*125000)*FMath::Sin(PI*Progress);
+        const int Glyph=TitleGlyphs[OwnerCell];const float Beat=Age*.85f+Glyph*1.43f;
+        const FVector Pivot(0,(Glyph-2)*445000.f,Glyph==2?-85000.f:0.f);
+        const FVector Target=Pivot+FQuat(FVector::ForwardVector,.045f*Idle*FMath::Sin(Beat)).RotateVector(TitleTargets[OwnerCell]-Pivot)
+            +FVector(9000*FMath::Sin(Beat*.8f),4000*FMath::Cos(Beat),11000*FMath::Sin(Beat))*Idle;
+        const FVector Center=FMath::Lerp(TitleCenters[OwnerCell],Target,Progress)+Bend+Float;
+        TitleAnimatedCenters[OwnerCell]=Center;TitleAnimatedScales[OwnerCell]=CellScale;
+    }
+    TitleWorkingPoses.SetNum(TitleBatches.Num());
     for(int Batch=0;Batch<TitleBatches.Num();++Batch)
     {
-        TArray<FTransform> Poses=TitleOriginals[Batch];
+        auto& Poses=TitleWorkingPoses[Batch];Poses=TitleOriginals[Batch];
         const int PerCell=Batch==3?42:Batch==4?22:1;
         for(int I=0;I<Poses.Num();++I)
         {
             const int OwnerCell=I/PerCell;if(!TitleCenters.IsValidIndex(OwnerCell))continue;
-            const float Phase=OwnerCell*2.39996f;
-            const float Seed=.5f+.5f*FMath::Sin(Phase*7.13f),Delay=Seed*.23f;
-            const float Progress=Finale::Ease((Alpha-Delay)/(1-Delay));
-            const float CellScale=FMath::Lerp(1.f,.17f,Progress);
-            const float Rate=.12f+Seed*.18f;
-            const FVector Float=FVector(
-                .65f*FMath::Sin(Age*Rate+Phase)+.35f*FMath::Sin(Age*Rate*.43f+Phase*3),
-                .65f*FMath::Sin(Age*Rate*.71f+Phase*1.3f)+.35f*FMath::Cos(Age*Rate*1.21f+Phase),
-                .65f*FMath::Cos(Age*Rate*.87f+Phase)+.35f*FMath::Sin(Age*Rate*.57f+Phase*2))*6500*FMath::Lerp(.1f,1.f,FMath::Square(1-Alpha));
-            const FVector Bend=FVector(FMath::Sin(Phase*1.7f)*.5f,FMath::Cos(Phase*.87f),FMath::Sin(Phase*1.31f))*(45000+Seed*125000)*FMath::Sin(PI*Progress);
-            const FVector Center=FMath::Lerp(TitleCenters[OwnerCell],TitleTargets[OwnerCell],Progress)+Bend+Float;
-            Poses[I].SetLocation(Center+(Poses[I].GetLocation()-TitleCenters[OwnerCell])*CellScale);
+            const float CellScale=TitleAnimatedScales[OwnerCell];
+            Poses[I].SetLocation(TitleAnimatedCenters[OwnerCell]+(Poses[I].GetLocation()-TitleCenters[OwnerCell])*CellScale);
             Poses[I].SetScale3D(Poses[I].GetScale3D()*CellScale);
         }
         TitleBatches[Batch]->BatchUpdateInstancesTransforms(0,Poses,false,true,true);
     }
-    const FVector Main=TitleTargets[0]+FVector(0,12000,0);
+    const FVector Main=TitleAnimatedCenters[0]+FVector(0,12000,0);
     Cell->SetRelativeLocation(Main*Alpha);Cell->SetRelativeScale3D(FVector(32*Scale));
     Universe->SetRelativeLocation(Main*Alpha);Universe->SetRelativeScale3D(FVector(Scale));
     bTitleRestored=false;
@@ -169,7 +188,7 @@ void AEndingEmergence::PrepareFinaleRocks()
         auto* Mat=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_ComicRock")),Rock);
         Mat->SetVectorParameterValue(TEXT("Tint"),Finale::Palette[Finale::Stage(X)]*.72f);Mat->SetScalarParameterValue(TEXT("MeshInk"),1);Mat->SetScalarParameterValue(TEXT("WhiteInk"),Finale::Stage(X)==5?1.f:0.f);
         Rock->RockMaterial=Mat;Rock->FinishSpawning(T);FinaleRocks.Add(Rock);
-        Rock->RockMesh->SetCastShadow(false);
+        Rock->RockMesh->SetCastShadow(false);Rock->SetActorHiddenInGame(true);
         if(I){auto* Previous=Cast<AEndingComicRock>(FinaleRocks[I-1]);Previous->Next=Rock;Rock->Previous=Previous;}
     }
     // Prepare tools while the title is still visible, not on the entrance frame.
@@ -182,7 +201,11 @@ void AEndingEmergence::PrepareFinaleRocks()
         Pivot->SetRelativeLocationAndRotation(FVector(Left?95:85,Left?-28:28,3),FRotator(14,Left?18:-18,0));
         Pivot->RegisterComponent();FinaleDrillPivots.Add(Pivot);
         auto* Mesh=NewObject<UStaticMeshComponent>(this,NAME_None,RF_Transient);Mesh->SetupAttachment(Pivot);Mesh->SetStaticMesh(Part->GetStaticMesh());
-        Mesh->SetRelativeTransform(Part->GetRelativeTransform());Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);Mesh->SetCastShadow(false);Mesh->SetVisibleInRayTracing(false);
+        // Keep the original cinematic framing. The shared gameplay pawn has a
+        // different model offset; copying it lifts both drills across the lens.
+        Mesh->SetRelativeTransform(FTransform(FRotator(-10,0,0),
+            FVector(Left?-31.280714:-21.432637,0,Left?-14.638632:-16.375114),FVector(.72,Left?-.72:.72,.72)));
+        Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);Mesh->SetCastShadow(false);Mesh->SetVisibleInRayTracing(false);
         auto* ToolMat=UMaterialInstanceDynamic::Create(ComicDrill?ComicDrill:Part->GetMaterial(0),Mesh);
         ToolMat->SetScalarParameterValue(TEXT("Fade"),1);ToolMat->SetScalarParameterValue(TEXT("InkExit"),0);FinaleDrillMaterials.Add(ToolMat);
         for(int M=0;M<Part->GetNumMaterials();++M)Mesh->SetMaterial(M,ToolMat);
@@ -211,20 +234,36 @@ void AEndingEmergence::BeginFinaleDrill()
     Mining->SetInputSuspended(false);if(!Mining->bDrillMode)Mining->ActivateDrill();
     Mining->OnMiningHit.AddDynamic(this,&AEndingEmergence::FinaleDrillHit);
     PrepareFinaleRocks();
+    // Prepared tools may retain the exit fade after a preview or shot seek.
+    // Every mining entrance must restore opaque, coloured drills.
+    for(auto Mat:FinaleDrillMaterials)
+    {
+        Mat->SetScalarParameterValue(TEXT("Fade"),1);
+        Mat->SetScalarParameterValue(TEXT("InkExit"),0);
+        Mat->SetScalarParameterValue(TEXT("WhiteInk"),0);
+    }
+    for(auto Rock:FinaleRocks)if(IsValid(Rock))Rock->SetActorHiddenInGame(false);
     FinaleEntrancePreview->SetVisibility(false,true);
     for(auto Pivot:FinaleDrillPivots)Pivot->SetVisibility(true,true);
     FinaleTunnel->SetVisibility(true,true);
     FinaleLight->SetRelativeScale3D(FVector(.04f,.75f,.75f));
-    ResetPaperFinale();PaperScene->SetVisibility(false,true);
+    ResetPaperFinale();
+    // Reuse the tabletop aperture during drilling: same 75 cm diameter,
+    // material and world position, so the on-screen circle cannot jump at exit.
+    PaperScene->SetVisibility(false,true);PaperScene->SetVisibility(true);
+    PaperSurfaceMaterial->SetScalarParameterValue(TEXT("ApertureRadius"),37.5f);
+    PaperSurface->SetVisibility(true);FinaleLight->SetVisibility(false);
     ToolLight->SetVisibility(true);ToolLight->SetIntensity(1800);
     Pose(Finale::Tunnel,Finale::Tunnel+FVector(1000,0,0),86);
-    Mining->BeginMiningInput();SetAmbience(TEXT("Brain"),.32f);
+    Mining->BeginMiningInput();SetAmbience(TEXT("Drill_Loop"),.24f);Sound(TEXT("DrillHit_01"),.16f,.82f);
 }
 
 void AEndingEmergence::FinaleDrillHit(const FHitResult& Hit)
 {
     if(!bFinaleDrilling||!FinaleRocks.Contains(Cast<ADiggableRock>(Hit.GetActor())))return;
     ++FinaleDrillCuts;FinaleKick=Finale::Impact(DrillDistance);
+    Sound(TEXT("DrillHit_01"),.28f,.90f+(FinaleDrillCuts%4)*.045f);
+    if(FinaleDrillCuts%4==0)Sound(TEXT("DrillDebris_01"),.20f,.92f+(FinaleDrillCuts%3)*.04f);
     FinaleImpactOrigins[FinaleImpactSlot]=GetActorTransform().InverseTransformPosition(Hit.ImpactPoint)-Finale::Tunnel;
     FinaleImpactAges[FinaleImpactSlot]=0;FinaleImpactSlot=(FinaleImpactSlot+1)%6;
 }
@@ -292,7 +331,8 @@ void AEndingEmergence::EndFinaleDrill(bool KeepVisuals)
 {
     if(bFinaleDrilling&&Mining)
     {
-        if(auto* Effects=Player->GetPawn()->FindComponentByClass<UMiningToolEffectsComponent>())
+        APawn* Pawn=Player?Player->GetPawn():nullptr;
+        if(auto* Effects=Pawn?Pawn->FindComponentByClass<UMiningToolEffectsComponent>():nullptr)
         {
             Effects->bEnabled=SavedEffectsEnabled;
             Effects->DrillSmokeStrength=SavedDrillSmoke;Effects->DrillDustStrength=SavedDrillDust;Effects->DrillSparkStrength=SavedDrillSparks;
@@ -326,7 +366,9 @@ void AEndingEmergence::UpdateFinaleExit(float Dt)
     }
     for(auto Pivot:FinaleDrillPivots)Pivot->SetVisibility(Fade>0,true);
     if(ToolLight)ToolLight->SetIntensity(1800*Fade);
-    if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),FMath::Sin(PI*Finale::Ease(ShotTime/2.2f))*.6f);
+    // Keep the reference's peripheral white strokes in the black flight, then
+    // clear them before the camera reaches the physical white desktop.
+    if(ExitInkMaterial)ExitInkMaterial->SetScalarParameterValue(TEXT("Strength"),.6f*(1-Finale::Ease((ShotTime-1.5f)/.8f)));
 }
 
 void AEndingEmergence::ResetFinale()
@@ -342,11 +384,9 @@ void AEndingEmergence::ResetFinale()
     if(FinaleEntrancePreview)FinaleEntrancePreview->SetVisibility(false,true);
     for(auto Mat:FinalePreviewMaterials)Mat->SetScalarParameterValue(TEXT("Reveal"),0);
     if(FinaleCellSpecks)FinaleCellSpecks->SetVisibility(false);
-    if(FinaleTunnel)FinaleTunnel->SetVisibility(false,true);if(FinaleReality)FinaleReality->SetVisibility(false,true);
+    if(FinaleTunnel)FinaleTunnel->SetVisibility(false,true);
     if(FinaleLight){FinaleLight->SetRelativeScale3D(FVector(.24f));FinaleLight->SetVisibility(false);}
     ResetPaperFinale();if(PaperScene)PaperScene->SetVisibility(false,true);
-    if(CreditsScreenMaterial)CreditsScreenMaterial->SetScalarParameterValue(TEXT("Power"),0);
-    if(CreditsScreenLight)CreditsScreenLight->SetIntensity(0);
     DrillDistance=FinaleDrillSpeed=FinaleDrillCuts=0;TitleUpdateAt=-1;
 }
 
@@ -357,12 +397,15 @@ void AEndingEmergence::UpdateFinale(float Dt)
         for(auto Mat:FinalePreviewMaterials)Mat->SetScalarParameterValue(TEXT("Reveal"),0);
         const float T=Finale::Ease(ShotTime/10);
         if(Age-TitleUpdateAt>1.f/30){UpdateCellTitle(T);TitleUpdateAt=Age;}
-        Pose(Finale::Cosmos+FMath::Lerp(TitleCameraStart,Finale::TitleEye,Finale::Ease(ShotTime/12)),Finale::Cosmos+FVector(0,0,30000),62);
+        const float U=FMath::Clamp(ShotTime/Duration(7),0.f,1.f);
+        const FVector Incoming=TitleCameraVelocity.GetClampedToMaxSize(FVector::Dist(TitleCameraStart,Finale::TitleEye)*2/Duration(7));
+        Pose(Finale::Cosmos+FMath::CubicInterp(TitleCameraStart,Incoming*Duration(7),Finale::TitleEye,FVector::ZeroVector,U),Finale::Cosmos+FVector(0,0,30000),62);
         Camera->SetActorRotation(FQuat::Slerp(TitleLookStart.Quaternion(),Camera->GetActorQuat(),Finale::Ease(ShotTime/2)));
     }
     else if(Shot==8)
     {
-        for(auto Mat:FinalePreviewMaterials)Mat->SetScalarParameterValue(TEXT("Reveal"),Finale::Ease((ShotTime-.25f)/2.9f));
+        if(Age-TitleUpdateAt>1.f/30){UpdateCellTitle(1);TitleUpdateAt=Age;}
+        for(auto Mat:FinalePreviewMaterials)Mat->SetScalarParameterValue(TEXT("Reveal"),Finale::Ease((ShotTime-2.15f)/1.65f));
         const float T=FMath::Clamp(ShotTime/Duration(8),0.f,1.f),Fall=T*T*T*(T*(T*6-15)+10);
         Pose(Finale::Cosmos+FMath::Lerp(Finale::TitleEye,Finale::Hole+FVector(-300,0,0),Fall),Finale::Cosmos+FMath::Lerp(FVector(0,0,30000),Finale::Hole,Finale::Ease(T*2)),FMath::Lerp(62.f,86.f,Finale::Ease(T)),bComfortMode?0:12*FMath::Sin(PI*T));
     }

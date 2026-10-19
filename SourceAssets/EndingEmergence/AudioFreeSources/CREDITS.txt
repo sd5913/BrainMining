@@ -1,0 +1,15 @@
+Ending Emergence free audio selection — 2026-10-18
+Processing: resampled to 48 kHz PCM16, normalized, trimmed where needed, and crossfaded for loops.
+All source files are retained under AudioFreeSources/Originals for auditability.
+
+OpenGameArt sources:
+MindStream — DST — CC0 — https://opengameart.org/content/mindstream
+Deep Humidity — yd — CC0 — https://opengameart.org/content/deep-humidity
+Loopable Dungeon Ambience — remaxim — CC0 — https://opengameart.org/content/loopable-dungeon-ambience
+S31 Tunnel Drilling — yd — CC0 — https://opengameart.org/content/s31-tunnel-drilling
+Ambience Pack 1: Sci-Fi Horror — remaxim — CC0 — https://opengameart.org/content/ambience-pack-1-sci-fi-horror
+The Surreal Truth, Infestation in the Control Room, Final Captain's Log — remaxim — CC0 — selected from the Ambience Pack 1 source page
+Paper sounds — OpenGameArt CC0 assets — retained with source filenames
+
+Kenney Sci-Fi Sounds — Kenney — CC0 — https://kenney.nl/assets/sci-fi-sounds
+Map/paper sounds are retained as their original OpenGameArt files and are only used as short effects.

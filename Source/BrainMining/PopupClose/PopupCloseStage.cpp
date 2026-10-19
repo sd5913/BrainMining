@@ -1,4 +1,5 @@
 #include "PopupClose/PopupCloseStage.h"
+#include "Subtitles/SubtitleLibrary.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "HAL/IConsoleManager.h"
 #include "PopupClose/PopupCloseContent.h"
@@ -54,8 +55,8 @@ namespace
  constexpr float WorkSeconds=65.f;
  float IssueInterval(float Seconds,int32 Index)
  {
-  const float InitialInterval=Index>=2?16.f:14.f;
-  const float ManageableInterval=Index>=2?12.f:10.f;
+  const float InitialInterval=Index>=2?10.f:9.f;
+  const float ManageableInterval=Index>=2?7.f:6.f;
   if(Seconds<PanicSeconds)return FMath::Lerp(InitialInterval,ManageableInterval,FMath::Clamp(Seconds/PanicSeconds,0.f,1.f));
   return ManageableInterval*FMath::Pow(.12f/ManageableInterval,FMath::Clamp((Seconds-PanicSeconds)/(WorkSeconds-PanicSeconds),0.f,1.f));
  }
@@ -228,11 +229,11 @@ void APopupCloseStage::ConfigureArtRendering(bool bActive)
 }
 void APopupCloseStage::SetAreaActive(bool bActive)
 {
- const bool bEntering=bActive && !bAreaActive;
  if (!bActive){CancelSession();if(Flood)Flood->Pause();UMiningRoomAudioSubsystem::StopSource(this);}
  bAreaActive = bActive;
  ConfigureArtRendering(bActive);
- if (bEntering && bStartOnAreaEntry) StartOfficeRound();
+ // Area entry only enables the room. Tick waits until the player has walked
+ // around the entrance partition and reached the front of a visible computer.
  if (!bActive && Prompt) Prompt->SetVisibility(ESlateVisibility::Collapsed);
 }
 void APopupCloseStage::CancelSession()
@@ -307,8 +308,22 @@ FString APopupCloseStage::GetInteractionAction(APlayerController* PC) const
  if (!bAreaActive) return FString();
  auto* Device = FocusedDevice(PC);
  if (!Device) return FString();
- if (Phase == EPhase::Idle) return TEXT("开始办公");
+ if (Phase == EPhase::Idle) return FString();
  return Device->IsPrinter() ? FString::Printf(TEXT("处理文件 · %d 张"), Device->Pending()) : TEXT("使用电脑");
+}
+bool APopupCloseStage::HandleInteractionInput(APlayerController* PC)
+{
+ if(!PC || !bAreaActive)return false;
+ if(View==EView::InScreen){ExitScreen();return true;}
+ if(View!=EView::Free)return false;
+ if(Exit && Exit->IsWaitingForBomb() && Exit->CanCollect(PC))return Exit->Collect(PC);
+ if(auto Device=FocusedDevice(PC)){HandleInteraction(PC,Device);return true;}
+ return false;
+}
+bool APopupCloseStage::HandleMobilePrimary(APlayerController* PC)
+{
+	if (!PC || !bAreaActive || View != EView::InScreen || !ActiveComputer) return false;
+	return ActiveComputer->ClickReplyForMobile();
 }
 
 void APopupCloseStage::ShowPrompt(APlayerController* PC,const FString& Message)
@@ -327,6 +342,7 @@ void APopupCloseStage::StartOfficeRound()
 {
  if(Phase!=EPhase::Idle)return;
  Phase=EPhase::Running;RoundTime=0;SlowPhaseScheduledIssues=0;
+ USubtitleLibrary::PlayMainGameSubtitle(this,TEXT("电脑弹窗玩法1"));
  // Randomize the initial order, with separated time slots instead of four immediate problems.
  int32 Order[]={0,1,2,3};
  for(int32 I=3;I>0;--I)Swap(Order[I],Order[FMath::RandRange(0,I)]);
@@ -393,8 +409,7 @@ void APopupCloseStage::TickView(float Dt)
  }
  else if(View==EView::InScreen)
  {
-  if(PC && PC->WasInputKeyJustPressed(EKeys::E))ExitScreen();
-  else if(ActiveComputer)ActiveComputer->TickScreen(Dt,PC);
+  if(ActiveComputer)ActiveComputer->TickScreen(Dt,PC);
  }
  else if(View==EView::Exiting && ViewTime>=ScreenExitSeconds)
  {
@@ -406,6 +421,26 @@ void APopupCloseStage::Tick(float Dt)
  const double Now=FPlatformTime::Seconds();const float Wall=LastTickTime>0?float(Now-LastTickTime):Dt;LastTickTime=Now;
  Super::Tick(Dt);
  if (bAreaManaged && !bAreaActive) return;
+ if(Phase==EPhase::Idle && bStartOnAreaEntry)
+ {
+  auto* PC=GetWorld()->GetFirstPlayerController();
+  APawn* Pawn=PC?PC->GetPawn():nullptr;
+  if(Pawn && !PC->IsPaused() && !PC->IsMoveInputIgnored() && !PC->IsLookInputIgnored())
+   for(APopupOfficeDevice* Device:Devices)
+   {
+    if(!IsValid(Device) || Device->IsPrinter())continue;
+    const FVector LocalPlayer=Device->GetActorTransform().InverseTransformPosition(Pawn->GetActorLocation());
+    // Use the computer's facing rather than the room's world axes, so rotated
+    // copies in MainGame retain the same workstation approach area.
+    if(LocalPlayer.X>-45.f || LocalPlayer.X< -320.f || FMath::Abs(LocalPlayer.Y)>230.f ||
+       FVector::Dist2D(Pawn->GetActorLocation(),Device->GetActorLocation())>320.f ||
+       FMath::Abs(Pawn->GetPawnViewLocation().Z-Device->InteractionPoint().Z)>180.f)continue;
+    FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(OfficeWorkstationStart),false,Pawn);
+    const bool bBlocked=GetWorld()->LineTraceSingleByChannel(Hit,Pawn->GetPawnViewLocation(),Device->InteractionPoint(),ECC_Visibility,Query);
+    if(bBlocked && Hit.GetActor()!=Device)continue;
+    StartOfficeRound();break;
+   }
+ }
  if(!IsOfficeEscaped()) UMiningRoomAudioSubsystem::Loop(this,TEXT("A_Office_Loop"),.18f);
  if((Phase==EPhase::Spraying || Phase==EPhase::Complete) && Exit && !Exit->HasOfferedBomb())
   UMiningRoomAudioSubsystem::Loop(this,TEXT("S_OfficeBurst_Loop"),.32f);
@@ -426,17 +461,18 @@ void APopupCloseStage::Tick(float Dt)
  auto PC=GetWorld()->GetFirstPlayerController();
  if(Exit && Exit->IsWaitingForBomb())
  {
-  ShowPrompt(PC,Exit->CanCollect(PC)?TEXT("E 获取炸弹技能"):Exit->NeedsDoorBreach()?TEXT("G 装备炸弹 · 左键投掷"):TEXT(""));
+  // The pickup prompt is useful before collection. Once the skill is owned,
+  // the bomb remains a normal gameplay ability and does not show a tutorial
+  // hint over the office scene.
+  ShowPrompt(PC,Exit->CanCollect(PC)?TEXT("E 获取炸弹技能"):TEXT(""));
   return;
  }
  if(auto Device=FocusedDevice(PC))
  {
-  ShowPrompt(PC,Phase==EPhase::Idle?TEXT("按 E 开始办公"):
+  ShowPrompt(PC,Phase==EPhase::Idle?TEXT(""):
    Device->IsPrinter()?FString::Printf(TEXT("按 E 处理文件  ·  %d 张"),Device->Pending()):TEXT("按 E 使用电脑"));
-  if(PC && PC->WasInputKeyJustPressed(EKeys::E))HandleInteraction(PC,Device);
  }
- else ShowPrompt(PC,bStartOnAreaEntry && Phase==EPhase::Running && View==EView::Free && RoundTime<10.f
-  ?TEXT("办公已开始 · 靠近电脑或打印机，瞄准后按 E 处理") :TEXT(""));
+ else ShowPrompt(PC,TEXT(""));
 }
 void APopupCloseStage::TickIssues(float Dt)
 {
@@ -476,6 +512,7 @@ void APopupCloseStage::BeginBurst()
 {
  if(Phase!=EPhase::Running)return;
  Phase=EPhase::Spraying;SprayTime=0;SprayDebt=0;
+ USubtitleLibrary::PlayMainGameSubtitle(this,TEXT("电脑弹窗玩法2"));
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_OfficePanic"),.65f);
  bForcedExit=View==EView::Entering || View==EView::InScreen;
  // Disable every reply before releasing any shared Slate pointer capture.
@@ -523,7 +560,7 @@ void APopupCloseStage::WriteSessionReport()
  bool bLocked=true,bEmitted=true;for(auto Device:Devices){bLocked &= Device->IsLocked() && !Device->CanInteract(PC);bEmitted &= Flood && Flood->Emitted(Device->DeviceIndex)>=95;}
  const auto Paper=PaperLandingStatus(GetWorld(),Floor->Bounds.GetBox().Max.Z);
  const bool bPaperSafe=Paper.BelowFloor==0 && Paper.bCCD && Flood && Flood->IsHealthy();
- const bool bPass=bInput && bLocked && bEmitted && bPaperSafe && bAccountingValid && bWarningsValid && bIndependentTimersValid && SlowPhaseScheduledIssues<=24.f && Flood->IsFloorCovered();
+ const bool bPass=bInput && bLocked && bEmitted && bPaperSafe && bAccountingValid && bWarningsValid && bIndependentTimersValid && SlowPhaseScheduledIssues<=44.f && Flood->IsFloorCovered();
  FString Report=FString::Printf(TEXT("%s\nTotal time: %.2f s\nManageable phase: %.0f s, %.0f automatically scheduled issues\nRapid acceleration: %.0f s\nAll unresolved problems accumulated: %d\nWarning icons track pending counts: %d\nIndependent randomized timers remain valid: %d\nEruption forced camera exit: %d\nCamera and movement restored: %d\nAll four devices permanently locked: %d\nLargest frame in first eruption second: %.2f ms\n"),
  bPass?TEXT("PASS"):TEXT("FAIL"),RoundTime+SprayTime,PanicSeconds,SlowPhaseScheduledIssues,WorkSeconds-PanicSeconds,bAccountingValid,bWarningsValid,bIndependentTimersValid,bForcedExit,bInput,bLocked,FirstBurstPeakFrame*1000);
  Report+=GetSessionStatus()+TEXT("\n");
@@ -588,7 +625,7 @@ FString APopupCloseStage::ValidateOffice()
  // The second computer remains active so the end-of-round test exercises forced ejection.
  bool Faster=true;for(int32 I=1;I<=100;++I)Faster &= IssueInterval(WorkSeconds*I/100.f,0)<IssueInterval(WorkSeconds*(I-1)/100.f,0);
  Check(Faster,TEXT("problem frequency continuously accelerates with no peak hold"));
- Check(PanicSeconds==45.f && IssueInterval(0.f,0)==14.f && IssueInterval(PanicSeconds,0)==10.f && IssueInterval(PanicSeconds,2)==12.f,TEXT("first 45 seconds only gently accelerate with manageable gaps"));
+ Check(PanicSeconds==45.f && IssueInterval(0.f,0)==9.f && IssueInterval(PanicSeconds,0)==6.f && IssueInterval(PanicSeconds,2)==7.f,TEXT("first 45 seconds produce more problems with manageable independent gaps"));
  Check(IssueInterval(55.f,0)<IssueInterval(45.f,0)*.2f && IssueInterval(WorkSeconds,0)<=.121f,TEXT("acceleration becomes much faster after 45 seconds"));
  Check(bIndependentTimersValid,TEXT("every device maintains its own randomized countdown"));
  Check(bAccountingValid && bWarningsValid,TEXT("pending counts and warning icons stay consistent"));

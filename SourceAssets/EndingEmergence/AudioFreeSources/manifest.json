@@ -1,0 +1,522 @@
+[
+  {
+    "asset": "M_EE_Main_Loop",
+    "file": "SourceAssets/EndingEmergence/Audio/M_EE_Main_Loop.wav",
+    "import_file": "Wav/M_EE_Main_Loop.wav",
+    "category": "Music",
+    "loop": true,
+    "channels": 2,
+    "sample_rate": 48000,
+    "seconds": 117.0,
+    "peak": 0.3,
+    "rms": 0.07024465051479187,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/DST-MindStream.mp3",
+        "sha256": "50e3306a36eabead31dc702bb7654ff935351d19b9ef40421e89b4e037f92bb9",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": false,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 3.0,
+      "target_peak": 0.3
+    },
+    "sha256": "ef1e6fdecf537067c1f909024a3934a02d88c884ef471604769a140d72c43a1e"
+  },
+  {
+    "asset": "M_EE_Cosmic_Loop",
+    "file": "SourceAssets/EndingEmergence/Audio/M_EE_Cosmic_Loop.wav",
+    "import_file": "Wav/M_EE_Cosmic_Loop.wav",
+    "category": "Music",
+    "loop": true,
+    "channels": 2,
+    "sample_rate": 48000,
+    "seconds": 82.0,
+    "peak": 0.24,
+    "rms": 0.06598938084791045,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/S31-Tunnel-Drilling.ogg",
+        "sha256": "5992d243d92e7b6753de419886160b5e39aff41ea64c03a4637522cbeeeeb49b",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": false,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 2.0,
+      "target_peak": 0.24
+    },
+    "sha256": "cab58b0df48435bef27ae6a21fc0d3c3480ed7bc0e32f38b20af859465efce05"
+  },
+  {
+    "asset": "M_EE_Inner_Loop",
+    "file": "SourceAssets/EndingEmergence/Audio/M_EE_Inner_Loop.wav",
+    "import_file": "Wav/M_EE_Inner_Loop.wav",
+    "category": "Music",
+    "loop": true,
+    "channels": 2,
+    "sample_rate": 48000,
+    "seconds": 56.9323,
+    "peak": 0.2,
+    "rms": 0.026133518125913448,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/EndingAmbiencePack/The_Surreal_Truth.mp3",
+        "sha256": "fe4a94a95aa8f281185f09818d1c9f4cb0da5cd70350bf13b43b5a3c779ce691",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": false,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 2.0,
+      "target_peak": 0.2
+    },
+    "sha256": "61ede7aaa494bce16959b61ce978de11b9500109f1ae02e2212bc77a8a82b134"
+  },
+  {
+    "asset": "M_EE_Drill_Loop",
+    "file": "SourceAssets/EndingEmergence/Audio/M_EE_Drill_Loop.wav",
+    "import_file": "Wav/M_EE_Drill_Loop.wav",
+    "category": "Music",
+    "loop": true,
+    "channels": 2,
+    "sample_rate": 48000,
+    "seconds": 45.6474,
+    "peak": 0.16,
+    "rms": 0.030939539863057763,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/EndingAmbiencePack/Infestation_in_the_Control_Room.mp3",
+        "sha256": "a5626bf6295dc29581db9a68e1eb33e5f8ecdad5fe188314f15251abdbb66bfc",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": false,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 2.0,
+      "target_peak": 0.16
+    },
+    "sha256": "765a9d0cd99452515afaa594786948707ac285641c1d387a4554de5560a4b112"
+  },
+  {
+    "asset": "M_EE_Resolve_Loop",
+    "file": "SourceAssets/EndingEmergence/Audio/M_EE_Resolve_Loop.wav",
+    "import_file": "Wav/M_EE_Resolve_Loop.wav",
+    "category": "Music",
+    "loop": true,
+    "channels": 2,
+    "sample_rate": 48000,
+    "seconds": 56.4323,
+    "peak": 0.22,
+    "rms": 0.028591883892411258,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/EndingAmbiencePack/Final_Captains_Log.mp3",
+        "sha256": "9e8990fcd2221b49b7fbac717cb012085fdc583f82c41c3bf6d2eefe8d8bf6bb",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": false,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 2.5,
+      "target_peak": 0.22
+    },
+    "sha256": "bb19172a0d333b1d527152aaa7becedb2781b8fb18165310c7887a5f99c5d24d"
+  },
+  {
+    "asset": "A_EE_Cell_Loop",
+    "file": "SourceAssets/EndingEmergence/Audio/A_EE_Cell_Loop.wav",
+    "import_file": "Wav/A_EE_Cell_Loop.wav",
+    "category": "Ambience",
+    "loop": true,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 54.7,
+    "peak": 0.22,
+    "rms": 0.03691639907914241,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/deep-humidity.ogg",
+        "sha256": "08852f14e96347c15f16d3e4a3e9bb3142c4b976627e852b8978602f30b98dec",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0.3,
+      "target_peak": 0.22
+    },
+    "sha256": "8cd26cdebb639228fb70df30aa2d15159f004ab6728029b1cd9c1c6e30ece35d"
+  },
+  {
+    "asset": "A_EE_Blood_Loop",
+    "file": "SourceAssets/EndingEmergence/Audio/A_EE_Blood_Loop.wav",
+    "import_file": "Wav/A_EE_Blood_Loop.wav",
+    "category": "Ambience",
+    "loop": true,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 47.7,
+    "peak": 0.18,
+    "rms": 0.016205447235980823,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/dungeon002.ogg",
+        "sha256": "18da6d6c4492d744f5ebde5bb128a636770df4197d2d4a0b5e8d65df6e27f57b",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0.3,
+      "target_peak": 0.18
+    },
+    "sha256": "a2b519482386c63da7574b037319107ea0e0e9cc4990d436bbffe255bbf96e5d"
+  },
+  {
+    "asset": "A_EE_Drill_Loop",
+    "file": "SourceAssets/EndingEmergence/Audio/A_EE_Drill_Loop.wav",
+    "import_file": "Wav/A_EE_Drill_Loop.wav",
+    "category": "Ambience",
+    "loop": true,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 2.12,
+    "peak": 0.3,
+    "rms": 0.06566444160381837,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/Kenney/engineCircular_000.ogg",
+        "sha256": "8ab85f9fa85e9e692287f98acb36b9ac3ba15313b007c039055e286b736f4e3a",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0.08,
+      "target_peak": 0.3
+    },
+    "sha256": "932374c1c085095da673d5991aad0d74c38b0eab59e5242e0eee2d3957c8ca9e"
+  },
+  {
+    "asset": "S_EE_ScaleWhoosh_01",
+    "file": "SourceAssets/EndingEmergence/Audio/S_EE_ScaleWhoosh_01.wav",
+    "import_file": "Wav/S_EE_ScaleWhoosh_01.wav",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.954,
+    "peak": 0.52,
+    "rms": 0.15269670549249584,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/Kenney/forceField_000.ogg",
+        "sha256": "c2916f2a062c8ddd1aca2826d134fe90847037db31342726ffb0f9097afe339c",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0,
+      "target_peak": 0.52
+    },
+    "sha256": "06300cf9a2911faa2b38eb5ecc6b7c756359143a1def5590849ce2d0e8a68bd4"
+  },
+  {
+    "asset": "S_EE_ScaleWhoosh_02",
+    "file": "SourceAssets/EndingEmergence/Audio/S_EE_ScaleWhoosh_02.wav",
+    "import_file": "Wav/S_EE_ScaleWhoosh_02.wav",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 5.0,
+    "peak": 0.4799999999999999,
+    "rms": 0.17758903334403447,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/Kenney/spaceEngine_000.ogg",
+        "sha256": "c06e84fb6734ddd0ce7242351e0952d560b3b3e47430172e8944f761d7bb1fc8",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0,
+      "target_peak": 0.48
+    },
+    "sha256": "ff0b19d0e7e83dd514c54600ab10fb6e6f7e8ceb684f6859fcb8180a76b649af"
+  },
+  {
+    "asset": "S_EE_NeuralPulse_01",
+    "file": "SourceAssets/EndingEmergence/Audio/S_EE_NeuralPulse_01.wav",
+    "import_file": "Wav/S_EE_NeuralPulse_01.wav",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.2392,
+    "peak": 0.42,
+    "rms": 0.10988982857479056,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/Kenney/laserSmall_000.ogg",
+        "sha256": "72b589eadd41781257ac859e4f4d030222e623390e4a1a83f6d05329a6e026f1",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0,
+      "target_peak": 0.42
+    },
+    "sha256": "b5f93b06b4cfaa9c4261c337a17f8a06533ce6904e84a2e3cc65bad493661b5f"
+  },
+  {
+    "asset": "S_EE_DrillHit_01",
+    "file": "SourceAssets/EndingEmergence/Audio/S_EE_DrillHit_01.wav",
+    "import_file": "Wav/S_EE_DrillHit_01.wav",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.6349,
+    "peak": 0.48,
+    "rms": 0.05937342830854779,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/Kenney/impactMetal_000.ogg",
+        "sha256": "956c6612a256aa1a67a2327fffe2454f6b1d82e4c1c2be28fd66916335d5b1d6",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0,
+      "target_peak": 0.48
+    },
+    "sha256": "419ff609305bb72fcede4a01f214c4d128c4d6e24faed08f08559b7288ca9e96"
+  },
+  {
+    "asset": "S_EE_DrillDebris_01",
+    "file": "SourceAssets/EndingEmergence/Audio/S_EE_DrillDebris_01.wav",
+    "import_file": "Wav/S_EE_DrillDebris_01.wav",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.7775,
+    "peak": 0.42,
+    "rms": 0.13120816775047803,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/Kenney/explosionCrunch_000.ogg",
+        "sha256": "4b597d658d0ae101f0a030fbeea5fc3a4292ab85f017470a8254a8e7959cbd69",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0,
+      "target_peak": 0.42
+    },
+    "sha256": "fe943a5397200fb416563dfef639bbdd67e64d973f63adc84507188a2497976c"
+  },
+  {
+    "asset": "S_EE_PaperFlight",
+    "file": "SourceAssets/EndingEmergence/Audio/S_EE_PaperFlight.wav",
+    "import_file": "Wav/S_EE_PaperFlight.wav",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 0.4876,
+    "peak": 0.3,
+    "rms": 0.019453867244519148,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/paper_sound_-_1.mp3",
+        "sha256": "f62e6cab41a9c0a8c67b5752c95e80e6adc681110d579ada982627909be1773d",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0,
+      "target_peak": 0.3
+    },
+    "sha256": "27dcb3a2e7fb9e6bb0e1226ca753d5c1667431ea310f040e6261862cee4fc8bf"
+  },
+  {
+    "asset": "S_EE_PaperLand",
+    "file": "SourceAssets/EndingEmergence/Audio/S_EE_PaperLand.wav",
+    "import_file": "Wav/S_EE_PaperLand.wav",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 1.1494,
+    "peak": 0.34,
+    "rms": 0.012669888342388433,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/paper_crushed_-_1.mp3",
+        "sha256": "f43b208fada1e29e086dc3b9df8d1208dea7d5b0a0496a755d793c2f620b7de2",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 44100,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0,
+      "target_peak": 0.34
+    },
+    "sha256": "999e4c36817da03e3fa045e856ac75848bd530c1fe441536e9c2fb77322cec27"
+  },
+  {
+    "asset": "S_EE_FinalResolve",
+    "file": "SourceAssets/EndingEmergence/Audio/S_EE_FinalResolve.wav",
+    "import_file": "Wav/S_EE_FinalResolve.wav",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 1.6245,
+    "peak": 0.38,
+    "rms": 0.007284017408030483,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/snd_close_map.wav",
+        "sha256": "cf0f53aa3ce6ff522527bbdffa610f56bbcdc91d1b93dc7541ff3c279d34c4d1",
+        "gain": 1.0,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 96000,
+        "offset": 0.0
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0,
+      "target_peak": 0.38
+    },
+    "sha256": "46fbc35cce34dec48783eb5962833279afee6aad8e7d884a582bb5f1538a7d17"
+  },
+  {
+    "asset": "S_EE_FinalComputer",
+    "file": "SourceAssets/EndingEmergence/Audio/S_EE_FinalComputer.wav",
+    "import_file": "Wav/S_EE_FinalComputer.wav",
+    "category": "Effects",
+    "loop": false,
+    "channels": 1,
+    "sample_rate": 48000,
+    "seconds": 5.0,
+    "peak": 0.38,
+    "rms": 0.17890026011774063,
+    "sources": [
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/Kenney/computerNoise_000.ogg",
+        "sha256": "1527944e16eb14b48ee03fe3e7ce6aae94262833a4e1f83928d451a7414fe4e1",
+        "gain": 0.55,
+        "start": 0.0,
+        "end": null,
+        "mono": true,
+        "source_rate": 44100,
+        "offset": 0.0
+      },
+      {
+        "file": "SourceAssets/EndingEmergence/AudioFreeSources/Originals/snd_close_map.wav",
+        "sha256": "cf0f53aa3ce6ff522527bbdffa610f56bbcdc91d1b93dc7541ff3c279d34c4d1",
+        "gain": 0.2,
+        "start": 0.12,
+        "end": null,
+        "mono": true,
+        "source_rate": 96000,
+        "offset": 0.35
+      }
+    ],
+    "processing": {
+      "resample_to": 48000,
+      "crossfade_seconds": 0,
+      "target_peak": 0.38
+    },
+    "sha256": "115534f88b1aabcb46b91121141adc24bacd64310ef380d6effb7a4824100a42"
+  }
+]

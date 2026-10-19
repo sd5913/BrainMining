@@ -67,7 +67,8 @@ static FAutoConsoleCommand ReviewP2(TEXT("BrainMining.ReviewP2"),TEXT("Play P2's
         {
             bool Auto=false;
             for(TActorIterator<AMiningRoomEscape> It(Stage->GetWorld());It;++It)Auto|=It->bAutoClaimVictoryReward;
-            if(!Auto)Stage->CollectReward();
+            // Leave time to inspect the physical drill and exercise the normal E pickup.
+            if(!Auto && Run.PhaseTime>4.f)Stage->CollectReward();
         }
         if(Run.Phase==ECardRoomPhase::Collected && !State->Collected)
         {State->Report+=TEXT("victory_reward_collected\n");State->Collected=true;}

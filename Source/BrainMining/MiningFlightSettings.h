@@ -33,6 +33,10 @@ struct BRAINMINING_API FMiningFlightSettings
 	float DoubleTapWindowSeconds = .30f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Feel", meta=(ClampMin="0.05", ClampMax="2", Units="s"))
 	float SpoolUpSeconds = .28f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Feel", meta=(ClampMin="0", ClampMax="2", Units="s", ToolTip="Low-speed drift duration while a caught fall gently reverses into ascent. Velocity keeps changing throughout; never holds the character still."))
+	float AirCatchHangSeconds = .30f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Feel", meta=(ClampMin="0.05", ClampMax="2", Units="s", ToolTip="Smooth ramp from gentle drift lift to full upward thrust after catching a fall."))
+	float AirCatchRiseSeconds = .32f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Feel", meta=(ClampMin="0.05", ClampMax="1"))
 	float InitialThrustFraction = .18f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight|Jetpack Feel", meta=(ClampMin="1", ClampMax="5"))

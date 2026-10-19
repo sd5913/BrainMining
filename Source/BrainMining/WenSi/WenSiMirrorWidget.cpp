@@ -1,7 +1,8 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "BrainMiningFonts.h"
+#include "WenSi/MouseMuseumPortal.h"
 #include "WenSi/WenSiThoughtBubble.h"
 #include "Engine/Texture2D.h"
-#include "Fonts/CompositeFont.h"
 #include "Input/DragAndDrop.h"
 #include "InputCoreTypes.h"
 #include "Styling/CoreStyle.h"
@@ -21,14 +22,8 @@ namespace
 {
  FSlateFontInfo ThoughtFont(float Size)
  {
-  static TSharedPtr<const FCompositeFont> Font;
-  if (!Font)
-  {
-   FString Path=TEXT("C:/Windows/Fonts/simhei.ttf");
-   if (FPaths::FileExists(Path)) Font=MakeShared<FStandaloneCompositeFont>(NAME_None,Path,EFontHinting::Default,EFontLoadingPolicy::LazyLoad);
-  }
-  return Font ? FSlateFontInfo(Font,Size) : FCoreStyle::GetDefaultFontStyle(TEXT("Regular"),Size);
- }
+        return BrainMiningFonts::Body(Size);
+    }
  class SThoughtExchange : public SLeafWidget
  {
  public:
@@ -216,7 +211,9 @@ void UWenSiMirrorWidget::Refresh()
   if(WordWidgets[Index].IsValid())WordWidgets[Index]->SetRenderOpacity(Puzzle->IsSwapping() && !Puzzle->HasSwapCommitted()?0.f:1.f);
  }
  FString Message;
- if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("E 重置谜题");
+ if(Puzzle->MousePortal && Puzzle->MousePortal->IsEntering()) Message=TEXT("");
+ else if(Puzzle->MousePortal && Puzzle->MousePortal->IsFocused()) Message=FString();
+ else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("E 重置谜题");
  else if (!Puzzle->bComplete)
  {
   if (Puzzle->Aim.IsValid()) Message=TEXT("E 思考    ");

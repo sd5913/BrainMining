@@ -21,6 +21,9 @@ if not unreal.EditorAssetLibrary.does_asset_exist(path):
         i=unreal.CustomInput();i.set_editor_property('input_name',name);inputs.append(i)
     custom.set_editor_property('inputs',inputs)
     custom.set_editor_property('code','''
+#if SHADING_PATH_MOBILE
+return Base.rgb;
+#else
 float2 uv = GetDefaultSceneTextureUV(Parameters, 13);
 float2 texel = View.BufferSizeAndInvSize.zw;
 float center = (Mask.r > 0.0 && Mask.r < 10000000.0 && Mask.r <= Depth.r + 1.0) ? 1.0 : 0.0;
@@ -35,6 +38,7 @@ float edge = 0.0;
     }
 }
 return lerp(Base.rgb, float3(1.0,1.0,1.0), edge*(1.0-center));
+#endif
 ''')
     for name,texture in [('Base',unreal.SceneTextureId.PPI_POST_PROCESS_INPUT0),('Depth',unreal.SceneTextureId.PPI_SCENE_DEPTH),('Mask',unreal.SceneTextureId.PPI_CUSTOM_DEPTH)]:
         node=lib.create_material_expression(m,unreal.MaterialExpressionSceneTexture);node.set_editor_property('scene_texture_id',texture)

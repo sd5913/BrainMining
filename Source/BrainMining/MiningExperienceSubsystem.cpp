@@ -1,6 +1,9 @@
 #include "MiningExperienceSubsystem.h"
+#include "BrainMiningFonts.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningComponent.h"
+#include "MiningCollection.h"
+#include "EngineUtils.h"
 #include "MiningCharacterMovementComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
@@ -37,7 +40,6 @@ namespace MiningExperiences
         {TEXT("多矿区串联"), TEXT("主房间 · 独立矿区 · 隐藏洞室"), TEXT("/Game/MiningPrototype/Maps/Lvl_MiningHollowChain_Demo")}
     };
 
-#if !UE_BUILD_SHIPPING
     const FEntry DeveloperEntries[] = {
         {TEXT("主游戏 · MainGame"), TEXT("重新载入三矿区主流程，再用上方房间列表跳转"), TEXT("/Game/MainGame/Maps/Lvl_MainGame")},
         {TEXT("办公室 · 独立测试"), TEXT("电脑弹窗、打印机、炸弹与撤离，从房间初始状态开始"), TEXT("/Game/PopupClose/Maps/Lvl_PopupClose")},
@@ -47,7 +49,6 @@ namespace MiningExperiences
         {TEXT("涌现结尾 · 独立测试"), TEXT("新结尾房的独立演示"), TEXT("/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo")},
         {TEXT("旧主流程 · FullJourney"), TEXT("重新载入旧主流程，可继续使用房间跳转"), TEXT("/Game/Campaign/Maps/Lvl_FullJourney")}
     };
-#endif
 
     class FShortcuts : public IInputProcessor
     {
@@ -58,7 +59,6 @@ namespace MiningExperiences
         {
             auto* Owner = Subsystem.Get();
             if (!Owner || Event.IsRepeat()) return false;
-#if !UE_BUILD_SHIPPING
             if (Event.GetKey() == EKeys::F10 && Event.IsControlDown())
             {
                 auto* Viewport = Owner->GetWorld() ? Owner->GetWorld()->GetGameViewport() : nullptr;
@@ -67,11 +67,16 @@ namespace MiningExperiences
                     return Owner->ToggleDeveloperMenu();
                 return false;
             }
-#endif
             if (Event.GetKey() == EKeys::F6 && !Owner->IsMenuOpen())
                 if (auto* Hall = AMiningExhibitHall::Find(Owner->GetWorld())) { Hall->ReturnToLobby(); return true; }
             if (Event.GetKey() == EKeys::F4) return Owner->ToggleMenu();
-            if (Event.GetKey() == EKeys::Escape && Owner->IsMenuOpen()) { Owner->CloseMenu(); return true; }
+            if (Event.GetKey() == EKeys::Escape)
+            {
+                if(Owner->IsMenuOpen()) { if(Owner->bQuitConfirmation)Owner->CancelQuitConfirmation();else Owner->CloseMenu();return true; }
+                auto* Viewport=Owner->GetWorld()?Owner->GetWorld()->GetGameViewport():nullptr;
+                auto Widget=Viewport?Viewport->GetGameViewportWidget():nullptr;
+                if(Widget&&(Widget->HasKeyboardFocus()||Widget->HasFocusedDescendants()))return Owner->TogglePauseMenu();
+            }
             return false;
         }
     private:
@@ -115,9 +120,6 @@ bool UMiningExperienceSubsystem::ToggleMenu()
 
 bool UMiningExperienceSubsystem::ToggleDeveloperMenu()
 {
-#if UE_BUILD_SHIPPING
-    return false;
-#else
     if (Menu) { CloseMenu(); return true; }
     if (auto* Hall = AMiningExhibitHall::Find(GetWorld()))
     {
@@ -125,7 +127,6 @@ bool UMiningExperienceSubsystem::ToggleDeveloperMenu()
         if (Hall->IsInteractionOpen()) return false;
     }
     return BuildMenu(true);
-#endif
 }
 
 bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
@@ -150,13 +151,12 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
         if (auto* Movement = Pawn->FindComponentByClass<UMiningCharacterMovementComponent>()) Movement->ResetFlightInput();
     }
     auto Choices = SNew(SVerticalBox);
-#if !UE_BUILD_SHIPPING
     if (bDeveloper)
     {
         auto* Hall = AMiningExhibitHall::Find(World);
         Choices->AddSlot().AutoHeight().Padding(0, 10)
             [SNew(STextBlock).Text(FText::FromString(Hall ? TEXT("当前地图 · 跳转到区域入口（保留房间进度）") : TEXT("当前地图无主流程区域，请使用下方独立玩法入口。")))
-                .Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).AutoWrapText(true)];
+                .Font(BrainMiningFonts::Style("Bold", 18)).AutoWrapText(true)];
         if (Hall)
         {
             for (int32 Index = 0; Index < Hall->Areas.Num(); ++Index)
@@ -165,19 +165,21 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
                     [SNew(SButton).IsEnabled(Hall->bReady).ContentPadding(FMargin(18, 9))
                         .OnClicked_Lambda([this, Index]() { JumpToDeveloperArea(Index); return FReply::Handled(); })
                         [SNew(STextBlock).Text(FText::FromString(FString::Printf(TEXT("跳转 · %s%s"), *Hall->Areas[Index].Title.ToString(),
-                            Index == Hall->ActiveArea ? TEXT("（当前）") : TEXT("")))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))]];
+                            Index == Hall->ActiveArea ? TEXT("（当前）") : TEXT("")))).Font(BrainMiningFonts::Body(18))]];
             }
             if (!Hall->bReady) MenuError = TEXT("房间仍在加载，稍后重新打开面板即可跳转。");
         }
+        Choices->AddSlot().AutoHeight().Padding(0,12)[SNew(STextBlock).Text(FText::FromString(TEXT("GM · 收集物附近"))).Font(BrainMiningFonts::Style("Bold",18))];
+        for(int32 Id=0;Id<AMiningCollectible::ItemTypeCount;++Id)
+            Choices->AddSlot().AutoHeight().Padding(0,2)[SNew(SButton).ContentPadding(10)
+                .OnClicked_Lambda([this,Id](){JumpToCollectible(Id);return FReply::Handled();})
+                [SNew(STextBlock).Font(BrainMiningFonts::Body(12)).Text(FText::FromString(AMiningCollectible::ItemName(Id)))]];
         Choices->AddSlot().AutoHeight().Padding(0, 16, 0, 6)
-            [SNew(STextBlock).Text(FText::FromString(TEXT("独立玩法 · 切换地图并从头测试房间"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))];
+            [SNew(STextBlock).Text(FText::FromString(TEXT("独立玩法 · 切换地图并从头测试房间"))).Font(BrainMiningFonts::Style("Bold", 18))];
     }
-#endif
     const MiningExperiences::FEntry* MenuEntries = MiningExperiences::Entries;
     int32 EntryCount = UE_ARRAY_COUNT(MiningExperiences::Entries);
-#if !UE_BUILD_SHIPPING
     if (bDeveloper) { MenuEntries = MiningExperiences::DeveloperEntries; EntryCount = UE_ARRAY_COUNT(MiningExperiences::DeveloperEntries); }
-#endif
     for (int32 Index = 0; Index < EntryCount; ++Index)
     {
         const auto& Entry = MenuEntries[Index];
@@ -187,9 +189,9 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
             { if (bDeveloper) OpenDeveloperExperience(Index); else OpenExperience(Index); return FReply::Handled(); })
             [SNew(SVerticalBox)
                 + SVerticalBox::Slot().AutoHeight()
-                    [SNew(STextBlock).Text(FText::FromString(Entry.Title)).Font(FCoreStyle::GetDefaultFontStyle("Bold", 20)).ColorAndOpacity(FLinearColor::White)]
+                    [SNew(STextBlock).Text(FText::FromString(Entry.Title)).Font(BrainMiningFonts::Style("Bold", 20)).ColorAndOpacity(FLinearColor::White)]
                 + SVerticalBox::Slot().AutoHeight().Padding(0,3,0,0)
-                    [SNew(STextBlock).Text(FText::FromString(bAvailable ? Entry.Detail : TEXT("当前安装或构建未包含此关卡"))).Font(FCoreStyle::GetDefaultFontStyle("Regular", 14)).ColorAndOpacity(FLinearColor(.75f,.83f,.86f)).AutoWrapText(true)]]];
+                    [SNew(STextBlock).Text(FText::FromString(bAvailable ? Entry.Detail : TEXT("当前安装或构建未包含此关卡"))).Font(BrainMiningFonts::Style("Regular", 14)).ColorAndOpacity(FLinearColor(.75f,.83f,.86f)).AutoWrapText(true)]]];
     }
     TSharedPtr<SButton> CloseButton;
     Menu = SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -197,21 +199,21 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
         [SNew(SBox).WidthOverride(860).MaxDesiredHeight(850)
             [SNew(SVerticalBox)
                 + SVerticalBox::Slot().AutoHeight().Padding(12)
-                    [SNew(STextBlock).Text(FText::FromString(bDeveloper ? TEXT("开发者 · 房间跳转与玩法测试") : TEXT("BrainMining · 全部玩法"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 26)).ColorAndOpacity(FLinearColor::White)]
+                    [SNew(STextBlock).Text(FText::FromString(bDeveloper ? TEXT("开发者 · 房间跳转与玩法测试") : TEXT("BrainMining · 全部玩法"))).Font(BrainMiningFonts::Style("Bold", 26)).ColorAndOpacity(FLinearColor::White)]
                 + SVerticalBox::Slot().AutoHeight().Padding(12,0,12,10)
                     [SNew(STextBlock).Text(FText::FromString(bDeveloper
                         ? FString::Printf(TEXT("当前地图：%s\n跳转可进入未解锁区域，并补齐开局装备；不会自动通关。\n独立测试会离开当前地图，当前房间进度不保留。Ctrl + F10 / Esc 关闭。"), *UGameplayStatics::GetCurrentLevelName(World))
                         : FString(TEXT("切换关卡会重开试玩，本轮进度不跨地图保存。\nF4 / Esc 关闭并继续当前试玩。"))))
-                        .Font(FCoreStyle::GetDefaultFontStyle("Regular", 15)).ColorAndOpacity(FLinearColor(.75f,.83f,.86f)).AutoWrapText(true)]
+                        .Font(BrainMiningFonts::Style("Regular", 15)).ColorAndOpacity(FLinearColor(.75f,.83f,.86f)).AutoWrapText(true)]
                 + SVerticalBox::Slot().FillHeight(1)
                     [SNew(SScrollBox) + SScrollBox::Slot()[Choices]]
                 + SVerticalBox::Slot().AutoHeight().Padding(0, 6)
-                    [SNew(STextBlock).Text_Lambda([this]() { return FText::FromString(MenuError); })
+                    [SNew(STextBlock).Font(BrainMiningFonts::Body(12)).Text_Lambda([this]() { return FText::FromString(MenuError); })
                         .ColorAndOpacity(FLinearColor(1.f, .55f, .3f)).AutoWrapText(true)]
                 + SVerticalBox::Slot().AutoHeight().Padding(0,8)
                     [SAssignNew(CloseButton, SButton).HAlign(HAlign_Center).ContentPadding(12)
                         .OnClicked_Lambda([this]() { CloseMenu(); return FReply::Handled(); })
-                        [SNew(STextBlock).Text(FText::FromString(TEXT("继续当前试玩"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White)]]]];
+                        [SNew(STextBlock).Text(FText::FromString(TEXT("继续当前试玩"))).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(FLinearColor::White)]]]];
     Controller->SetIgnoreMoveInput(true);
     Controller->SetIgnoreLookInput(true);
     bPausedByMenu = Controller->SetPause(true);
@@ -241,7 +243,7 @@ void UMiningExperienceSubsystem::CloseMenu()
     bPausedByMenu = false;
     MenuController.Reset();
     MenuWorld.Reset();
-    bDeveloperMenu = false;
+    bDeveloperMenu = false;bPauseMenu=false;bQuitConfirmation=false;
 }
 
 void UMiningExperienceSubsystem::OnWorldCleanup(UWorld* World, bool bSessionEnded, bool bCleanupResources)
@@ -252,30 +254,21 @@ void UMiningExperienceSubsystem::OnWorldCleanup(UWorld* World, bool bSessionEnde
 TArray<FString> UMiningExperienceSubsystem::DeveloperMapPaths()
 {
     TArray<FString> Paths;
-#if !UE_BUILD_SHIPPING
     for (const auto& Entry : MiningExperiences::DeveloperEntries) Paths.Add(Entry.Map);
-#endif
     return Paths;
 }
 
 bool UMiningExperienceSubsystem::JumpToDeveloperArea(int32 Index)
 {
-#if UE_BUILD_SHIPPING
-    return false;
-#else
     auto* Hall = AMiningExhibitHall::Find(GetWorld());
     if (!Menu || !bDeveloperMenu || !Hall) return false;
     if (!Hall->EnterDeveloperArea(Index, MenuError)) return false;
     CloseMenu();
     return true;
-#endif
 }
 
 bool UMiningExperienceSubsystem::OpenDeveloperExperience(int32 Index)
 {
-#if UE_BUILD_SHIPPING
-    return false;
-#else
     if (!Menu || !bDeveloperMenu || !GetWorld()) return false;
     const auto Paths = DeveloperMapPaths();
     if (!Paths.IsValidIndex(Index) || !FPackageName::DoesPackageExist(Paths[Index]))
@@ -287,7 +280,6 @@ bool UMiningExperienceSubsystem::OpenDeveloperExperience(int32 Index)
     CloseMenu();
     UGameplayStatics::OpenLevel(GetWorld(), Map);
     return true;
-#endif
 }
 
 bool UMiningExperienceSubsystem::OpenExperience(int32 Index)

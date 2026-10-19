@@ -20,6 +20,7 @@ public:
         const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override;
     virtual FVector2D ComputeDesiredSize(float LayoutScaleMultiplier) const override;
     virtual FReply OnTouchStarted(const FGeometry& MyGeometry, const FPointerEvent& Event) override;
+    virtual FReply OnTouchFirstMove(const FGeometry& MyGeometry, const FPointerEvent& Event) override;
     virtual FReply OnTouchMoved(const FGeometry& MyGeometry, const FPointerEvent& Event) override;
     virtual FReply OnTouchEnded(const FGeometry& MyGeometry, const FPointerEvent& Event) override;
     virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& Event) override;
@@ -37,7 +38,18 @@ private:
         Mine,
         Bomb,
         Drill,
-        Upgrade
+        Jetpack,
+        Interact,
+        Upgrade,
+        Primary,
+        Confirm,
+        Reset,
+        ThoughtLeft,
+        ThoughtRight,
+        Map,
+        Catalogue,
+        Back,
+        Edit
     };
 
     enum class EButton : uint8
@@ -45,7 +57,18 @@ private:
         Mine,
         Bomb,
         Drill,
-        Upgrade
+        Jetpack,
+        Interact,
+        Upgrade,
+        Primary,
+        Confirm,
+        Reset,
+        ThoughtLeft,
+        ThoughtRight,
+        Map,
+        Catalogue,
+        Back,
+        Edit
     };
 
     TWeakObjectPtr<ABrainMiningPlayerController> OwnerController;
@@ -54,16 +77,29 @@ private:
     int32 MinePointer = -1;
     int32 BombPointer = -1;
     int32 DrillPointer = -1;
+    int32 JetpackPointer = -1;
+    int32 InteractPointer = -1;
     int32 UpgradePointer = -1;
+    int32 PrimaryPointer = -1;
+    int32 ConfirmPointer = -1;
+    int32 ResetPointer = -1;
+    int32 ThoughtLeftPointer = -1;
+    int32 ThoughtRightPointer = -1;
+    int32 MapPointer = -1;
+    int32 CataloguePointer = -1;
+    int32 BackPointer = -1;
+    int32 EditPointer = -1;
     FVector2D JoystickOrigin = FVector2D::ZeroVector;
     FVector2D JoystickPosition = FVector2D::ZeroVector;
     FVector2D JoystickAxis = FVector2D::ZeroVector;
     FVector2D LastLookPosition = FVector2D::ZeroVector;
+    TMap<int32, FVector2D> ButtonLastPositions;
     float JoystickOpacity = 0.f;
 
     float GetUiScale(const FVector2D& Size) const;
     float GetJoystickRadius(const FVector2D& Size) const;
     float GetButtonRadius(const FVector2D& Size) const;
+    float GetButtonHitRadius(EButton Button, const FVector2D& Size) const;
     FVector2D GetButtonCenter(EButton Button, const FVector2D& Size) const;
     EPointerAction GetButtonAction(EButton Button) const;
     int32& GetButtonPointer(EButton Button);
@@ -71,6 +107,9 @@ private:
     bool IsInsideButton(EButton Button, const FVector2D& Position, const FVector2D& Size) const;
     bool IsJoystickZone(const FVector2D& Position, const FVector2D& Size) const;
     bool IsButtonPressed(EButton Button) const;
+    bool IsButtonVisible(EButton Button) const;
+    FString GetButtonLabel(EButton Button) const;
+    FLinearColor GetButtonColor(EButton Button) const;
 
     FReply HandlePointerStarted(const FGeometry& MyGeometry, int32 PointerIndex, const FVector2D& LocalPosition);
     FReply HandlePointerMoved(const FGeometry& MyGeometry, int32 PointerIndex, const FVector2D& LocalPosition);

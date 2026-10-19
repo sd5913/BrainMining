@@ -23,6 +23,7 @@ public:
     TWeakObjectPtr<AEndingComicRock> Previous,Next;
     virtual void ResetRock() override;
     virtual bool MineSphere(FVector WorldCenter,float WorldRadius) override;
+    virtual bool MinePickaxe(FTransform WorldFrame,FVector HalfSize,int32 Seed,float Roughness) override;
 private:
     bool CutLocal(FVector Center,float Radius,const UE::Geometry::FDynamicMesh3& Cutter);
 };

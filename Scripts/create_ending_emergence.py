@@ -191,11 +191,15 @@ if not unreal.EditorAssetLibrary.does_asset_exist(path):
         i = unreal.CustomInput(); i.set_editor_property('input_name', n); ins.append(i)
     custom.set_editor_property('inputs', ins)
     custom.set_editor_property('code', '''
+#if SHADING_PATH_MOBILE
+    return SC.rgb;
+#else
     float2 p=UV-.5;
     float r=dot(p,p);
     float2 warped=.5+p*(1+.38*r)/1.12;
     float2 sampleUV=ViewportUVToSceneTextureUV(saturate(warped),14);
     return SceneTextureLookup(sampleUV,14,false).rgb+SC.rgb*.00000001;
+#endif
     ''')
     lib.connect_material_expressions(uv, 'ViewportUV', custom, 'UV')
     lib.connect_material_expressions(scene, 'Color', custom, 'SC')

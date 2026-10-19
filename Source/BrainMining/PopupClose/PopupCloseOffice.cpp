@@ -63,6 +63,13 @@ void APopupCloseOffice::BuildOffice()
  for(int32 I=0;I<Groups.Num();++I)
  {
   Groups[I]->ClearInstances();
+  // Imported office art owns the visible shell. The procedural groups still
+  // rebuild their instances for editor compatibility, but must not leave a
+  // second, invisible collision shell inside that art.
+  const bool bUseProceduralShell=!bUseImportedArchitecture;
+  Groups[I]->SetVisibility(bUseProceduralShell);
+  Groups[I]->SetCollisionEnabled(bUseProceduralShell && (I==0 || I==2 || I==3)?ECollisionEnabled::QueryAndPhysics:ECollisionEnabled::NoCollision);
+  Groups[I]->SetGenerateOverlapEvents(bUseProceduralShell);
   auto Surface=UMaterialInstanceDynamic::Create(Parent,this);Surface->SetVectorParameterValue(TEXT("Color"),Colors[I==13?1:I==14?0:I]);
   UMaterialInterface* Override=SurfaceOverrides.IsValidIndex(I)?SurfaceOverrides[I].Get():nullptr;
   if(I==13)Override=CarpetMaterial.Get();

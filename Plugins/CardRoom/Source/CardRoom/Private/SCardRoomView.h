@@ -10,6 +10,7 @@ public:
     virtual FVector2D ComputeDesiredSize(float) const override { return FVector2D(1600,900); }
     virtual bool SupportsKeyboardFocus() const override { return true; }
     virtual int32 OnPaint(const FPaintArgs&,const FGeometry&,const FSlateRect&,FSlateWindowElementList&,int32,const FWidgetStyle&,bool) const override;
+    virtual FReply OnTouchStarted(const FGeometry&,const FPointerEvent&) override;
     virtual FReply OnMouseButtonDown(const FGeometry&,const FPointerEvent&) override;
     virtual FReply OnMouseButtonUp(const FGeometry&,const FPointerEvent&) override;
     virtual FReply OnMouseMove(const FGeometry&,const FPointerEvent&) override;

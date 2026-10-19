@@ -1,4 +1,5 @@
 #include "PopupClose/PopupOfficeExit.h"
+#include "Subtitles/SubtitleLibrary.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "PopupClose/PopupCloseStage.h"
 #include "PopupClose/PopupCloseOffice.h"
@@ -33,7 +34,7 @@ CSV_DEFINE_CATEGORY(OfficeFinale,true);
 namespace
 {
  constexpr int32 BombBudget=256;
- constexpr float PickupBombScale=1.9f;
+ constexpr float PickupBombScale=2.2f;
  constexpr float ExitPlane=1090.f;
  constexpr float VisualUpdateHz=30.f;
  void WarmBombRenderPool(UInstancedStaticMeshComponent* Mesh)
@@ -58,6 +59,20 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
   return Mesh;
  };
  Door=Owner.ExitDoorModel;
+ // Authored office shells hid the original stage meshes, including this live door.
+ // Restore it at runtime too: cooked maps retain those component overrides.
+ Door->SetHiddenInGame(false);Door->SetVisibility(true);
+ Door->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+ if(auto* DoorAsset=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/PopupClose/Maps/_GENERATED/Lenovo/office_doors_Submesh_704FAA0D.office_doors_Submesh_704FAA0D")))
+ {
+  auto* Art=Make(TEXT("OfficeBlastDoorArt"),DoorAsset,FLinearColor::White);
+  Art->AttachToComponent(Door.Get(),FAttachmentTransformRules::KeepWorldTransform);
+  const FVector Size=DoorAsset->GetBounds().BoxExtent*2;
+  const FVector Scale(26/FMath::Max(1.,Size.X),200/FMath::Max(1.,Size.Y),290/FMath::Max(1.,Size.Z));
+  Art->SetWorldScale3D(Scale*Owner.GetActorScale3D());Art->SetWorldRotation(Owner.GetActorRotation());
+  Art->SetWorldLocation(Owner.GetActorTransform().TransformPosition(FVector(1000,0,145)-DoorAsset->GetBounds().Origin*Scale));
+  Art->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ }
  bool bConnected=false;for(TActorIterator<APopupCloseOffice> It(Owner.GetWorld());It;++It)
   if(FVector::DistSquared(It->GetActorLocation(),Owner.GetActorLocation())<2500.f)bConnected=It->bWalkThroughConnections;
  const float CorridorEnd=bConnected?1200.f:1750.f;
@@ -225,6 +240,7 @@ bool FPopupOfficeExit::Collect(APlayerController* PC)
 void FPopupOfficeExit::OfferBomb()
 {
  if(Phase!=0)return;Phase=1;Age=0;Pickup->SetVisibility(true);
+ USubtitleLibrary::PlayMainGameSubtitle(&Owner,TEXT("电脑弹窗玩法3"));
  UMiningRoomAudioSubsystem::Emit(&Owner,TEXT("S_BombOffer"),.65f);
  if(auto Body=Cast<USphereComponent>(Pickup->GetAttachParent()))
  {
@@ -245,7 +261,7 @@ void FPopupOfficeExit::HandleExplosion(const FVector& WorldPosition)
  if(FVector::DistSquared(P,Closest)>FMath::Square(FMath::Clamp(Tool->Settings.BlastRadius,50.f,3000.f)))return;
  FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(OfficeBlastDoor),false,Tool->GetOwner());
  if(Owner.GetWorld()->LineTraceSingleByChannel(Hit,WorldPosition,Owner.GetActorTransform().TransformPosition(FVector(1000,Closest.Y,Closest.Z)),ECC_Visibility,Query) && Hit.GetComponent()!=Door.Get())return;
- Phase=4;Age=0;Door->SetVisibility(false);Door->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ Phase=4;Age=0;Door->SetVisibility(false,true);Door->SetCollisionEnabled(ECollisionEnabled::NoCollision);
  UMiningRoomAudioSubsystem::Emit(Door.Get(),TEXT("S_DoorBreak"),.65f,true);
  for(int32 I=0;I<8;++I)DoorFragments->AddInstance(FTransform(FRotator(0,I*31.f,15),FVector(935-I*6,-85+I*24,7),FVector(.5f,.35f,.08f)));
  UE_LOG(LogOfficeExit,Display,TEXT("Exit door breached by a real player bomb explosion; blast=%s"),*P.ToString());
@@ -265,7 +281,7 @@ void FPopupOfficeExit::Tick()
  }
  if(Phase==2 && Owner.bAreaActive && Owner.View==APopupCloseStage::EView::Free)
  {
-  if(CanCollect(PC)){Owner.ShowPrompt(PC,TEXT("E 获取炸弹技能"));if(PC->WasInputKeyJustPressed(EKeys::E))Collect(PC);}
+  if(CanCollect(PC))Owner.ShowPrompt(PC,TEXT("E 获取炸弹技能"));
  }
  if(Pawn && Phase<5)
  {
@@ -339,6 +355,7 @@ void FPopupOfficeExit::TickExitTurn(float Dt)
 void FPopupOfficeExit::SealRoom()
 {
  Phase=5;Age=EmissionDebt=0;Shutter->SetVisibility(true);Shutter->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);ReturnGrille->SetVisibility(true);
+ USubtitleLibrary::PlayMainGameSubtitle(&Owner,TEXT("电脑弹窗玩法4"));
  UMiningRoomAudioSubsystem::Emit(Shutter.Get(),TEXT("S_Seal"),.7f,true);
  UMiningRoomAudioSubsystem::StopSource(&Owner);
  Bombs->SetVisibility(true);CSV_EVENT(OfficeFinale,TEXT("BombEruptionStart"));
@@ -400,7 +417,7 @@ void FPopupOfficeExit::Reset()
  FinishExitTurn();
  Phase=BombsEmitted=BombCursor=ExplosionWaves=0;Age=EmissionDebt=0;bInsideSeen=bHavePosition=bDestructionSignaled=false;
  for(auto Effect:Effects)if(Effect.IsValid())Effect->Destroy();Effects.Reset();
- Door->SetVisibility(true);Door->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+ Door->SetVisibility(true,true);Door->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
  Pickup->SetVisibility(false);Pickup->SetCollisionEnabled(ECollisionEnabled::NoCollision);
  if(PickupOutline.IsValid())PickupOutline->bEnabled=false;
  if(auto Body=Cast<USphereComponent>(Pickup->GetAttachParent()))

@@ -12,6 +12,7 @@ class UCardRoomUISettings;
 class UPointLightComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCardRoomCompleted, FName, RoomId);
 DECLARE_DELEGATE_TwoParams(FCardRoomAudioOverride, FName, float);
+DECLARE_DELEGATE_TwoParams(FCardRoomSubtitleOverride, const FString&, float);
 
 UCLASS()
 class CARDROOM_API ACardRoomStage : public AActor
@@ -24,6 +25,7 @@ public:
     virtual void BeginPlay() override;
     FCardRoomRun Run;
     FCardRoomAudioOverride AudioOverride;
+    FCardRoomSubtitleOverride SubtitleOverride;
     void Sound(const TCHAR* Name, float Volume=0.65f);
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Card Room") FName RoomId = TEXT("CardDuel_P1");
     // Integration hooks only: listeners decide what a win or collectible means in the main game.
@@ -49,6 +51,7 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|UI") TObjectPtr<UCardRoomUISettings> UISettings;
     // Art-only override. Both study maps continue to use the same FCardRoomRun.
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") bool bStyledEffects=false;
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") bool bUseRobotOpponent=false;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TArray<TObjectPtr<class UNiagaraSystem>> StyledSystems;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TObjectPtr<class UMaterialInterface> StyledEnergyMaterial;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") TObjectPtr<class UMaterialInterface> StyledRingMaterial;
@@ -65,10 +68,12 @@ public:
     FVector GetCardLanding(int32 Index,int32 Count) const;
     FVector GetSeatEyeLocation() const {return GetActorTransform().TransformPosition(FVector(-270,0,188));}
     FVector GetSeatLocation() const { return GetActorTransform().TransformPosition(FVector(-270,0,100)); }
-    FVector GetApproachLocation() const { return GetActorTransform().TransformPosition(bTabletopEntry?FVector(-270,0,115):FVector(-295,0,0)); }
+    FVector GetApproachLocation() const { return GetActorTransform().TransformPosition(bTabletopEntry?FVector(-75,0,115):FVector(-295,0,0)); }
+    float GetApproachRadius() const { return bTabletopEntry?800.f:180.f; }
     bool IsPlayerNear(const FVector& Position) const;
 private:
     UPROPERTY() TObjectPtr<USceneComponent> ToyRoot;
+    UPROPERTY() TObjectPtr<class UChildActorComponent> RobotOpponent;
     UPROPERTY() TObjectPtr<USceneComponent> HeadPivot;
     UPROPERTY() TObjectPtr<USkeletalMeshComponent> RabbitVisual;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> ToyParts;
@@ -78,6 +83,7 @@ private:
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Beam;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Ball;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Reward;
+    UPROPERTY(Transient) TObjectPtr<class UPostProcessComponent> RewardOutline;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> PlayedCards;
     UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> CardMarks;
     UPROPERTY() TObjectPtr<UPointLightComponent> SpellLight;

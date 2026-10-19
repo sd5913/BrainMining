@@ -104,6 +104,15 @@ bool FMiningJetpackMovementTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Air catch brakes before reaching the nearby floor"),
 		Movement->IsFalling() && Movement->Velocity.Z > -500 && Pawn->GetActorLocation().Z > GroundZ + 100);
 	Step(16);
+	TestTrue(TEXT("After braking, holding Space drifts slowly above the floor"),
+		Movement->IsFalling() && FMath::Abs(Movement->Velocity.Z) < 60. && Pawn->GetActorLocation().Z > GroundZ + 100);
+	const double DriftVelocity = Movement->Velocity.Z;
+	const double DriftHeight = Pawn->GetActorLocation().Z;
+	Step(6);
+	TestTrue(TEXT("Perceived hover keeps changing speed and height instead of freezing"),
+		Movement->Velocity.Z > DriftVelocity + 10. && Movement->Velocity.Z < 100.
+		&& FMath::Abs(Pawn->GetActorLocation().Z - DriftHeight) > .1);
+	Step(18);
 	TestTrue(TEXT("Keeping Space held recovers into ascent without landing"), Movement->IsFalling() && Movement->Velocity.Z > 400);
 	TestTrue(TEXT("Aerial recovery uses the normal heat budget"), Movement->JetpackHeat > 0.f);
 	Pawn->ProcessEvent(Pawn->FindFunctionChecked(TEXT("DoJumpEnd")), nullptr);

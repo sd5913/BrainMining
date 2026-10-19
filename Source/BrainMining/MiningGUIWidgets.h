@@ -182,9 +182,13 @@ protected:
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> UpgradeNames;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> UpgradeDescriptions;
 	UPROPERTY(Transient) TObjectPtr<UCanvasPanel> MineralPanel;
+	UPROPERTY(Transient) TObjectPtr<UImage> MineralBackplate;
+	UPROPERTY(Transient) TObjectPtr<UImage> PickaxeBackplate;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> MineralCounts;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> PickaxeLevelLabel;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> PickaxeRequirements;
     UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> PickaxeRequirementRows;
+	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> PickaxeRequirementCounts;
+	UPROPERTY(Transient) TArray<TObjectPtr<UImage>> PickaxeRequirementIcons;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> PickaxeUpgradeHint;
 };

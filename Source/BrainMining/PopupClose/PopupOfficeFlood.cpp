@@ -45,7 +45,7 @@ namespace
   // phase keeps the same ten-second window, but eases into a restrained rate
   // so the room does not look like it is accelerating objects unnaturally.
   if(Seconds>=TotalEmissionSeconds)return 0.f;
-  const float SlowRate=bAdditionalComputer?1.5f:2.f;
+  const float SlowRate=bAdditionalComputer?2.5f:3.5f;
   return Seconds<SlowEmissionSeconds ? SlowRate : FMath::Lerp(8.f,12.f,FMath::Clamp((Seconds-SlowEmissionSeconds)/RapidEmissionSeconds,0.f,1.f));
  }
 }

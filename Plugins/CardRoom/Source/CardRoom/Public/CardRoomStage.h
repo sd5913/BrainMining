@@ -8,6 +8,7 @@ class USkeletalMeshComponent;
 class USceneComponent;
 class UStaticMesh;
 class USkeletalMesh;
+class UCardRoomUISettings;
 class UPointLightComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCardRoomCompleted, FName, RoomId);
 DECLARE_DELEGATE_TwoParams(FCardRoomAudioOverride, FName, float);
@@ -47,6 +48,7 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") float CardThrowHeight=48.f;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") float CardVisualScale=1.f;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") float SpellPresentationScale=1.f;
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|UI") TObjectPtr<UCardRoomUISettings> UISettings;
     // Art-only override. Both study maps continue to use the same FCardRoomRun.
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation") bool bStyledEffects=false;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") bool bUseRobotOpponent=false;
@@ -60,6 +62,7 @@ public:
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") TObjectPtr<USkeletalMesh> RabbitSkeletalMesh;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit", meta=(ClampMin="0.01")) float RabbitVisualScale=1.f;
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") FVector RabbitVisualOffset=FVector::ZeroVector;
+    UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") FVector RabbitLandingLocal=FVector(1700.f,0.f,-420.f);
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") bool bRabbitPhysicsDrop=true;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") FVector RewardLocal=FVector(-30,0,143);
     FVector GetCardLanding(int32 Index,int32 Count) const;
@@ -100,6 +103,7 @@ private:
     float StyledLastTime=0;
     bool bStyledPoisonLive=false;
     bool bRabbitPhysicsDropped=false;
+    bool bRabbitPhysicsSettled=false;
     FTransform RabbitInitialRelativeTransform;
     ECardRoomPhase LastPhase = ECardRoomPhase::Exploring;
     bool bReplySound = false;

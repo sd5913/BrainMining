@@ -1,6 +1,8 @@
 """Rebuild the existing ending map after room geometry changes, with a backup."""
 from datetime import datetime
 from pathlib import Path
+import runpy
+runpy.run_path(str(Path(__file__).with_name("ending_scenery_guard.py")))
 import shutil
 import unreal
 

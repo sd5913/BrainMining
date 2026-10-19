@@ -52,13 +52,8 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
             Out.PushClip(FSlateClippingZone(FSlateRect(Min.X,Min.Y,Max.X,Max.Y)));
         };
         auto Health=[&](bool Player,float HP,float Y){
-            const float X=46, BarX=X+55, BarY=Y+13, BarW=273, BarH=26;
+            const float X=46, BarX=X+39, BarY=Y+13, BarW=289, BarH=26;
             const FLinearColor Color=Player?FLinearColor(.64f,.43f,.13f):FLinearColor(.58f,.16f,.12f);
-            // Retain only the portrait; the old segmented strip is never painted outside this clip.
-            Clip(X,Y,48,52);
-            Art(Player?TEXT("M_Health_Player"):TEXT("M_Health_Opponent"),X,Y,330,52,
-                Player?FLinearColor(.64f,.62f,1.f):FLinearColor(.58f,.85f,.75f));
-            Out.PopClip();
             Box(BarX,BarY+3,BarW,BarH,FLinearColor(.025f,.018f,.012f,.35f),13.f);
             Box(BarX,BarY,BarW,BarH,FLinearColor(.39f,.30f,.21f,.88f),13.f);
             Box(BarX+2,BarY+2,BarW-4,BarH-4,FLinearColor(.055f,.038f,.026f,.95f),11.f);
@@ -66,9 +61,37 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
             if(Fill>0.f)
             {
                 // Clip the continuous fill, so zero HP is empty and damage cannot cover the frame or portrait.
-                Clip(BarX+3,BarY+3,(BarW-6)*Fill,BarH-6);
-                Box(BarX+3,BarY+3,BarW-6,BarH-6,Color,10.f);
+                // Start the measured fill after the overlapping badge: even
+                // one HP remains visible instead of hiding beneath the icon.
+                Clip(BarX+17,BarY+3,(BarW-20)*Fill,BarH-6);
+                Box(BarX+17,BarY+3,BarW-20,BarH-6,Color,10.f);
                 Out.PopClip();
+            }
+            // The badge overlaps the continuous track and shares its frame, rather
+            // than clipping a portrait out of the old segmented health texture.
+            const FLinearColor Frame(.39f,.30f,.21f,.98f), Ink(.055f,.038f,.026f,1);
+            const FLinearColor Ivory(.91f,.82f,.65f,1);
+            Box(X,Y+3,56,52,FLinearColor(.025f,.018f,.012f,.35f),18);
+            Box(X,Y,56,52,Frame,18);Box(X+2,Y+2,52,48,Ink,16);
+            Box(X+5,Y+5,46,42,Color*.70f,13);
+            if(Player)
+            {
+                // Miner: warm face, rounded hard hat and a pale headlamp.
+                Box(X+17,Y+24,23,17,Ivory,8);
+                Box(X+12,Y+12,32,21,Color*1.32f,12);
+                Box(X+9,Y+27,38,5,Ivory,2.5f);
+                Box(X+24,Y+12,8,18,Frame,3);
+                Box(X+22,Y+17,12,10,Ivory,4);
+                Box(X+25,Y+19,6,6,FLinearColor(1,.93f,.70f),3);
+            }
+            else
+            {
+                // Opponent: the square cardboard robot from the room.
+                Box(X+9,Y+22,5,12,Ivory,2);Box(X+42,Y+22,5,12,Ivory,2);
+                Box(X+13,Y+13,30,27,Ivory,6);
+                Box(X+18,Y+23,6,6,Ink,3);Box(X+32,Y+23,6,6,Ink,3);
+                Box(X+21,Y+33,14,3,Ink,1.5f);
+                Box(X+18,Y+18,8,2,Ink,1);Box(X+30,Y+18,8,2,Ink,1);
             }
         };
         Health(false,R.RivalHP,110); Health(true,R.PlayerHP,755);

@@ -67,6 +67,32 @@ void DrainPickaxe(AGeneratedMiningRock* Rock)
 }
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningScaledWallTest, "BrainMining.Pickaxe.NonUniformAuthoredWalls", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMiningScaledWallTest::RunTest(const FString&)
+{
+    UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+    ON_SCOPE_EXIT {World->DestroyWorld(false);};
+    for(bool Generated:{false,true})
+    {
+        ADiggableRock* Rock=Generated?World->SpawnActor<AGeneratedMiningRock>():World->SpawnActor<ADiggableRock>();
+        Rock->RockSize=FVector(160,600,600);Rock->ResetRock();
+        if(auto* Chunked=Cast<AGeneratedMiningRock>(Rock))
+        {
+            FMinimalBoxMeshGenerator Box;Box.Box=FOrientedBox3d(FVector3d::Zero(),FVector3d(80,300,300));Box.Generate();
+            TestTrue(TEXT("Scaled fixture uses actual terrain chunks"),Chunked->SetChunkedMesh(FDynamicMesh3(&Box),400,true));
+        }
+        Rock->SetActorScale3D(FVector(.7f,1.8f,1.2f));
+        auto* Mining=CreatePickaxe(World);Mining->DownwardOffset=40;
+        FHitResult Hit;
+        TestTrue(TEXT("Close visible contact hits the scaled surface"),Rock->ActorLineTraceSingle(Hit,FVector(-100,0,0),FVector(200,0,0),ECC_Visibility,FCollisionQueryParams(NAME_None,true)));
+        TestTrue(TEXT("Pickaxe cuts a nonuniform authored wall"),Mining->ApplyPickaxeHit(PickaxeHit(Rock,Hit.ImpactPoint,Hit.ImpactNormal)));
+        if(auto* Chunked=Cast<AGeneratedMiningRock>(Rock))DrainPickaxe(Chunked);
+        TestTrue(TEXT("The surface actually changes"),Rock->SuccessfulCuts>0);
+        Rock->Destroy();
+    }
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningPickaxeThreeHitsTest, "BrainMining.Pickaxe.ThreeHitsAndSquareCollision", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FMiningPickaxeThreeHitsTest::RunTest(const FString&)
 {

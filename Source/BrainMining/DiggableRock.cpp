@@ -160,9 +160,9 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 	ON_SCOPE_EXIT { LastTotalMilliseconds = (FPlatformTime::Seconds() - OperationStart) * 1000.0; };
 	const FVector Scale = GetActorScale3D();
 	if (WorldCenter.ContainsNaN() || !FMath::IsFinite(WorldRadius) || WorldRadius <= 0.0f ||
-		Scale.X <= UE_SMALL_NUMBER || !FMath::IsNearlyEqual(Scale.X, Scale.Y) || !FMath::IsNearlyEqual(Scale.X, Scale.Z))
+		Scale.ContainsNaN() || Scale.GetMin() <= UE_SMALL_NUMBER)
 	{
-		LastStatus = TEXT("Use positive uniform scale and a valid radius");
+		LastStatus = TEXT("Use positive scale and a valid radius");
 		return false;
 	}
 	if (TriangleCount == 0)
@@ -171,7 +171,7 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 		return false;
 	}
 	const FVector LocalCenter = GetActorTransform().InverseTransformPosition(WorldCenter);
-	const double LocalRadius = WorldRadius / Scale.X;
+	const double LocalRadius = WorldRadius / Scale.GetMin();
 	FDynamicMesh3 SourceMesh;
 	RockMesh->GetDynamicMesh()->ProcessMesh([&SourceMesh](const FDynamicMesh3& Mesh) { SourceMesh = Mesh; });
 	if (SourceMesh.GetBounds().DistanceSquared(FVector3d(LocalCenter)) > LocalRadius * LocalRadius)
@@ -199,7 +199,7 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 	for (int32 VertexID : Cutter.VertexIndicesItr())
 	{
 		Cutter.SetVertex(VertexID, WorldCutter ? FVector3d(GetActorTransform().InverseTransformPosition(FVector(Cutter.GetVertex(VertexID))))
-			: Cutter.GetVertex(VertexID) * LocalRadius + FVector3d(LocalCenter));
+			: FVector3d(GetActorTransform().InverseTransformPosition(WorldCenter + FVector(Cutter.GetVertex(VertexID)) * WorldRadius)));
 	}
 	FDynamicMesh3 Result;
 	FMeshBoolean Operation(&SourceMesh, &Cutter, &Result, FMeshBoolean::EBooleanOp::Difference);

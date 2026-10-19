@@ -29,10 +29,11 @@ public class BrainMining : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[] { "GeometryCore", "GeometryFramework", "DynamicMesh" });
 		PrivateDependencyModuleNames.Add("RenderCore");
         PrivateDependencyModuleNames.Add("ApplicationCore");
+        RuntimeDependencies.Add("$(ProjectDir)/Content/UI/Gamepad/*.svg", StagedFileType.NonUFS);
 		PrivateDependencyModuleNames.Add("AudioMixer");
 		PrivateDependencyModuleNames.Add("MediaAssets");
 		PrivateDependencyModuleNames.AddRange(new[] { "GeometryAlgorithms", "AssetRegistry" });
-		if (Target.bBuildEditor) PrivateDependencyModuleNames.AddRange(new[] { "UnrealEd", "MeshConversion", "MeshDescription" });
+		if (Target.bBuildEditor) PrivateDependencyModuleNames.AddRange(new[] { "UnrealEd", "MeshConversion", "MeshDescription", "StaticMeshDescription" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"BrainMining",

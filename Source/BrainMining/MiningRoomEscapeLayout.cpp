@@ -244,12 +244,14 @@ void AMiningRoomEscape::BuildStudyLayout()
     const FVector RampStart=TunnelPoint(FVector(7100,0,-H)),RampEnd(31100+SourceLevelOffset.X,ComputerEntry.Y,9900+SourceLevelOffset.Z);
     ExitRamp=Shape((RampStart+RampEnd)*.5f-FVector(0,0,20),FVector(FVector::Distance(RampStart,RampEnd)+80,W*2,40),Wood,true,(RampEnd-RampStart).Rotation());
     const FVector Deck(31900+SourceLevelOffset.X,ComputerEntry.Y,9850+SourceLevelOffset.Z);
-    Shape(Deck,FVector(1800,2000,100),Wood);
+    Shape(Deck+FVector(60,0,0),FVector(1920,2000,100),Wood);
     if(!bWalkThroughConnections) Shape(Deck+FVector(950,0,500),FVector(100,2200,1100),Plaster);
     else
     {
-        for(float Side:{-1.f,1.f}) Shape(Deck+FVector(950,Side*690,500),FVector(100,820,1100),Plaster);
-        Shape(Deck+FVector(950,0,900),FVector(100,560,300),Plaster);
+        // Match the authored cave mouth (490 x 350 cm) and overlap its
+        // rock collar in depth. The old 560 x 750 opening exposed the shell.
+        for(float Side:{-1.f,1.f}) Shape(Deck+FVector(900,Side*672.5f,500),FVector(180,855,1100),Plaster);
+        Shape(Deck+FVector(900,0,725),FVector(180,490,650),Plaster);
     }
     for(float Side:{-1.f,1.f})
     {

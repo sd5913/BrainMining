@@ -1,4 +1,5 @@
 #include "EndingEmergence.h"
+#include "Subtitles/SubtitleSubsystem.h"
 #include "MiningGamepadSubsystem.h"
 #include "UObject/ConstructorHelpers.h"
 #include "BrainMiningFonts.h"
@@ -46,6 +47,17 @@
 
 namespace Ending
 {
+    void TravelHintOnce(AEndingEmergence* Director, FName Id, const TCHAR* Text)
+    {
+        if(Director->ActorHasTag(Id))return;
+        if(auto* Subtitles=USubtitleSubsystem::Get(Director))
+        {
+            Director->Tags.Add(Id);
+            Subtitles->StopAll();
+            Subtitles->PlayStatusLine(FText::FromString(Text),4.f);
+        }
+    }
+
     const FName Tag(TEXT("EmergenceEndingGenerated"));
     const FLinearColor Gold(.95f,.47f,.09f), Teal(.035f,.62f,.58f), Blue(.065f,.18f,.42f), Rose(.48f,.035f,.085f);
     const FLinearColor Neural(.065f,.32f,.72f);
@@ -111,14 +123,6 @@ public:
                 Rect(Screen.X-R,Screen.Y-R,10,2,C);Rect(Screen.X-R,Screen.Y-R,2,10,C);
                 Rect(Screen.X+R-10*S,Screen.Y+R,10,2,C);Rect(Screen.X+R,Screen.Y+R-8*S,2,10,C);
             }
-        }
-        const FString Controls=D->Hint();
-        if(!Controls.IsEmpty())
-        {
-            const auto Font=BrainMiningFonts::Style("Regular",FMath::Max(10,FMath::RoundToInt(13*S)));
-            const FVector2f Position(48*S,Size.Y-40*S);
-            FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(Size.X-96*S,30*S),FSlateLayoutTransform(Position+FVector2f(1,1))),Controls,Font,ESlateDrawEffect::None,FLinearColor(0,0,0,.7f));
-            FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(Size.X-96*S,30*S),FSlateLayoutTransform(Position)),Controls,Font,ESlateDrawEffect::None,FLinearColor(.8f,.86f,.89f,.9f));
         }
         return L;
     }
@@ -431,6 +435,7 @@ void AEndingEmergence::BuildCity()
 
 void AEndingEmergence::ApplyCityBuildings()
 {
+    if(bEditableScenery){UE_LOG(LogTemp,Display,TEXT("ENDING_SCENERY_PROTECTED: edit the saved scenery actors; city generation skipped."));return;}
     if(CityBuildingMeshes.Num()!=4||CityBuildingMeshes.Contains(nullptr)||!Sets.IsValidIndex(1))return;
     TArray<UInstancedStaticMeshComponent*> Existing;GetComponents(Existing);
     for(auto* C:Existing)
@@ -639,6 +644,7 @@ void AEndingEmergence::BuildAbstractCells()
 
 void AEndingEmergence::ApplyCellVisuals()
 {
+    if(bEditableScenery){UE_LOG(LogTemp,Display,TEXT("ENDING_SCENERY_PROTECTED: edit the saved scenery actors; cell generation skipped."));return;}
     if(Sets.IsEmpty()||!Cell||!OtherCells)return;
     TArray<USceneComponent*> Parts;Sets[0]->GetChildrenComponents(true,Parts);
     for(int I=Parts.Num()-1;I>=0;--I)
@@ -742,6 +748,7 @@ void AEndingEmergence::BuildAfternoon()
 
 void AEndingEmergence::BuildDemo()
 {
+    if(bEditableScenery){UE_LOG(LogTemp,Display,TEXT("ENDING_SCENERY_PROTECTED: this level contains authored scenery; rebuild skipped."));return;}
     if(!GetWorld()||GetWorld()->IsGameWorld())return;
     for(ADiggableRock* G:Gates)if(IsValid(G))G->Destroy();Gates.Empty();
     TArray<UActorComponent*> Old;GetComponents(Old);
@@ -1051,7 +1058,7 @@ void AEndingEmergence::SetShot(int32 Index)
     }
     if(Shot>=1&&Shot<=6)Sound(Shot%2?TEXT("ScaleWhoosh_01"):TEXT("ScaleWhoosh_02"),.22f,.9f+Shot*.035f);
     if(Shot==8){UpdateCellTitle(1);Sound(TEXT("PulseFlight"),.7f,.6f);Sound(TEXT("NeuralPulse_01"),.3f,.92f);}
-    if(Shot==9){BeginFinaleDrill();}
+    if(Shot==9){BeginFinaleDrill();Ending::TravelHintOnce(this,TEXT("EndingHint_O"),TEXT("按W加速前进"));}
     if(Shot==10)
     {
         PrepareFinaleVideo();
@@ -1084,7 +1091,7 @@ void AEndingEmergence::SetShot(int32 Index)
         SetAmbience(TEXT("Afternoon"),.24f);
         if(!bFinalResolvePlayed){Sound(TEXT("FinalComputer"),.55f,.96f);bFinalResolvePlayed=true;}
     }
-    if(Shot==0){SetAmbience(TEXT("Street"),.28f);Sound(TEXT("ScaleWhoosh_01"),.32f,.86f);}
+    if(Shot==0){Ending::TravelHintOnce(this,TEXT("EndingHint_Street"),TEXT("按S可加速后退"));SetAmbience(TEXT("Street"),.28f);Sound(TEXT("ScaleWhoosh_01"),.32f,.86f);}
     if(Shot==3){SetAmbience(TEXT("Space"),.18f);Sound(TEXT("ScaleWhoosh_02"),.34f,.82f);}
     UE_LOG(LogTemp,Display,TEXT("ENDING_SHOT %d"),Shot);
 }
@@ -1521,6 +1528,7 @@ void AEndingEmergence::UpdateNerves()
 
 void AEndingEmergence::EnterBlood()
 {
+    Ending::TravelHintOnce(this,TEXT("EndingHint_Blood"),TEXT("按W可加速前进"));
     GateIndex=1;BloodAt=Age;BeatAt=Age+3;BloodSpeed=480;BloodY=0;
     UpdatePainterly(); // Clear both views before the camera handoff, not a tick later.
     const FVector Eye=Player->PlayerCameraManager->GetCameraLocation();
@@ -1836,7 +1844,7 @@ void AEndingEmergence::Tick(float Dt)
     else
     {
         const FVector PreviousFilmPosition=Camera->GetActorLocation();
-        const bool Pulling=Shot>=1&&Shot<=6;
+        const bool Pulling=Shot>=0&&Shot<=6;
         // W is intentionally absent: the sequence always moves outward. S boosts
         // the rail clock, increasingly at larger scales, with a short inertial release.
         const float TargetBoost=Pulling?FMath::Max(0.f,float(-UMiningGamepadSubsystem::ReadMove(Player).Y)):0.f;
@@ -1908,16 +1916,7 @@ FString AEndingEmergence::Title() const
 
 FString AEndingEmergence::Hint() const
 {
-    if(Shot<0)
-    {
-        if(GateIndex==0)return TEXT("WASD 移动   鼠标 观察   左键 挖掘");
-        if(bEnteringBrain)return TEXT("");
-        if(GateIndex==1)return TEXT("W 加速   A / D 微调   鼠标 转头");
-        if(GateIndex==2)return TEXT("鼠标 瞄准神经元   空格 跃迁");
-    }
-    if(Shot>=1&&Shot<=6)return TEXT("S 加速拉远   A / D 微调");
-    if(Shot==9)return TEXT("W 加速挖掘   A / D 微调");
-    return TEXT("");
+    return FString(); // Travel guidance is a one-time subtitle, never a persistent HUD strip.
 }
 
 FString AEndingEmergence::Subtitle() const

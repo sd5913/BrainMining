@@ -1,4 +1,6 @@
 #include "MiningGamepadSubsystem.h"
+#include "MiningGamepadHints.h"
+#include "MiningGUIWidgets.h"
 #include "BrainMiningCharacter.h"
 #include "BrainMiningFonts.h"
 #include "BrainMiningPlayerController.h"
@@ -22,13 +24,14 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Styling/CoreStyle.h"
 
 void UMiningGamepadSubsystem::TickInput(float DeltaSeconds)
 {
-    if (IsUpgradeOpen() && (UpgradeController.Get() != Controller() || !UpgradePawn.IsValid() || UpgradeController->GetPawn() != UpgradePawn.Get())) CloseUpgrade();
+    UpgradeFeedbackRemaining = FMath::Max(0.f, UpgradeFeedbackRemaining - FMath::Max(0.f, DeltaSeconds));
     UpdateContext();
     auto* Player = Controller();
     if (!Player) return;
@@ -37,10 +40,9 @@ void UMiningGamepadSubsystem::TickInput(float DeltaSeconds)
     if (!Hints.IsValid() && Player->GetWorld()->GetGameViewport())
     {
         Hints = SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(FMargin(20, 0, 20, 24))
-            .Visibility_Lambda([this]() { return bGamepad && !GetHint().IsEmpty() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
-            [SNew(SBorder).BorderBackgroundColor(FLinearColor(0, 0, 0, .8f)).Padding(FMargin(18, 10))
-                [SNew(STextBlock).Text_Lambda([this]() { return FText::FromString(GetHint()); })
-                    .ColorAndOpacity(FLinearColor::White).Font(BrainMiningFonts::Style("Regular", 14))]];
+            .Visibility_Lambda([this]() { return bGamepad && !GetHintEntries().IsEmpty() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
+            [SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
+                [MakeMiningGamepadHints(this)]];
         Player->GetWorld()->GetGameViewport()->AddViewportWidgetContent(Hints.ToSharedRef(), 2000);
     }
     const auto Context = GetContext();
@@ -75,11 +77,11 @@ void UMiningGamepadSubsystem::TickInput(float DeltaSeconds)
                 break;
             }
     }
-    else if (Context == EMiningInputContext::Office || Context == EMiningInputContext::Thoughts || Context == EMiningInputContext::Menu || Context == EMiningInputContext::Upgrade)
+    else if (Context == EMiningInputContext::Office || Context == EMiningInputContext::Thoughts || Context == EMiningInputContext::Menu)
     {
         if (!Look.IsNearlyZero()) { bMenuPointer = true; MovePointer(Look, Step); }
     }
-    const bool bNavigate = Context == EMiningInputContext::Menu || Context == EMiningInputContext::Catalogue || Context == EMiningInputContext::Upgrade;
+    const bool bNavigate = Context == EMiningInputContext::Menu || Context == EMiningInputContext::Catalogue;
     int32 Direction = 0;
     if (bNavigate && Move.SizeSquared() > .25f)
         Direction = FMath::Abs(Move.X) > FMath::Abs(Move.Y) ? (Move.X > 0 ? 1 : 2) : (Move.Y > 0 ? 3 : 4);
@@ -148,112 +150,61 @@ void UMiningGamepadSubsystem::PointerButton(bool bPressed)
     if (bPressed) Slate.ProcessMouseButtonDownEvent(nullptr, Event); else Slate.ProcessMouseButtonUpEvent(Event);
 }
 
-void UMiningGamepadSubsystem::ToggleUpgrade()
-{
-    if (IsUpgradeOpen()) { CloseUpgrade(); return; }
-    auto* Player = Cast<ABrainMiningPlayerController>(Controller());
-    if (!Player || GetContext() != EMiningInputContext::Exploration || !Player->IsMiningGUIEnabled() || Player->IsMoveInputIgnored() || Player->IsLookInputIgnored()) return;
-    if (auto* Room = AMiningStartRoom::Find(Player->GetWorld()); Room && (!Room->bPickaxeUnlocked || !Room->bJetpackUnlocked)) return;
-    auto* Progression = Player->GetPawn()->FindComponentByClass<UMiningProgressionComponent>();
-    auto* Viewport = Player->GetWorld()->GetGameViewport();
-    if (!Progression || !Viewport) return;
-    if (!Progression->bInitialized && !Progression->InitializeProgression()) return;
-    ReleaseInputs();
-    UpgradeController = Player;
-    UpgradePawn = Player->GetPawn();
-    UpgradeMining = Player->GetPawn()->FindComponentByClass<UMiningComponent>();
-    bUpgradeMiningSuspended = UpgradeMining.IsValid() && UpgradeMining->IsInputSuspended();
-    if (UpgradeMining.IsValid()) UpgradeMining->SetInputSuspended(true);
-    UpgradeTrack = 0;
-    UpgradeFeedback = FText::GetEmpty();
-    TSharedPtr<SButton> Confirm;
-    UpgradePanel = SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Center)
-        [SNew(SBorder).Padding(28).BorderBackgroundColor(FLinearColor(.025f, .035f, .05f, .98f))
-            [SNew(SBox).WidthOverride(680)
-                [SNew(SVerticalBox)
-                    + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 20)
-                    [SNew(STextBlock).Text(FText::FromString(TEXT("装备升级"))).Font(BrainMiningFonts::Style("Bold", 28))]
-                    + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 20)
-                    [SNew(STextBlock).Text_Lambda([this]() { return UpgradeDescription(); }).WrapTextAt(640).Font(BrainMiningFonts::Style("Regular", 18))]
-                    + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 12)
-                    [SNew(STextBlock).Text_Lambda([this]() { return UpgradeFeedback; }).WrapTextAt(640)]
-                    + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 12)
-                    [SAssignNew(Confirm, SButton).Text(FText::FromString(TEXT("A / 确认购买")))
-                        .OnClicked_Lambda([this]() { PurchaseUpgrade(); return FReply::Handled(); })]
-                    + SVerticalBox::Slot().AutoHeight()
-                    [SNew(SButton).Text(FText::FromString(TEXT("B / 返回")))
-                        .OnClicked_Lambda([this]() { CloseUpgrade(); return FReply::Handled(); })]
-                ]]];
-    Viewport->AddViewportWidgetContent(UpgradePanel.ToSharedRef(), 500);
-    Player->SetIgnoreMoveInput(true);
-    Player->SetIgnoreLookInput(true);
-    bUpgradePaused = Player->SetPause(true);
-    Player->bShowMouseCursor = true;
-    FInputModeUIOnly Mode;
-    Mode.SetWidgetToFocus(Confirm);
-    Player->SetInputMode(Mode);
-}
-
-void UMiningGamepadSubsystem::CloseUpgrade()
-{
-    if (!IsUpgradeOpen()) return;
-    ReleaseInputs();
-    auto* Player = UpgradeController.Get();
-    if (Player && Player->GetGameInstance())
-        if (auto* Menu = Player->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>(); Menu && Menu->IsMenuOpen()) Menu->CloseMenu();
-    if (Player && Player->GetWorld()->GetGameViewport()) Player->GetWorld()->GetGameViewport()->RemoveViewportWidgetContent(UpgradePanel.ToSharedRef());
-    UpgradePanel.Reset();
-    if (UpgradeMining.IsValid()) UpgradeMining->SetInputSuspended(bUpgradeMiningSuspended);
-    if (Player)
-    {
-        if (bUpgradePaused) Player->SetPause(false);
-        Player->SetIgnoreMoveInput(false);
-        Player->SetIgnoreLookInput(false);
-        Player->bShowMouseCursor = false;
-        Player->SetInputMode(FInputModeGameOnly());
-    }
-    bUpgradePaused = false;
-    UpgradeController.Reset();
-    UpgradePawn.Reset();
-    UpgradeMining.Reset();
-}
-
 void UMiningGamepadSubsystem::PurchaseUpgrade()
 {
-    auto* Player = UpgradeController.Get();
-    auto* Progression = Player && Player->GetPawn() ? Player->GetPawn()->FindComponentByClass<UMiningProgressionComponent>() : nullptr;
-    if (!IsUpgradeOpen() || !Player || Player->GetPawn() != UpgradePawn.Get() || !Progression || !Progression->Tracks.IsValidIndex(UpgradeTrack)) return;
-    const bool bPurchased = Progression->Purchase(UpgradeTrack, Progression->GetLevel(UpgradeTrack) + 1);
-    UpgradeFeedback = FText::FromString(bPurchased ? TEXT("升级成功") : TEXT("无法升级：资源不足或已达到最高等级"));
+    auto* Player = Cast<ABrainMiningPlayerController>(Controller());
+    if (!Player || !Player->GetPawn() || GetContext() != EMiningInputContext::Exploration || !Player->IsMiningGUIEnabled()
+        || Player->IsMoveInputIgnored() || Player->IsLookInputIgnored() || Player->IsPaused()) return;
+    if (auto* Room = AMiningStartRoom::Find(Player->GetWorld()); Room && (!Room->bPickaxeUnlocked || !Room->bJetpackUnlocked)) return;
+    auto* Mining = Player->GetPawn()->FindComponentByClass<UMiningComponent>();
+    if (!Mining || Mining->IsInputSuspended() || Mining->IsEncounterBlocked()) return;
+    auto* Progression = Player->GetPawn()->FindComponentByClass<UMiningProgressionComponent>();
+    if (!Progression || (!Progression->bInitialized && !Progression->InitializeProgression())) return;
+    const bool bPurchased = Progression->Purchase(0, Progression->GetLevel(0) + 1);
+    UpgradeFeedback = FText::FromString(bPurchased ? TEXT("升级成功") : TEXT("暂时无法升级：资源不足或已满级"));
+    UpgradeFeedbackRemaining = 2.5f;
     if (auto* Audio = Player->GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPurchase(bPurchased);
+    if (bPurchased && Player->MiningGUI) Player->MiningGUI->RefreshMineralProgression();
 }
 
-FText UMiningGamepadSubsystem::UpgradeDescription() const
+TArray<FMiningGamepadHint> UMiningGamepadSubsystem::GetHintEntries() const
 {
-    const auto* Player = UpgradeController.Get();
-    const auto* Progression = Player && Player->GetPawn() ? Player->GetPawn()->FindComponentByClass<UMiningProgressionComponent>() : nullptr;
-    if (!Progression || !Progression->Tracks.IsValidIndex(UpgradeTrack)) return FText::FromString(TEXT("暂无可用升级"));
-    const FString Cost = Progression->UsesMineralInventory() ? Progression->GetNextMaterialRequirements().ToString() : FString::Printf(TEXT("需要金币：%lld"), Progression->GetNextPrice(UpgradeTrack));
-    return FText::FromString(FString::Printf(TEXT("%s · 等级 %d\n\n%s\n\n%s\n\n方向键切换项目 · A 购买 · B 返回"),
-        *Progression->Tracks[UpgradeTrack].Name.ToString(), Progression->GetLevel(UpgradeTrack), *Progression->GetNextDescription(UpgradeTrack).ToString(), *Cost));
+    using Glyph = EMiningGamepadGlyph;
+    const auto Context = GetContext();
+    if (Context == EMiningInputContext::Blocked || Context == EMiningInputContext::Cards) return {};
+    if (Context == EMiningInputContext::Office)
+        return {{Glyph::RightStick, TEXT("光标")}, {Glyph::LT, TEXT("精调")}, {Glyph::A, TEXT("点击"), Glyph::RT}, {Glyph::B, TEXT("离开电脑")}};
+    if (Context == EMiningInputContext::Catalogue)
+        return {{Glyph::LB, TEXT("切换藏品"), Glyph::RB}, {Glyph::RightStick, TEXT("旋转")}, {Glyph::LT, TEXT("缩放"), Glyph::RT}, {Glyph::Y, TEXT("复位")}, {Glyph::B, TEXT("返回")}};
+    if (Context == EMiningInputContext::Menu)
+        return {{Glyph::DPad, TEXT("导航")}, {Glyph::A, TEXT("确认")}, {Glyph::RightStick, TEXT("光标")}, {Glyph::RT, TEXT("点击")}, {Glyph::B, TEXT("返回")}};
+    if (Context == EMiningInputContext::Thoughts)
+        return {{Glyph::A, TEXT("交换")}, {Glyph::RightStick, TEXT("光标")}, {Glyph::RT, TEXT("按住拖拽")}, {Glyph::LB, TEXT("思维操作"), Glyph::RB}, {Glyph::B, TEXT("返回")}};
+    if (UpgradeFeedbackRemaining > 0) return {{Glyph::LT, UpgradeFeedback.ToString()}};
+    if (const auto* Player = Controller())
+    {
+        for (TActorIterator<AWenSiMirrorPuzzle> Puzzle(Player->GetWorld()); Puzzle; ++Puzzle)
+            if (Puzzle->bAreaActive)
+                return {{Glyph::X, TEXT("思考/交互")}, {Glyph::RB, TEXT("交换属性")}, {Glyph::LB, TEXT("清空思维")}, {Glyph::Y, TEXT("编辑")}, {Glyph::A, TEXT("跳跃/飞行")}};
+        for (TActorIterator<AWenSiPuzzle> Puzzle(Player->GetWorld()); Puzzle; ++Puzzle)
+            if (Puzzle->bAreaActive)
+                return {{Glyph::X, TEXT("思考/交互")}, {Glyph::Y, TEXT("编辑")}, {Glyph::LB, TEXT("关闭左右思维"), Glyph::RB}, {Glyph::A, TEXT("跳跃/飞行")}};
+    }
+    if (bResetHeld)
+        return {{Glyph::DPad, FString::Printf(TEXT("重置：%d%% · 松开取消"), FMath::Clamp(FMath::RoundToInt(ResetElapsed / FMath::Max(.4f, ResetHoldSeconds) * 100), 0, 100))}};
+    return {{Glyph::A, TEXT("跳跃/按住飞行")}, {Glyph::RT, TEXT("操作")}, {Glyph::X, TEXT("交互")}, {Glyph::Y, TEXT("钻机")},
+        {Glyph::RB, TEXT("炸弹")}, {Glyph::DPadUp, TEXT("图鉴")}, {Glyph::LT, TEXT("升级")}, {Glyph::Menu, TEXT("暂停")}};
 }
 
 FString UMiningGamepadSubsystem::GetHint() const
 {
-    const auto Context = GetContext();
-    if (Context == EMiningInputContext::Blocked || Context == EMiningInputContext::Upgrade) return FString();
-    if (Context == EMiningInputContext::Cards) return FString();
-    if (Context == EMiningInputContext::Office) return TEXT("右摇杆 光标   LT 精调   A / RT 点击   B 离开电脑");
-    if (Context == EMiningInputContext::Catalogue) return TEXT("LB / RB 切换藏品   右摇杆 旋转   LT / RT 缩放   Y 复位   B 返回");
-    if (Context == EMiningInputContext::Menu) return TEXT("方向键 导航   A 确认   右摇杆 光标   RT 点击   B 返回");
-    if (Context == EMiningInputContext::Thoughts) return TEXT("A 交换   右摇杆 + RT 拖拽   LB / RB 思维操作   B 返回");
-    if (const auto* Player = Controller())
+    FString Result;
+    for (const auto& Entry : GetHintEntries())
     {
-        for (TActorIterator<AWenSiMirrorPuzzle> Puzzle(Player->GetWorld()); Puzzle; ++Puzzle)
-            if (Puzzle->bAreaActive) return TEXT("X 思考/交互   RB 交换属性   LB 清空思维   Y 编辑   A 跳跃/飞行");
-        for (TActorIterator<AWenSiPuzzle> Puzzle(Player->GetWorld()); Puzzle; ++Puzzle)
-            if (Puzzle->bAreaActive) return TEXT("X 思考/交互   Y 编辑   LB / RB 关闭左右思维   A 跳跃/飞行");
+        if (!Result.IsEmpty()) Result += TEXT("   ");
+        Result += MiningGamepadGlyphName(Entry.Key);
+        if (Entry.AlternateKey != EMiningGamepadGlyph::None) Result += FString(TEXT("/")) + MiningGamepadGlyphName(Entry.AlternateKey);
+        Result += TEXT(" ") + Entry.Label;
     }
-    if (bResetHeld) return FString::Printf(TEXT("重置：%d%% · 松开取消"), FMath::Clamp(FMath::RoundToInt(ResetElapsed / FMath::Max(.4f, ResetHoldSeconds) * 100), 0, 100));
-    return TEXT("A 跳跃/按住飞行   RT 操作   X 交互   Y 钻机   RB 炸弹   ↑ 图鉴   → 升级   View 地图   Menu 暂停");
+    return Result;
 }

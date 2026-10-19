@@ -12,6 +12,7 @@
 #include "Components/WidgetComponent.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/HUD.h"
@@ -22,6 +23,8 @@
 #include "StartRoom/MiningStartRoom.h"
 #include "Components/DecalComponent.h"
 #include "Materials/MaterialInterface.h"
+#include "MainGameDoor.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 
 AMiningOpening* AMiningOpening::EnsureMainGameOpening(AMiningExhibitHall* Hall)
 {
@@ -52,6 +55,11 @@ TSharedRef<SWidget> UMiningOpeningTitle::RebuildWidget()
 {
     auto* Picture=WidgetTree->ConstructWidget<UImage>();WidgetTree->RootWidget=Picture;
     Picture->SetBrushFromTexture(Texture);
+    if(bCornerLayout)
+    {
+        auto* Canvas=WidgetTree->ConstructWidget<UCanvasPanel>();WidgetTree->RootWidget=Canvas;
+        auto* PictureSlot=Canvas->AddChildToCanvas(Picture);PictureSlot->SetPosition(FVector2D(36,30));PictureSlot->SetSize(FVector2D(280,164));
+    }
     return Super::RebuildWidget();
 }
 
@@ -124,11 +132,24 @@ void AMiningOpening::StartGame()
 {
     if(!bPrepared || bStarted || bFinished)return;
     bStarted=true;Elapsed=0;if(Menu)Menu->RemoveFromParent();
+    CornerTitle=CreateWidget<UMiningOpeningTitle>(Player.Get());CornerTitle->Texture=TitleTexture;CornerTitle->bCornerLayout=true;
+    CornerTitle->SetVisibility(ESlateVisibility::HitTestInvisible);CornerTitle->AddToViewport(490);
+    WorldTitle->SetVisibility(false);
     if(Player.IsValid()){Player->bShowMouseCursor=false;Player->SetInputMode(FInputModeGameOnly());}
 }
 void AMiningOpening::Tick(float Dt)
 {
-    Super::Tick(Dt);if(bFinished)return;
+    Super::Tick(Dt);
+    if(bTitleFlying)
+    {
+        TitleFlightTime+=Dt;const float A=FMath::SmoothStep(0.f,1.f,FMath::Clamp(TitleFlightTime/.95f,0.f,1.f));
+        const FVector Logo=FMath::Lerp(InitialTitle,DoorTitleLocation,A)+FVector(0,0,FMath::Sin(A*PI)*32);
+        WorldTitle->SetWorldLocationAndRotation(Logo,FQuat::Slerp(InitialRotation,DoorTitleRotation.Quaternion(),A));
+        WorldTitle->SetWorldScale3D(FVector(FMath::Lerp(InitialTitleScale,.205f,A)));
+        if(A>=1){EnsureTitleOnWall();bTitleFlying=false;bTitleLanded=true;SetActorTickEnabled(false);}
+        return;
+    }
+    if(bFinished)return;
     if(!bPrepared)
     {
         auto* PC=GetWorld()->GetFirstPlayerController();auto* Hall=AMiningExhibitHall::Find(GetWorld());
@@ -144,14 +165,30 @@ void AMiningOpening::Tick(float Dt)
     Camera->SetActorLocation(P);
     const FRotator FinalAim=Player->GetControlRotation();
     Camera->SetActorRotation(FQuat::Slerp(Facing.Quaternion(),FinalAim.Quaternion(),A));
-    FVector Logo=FMath::Lerp(InitialTitle,DoorTitleLocation,A)+FVector(0,0,FMath::Sin(A*PI)*55);
-    WorldTitle->SetWorldLocationAndRotation(Logo,FQuat::Slerp(InitialRotation,DoorTitleRotation.Quaternion(),A));
-    WorldTitle->SetWorldScale3D(FVector(FMath::Lerp(.19f,.205f,A)));
     if(T>=1.f)
     {
-        EnsureTitleOnWall();
-        bFinished=true;Release();SetActorTickEnabled(false);
+        bFinished=true;Release();
     }
+}
+void AMiningOpening::BeginTitleToWall(AMainGameDoor* Door)
+{
+    if(!bFinished || bTitleFlying || bTitleLanded || !Player.IsValid() || !Door)return;
+    // Start the flight exactly where the upper-left HUD title is painted.
+    const float DPI=UWidgetLayoutLibrary::GetViewportScale(Player.Get());
+    FVector Origin,Direction,LeftOrigin,LeftDirection,RightOrigin,RightDirection;
+    FVector Eye;FRotator View;Player->GetPlayerViewPoint(Eye,View);
+    InitialTitle=Eye+View.RotateVector(FVector(240,-160,85));InitialTitleScale=.07f;
+    if(Player->DeprojectScreenPositionToWorld(176*DPI,112*DPI,Origin,Direction) &&
+       Player->DeprojectScreenPositionToWorld(36*DPI,112*DPI,LeftOrigin,LeftDirection) &&
+       Player->DeprojectScreenPositionToWorld(316*DPI,112*DPI,RightOrigin,RightDirection))
+    {
+        InitialTitle=Origin+Direction*240;
+        InitialTitleScale=FVector::Distance(LeftOrigin+LeftDirection*240,RightOrigin+RightDirection*240)/1024.f;
+    }
+    InitialRotation=(View+FRotator(0,180,0)).Quaternion();
+    if(CornerTitle)CornerTitle->RemoveFromParent();
+    WorldTitle->SetWorldLocationAndRotation(InitialTitle,InitialRotation);WorldTitle->SetWorldScale3D(FVector(InitialTitleScale));
+    WorldTitle->SetVisibility(true);bTitleFlying=true;TitleFlightTime=0;SetActorTickEnabled(true);
 }
 void AMiningOpening::EnsureTitleOnWall()
 {
@@ -191,4 +228,4 @@ void AMiningOpening::Release()
     }
     if(Camera){Camera->Destroy();Camera=nullptr;}
 }
-void AMiningOpening::EndPlay(const EEndPlayReason::Type Reason){if(bPrepared&&!bFinished)Release();Super::EndPlay(Reason);}
+void AMiningOpening::EndPlay(const EEndPlayReason::Type Reason){if(CornerTitle)CornerTitle->RemoveFromParent();if(bPrepared&&!bFinished)Release();Super::EndPlay(Reason);}

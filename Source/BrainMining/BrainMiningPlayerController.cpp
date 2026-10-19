@@ -2,6 +2,7 @@
 
 
 #include "BrainMiningPlayerController.h"
+#include "MainGameDoor.h"
 #include "BrainMiningFonts.h"
 #include "MiningAudioSettings.h"
 #include "MiningAudioComponent.h"
@@ -473,6 +474,7 @@ bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 	if (IsAudioSettingsOpen()) return true;
 	if (Params.Key == EKeys::E && Params.Event == IE_Pressed && !bUpgradeMenuHeld)
 	{
+		if(auto* Door=AMainGameDoor::FindInteractionTarget(this)){Door->OpenDoor();return true;}
 		for (TActorIterator<APopupCloseStage> It(GetWorld()); It; ++It)
 			if (It->HandleInteractionInput(this)) return true;
 		for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It)

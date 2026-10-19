@@ -14,7 +14,7 @@ void ACardRoomStage::InitializeStyledEffects()
     for(auto& System:StyledSystems)if(System)System->WaitForCompilationComplete(true,false);
 #endif
     // Independent components avoid teleporting the particles of a previous cast.
-    const int32 Assets[]={0,1,2,1,3,4};
+    const int32 Assets[]={0,1,2,1,3,4,1,1,1,1,1,1};
     for(int32 I=0;I<UE_ARRAY_COUNT(Assets);++I)
     {
         auto* FX=NewObject<UNiagaraComponent>(this,I==5?FName(TEXT("P2Fx_PoisonHit")):FName(*FString::Printf(TEXT("StyledSpell%d"),I)));
@@ -85,7 +85,8 @@ void ACardRoomStage::TickStyledEffects()
     if(StyledFX.IsValidIndex(5))
     {
         auto* Poison=StyledFX[5].Get();
-        const bool KeepPoison=Run.bPoisoned || (Resolve && Run.Round==2 && T>=1.f);
+        const bool Burning=Resolve && Run.Round==3 && T>=1.f && T<1.28f;
+        const bool KeepPoison=Run.bPoisoned || Burning || (Resolve && Run.Round==2 && T>=1.f);
         if(KeepPoison && !bStyledPoisonLive)
         {
             Poison->SetRelativeLocation(Target);Poison->SetRelativeScale3D(FVector(S));
@@ -93,10 +94,13 @@ void ACardRoomStage::TickStyledEffects()
         }
         else if(!KeepPoison && bStyledPoisonLive)
         {
-            Poison->DeactivateImmediate();bStyledPoisonLive=false;
+            // Stop emission after the flame front enters the cloud. Existing
+            // particles finish naturally, so fire visibly consumes the poison.
+            if(Resolve && Run.Round==3)Poison->Deactivate();
+            else Poison->DeactivateImmediate();
+            bStyledPoisonLive=false;
         }
-        // Poison survives the deal transition; the rules clear it at the fire
-        // impact, or on restart. Neither path edits the Niagara asset.
+        if(!Resolve && !Run.bPoisoned)Poison->DeactivateImmediate();
     }
     if(Resolve && Run.Round==2 && T>=.25f && T<1.f)
     {
@@ -119,7 +123,25 @@ void ACardRoomStage::TickStyledEffects()
             Beam->SetRelativeRotation(FRotationMatrix::MakeFromZ(D).Rotator());
             Fire(4,.70f,Muzzle,.28f,Color);
         }
-        Fire(Hot?1:0,1.f,Impact,Hot?1.8f:1.2f,Hot?Amber:Cyan);
+        Fire(Hot?1:0,1.f,Impact,Hot?1.25f:1.2f,Hot?Amber:Cyan);
+        if(Hot)
+        {
+            // Ignite the volume around the robot in a quick outward succession,
+            // rather than replacing the entire poison cloud with one impact.
+            for(int32 I=0;I<6;++I)
+            {
+                const float Angle=I*PI/3.f;
+                const FVector Spread(18*S,FMath::Cos(Angle)*72*S,FMath::Sin(Angle)*62*S);
+                Fire(6+I,1.04f+I*.055f,Target+Spread,.60f,Amber);
+            }
+            if(T>=1.f && T<1.72f)for(int32 I=0;I<8;++I)
+            {
+                const float A=FMath::Clamp((T-1.f-I*.025f)/.55f,0.f,1.f);
+                const float Angle=I*PI/4.f;
+                const FVector P=Impact+FVector(0,FMath::Cos(Angle),FMath::Sin(Angle))*(25+100*A)*S+FVector(0,0,45*A*S);
+                Energy(Trails[I],P,FVector(.22f*S*(1-A),.22f*S*(1-A),.45f*S),I%2?Amber:Cream,(1-A)*.65f);
+            }
+        }
         if(Hot && T>=.58f && T<1.f)for(int32 I=0;I<8;++I)
         {
             const float A=FMath::Clamp((T-.58f)/.42f-I*.035f,0.f,1.f);

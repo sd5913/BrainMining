@@ -691,11 +691,15 @@
       "room_width": 490,
       "room_height": 350,
       "backing_depth": 110,
-      "start_x": 32775,
+      "start_x": 32650,
       "end_x": 33950,
       "rock": "/Game/MainGame/Maps/Lvl_MainGame.Lvl_MainGame:PersistentLevel.GeneratedMiningRock_9",
       "shell": "/Game/MainGame/Maps/Lvl_MainGame.Lvl_MainGame:PersistentLevel.DynamicMeshActor_4",
       "floor_samples": [
+        [
+          32650,
+          19900
+        ],
         [
           32775.0,
           19900.0

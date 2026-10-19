@@ -71,10 +71,8 @@ public:
         }
         if(!Opening->bFinished)return false;
         Test->TestTrue(TEXT("Started exactly once"),Opening->bStarted);
-        Test->TestTrue(TEXT("Title landed on the doorway"),Opening->WorldTitle->GetComponentLocation().Equals(Opening->DoorTitleLocation,1));
-        Test->TestFalse(TEXT("Floating title image is replaced after landing"),Opening->WorldTitle->IsVisible());
-        auto* TitleDecal=Opening->FindComponentByClass<UDecalComponent>();
-        Test->TestTrue(TEXT("Title projects only onto the actual wall surface"),TitleDecal && TitleDecal->GetDecalMaterial() && TitleDecal->DecalSize.X<=18.f);
+        Test->TestFalse(TEXT("Title has not flown to the wall before opening the door"),Opening->HasTitleLanded());
+        Test->TestNull(TEXT("No wall decal until the player opens the door"),Opening->FindComponentByClass<UDecalComponent>());
         Test->TestTrue(TEXT("Standing pawn returned to player"),PC->GetViewTarget()==PC->GetPawn());
         Test->TestFalse(TEXT("Movement unlocked after standing"),PC->IsMoveInputIgnored());
         Test->TestFalse(TEXT("Look unlocked after standing"),PC->IsLookInputIgnored());

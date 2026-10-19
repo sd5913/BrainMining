@@ -22,6 +22,7 @@ public:
  void Cancel();
  bool IsFocused() const { return bFocused; }
  bool IsEntering() const { return EntryAge>=0; }
+ bool HasShownGalleryHint() const { return bGalleryHintShown; }
  FVector CellCenter() const;
  static constexpr float CanvasWidth=126.f;
  static constexpr float CanvasHeight=168.f;
@@ -41,6 +42,7 @@ private:
  uint8 PreviousMovementMode=0,PreviousCustomMode=0;
  bool bPawnWasHidden=false;
  float EntryFOV=90,EntryAge=-1;
+ double GalleryEnteredAt=-1;
  bool bGalleryHintShown=false;
  bool bFocused=false,bTravelRequested=false,bInputLocked=false;
 };

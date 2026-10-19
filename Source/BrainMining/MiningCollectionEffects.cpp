@@ -87,8 +87,9 @@ void AMiningCollectionEffects::Tick(float Dt)
             FVector P,Scale; FRotator Rotation=FRotator::ZeroRotator;
             if(Kind==3)
             {
-                // A dense first salvo, then repeating showers from all three TV-stage cannons.
-                const float Delay=(bSeparateStageTriggers?.18f:3.f)*(I+float(C)/Pools.Num())/Pool->GetInstanceCount();
+                // Fill the flight cycle continuously from the instant the curtain opens.
+                // Three interleaved streams reuse the same bounded instance pool.
+                const float Delay=(bSeparateStageTriggers?1.5f:3.f)*(I+float(C)/Pools.Num())/Pool->GetInstanceCount();
                 if(bSeparateStageTriggers && Age<Delay){Pool->UpdateInstanceTransform(I,FTransform(FQuat::Identity,FVector::ZeroVector,FVector::ZeroVector),false,false,true);continue;}
                 const float T=FMath::Fmod(bSeparateStageTriggers?FMath::Max(0.f,Age-Delay):Age+I*.067f+C*.031f,bSeparateStageTriggers?1.5f:3.f),Side=I%2?1.f:-1.f;
                 const float Speed=150+45*FMath::Sin(Seed);

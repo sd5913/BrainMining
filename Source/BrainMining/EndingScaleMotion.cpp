@@ -29,13 +29,19 @@ void AEndingEmergence::InitializeScaleMotion()
     }
     // Restore the original layered composition on serialized maps as well.
     Parts.Empty();NebulaUniverse->GetChildrenComponents(false,Parts);
+    int NebulaLayer=0;
     for(auto* Part:Parts)
     {
         FVector P=Part->GetRelativeLocation();
         if(Part->GetName().StartsWith(TEXT("DeepStarField")))
         {const int L=FMath::RoundToInt((-P.X-19000)/4300);P.Y=(L%2?1:-1)*12500;Part->SetRelativeLocation(P);}
         else if(Part->GetName().StartsWith(TEXT("ParallaxNebula")))
-        {const int L=FMath::RoundToInt((-P.X-12500)/4300);P.Y=(L%2?1:-1)*(6200+L*1400);Part->SetRelativeLocation(P);}
+        {
+            const int L=NebulaLayer++;
+            // Put the first sheet behind the arriving camera. The pullback must
+            // leave the solar system before it physically reaches the nebula.
+            P.X=-16700-L*4300;P.Y=(L%2?1:-1)*(6200+L*1400);Part->SetRelativeLocation(P);
+        }
     }
     if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_ScaleZoom")))
     {

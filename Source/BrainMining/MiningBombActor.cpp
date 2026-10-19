@@ -34,6 +34,8 @@ AMiningBombActor::AMiningBombActor()
 	Tags.Add(TEXT("BM_PlayerEffect"));
 	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("BombCollision"));
 	SetRootComponent(Collision);
+	// A stuck bomb follows the surface pose, but never inherits its scale.
+	Collision->SetAbsolute(false,false,true);
 	Collision->InitSphereRadius(10.f);
 	Collision->SetCollisionProfileName(TEXT("PhysicsActor"));
 	Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -60,6 +62,7 @@ void AMiningBombActor::Launch(UStaticMesh* Mesh, UNiagaraSystem* Effect, UMining
 	Explosion = Effect;
 	SourceTool = Tool;
 	Model->SetStaticMesh(Mesh);
+	SetActorScale3D(FVector::OneVector);
 	constexpr float ThrownModelScale=1.4f;
 	Model->SetRelativeScale3D(FVector(ThrownModelScale));
 	Model->SetRelativeLocation(-Mesh->GetBounds().Origin*ThrownModelScale);

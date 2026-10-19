@@ -66,6 +66,7 @@ $requiredAssets = @(
     'MainGame/Blueprints/BP_MainGameCharacter.uasset',
     'Showcase/Blueprints/BP_SharedMiningCharacter.uasset',
     'Drill/Stylized/SM_DrillStylized.uasset',
+    'Drill/M_DrillDust.uasset',
     'MainGame/Materials/M_BuriedMineralGlow.uasset',
     'WenSi/Mirror/Materials/M_PoweredCable.uasset',
     'Rooms/CardDuel/Materials/M_EscapeCRTScreen.uasset',

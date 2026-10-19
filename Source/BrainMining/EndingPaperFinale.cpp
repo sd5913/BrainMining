@@ -375,7 +375,7 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
         PaperPose(Eye,Aim,108,bComfortMode?0:FMath::Sin(T*2*PI)*4.5f);
         if(ShotTime>=4.85f && !bMealSubtitle)
         {bMealSubtitle=true;if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("唉算了，涌现不出来了，我们去吃饭吧。")),5.f);}}
-        PaperRock->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.05f)/.70f)),0,0));
+        PaperRock->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.85f)/.70f)),0,0));
         PaperPick->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.95f)/.65f)),0,0));
         // Submit the film surface while the upright, unbroken rock still covers
         // it. First-use shader preparation must finish before the cap flies away.

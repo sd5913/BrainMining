@@ -160,6 +160,11 @@ public:
         if(Step==0)
         {
             const int SavedPaperShot=D->Shot;const float SavedPaperTime=D->ShotTime;
+            D->Shot=7;D->ShotTime=.6f;D->UpdateCellTitle(.05f);
+            Test->TestTrue(TEXT("Central cell starts gathering with the crowd"),D->Cell->GetRelativeScale3D().X<32.f*.999f);
+            for(float Scale:D->TitleAnimatedScales)
+                Test->TestTrue(TEXT("Every surrounding cell starts gathering without a stagger delay"),Scale<.999f);
+            D->UpdateCellTitle(0);
             D->Shot=10;
             for(float Time:{2.50f,2.56f,2.58f,2.60f})
             {
@@ -167,6 +172,10 @@ public:
                 Test->TestEqual(TEXT("The white exit keeps its physical radius throughout approach"),D->PaperSurfaceMaterial->K2_GetScalarParameterValue(TEXT("ApertureRadius")),37.5f);
             }
             D->PaperScene->SetRelativeRotation(FRotator::ZeroRotator);
+            D->Shot=11;D->ShotTime=4.84f;D->UpdatePaperFinale(0);
+            Test->TestTrue(TEXT("Paper rock stays flat until the meal line"),FMath::IsNearlyEqual(D->PaperRock->GetRelativeRotation().Pitch,-90.f,.01f));
+            D->ShotTime=4.95f;D->UpdatePaperFinale(0);
+            Test->TestTrue(TEXT("Paper rock rises with the meal line"),D->PaperRock->GetRelativeRotation().Pitch>-90.f);
             D->Shot=11;D->ShotTime=6.59f;D->UpdatePaperFinale(0);
             const FVector BeforeHit=D->Camera->GetActorLocation();
             D->ShotTime=6.6f;D->UpdatePaperFinale(0);

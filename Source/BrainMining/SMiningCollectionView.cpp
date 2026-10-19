@@ -6,6 +6,9 @@
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Fonts/FontMeasure.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Rendering/SlateRenderer.h"
 
 void SMiningCollectionView::Construct(const FArguments& Args) { Owner=Args._Owner; PreviewBrush.DrawAs=ESlateBrushDrawType::Image; PreviewBrush.ImageSize=FVector2D(1536,1024); }
 FVector2D SMiningCollectionView::ToVirtual(const FGeometry& G,const FVector2D& P) const
@@ -43,7 +46,7 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
         }
         if(F->ToastRemaining>0) { Box(320,665,960,61,Panel); Text(F->Toast,343,681,18,Cream); }
         if(!HeavenRoom && Total>0 && F->UniqueCount()==Total) { Text(TEXT("本区奇物已集齐 · 打开图鉴，看看它们的另一面"),470,169,22,Gold); }
-        if(HeavenRoom && F->UniqueCount()==1) { Text(TEXT("已找到天堂马桶 · Tab 打开图鉴检视"),525,169,22,Gold); }
+        if(HeavenRoom && F->UniqueCount()==1) { Text(TEXT("已找到")+AMiningCollectible::ItemName(0)+TEXT(" · Tab 打开图鉴检视"),525,169,22,Gold); }
         return L;
     }
     FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),Brush,ESlateDrawEffect::None,FLinearColor::Black);
@@ -62,7 +65,19 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
     {
         Text(AMiningCollectible::ItemName(F->SelectedId),1220,280,32,Cream,true);
         Box(1223,344,46,2,Gold);
-        TArray<FString> Lines; AMiningCollectible::Description(F->SelectedId).ParseIntoArrayLines(Lines);
+        // Authoring stores the exact description. Wrap its presentation to the
+        // info column so longer Chinese sentences do not run off the screen.
+        TArray<FString> Lines; FString Current;
+        const auto Font=BrainMiningFonts::Body(FMath::Max(8,FMath::RoundToInt(15*S)));
+        const auto Measure=FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
+        for(const TCHAR Character:AMiningCollectible::Description(F->SelectedId))
+        {
+            if(Character==TEXT('\n')) { Lines.Add(Current); Current.Empty(); continue; }
+            const FString Next=Current+FString::Chr(Character);
+            if(!Current.IsEmpty() && Measure->Measure(Next,Font).X>330*S) { Lines.Add(Current); Current.Empty(); }
+            Current.AppendChar(Character);
+        }
+        if(!Current.IsEmpty())Lines.Add(Current);
         for(int i=0;i<Lines.Num();++i) Text(Lines[i],1223,379+i*35,15,Muted);
     }
     else

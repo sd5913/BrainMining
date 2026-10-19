@@ -1,5 +1,6 @@
 #include "MiningCollection.h"
 #include "MiningExperienceSubsystem.h"
+#include "Subtitles/SubtitleLibrary.h"
 #include "Engine/GameInstance.h"
 #include "MiningInteractionTrace.h"
 #include "BrainMiningPlayerController.h"
@@ -299,6 +300,9 @@ bool AMiningCollectionField::TryCollectTarget()
     Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);
     if(IsValid(Item->PresentationActor)) { Item->PresentationActor->Destroy(); Item->PresentationActor=nullptr; }
     ++Inventory[Item->ItemId];
+    // All collectibles, including the room-owned stage ribbon, reach this
+    // successful pickup path. Queue the editable segment only after collection.
+    USubtitleLibrary::PlaySubtitleSegment(this,FName(*FString::Printf(TEXT("收集物拾取_%02d"),Item->ItemId)));
     if(ActorHasTag(TEXT("BM_MainGame_Collections")))if(auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>())Session->CampaignCollection=Inventory;
     SelectedId=Item->ItemId; Target=nullptr;
     Toast=FString::Printf(TEXT("已收集 · %s     [ %s ] 打开图鉴"),*AMiningCollectible::ItemName(Item->ItemId),*CatalogueKey.GetDisplayName().ToString()); ToastRemaining=5;

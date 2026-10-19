@@ -16,6 +16,7 @@ class BRAINMINING_API UMiningOpeningTitle : public UUserWidget
     GENERATED_BODY()
 public:
     UPROPERTY() TObjectPtr<UTexture2D> Texture;
+    bool bCornerLayout=false;
     virtual TSharedRef<SWidget> RebuildWidget() override;
 };
 
@@ -41,6 +42,8 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     UFUNCTION(BlueprintCallable) void StartGame();
+    void BeginTitleToWall(class AMainGameDoor* Door);
+    bool HasTitleLanded() const { return bTitleLanded; }
     static bool IsOpening(UWorld* World);
     static AMiningOpening* EnsureMainGameOpening(class AMiningExhibitHall* Hall);
     UPROPERTY(EditAnywhere, Category="Opening") TObjectPtr<UTexture2D> TitleTexture;
@@ -59,6 +62,7 @@ private:
     void Release();
     void EnsureTitleOnWall();
     UPROPERTY(Transient) TObjectPtr<UMiningOpeningMenu> Menu;
+    UPROPERTY(Transient) TObjectPtr<UMiningOpeningTitle> CornerTitle;
     UPROPERTY(Transient) TObjectPtr<ACameraActor> Camera;
     TWeakObjectPtr<APlayerController> Player;
     FVector InitialTitle;
@@ -70,4 +74,8 @@ private:
     bool bInputLocked = false;
     bool bOldCollision = true;
     bool bOldHUD = true;
+    bool bTitleFlying=false;
+    bool bTitleLanded=false;
+    float TitleFlightTime=0;
+    float InitialTitleScale=.07f;
 };

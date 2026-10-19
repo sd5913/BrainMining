@@ -1,6 +1,7 @@
 param(
     [string]$EngineRoot = '',
     [string]$OutputDirectory = '',
+    [string]$ZenServer = '',
     [switch]$SkipBuild,
     [switch]$SkipCook
 )
@@ -39,6 +40,7 @@ $argsUat = @(
     '-UbtArgs=-MaxParallelActions=2 -NoUBA -NoXGE -NoFASTBuild -NoSNDBS',
     "-AdditionalCookerOptions=-LocalDataCachePath=$projectRoot/Saved/DerivedDataCache -corelimit=4 -asyncassetcompilationmaxconcurrency=1 -asynctexturecompilationmaxconcurrency=1 -ini:Engine:[DevOptions.Shaders]:NumUnusedShaderCompilingThreads=2 -ini:Editor:[CookSettings]:MemoryMinFreePhysical=4096"
 )
+if ($ZenServer) { $argsUat += "-NoZenAutoLaunch=$ZenServer" }
 if ($SkipBuild) { $argsUat += '-skipbuild' } else { $argsUat += '-build' }
 if ($SkipCook) { $argsUat += '-skipcook' } else { $argsUat += '-cook' }
 @{output=$OutputDirectory;started=(Get-Date).ToString('o');configuration='Shipping';arguments=$argsUat} | ConvertTo-Json -Depth 4 | Set-Content "$report/request.json" -Encoding UTF8
@@ -72,6 +74,15 @@ $requiredAssets = @(
     'MainGame/UI/T_MainGameStart.uasset',
     'MainGame/UI/T_MainGameExit.uasset',
     'Rooms/CardDuel/UI/DA_CardRoomUISettings.uasset',
+    'Rooms/CardDuel/UI/Refined/M_Card_Laser.uasset',
+    'Rooms/CardDuel/UI/Refined/M_Card_Poison.uasset',
+    'Rooms/CardDuel/UI/Refined/M_Card_Fire.uasset',
+    'Rooms/CardDuel/UI/Refined/M_Health_Opponent.uasset',
+    'Rooms/CardDuel/UI/Refined/M_Health_Player.uasset',
+    'Rooms/CardDuel/UI/Refined/T_Supplied_Laser.uasset',
+    'Rooms/CardDuel/UI/Refined/T_Supplied_Poison.uasset',
+    'Rooms/CardDuel/UI/Refined/T_Supplied_Fire.uasset',
+    'Subtitles/Collectibles/DA_CollectiblePickup_11.uasset',
     'WenSi/Mirror/Materials/M_PoweredCable.uasset',
     'Rooms/CardDuel/Materials/M_EscapeCRTScreen.uasset',
     'CollectionPrototype/Materials/M_CollectionSilhouette.uasset',
@@ -91,6 +102,14 @@ $requiredAssets = @(
 )
 Get-ChildItem -LiteralPath "$projectRoot/Content/Passages/Echo/ArtP2/Collision" -Filter '*_Walkable.uasset' -File | ForEach-Object {
     $requiredAssets += 'Passages/Echo/ArtP2/Collision/' + $_.Name
+}
+# The editable ending stores baked meshes/materials outside the old generator
+# directories. Require every saved baked asset in the Shipping container.
+$editableEnding = Join-Path $projectRoot 'Content/EndingEmergence/Editable'
+if (Test-Path -LiteralPath $editableEnding) {
+    Get-ChildItem -LiteralPath $editableEnding -Filter '*.uasset' -Recurse -File | ForEach-Object {
+        $requiredAssets += [IO.Path]::GetRelativePath((Join-Path $projectRoot 'Content'), $_.FullName).Replace('\','/')
+    }
 }
 foreach ($asset in $requiredAssets) {
     if (-not $containerText.Contains("../../../BrainMining/Content/$asset,")) {

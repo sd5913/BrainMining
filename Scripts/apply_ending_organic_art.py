@@ -3,6 +3,8 @@ Run in a clean dedicated editor. Rebuilds the existing single demo map.
 """
 import unreal, shutil, math, random
 from pathlib import Path
+import runpy
+runpy.run_path(str(Path(__file__).with_name("ending_scenery_guard.py")))
 from datetime import datetime
 
 project=Path(unreal.Paths.project_dir()).resolve()

@@ -1,5 +1,8 @@
 #include "Subtitles/SubtitleWidget.h"
 #include "BrainMiningFonts.h"
+#include "CardRoomPlayer.h"
+#include "CardRoomStage.h"
+#include "GameFramework/PlayerController.h"
 #include "Subtitles/SubtitleSettings.h"
 
 #include "Styling/CoreStyle.h"
@@ -153,9 +156,14 @@ TSharedRef<SWidget> USubtitleWidget::RebuildWidget()
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Bottom)
-			.Padding(TAttribute<FMargin>::CreateLambda([]
+			.Padding(TAttribute<FMargin>::CreateLambda([WeakThis=TWeakObjectPtr<USubtitleWidget>(this)]
 			{
-				return FMargin(48.f, 0.f, 48.f, FMath::Clamp(GetDefault<USubtitleSettings>()->BottomMargin, 0.f, 500.f));
+				float Bottom=FMath::Clamp(GetDefault<USubtitleSettings>()->BottomMargin, 0.f, 500.f);
+                if(WeakThis.IsValid())
+                    if(const auto* PC=WeakThis->GetOwningPlayer())
+                        if(const auto* Cards=PC->FindComponentByClass<UCardRoomInteractionComponent>(); Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase==ECardRoomPhase::Choosing)
+                            Bottom=FMath::Max(Bottom,360.f);
+                return FMargin(48.f, 0.f, 48.f, Bottom);
 			}))
 		[
 			SNew(SBox)

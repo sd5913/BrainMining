@@ -189,7 +189,7 @@ public:
             D->ResetPaperFinale();D->Shot=SavedPaperShot;D->ShotTime=SavedPaperTime;
             Test->TestFalse(TEXT("The ending disables the shared R reset action"),M->bFieldResetEnabled);
             const int SavedShot=D->Shot;
-            for(int S=-1;S<=14;++S){D->Shot=S;Test->TestFalse(TEXT("Hints omit comfort and replay controls"),D->Hint().Contains(TEXT("C "))||D->Hint().Contains(TEXT("R ")));}
+            for(int S=-1;S<=14;++S){D->Shot=S;Test->TestTrue(TEXT("Ending never draws a persistent key hint strip"),D->Hint().IsEmpty());}
             D->Shot=SavedShot;
             Test->TestFalse(TEXT("The retired save holder cannot auto-load or write campaign progress"),
                 UMiningSaveSubsystem::StaticClass()->IsChildOf(UGameInstanceSubsystem::StaticClass()));

@@ -33,11 +33,13 @@
 class FEndingOrganicPreview : public IAutomationLatentCommand
 {
     FAutomationTestBase* Test;int Step=0,ShotIndex=0;
-    double Start=FPlatformTime::Seconds(),At=0;FVector CellBefore;bool ShotCaptured=false;
+    double Start=FPlatformTime::Seconds(),At=0;FVector CellBefore;bool ShotCaptured=false,bClearingCellRim=false;
     double ThoughtFrameAt=0;TArray<double> ThoughtFrames;
     FVector EarlyNebulaCamera;double EarlyNebulaDepth=0;
     const int Shots[8]={2,3,3,3,4,4,5,6};
-    const float ShotTimes[8]={4,1.5f,6,13.5f,2,30,16,6}; // Late sample of the 35-second nebula rail.
+    // Leave room for the one-second settle before capture; follow the actual
+    // Earth duration rather than sampling beyond its end and entering nebula.
+    const float ShotTimes[8]={4,1.5f,6,AEndingEmergence::Duration(3)-2,2,30,16,6};
     void Key(APlayerController* P,FKey K,bool Down){P->InputKey(FInputKeyEventArgs::CreateSimulated(K,Down?IE_Pressed:IE_Released,Down?1.f:0.f));}
     void Capture(const FString& Name){FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("EndingEmergencePreview")/(TEXT("organic-")+Name+TEXT(".png")),true,false);}
 public:
@@ -146,18 +148,51 @@ public:
                 Pawn->AddMovementInput(D->GetActorForwardVector());
                 FVector Eye;FRotator Rot;P->GetPlayerViewPoint(Eye,Rot);
                 FVector Target=D->Gates[0]->GetActorLocation()+FVector(-60,0,-70);
-                // Once the eye-height hole is open, aim at its lower lip so the
-                // full walking capsule can pass, as a player would with the mouse.
-                if(D->Gates[0]->SuccessfulCuts>=4)Target.Z=Pawn->GetActorLocation().Z-45;
-                if(D->Gates[0]->SuccessfulCuts>=4)
+                // Detect the actual eye-height opening. Mesh cooking and frame
+                // timing can make it open after three or four cuts; waiting for
+                // a fixed fourth cut leaves the test aiming through empty air.
+                if(!bClearingCellRim&&D->Gates[0]->SuccessfulCuts>0)
+                {
+                    FHitResult MembraneHit;
+                    bClearingCellRim=!D->Gates[0]->ActorLineTraceSingle(MembraneHit,Eye,
+                        Eye+(Target-Eye).GetSafeNormal()*1200,ECC_Visibility,
+                        FCollisionQueryParams(SCENE_QUERY_STAT(EndingExitOpening),true));
+                }
+                if(bClearingCellRim)Target.Z=Pawn->GetActorLocation().Z-45;
+                if(bClearingCellRim)
                 {
                     FHitResult RimHit;
                     FCollisionQueryParams RimQuery(SCENE_QUERY_STAT(EndingExitClearance),true,Pawn);
                     RimQuery.AddIgnoredActor(D);
+                    // Authored scenery used to be components owned by D. Keep
+                    // this gate-only aiming probe equivalent after conversion;
+                    // movement and real pickaxe traces still use all collision.
+                    for(TActorIterator<AActor> It(W);It;++It)
+                        if(It->ActorHasTag(TEXT("EndingEditableScenery")))RimQuery.AddIgnoredActor(*It);
                     const auto* Capsule=Pawn->GetCapsuleComponent();
                     if(W->SweepSingleByChannel(RimHit,Pawn->GetActorLocation(),Pawn->GetActorLocation()+FVector(220,0,0),FQuat::Identity,ECC_Pawn,
                         FCollisionShape::MakeCapsule(Capsule->GetScaledCapsuleRadius(),Capsule->GetScaledCapsuleHalfHeight()),RimQuery)&&RimHit.GetActor()==D->Gates[0])
                         Target=RimHit.ImpactPoint-RimHit.ImpactNormal*12;
+                    // A capsule contact can lie behind the cut edge from the
+                    // eye's viewpoint. Find a genuinely visible patch nearby,
+                    // using the same world collision and reach as the pickaxe.
+                    // This only steers input; it never edits or bypasses terrain.
+                    const auto* Mining=Pawn->FindComponentByClass<UMiningComponent>();
+                    const float Reach=Mining?Mining->Reach:400.f;
+                    double Best=1e30;FVector VisibleTarget=Target;
+                    for(int Y=-3;Y<=3;++Y)for(int Z=-3;Z<=3;++Z)
+                    {
+                        const FVector Probe=Target+FVector(0,Y*20,Z*20);
+                        const FVector Direction=(Probe-Eye).GetSafeNormal();
+                        FHitResult VisibleHit;
+                        if(W->LineTraceSingleByChannel(VisibleHit,Eye,Eye+Direction*Reach,ECC_Visibility,
+                            FCollisionQueryParams(SCENE_QUERY_STAT(EndingVisibleRim),true,Pawn))&&VisibleHit.GetActor()==D->Gates[0])
+                        {
+                            const double Score=Y*Y+Z*Z;
+                            if(Score<Best){Best=Score;VisibleTarget=VisibleHit.ImpactPoint+Direction*2;}
+                        }
+                    }
+                    Target=VisibleTarget;
                 }
                 Rot=(Target-Eye).Rotation();
                 Rot.Pitch=FMath::Clamp(Rot.Pitch,-89.,70.);

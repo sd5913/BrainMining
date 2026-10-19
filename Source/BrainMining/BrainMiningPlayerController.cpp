@@ -2,6 +2,7 @@
 
 
 #include "BrainMiningPlayerController.h"
+#include "MainGameDoor.h"
 #include "BrainMiningFonts.h"
 #include "MiningAudioSettings.h"
 #include "MiningAudioComponent.h"
@@ -157,8 +158,28 @@ void ABrainMiningPlayerController::SetMiningGUIEnabled(bool bEnabled)
  if (MiningGUI) MiningGUI->SetVisibility(bEnabled ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 }
 
+void ABrainMiningPlayerController::PlayerTick(float DeltaTime)
+{
+    Super::PlayerTick(DeltaTime);
+    const auto* Cards = FindComponentByClass<UCardRoomInteractionComponent>();
+    const bool bInCards = Cards && Cards->bRoomActive && Cards->Stage
+        && Cards->Stage->Run.Phase != ECardRoomPhase::Exploring
+        && Cards->Stage->Run.Phase != ECardRoomPhase::Collected;
+    if (MiningGUI)
+        MiningGUI->SetVisibility(bMiningGUIEnabled && !bInCards ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+    if (bInCards && bUpgradeMenuHeld) SetUpgradeMenuHeld(false);
+    const auto* Echo = FindComponentByClass<UEchoPassageInteractionComponent>();
+    if (Echo && Echo->bExplorationActive && Echo->Stage && Echo->Stage->bLanded && !Echo->Stage->bCompleted)
+        if (auto* Bomb = GetPawn() ? GetPawn()->FindComponentByClass<UMiningBombToolComponent>() : nullptr)
+            Bomb->Stow();
+}
+
 void ABrainMiningPlayerController::UseAbilityG()
 {
+	// Returning to the pickaxe must remain possible inside non-mining rooms.
+	if (!IsPaused())
+		if (auto* Equipped = GetPawn() ? GetPawn()->FindComponentByClass<UMiningBombToolComponent>() : nullptr; Equipped && Equipped->bEquipped)
+		{ Equipped->Stow(); return; }
 	if (!bMiningGUIEnabled || IsMoveInputIgnored() || IsLookInputIgnored() || IsPaused() || bUpgradeMenuHeld) return;
 	if (MiningGUI && MiningGUI->AbilityG && !MiningGUI->AbilityG->bAvailable) return;
 	auto* Bomb = GetPawn() ? GetPawn()->FindComponentByClass<UMiningBombToolComponent>() : nullptr;
@@ -453,6 +474,7 @@ bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 	if (IsAudioSettingsOpen()) return true;
 	if (Params.Key == EKeys::E && Params.Event == IE_Pressed && !bUpgradeMenuHeld)
 	{
+		if(auto* Door=AMainGameDoor::FindInteractionTarget(this)){Door->OpenDoor();return true;}
 		for (TActorIterator<APopupCloseStage> It(GetWorld()); It; ++It)
 			if (It->HandleInteractionInput(this)) return true;
 		for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It)

@@ -31,6 +31,8 @@ void ASubtitleTrigger::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AA
 	{
 		return;
 	}
+	// The card introduction follows successful matchmaking, never the approach volume.
+	if (SegmentId == TEXT("卡牌玩法1")) return;
 
 	const APawn* Pawn = Cast<APawn>(OtherActor);
 	if (!Pawn || !Pawn->IsPlayerControlled())

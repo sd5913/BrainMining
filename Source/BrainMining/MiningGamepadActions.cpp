@@ -60,12 +60,8 @@ void UMiningGamepadSubsystem::Primary(bool bPressed)
     auto* Player = Controller();
     if (!Player || !Player->GetPawn()) return;
     const auto Context = GetContext();
-    if (Context == EMiningInputContext::Cards)
-    {
-        if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>()) Cards->ToggleFocusedCard();
-        return;
-    }
-    if (Context == EMiningInputContext::Office || Context == EMiningInputContext::Menu || Context == EMiningInputContext::Thoughts || Context == EMiningInputContext::Upgrade)
+    if (Context == EMiningInputContext::Cards) return;
+    if (Context == EMiningInputContext::Office || Context == EMiningInputContext::Menu || Context == EMiningInputContext::Thoughts)
     {
         PointerButton(true);
         return;
@@ -105,7 +101,7 @@ void UMiningGamepadSubsystem::Interact()
     }
     if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>(); Cards && Cards->bRoomActive && Cards->Stage)
     {
-        if (Cards->Stage->Run.Phase == ECardRoomPhase::Choosing) { Cards->ToggleFocusedCard(); return; }
+        if (Cards->Stage->Run.Phase == ECardRoomPhase::Choosing) return;
         if (Cards->Stage->Run.Phase == ECardRoomPhase::Victory || Cards->Stage->IsPlayerNear(Player->GetPawn()->GetActorLocation())) { Cards->Interact(); return; }
     }
     for (TActorIterator<AMiningCollectionField> Field(World); Field; ++Field) if (Field->TryCollectTarget()) return;
@@ -122,7 +118,7 @@ void UMiningGamepadSubsystem::Dispatch(EMiningInputAction Action, bool bPressed)
     {
         if (Action == EMiningInputAction::Jump)
         {
-            if (GetContext() == EMiningInputContext::Exploration && (HeldButtons.Contains(EKeys::Gamepad_FaceButton_Bottom) || HeldButtons.Contains(EKeys::Gamepad_LeftTrigger))) return;
+            if (GetContext() == EMiningInputContext::Exploration && HeldButtons.Contains(EKeys::Gamepad_FaceButton_Bottom)) return;
             if (auto* Character = Cast<ABrainMiningCharacter>(JumpPawn.Get())) Character->DoJumpEnd();
             JumpPawn.Reset();
             bJumpHeld = false;
@@ -147,6 +143,8 @@ void UMiningGamepadSubsystem::Dispatch(EMiningInputAction Action, bool bPressed)
         if (auto* Menu = Player->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()) Menu->TogglePauseMenu();
         return;
     }
+    // The seated card encounter uses mouse selection and Space only. Pause remains available.
+    if (Context == EMiningInputContext::Cards) return;
     if (Action == EMiningInputAction::Previous || Action == EMiningInputAction::Next || Action == EMiningInputAction::Up || Action == EMiningInputAction::Down)
     {
         if (Context == EMiningInputContext::Menu)
@@ -157,11 +155,6 @@ void UMiningGamepadSubsystem::Dispatch(EMiningInputAction Action, bool bPressed)
             SendUIKey(Key, false);
         }
         else Navigate(Action == EMiningInputAction::Previous || Action == EMiningInputAction::Up ? -1 : 1);
-        return;
-    }
-    if (Context == EMiningInputContext::Upgrade)
-    {
-        if (Action == EMiningInputAction::Jump || Action == EMiningInputAction::Interact) PurchaseUpgrade();
         return;
     }
     if (Context == EMiningInputContext::Catalogue)
@@ -185,16 +178,6 @@ void UMiningGamepadSubsystem::Dispatch(EMiningInputAction Action, bool bPressed)
     if (Context == EMiningInputContext::Office)
     {
         if (Action == EMiningInputAction::Jump) PointerButton(true);
-        return;
-    }
-    if (Context == EMiningInputContext::Cards)
-    {
-        auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>();
-        if (Cards && Cards->Stage)
-        {
-            if (Action == EMiningInputAction::Jump) Cards->ConfirmFocusedAction();
-            if (Action == EMiningInputAction::Tool) Cards->ToggleAllCards();
-        }
         return;
     }
     auto* Mirror = FindGamepadActionActor<AWenSiMirrorPuzzle>(Player->GetWorld(), [](auto* Puzzle) { return Puzzle->bAreaActive; });
@@ -231,12 +214,8 @@ void UMiningGamepadSubsystem::Dispatch(EMiningInputAction Action, bool bPressed)
             && !Player->IsMoveInputIgnored() && !Player->IsLookInputIgnored())
             if (auto* Bomb = Player->GetPawn()->FindComponentByClass<UMiningBombToolComponent>()) Bomb->ToggleEquipped();
     }
-    else if (Action == EMiningInputAction::Upgrade) ToggleUpgrade();
+    else if (Action == EMiningInputAction::Upgrade) PurchaseUpgrade();
     else if (Action == EMiningInputAction::Reset) { bResetHeld = true; bResetFired = false; ResetElapsed = 0; }
-    else if (Action == EMiningInputAction::Map)
-    {
-        if (auto* Hall = AMiningExhibitHall::Find(Player->GetWorld())) Hall->ToggleMap();
-    }
     else if (Action == EMiningInputAction::Catalogue)
     {
         if (auto* Hall = AMiningExhibitHall::Find(Player->GetWorld())) Hall->ToggleCatalogue();
@@ -254,7 +233,6 @@ void UMiningGamepadSubsystem::Back()
         if (Menu->bQuitConfirmation) Menu->CancelQuitConfirmation(); else Menu->CloseMenu();
         return;
     }
-    if (IsUpgradeOpen()) { CloseUpgrade(); return; }
     UWorld* World = Player->GetWorld();
     if (auto* Field = FindGamepadActionActor<AMiningCollectionField>(World, [](auto* Candidate) { return Candidate->bCatalogueOpen; })) { Field->ToggleCatalogue(); return; }
     if (auto* MiningPlayer = Cast<ABrainMiningPlayerController>(Player))
@@ -271,7 +249,6 @@ void UMiningGamepadSubsystem::Back()
         return;
     }
     if (auto* Puzzle = FindGamepadActionActor<AWenSiPuzzle>(World, [](auto* Candidate) { return Candidate->bAreaActive && Candidate->bEditing; })) { Puzzle->ToggleEdit(); return; }
-    if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>(); Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase != ECardRoomPhase::Exploring) Cards->CancelFocusedAction();
 }
 
 void UMiningGamepadSubsystem::ResetContext()
@@ -297,19 +274,12 @@ void UMiningGamepadSubsystem::Navigate(int32 Direction)
 {
     auto* Player = Controller();
     if (!Player) return;
-    if (IsUpgradeOpen())
-    {
-        const auto* Progression = Player->GetPawn() ? Player->GetPawn()->FindComponentByClass<UMiningProgressionComponent>() : nullptr;
-        if (Progression && !Progression->Tracks.IsEmpty()) UpgradeTrack = (UpgradeTrack + Direction + Progression->Tracks.Num()) % Progression->Tracks.Num();
-        return;
-    }
     if (auto* Field = FindGamepadActionActor<AMiningCollectionField>(Player->GetWorld(), [](auto* Candidate) { return Candidate->bCatalogueOpen; }))
     {
         const TArray<int32> Ids = Field->CatalogueIds();
         if (!Ids.IsEmpty()) Field->SelectItem(Ids[(FMath::Max(0, Ids.IndexOfByKey(Field->SelectedId)) + Direction + Ids.Num()) % Ids.Num()]);
         return;
     }
-    if (auto* Cards = Player->FindComponentByClass<UCardRoomInteractionComponent>(); Cards && GetContext() == EMiningInputContext::Cards) { Cards->NavigateCards(Direction); return; }
     if (GetContext() == EMiningInputContext::Menu && FSlateApplication::IsInitialized())
     {
         TGuardValue<bool> Synthetic(bSyntheticPointer, true);

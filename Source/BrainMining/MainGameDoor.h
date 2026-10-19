@@ -43,7 +43,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Door")
 	void OpenDoor();
 
+	static AMainGameDoor* FindInteractionTarget(APlayerController* Controller);
+
 private:
 	float AnimationTime = 0.0f;
 	FRotator ClosedRotation;
+	FVector ClosedLocation;
+	FVector HingeLocation;
+	UPROPERTY(Transient) TObjectPtr<class UPostProcessComponent> Highlight;
 };

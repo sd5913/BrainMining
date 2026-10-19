@@ -10,6 +10,7 @@
 #include "Sound/SoundBase.h"
 #include "GameFramework/PlayerController.h"
 #include "UObject/ConstructorHelpers.h"
+#include "CardRoomUISettings.h"
 
 UStaticMeshComponent* ACardRoomStage::Shape(FName Name,USceneComponent* Parent,const TCHAR* Path,FVector Position,FVector Scale)
 {
@@ -21,6 +22,7 @@ UStaticMeshComponent* ACardRoomStage::Shape(FName Name,USceneComponent* Parent,c
 ACardRoomStage::ACardRoomStage()
 {
     PrimaryActorTick.bCanEverTick=true;
+    UISettings=LoadObject<UCardRoomUISettings>(nullptr,TEXT("/Game/Rooms/CardDuel/UI/DA_CardRoomUISettings.DA_CardRoomUISettings"));
     RootComponent=CreateDefaultSubobject<USceneComponent>(TEXT("RoomOrigin"));
     ToyRoot=CreateDefaultSubobject<USceneComponent>(TEXT("Opponent")); ToyRoot->SetupAttachment(RootComponent); ToyRoot->SetRelativeLocation(FVector(180,0,112));
     RobotOpponent=CreateDefaultSubobject<UChildActorComponent>(TEXT("RobotOpponent"));RobotOpponent->SetupAttachment(ToyRoot);
@@ -104,7 +106,8 @@ void ACardRoomStage::OnConstruction(const FTransform& Transform)
             RabbitVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
             RabbitVisual->SetVisibility(true,true);
             RabbitInitialRelativeTransform=RabbitVisual->GetRelativeTransform();
-            for(auto& Part:ToyParts) if(Part) Part->SetVisibility(false,true);
+            for(const int32 BodyIndex:{0,1,2,3,7,8,9})
+                if(ToyParts.IsValidIndex(BodyIndex) && ToyParts[BodyIndex]) ToyParts[BodyIndex]->SetVisibility(false,true);
             // The imported rabbit has a single plastic face and no usable facial
             // animation in UE. Attach small authored controls to its head bone.
             for(const int32 FaceIndex:{4,5,10,11,12})
@@ -197,6 +200,7 @@ void ACardRoomStage::BeginPlay()
         RabbitVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         RabbitVisual->SetSimulatePhysics(false);
         bRabbitPhysicsDropped=false;
+        bRabbitPhysicsSettled=false;
     }
     InitializeStyledEffects();
 }
@@ -210,6 +214,7 @@ void ACardRoomStage::ResetRabbitPhysicsDrop()
     RabbitVisual->SetRelativeTransform(RabbitInitialRelativeTransform);
     RabbitVisual->SetVisibility(true,true);
     bRabbitPhysicsDropped=false;
+    bRabbitPhysicsSettled=false;
 }
 
 void ACardRoomStage::TriggerRabbitPhysicsDrop()
@@ -221,9 +226,15 @@ void ACardRoomStage::TriggerRabbitPhysicsDrop()
     RabbitVisual->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     RabbitVisual->SetSimulatePhysics(true);
     RabbitVisual->SetEnableGravity(true);
-    RabbitVisual->AddImpulse(FVector(-120.f,0.f,80.f),NAME_None,true);
-    RabbitVisual->AddAngularImpulseInDegrees(FVector(0.f,0.f,180.f),NAME_None,true);
+    // True free fall: no damping or hidden easing. The existing chair collision
+    // is responsible for stopping the rabbit when it lands.
+    RabbitVisual->SetLinearDamping(0.f);
+    RabbitVisual->SetAngularDamping(0.f);
+    RabbitVisual->SetUseCCD(true);
+    RabbitVisual->SetPhysicsLinearVelocity(FVector(0.f,0.f,-120.f));
+    RabbitVisual->SetPhysicsAngularVelocityInDegrees(FVector(0.f,0.f,35.f));
     bRabbitPhysicsDropped=true;
+    bRabbitPhysicsSettled=false;
     UE_LOG(LogTemp,Log,TEXT("CardRoom rabbit physics drop at %s"),*Launch.ToString());
 }
 
@@ -284,7 +295,21 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     PreviousAudioTime=T;
     const bool bGhost=Phase==ECardRoomPhase::Seated || Phase==ECardRoomPhase::Matching || Phase==ECardRoomPhase::Victory || Phase==ECardRoomPhase::Collected;
     for(const auto& Dot:GhostDots) Dot->SetVisibility(bGhost);
-    ToyRoot->SetVisibility(bBattle || Phase==ECardRoomPhase::Arrival,true);
+    const bool bOpponentVisible=RabbitSkeletalMesh ? (Phase!=ECardRoomPhase::Exploring && Phase!=ECardRoomPhase::Collected) : (bBattle || Phase==ECardRoomPhase::Arrival);
+    ToyRoot->SetVisibility(bOpponentVisible,true);
+    // Keep the authored P2 replacement authoritative at runtime. Older saved
+    // instances can retain component visibility overrides from the static toy;
+    // re-apply the skeletal mesh and hide every legacy toy part before drawing.
+    if(RabbitSkeletalMesh && RabbitVisual)
+    {
+        if(RabbitVisual->GetSkeletalMeshAsset()!=RabbitSkeletalMesh)
+            RabbitVisual->SetSkeletalMesh(RabbitSkeletalMesh);
+        RabbitVisual->SetVisibility(bOpponentVisible,true);
+        // Keep the static body hidden, but retain the small authored eye/mouth
+        // pieces attached to the rabbit head as the animation fallback.
+        for(const int32 BodyIndex:{0,1,2,3,7,8,9})
+            if(ToyParts.IsValidIndex(BodyIndex) && ToyParts[BodyIndex]) ToyParts[BodyIndex]->SetVisibility(false,true);
+    }
     const float Time=GetWorld()->GetTimeSeconds();
     const float Breath=FMath::Sin(Time*2.25f);
     FVector Offset=OpponentBaseLocal+FVector(0,0,Breath*1.6f); FRotator Spin(0,0,FMath::Sin(Time*1.1f)*1.2f);
@@ -339,13 +364,29 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     if(bResolve && Run.Round==4 && T>1)
     {
         const float Fly=FMath::Clamp((T-1)/1.7f,0.f,1.f);
-        Offset=FMath::Lerp(Offset,OpponentExitLocal,Fly);Offset.Z+=FMath::Sin(Fly*PI)*120;Spin.Roll=Fly*600;
+        const FVector DropAboveBench=RabbitLandingLocal+FVector(0.f,0.f,900.f);
+        Offset=FMath::Lerp(Offset,DropAboveBench,Fly);Offset.Z+=FMath::Sin(Fly*PI)*120;Spin.Roll=Fly*600;
         Offset-=Spin.RotateVector(OpponentExitCenterOffset*ToyRoot->GetRelativeScale3D())*Fly;
         if(Fly>=.78f && !bUseRobotOpponent) TriggerRabbitPhysicsDrop();
         bReachedWall=Fly>=1;
     }
     ToyRoot->SetRelativeLocation(Offset); ToyRoot->SetRelativeRotation(Spin);
     if(bReachedWall) {ToyRoot->SetVisibility(false,true);if(!bImpactSent){bImpactSent=true;OnOpponentWallImpact.Broadcast(RoomId);}}
+    if(bRabbitPhysicsDropped && !bRabbitPhysicsSettled && RabbitVisual)
+    {
+        const FVector Landing=GetActorTransform().TransformPosition(RabbitLandingLocal);
+        const FVector Current=RabbitVisual->GetComponentLocation();
+        const FVector Horizontal(Current.X-Landing.X,Current.Y-Landing.Y,0.f);
+        if(Current.Z<=Landing.Z+140.f && Horizontal.SizeSquared()<=300.f*300.f && RabbitVisual->GetComponentVelocity().SizeSquared()<35.f*35.f)
+        {
+            RabbitVisual->SetPhysicsLinearVelocity(FVector::ZeroVector);
+            RabbitVisual->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+            RabbitVisual->SetSimulatePhysics(false);
+            RabbitVisual->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+            RabbitVisual->SetWorldLocation(Landing);
+            bRabbitPhysicsSettled=true;
+        }
+    }
     if(auto* PC=GetWorld()->GetFirstPlayerController())
     {
         FVector Eye;FRotator Aim;PC->GetPlayerViewPoint(Eye,Aim);

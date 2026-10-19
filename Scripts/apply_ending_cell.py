@@ -1,6 +1,8 @@
 """Import prepared user cell meshes; change only the existing ending demo."""
 import unreal, shutil
 from pathlib import Path
+import runpy
+runpy.run_path(str(Path(__file__).with_name("ending_scenery_guard.py")))
 from datetime import datetime
 project=Path(unreal.Paths.project_dir()).resolve()
 source=project/'SourceAssets/EndingEmergence/Cell'

@@ -103,6 +103,14 @@ $requiredAssets = @(
 Get-ChildItem -LiteralPath "$projectRoot/Content/Passages/Echo/ArtP2/Collision" -Filter '*_Walkable.uasset' -File | ForEach-Object {
     $requiredAssets += 'Passages/Echo/ArtP2/Collision/' + $_.Name
 }
+# The editable ending stores baked meshes/materials outside the old generator
+# directories. Require every saved baked asset in the Shipping container.
+$editableEnding = Join-Path $projectRoot 'Content/EndingEmergence/Editable'
+if (Test-Path -LiteralPath $editableEnding) {
+    Get-ChildItem -LiteralPath $editableEnding -Filter '*.uasset' -Recurse -File | ForEach-Object {
+        $requiredAssets += [IO.Path]::GetRelativePath((Join-Path $projectRoot 'Content'), $_.FullName).Replace('\','/')
+    }
+}
 foreach ($asset in $requiredAssets) {
     if (-not $containerText.Contains("../../../BrainMining/Content/$asset,")) {
         throw "Required runtime asset missing from packaged container: $asset"

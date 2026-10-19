@@ -34,6 +34,9 @@ class BRAINMINING_API AEndingEmergence : public AActor
     GENERATED_BODY()
 public:
     AEndingEmergence();
+    /** Once converted, the saved level owns scenery. Generator buttons cannot replace it. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ending|Scenery") bool bEditableScenery = false;
+    UFUNCTION(CallInEditor, BlueprintCallable, Category="Ending|Scenery") bool ConvertSceneryToEditableActors();
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending") TObjectPtr<UEndingCrowdAssets> CrowdAssets;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending") TArray<TObjectPtr<UStaticMesh>> CityBuildingMeshes;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ending") TArray<TObjectPtr<UStaticMesh>> CityPropMeshes;
@@ -104,6 +107,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") float FinaleDrillSpeed=0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") int32 FinaleDrillCuts=0;
 private:
+    friend class FEndingEditableSceneryPreview;
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> PainterlyMaterial;
     void UpdatePainterly();
     friend class FEndingTitleDrillPreview;

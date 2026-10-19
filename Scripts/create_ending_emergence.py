@@ -12,6 +12,8 @@ import os
 import shutil
 import datetime
 from pathlib import Path
+import runpy
+runpy.run_path(str(Path(__file__).with_name("ending_scenery_guard.py")))
 
 ROOT = '/Game/EndingEmergence'
 MAP = ROOT + '/Maps/Lvl_EndingEmergence_Demo'

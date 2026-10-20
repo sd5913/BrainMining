@@ -35,18 +35,18 @@ FTransform HeadBind(USkeletalMesh* Mesh)
     return T;
 }
 
-UHierarchicalInstancedStaticMeshComponent* OverCrowdBatch(ACrowdInstancer* Owner, UStaticMesh* Mesh, int32 Index)
+UInstancedStaticMeshComponent* MovingCrowdBatch(ACrowdInstancer* Owner, UStaticMesh* Mesh)
 {
     if(!Owner||!Mesh)return nullptr;
-    const FGameplayTag WardrobeID=FGameplayTag::RequestGameplayTag(FName("OverCrowd.Wardrobe.Default"));
-    UVatStaticMesh* Pair=NewObject<UVatStaticMesh>(Owner,*FString::Printf(TEXT("EndingVatPair_%d"),Index));
-    Pair->VatStaticMesh=Mesh;
-    Pair->BodyPart=FGameplayTag::RequestGameplayTag(FName("OverCrowd.BodyPart.Body"));
-    FWardrobe Wardrobe;Wardrobe.WardrobeID=WardrobeID;
-    Owner->AddHISMComponent(Pair,Wardrobe);
-    if(const FDataHISMLookUp* Lookup=Owner->HISMLookupWithWardrobeID.Find(WardrobeID))
-        if(const FHISMData* Data=Lookup->HISMLookup.Find(Pair))return Data->HISM;
-    return nullptr;
+    // These instances move every frame. A static HISM cluster tree can cull a
+    // walker using its old cluster bounds; ISM updates the moving instance data.
+    auto* C=Part<UInstancedStaticMeshComponent>(Owner,Owner->GetRootComponent());
+    C->SetMobility(EComponentMobility::Movable);
+    C->SetStaticMesh(Mesh);
+    C->SetCullDistances(0,0);
+    C->bNeverDistanceCull=true;
+    C->bAllowCullDistanceVolume=false;
+    return C;
 }
 }
 
@@ -144,9 +144,9 @@ void UEndingCrowdComponent::UpdateCrowd(bool bActive,float DeltaTime)
         {
             for(int32 I=0;I<BatchTransforms[B].Num();++I)
             {
-                FVector P=BatchOrigins[B][I]+BatchVelocities[B][I]*TravelTime;
-                if(BatchVelocities[B][I].X!=0)P.X=FMath::Fmod(P.X+42000+4200,8400)-4200;
-                else P.Y=FMath::Fmod(P.Y+42000+4200,8400)-4200;
+                // This finite shot needs no recycling. Wrapping at +/-42m
+                // teleported visible pedestrians during the upward pullback.
+                const FVector P=BatchOrigins[B][I]+BatchVelocities[B][I]*TravelTime;
                 BatchTransforms[B][I].SetLocation(P);
             }
             if(!BatchTransforms[B].IsEmpty())Batches[B]->BatchUpdateInstancesTransforms(0,BatchTransforms[B],false,true,true);
@@ -164,7 +164,7 @@ void UEndingCrowdComponent::UpdateCrowd(bool bActive,float DeltaTime)
         if(Speeds[I]!=0)
         {
             double& Axis=(I/2)%2?P.Y:P.X;
-            Axis=FMath::Fmod(Axis+Speeds[I]*TravelTime+2700+54000,5400)-2700;
+            Axis+=Speeds[I]*TravelTime;
         }
         People[I]->SetRelativeLocation(P);
     }
@@ -177,10 +177,16 @@ bool UEndingCrowdComponent::BuildBaked(UEndingCrowdAssets* Assets)
     if(!Owner||!Owner->GetWorld())return false;
     FActorSpawnParameters SpawnInfo;SpawnInfo.Owner=Owner;SpawnInfo.Name=TEXT("EndingOverCrowdInstancer");
     // The crowd component is attached to the city set (Sets[1]); spawn the
-    // OverCrowd HISM owner at that component transform so its local lanes land
+    // OverCrowd owner at that component transform so its local lanes land
     // in the same street space as the JapaneseCity replacement.
     OverCrowdInstancer=Owner->GetWorld()->SpawnActor<ACrowdInstancer>(ACrowdInstancer::StaticClass(),GetComponentTransform(),SpawnInfo);
     if(!OverCrowdInstancer)return false;
+    auto* CrowdRoot=NewObject<USceneComponent>(OverCrowdInstancer,TEXT("MovingCrowdRoot"));
+    OverCrowdInstancer->AddInstanceComponent(CrowdRoot);
+    OverCrowdInstancer->SetRootComponent(CrowdRoot);
+    CrowdRoot->RegisterComponent();
+    OverCrowdInstancer->SetActorTransform(GetComponentTransform());
+    OverCrowdInstancer->SetActorTickEnabled(false);
     OverCrowdInstancer->SetActorEnableCollision(false);
     OverCrowdInstancer->SetActorHiddenInGame(true);
     // JapaneseCity uses lit surface materials, while the original ending
@@ -189,26 +195,53 @@ bool UEndingCrowdComponent::BuildBaked(UEndingCrowdAssets* Assets)
     auto* KeyLight=Part<UDirectionalLightComponent>(Owner,this);
     KeyLight->SetRelativeRotation(FRotator(-48.f,-35.f,0.f));
     KeyLight->SetMobility(EComponentMobility::Movable);
-    KeyLight->SetIntensity(4.5f);
-    KeyLight->SetLightColor(FLinearColor(1.f,.92f,.82f));
+    KeyLight->SetIntensity(.65f);
+    KeyLight->SetLightColor(FLinearColor(.48f,.62f,1.f));
     KeyLight->SetCastShadows(false);
     Lights.Add(KeyLight);
     auto* FillLight=Part<UDirectionalLightComponent>(Owner,this);
     FillLight->SetRelativeRotation(FRotator(-25.f,145.f,0.f));
     FillLight->SetMobility(EComponentMobility::Movable);
-    FillLight->SetIntensity(1.8f);
+    FillLight->SetIntensity(.22f);
     FillLight->SetLightColor(FLinearColor(.55f,.7f,1.f));
     FillLight->SetCastShadows(false);
     Lights.Add(FillLight);
     for(int32 I=0;I<9;++I)
     {
         UStaticMesh* Mesh=I==8?Assets->BakedHero:Assets->BakedWalkers[I];
-        auto* C=OverCrowdBatch(OverCrowdInstancer,Mesh,I);
+        auto* C=MovingCrowdBatch(OverCrowdInstancer,Mesh);
         if(!C){OverCrowdInstancer->Destroy();OverCrowdInstancer=nullptr;return false;}
-        C->NumCustomDataFloats=2;CheapMesh(C);C->SetBoundsScale(1.25f);
+        C->SetNumCustomDataFloats(8);CheapMesh(C);C->SetBoundsScale(1.6f);
+        // Only the four intersection lamps cast local shadows. All walkers
+        // participate, including their VAT motion; no distance-based toggles.
+        C->SetCastShadow(true);
         Batches.Add(C);BatchTransforms.AddDefaulted();BatchOrigins.AddDefaulted();BatchVelocities.AddDefaulted();
     }
     FRandomStream Random(9127);
+    FRandomStream Wardrobe(38021); // Independent stream preserves paths/phases.
+    const FLinearColor Shirts[]={
+        {.12f,.21f,.34f},{.58f,.52f,.39f},{.32f,.075f,.095f},
+        {.17f,.24f,.10f},{.055f,.32f,.29f},{.58f,.32f,.075f},
+        {.34f,.24f,.43f},{.25f,.35f,.44f},{.09f,.10f,.12f},
+        {.65f,.63f,.55f},{.38f,.16f,.095f},{.14f,.26f,.49f}};
+    const FLinearColor Trousers[]={
+        {.012f,.012f,.012f},{.035f,.035f,.035f},{.075f,.075f,.075f},
+        {.14f,.14f,.14f},{.24f,.24f,.24f}};
+    const FLinearColor Neutrals[]={
+        {.012f,.012f,.012f},{.028f,.028f,.028f},{.065f,.065f,.065f},
+        {.13f,.13f,.13f},{.24f,.24f,.24f},{.40f,.40f,.40f},
+        {.60f,.60f,.60f},{.82f,.82f,.82f}};
+    auto Dress=[&](UInstancedStaticMeshComponent* Batch,int32 Instance,bool Hero=false)
+    {
+        const FLinearColor Shirt=Hero?FLinearColor(.13f,.13f,.13f):
+            Wardrobe.FRand()<.85f?Neutrals[Wardrobe.RandRange(0,UE_ARRAY_COUNT(Neutrals)-1)]:Shirts[Wardrobe.RandRange(0,UE_ARRAY_COUNT(Shirts)-1)];
+        const FLinearColor Pants=Trousers[Wardrobe.RandRange(0,UE_ARRAY_COUNT(Trousers)-1)];
+        for(int32 Channel=0;Channel<3;++Channel)
+        {
+            Batch->SetCustomDataValue(Instance,2+Channel,Shirt.Component(Channel),false);
+            Batch->SetCustomDataValue(Instance,5+Channel,Pants.Component(Channel),false);
+        }
+    };
     for(int32 I=0;I<1200;++I)
     {
         const bool AlongY=I%2!=0;const int32 Lane=(I/2)%12;
@@ -221,14 +254,16 @@ bool UEndingCrowdComponent::BuildBaked(UEndingCrowdAssets* Assets)
         const int32 Instance=Batches[B]->AddInstance(T);
         Batches[B]->SetCustomDataValue(Instance,0,Random.FRand(),false);
         Batches[B]->SetCustomDataValue(Instance,1,Rate,false);
+        Dress(Batches[B],Instance);
         BatchTransforms[B].Add(T);BatchOrigins[B].Add(P);
         const float Speed=Direction*(B%4==1?105.f:120.f)*Rate*T.GetScale3D().X;
         BatchVelocities[B].Add(AlongY?FVector(0,Speed,0):FVector(Speed,0,0));++BakedCount;
     }
     Batches[8]->AddInstance(FTransform(FRotator(0,90,0),FVector::ZeroVector));
     Batches[8]->SetCustomDataValue(0,1,1,true);++BakedCount;
+    Dress(Batches[8],0,true);
     for(auto B:Batches){B->MarkRenderStateDirty();B->PrecachePSOs();}
     SetVisibility(false,true);bCrowdActive=false;
-    UE_LOG(LogTemp, Display, TEXT("ENDING_OVERCROWD_HISM_READY: batches=%d instances=%d origin=%s"), Batches.Num(), BakedCount, *GetComponentLocation().ToString());
+    UE_LOG(LogTemp, Display, TEXT("ENDING_MOVING_CROWD_READY: batches=%d instances=%d origin=%s"), Batches.Num(), BakedCount, *GetComponentLocation().ToString());
     return true;
 }

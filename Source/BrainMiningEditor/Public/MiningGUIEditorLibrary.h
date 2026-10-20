@@ -37,6 +37,9 @@ public:
 	/** Capture the PIE game viewport, rather than the editor's active viewport. */
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
 	static bool CapturePreview(APlayerController* Controller, const FString& Filename);
+	/** Fast, viewport-only JPEG frames for local real-time review recordings. */
+	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
+	static bool CapturePreviewVideoFrame(APlayerController* Controller, const FString& Filename, int32 Quality = 90);
 	/** PIE-only test fixture: activate an area and optionally expose its completed TV stage. */
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
 	static bool PrepareCollectionPreviewArea(APlayerController* Controller, int32 AreaIndex, bool CompleteTelevision = false);

@@ -43,7 +43,7 @@ bool FOpeningBootstrapTest::RunTest(const FString&)
     if(TestNotNull(TEXT("Latest MainGame can bootstrap without an authored opening actor"),Opening))
     {
         TestNotNull(TEXT("Published title asset loads"),Opening->TitleTexture.Get());
-        TestTrue(TEXT("Seat follows source-room transform"),Opening->SeatEye.Equals(Transform.TransformPosition(FVector(-260,-160,127)),.01));
+        TestTrue(TEXT("Seat follows source-room transform"),Opening->SeatEye.Equals(Transform.TransformPosition(FVector(-350,-160,175)),.01));
         TestTrue(TEXT("Door follows source-room transform"),Opening->DoorTitleLocation.Equals(Transform.TransformPosition(FVector(466,0,168)),.01));
         TestTrue(TEXT("Opening belongs to the active start area"),Opening->ActorHasTag(Hall->Areas[0].Tag));
         Opening->Duration=4.25f;
@@ -171,12 +171,18 @@ public:
                 PC->SetControlRotation((Target-PickupEye).Rotation());PC->PlayerCameraManager->UpdateCamera(.05f);
                 Test->TestTrue(TEXT("Real E interaction collects pickaxe"),Room->Interact(PC));
                 Test->TestTrue(TEXT("Pickaxe unlock state changed"),Room->bPickaxeUnlocked);
+                Test->TestFalse(TEXT("Picking up the tool alone does not reveal the title"),Opening->HasTitleLanded());
+                const FVector WallEye=Opening->DoorTitleLocation-FVector(180,0,0);
+                PC->GetPawn()->SetActorLocation(WallEye-(PC->GetPawn()->GetPawnViewLocation()-PC->GetPawn()->GetActorLocation()));
+                PC->SetControlRotation((Opening->DoorTitleLocation-WallEye).Rotation());
+                PC->PlayerCameraManager->UpdateCamera(.05f);
+
             }
             else Opening->BeginTitleToWall(nullptr);
             Opened=true;return false;
         }
         if(!Opening->HasTitleLanded())return false;
-        Test->TestNotNull(TEXT("Pickaxe pickup projects the title onto the mineable wall"),Opening->FindComponentByClass<UDecalComponent>());
+        Test->TestNotNull(TEXT("Aiming at dirt after pickup projects the title onto the mineable wall"),Opening->FindComponentByClass<UDecalComponent>());
         Test->TestFalse(TEXT("Floating title becomes a wall decal"),Opening->WorldTitle->IsVisible());
         Test->TestTrue(TEXT("Standing pawn returned to player"),PC->GetViewTarget()==PC->GetPawn());
         Test->TestFalse(TEXT("Movement unlocked after standing"),PC->IsMoveInputIgnored());

@@ -81,6 +81,8 @@ public:
 	UFUNCTION(BlueprintPure, Category="Mining|Drill") bool IsDrillUnlocked() const;
 	UFUNCTION(BlueprintCallable, Category="Mining|Drill") void RequireDrillUnlock();
 	UFUNCTION(BlueprintCallable, Category="Mining|Drill") void UnlockDrill();
+    /** Temporary access for the ending rail; never purchases or changes the saved unlock. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Mining|Drill") bool bScriptedDrillAccess=false;
 	bool MineTelevision(const FHitResult& Hit);
 	/** Stow an active drill without clearing its existing use/cooldown deadlines. */
 	UFUNCTION(BlueprintCallable, Category="Mining|Tool") void SelectPickaxe();

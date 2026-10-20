@@ -67,6 +67,8 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") FVector RewardLocal=FVector(-30,0,143);
     FVector GetCardLanding(int32 Index,int32 Count) const;
     FVector GetSeatEyeLocation() const {return GetActorTransform().TransformPosition(FVector(-270,0,188));}
+    UFUNCTION(BlueprintPure,Category="Card Room|Presentation") FVector GetSpellSourceLocal() const;
+    UFUNCTION(BlueprintPure,Category="Card Room|Presentation") FVector GetSpellTargetLocal() const;
     FVector GetSeatLocation() const { return GetActorTransform().TransformPosition(FVector(-270,0,100)); }
     FVector GetApproachLocation() const { return GetActorTransform().TransformPosition(bTabletopEntry?FVector(-75,0,115):FVector(-295,0,0)); }
     float GetApproachRadius() const { return bTabletopEntry?800.f:180.f; }

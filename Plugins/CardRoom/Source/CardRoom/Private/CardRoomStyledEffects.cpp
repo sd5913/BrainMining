@@ -44,9 +44,9 @@ void ACardRoomStage::TickStyledEffects()
 {
     const bool Resolve=Run.Phase==ECardRoomPhase::Resolving;
     const float T=Run.PhaseTime,S=FMath::Clamp(SpellPresentationScale,1.f,4.f);
-    const FVector Target=OpponentBaseLocal+FVector(-44*OpponentScale,0,60*OpponentScale);
+    const FVector Target=GetSpellTargetLocal();
     const FVector Impact=Target+FVector(-14*OpponentScale,0,0);
-    const FVector Muzzle=CardLandingLocal+FVector(-40,0,180);
+    const FVector Muzzle=GetSpellSourceLocal();
     auto* Camera=UGameplayStatics::GetPlayerCameraManager(this,0);
     const FVector Eye=Camera?GetActorTransform().InverseTransformPosition(Camera->GetCameraLocation()):Muzzle;
     const FLinearColor Cyan(.06f,.62f,1.f),Amber(1.f,.28f,.045f),Cream(1.f,.75f,.32f);
@@ -123,7 +123,9 @@ void ACardRoomStage::TickStyledEffects()
             Beam->SetRelativeRotation(FRotationMatrix::MakeFromZ(D).Rotator());
             Fire(4,.70f,Muzzle,.28f,Color);
         }
-        Fire(Hot?1:0,1.f,Impact,Hot?1.25f:1.2f,Hot?Amber:Cyan);
+        // The arc-impact pack leaves dark tangled ribbons on the toy's chest.
+        // The first laser already has the luminous core and soft impact rings.
+        if(Hot)Fire(1,1.f,Impact,1.25f,Amber);
         if(Hot)
         {
             // Ignite the volume around the robot in a quick outward succession,

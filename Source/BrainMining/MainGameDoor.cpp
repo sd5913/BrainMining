@@ -6,10 +6,12 @@
 #include "GameFramework/PlayerController.h"
 #include "MiningInteractionTrace.h"
 #include "StartRoom/MiningOpening.h"
+#include "StartRoom/MiningStartRoom.h"
 #include "Components/PostProcessComponent.h"
 #include "Materials/MaterialInterface.h"
 #include "Engine/StaticMesh.h"
 #include "EngineUtils.h"
+#include "Camera/PlayerCameraManager.h"
 
 AMainGameDoor::AMainGameDoor()
 {
@@ -35,6 +37,13 @@ void AMainGameDoor::BeginPlay()
 	const FVector ScaledSize=Bounds.GetSize()*DoorMesh->GetComponentScale().GetAbs();
 	const FVector Hinge=ScaledSize.X<ScaledSize.Y?FVector(Bounds.GetCenter().X,Bounds.Min.Y,Bounds.Min.Z):FVector(Bounds.Min.X,Bounds.GetCenter().Y,Bounds.Min.Z);
 	HingeLocation=DoorMesh->GetComponentTransform().TransformPosition(Hinge);
+	if(const auto* Room=AMiningStartRoom::Find(GetWorld()))
+	{
+		// Choose the swing whose initial arc moves away from the room interior.
+		const FVector Outward=ClosedLocation-Room->GetActorLocation();
+		const FVector PositiveArc=FVector::CrossProduct(FVector::UpVector,ClosedLocation-HingeLocation);
+		OpenDirection=FVector::DotProduct(PositiveArc,Outward)>=0.f?1.f:-1.f;
+	}
 	DoorMesh->SetMobility(EComponentMobility::Movable);
 	Highlight=NewObject<UPostProcessComponent>(this);AddInstanceComponent(Highlight);
 	Highlight->SetupAttachment(RootComponent);Highlight->bUnbound=true;Highlight->bEnabled=false;
@@ -68,6 +77,16 @@ AMainGameDoor* AMainGameDoor::FindInteractionTarget(APlayerController* Controlle
 void AMainGameDoor::OpenDoor()
 {
 	if (bIsOpen) return;
+    // The authored room actor's origin is not its interior. Use the actual
+    // opening seat (or the interacting player), and ignore a saved angle sign.
+    FVector Inside=ClosedLocation-GetActorForwardVector()*300;
+    if(auto* PC=GetWorld()->GetFirstPlayerController();PC&&PC->GetPawn())Inside=PC->GetPawn()->GetActorLocation();
+    for(TActorIterator<AMiningOpening> It(GetWorld());It;++It){Inside=It->SeatEye;break;}
+    const FVector Centre=DoorMesh->Bounds.Origin;
+    const FVector Outward=(Centre-Inside).GetSafeNormal2D();
+    const FQuat Probe(FVector::UpVector,FMath::DegreesToRadians(FMath::Abs(OpenAngle)*.25f));
+    const FVector Arc=HingeLocation+Probe.RotateVector(Centre-HingeLocation)-Centre;
+    OpenDirection=FVector::DotProduct(Arc,Outward)>=0?1.f:-1.f;
 	bIsOpen = true;
 	DoorMesh->SetRenderCustomDepth(false);if(Highlight)Highlight->bEnabled=false;
 	AnimationTime = 0.0f;
@@ -87,6 +106,6 @@ void AMainGameDoor::Tick(float DeltaSeconds)
 	AnimationTime = FMath::Min(OpenDuration, AnimationTime + FMath::Max(0.0f, DeltaSeconds));
 	const float T = OpenDuration > KINDA_SMALL_NUMBER ? AnimationTime / OpenDuration : 1.0f;
 	const float Smooth = T * T * (3.0f - 2.0f * T);
-	const FQuat Turn(FVector::UpVector,FMath::DegreesToRadians(OpenAngle*OpenDirection*Smooth));
+	const FQuat Turn(FVector::UpVector,FMath::DegreesToRadians(FMath::Abs(OpenAngle)*OpenDirection*Smooth));
 	DoorMesh->SetWorldLocationAndRotation(HingeLocation+Turn.RotateVector(ClosedLocation-HingeLocation),Turn*ClosedRotation.Quaternion());
 }

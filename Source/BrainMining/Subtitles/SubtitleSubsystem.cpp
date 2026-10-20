@@ -204,7 +204,7 @@ void USubtitleSubsystem::ShowCurrentLine()
 	}
 	if (Sound)
 	{
-		ActiveAudio = UGameplayStatics::CreateSound2D(World, Sound);
+		ActiveAudio = UGameplayStatics::CreateSound2D(World, Sound, GetDefault<USubtitleSettings>()->VoiceVolume);
 		if (ActiveAudio)
 		{
 			if (auto* Instance = World->GetGameInstance()) ActiveAudio->SoundClassOverride = Instance->GetSubsystem<UMiningAudioSettings>()->GetClass(4);

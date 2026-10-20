@@ -75,6 +75,7 @@ private:
     TWeakObjectPtr<APlayerController> Player;
     FVector InitialTitle;
     FVector StandingEye;
+    float StandingFOV=90;
     FVector SeatPawnLocation;
     FQuat InitialRotation;
     float Elapsed = 0;

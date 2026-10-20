@@ -4,6 +4,11 @@
 #include "UObject/UnrealType.h"
 
 #include "EndingEmergence.h"
+#include "EndingCreditsWidget.h"
+#include "Components/ScaleBox.h"
+#include "Components/SizeBox.h"
+#include "Components/RichTextBlock.h"
+#include "Engine/DataTable.h"
 #include "MiningExperienceSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
@@ -47,6 +52,15 @@ UObject* UMiningGUIEditorLibrary::ReadPreviewObject(UObject* Object,FName Proper
     const auto* Property=FindFProperty<FObjectPropertyBase>(Object->GetClass(),PropertyName);
     return Property?Property->GetObjectPropertyValue_InContainer(Object):nullptr;
 }
+FString UMiningGUIEditorLibrary::ReadPreviewState(UObject* Object,FName PropertyName)
+{
+    FString Value;
+    if (!Object || !Object->GetWorld() || Object->GetWorld()->WorldType!=EWorldType::PIE) return Value;
+    if (const auto* Property=FindFProperty<FProperty>(Object->GetClass(),PropertyName))
+        Property->ExportTextItem_Direct(Value,Property->ContainerPtrToValuePtr<void>(Object),nullptr,Object,PPF_None);
+    return Value;
+}
+
 bool UMiningGUIEditorLibrary::WritePreviewState(UObject* Object,FName PropertyName,const FString& Value)
 {
     if(!Object || !Object->GetWorld() || Object->GetWorld()->WorldType!=EWorldType::PIE)return false;
@@ -563,4 +577,77 @@ bool UMiningGUIEditorLibrary::ClearGUIPlaceholderNumbers()
 		if (!Complete(BP, Size)) return false;
 	}
 	return true;
+}
+
+
+bool UMiningGUIEditorLibrary::UpdateEndingCreditsFeedback()
+{
+    auto* BP=LoadObject<UWidgetBlueprint>(nullptr,TEXT("/Game/EndingEmergence/UI/WBP_EndingCredits.WBP_EndingCredits"));
+    if(!BP||!BP->WidgetTree)return false;
+    BP->Modify();auto* Tree=BP->WidgetTree.Get();Tree->Modify();
+    auto* Group=Cast<UCanvasPanel>(Tree->FindWidget(TEXT("TextGroup")));if(!Group)return false;
+    for(const auto Name:{TEXT("AuthorChinese"),TEXT("AuthorEnglish")})if(auto* Text=Cast<UTextBlock>(Tree->FindWidget(Name)))
+    {Text->Modify();auto Font=Text->GetFont();Font.Size=Name==FString(TEXT("AuthorChinese"))?29:30;Text->SetFont(Font);}
+    auto* Thanks=Cast<UTextBlock>(Tree->FindWidget(TEXT("ThankYou")));
+    if(!Thanks)
+    {
+        Thanks=Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("ThankYou"));Thanks->bIsVariable=true;
+        Group->AddChildToCanvas(Thanks);
+    }
+    if(auto* Slot=Cast<UCanvasPanelSlot>(Thanks->Slot))
+    {Slot->SetPosition(FVector2D(270,621));Slot->SetSize(FVector2D(1060,48));}
+    if(!BP->WidgetVariableNameToGuidMap.Contains(Thanks->GetFName()))
+        BP->WidgetVariableNameToGuidMap.Add(Thanks->GetFName(),FGuid::NewGuid());
+    Thanks->SetText(FText::FromString(TEXT("感谢游玩！")));Thanks->SetJustification(ETextJustify::Center);
+    auto* Font=LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_CreditsHiragino"));Thanks->SetFont(FSlateFontInfo(Font,27,TEXT("Regular")));
+    Thanks->SetColorAndOpacity(FSlateColor(FLinearColor(.96f,.95f,.92f)));Thanks->SetRenderOpacity(0);
+    if(auto* Names=Tree->FindWidget(TEXT("Contributors")))Names->SetRenderOpacity(0);
+    return MiningGUIEditor::Complete(BP,FVector2D(1600,900));
+}
+
+bool UMiningGUIEditorLibrary::CreateEndingCreditsAsset()
+{
+    const FString PackageName=TEXT("/Game/EndingEmergence/UI/WBP_EndingCredits");
+    if(LoadObject<UWidgetBlueprint>(nullptr,*(PackageName+TEXT(".WBP_EndingCredits"))))return true;
+    auto* Package=CreatePackage(*PackageName);
+    auto* Factory=NewObject<UWidgetBlueprintFactory>();Factory->ParentClass=UEndingCreditsWidget::StaticClass();
+    auto* BP=Cast<UWidgetBlueprint>(Factory->FactoryCreateNew(UWidgetBlueprint::StaticClass(),Package,TEXT("WBP_EndingCredits"),RF_Public|RF_Standalone,nullptr,GWarn));
+    if(!BP)return false;
+    FAssetRegistryModule::AssetCreated(BP);
+    auto* Tree=BP->WidgetTree.Get();
+    auto* Root=Tree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("Root"));Tree->RootWidget=Root;
+    auto Fill=[](UCanvasPanel* Parent,UWidget* W)
+    {auto* Slot=Parent->AddChildToCanvas(W);Slot->SetAnchors(FAnchors(0,0,1,1));Slot->SetOffsets(FMargin(0));};
+    auto* Background=Tree->ConstructWidget<UImage>(UImage::StaticClass(),TEXT("BlackBackground"));
+    Background->SetColorAndOpacity(FLinearColor::Black);Fill(Root,Background);
+    auto* Responsive=Tree->ConstructWidget<UScaleBox>(UScaleBox::StaticClass(),TEXT("ResponsiveLayout"));Responsive->SetStretch(EStretch::ScaleToFit);Fill(Root,Responsive);
+    auto* Design=Tree->ConstructWidget<USizeBox>(USizeBox::StaticClass(),TEXT("Design1600x900"));Design->SetWidthOverride(1600);Design->SetHeightOverride(900);Responsive->AddChild(Design);
+    auto* Canvas=Tree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("CardLayout"));Design->AddChild(Canvas);
+    auto* Group=Tree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("TextGroup"));Fill(Canvas,Group);
+    auto AddText=[&](UCanvasPanel* Parent,const TCHAR* Name,const TCHAR* Words,bool English,int Size,float X,float Y,float Width,float Height,ETextJustify::Type Justify)
+    {
+        auto* Text=Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),Name);Text->bIsVariable=true;
+        Text->SetText(FText::FromString(Words));
+        auto* Font=LoadObject<UFont>(nullptr,English?TEXT("/Game/Fonts/F_CreditsRockwell"):TEXT("/Game/Fonts/F_CreditsHiragino"));
+        Text->SetFont(Font?FSlateFontInfo(Font,Size,TEXT("Regular")):BrainMiningFonts::Body(Size));
+        Text->SetColorAndOpacity(FSlateColor(FLinearColor(.96f,.95f,.92f)));Text->SetJustification(Justify);
+        auto* Slot=Parent->AddChildToCanvas(Text);Slot->SetPosition(FVector2D(X,Y));Slot->SetSize(FVector2D(Width,Height));
+        return Text;
+    };
+    AddText(Group,TEXT("QuoteChinese"),TEXT("找到出口的最好方式，就是前进。"),false,43,205,222,1190,90,ETextJustify::Center);
+    AddText(Group,TEXT("QuoteEnglish"),TEXT("The best way out is always through."),true,44,205,312,1190,80,ETextJustify::Center);
+    AddText(Group,TEXT("AuthorChinese"),TEXT("罗伯特·弗罗斯特"),false,38,720,451,665,78,ETextJustify::Right);
+    AddText(Group,TEXT("AuthorEnglish"),TEXT("Robert Frost 1914"),true,39,720,526,665,74,ETextJustify::Right);
+    auto* Styles=NewObject<UDataTable>(BP,TEXT("CreditsTextStyles"),RF_Public);
+    Styles->RowStruct=FRichTextStyleRow::StaticStruct();
+    FRichTextStyleRow CN,EN;
+    CN.TextStyle.SetFont(FSlateFontInfo(LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_CreditsHiragino")),24,TEXT("Regular"))).SetColorAndOpacity(FLinearColor(.96f,.95f,.92f));
+    EN.TextStyle.SetFont(FSlateFontInfo(LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_CreditsRockwell")),26,TEXT("Regular"))).SetColorAndOpacity(FLinearColor(.96f,.95f,.92f));
+    Styles->AddRow(TEXT("Default"),CN);Styles->AddRow(TEXT("cn"),CN);Styles->AddRow(TEXT("en"),EN);
+    auto* Names=Tree->ConstructWidget<URichTextBlock>(URichTextBlock::StaticClass(),TEXT("Contributors"));Names->bIsVariable=true;
+    Names->SetTextStyleSet(Styles);Names->SetText(FText::FromString(TEXT("<cn>铁皮辣妹</>    <cn>空空道人</>    <en>Seven</>    <en>Rasimet</>")));Names->SetJustification(ETextJustify::Center);
+    auto* NameSlot=Group->AddChildToCanvas(Names);NameSlot->SetPosition(FVector2D(270,676));NameSlot->SetSize(FVector2D(1060,65));
+    AddText(Canvas,TEXT("Prompt"),TEXT("[C] 收集界面     [ESC] 退出游戏"),false,24,240,812,1120,65,ETextJustify::Center);
+    Background->bIsVariable=true;Group->bIsVariable=true;
+    return MiningGUIEditor::Complete(BP,FVector2D(1600,900));
 }

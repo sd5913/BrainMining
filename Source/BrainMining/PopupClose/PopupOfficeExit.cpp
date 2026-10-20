@@ -28,6 +28,9 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "TimerManager.h"
 #include "InputCoreTypes.h"
+#include "MiningWaypoint.h"
+#include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
 #include "ProfilingDebugging/CsvProfiler.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogOfficeExit,Log,All);
@@ -48,6 +51,16 @@ namespace
 
 FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
 {
+ if(GEngine && GEngine->GameViewport)
+ {
+  PickupGuide=SNew(SMiningWaypoint).Player(Owner.GetWorld()->GetFirstPlayerController()).Label(TEXT("拾取炸弹"))
+   .Target_Lambda([this]()->TOptional<FVector>
+   {
+    if(Owner.bAreaActive && !Owner.IsHidden() && (Phase==1||Phase==2) && Owner.View==APopupCloseStage::EView::Free && Pickup.IsValid())return PickupPosition();
+    return {};
+   });
+  GEngine->GameViewport->AddViewportWidgetContent(PickupGuide.ToSharedRef(),9);
+ }
  auto Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
  auto BombMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/Bomb/SM_StickyBomb.SM_StickyBomb"));
  auto Parent=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
@@ -188,6 +201,8 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
 }
 FPopupOfficeExit::~FPopupOfficeExit()
 {
+ if(PickupGuide.IsValid() && GEngine && GEngine->GameViewport)GEngine->GameViewport->RemoveViewportWidgetContent(PickupGuide.ToSharedRef());
+ PickupGuide.Reset();
  FinishExitTurn();
  if(Owner.GetWorld())Owner.GetWorld()->GetTimerManager().ClearTimer(Timer);
  if(auto Tool=BoundTool.Get())Tool->OnBombExploded.RemoveDynamic(&Owner,&APopupCloseStage::OnPlayerBombExploded);

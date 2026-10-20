@@ -218,7 +218,7 @@ public:
             Test->TestEqual(TEXT("Third collectible in second mine"),Collection->UniqueCount(),3);
             if(!bCatalogueCaptured)
             {
-                Key(EKeys::I,IE_Pressed);
+                Key(EKeys::C,IE_Pressed);
                 Test->TestTrue(TEXT("Catalogue opens"),Collection->bCatalogueOpen);
                 Shot(TEXT("04_Catalogue"));
                 bCatalogueCaptured=true;Changed=FPlatformTime::Seconds();return false;

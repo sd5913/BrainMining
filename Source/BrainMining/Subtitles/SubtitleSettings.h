@@ -11,6 +11,9 @@ class BRAINMINING_API USubtitleSettings : public UObject
 	GENERATED_BODY()
 
 public:
+    UPROPERTY(Config, EditAnywhere, Category="通用设置", meta=(DisplayName="字幕音效音量", ClampMin="0", ClampMax="1"))
+    float VoiceVolume = .45f;
+
 	UPROPERTY(Config, EditAnywhere, Category="通用设置", meta=(DisplayName="字体大小", ClampMin="12", ClampMax="72", ToolTip="所有字幕共用的字号，按界面 DPI 缩放。原字号为 22。"))
 	int32 FontSize = 28;
 

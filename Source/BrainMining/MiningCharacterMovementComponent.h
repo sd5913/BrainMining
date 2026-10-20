@@ -12,6 +12,10 @@ class BRAINMINING_API UMiningCharacterMovementComponent : public UCharacterMovem
 
 public:
 	UMiningCharacterMovementComponent();
+	/** Zero-gravity controls owned exclusively by the ending's playable cell room. */
+	void SetEndingCellFloat(bool bEnabled);
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending") bool bEndingCellFloat = false;
+	FVector SavedCellMovement = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player Flight", meta=(ShowOnlyInnerProperties))
 	FMiningFlightSettings FlightSettings;

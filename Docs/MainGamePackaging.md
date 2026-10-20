@@ -21,6 +21,8 @@
 - 结尾人群使用已有的 `EndingEmergence/Crowd/Lite`。不要把整个 `EndingEmergence/Crowd` 目录强制加入打包，否则会额外带入制作阶段的源角色、骨骼和 8K 贴图，增加包体和烘焙内存；必要的真实引用仍由 Cook 自动收集。
 - 中文界面依赖字体与国际化数据，保留中文和英文资源。音效来源说明随包保留。
 - 卡牌机器人的部件通过 C++ 路径动态加载，必须保留 `/Game/Rooms/CardDuel/Robot` 的 `DirectoriesToAlwaysCook` 配置。
+- BloodCirculation 血细胞网格与血管/细胞材质实例同样通过 C++ 路径加载，必须保留这些目录的强制 Cook 配置。打包脚本会检查实际地图依赖及新谢幕、血管、封口膜、标题透视材质，避免把已被替换的旧布景误当作必需资源。
+- 应用图标原图保存在 `SourceAssets/Branding/ApplicationIcon.png`，Windows 多尺寸图标位于 `Build/Windows/Application.ico`；交付前需核验启动 EXE 与 Shipping EXE 的所有图标组。
 - 矿物线索贴花 `M_BuriedMineralGlow` 通过运行时代码加载，必须保留 `/Game/MainGame/Materials` 的强制 Cook 配置；缺失时引擎默认贴花会在岩壁上显示大片亮块。打包脚本现在检查最终 IoStore 容器内是否包含该材质，缺失直接报错；运行时代码也会隐藏无材质的线索贴花。
 - 后处理不能为兼容移动端而清空桌面着色器。`repair_android_postprocess_materials.py` 现从原始制作脚本恢复描边及五种结局效果，只在 `SHADING_PATH_MOBILE` 分支降级。最终包检查包含这六种材质；Windows SM5/SM6 Cook 已通过，移动端需另行验证。
 - 只会排除未引用的资源。蓝图、软引用或默认类引用仍可能带入额外地图/素材，清理这些依赖需要另行评估，不能直接删除源资源。

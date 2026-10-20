@@ -38,6 +38,7 @@ public:
     static AMiningStartRoom* Find(UWorld* World);
     void InitializePlayer(APawn* Pawn);
     void UnlockDeveloperEquipment();
+    void UnlockDeveloperPickaxe();
     UFUNCTION(BlueprintCallable, Category="Start Room") bool Interact(APlayerController* Controller);
     UFUNCTION(BlueprintPure, Category="Start Room") AMiningStarterPickup* GetTarget(APlayerController* Controller) const;
     FString GetInteractionAction(APlayerController* Controller) const;
@@ -47,6 +48,11 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Start Room") bool bJetpackUnlocked = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Start Room") bool bHeadlampUnlocked = false;
 private:
+    void UpdateLookTargets(APlayerController* Controller);
+    AActor* GetViewedActor(APlayerController* Controller) const;
+    UPROPERTY(Transient) TObjectPtr<class UPostProcessComponent> PropHighlight;
+    TWeakObjectPtr<AActor> HighlightedProp;
+    bool bTitleTriggered = false;
     void ReleasePlayer();
     TWeakObjectPtr<APawn> Player;
     TWeakObjectPtr<UMiningComponent> Mining;

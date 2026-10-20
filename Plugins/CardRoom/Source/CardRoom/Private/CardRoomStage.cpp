@@ -5,6 +5,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Engine/SkeletalMesh.h"
+#include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
@@ -80,6 +81,25 @@ ACardRoomStage::ACardRoomStage()
     Beam=Shape(TEXT("Laser"),RootComponent,TEXT("/Engine/BasicShapes/Cylinder.Cylinder"),FVector::ZeroVector,FVector(.1));
     Ball=Shape(TEXT("SpellOrb"),RootComponent,Sphere,FVector::ZeroVector,FVector(.3));
     Reward=Shape(TEXT("CollectibleOrb"),RootComponent,Sphere,FVector(0,0,135),FVector(.23));
+}
+FVector ACardRoomStage::GetSpellSourceLocal() const
+{
+    // Chest/hand height at the player's seat; table edits cannot move the muzzle.
+    return GetActorTransform().InverseTransformPosition(GetSeatEyeLocation())+FVector(65,-28,-48);
+}
+FVector ACardRoomStage::GetSpellTargetLocal() const
+{
+    if(RobotOpponent&&RobotOpponent->GetChildActor())
+    {
+        TArray<UStaticMeshComponent*> Parts;RobotOpponent->GetChildActor()->GetComponents(Parts);
+        for(auto* Part:Parts)if(Part->GetFName()==TEXT("Body")&&Part->GetStaticMesh())
+        {
+            const FBox Box=Part->GetStaticMesh()->GetBoundingBox();
+            FVector Chest=Box.GetCenter();Chest.X=Box.Min.X;Chest.Z=FMath::Lerp(Chest.Z,Box.Max.Z,.65f);
+            return GetActorTransform().InverseTransformPosition(Part->GetComponentTransform().TransformPosition(Chest));
+        }
+    }
+    return OpponentBaseLocal+FVector(-44*OpponentScale,0,60*OpponentScale);
 }
 void ACardRoomStage::Tint(UStaticMeshComponent* Part,FLinearColor Color,bool bGlow)
 {

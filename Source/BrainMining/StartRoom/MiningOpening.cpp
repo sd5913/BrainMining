@@ -1,4 +1,5 @@
 #include "StartRoom/MiningOpening.h"
+#include "TimerManager.h"
 #include "MiningHapticsSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "Blueprint/WidgetTree.h"
@@ -25,6 +26,7 @@
 #include "StartRoom/MiningStartRoom.h"
 #include "Components/DecalComponent.h"
 #include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "MainGameDoor.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 
@@ -45,9 +47,10 @@ AMiningOpening* AMiningOpening::EnsureMainGameOpening(AMiningExhibitHall* Hall)
     if(!Opening)return nullptr;
     Opening->Tags.Add(Hall->Areas[0].Tag);
     Opening->TitleTexture=Title;
-    Opening->SeatEye=RoomTransform.TransformPosition(FVector(-260,-160,127));
+    Opening->SeatEye=RoomTransform.TransformPosition(FVector(-350,-160,175));
     Opening->StandingLocation=RoomTransform.TransformPosition(FVector(-260,-70,98));
-    Opening->Facing=(RoomTransform.GetRotation()*FRotator(0,13,0).Quaternion()).Rotator();
+    Opening->Facing=(RoomTransform.GetRotation()*FRotator(-8,32,0).Quaternion()).Rotator();
+    Opening->Duration=2.6f;
     Opening->DoorTitleLocation=RoomTransform.TransformPosition(FVector(466,0,168));
     Opening->DoorTitleRotation=(RoomTransform.GetRotation()*FRotator(0,180,0).Quaternion()).Rotator();
     Opening->FinishSpawning(SpawnTransform);
@@ -73,7 +76,14 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
     auto* TitleSlot=Canvas->AddChildToCanvas(Fit);TitleSlot->SetAnchors(FAnchors(.045f,.08f,.47f,.53f));TitleSlot->SetOffsets(FMargin(0));
     TitleImage=WidgetTree->ConstructWidget<UImage>();Fit->AddChild(TitleImage);
     if(Opening.IsValid())TitleImage->SetBrushFromTexture(Opening->TitleTexture,true);
-    // The supplied title stays flat; only the menu text shares the room perspective.
+    // Only the menu logo turns toward the screen centre. The same supplied
+    // artwork remains flat when projected onto the actual mineable wall.
+    if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/StartRoom/UI/M_OpeningTitlePerspective")))
+    {
+        auto* Perspective=UMaterialInstanceDynamic::Create(Base,TitleImage);
+        if(Opening.IsValid())Perspective->SetTextureParameterValue(TEXT("Logo"),Opening->TitleTexture);
+        TitleImage->SetBrushFromMaterial(Perspective);
+    }
     auto* Column=WidgetTree->ConstructWidget<UVerticalBox>();
     auto* CanvasSlot=Canvas->AddChildToCanvas(Column);
     CanvasSlot->SetAnchors(FAnchors(.81f,.65f));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
@@ -146,8 +156,15 @@ void AMiningOpening::Prepare(APlayerController* Controller)
     Player=Controller;bPrepared=true;
     APawn* Pawn=Controller->GetPawn();bOldCollision=Pawn->GetActorEnableCollision();Pawn->SetActorEnableCollision(false);
     if(auto* Character=Cast<ACharacter>(Pawn)){Character->GetCharacterMovement()->StopMovementImmediately();Character->GetCharacterMovement()->DisableMovement();}
-    const FVector EyeOffset=Pawn->GetPawnViewLocation()-Pawn->GetActorLocation();
-    StandingEye=StandingLocation+EyeOffset;SeatPawnLocation=SeatEye-EyeOffset;
+    FMinimalViewInfo NativeView;Pawn->CalcCamera(0,NativeView);
+    FVector EyeOffset=NativeView.Location-Pawn->GetActorLocation();StandingFOV=NativeView.FOV;
+    // The first skeletal-camera sample can still contain the spawn pose. Keep
+    // the standing eye at adult eye height instead of caching that crouched pose.
+    if(const auto* Character=Cast<ACharacter>(Pawn))
+        EyeOffset.Z=FMath::Max(EyeOffset.Z,Character->GetSimpleCollisionHalfHeight()*.95f);
+    StandingEye=StandingLocation+EyeOffset;
+    SeatEye.Z=FMath::Min(SeatEye.Z,StandingEye.Z-50.f);
+    SeatPawnLocation=SeatEye-EyeOffset;
     Pawn->SetActorLocation(SeatPawnLocation);Controller->SetControlRotation(Facing);
     Controller->SetIgnoreMoveInput(true);Controller->SetIgnoreLookInput(true);bInputLocked=true;
     if(auto* HUD=Controller->GetHUD()){bOldHUD=HUD->bShowHUD;HUD->bShowHUD=false;}
@@ -184,14 +201,20 @@ void AMiningOpening::Tick(float Dt)
     const float T=FMath::Clamp(Elapsed/Duration,0.f,1.f);const float A=FMath::SmoothStep(0.f,1.f,T);
     const FVector Eye=StandingEye;
     if(APawn* Pawn=Player->GetPawn())Pawn->SetActorLocation(FMath::Lerp(SeatPawnLocation,StandingLocation,A));
-    // Lean forward, lift from the mattress, then settle beside the bed.
-    FVector P=FMath::Lerp(SeatEye,Eye,A);P.Z-=FMath::Sin(FMath::Min(T*2.f,1.f)*PI)*9.f;
+    // Shift weight over the feet, rise, then take a small step beside the bed.
+    // The endpoint is cached, so idle head animation cannot bend this camera rail.
+    const float Rise=FMath::SmoothStep(.18f,.86f,T),Step=FMath::SmoothStep(.12f,.94f,T);
+    FVector P=FMath::Lerp(SeatEye,Eye,Step);P.Z=FMath::Lerp(SeatEye.Z,Eye.Z,Rise);
+    const float Lean=FMath::SmoothStep(0.f,.22f,T)*(1-FMath::SmoothStep(.38f,.9f,T));
+    P+=Facing.Vector().GetSafeNormal2D()*12.f*Lean;P.Z-=3.f*Lean;
     Camera->SetActorLocation(P);
+    Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(80.f,StandingFOV,A));
     const FRotator FinalAim=Player->GetControlRotation();
-    Camera->SetActorRotation(FQuat::Slerp(Facing.Quaternion(),FinalAim.Quaternion(),A));
+    FRotator Look=FQuat::Slerp(Facing.Quaternion(),FinalAim.Quaternion(),A).Rotator();Look.Pitch-=2.f*Lean;
+    Camera->SetActorRotation(Look);
     if(T>=1.f)
     {
-        bFinished=true;Release();
+        Release();
     }
 }
 void AMiningOpening::BeginTitleToWall(AMainGameDoor* Door)
@@ -229,14 +252,22 @@ void AMiningOpening::Release()
     {
         if(APawn* Pawn=Player->GetPawn())
         {
-            Pawn->SetActorEnableCollision(bOldCollision);Player->SetViewTarget(Pawn);
+            Pawn->SetActorEnableCollision(bOldCollision);
             if(auto* C=Cast<ACharacter>(Pawn))C->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+            Player->SetViewTargetWithBlend(Pawn,.45f,EViewTargetBlendFunction::VTBlend_EaseInOut,2.f,true);
         }
         if(bInputLocked){Player->SetIgnoreMoveInput(false);Player->SetIgnoreLookInput(false);bInputLocked=false;}
         Player->bShowMouseCursor=false;Player->SetInputMode(FInputModeGameOnly());
         if(auto* HUD=Player->GetHUD())HUD->bShowHUD=bOldHUD;
         if(auto* PC=Cast<AMiningExhibitController>(Player.Get()))PC->SetMiningGUIEnabled(true);
     }
-    if(Camera){Camera->Destroy();Camera=nullptr;}
+    if(Camera)
+    {
+        const TWeakObjectPtr<ACameraActor> Outgoing=Camera;
+        const TWeakObjectPtr<AMiningOpening> Opening=this;
+        FTimerHandle Cleanup;
+        GetWorldTimerManager().SetTimer(Cleanup,FTimerDelegate::CreateLambda([Outgoing,Opening](){if(Outgoing.IsValid())Outgoing->Destroy();if(Opening.IsValid())Opening->bFinished=true;}),.55f,false);
+        Camera=nullptr;
+    }
 }
 void AMiningOpening::EndPlay(const EEndPlayReason::Type Reason){if(CornerTitle)CornerTitle->RemoveFromParent();if(bPrepared&&!bFinished)Release();Super::EndPlay(Reason);}

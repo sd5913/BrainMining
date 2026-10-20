@@ -125,7 +125,7 @@ void AMiningRoomEscape::TickExitStage()
         {
             auto* Field=GetWorld()->SpawnActorDeferred<AMiningCollectionField>(AMiningCollectionField::StaticClass(),FTransform::Identity,this);
             Field->bUseAuthoredPlacements=true;Field->bAreaManaged=true;Field->bSharedAbilities=true;
-            Field->bShowExplorationHUD=false;Field->CatalogueKey=EKeys::I;
+            Field->bShowExplorationHUD=false;Field->CatalogueKey=EKeys::C;
             Field->FinishSpawning(FTransform::Identity);StageCollection=Field;bOwnsStageCollection=true;GeneratedActors.Add(Field);
         }
     }

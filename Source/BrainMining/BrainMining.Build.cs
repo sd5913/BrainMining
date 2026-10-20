@@ -30,6 +30,7 @@ public class BrainMining : ModuleRules
 		PrivateDependencyModuleNames.Add("RenderCore");
         PrivateDependencyModuleNames.Add("ApplicationCore");
         RuntimeDependencies.Add("$(ProjectDir)/Content/UI/Gamepad/*.svg", StagedFileType.NonUFS);
+        RuntimeDependencies.Add("$(ProjectDir)/Content/UI/Mobile/*.svg", StagedFileType.NonUFS);
 		PrivateDependencyModuleNames.Add("AudioMixer");
 		PrivateDependencyModuleNames.Add("MediaAssets");
 		PrivateDependencyModuleNames.Add("OverCrowd");

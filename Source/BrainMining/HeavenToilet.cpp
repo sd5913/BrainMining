@@ -67,9 +67,14 @@ void AHeavenToilet::LaunchDuck()
  if(!SprayDuck||!SprayDuck->GetStaticMesh()||!WaterOutlet)return;
  if(DuckPool.IsEmpty())return;
  auto* Duck=DuckPool[NextDuck].Get();auto& Motion=DuckMotion[NextDuck];
+ Duck->SetRelativeScale3D(FVector(DuckScale));
  Duck->SetWorldLocation(WaterOutlet->GetComponentLocation());
- Duck->SetWorldRotation(WaterOutlet->GetComponentRotation());Duck->SetVisibility(true);
- Motion.Velocity=WaterOutlet->GetForwardVector()*DuckForwardSpeed+FVector::UpVector*DuckUpSpeed;
+ // Scatter each burst around the basin, with different ranges and flight arcs.
+ const float Azimuth=FMath::FRandRange(-PI,PI);
+ const FVector Direction(FMath::Cos(Azimuth),FMath::Sin(Azimuth),0);
+ Duck->SetWorldRotation(FRotator(0,FMath::RadiansToDegrees(Azimuth),0));Duck->SetVisibility(true);
+ Motion.Velocity=Direction*DuckForwardSpeed*FMath::FRandRange(.75f,1.25f)
+     +FVector::UpVector*DuckUpSpeed*FMath::FRandRange(.85f,1.3f);
  Motion.Age=0;Motion.Flying=true;NextDuck=(NextDuck+1)%DuckPool.Num();
 }
 void AHeavenToilet::Tick(float DeltaSeconds)

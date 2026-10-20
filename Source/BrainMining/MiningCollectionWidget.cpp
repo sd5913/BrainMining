@@ -17,11 +17,14 @@ void UMiningCollectionWidget::NativeConstruct()
     if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("PreviousButton"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Previous);
     if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("NextButton"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Next);
     if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("CloseButton"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::CloseCollection);
+    for(const TCHAR* Name:{TEXT("PreviousButton"),TEXT("NextButton"),TEXT("CloseButton"),TEXT("ItemButton0"),TEXT("ItemButton1"),TEXT("ItemButton2"),TEXT("ItemButton3")})
+        if(auto* B=Cast<UButton>(GetWidgetFromName(Name))){auto Style=B->GetStyle();Style.SetHovered(Style.Normal);Style.SetPressed(Style.Normal);Style.SetHoveredForeground(Style.NormalForeground);Style.SetPressedForeground(Style.NormalForeground);Style.SetPressedPadding(Style.NormalPadding);Style.SetDisabled(Style.Normal);B->SetStyle(Style);}
     RefreshCollection();
 }
-void UMiningCollectionWidget::SetCollection(AMiningCollectionField* Field){Collection=Field;RefreshCollection();}
+void UMiningCollectionWidget::SetCollection(AMiningCollectionField* Field){Collection=Field;CurrentPage=Collection?FMath::Max(0,Collection->CatalogueIds().IndexOfByKey(Collection->SelectedId))/4:0;RefreshCollection();}
 void UMiningCollectionWidget::RevealCollection()
 {
+    CurrentPage=IsValid(Collection)?FMath::Max(0,Collection->CatalogueIds().IndexOfByKey(Collection->SelectedId))/4:0;
     bDragging=false;RevealElapsed=0;bRevealing=true;
     if(auto* Panel=GetWidgetFromName(TEXT("InfoPanel")))Panel->SetRenderTranslation(FVector2D(PanelSlideDistance,0));
     if(auto* Blur=Cast<UBackgroundBlur>(GetWidgetFromName(TEXT("SceneBlur"))))Blur->SetBlurStrength(0);
@@ -52,34 +55,49 @@ void UMiningCollectionWidget::RefreshCollection()
         I->SetVisibility(Owned?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
     }
     if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemName"))))T->SetText(FText::FromString(Owned?AMiningCollectible::ItemName(Id):TEXT("尚未发现")));
-    if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))T->SetText(FText::FromString(Owned?AMiningCollectible::Description(Id):TEXT("收集后即可旋转检视")));
-    if(auto* W=GetWidgetFromName(TEXT("PreviewHelp")))W->SetVisibility(Owned?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+    if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))T->SetText(FText::FromString(Owned?AMiningCollectible::Description(Id):TEXT("")));
+    if(auto* W=GetWidgetFromName(TEXT("PreviewHelp")))W->SetVisibility(ESlateVisibility::Collapsed);
     const auto Ids=Collection->CatalogueIds();
-    const int32 Page=FMath::Max(0,Ids.IndexOfByKey(Id))/4;
+    const int32 Page=CurrentPage;
+    if(auto* W=GetWidgetFromName(TEXT("PreviousButton")))W->SetVisibility(Page>0?ESlateVisibility::Visible:ESlateVisibility::Hidden);
+    if(auto* W=GetWidgetFromName(TEXT("NextButton")))W->SetVisibility((Page+1)*4<Ids.Num()?ESlateVisibility::Visible:ESlateVisibility::Hidden);
     for(int32 I=0;I<4;++I)
     {
         const int32 Item=Ids.IsValidIndex(Page*4+I)?Ids[Page*4+I]:INDEX_NONE;
         const bool Has=Collection->Inventory.IsValidIndex(Item)&&Collection->Inventory[Item]>0;
         if(auto* Image=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemArt%d"),I)))))
         {
-            const TCHAR* Art=Has?TEXT("/Game/CollectionPrototype/UI/Redesign/T_CollectionSelected"):TEXT("/Game/CollectionPrototype/UI/Redesign/T_CollectionUnknown");
+            const TCHAR* Art=Has?TEXT("/Game/CollectionPrototype/UI/Redesign/T_CollectionOwnedGray"):TEXT("/Game/CollectionPrototype/UI/Redesign/T_CollectionUnknown");
             if(auto* Texture=LoadObject<UTexture2D>(nullptr,Art))Image->SetBrushFromTexture(Texture);
-            Image->SetColorAndOpacity(Has&&Id!=Item?FLinearColor(.45f,.55f,.42f):FLinearColor::White);
+            Image->SetColorAndOpacity(FLinearColor::White);
         }
         if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):FString()));
-        if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I))))W->SetVisibility(Id==Item?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
-        if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemButton%d"),I))))W->SetVisibility(Item==INDEX_NONE?ESlateVisibility::Hidden:ESlateVisibility::Visible);
+        if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I))))W->SetVisibility(Has&&Id==Item?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+        if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemButton%d"),I))))
+        {
+            W->SetVisibility(Item==INDEX_NONE?ESlateVisibility::Hidden:ESlateVisibility::Visible);
+            W->SetIsEnabled(Has);
+        }
+        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetColorAndOpacity(Id==Item?FLinearColor(.025f,.045f,.025f):FLinearColor(.68f,.7f,.67f));
     }
 }
-void UMiningCollectionWidget::SelectCollectionItem(int32 Id){if(IsValid(Collection))Collection->SelectItem(Id);}
+void UMiningCollectionWidget::SelectCollectionItem(int32 Id)
+{
+    if(IsValid(Collection)&&Collection->Inventory.IsValidIndex(Id)&&Collection->Inventory[Id]>0)
+    {CurrentPage=FMath::Max(0,Collection->CatalogueIds().IndexOfByKey(Id))/4;Collection->SelectItem(Id);}
+}
 void UMiningCollectionWidget::TurnCollectionPage(int32 Direction)
 {
     if(!IsValid(Collection))return;
     const auto Ids=Collection->CatalogueIds(); if(Ids.IsEmpty())return;
-    const int32 Index=FMath::Max(0,Ids.IndexOfByKey(Collection->SelectedId));
     const int32 Pages=FMath::DivideAndRoundUp(Ids.Num(),4);
-    const int32 Page=(Index/4+(Direction<0?-1:1)+Pages)%Pages;
-    SelectCollectionItem(Ids[FMath::Min(Page*4+Index%4,Ids.Num()-1)]);
+    const int32 Page=FMath::Clamp(CurrentPage+(Direction<0?-1:1),0,Pages-1);
+    if(Page==CurrentPage)return;
+    CurrentPage=Page;
+    int32 Selection=INDEX_NONE;
+    for(int32 I=Page*4;I<FMath::Min((Page+1)*4,Ids.Num());++I)
+        if(Collection->Inventory.IsValidIndex(Ids[I])&&Collection->Inventory[Ids[I]]>0){Selection=Ids[I];break;}
+    Collection->SelectItem(Selection);
     RefreshCollection();
 }
 void UMiningCollectionWidget::CloseCollection(){bDragging=false;if(IsValid(Collection)&&Collection->bCatalogueOpen)Collection->ToggleCatalogue();}
@@ -138,6 +156,6 @@ void UMiningCollectionWidget::SelectSlot(int32 SlotIndex)
 {
     if(!IsValid(Collection))return;
     const auto Ids=Collection->CatalogueIds();
-    const int32 Index=(FMath::Max(0,Ids.IndexOfByKey(Collection->SelectedId))/4)*4+SlotIndex;
+    const int32 Index=CurrentPage*4+SlotIndex;
     if(Ids.IsValidIndex(Index)) { SelectCollectionItem(Ids[Index]); RefreshCollection(); }
 }

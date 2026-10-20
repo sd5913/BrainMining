@@ -1,6 +1,7 @@
 #include "WenSi/WenSiPuzzle.h"
 #include "BrainMiningFonts.h"
 #include "WenSi/WenSiThoughtBubble.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Engine/Texture2D.h"
 #include "MiningInteractionHUDWidget.h"
 #include "Input/DragAndDrop.h"
@@ -104,7 +105,8 @@ TSharedRef<SWidget> UWenSiPuzzleWidget::RebuildWidget()
   +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("·"))).Font(PuzzleThoughtFont(24)).Visibility_Lambda([this](){return !UMiningInteractionHUDWidget::IsActiveFor(GetOwningPlayer()) && Puzzle.IsValid() && !Puzzle->bEditing && (!Puzzle->bComplete || Puzzle->ResetButton) ? EVisibility::HitTestInvisible:EVisibility::Collapsed;})]
   +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,40)[SAssignNew(Hint,STextBlock).Font(PuzzleThoughtFont(18)).ColorAndOpacity(FLinearColor::White).ShadowOffset(FVector2D(1,1))];
  Signature.Empty();
- return Overlay;
+ return SNew(SScaleBox).Stretch(EStretch::ScaleToFit)
+  [SNew(SBox).WidthOverride(1600).HeightOverride(900)[Overlay]];
 }
 FReply UWenSiPuzzleWidget::NativeOnKeyDown(const FGeometry& G,const FKeyEvent& E)
 {
@@ -146,7 +148,7 @@ void UWenSiPuzzleWidget::Refresh()
    Rows[I]->ClearChildren(); if (!Obj) continue;
    WenSiThoughtBubble::AddText(Rows[I],TEXT("这是一个"),PuzzleThoughtFont(26));
    Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(SPuzzleThoughtWord).ThoughtIndex(I).Word(Obj->Adjective()).Puzzle(Puzzle)];
-   WenSiThoughtBubble::AddText(Rows[I],TEXT("的")+Obj->Noun()+TEXT("。"),PuzzleThoughtFont(26));
+   WenSiThoughtBubble::AddText(Rows[I],TEXT("的")+Obj->Noun(),PuzzleThoughtFont(26));
   }
  }
  FString Message;

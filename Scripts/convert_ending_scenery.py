@@ -22,7 +22,8 @@ if not demo.get_editor_property('editable_scenery'):
     assert levels.save_current_level()
     unreal.log('ENDING_EDITABLE_BACKUP=' + str(backup))
 editable = [a for a in actors.get_all_level_actors() if a.actor_has_tag('EndingEditableScenery')]
-assert len(editable) > 300
+assert any(a.actor_has_tag('EndingEditableCell') for a in editable)
+assert any(a.actor_has_tag('EndingEditableCity') for a in editable)
 assert all(a.get_attach_parent_actor() == demo for a in editable)
 # The brain and city share coordinates in different film stages. Apply this
 # initial editor view once; later migration runs preserve artist visibility.

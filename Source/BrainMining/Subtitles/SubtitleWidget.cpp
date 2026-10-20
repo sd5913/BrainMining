@@ -7,6 +7,7 @@
 
 #include "Styling/CoreStyle.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
@@ -154,7 +155,7 @@ TSharedRef<SWidget> USubtitleWidget::RebuildWidget()
 {
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
-		.HAlign(HAlign_Center)
+		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Bottom)
 			.Padding(TAttribute<FMargin>::CreateLambda([WeakThis=TWeakObjectPtr<USubtitleWidget>(this)]
 			{
@@ -166,11 +167,11 @@ TSharedRef<SWidget> USubtitleWidget::RebuildWidget()
                 return FMargin(48.f, 0.f, 48.f, Bottom);
 			}))
 		[
-			SNew(SBox)
-			.Padding(FMargin(18.f, 10.f))
+			SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
+            [SNew(SBox).Padding(FMargin(18.f,10.f))
 			[
 				SAssignNew(SubtitleVisual, SSubtitleVisual)
 				.Text(CurrentLine)
-			]
+			]]
 		];
 }

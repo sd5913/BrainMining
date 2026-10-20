@@ -22,6 +22,7 @@ public:
     bool ToggleMenu();
     bool ToggleDeveloperMenu();
     UFUNCTION(BlueprintCallable) bool TogglePauseMenu();
+    bool ToggleMobileMenu(bool bUpgrade = false);
     UFUNCTION(BlueprintCallable) bool JumpToCollectible(int32 ItemId);
     UFUNCTION(BlueprintCallable) void OpenPauseCollection();
     UFUNCTION(BlueprintCallable) void RequestQuitConfirmation();

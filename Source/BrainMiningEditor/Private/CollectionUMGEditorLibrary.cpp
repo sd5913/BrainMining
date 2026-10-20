@@ -57,7 +57,7 @@ UTextBlock* Text(UWidgetBlueprint* BP,UCanvasPanel* Parent,const FString& Name,c
 UButton* Button(UWidgetBlueprint* BP,UCanvasPanel* Parent,const FString& Name,float X,float Y,float W,float H)
 {
     auto* B=Make<UButton>(BP,Name);FButtonStyle Style;
-    FSlateBrush Normal;Normal.TintColor=FLinearColor(0,0,0,0);FSlateBrush Hover=Normal;Hover.TintColor=FLinearColor(.56f,1.f,.29f,.12f);
+    FSlateBrush Normal;Normal.TintColor=FLinearColor(0,0,0,0);FSlateBrush Hover=Normal;Hover.TintColor=FLinearColor(0,0,0,0);
     Style.SetNormal(Normal).SetHovered(Hover).SetPressed(Hover);Style.SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));
     B->SetStyle(Style);B->IsFocusable=false;B->SetVisibility(ESlateVisibility::Visible);Place(Parent,B,X,Y,W,H);return B;
 }
@@ -91,7 +91,7 @@ static bool BuildCollectionInspectWidget(bool bReplace)
         FSlateBrush Normal;Normal.SetResourceObject(Art(Skin));Normal.DrawAs=ESlateBrushDrawType::Image;Normal.ImageSize=FVector2D(W,H);
         if(Mirror)Normal.Mirroring=ESlateBrushMirrorType::Horizontal;
         FSlateBrush Hover=Normal,Pressed=Normal;
-        Hover.TintColor=FLinearColor(1.4f,1.8f,.8f);Pressed.TintColor=FLinearColor(2.2f,3.f,.65f);
+        Hover=Normal;Pressed=Normal;
         Style.SetNormal(Normal).SetHovered(Hover).SetPressed(Pressed).SetDisabled(Normal);
         Style.SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));B->SetStyle(Style);return B;
     };
@@ -104,16 +104,16 @@ static bool BuildCollectionInspectWidget(bool bReplace)
     auto* FitSlot=Overlay->AddChildToOverlay(Fit);FitSlot->SetHorizontalAlignment(HAlign_Fill);FitSlot->SetVerticalAlignment(VAlign_Fill);
     auto* Size=Make<USizeBox>(BP,TEXT("DesignSize1600x900"));Size->SetWidthOverride(1600);Size->SetHeightOverride(900);Fit->AddChild(Size);
     auto* Canvas=Make<UCanvasPanel>(BP,TEXT("LayoutCanvas"));Size->AddChild(Canvas);
-    auto* PreviewPanel=Make<UBorder>(BP,TEXT("PreviewPanel"));PreviewPanel->SetBrushColor(FLinearColor::Transparent);PreviewPanel->SetPadding(FMargin(0));PreviewPanel->SetVisibility(ESlateVisibility::Visible);Place(Canvas,PreviewPanel,70,92,990,620);
+    auto* PreviewPanel=Make<UBorder>(BP,TEXT("PreviewPanel"));PreviewPanel->SetBrushColor(FLinearColor::Transparent);PreviewPanel->SetPadding(FMargin(0));PreviewPanel->SetVisibility(ESlateVisibility::Visible);Place(Canvas,PreviewPanel,70,62,990,620);
     auto* PreviewImage=Make<UImage>(BP,TEXT("PreviewImage"));PreviewImage->SetVisibility(ESlateVisibility::HitTestInvisible);PreviewPanel->AddChild(PreviewImage);
-    Text(BP,Canvas,TEXT("CollectionTitle"),TEXT("奇物收藏"),60,30,300,50,22,FLinearColor(.9f,.92f,.86f));
+    Text(BP,Canvas,TEXT("CollectionTitle"),TEXT("收藏"),60,30,300,50,22,FLinearColor(.9f,.92f,.86f));
     auto* Info=Make<UCanvasPanel>(BP,TEXT("InfoPanel"));Place(Canvas,Info,1072,0,528,900);
     Picture(Info,TEXT("InfoBackground"),0,0,528,900,TEXT("Info"));
     Text(BP,Info,TEXT("ItemName"),TEXT("化学试剂"),182,363,320,70,32,FLinearColor(.91f,.93f,.86f));
     Image(BP,Info,TEXT("DescriptionDivider"),190,441,118,1,nullptr,FLinearColor(.58f,.62f,.59f));
     auto* Description=Text(BP,Info,TEXT("ItemDescription"),TEXT("加点这个……再加点那个……"),190,465,300,185,15,FLinearColor(.61f,.68f,.64f));Description->SetAutoWrapText(true);
-    IconButton(Info,TEXT("CloseButton"),438,42,44,35,TEXT("Back"));
-    auto* Help=Text(BP,Canvas,TEXT("PreviewHelp"),TEXT("拖动旋转   滚轮缩放   双击复位"),285,695,540,24,12,FLinearColor(.64f,.69f,.65f));Help->SetJustification(ETextJustify::Center);
+    IconButton(Info,TEXT("CloseButton"),448,44,30,24,TEXT("Back"));
+    auto* Help=Text(BP,Canvas,TEXT("PreviewHelp"),TEXT(""),285,695,540,24,12,FLinearColor(.64f,.69f,.65f));Help->SetVisibility(ESlateVisibility::Collapsed);
     auto* Bar=Make<UCanvasPanel>(BP,TEXT("CollectionBar"));Place(Canvas,Bar,50,728,1010,100);
     for(int32 I=0;I<4;++I)
     {

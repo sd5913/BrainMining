@@ -85,7 +85,6 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
         Text(TEXT("尚未发现"),1220,280,32,Muted,true);
         Text(TEXT("收藏后即可检视"),1223,380,16,Muted);
     }
-    Text(TEXT("拖动旋转    滚轮缩放    双击复位"),355,729,14,Muted);
     const float MaxScroll=FMath::Max(0.f,Total*267.f-25.f-1480.f);
     Out.PushClip(FSlateClippingZone(G.MakeChild(FVector2D(1480*S,90*S),FSlateLayoutTransform(FVector2f(O+FVector2D(60,780)*S)))));
     for(int Slot=0;Slot<Total;++Slot)

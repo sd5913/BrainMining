@@ -1,5 +1,8 @@
 #include "MiningExperienceSubsystem.h"
 #include "BrainMiningFonts.h"
+#include "MiningMenuStyle.h"
+#include "EndingEmergence.h"
+#include "EndingCreditsInput.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningGamepadSubsystem.h"
 #include "StartRoom/MiningOpening.h"
@@ -29,12 +32,16 @@
 
 bool UMiningExperienceSubsystem::TogglePauseMenu()
 {
-    if(Menu){CloseMenu();return true;}
     auto* PC=GetWorld()?GetWorld()->GetFirstPlayerController():nullptr;
+    if(auto* SettingsPC=Cast<ABrainMiningPlayerController>(PC);SettingsPC&&SettingsPC->IsAudioSettingsOpen()){SettingsPC->ToggleAudioSettings();return true;}
+    if(Menu){CloseMenu();return true;}
+    if(EndingCreditsInput::Handle(PC,EKeys::Escape))return true;
     auto* Viewport=GetGameInstance()->GetGameViewportClient();
     if(!PC||!PC->IsLocalController()||!PC->GetPawn()||!Viewport||AMiningOpening::IsOpening(GetWorld()))return false;
     if(auto* Input=UMiningGamepadSubsystem::Find(PC);Input&&Input->GetContext()==EMiningInputContext::Blocked)return false;
-    const bool bFromGameplay=!PC->IsPaused()&&!PC->bShowMouseCursor&&!PC->IsMoveInputIgnored()&&!PC->IsLookInputIgnored();
+    if(auto* Mobile=Cast<ABrainMiningPlayerController>(PC);Mobile&&Mobile->IsUsingTouchControls())return ToggleMobileMenu();
+    bool bAtCredits=false;for(TActorIterator<AEndingEmergence> It(GetWorld());It;++It)if(It->bComplete){bAtCredits=true;break;}
+    const bool bFromGameplay=bAtCredits||(!PC->IsPaused()&&!PC->bShowMouseCursor&&!PC->IsMoveInputIgnored()&&!PC->IsLookInputIgnored());
     CaptureMenuInput(PC);
     MenuController=PC;MenuWorld=GetWorld();bPauseMenu=true;bQuitConfirmation=false;
     MenuMining=PC->GetPawn()->FindComponentByClass<UMiningComponent>();
@@ -42,14 +49,14 @@ bool UMiningExperienceSubsystem::TogglePauseMenu()
     if(auto* Move=PC->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()){Move->ResetFlightInput();Move->StopMovementImmediately();}
     auto Choices=SNew(SVerticalBox);
     Choices->AddSlot().AutoHeight().Padding(0,0,0,32)[SNew(STextBlock).Justification(ETextJustify::Center)
-        .Text_Lambda([this](){return FText::FromString(bQuitConfirmation?TEXT("确定退出游戏？"):TEXT("暂停"));}).Font(BrainMiningFonts::Style("Bold",30))];
+        .Text_Lambda([this](){return FText::FromString(bQuitConfirmation?TEXT("确定退出游戏？"):TEXT("暂停"));}).Font(BrainMiningFonts::Title(32)).ColorAndOpacity(MiningMenuStyle::Gold)];
     TSharedPtr<SButton> FirstButton;
     auto Button=[&](const TCHAR* Text,TFunction<void()> Action,bool Confirm)
     {
-        auto Choice=SNew(SButton).HAlign(HAlign_Center).ContentPadding(FMargin(30,18))
+        auto Choice=SNew(SButton).ButtonStyle(MiningMenuStyle::Button()).HAlign(HAlign_Left).ContentPadding(FMargin(28,16))
             .Visibility_Lambda([this,Confirm](){return bQuitConfirmation==Confirm?EVisibility::Visible:EVisibility::Collapsed;})
             .OnClicked_Lambda([Action](){Action();return FReply::Handled();})
-            [SNew(STextBlock).Text(FText::FromString(Text)).Font(BrainMiningFonts::Style("Regular",22))];
+            [SNew(STextBlock).Text(FText::FromString(Text)).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())];
         Choices->AddSlot().AutoHeight().Padding(0,7)[Choice];
         if(!FirstButton)FirstButton=Choice;
         return Choice;
@@ -57,7 +64,7 @@ bool UMiningExperienceSubsystem::TogglePauseMenu()
     ResumeButton=Button(TEXT("继续游戏"),[this](){CloseMenu();},false);
     auto CollectionButton=Button(TEXT("收集界面"),[this](){OpenPauseCollection();},false);
     CollectionButton->SetEnabled(bFromGameplay);
-    auto AudioButton=Button(TEXT("声音与震动"),[this]()
+    auto AudioButton=Button(TEXT("设置"),[this]()
     {
         auto* Controller=Cast<ABrainMiningPlayerController>(MenuController.Get());
         CloseMenu();
@@ -67,14 +74,7 @@ bool UMiningExperienceSubsystem::TogglePauseMenu()
     Button(TEXT("退出游戏"),[this](){RequestQuitConfirmation();},false);
     CancelQuitButton=Button(TEXT("取消"),[this](){CancelQuitConfirmation();},true);
     Button(TEXT("确认退出"),[this](){auto* PC=MenuController.Get();CloseMenu();UKismetSystemLibrary::QuitGame(this,PC,EQuitPreference::Quit,false);},true);
-    Choices->AddSlot().AutoHeight().Padding(0,24)[SNew(STextBlock).Text_Lambda([this]()
-    {
-        if(UMiningGamepadSubsystem::UsesGamepad(MenuController.Get()))
-            return FText::FromString(bQuitConfirmation?TEXT("A 确认选项 · B 取消退出"):TEXT("方向键 导航 · A 确认 · B / Menu 返回"));
-        return FText::FromString(bQuitConfirmation?TEXT("Esc 取消退出"):TEXT("Esc 返回游戏"));
-    }).Font(BrainMiningFonts::Body(12)).Justification(ETextJustify::Center)];
-    Menu=SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.012,.025,.03,.96))
-        .HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(SBox).WidthOverride(400)[Choices]];
+    Menu=MiningMenuStyle::Frame(Choices,650,0);
     PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);bPausedByMenu=!PC->IsPaused()&&PC->SetPause(true);
     Viewport->AddViewportWidgetContent(Menu.ToSharedRef(),1500);
     FInputModeUIOnly Mode;Mode.SetWidgetToFocus(FirstButton);PC->SetInputMode(Mode);PC->bShowMouseCursor=true;return true;
@@ -99,7 +99,7 @@ void UMiningExperienceSubsystem::OpenPauseCollection()
     if(!bPauseMenu)return;
     AMiningCollectionField* Field=nullptr;
     for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It)if(It->bUseAuthoredPlacements){Field=*It;break;}
-    if(!Field)for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It){Field=*It;break;}
+    if(!Field){TActorIterator<AMiningCollectionField> FirstField(GetWorld());if(FirstField)Field=*FirstField;}
     // The ending has no placed collection field before its credits begin.
     // Create a catalogue without spawning collectibles or resetting the player.
     if(!Field)

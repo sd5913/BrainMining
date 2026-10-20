@@ -164,12 +164,17 @@ bool FMiningAudioSettingsTest::RunTest(const FString&)
     TestEqual(TEXT("Gain cannot exceed one"), Settings->GetVolume(2), 1.f);
     const FString Filename = FPaths::CreateTempFilename(*FPaths::ProjectSavedDir(), TEXT("AudioSettingsTest"), TEXT(".ini"));
     ON_SCOPE_EXIT { IFileManager::Get().Delete(*Filename); };
+    Settings->SetLookSensitivity(1.75f);
     Settings->SaveVolumes(Filename);
     auto* Restored = NewObject<UMiningAudioSettings>(Instance);
     Restored->LoadVolumes(Filename);
     for (int32 Channel = 0; Channel < 5; ++Channel)
         TestEqual(TEXT("Each channel survives a disk round trip"), Restored->GetVolume(Channel), Settings->GetVolume(Channel));
+    TestEqual(TEXT("Camera sensitivity survives disk round trip"), Restored->GetLookSensitivity(), 1.75f);
+    Restored->SetLookSensitivity(-1.f);
+    TestEqual(TEXT("Camera sensitivity stays positive"), Restored->GetLookSensitivity(), .2f);
     Restored->RestoreDefaults();
+    TestEqual(TEXT("Default camera sensitivity restored"), Restored->GetLookSensitivity(), 1.f);
     TestEqual(TEXT("Default master restored"), Restored->GetVolume(0), 1.f);
     TestEqual(TEXT("Default effects restored"), Restored->GetVolume(2), .85f);
     return true;

@@ -1,4 +1,8 @@
 #include "MiningGUIEditorLibrary.h"
+#include "MiningCollection.h"
+#include "Components/BoxComponent.h"
+#include "UObject/UnrealType.h"
+
 #include "EndingEmergence.h"
 #include "MiningExperienceSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -30,12 +34,35 @@
 #include "Widgets/Input/SButton.h"
 #include "Editor.h"
 #include "Engine/GameViewportClient.h"
+#include "UnrealClient.h"
 #include "ImageUtils.h"
 #include "Misc/FileHelper.h"
 #include "Widgets/SWindow.h"
 #include "PlayInEditorDataTypes.h"
 #include "Settings/LevelEditorPlaySettings.h"
 
+UObject* UMiningGUIEditorLibrary::ReadPreviewObject(UObject* Object,FName PropertyName)
+{
+    if(!Object || !Object->GetWorld() || Object->GetWorld()->WorldType!=EWorldType::PIE)return nullptr;
+    const auto* Property=FindFProperty<FObjectPropertyBase>(Object->GetClass(),PropertyName);
+    return Property?Property->GetObjectPropertyValue_InContainer(Object):nullptr;
+}
+bool UMiningGUIEditorLibrary::WritePreviewState(UObject* Object,FName PropertyName,const FString& Value)
+{
+    if(!Object || !Object->GetWorld() || Object->GetWorld()->WorldType!=EWorldType::PIE)return false;
+    auto* Property=FindFProperty<FProperty>(Object->GetClass(),PropertyName);
+    return Property && Property->ImportText_Direct(*Value,Property->ContainerPtrToValuePtr<void>(Object),Object,PPF_None)!=nullptr;
+}
+AMiningCollectible* UMiningGUIEditorLibrary::SpawnPreviewCollectible(AMiningCollectionField* Field,int32 ItemId,FVector Location)
+{
+    if(!Field || Field->GetWorld()->WorldType!=EWorldType::PIE || ItemId<0 || ItemId>=AMiningCollectible::ItemTypeCount)return nullptr;
+    auto* Item=Field->GetWorld()->SpawnActor<AMiningCollectible>(Location,FRotator::ZeroRotator);
+    if(!Item)return nullptr;
+    Item->BuildModel(ItemId);Item->bReleased=true;Item->Exposure=1;
+    Item->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    if(!Field->RegisterExternalCollectible(Item)){Item->Destroy();return nullptr;}
+    return Item;
+}
 bool UMiningGUIEditorLibrary::PrepareEndingCreditsPreview(APlayerController* Controller, const TArray<int32>& Inventory)
 {
     UWorld* World=Controller?Controller->GetWorld():nullptr;
@@ -454,6 +481,17 @@ void UMiningGUIEditorLibrary::StartFloatingPreview()
 	GEditor->RequestPlaySession(Params);
 }
 
+bool UMiningGUIEditorLibrary::ResizePreviewViewport(APlayerController* Controller,int32 Width,int32 Height)
+{
+    auto* World=Controller?Controller->GetWorld():nullptr;
+    if(!World || World->WorldType!=EWorldType::PIE || Width<640 || Height<360 || Width>3840 || Height>2160)return false;
+    auto* Viewport=World->GetGameViewport();
+    auto Window=Viewport?Viewport->GetWindow():nullptr;
+    if(!Window)return false;
+    Window->Resize(FVector2D(Width,Height));
+    return true;
+}
+
 bool UMiningGUIEditorLibrary::RepairMissingGUIFonts()
 {
 	using namespace MiningGUIEditor;
@@ -492,6 +530,20 @@ bool UMiningGUIEditorLibrary::CapturePreview(APlayerController* Controller, cons
 	for (FColor& Pixel : Pixels) Pixel.A = 255;
 	TArray64<uint8> Compressed;
 	FImageUtils::PNGCompressImageArray(Size.X, Size.Y, Pixels, Compressed);
+	return FFileHelper::SaveArrayToFile(Compressed, *Filename);
+}
+
+bool UMiningGUIEditorLibrary::CapturePreviewVideoFrame(APlayerController* Controller, const FString& Filename, int32 Quality)
+{
+	if (!Controller || Controller->GetWorld()->WorldType != EWorldType::PIE) return false;
+	auto* Client = Controller->GetWorld()->GetGameViewport();
+	if (!Client || !Client->Viewport) return false;
+	const FIntPoint Size = Client->Viewport->GetSizeXY();
+	if (Size.X < 2 || Size.Y < 2) return false;
+	TArray<FColor> Pixels;
+	if (!Client->Viewport->ReadPixels(Pixels) || Pixels.Num() != Size.X * Size.Y) return false;
+	TArray64<uint8> Compressed;
+	if (!FImageUtils::CompressImage(Compressed, TEXT("jpg"), FImageView(Pixels.GetData(), Size.X, Size.Y), FMath::Clamp(Quality, 1, 100))) return false;
 	return FFileHelper::SaveArrayToFile(Compressed, *Filename);
 }
 

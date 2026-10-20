@@ -2,7 +2,10 @@
 /DerivedDataCache/
 /Intermediate/
 /Saved/
-/Build/
+/Build/*
+!/Build/Windows/
+/Build/Windows/*
+!/Build/Windows/Application.ico
 /Builds/
 /Build/**/FileOpenOrder/
 /Plugins/**/Intermediate/

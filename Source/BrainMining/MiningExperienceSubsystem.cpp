@@ -1,4 +1,5 @@
 #include "MiningExperienceSubsystem.h"
+#include "BrainMiningPlayerController.h"
 #include "BrainMiningFonts.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningComponent.h"
@@ -73,6 +74,10 @@ namespace MiningExperiences
             if (Event.GetKey() == EKeys::F4) return Owner->ToggleMenu();
             if (Event.GetKey() == EKeys::Escape)
             {
+                // Close settings before opening another modal. Consuming this press
+                // prevents a hidden settings panel from surviving underneath pause.
+                auto* PC=Owner->GetWorld()?Cast<ABrainMiningPlayerController>(Owner->GetWorld()->GetFirstPlayerController()):nullptr;
+                if(PC&&PC->IsAudioSettingsOpen()){PC->ToggleAudioSettings();return true;}
                 if(Owner->IsMenuOpen()) { if(Owner->bQuitConfirmation)Owner->CancelQuitConfirmation();else Owner->CloseMenu();return true; }
                 // Handle the UMG catalogue before editor/game viewport shortcuts
                 // so Escape consistently returns to gameplay, including in PIE.

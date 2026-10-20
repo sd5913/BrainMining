@@ -196,3 +196,26 @@ bool UProjectTypographyEditorLibrary::InstallProjectFonts()
     UE_LOG(LogTemp, Display, TEXT("PROJECT_FONTS_INSTALLED %s"), *Json);
     return Success;
 }
+
+
+bool UProjectTypographyEditorLibrary::InstallCreditsFonts()
+{
+    for(const bool English:{false,true})
+    {
+        const FString Name=English?TEXT("CreditsRockwell"):TEXT("CreditsHiragino");
+        const FString Source=FPaths::ProjectDir()/TEXT("SourceAssets/Fonts")/(English?TEXT("Rockwell.otf"):TEXT("HiraginoSansGB-W6.otf"));
+        TArray<uint8> Bytes;
+        if(!FFileHelper::LoadFileToArray(Bytes,*Source))return false;
+        auto* Face=Asset<UFontFace>(TEXT("FF_")+Name);
+        Face->Modify();Face->SourceFilename=Source;
+        Face->Hinting=EFontHinting::Default;Face->LoadingPolicy=EFontLoadingPolicy::Inline;Face->LayoutMethod=EFontLayoutMethod::Metrics;
+        Face->FontFaceData->SetData(MoveTemp(Bytes));Face->CacheSubFaces();Face->PostEditChange();
+        if(!Save(Face))return false;
+        auto* Font=Asset<UFont>(TEXT("F_")+Name);
+        Font->Modify();Font->FontCacheType=EFontCacheType::Runtime;
+        auto& Composite=Font->GetMutableInternalCompositeFont();Composite.DefaultTypeface.Fonts.Reset();
+        auto& Entry=Composite.DefaultTypeface.Fonts.AddDefaulted_GetRef();Entry.Name=TEXT("Regular");Entry.Font=FFontData(Face);Composite.MakeDirty();
+        if(!Save(Font))return false;
+    }
+    return true;
+}

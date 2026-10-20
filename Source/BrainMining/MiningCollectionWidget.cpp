@@ -18,7 +18,7 @@ void UMiningCollectionWidget::NativeConstruct()
     if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("NextButton"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Next);
     if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("CloseButton"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::CloseCollection);
     for(const TCHAR* Name:{TEXT("PreviousButton"),TEXT("NextButton"),TEXT("CloseButton"),TEXT("ItemButton0"),TEXT("ItemButton1"),TEXT("ItemButton2"),TEXT("ItemButton3")})
-        if(auto* B=Cast<UButton>(GetWidgetFromName(Name))){auto Style=B->GetStyle();Style.SetHovered(Style.Normal);Style.SetDisabled(Style.Normal);B->SetStyle(Style);}
+        if(auto* B=Cast<UButton>(GetWidgetFromName(Name))){auto Style=B->GetStyle();Style.SetHovered(Style.Normal);Style.SetPressed(Style.Normal);Style.SetHoveredForeground(Style.NormalForeground);Style.SetPressedForeground(Style.NormalForeground);Style.SetPressedPadding(Style.NormalPadding);Style.SetDisabled(Style.Normal);B->SetStyle(Style);}
     RefreshCollection();
 }
 void UMiningCollectionWidget::SetCollection(AMiningCollectionField* Field){Collection=Field;CurrentPage=Collection?FMath::Max(0,Collection->CatalogueIds().IndexOfByKey(Collection->SelectedId))/4:0;RefreshCollection();}
@@ -56,7 +56,7 @@ void UMiningCollectionWidget::RefreshCollection()
     }
     if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemName"))))T->SetText(FText::FromString(Owned?AMiningCollectible::ItemName(Id):TEXT("尚未发现")));
     if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))T->SetText(FText::FromString(Owned?AMiningCollectible::Description(Id):TEXT("")));
-    if(auto* W=GetWidgetFromName(TEXT("PreviewHelp")))W->SetVisibility(Owned?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+    if(auto* W=GetWidgetFromName(TEXT("PreviewHelp")))W->SetVisibility(ESlateVisibility::Collapsed);
     const auto Ids=Collection->CatalogueIds();
     const int32 Page=CurrentPage;
     if(auto* W=GetWidgetFromName(TEXT("PreviousButton")))W->SetVisibility(Page>0?ESlateVisibility::Visible:ESlateVisibility::Hidden);

@@ -22,6 +22,21 @@
 #include "MediaTexture.h"
 #include "MediaSoundComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
+#include "Widgets/Images/SImage.h"
+#include "Widgets/SOverlay.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Styling/CoreStyle.h"
+
+struct FEndingVideoPresentation
+{
+    FSlateBrush Frame;
+    TSharedPtr<SWidget> Widget;
+    FVector2D SourceSize=FVector2D(864,480);
+};
 
 namespace PaperEnding
 {
@@ -242,6 +257,15 @@ void AEndingEmergence::FinaleVideoOpened(FString OpenedUrl)
 void AEndingEmergence::StartFinaleVideo()
 {
     bFinaleVideoRequested=true;
+    // The supplied movie bypasses the scene's exposure, vignette, temporal
+    // reconstruction and cinematic postprocessing from its first full frame.
+    if(Camera)
+    {
+        auto& PP=Camera->GetCameraComponent()->PostProcessSettings;
+        PP.WeightedBlendables.Array.Empty();PP.bOverride_VignetteIntensity=true;PP.VignetteIntensity=0;
+        PP.bOverride_SceneFringeIntensity=true;PP.SceneFringeIntensity=0;
+        PP.bOverride_MotionBlurAmount=true;PP.MotionBlurAmount=0;
+    }
     if(FinaleVideoPlayer&&FinaleVideoPlayer->IsReady())
     {
         if(FinaleVideoSound)FinaleVideoSound->SetVolumeMultiplier(1);
@@ -250,10 +274,42 @@ void AEndingEmergence::StartFinaleVideo()
     }
 }
 
-void AEndingEmergence::FinaleVideoEnded(){if(bFinaleVideoRequested)bComplete=true;}
+void AEndingEmergence::FinaleVideoEnded()
+{
+    if(bFinaleVideoRequested)
+    {
+        // AutoClear is disabled. Keep this exact texture and fitted rectangle
+        // beneath the credits fade; never switch back to the 3D film surface.
+        UpdateFinaleVideoPresentation();
+        bComplete=true;
+    }
+}
+
+void AEndingEmergence::UpdateFinaleVideoPresentation()
+{
+    if(!bFinaleVideoRequested || !FinaleVideoTexture || !FinaleVideoPlayer || !GEngine || !GEngine->GameViewport)return;
+    if(VideoPresentation.IsValid())return;
+    const FIntPoint Dimensions=FinaleVideoPlayer->GetVideoTrackDimensions(INDEX_NONE,INDEX_NONE);
+    if(Dimensions.X<=0 || Dimensions.Y<=0 || FinaleVideoTexture->GetWidth()<=0)return;
+    VideoPresentation=MakeShared<FEndingVideoPresentation>();
+    auto Presentation=VideoPresentation;
+    Presentation->SourceSize=FVector2D(Dimensions.X,Dimensions.Y);
+    Presentation->Frame.SetResourceObject(FinaleVideoTexture);Presentation->Frame.DrawAs=ESlateBrushDrawType::Image;
+    Presentation->Frame.ImageSize=Presentation->SourceSize;
+    Presentation->Widget=SNew(SOverlay)
+        +SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor::Black)]
+        +SOverlay::Slot()[SNew(SScaleBox).Stretch(EStretch::ScaleToFit)
+            [SNew(SBox).WidthOverride(Presentation->SourceSize.X).HeightOverride(Presentation->SourceSize.Y)
+                [SNew(SImage).Image(&Presentation->Frame)]]];
+    Presentation->Widget->SetVisibility(EVisibility::HitTestInvisible);
+    GEngine->GameViewport->AddViewportWidgetContent(Presentation->Widget.ToSharedRef(),60);
+}
 
 void AEndingEmergence::ResetFinaleVideo()
 {
+    if(VideoPresentation.IsValid() && VideoPresentation->Widget.IsValid() && GEngine && GEngine->GameViewport)
+        GEngine->GameViewport->RemoveViewportWidgetContent(VideoPresentation->Widget.ToSharedRef());
+    VideoPresentation.Reset();
     if(FinaleVideoPlayer)FinaleVideoPlayer->Close();
     if(FinaleVideoSound){FinaleVideoSound->Stop();FinaleVideoSound->DestroyComponent();}
     FinaleVideoSound=nullptr;FinaleVideoPlayer=nullptr;FinaleVideoTexture=nullptr;bFinaleVideoRequested=false;
@@ -321,6 +377,7 @@ void AEndingEmergence::UpdatePaperProps(float CameraX,float Dt)
 
 void AEndingEmergence::UpdatePaperFinale(float Dt)
 {
+    if(bFinaleVideoRequested && FinaleVideoPlayer && FinaleVideoPlayer->IsPlaying())UpdateFinaleVideoPresentation();
     if(bFinaleVideoRequested&&FinaleVideoPlayer&&FinaleVideoPlayer->IsPlaying()&&FinaleVideoTexture&&FinaleVideoTexture->GetWidth()>0)
         FinaleVideoMaterial->SetScalarParameterValue(TEXT("VideoBlend"),PaperEnding::Ease(float(FinaleVideoPlayer->GetTime().GetTotalSeconds()-.04)/.12f));
     if(FinaleVideoPlayer&&!bFinaleVideoRequested&&FinaleVideoPlayer->IsPlaying()&&FinaleVideoPlayer->GetTime().GetTotalSeconds()>.08)

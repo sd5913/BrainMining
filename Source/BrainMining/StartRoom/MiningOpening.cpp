@@ -160,6 +160,8 @@ void AMiningOpening::Prepare(APlayerController* Controller)
     WorldTitle->SetWorldLocationAndRotation(InitialTitle,InitialRotation);WorldTitle->SetWorldScale3D(FVector(.19f));WorldTitle->SetVisibility(false);
     Menu=CreateWidget<UMiningOpeningMenu>(Controller);Menu->Opening=this;Menu->SetIsFocusable(true);Menu->AddToViewport(500);
     Controller->bShowMouseCursor=true;FInputModeUIOnly Mode;Mode.SetWidgetToFocus(Menu->StartButton ? Menu->StartButton->TakeWidget() : Menu->TakeWidget());Controller->SetInputMode(Mode);
+    Controller->PlayerCameraManager->UpdateCamera(0.f);
+    if(auto* MiningPC=Cast<AMiningExhibitController>(Controller))MiningPC->RevealOpening();
 }
 void AMiningOpening::StartGame()
 {
@@ -176,7 +178,7 @@ void AMiningOpening::Tick(float Dt)
     if(!bPrepared)
     {
         auto* PC=GetWorld()->GetFirstPlayerController();auto* Hall=AMiningExhibitHall::Find(GetWorld());
-        if(PC && PC->GetPawn() && GetWorld()->GetTimeSeconds()>.6f && (!Hall || Hall->bReady))Prepare(PC);
+        if(PC && PC->GetPawn() && (!Hall || Hall->bReady))Prepare(PC);
         return;
     }
     if(!bStarted || !Player.IsValid() || !Camera)return;

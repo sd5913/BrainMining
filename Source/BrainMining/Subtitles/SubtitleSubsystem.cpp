@@ -214,7 +214,7 @@ void USubtitleSubsystem::ShowCurrentLine()
 	if (Line.Audio)
 	{
 		const float SoundDuration = Line.Audio->GetDuration();
-		if (SoundDuration > 0.05f)
+		if (!Line.Audio->IsLooping() && FMath::IsFinite(SoundDuration) && SoundDuration > 0.05f && SoundDuration < 3600.f)
 		{
 			Duration = SoundDuration;
 		}
@@ -254,17 +254,18 @@ void USubtitleSubsystem::FinishCurrent()
 		World->GetTimerManager().ClearTimer(LineTimer);
 	}
 
-	if (!Queue.IsEmpty())
-	{
-		const FName NextId = Queue[0];
-		Queue.RemoveAt(0);
-		PlaySegment(NextId);
-		return;
-	}
-
+	// Always retire the finished line, even if a queued asset was not cooked or
+	// has been removed. A failed lookup must not leave its predecessor on screen.
 	if (Widget)
 	{
 		Widget->RemoveFromParent();
 		Widget = nullptr;
+	}
+	while (!Queue.IsEmpty())
+	{
+		const FName NextId = Queue[0];
+		Queue.RemoveAt(0);
+		PlaySegment(NextId);
+		if (bPlaying) return;
 	}
 }

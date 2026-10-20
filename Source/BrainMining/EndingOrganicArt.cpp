@@ -43,7 +43,18 @@ void AEndingEmergence::UpdateCosmos(float Reveal)
     NebulaUniverse->SetVisibility(true,true);
     TArray<USceneComponent*> Parts;NebulaUniverse->GetChildrenComponents(true,Parts);
     for(auto* Part:Parts)if(auto* Mesh=Cast<UStaticMeshComponent>(Part))
+    {
         if(auto* Mat=Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(0)))Mat->SetScalarParameterValue(TEXT("Reveal"),1);
+        const FString Name=Mesh->GetName();
+        if(Name.StartsWith(TEXT("ParallaxNebula")) || Name.StartsWith(TEXT("DeepStarField")) || Name.StartsWith(TEXT("GalaxyHaze")))
+        {
+            // These are enormous, almost zero-thickness background planes.
+            // Keep stable LOD/bounds while the camera crosses their depth layers.
+            Mesh->SetForcedLodModel(1);Mesh->SetBoundsScale(2.f);
+            Mesh->bNeverDistanceCull=true;Mesh->bAllowCullDistanceVolume=false;
+            Mesh->SetCastShadow(false);Mesh->SetTranslucentSortPriority(-50);
+        }
+    }
 }
 
 void AEndingEmergence::CacheCellMotion()

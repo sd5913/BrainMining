@@ -1,4 +1,5 @@
 #include "DiggableRock.h"
+#include "MiningTerrainFragments.h"
 #include "MiningBlastGeometry.h"
 #include "MiningPickaxeGeometry.h"
 #include "Engine/World.h"
@@ -309,6 +310,8 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 		Result.EnableAttributes();
 		FMeshNormals::InitializeOverlayToPerTriangleNormals(Result.Attributes()->PrimaryNormals());
 	}
+	const auto OriginalBounds=SourceMesh.GetBounds();
+	MiningTerrainFragments::RemoveSmallFloatingPieces(Result,FBox(FVector(OriginalBounds.Min),FVector(OriginalBounds.Max)),false,40.f/Scale.GetMin());
 	CommitMesh(MoveTemp(Result));
 	RockMesh->GetDynamicMesh()->ProcessMesh([this, LocalCenter, LocalRadius](const FDynamicMesh3& Mesh)
 	{

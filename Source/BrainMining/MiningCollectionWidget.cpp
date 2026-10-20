@@ -1,5 +1,6 @@
 #include "MiningCollectionWidget.h"
 #include "MiningCollection.h"
+#include "MiningMenuStyle.h"
 #include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
@@ -67,18 +68,21 @@ void UMiningCollectionWidget::RefreshCollection()
         const bool Has=Collection->Inventory.IsValidIndex(Item)&&Collection->Inventory[Item]>0;
         if(auto* Image=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemArt%d"),I)))))
         {
-            const TCHAR* Art=Has?TEXT("/Game/CollectionPrototype/UI/Redesign/T_CollectionOwnedGray"):TEXT("/Game/CollectionPrototype/UI/Redesign/T_CollectionUnknown");
-            if(auto* Texture=LoadObject<UTexture2D>(nullptr,Art))Image->SetBrushFromTexture(Texture);
-            Image->SetColorAndOpacity(FLinearColor::White);
+            Image->SetBrush(*MiningMenuStyle::Brush(1));
+            Image->SetColorAndOpacity(Has?FLinearColor::White:FLinearColor(.5f,.5f,.5f,.65f));
         }
-        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):FString()));
-        if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I))))W->SetVisibility(Has&&Id==Item?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):TEXT("尚未发现")));
+        if(auto* W=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I)))))
+        {
+            W->SetBrush(*MiningMenuStyle::Brush(2));
+            W->SetVisibility(Has&&Id==Item?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+        }
         if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemButton%d"),I))))
         {
             W->SetVisibility(Item==INDEX_NONE?ESlateVisibility::Hidden:ESlateVisibility::Visible);
             W->SetIsEnabled(Has);
         }
-        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetColorAndOpacity(Id==Item?FLinearColor(.025f,.045f,.025f):FLinearColor(.68f,.7f,.67f));
+        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetColorAndOpacity(Has&&Id==Item?FLinearColor(.025f,.02f,.005f):Has?MiningMenuStyle::Cream:FLinearColor(.42f,.42f,.40f));
     }
 }
 void UMiningCollectionWidget::SelectCollectionItem(int32 Id)

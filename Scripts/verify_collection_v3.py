@@ -82,7 +82,7 @@ def tick(dt):
             check('Adjacent supported feather stays attached',s['feathers'][1].get_actor_location()==s['feather_positions'][1])
             s['phase']=21;s['next']=now+8
         elif p==21:
-            check('Falling feather settles on actual floor',s['feather'].actor_has_tag('FeatherLanded') and 1<s['feather'].get_actor_location().z<10)
+            check('Fallen feather fades away instead of remaining as a misleading clue',not unreal.SystemLibrary.is_valid(s['feather']))
             s['f'].reset_collection()
             check('Reset restores seven supported feathers',len(unreal.GameplayStatics.get_all_actors_with_tag(s['w'],'CollectionFeather'))==7 and not unreal.GameplayStatics.get_all_actors_with_tag(s['w'],'FeatherFalling'))
             aim(s['f'].items[4]);s['f'].collect_target()

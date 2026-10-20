@@ -26,6 +26,7 @@ class UMediaSource;
 class UMediaPlayer;
 class UMediaTexture;
 class UMediaSoundComponent;
+struct FEndingVideoPresentation;
 class USplineMeshComponent;
 
 /** Standalone playable ending study; never changes the campaign or shared pawn defaults. */
@@ -123,6 +124,8 @@ private:
     void PrepareFinaleVideo();
     void StartFinaleVideo();
     void ResetFinaleVideo();
+    void UpdateFinaleVideoPresentation();
+    TSharedPtr<FEndingVideoPresentation> VideoPresentation;
     UFUNCTION() void FinaleVideoOpened(FString OpenedUrl);
     UFUNCTION() void FinaleVideoEnded();
     UPROPERTY(Transient) TObjectPtr<UMediaPlayer> FinaleVideoPlayer;

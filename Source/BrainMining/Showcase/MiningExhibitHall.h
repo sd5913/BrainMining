@@ -46,9 +46,13 @@ class BRAINMINING_API AMiningExhibitController : public AMiningEncounterPlayerCo
     GENERATED_BODY()
 public:
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+    void RevealOpening();
     virtual bool InputKey(const FInputKeyEventArgs& Params) override;
 protected:
     virtual void OnPossess(APawn* InPawn) override;
+private:
+    TSharedPtr<SWidget> OpeningCover;
 };
 
 UCLASS()

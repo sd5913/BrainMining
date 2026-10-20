@@ -114,7 +114,18 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
             }
         }
     for (TActorIterator<AWenSiMirrorPuzzle> Mirror(GetWorld()); Mirror; ++Mirror)
-        if(Mirror->bAreaActive && Mirror->MousePortal && Mirror->MousePortal->IsFocused())return TEXT("进入画中的圆环");
+        if(Mirror->bAreaActive && !Mirror->bEditing)
+        {
+            if(Mirror->MousePortal && Mirror->MousePortal->IsFocused())return TEXT("进入画中的圆环");
+            if(Mirror->bAimReset)return TEXT("重置谜题");
+            if(Mirror->bComplete || Mirror->IsSwapping() || !Mirror->Aim.IsValid())continue;
+            const auto* Object=Mirror->Aim.Get();
+            const auto IsSelf=[](const AWenSiMirrorExhibit* E){return E && (E->Kind==10 || E->Kind==11);};
+            bool AlreadyThinking=false;
+            for(const auto& Thought:Mirror->Thoughts)
+                AlreadyThinking|=Thought.Get()==Object || (IsSelf(Thought.Get()) && IsSelf(Object));
+            if(!AlreadyThinking && (!Mirror->Thoughts[0].IsValid() || !Mirror->Thoughts[1].IsValid()))return TEXT("思考");
+        }
     for (TActorIterator<AMiningCollectionField> Collection(GetWorld()); Collection; ++Collection)
         if (Collection->IsAreaActive() && !Collection->bCatalogueOpen && IsValid(Collection->Target)
             && !Collection->Target->bCollected && Collection->Target->bReleased)

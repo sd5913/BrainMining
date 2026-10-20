@@ -12,6 +12,7 @@
 #include "WenSi/WenSiMirrorMechanismLayout.h"
 #include "WenSi/WenSiPuzzle.h"
 #include "MiningComponent.h"
+#include "MiningBombToolComponent.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -438,6 +439,11 @@ void AWenSiMirrorPuzzle::SetAreaActive(bool Active)
  if(!Active){Aim.Reset();bAimReset=false;for(auto Exhibit:Exhibits)Exhibit->Highlight(false);}
  if(!bAreaManaged || WasActive==Active)return;
  auto PC=GetWorld()->GetFirstPlayerController();auto Pawn=PC?Cast<ACharacter>(PC->GetPawn()):nullptr;if(!Pawn)return;
+ if(Active)
+ {
+  if(auto* Bomb=Pawn->FindComponentByClass<UMiningBombToolComponent>())Bomb->Stow();
+  if(auto* Tool=Pawn->FindComponentByClass<UMiningComponent>()){Tool->CancelMining();Tool->SelectPickaxe();}
+ }
  if(Active){PlayerBaseRadius=Pawn->GetCapsuleComponent()->GetUnscaledCapsuleRadius();PlayerBaseHalfHeight=Pawn->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();PlayerBaseStepHeight=Pawn->GetCharacterMovement()->MaxStepHeight;Pawn->GetCapsuleComponent()->SetCapsuleSize(32,88);Pawn->GetCharacterMovement()->MaxStepHeight=12;PlayerBaseScale=Pawn->GetActorScale3D();PlayerBaseSpeed=Pawn->GetCharacterMovement()->MaxWalkSpeed;PlayerBaseCollision=Pawn->GetCapsuleComponent()->GetCollisionResponseToChannel(ECC_WorldDynamic);if(SharedPlayerWord!=EWenSiMirrorWord::Ordinary)SetPlayerWord(SharedPlayerWord);}
  else if(SharedPlayerWord!=EWenSiMirrorWord::Ordinary)
  {

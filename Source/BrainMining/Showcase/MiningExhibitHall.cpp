@@ -35,6 +35,8 @@
 #include "Widgets/Input/SVirtualJoystick.h"
 #include "UObject/ConstructorHelpers.h"
 #include "TimerManager.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Styling/CoreStyle.h"
 
 AMiningExhibitGameMode::AMiningExhibitGameMode()
 {
@@ -46,12 +48,46 @@ AMiningExhibitGameMode::AMiningExhibitGameMode()
 
 void AMiningExhibitController::BeginPlay()
 {
+    // Hall/streamed-room setup may take several frames. Cover the viewport
+    // before base BeginPlay adds HUDs or the default pawn camera can render.
+    if(IsLocalController() && GetWorld()->GetMapName().EndsWith(TEXT("Lvl_MainGame")))
+        if(auto* Viewport=GetWorld()->GetGameViewport())
+        {
+            OpeningCover=SNew(SBorder)
+                .BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+                .BorderBackgroundColor(FLinearColor::Black);
+            Viewport->AddViewportWidgetContent(OpeningCover.ToSharedRef(),10000);
+        }
     Super::BeginPlay();
     EncounterPolicy->Release();
     EchoInteraction->SetExplorationActive(false);
     CardInteraction->SetRoomActive(false);
     SetMiningGUIEnabled(true);
     if (auto* Room = AMiningStartRoom::Find(GetWorld())) Room->InitializePlayer(GetPawn());
+}
+
+void AMiningExhibitController::RevealOpening()
+{
+    // Give the seated camera and menu a complete layout frame before exposing
+    // them. Do not use a fixed startup delay or expose the initialization view.
+    GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this,[this]()
+    {
+        if(OpeningCover)
+        {
+            if(auto* Viewport=GetWorld()->GetGameViewport())Viewport->RemoveViewportWidgetContent(OpeningCover.ToSharedRef());
+            OpeningCover.Reset();
+        }
+    }));
+}
+
+void AMiningExhibitController::EndPlay(const EEndPlayReason::Type Reason)
+{
+    if(OpeningCover)
+    {
+        if(auto* Viewport=GetWorld()->GetGameViewport())Viewport->RemoveViewportWidgetContent(OpeningCover.ToSharedRef());
+        OpeningCover.Reset();
+    }
+    Super::EndPlay(Reason);
 }
 
 void AMiningExhibitController::OnPossess(APawn* InPawn)

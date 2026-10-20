@@ -830,16 +830,16 @@ void AEndingEmergence::ReplaceBloodAssets()
         Part->SetVisibility(false,true);
     }
 
-    if(BloodVessels.IsEmpty())
-    {
-        const FVector MeshSize=VesselMesh->GetBoundingBox().GetSize();
-        const int32 Step=8;
-        auto VesselRadius=[&](float T)
+    auto VesselRadius=[](float T)
         {
             const float Flare=Ending::Ease((T-.77f)/.23f);
             return FVector2D(FMath::Lerp(242.25f,850.f,Ending::Ease((T-.10f)/.12f))+Flare*400,
                              FMath::Lerp(212.5f,850.f,Ending::Ease((T-.10f)/.12f))+Flare*400);
         };
+    if(BloodVessels.IsEmpty())
+    {
+        const FVector MeshSize=VesselMesh->GetBoundingBox().GetSize();
+        const int32 Step=8;
         for(int32 I=0;I<VesselPath.Num()-1;I+=Step)
         {
             const int32 J=FMath::Min(I+Step,VesselPath.Num()-1);
@@ -860,6 +860,31 @@ void AEndingEmergence::ReplaceBloodAssets()
         }
     }
 
+    // Keep the supplied base colour/normal/subsurface detail, but remove the
+    // bright emissive tint that made the moving cells appear self-illuminated.
+    UMaterialInstanceDynamic* LitBlood=nullptr;
+    if(BloodMaterial)
+    {
+        LitBlood=UMaterialInstanceDynamic::Create(BloodMaterial,this);
+        LitBlood->SetVectorParameterValue(TEXT("EnissiveColor1"),FLinearColor::Black);
+        LitBlood->SetVectorParameterValue(TEXT("EnissiveColor2"),FLinearColor::Black);
+    }
+    // Local vessel lighting leaves the rest of the finale's exposure unchanged.
+    // Alternating broad side lights give cells a readable lit and shaded face.
+    for(float Distance=400;Distance<VesselDistances.Last()-300;Distance+=1400)
+    {
+        auto* Light=NewObject<UPointLightComponent>(this,NAME_None,RF_Transient);
+        AddInstanceComponent(Light);Light->SetupAttachment(Sets[0]);
+        Light->SetMobility(EComponentMobility::Movable);
+        Light->IntensityUnits=ELightUnits::Lumens;
+        Light->SetIntensity(18000);Light->SetAttenuationRadius(2300);
+        Light->SetLightColor(FLinearColor(1.f,.82f,.72f));
+        Light->SetCastShadows(false);
+        const float Side=FMath::FloorToInt(Distance/1400)%2?1.f:-1.f;
+        const FVector2D Radius=VesselRadius(Distance/VesselDistances.Last());
+        Light->SetRelativeLocation(VesselPoint(Distance)+VesselRotation(Distance).RotateVector(FVector(0,Side*Radius.X*.52f,Radius.Y*.35f)));
+        Light->SetVisibility(Sets[0]->IsVisible());Light->RegisterComponent();
+    }
     BloodScales.Empty(Blood.Num());
     const FVector BloodSize(220,210,62);
     const FVector CellMeshSize=BloodMesh->GetBoundingBox().GetSize();
@@ -867,7 +892,7 @@ void AEndingEmergence::ReplaceBloodAssets()
     {
         auto* B=Blood[BloodIndex].Get();
         if(!B)continue;
-        B->SetStaticMesh(BloodMesh);if(BloodMaterial)B->SetMaterial(0,BloodMaterial);
+        B->SetStaticMesh(BloodMesh);if(LitBlood)B->SetMaterial(0,LitBlood);
         B->SetCollisionProfileName(TEXT("NoCollision"));B->SetCastShadow(false);
         const FVector Base(BloodSize.X/FMath::Max(1.f,CellMeshSize.X),BloodSize.Y/FMath::Max(1.f,CellMeshSize.Y),BloodSize.Z/FMath::Max(1.f,CellMeshSize.Z));
         B->SetRelativeScale3D(Base);BloodScales.Add(Base);B->SetVisibility(true,true);

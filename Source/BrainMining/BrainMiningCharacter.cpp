@@ -4,6 +4,7 @@
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "MiningFootprintComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
@@ -50,6 +51,7 @@ ABrainMiningCharacter::ABrainMiningCharacter(const FObjectInitializer& ObjectIni
 	FirstPersonCameraComponent->FirstPersonScale = 0.6f;
 
 	MiningComponent = CreateDefaultSubobject<UMiningComponent>(TEXT("MiningComponent"));
+	CreateDefaultSubobject<UMiningFootprintComponent>(TEXT("Footprints"));
 	MiningAudio = CreateDefaultSubobject<UMiningAudioComponent>(TEXT("MiningAudio"));
 	MiningToolEffects = CreateDefaultSubobject<UMiningToolEffectsComponent>(TEXT("MiningToolEffects"));
 	BombTool = CreateDefaultSubobject<UMiningBombToolComponent>(TEXT("BombTool"));
@@ -192,6 +194,15 @@ void ABrainMiningCharacter::PostInitializeComponents()
 		}
 		InitializePlayerMining();
 		InitializePlayerScale();
+		// Apply after blueprint defaults and player scaling. Keep head clearance
+		// unchanged while giving faceted excavated terrain a little more clearance.
+		const float BodyScale=GetCapsuleComponent()->GetShapeScale();
+		GetCapsuleComponent()->SetCapsuleRadius(30.f);
+		auto* Walking=GetCharacterMovement();
+		Walking->MaxStepHeight=FMath::Max(Walking->MaxStepHeight,60.f*BodyScale);
+		Walking->SetWalkableFloorAngle(FMath::Max(Walking->GetWalkableFloorAngle(),55.f));
+		Walking->PerchRadiusThreshold=4.f*BodyScale;
+		Walking->PerchAdditionalHeight=24.f*BodyScale;
 		InitializePlayerFlight();
 		ConfigureMiningLighting(1.4f,.22f);
 	}

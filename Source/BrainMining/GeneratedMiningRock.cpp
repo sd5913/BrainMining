@@ -1,4 +1,5 @@
 #include "GeneratedMiningRock.h"
+#include "MiningTerrainFragments.h"
 #include "MiningPickaxeGeometry.h"
 #include "MiningTerrainSource.h"
 #include "MiningBlastGeometry.h"
@@ -745,6 +746,7 @@ bool AGeneratedMiningRock::MineChunks(FVector WorldCenter, float WorldRadius, co
 			return false;
 		}
 		if (Source.IsSameAs(Result, FDynamicMesh3::FSameAsOptions())) continue;
+		MiningTerrainFragments::RemoveSmallFloatingPieces(Result,Chunk.Bounds,true,40.f/Scale.GetMin());
 		if (bSimplifyChunks && !GetWorld()->IsGameWorld() && ((Chunk.Cuts + 1) % 12 == 0 || Result.TriangleCount() > Budget * 0.8))
 		{
 			const double SimplifyStart = FPlatformTime::Seconds();
@@ -843,10 +845,11 @@ void AGeneratedMiningRock::StartDeferredCut()
 	}
 	const int32 Budget=FMath::Clamp(MaxTriangles,1000,MiningChunks::MaxChunkTriangles);
 	const double Tolerance=FMath::Clamp<double>(SimplificationTolerance/GetActorScale3D().X,.05,1);
+	const float FragmentSize=40.f/GetActorScale3D().GetMin();
 	bCutPending=true;
 	// Workers own mesh copies only. Neither collision nor crystal instances change
 	// until every affected piece can be committed together on the game thread.
-	CutTask=Async(EAsyncExecution::ThreadPool,[Work,Request,Initial=MoveTemp(Initial),Bounds=MoveTemp(Bounds),Budget,Tolerance]()
+	CutTask=Async(EAsyncExecution::ThreadPool,[Work,Request,Initial=MoveTemp(Initial),Bounds=MoveTemp(Bounds),Budget,Tolerance,FragmentSize]()
 	{
 		const double Started=FPlatformTime::Seconds();
 		for(const FVector3d Offset:{FVector3d::Zero(),FVector3d(.013,.021,.017),FVector3d(-.037,.011,-.023),FVector3d(.061,-.043,.029),FVector3d(.23,.17,-.13),FVector3d(-.61,.43,.29)})
@@ -861,6 +864,7 @@ void AGeneratedMiningRock::StartDeferredCut()
 				FDynamicMesh3 Result;
 				if(!MiningChunks::Subtract(Work->Sources[I],Cutter,Result,Request->bPreserveEdges,.25))
 				{Work->Failure=FString::Printf(TEXT("chunk %d boolean, source %d tris closed %d, result %d tris closed %d"),Work->Indices[I],Work->Sources[I].TriangleCount(),Work->Sources[I].IsClosed(),Result.TriangleCount(),Result.IsClosed());Work->bValid=false;break;}
+				MiningTerrainFragments::RemoveSmallFloatingPieces(Result,Bounds[I],true,FragmentSize);
 				if(Result.TriangleCount()>Budget)MiningChunks::Simplify(Result,Initial[I],Bounds[I],Tolerance);
 				if(Result.TriangleCount()>Budget){Work->Failure=FString::Printf(TEXT("chunk %d exceeds triangle budget: %d / %d"),Work->Indices[I],Result.TriangleCount(),Budget);Work->bValid=false;break;}
 				MiningChunks::Normals(Result);Work->Results.Add(MoveTemp(Result));

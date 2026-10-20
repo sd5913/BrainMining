@@ -111,7 +111,7 @@ void AMiningCollectionField::MakeFeather(ADiggableRock* Rock,FVector Support,flo
         Triangle(FVector(-.25,0,0),P,Q,Side<0?0:1);
     }
     FMeshNormals::InitializeOverlayToPerTriangleNormals(Mesh.Attributes()->PrimaryNormals()); Shape->SetMesh(MoveTemp(Mesh));
-    auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
+    auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionFeatherFade"));
     for(int i=0;i<2;++i)
     {
         auto* M=UMaterialInstanceDynamic::Create(Base,A);
@@ -155,14 +155,19 @@ void AMiningCollectionField::TickClues(float Dt)
                 for(AActor* Part:Parts)if(IsValid(Part))Part->Destroy();
                 C.Actor->Destroy();continue;
             }
-            C.bFalling=true; C.bLanded=false; C.Speed=8; C.Age=0;
+            C.bFalling=true; C.bLanded=false; C.Speed=8; C.Age=0; C.LandedAge=0;
             C.Actor->Tags.Remove(TEXT("FeatherLanded")); C.Actor->Tags.AddUnique(TEXT("FeatherFalling"));
         }
     }
     for(auto& C:Clues) if(C.bFeather&&C.Actor.IsValid()&&(C.bFalling||C.bLanded))
     {
         C.Age+=Dt;
-        if(C.Age>12) { C.Actor->Destroy(); continue; }
+        if(C.bLanded)C.LandedAge+=Dt;
+        const float Fade=1.f-FMath::Max(FMath::Clamp((C.LandedAge-.8f)/2.2f,0.f,1.f),FMath::Clamp((C.Age-9.f)/3.f,0.f,1.f));
+        if(Fade<=0.f) { C.Actor->Destroy(); continue; }
+        TInlineComponentArray<UMeshComponent*> Parts(C.Actor.Get());
+        for(auto* MeshPart:Parts)for(int32 Slot=0;Slot<MeshPart->GetNumMaterials();++Slot)
+                if(auto* Mat=Cast<UMaterialInstanceDynamic>(MeshPart->GetMaterial(Slot)))Mat->SetScalarParameterValue(TEXT("Opacity"),Fade);
         if(!C.bFalling) continue;
         C.Speed=FMath::Min(85.f,C.Speed+Dt*65);
         const FVector P=C.Actor->GetActorLocation();

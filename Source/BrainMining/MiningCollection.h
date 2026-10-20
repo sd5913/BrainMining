@@ -68,6 +68,7 @@ struct FCollectionClue
     int32 ObservedCuts=INDEX_NONE;
     bool bFeather=false,bFalling=false,bLanded=false;
     float Age=0,Speed=0,Phase=0;
+    float LandedAge=0;
 };
 
 // The item IDs also index the catalogue. These remain stable across field resets.

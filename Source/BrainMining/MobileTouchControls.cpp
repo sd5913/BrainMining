@@ -3,6 +3,7 @@
 #include "MiningComponent.h"
 #include "MiningBombToolComponent.h"
 #include "MiningCharacterMovementComponent.h"
+#include "EndingEmergence.h"
 #include "MiningExperienceSubsystem.h"
 #include "MiningWalletSubsystem.h"
 #include "MiningInteractionHUDWidget.h"
@@ -174,6 +175,12 @@ bool SMobileTouchControls::IsButtonVisible(EButton Button) const
     if (AMiningOpening::IsOpening(OwnerController->GetWorld())) return false;
     const auto* Menu = OwnerController->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();
     if ((Menu && Menu->IsMenuOpen()) || OwnerController->IsAudioSettingsOpen()) return false;
+    if (const auto* Ending = AEndingEmergence::FindForPlayer(OwnerController.Get()))
+    {
+        if (OwnerController->IsPaused() || OwnerController->bShowMouseCursor) return false;
+        const auto Input = Ending->GetTouchInput();
+        return (Button == EButton::Mine && Input.bMine) || (Button == EButton::Jetpack && Input.bJump);
+    }
     const bool bExploring = !OwnerController->IsPaused() && !OwnerController->IsMoveInputIgnored()
         && !OwnerController->IsLookInputIgnored() && !OwnerController->bShowMouseCursor;
     switch (Button)
@@ -184,8 +191,8 @@ bool SMobileTouchControls::IsButtonVisible(EButton Button) const
         return bExploring && OwnerController->IsMiningGUIEnabled() && !OwnerController->IsMobileActionVisible() && !OwnerController->IsMobileConfirmVisible();
     case EButton::Jetpack: return bExploring;
     case EButton::Primary: return !OwnerController->IsPaused() && OwnerController->IsMobileActionVisible();
-    case EButton::Confirm: return !OwnerController->IsPaused() && OwnerController->IsMobileConfirmVisible();
-    case EButton::Interact: return !OwnerController->IsPaused();
+    case EButton::Confirm: return false;
+    case EButton::Interact: return !OwnerController->IsPaused() && OwnerController->IsMobileInteractVisible();
     case EButton::ThoughtLeft:
     case EButton::ThoughtRight: return !OwnerController->IsPaused() && OwnerController->IsMobileThoughtVisible();
     case EButton::Edit: return !OwnerController->IsPaused() && OwnerController->IsMobileEditVisible();
@@ -237,8 +244,7 @@ FReply SMobileTouchControls::HandlePointerStarted(const FGeometry& MyGeometry, i
         }
     }
 
-    if (OwnerController->IsPaused() || OwnerController->IsMoveInputIgnored() || OwnerController->IsLookInputIgnored() || OwnerController->bShowMouseCursor) return FReply::Unhandled();
-    if (IsJoystickZone(LocalPosition, Size))
+    if (OwnerController->IsMobileMoveEnabled() && IsJoystickZone(LocalPosition, Size))
     {
         const float Radius = GetJoystickRadius(Size);
         JoystickPointer = PointerIndex;
@@ -251,7 +257,7 @@ FReply SMobileTouchControls::HandlePointerStarted(const FGeometry& MyGeometry, i
         return FReply::Handled().CaptureMouse(SharedThis(this));
     }
 
-    if (LookPointer == -1 && LocalPosition.X >= Size.X * .58f)
+    if (OwnerController->IsMobileLookEnabled() && LookPointer == -1 && LocalPosition.X >= Size.X * .58f)
     {
         LookPointer = PointerIndex;
         LastLookPosition = LocalPosition;
@@ -434,11 +440,8 @@ void SMobileTouchControls::Tick(const FGeometry& AllottedGeometry, const double 
 {
     SLeafWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
     if (OwnerController.IsValid() && OwnerController->IsPaused()) ResetInput();
-    if (OwnerController.IsValid() && (OwnerController->IsMoveInputIgnored() || OwnerController->IsLookInputIgnored() || OwnerController->bShowMouseCursor))
-    {
-        ReleaseJoystick();
-        LookPointer = -1;
-    }
+    if (OwnerController.IsValid() && !OwnerController->IsMobileMoveEnabled()) ReleaseJoystick();
+    if (OwnerController.IsValid() && !OwnerController->IsMobileLookEnabled()) LookPointer = -1;
     for (const EButton Button : {EButton::Mine, EButton::Jetpack})
     {
         int32& Pointer = GetButtonPointer(Button);
@@ -540,7 +543,7 @@ int32 SMobileTouchControls::OnPaint(const FPaintArgs& Args, const FGeometry& All
     if (!Player || (Menu && Menu->IsMenuOpen()) || Player->IsAudioSettingsOpen()) return CurrentLayer;
     if (AMiningOpening::IsOpening(Player->GetWorld())) return CurrentLayer;
     const bool bExploring = !Player->IsPaused() && !Player->IsMoveInputIgnored() && !Player->IsLookInputIgnored() && !Player->bShowMouseCursor;
-    if (bExploring)
+    if (Player->IsMobileMoveEnabled())
     {
         const FVector2D Origin = JoystickPointer == -1 ? FVector2D(164 * Scale, Size.Y - 150 * Scale) : JoystickOrigin;
         const float Radius = GetJoystickRadius(Size);

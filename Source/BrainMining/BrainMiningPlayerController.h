@@ -23,6 +23,7 @@ class BRAINMINING_API ABrainMiningPlayerController : public APlayerController
 {
 	GENERATED_BODY()
     friend class FMiningMobileLifecycleTest;
+    friend class FMiningMobileEndingTest;
 	
 public:
 
@@ -35,7 +36,11 @@ public:
     // Touch controls call these small controller-side adapters so the same
     // mining components are used on desktop and mobile input paths.
     void HandleMobileLook(const FVector2D& Delta);
+    bool IsMobileMoveEnabled() const;
+    bool IsMobileLookEnabled() const;
+    bool IsMobileJumpEnabled() const;
     void HandleMobileMove(const FVector2D& Axis);
+    FVector2D GetMobileMoveAxis() const { return IsMobileMoveEnabled() ? MobileMoveAxis : FVector2D::ZeroVector; }
     void HandleMobileMine(bool bPressed);
     void HandleMobileBomb();
     void HandleMobileDrill();
@@ -133,4 +138,5 @@ protected:
 	void SetMobileVirtualKey(const FKey& Key, bool bPressed);
 	void TriggerMobileKey(const FKey& Key);
 	TSet<FKey> MobileVirtualKeys;
+    FVector2D MobileMoveAxis = FVector2D::ZeroVector;
 };

@@ -29,6 +29,14 @@ class UMediaSoundComponent;
 struct FEndingVideoPresentation;
 class USplineMeshComponent;
 
+struct FEndingTouchInput
+{
+    bool bMine=false;
+    bool bMove=false;
+    bool bLook=false;
+    bool bJump=false;
+};
+
 /** Standalone playable ending study; never changes the campaign or shared pawn defaults. */
 UCLASS()
 class BRAINMINING_API AEndingEmergence : public AActor
@@ -36,6 +44,8 @@ class BRAINMINING_API AEndingEmergence : public AActor
     GENERATED_BODY()
 public:
     AEndingEmergence();
+    static AEndingEmergence* FindForPlayer(const APlayerController* Controller);
+    FEndingTouchInput GetTouchInput() const;
     /** Once converted, the saved level owns scenery. Generator buttons cannot replace it. */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ending|Scenery") bool bEditableScenery = false;
     UFUNCTION(CallInEditor, BlueprintCallable, Category="Ending|Scenery") bool ConvertSceneryToEditableActors();
@@ -109,6 +119,7 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") float FinaleDrillSpeed=0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="Ending|Finale") int32 FinaleDrillCuts=0;
 private:
+    friend class FMiningMobileEndingTest;
     friend class FEndingEditableSceneryPreview;
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> PainterlyMaterial;
     void UpdatePainterly();
@@ -128,12 +139,17 @@ private:
     TSharedPtr<FEndingVideoPresentation> VideoPresentation;
     UFUNCTION() void FinaleVideoOpened(FString OpenedUrl);
     UFUNCTION() void FinaleVideoEnded();
+    UFUNCTION() void FinaleVideoFailed(FString FailedUrl);
+    void UpdateFinaleVideoProgress(float DeltaSeconds);
     UPROPERTY(Transient) TObjectPtr<UMediaPlayer> FinaleVideoPlayer;
     UPROPERTY(Transient) TObjectPtr<UMediaTexture> FinaleVideoTexture;
     TArray<FVector> FinaleVideoRim;
     UPROPERTY(Transient) TObjectPtr<UMediaSoundComponent> FinaleVideoSound;
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> FinaleVideoMaterial;
     bool bFinaleVideoRequested=false;
+    bool bFinaleVideoFailed=false;
+    float FinaleVideoIdleTime=0;
+    double LastFinaleVideoTime=-1;
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperScene;
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> PaperSurfaceMaterial;
     UPROPERTY(Transient) TObjectPtr<USceneComponent> PaperSurface;

@@ -60,6 +60,7 @@ public:
 #endif
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual bool IsTerrainCutPending() const override { return bCutPending || Super::IsTerrainCutPending(); }
 	virtual void ResetRock() override;
 	virtual bool MineSphere(FVector WorldCenter, float WorldRadius) override;
 	virtual bool MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed = 0, float Roughness = 1) override;

@@ -6,6 +6,13 @@
 !/Build/Windows/
 /Build/Windows/*
 !/Build/Windows/Application.ico
+!/Build/Android/
+/Build/Android/*
+!/Build/Android/res/
+/Build/Android/res/*
+!/Build/Android/res/drawable*/
+/Build/Android/res/drawable*/*
+!/Build/Android/res/drawable*/icon.png
 /Builds/
 /Build/**/FileOpenOrder/
 /Plugins/**/Intermediate/

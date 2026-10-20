@@ -35,6 +35,7 @@ public:
     UPROPERTY(BlueprintReadOnly) TObjectPtr<ACardRoomStage> Stage;
     APawn* GetPawn() const;
 private:
+    friend class FCardRoomTouchTest;
     APlayerController* Player() const;
     void RestoreSeat();
     TSharedPtr<SCardRoomView> View;

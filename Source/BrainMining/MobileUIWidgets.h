@@ -14,5 +14,6 @@ namespace MiningMobileUI
     FLinearColor Gold();
     FLinearColor Teal();
     float Scale(FVector2D Size);
+    bool CanOpenCollection(const ABrainMiningPlayerController* Controller);
     TSharedRef<SWidget> MakeToolbar(ABrainMiningPlayerController* Controller);
 }

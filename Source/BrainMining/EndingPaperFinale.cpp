@@ -233,6 +233,7 @@ void AEndingEmergence::PrepareFinaleVideo()
     FinaleVideoPlayer=NewObject<UMediaPlayer>(this);
     FinaleVideoPlayer->PlayOnOpen=false;FinaleVideoPlayer->SetLooping(false);
     FinaleVideoPlayer->OnMediaOpened.AddDynamic(this,&AEndingEmergence::FinaleVideoOpened);
+    FinaleVideoPlayer->OnMediaOpenFailed.AddDynamic(this,&AEndingEmergence::FinaleVideoFailed);
     FinaleVideoPlayer->OnEndReached.AddDynamic(this,&AEndingEmergence::FinaleVideoEnded);
     FinaleVideoTexture=NewObject<UMediaTexture>(this);
     FinaleVideoTexture->NewStyleOutput=true;FinaleVideoTexture->AutoClear=false;
@@ -247,7 +248,7 @@ void AEndingEmergence::PrepareFinaleVideo()
     FinaleVideoSound->SetVolumeMultiplier(0);FinaleVideoSound->RegisterComponent();FinaleVideoSound->Start();
     // Asynchronous preparation starts well before impact, never during the hit.
     if(!FinaleVideoPlayer->OpenSource(FinaleVideoSource))
-        UE_LOG(LogTemp,Warning,TEXT("Ending video could not open; keeping the preview frame."));
+        FinaleVideoFailed(FString());
 }
 
 void AEndingEmergence::FinaleVideoOpened(FString OpenedUrl)
@@ -263,6 +264,7 @@ void AEndingEmergence::FinaleVideoOpened(FString OpenedUrl)
 
 void AEndingEmergence::StartFinaleVideo()
 {
+    if(!bFinaleVideoRequested){FinaleVideoIdleTime=0;LastFinaleVideoTime=-1;}
     bFinaleVideoRequested=true;
     // The supplied movie bypasses the scene's exposure, vignette, temporal
     // reconstruction and cinematic postprocessing from its first full frame.
@@ -312,11 +314,33 @@ void AEndingEmergence::UpdateFinaleVideoPresentation()
     GEngine->GameViewport->AddViewportWidgetContent(Presentation->Widget.ToSharedRef(),60);
 }
 
+void AEndingEmergence::FinaleVideoFailed(FString FailedUrl)
+{
+    bFinaleVideoFailed=true;
+}
+
+void AEndingEmergence::UpdateFinaleVideoProgress(float DeltaSeconds)
+{
+    if(!bFinaleVideoRequested)return;
+    const double PlaybackTime=FinaleVideoPlayer?FinaleVideoPlayer->GetTime().GetTotalSeconds():0;
+    if(PlaybackTime>LastFinaleVideoTime+.001){LastFinaleVideoTime=PlaybackTime;FinaleVideoIdleTime=0;}
+    else FinaleVideoIdleTime+=FMath::Max(0.f,DeltaSeconds);
+    const double Duration=FinaleVideoPlayer?FinaleVideoPlayer->GetDuration().GetTotalSeconds():0;
+    if(Shot>=13&&(!FinaleVideoSource||!FinaleVideoPlayer||bFinaleVideoFailed||FinaleVideoPlayer->HasError()||FinaleVideoIdleTime>=20.f
+        ||(Duration>0&&PlaybackTime>=Duration-.05)))
+    {
+        if(FinaleVideoPlayer)FinaleVideoPlayer->Pause();
+        if(FinaleVideoSound)FinaleVideoSound->SetVolumeMultiplier(0);
+        bComplete=true;
+    }
+}
+
 void AEndingEmergence::ResetFinaleVideo()
 {
     if(VideoPresentation.IsValid() && VideoPresentation->Widget.IsValid() && GEngine && GEngine->GameViewport)
         GEngine->GameViewport->RemoveViewportWidgetContent(VideoPresentation->Widget.ToSharedRef());
     VideoPresentation.Reset();
+    bFinaleVideoRequested=false;bFinaleVideoFailed=false;FinaleVideoIdleTime=0;LastFinaleVideoTime=-1;
     if(FinaleVideoPlayer)FinaleVideoPlayer->Close();
     if(FinaleVideoSound){FinaleVideoSound->Stop();FinaleVideoSound->DestroyComponent();}
     FinaleVideoSound=nullptr;FinaleVideoPlayer=nullptr;FinaleVideoTexture=nullptr;bFinaleVideoRequested=false;
@@ -494,7 +518,7 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
         // No ceiling scene, new camera, seek or full-screen player is introduced.
         PaperPose(FVector(6200.f+PaperEnding::FlightSpeed*(Duration(12)+ShotTime),0,240),FVector::ForwardVector,108);
         PaperCaveScene->SetWorldLocation(Camera->GetActorLocation()+Camera->GetActorForwardVector()*50);
-        if(!FinaleVideoSource)bComplete=true;
+        UpdateFinaleVideoProgress(Dt);
 
     }
 }

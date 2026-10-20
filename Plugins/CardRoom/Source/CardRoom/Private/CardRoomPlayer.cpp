@@ -20,7 +20,8 @@ APawn* UCardRoomInteractionComponent::GetPawn() const {return Player()?Player()-
 void UCardRoomInteractionComponent::BeginPlay()
 {
     Super::BeginPlay();
-    for(TActorIterator<ACardRoomStage> It(GetWorld());It;++It) { Stage=*It; break; }
+    TActorIterator<ACardRoomStage> FirstStage(GetWorld());
+    if(FirstStage) Stage=*FirstStage;
     if(!Stage || !Player() || !Player()->IsLocalController()) {SetComponentTickEnabled(false);return;}
     if(GetWorld()->URL.HasOption(TEXT("FromEcho=")) && Player()->PlayerCameraManager)
         Player()->PlayerCameraManager->StartCameraFade(1,0,.45f,FLinearColor::Black,false);

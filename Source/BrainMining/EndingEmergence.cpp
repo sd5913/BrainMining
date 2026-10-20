@@ -1,4 +1,5 @@
 #include "EndingEmergence.h"
+#include "EngineUtils.h"
 #include "Subtitles/SubtitleSubsystem.h"
 #include "MiningGamepadSubsystem.h"
 #include "UObject/ConstructorHelpers.h"
@@ -944,6 +945,27 @@ void AEndingEmergence::ReplaceBloodAssets()
         B->SetRelativeScale3D(Base);BloodScales.Add(Base);B->SetVisibility(true,true);
     }
     UE_LOG(LogTemp,Display,TEXT("ENDING_BLOOD_ASSETS_REPLACED: vesselSegments=%d redCells=%d mesh=SM_Vein-derived/SM_RedBloodCell"),BloodVessels.Num(),Blood.Num());
+}
+
+AEndingEmergence* AEndingEmergence::FindForPlayer(const APlayerController* Controller)
+{
+    if(!Controller||!Controller->GetWorld())return nullptr;
+    for(TActorIterator<AEndingEmergence> Ending(Controller->GetWorld());Ending;++Ending)
+        if(Ending->Player==Controller&&Ending->bReady)return *Ending;
+    return nullptr;
+}
+
+FEndingTouchInput AEndingEmergence::GetTouchInput() const
+{
+    if(!bReady||bComplete||bEnteringBrain)return {};
+    if(Shot<0)
+    {
+        if(GateIndex==0)return {true,true,true,false};
+        if(GateIndex==1)return {false,true,true,false};
+        if(GateIndex==2)return {false,false,true,true};
+    }
+    if((Shot>=0&&Shot<=6)||Shot==9)return {false,true,false,false};
+    return {};
 }
 
 bool AEndingEmergence::Initialize()

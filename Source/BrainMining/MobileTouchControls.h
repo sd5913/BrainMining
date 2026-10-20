@@ -10,6 +10,8 @@ class SMobileTouchControls : public SLeafWidget
 {
     friend class FMiningMobileLayoutTest;
     friend class FMiningMobileLifecycleTest;
+    friend class FMiningMobileEndingTest;
+    friend class FWenSiMobileInputTest;
 public:
     SLATE_BEGIN_ARGS(SMobileTouchControls) {}
         SLATE_ARGUMENT(TWeakObjectPtr<ABrainMiningPlayerController>, OwnerController)

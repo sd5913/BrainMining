@@ -56,8 +56,9 @@ class FMuseumRewardTravel : public IAutomationLatentCommand
  int32 Step=0;
  double Started=FPlatformTime::Seconds(),Next=0,EntryStarted=0;
  double HintCheckStarted=-1;
+ bool bMobileInput=false;
 public:
- explicit FMuseumRewardTravel(FAutomationTestBase* InTest):Test(InTest){}
+ explicit FMuseumRewardTravel(FAutomationTestBase* InTest,bool MobileInput=false):Test(InTest),bMobileInput(MobileInput){}
  bool Update() override
  {
   const double Now=FPlatformTime::Seconds();
@@ -195,7 +196,14 @@ public:
     if(It->ActorHasTag(TEXT("MirrorReward")))Test->TestTrue(TEXT("Museum skip cannot reveal the obsolete golden egg"),It->IsHidden());
    PC->PlayerCameraManager->UpdateCamera(.016f);
    // Final travel exercises the actual campaign controller's E-key route.
-   PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E,IE_Pressed,1.f));
+   if(bMobileInput)
+   {
+    auto* Mobile=Cast<ABrainMiningPlayerController>(PC);
+    if(!Test->TestNotNull(TEXT("Campaign supports mobile interaction"),Mobile))return true;
+    Puzzle->Aim=Puzzle->Find(2);
+    Mobile->HandleMobileInteract();
+   }
+   else PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E,IE_Pressed,1.f));
    if(!Test->TestTrue(TEXT("Campaign E input begins the painting transition"),Puzzle->MousePortal->IsEntering()))return true;
    PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::E,IE_Released,0.f));
    EntryStarted=Now;
@@ -289,6 +297,16 @@ bool FMiningMuseumEndingTravel::RunTest(const FString&)
  AutomationOpenMap(TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
  FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FStartMuseumEndingPIE>());
  FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FMuseumRewardTravel>(this));
+ ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
+ return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningMobileMuseumEndingTravel,"BrainMining.Campaign.MobileMousePaintingEndingTravel",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningMobileMuseumEndingTravel::RunTest(const FString&)
+{
+ AutomationOpenMap(TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
+ FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FStartMuseumEndingPIE>());
+ FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FMuseumRewardTravel>(this,true));
  ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
  return true;
 }

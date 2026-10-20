@@ -3,6 +3,7 @@
 
 #include "BrainMiningPlayerController.h"
 #include "EndingCreditsInput.h"
+#include "EndingEmergence.h"
 #include "MobileUIWidgets.h"
 #include "MiningExperienceSubsystem.h"
 #include "Widgets/Layout/SSafeZone.h"
@@ -212,9 +213,30 @@ void ABrainMiningPlayerController::UseAbilityV()
 		MiningGUI->OnAbilityRequested.Broadcast(TEXT("V"));
 }
 
+bool ABrainMiningPlayerController::IsMobileMoveEnabled() const
+{
+    if(IsPaused()||bShowMouseCursor||!GetPawn())return false;
+    if(const auto* Ending=AEndingEmergence::FindForPlayer(this))return Ending->GetTouchInput().bMove;
+    return !IsMoveInputIgnored()&&!IsLookInputIgnored();
+}
+
+bool ABrainMiningPlayerController::IsMobileLookEnabled() const
+{
+    if(IsPaused()||bShowMouseCursor||IsLookInputIgnored()||!GetPawn())return false;
+    if(const auto* Ending=AEndingEmergence::FindForPlayer(this))return Ending->GetTouchInput().bLook;
+    return !IsMoveInputIgnored();
+}
+
+bool ABrainMiningPlayerController::IsMobileJumpEnabled() const
+{
+    if(IsPaused()||bShowMouseCursor||!GetPawn())return false;
+    if(const auto* Ending=AEndingEmergence::FindForPlayer(this))return Ending->GetTouchInput().bJump;
+    return !IsMoveInputIgnored()&&!IsLookInputIgnored();
+}
+
 void ABrainMiningPlayerController::HandleMobileLook(const FVector2D& Delta)
 {
-	if (IsPaused() || IsLookInputIgnored() || !GetPawn()) return;
+	if (!IsMobileLookEnabled()) return;
 	const float Sensitivity=FMath::Clamp(MobileLookSensitivity, .03f, .18f);
 	AddYawInput(Delta.X*Sensitivity);
 	AddPitchInput(Delta.Y*Sensitivity);
@@ -222,6 +244,8 @@ void ABrainMiningPlayerController::HandleMobileLook(const FVector2D& Delta)
 
 void ABrainMiningPlayerController::HandleMobileMove(const FVector2D& Axis)
 {
+	if (!Axis.IsNearlyZero() && !IsMobileMoveEnabled()) { HandleMobileMove(FVector2D::ZeroVector); return; }
+    MobileMoveAxis = FVector2D(FMath::Clamp(Axis.X, -1., 1.), FMath::Clamp(Axis.Y, -1., 1.));
 	SetMobileVirtualKey(EKeys::W, Axis.Y > .2f);
 	SetMobileVirtualKey(EKeys::S, Axis.Y < -.2f);
 	SetMobileVirtualKey(EKeys::D, Axis.X > .2f);
@@ -266,6 +290,7 @@ void ABrainMiningPlayerController::HandleMobileDrill()
 
 void ABrainMiningPlayerController::HandleMobileJump(bool bPressed)
 {
+	if (bPressed && !IsMobileJumpEnabled()) return;
 	SetMobileVirtualKey(EKeys::SpaceBar, bPressed);
 	auto* PawnCharacter = Cast<ABrainMiningCharacter>(GetPawn());
 	if (!PawnCharacter) return;
@@ -323,7 +348,7 @@ void ABrainMiningPlayerController::HandleMobilePrimary()
 	}
 	if (auto* EchoInteraction = FindComponentByClass<UEchoPassageInteractionComponent>())
 	{
-		if (EchoInteraction->Stage && EchoInteraction->Stage->bLanded && !EchoInteraction->Stage->bCompleted)
+		if (EchoInteraction->bExplorationActive && EchoInteraction->Stage && EchoInteraction->Stage->bLanded && !EchoInteraction->Stage->bCompleted)
 		{
 			EchoInteraction->Knock();
 			return;
@@ -334,7 +359,9 @@ void ABrainMiningPlayerController::HandleMobilePrimary()
 
 void ABrainMiningPlayerController::HandleMobileConfirm()
 {
-	TriggerMobileKey(EKeys::SpaceBar);
+    if (IsPaused()) return;
+    if (auto* Cards = FindComponentByClass<UCardRoomInteractionComponent>(); Cards && Cards->bRoomActive)
+        Cards->ConfirmCards();
 }
 
 void ABrainMiningPlayerController::HandleMobileReset()
@@ -344,11 +371,21 @@ void ABrainMiningPlayerController::HandleMobileReset()
 
 void ABrainMiningPlayerController::HandleMobileThoughtLeft()
 {
+	if (IsPaused()) return;
+	for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It)
+		if (It->bAreaActive) { It->CloseThought(0); return; }
+	for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It)
+		if (It->bAreaActive) { It->CloseThought(0); return; }
 	TriggerMobileKey(EKeys::Q);
 }
 
 void ABrainMiningPlayerController::HandleMobileThoughtRight()
 {
+	if (IsPaused()) return;
+	for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It)
+		if (It->bAreaActive) { It->CloseThought(1); return; }
+	for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It)
+		if (It->bAreaActive) { It->CloseThought(1); return; }
 	TriggerMobileKey(EKeys::R);
 }
 
@@ -365,11 +402,33 @@ void ABrainMiningPlayerController::HandleMobileCatalogue()
 
 void ABrainMiningPlayerController::HandleMobileBack()
 {
+	for (TActorIterator<AMiningCollectionField> Field(GetWorld()); Field; ++Field)
+	{
+		if (Field->bCatalogueOpen)
+		{
+			Field->ToggleCatalogue();
+			return;
+		}
+	}
+	for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It)
+		if (It->bAreaActive && It->bEditing) { It->ToggleEdit(); return; }
+	for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It)
+		if (It->bAreaActive && It->bEditing) { It->ToggleEdit(); return; }
 	TriggerMobileKey(EKeys::Escape);
 }
 
 void ABrainMiningPlayerController::HandleMobileEdit()
 {
+	if (IsPaused()) return;
+	for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It)
+		if (It->bAreaActive)
+		{
+			if (It->bEditing) It->ToggleEdit();
+			else It->SwapThoughts();
+			return;
+		}
+	for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It)
+		if (It->bAreaActive) { It->ToggleEdit(); return; }
 	TriggerMobileKey(EKeys::G);
 }
 
@@ -413,21 +472,24 @@ void ABrainMiningPlayerController::TriggerMobileKey(const FKey& Key)
 
 bool ABrainMiningPlayerController::IsMobileActionVisible() const
 {
-	for (TActorIterator<AEchoPassageStage> It(GetWorld()); It; ++It) if (It->bLanded && !It->bCompleted) return true;
+	const auto* Echo = FindComponentByClass<UEchoPassageInteractionComponent>();
+	if (Echo && Echo->bExplorationActive && Echo->Stage && Echo->Stage->bLanded && !Echo->Stage->bCompleted) return true;
 	for (TActorIterator<APopupCloseStage> It(GetWorld()); It; ++It) if (It->IsSessionActive()) return true;
 	return false;
 }
 
 bool ABrainMiningPlayerController::IsMobileInteractVisible() const
 {
-    return true;
+    const auto* Cards = FindComponentByClass<UCardRoomInteractionComponent>();
+    return !Cards || !Cards->bRoomActive || !Cards->Stage
+        || Cards->Stage->Run.Phase == ECardRoomPhase::Exploring
+        || Cards->Stage->Run.Phase == ECardRoomPhase::Collected;
 }
 
 bool ABrainMiningPlayerController::IsMobileConfirmVisible() const
 {
-	for (TActorIterator<ACardRoomStage> It(GetWorld()); It; ++It)
-		if (It->Run.Phase == ECardRoomPhase::Choosing) return true;
-	return false;
+    const auto* Cards = FindComponentByClass<UCardRoomInteractionComponent>();
+    return Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing;
 }
 
 bool ABrainMiningPlayerController::IsMobileResetVisible() const
@@ -462,6 +524,8 @@ bool ABrainMiningPlayerController::IsMobileCatalogueVisible() const
 
 bool ABrainMiningPlayerController::IsMobileBackVisible() const
 {
+	for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It) if (It->bAreaActive && It->bEditing) return true;
+	for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It) if (It->bAreaActive && It->bEditing) return true;
 	const AMiningExhibitHall* Hall = AMiningExhibitHall::Find(GetWorld());
 	if (Hall && Hall->IsMapOpen()) return true;
 	for (TActorIterator<AMiningCollectionField> It(GetWorld()); It; ++It) if (It->bCatalogueOpen) return true;
@@ -470,8 +534,10 @@ bool ABrainMiningPlayerController::IsMobileBackVisible() const
 
 bool ABrainMiningPlayerController::IsMobileEditVisible() const
 {
-	for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It) if (It->bAreaActive) return true;
-	for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It) if (It->bAreaActive) return true;
+	for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It)
+		if (It->bAreaActive) return It->bEditing || (!It->bComplete && !It->IsSwapping() && It->Thoughts[0].IsValid() && It->Thoughts[1].IsValid());
+	for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It)
+		if (It->bAreaActive) return It->bEditing || (!It->bComplete && (It->Thoughts[0].IsValid() || It->Thoughts[1].IsValid()));
 	return false;
 }
 
@@ -482,7 +548,8 @@ bool ABrainMiningPlayerController::IsMobileUpgradeVisible() const
 
 FString ABrainMiningPlayerController::GetMobileActionLabel() const
 {
-	for (TActorIterator<AEchoPassageStage> It(GetWorld()); It; ++It) if (It->bLanded && !It->bCompleted) return TEXT("HIT");
+	const auto* Echo = FindComponentByClass<UEchoPassageInteractionComponent>();
+	if (Echo && Echo->bExplorationActive && Echo->Stage && Echo->Stage->bLanded && !Echo->Stage->bCompleted) return TEXT("HIT");
 	for (TActorIterator<APopupCloseStage> It(GetWorld()); It; ++It) if (It->IsSessionActive()) return TEXT("CLICK");
 	return TEXT("TAP");
 }

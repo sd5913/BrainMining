@@ -477,7 +477,7 @@ void AWenSiMirrorPuzzle::BeginPlay()
   for(int32 I=0;I<2;++I)if(It->ActorHasTag(I?TEXT("MirrorPowerLamp"):TEXT("MirrorPressureLamp")))
    if(auto Mesh=It->FindComponentByClass<UStaticMeshComponent>()){LampMeshes.Add(Mesh);auto Mat=UMaterialInstanceDynamic::Create(Surface(TEXT("MI_Terracotta")),this);Mesh->SetMaterial(0,Mat);Lamps.Add(Mat);}
  }
- auto PC=GetWorld()->GetFirstPlayerController();if(PC){UI=CreateWidget<UWenSiMirrorWidget>(PC);UI->Puzzle=this;UI->AddToViewport(50);if(!bAreaManaged)PC->SetInputMode(FInputModeGameOnly());if(!bAreaManaged){PC->bShowMouseCursor=false;SetPlayerWord(EWenSiMirrorWord::Ordinary);}}
+ auto PC=GetWorld()->GetFirstPlayerController();if(PC){UI=CreateWidget<UWenSiMirrorWidget>(PC);UI->Puzzle=this;UI->AddToViewport(50);UI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);if(!bAreaManaged)PC->SetInputMode(FInputModeGameOnly());if(!bAreaManaged){PC->bShowMouseCursor=false;SetPlayerWord(EWenSiMirrorWord::Ordinary);}}
  if(bAreaManaged){StartTransform=AreaPlayerStart;bAreaActive=false;SetAreaActive(false);}
  if(Reward){Reward->SetActorHiddenInGame(true);Reward->SetActorEnableCollision(false);}
  MousePortal=GetWorld()->SpawnActor<AMouseMuseumPortal>();
@@ -500,6 +500,11 @@ void AWenSiMirrorPuzzle::Think()
 bool AWenSiMirrorPuzzle::HandleInteractionInput(APlayerController* PC)
 {
  if(!PC || !bAreaActive || bEditing || PC->IsPaused())return false;
+ if(MousePortal)
+ {
+  if(MousePortal->IsEntering())return true;
+  if(MousePortal->TryEnter()){if(UI)UI->Refresh();return true;}
+ }
  if(bAimReset){ResetPuzzle();return true;}
  if(Aim.IsValid() && !bComplete){Think();return true;}
  return false;

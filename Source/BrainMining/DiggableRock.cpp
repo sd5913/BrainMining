@@ -131,6 +131,7 @@ void ADiggableRock::ResetRock()
 
 bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
 {
+    if(ActorHasTag(TEXT("BM_UnmineableBoundary"))){LastStatus=TEXT("房间边界不可挖掘");return false;}
 	if (ActorHasTag(TEXT("BM_BombOnly"))) { LastStatus = TEXT("坚硬岩层：只能用炸弹破坏"); return false; }
 	const bool bResult = MineCutter(WorldCenter, WorldRadius, nullptr);
 	return bResult;
@@ -138,6 +139,7 @@ bool ADiggableRock::MineSphere(FVector WorldCenter, float WorldRadius)
 
 bool ADiggableRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed, float Roughness)
 {
+    if(ActorHasTag(TEXT("BM_UnmineableBoundary"))){LastStatus=TEXT("房间边界不可挖掘");return false;}
 	if (ActorHasTag(TEXT("BM_BombOnly"))) { LastStatus = TEXT("坚硬岩层：只能用炸弹破坏"); return false; }
 	if (!WorldFrame.IsValid() || HalfSize.ContainsNaN() || HalfSize.GetMin() <= 0) return false;
 	const FDynamicMesh3 Cutter = MiningPickaxe::MakeCutter(WorldFrame, HalfSize, Seed, Roughness);
@@ -147,6 +149,7 @@ bool ADiggableRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 S
 
 bool ADiggableRock::MineBlast(FVector WorldCenter, float WorldRadius, float Roughness, int32 Seed)
 {
+    if(ActorHasTag(TEXT("BM_UnmineableBoundary"))){LastStatus=TEXT("房间边界不可挖掘");return false;}
 	if (WorldCenter.ContainsNaN() || !FMath::IsFinite(WorldRadius) || WorldRadius <= 0 || !FMath::IsFinite(Roughness)) return false;
 	const FDynamicMesh3 Cutter = MiningBlast::MakeCutter(WorldCenter, WorldRadius, Roughness, Seed);
 	const bool bResult = MineCutter(WorldCenter, WorldRadius * 1.45f, &Cutter);

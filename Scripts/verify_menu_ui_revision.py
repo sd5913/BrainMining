@@ -54,7 +54,8 @@ def tick(dt):
             if not openings:return
             opening=openings[0];menu=helper.read_preview_object(opening,'Menu')
             if not menu:return
-            check(helper.read_preview_object(menu,'TitleImage').get_editor_property('brush').resource_object.get_path_name().startswith('/Game/StartRoom/UI/T_OpeningTitle'),'New title uses shared title asset')
+            title_resource=helper.read_preview_object(menu,'TitleImage').get_editor_property('brush').resource_object
+            check(isinstance(title_resource,unreal.MaterialInstanceDynamic) and title_resource.get_editor_property('parent').get_path_name().startswith('/Game/StartRoom/UI/M_OpeningTitlePerspective'),'New title uses the shared art with menu-only perspective')
             start=helper.read_preview_object(menu,'StartButton');exit=helper.read_preview_object(menu,'ExitButton')
             check(start.get_editor_property('render_transform').angle<0 and exit.get_editor_property('render_transform').angle>0,'Opening buttons angle towards the room as in the reference')
             shot('opening')

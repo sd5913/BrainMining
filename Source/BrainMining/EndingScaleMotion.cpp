@@ -116,6 +116,13 @@ void AEndingEmergence::UpdateCosmicRail()
 
 void AEndingEmergence::UpdateScaleMotion(float Dt)
 {
+    // The visible cytoplasm shares the main membrane's 3500:4200:3300 axes.
+    // Ease the art only once the solar-system shot is over; keep its camera rail.
+    if(Shot>=5&&Shot<=8)
+    {
+        const float Shape=Shot==5?FMath::SmoothStep(0.f,4.f,ShotTime):1.f;
+        Universe->SetRelativeScale3D(FMath::Lerp(FVector::OneVector,FVector(1,4200.f/3500.f,3300.f/3500.f),Shape));
+    }
     if(Shot>=3&&Shot<=6)CelestialAge+=Dt;
     const FVector EarthOrbit(4000*(FMath::Cos(CelestialAge*.012f)-1),4000*FMath::Sin(CelestialAge*.012f),30*FMath::Sin(CelestialAge*.25f));
     for(auto Part:EarthMovingParts)if(Part)

@@ -42,6 +42,8 @@
 #include "Components/SceneCaptureComponent2D.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/Texture2D.h"
+#include "MediaTexture.h"
+#include "MediaPlayer.h"
 #include "RenderingThread.h"
 #include "Fonts/FontMeasure.h"
 
@@ -96,6 +98,35 @@ public:
     {
         if(!Owner.IsValid() || Owner->bComplete)return L;
         const auto* D=Owner.Get();const FVector2D Size=G.GetLocalSize();
+        // Composite the same decoded frame inside the projected physical hole.
+        // Slate runs after scene exposure/ACES, preserving the supplied film's SDR.
+        if(D->Shot>=12&&D->bPaperRockBroken&&D->PaperCaveScene&&D->Player&&D->FinaleVideoTexture)
+        {
+            VideoBrush.DrawAs=ESlateBrushDrawType::Image;VideoBrush.SetResourceObject(D->FinaleVideoTexture);
+            VideoBrush.ImageSize=FVector2D(D->FinaleVideoTexture->GetWidth(),D->FinaleVideoTexture->GetHeight());
+            const float Depth=FVector::DotProduct(D->PaperCaveScene->GetComponentLocation()-D->Camera->GetActorLocation(),D->Camera->GetActorForwardVector());
+            if(D->Shot>=13||Depth<=65)
+                FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),&VideoBrush,ESlateDrawEffect::None,FLinearColor::White);
+            else
+            {
+                int32 W=0,H=0;D->Player->GetViewportSize(W,H);
+                TArray<FSlateVertex> V;TArray<SlateIndex> Indices;
+                auto Add=[&](FVector P)
+                {
+                    FVector2D Screen;
+                    if(W<=0||H<=0||!D->Player->ProjectWorldLocationToScreen(D->PaperCaveScene->GetComponentTransform().TransformPosition(P),Screen,false))return false;
+                    const FVector2f UV(Screen.X/W,Screen.Y/H),Position(UV.X*Size.X,UV.Y*Size.Y);
+                    V.Add(FSlateVertex::Make<ESlateVertexRounding::Disabled>(G.GetAccumulatedRenderTransform(),Position,UV,FColor::White));return true;
+                };
+                bool Valid=Add(FVector::ZeroVector);
+                for(const FVector& Point:D->FinaleVideoRim)Valid&=Add(Point);
+                if(Valid&&V.Num()>3)
+                {
+                    for(int32 I=1;I<V.Num();++I){Indices.Add(0);Indices.Add(I);Indices.Add(I==V.Num()-1?1:I+1);}
+                    FSlateDrawElement::MakeCustomVerts(Out,++L,FSlateApplication::Get().GetRenderer()->GetResourceHandle(VideoBrush),V,Indices,nullptr,0,0);
+                }
+            }
+        }
         const float S=FMath::Min(Size.X/1600,Size.Y/900);
         // Retain controls, aim and target markers, without narrative or target labels.
         const float Fade=D->OverlayAlpha();
@@ -128,6 +159,7 @@ public:
     }
 private:
     TWeakObjectPtr<AEndingEmergence> Owner;
+    mutable FSlateBrush VideoBrush;
 };
 
 AEndingEmergenceGameMode::AEndingEmergenceGameMode()
@@ -767,6 +799,7 @@ void AEndingEmergence::BuildDemo()
 void AEndingEmergence::BeginPlay()
 {
     Super::BeginPlay();
+    if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->SuppressForWorld(GetWorld());
     ReplaceBloodAssets();
     if(CrowdAssets&&Sets.IsValidIndex(1))
     {
@@ -810,7 +843,9 @@ void AEndingEmergence::BeginPlay()
 void AEndingEmergence::ReplaceBloodAssets()
 {
     if(VesselPath.Num()<2||!Sets.IsValidIndex(0))return;
-    auto* VesselMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/BloodCirculation/Mesh/BloodVessel/SM_Vein"));
+    // A straightened section of SM_Vein retains its inner/outer wall and UVs.
+    // The source asset is a complete winding vessel, not an X-aligned tube.
+    auto* VesselMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/EndingEmergence/Meshes/SM_EE_BloodCirculationVeinSegment"));
     auto* VesselMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/BloodCirculation/Materials/MaterialInstance/BloodVessel/MI_Vein"));
     auto* BloodMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/BloodCirculation/Mesh/Cell/SM_RedBloodCell"));
     auto* BloodMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/BloodCirculation/Materials/MaterialInstance/Cell/MI_RedBloodCell"));
@@ -828,6 +863,14 @@ void AEndingEmergence::ReplaceBloodAssets()
         if(!Part->ComponentHasTag(TEXT("EndingBloodVisual")))continue;
         if(auto* BloodPart=Cast<UStaticMeshComponent>(Part);Blood.Contains(BloodPart))continue;
         Part->SetVisibility(false,true);
+        TArray<USceneComponent*> OldMeshes;Part->GetChildrenComponents(true,OldMeshes);OldMeshes.Add(Part);
+        for(auto* Old:OldMeshes)if(auto* Mesh=Cast<UMeshComponent>(Old))
+        {
+            // Stage visibility is recursive on replay. Disable the old render
+            // passes permanently while preserving its collision and anchors.
+            Mesh->SetRenderInMainPass(false);Mesh->SetRenderInDepthPass(false);
+            Mesh->SetCastShadow(false);Mesh->SetVisibleInRayTracing(false);
+        }
     }
 
     auto VesselRadius=[](float T)
@@ -848,12 +891,15 @@ void AEndingEmergence::ReplaceBloodAssets()
             S->SetMobility(EComponentMobility::Movable);S->SetStaticMesh(VesselMesh);S->SetForwardAxis(ESplineMeshAxis::X,false);
             S->SetCollisionProfileName(TEXT("NoCollision"));S->SetGenerateOverlapEvents(false);S->SetCastShadow(false);S->SetCanEverAffectNavigation(false);
             if(VesselMaterial)S->SetMaterial(0,VesselMaterial);
-            const float T0=VesselDistances.IsValidIndex(I)?VesselDistances[I]/VesselDistances.Last():float(I)/VesselPath.Num();
-            const float T1=VesselDistances.IsValidIndex(J)?VesselDistances[J]/VesselDistances.Last():float(J)/VesselPath.Num();
+            const float T0=float(I)/(VesselPath.Num()-1),T1=float(J)/(VesselPath.Num()-1);
             const FVector2D R0=VesselRadius(T0),R1=VesselRadius(T1);
-            const FVector StartTangent=VesselPath[FMath::Min(I+1,J)]-VesselPath[I];
-            const FVector EndTangent=VesselPath[J]-VesselPath[FMath::Max(I,J-1)];
-            S->SetStartAndEnd(VesselPath[I],StartTangent,VesselPath[J],EndTangent,false);
+            // The Demo2 room's open neck ends slightly before the original
+            // centerline starts. Overlap its lip without moving any route point.
+            const FVector Start=VesselPath[I]-(I==0?FVector(160,0,0):FVector::ZeroVector);
+            const float Span=VesselDistances[J]-VesselDistances[I]+(I==0?160:0);
+            const FVector StartTangent=(VesselPath[FMath::Min(I+1,VesselPath.Num()-1)]-VesselPath[FMath::Max(I-1,0)]).GetSafeNormal()*Span;
+            const FVector EndTangent=(VesselPath[FMath::Min(J+1,VesselPath.Num()-1)]-VesselPath[FMath::Max(J-1,0)]).GetSafeNormal()*Span;
+            S->SetStartAndEnd(Start,StartTangent,VesselPath[J],EndTangent,false);
             S->SetStartScale(FVector2D(2*R0.X/FMath::Max(1.f,MeshSize.Y),2*R0.Y/FMath::Max(1.f,MeshSize.Z)),false);
             S->SetEndScale(FVector2D(2*R1.X/FMath::Max(1.f,MeshSize.Y),2*R1.Y/FMath::Max(1.f,MeshSize.Z)),false);
             S->RegisterComponent();S->UpdateMesh();BloodVessels.Add(S);
@@ -897,7 +943,7 @@ void AEndingEmergence::ReplaceBloodAssets()
         const FVector Base(BloodSize.X/FMath::Max(1.f,CellMeshSize.X),BloodSize.Y/FMath::Max(1.f,CellMeshSize.Y),BloodSize.Z/FMath::Max(1.f,CellMeshSize.Z));
         B->SetRelativeScale3D(Base);BloodScales.Add(Base);B->SetVisibility(true,true);
     }
-    UE_LOG(LogTemp,Display,TEXT("ENDING_BLOOD_ASSETS_REPLACED: vesselSegments=%d redCells=%d mesh=SM_Vein/SM_RedBloodCell"),BloodVessels.Num(),Blood.Num());
+    UE_LOG(LogTemp,Display,TEXT("ENDING_BLOOD_ASSETS_REPLACED: vesselSegments=%d redCells=%d mesh=SM_Vein-derived/SM_RedBloodCell"),BloodVessels.Num(),Blood.Num());
 }
 
 bool AEndingEmergence::Initialize()
@@ -916,7 +962,7 @@ bool AEndingEmergence::Initialize()
         PainterlyMaterial=UMaterialInstanceDynamic::Create(Base,this);
     if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_PulseTransit")))
     {TransitMaterial=UMaterialInstanceDynamic::Create(Base,this);Camera->GetCameraComponent()->AddOrUpdateBlendable(TransitMaterial,1);}
-    // Local instance only: the authored route is a short, grounded finale.
+    // The cell room floats without using or unlocking the campaign jetpack.
     if(auto* M=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())M->FlightSettings.bEnabled=false;
     CacheCellMotion();InitializeScaleMotion();
     // Keep transition audio resident: first playback must not flush loading on a cut.
@@ -1066,7 +1112,7 @@ void AEndingEmergence::RestartDemo()
 {
     if(bRestoring||!Player||!Mining)return;
     TGuardValue<bool> Guard(bRestoring,true);
-    ResetFinale();ResetScaleMotion();PrepareFinaleRocks();
+    RemoveCredits();ResetFinale();ResetScaleMotion();PrepareFinaleRocks();
     GateIndex=0;Shot=-1;ShotTime=0;Age=0;BeatAt=0;LastCuts=0;bComplete=false;BloodTravel=0;
     CurrentNeuron=TargetNeuron=TravellingToNeuron=INDEX_NONE;PossessionCount=0;VisitedNeurons.Empty();BloodSpeed=480;VesselDistance=150;BloodY=0;PulseAt=-100;BufferedJumpAt=-100;bEnteringBrain=false;TransitEffects(0);
     if(DroppedPickaxe){DroppedPickaxe->DestroyComponent();DroppedPickaxe=nullptr;}
@@ -1088,9 +1134,9 @@ void AEndingEmergence::RestartDemo()
     // Hide both body and first-person arms without hiding their camera/tool children.
     TArray<USkeletalMeshComponent*> PlayerBodies;Player->GetPawn()->GetComponents(PlayerBodies);
     for(auto* Body:PlayerBodies){Body->SetHiddenInGame(true,false);Body->SetVisibility(false,false);Body->SetCastShadow(false);}
-    Player->GetPawn()->SetActorLocation(GetActorTransform().TransformPosition(FVector(100,0,Ending::Ground(100)+110)),false,nullptr,ETeleportType::TeleportPhysics);
+    Player->GetPawn()->SetActorLocation(GetActorTransform().TransformPosition(FVector(100,0,260)),false,nullptr,ETeleportType::TeleportPhysics);
     Player->SetControlRotation(GetActorRotation());
-    if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->SetMovementMode(MOVE_Walking);}
+    if(auto* M=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()){M->SetEndingCellFloat(false);M->SetEndingCellFloat(true);}
     if(auto* C=Player->GetPawn()->FindComponentByClass<UCameraComponent>()){C->SetFieldOfView(90);if(FisheyeMaterial)C->AddOrUpdateBlendable(FisheyeMaterial,0);}
     Player->SetViewTarget(Player->GetPawn());Mining->SetInputSuspended(false);Mining->SetInputContextEnabled(true);
     bFinalResolvePlayed=false;UpdatePainterly();UpdateNerves();SetAmbience(TEXT("Cell_Loop"),.26f);
@@ -1113,7 +1159,7 @@ void AEndingEmergence::PreviewFilm()
 
 float AEndingEmergence::Duration(int32 Index)
 {
-    const float Seconds[]={5,10,8,11,35,20,18,12,4.5f,0,3.7f,6.6f,2.8f,3.f,0};
+    const float Seconds[]={5,13,8,11,35,20,18,12,4.5f,0,3.7f,6.6f,2.8f,3.f,0};
     return Index>=0&&Index<UE_ARRAY_COUNT(Seconds)?Seconds[Index]:0;
 }
 
@@ -1622,6 +1668,7 @@ void AEndingEmergence::UpdateNerves()
 
 void AEndingEmergence::EnterBlood()
 {
+    if(auto* M=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())M->SetEndingCellFloat(false);
     Ending::TravelHintOnce(this,TEXT("EndingHint_Blood"),TEXT("按W可加速前进"));
     GateIndex=1;BloodAt=Age;BeatAt=Age+3;BloodSpeed=480;BloodY=0;
     UpdatePainterly(); // Clear both views before the camera handoff, not a tick later.
@@ -1650,6 +1697,9 @@ void AEndingEmergence::EnterBlood()
     Player->SetIgnoreMoveInput(true);Player->GetPawn()->SetActorHiddenInGame(true);
     if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->DisableMovement();}
     Camera->SetActorLocation(Eye);Camera->SetActorRotation(Player->GetControlRotation());Player->SetViewTarget(Camera);
+    // A modest lamp follows the actual pulse camera, rather than the hidden pawn.
+    ToolLight->SetAttenuationRadius(1800);ToolLight->SetIntensity(1800);
+    ToolLight->SetLightColor(FLinearColor(1,.72f,.62f));ToolLight->SetVisibility(true);
     SetAmbience(TEXT("Blood_Loop"),.25f);Sound(TEXT("Connect"),.45f);
 }
 
@@ -1666,6 +1716,7 @@ bool AEndingEmergence::CanPossess(int32 I) const
 
 void AEndingEmergence::EnterBrain()
 {
+    if(ToolLight)ToolLight->SetVisibility(false);
     for(auto Gate:Gates)if(IsValid(Gate))Gate->SetActorHiddenInGame(true);
     // Leave the open vessel in the same shot; slow down and settle into host 0.
     bEnteringBrain=true;BrainEntryAt=Age;TransitStart=Camera->GetActorLocation();
@@ -1721,6 +1772,8 @@ void AEndingEmergence::BeginThought()
     GateIndex=5;BeatAt=Age+3.8f;TargetNeuron=INDEX_NONE;UpdateNerves();
     TArray<USceneComponent*> Parts;GetComponents(Parts);
     for(auto* Part:Parts)if(Part->ComponentHasTag(TEXT("EndingBloodVisual"))||Part->GetName().StartsWith(TEXT("EllipsoidalCellInterior"))||Part->GetName().StartsWith(TEXT("CellDress")))Part->SetVisibility(false,true);
+    TArray<USceneComponent*> CellParts;Sets[0]->GetChildrenComponents(true,CellParts);
+    for(auto* Part:CellParts)if(Part->ComponentHasTag(TEXT("EndingCellVisual")))Part->SetVisibility(false,true);
     TakeoffStart=GetActorTransform().InverseTransformPosition(Camera->GetActorLocation());
     TakeoffLook=TakeoffStart+GetActorTransform().InverseTransformVectorNoScale(Player->GetControlRotation().Vector())*850;
     Player->SetIgnoreLookInput(true);Sound(TEXT("Connect"),.65f,.85f);
@@ -1999,6 +2052,11 @@ float AEndingEmergence::BrainLens() const
 
 FVector AEndingEmergence::GetGateApproach(int32 I) const
 {
+    if(I==0&&Gates.IsValidIndex(0)&&IsValid(Gates[0]))
+    {
+        FVector Center,Extent;Gates[0]->GetActorBounds(true,Center,Extent);
+        return Center-GetActorForwardVector()*(Extent.X+200)-GetActorUpVector()*60;
+    }
     I=FMath::Clamp(I,0,4);const float X=Ending::GateX[I]-330,Y=Ending::GateY[I];return GetActorTransform().TransformPosition(FVector(X,Y,Ending::Ground(X,Y)+110));
 }
 
@@ -2041,6 +2099,7 @@ float AEndingEmergence::OverlayAlpha() const
 
 void AEndingEmergence::EndPlay(const EEndPlayReason::Type Reason)
 {
+    if(Player&&Player->GetPawn())if(auto* M=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())M->SetEndingCellFloat(false);
     if(PainterlyMaterial && Player && Player->GetPawn())
         if(auto* C=Player->GetPawn()->FindComponentByClass<UCameraComponent>())C->RemoveBlendable(PainterlyMaterial);
     RemoveCredits();ResetFinale();ClearEndingEffects();

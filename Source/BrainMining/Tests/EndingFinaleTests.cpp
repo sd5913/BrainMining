@@ -2,6 +2,7 @@
 #include "EndingEmergence.h"
 #include "MiningComponent.h"
 #include "MiningSaveSubsystem.h"
+#include "MiningWalletSubsystem.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Components/SceneCaptureComponent2D.h"
@@ -159,7 +160,12 @@ public:
         }
         if(Step==0)
         {
+            if(auto* Wallet=W->GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>())
+            {Wallet->bDrillSkillRequiresUnlock=true;Wallet->bDrillSkillUnlocked=false;}
+            Test->TestFalse(TEXT("Fixture enters the ending with the normal drill locked"),M->IsDrillUnlocked());
             const int SavedPaperShot=D->Shot;const float SavedPaperTime=D->ShotTime;
+            for(const FVector& Rim:D->FinaleVideoRim)
+                Test->TestTrue(TEXT("Video opening stays above the desktop inside the visible rock"),Rim.Z+240.f>40.f);
             D->Shot=7;D->ShotTime=.6f;D->UpdateCellTitle(.05f);
             Test->TestTrue(TEXT("Central cell starts gathering with the crowd"),D->Cell->GetRelativeScale3D().X<32.f*.999f);
             for(float Scale:D->TitleAnimatedScales)
@@ -174,9 +180,11 @@ public:
             D->PaperScene->SetRelativeRotation(FRotator::ZeroRotator);
             D->Shot=11;D->ShotTime=4.84f;D->UpdatePaperFinale(0);
             Test->TestTrue(TEXT("Paper rock stays flat until the meal line"),FMath::IsNearlyEqual(D->PaperRock->GetRelativeRotation().Pitch,-90.f,.01f));
+            Test->TestFalse(TEXT("Video never flashes before the rock rises"),D->PaperCaveScene->IsVisible());
             D->ShotTime=4.95f;D->UpdatePaperFinale(0);
             Test->TestTrue(TEXT("Paper rock rises with the meal line"),D->PaperRock->GetRelativeRotation().Pitch>-90.f);
             D->Shot=11;D->ShotTime=6.59f;D->UpdatePaperFinale(0);
+            Test->TestFalse(TEXT("Video stays hidden behind the unbroken rock"),D->PaperCaveScene->IsVisible());
             const FVector BeforeHit=D->Camera->GetActorLocation();
             D->ShotTime=6.6f;D->UpdatePaperFinale(0);
             const FVector Seam=D->Camera->GetActorLocation();const FQuat SeamFacing=D->Camera->GetActorQuat();
@@ -232,6 +240,7 @@ public:
         else if(Step==3&&D->Shot==8&&D->ShotTime>4.1f){Capture(TEXT("wooow-o-dive"));++Step;}
         else if(Step==4&&D->Shot==9&&D->DrillDistance>800&&D->FinaleKick>.12f)
         {
+            Test->TestTrue(TEXT("Ending grants temporary drill access without a saved unlock"),M->bScriptedDrillAccess);
             Test->TestTrue(TEXT("No click is required to run the real mining component"),M->IsMiningActive()&&M->bDrillMode&&M->bInfiniteDrillEnergy);
             Test->TestEqual(TEXT("Energy remains full"),M->DrillEnergy,M->MaxDrillEnergy);
             Test->TestEqual(TEXT("Both stylized drill models are equipped"),D->FinaleDrills.Num(),2);
@@ -307,6 +316,8 @@ public:
         {
             Test->TestTrue(TEXT("Sixth white excavation stage was reached"),WhiteCaptured);
             Test->TestFalse(TEXT("Drill shuts down at the exit"),M->bDrillMode);
+            Test->TestFalse(TEXT("Ending releases temporary access after the cave"),M->bScriptedDrillAccess);
+            Test->TestFalse(TEXT("Ending never permanently unlocks the player's drill"),W->GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>()->bDrillSkillUnlocked);
             Test->TestEqual(TEXT("Unlimited energy is scoped to the finale"),M->bInfiniteDrillEnergy,InfiniteBefore);
             Test->TestEqual(TEXT("Original mining radius is restored"),M->Radius,OriginalRadius);Capture(TEXT("paper-black-flight"));++Step;
             Test->TestEqual(TEXT("Main-game smoke restored after finale"),Effects->DrillSmokeStrength,OriginalSmoke);
@@ -344,7 +355,7 @@ public:
             {
                 Test->TestTrue(TEXT("Pickaxe strike opens a physical hole"),D->bPaperRockBroken&&!D->PaperRockCap->IsVisible());
                 Test->TestTrue(TEXT("The opening frame is already visible inside the hole"),D->PaperCaveScene->IsVisible());
-                Test->TestFalse(TEXT("The opening does not consume the movie before entry"),D->bFinaleVideoRequested);
+                Test->TestTrue(TEXT("The movie starts immediately when the rock opens"),D->bFinaleVideoRequested&&D->FinaleVideoPlayer&&D->FinaleVideoPlayer->IsPlaying());
                 Test->TestNotNull(TEXT("The supplied movie is prepared before impact"),D->FinaleVideoPlayer.Get());
                 if(D->FinaleVideoPlayer)Test->TestTrue(TEXT("The movie decoder is ready before impact"),D->FinaleVideoPlayer->IsReady());
                 Capture(TEXT("paper-rock-impact"));++InputPhase;
@@ -361,7 +372,7 @@ public:
                 if(D->FinaleVideoPlayer)
                 {
                     Test->TestTrue(TEXT("The real media clock advances"),D->FinaleVideoPlayer->GetTime().GetTotalSeconds()>.1);
-                    Test->TestTrue(TEXT("The supplied audio track is retained"),D->FinaleVideoPlayer->GetNumTracks(EMediaPlayerTrack::Audio)>0);
+                    Test->TestEqual(TEXT("The ending movie is silent and has no audio track"),D->FinaleVideoPlayer->GetNumTracks(EMediaPlayerTrack::Audio),0);
                 }
                 Test->TestTrue(TEXT("Video sound component is active"),D->FinaleVideoSound&&D->FinaleVideoSound->IsActive());
                 Capture(TEXT("paper-video-fullscreen"));Since=D->Age;++InputPhase;

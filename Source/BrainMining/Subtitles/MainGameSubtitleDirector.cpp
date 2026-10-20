@@ -47,8 +47,6 @@ void AMainGameSubtitleDirector::Tick(float Dt)
     for(TActorIterator<ACardRoomStage> It(GetWorld()); It; ++It)
         if(It->Run.Round == 1 && It->Run.Phase == ECardRoomPhase::Choosing)
             PlayOnce(TEXT("卡牌玩法1"));
-    for(TActorIterator<AEchoPassageStage> It(GetWorld()); It; ++It)
-        if(It->bLanded) PlayOnce(TEXT("盲人敲地玩法"));
     for(TActorIterator<AMiningRoomEscape> It(GetWorld()); It; ++It)
         if(It->Phase == EMiningEscapePhase::Flooding)
         {

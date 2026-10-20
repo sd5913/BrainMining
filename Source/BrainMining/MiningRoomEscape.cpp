@@ -231,6 +231,8 @@ void AMiningRoomEscape::Tick(float DeltaSeconds)
         return;
     }
     if((bAreaManaged && !bAreaActive) || !Player.IsValid() || !Player->GetPawn())return;
+    const FVector RoomLocal=Entrance->GetActorTransform().InverseTransformPosition(Player->GetPawn()->GetActorLocation());
+    Player->EncounterPolicy->SetFlightAllowed(RoomLocal.X>Entrance->RockSize.X*.5+35);
     TickPresentation(DeltaSeconds);const float PreviousPhaseTime=PhaseTime;PhaseTime+=DeltaSeconds;
     if(Phase==EMiningEscapePhase::Warning && PreviousPhaseTime<.45f && PhaseTime>=.45f)
         UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Warning"),.5f);

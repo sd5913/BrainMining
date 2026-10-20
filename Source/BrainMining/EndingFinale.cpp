@@ -1,6 +1,7 @@
 #include "MiningGamepadSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "EndingEmergence.h"
+#include "EndingTitleLayout.h"
 #include "DiggableRock.h"
 #include "EndingComicRock.h"
 #include "MiningComponent.h"
@@ -46,26 +47,9 @@ void AEndingEmergence::BuildFinale()
     const int Count=TitleCenters.Num();
     for(int I=0;I<Count;++I)
     {
-        const int Glyph=FMath::Min(4,I*5/Count),Start=FMath::DivideAndRoundUp(Glyph*Count,5),End=FMath::DivideAndRoundUp((Glyph+1)*Count,5);
-        const float U=float(I-Start)/FMath::Max(1,End-Start-1),Offset=(I%2?1:-1)*8500.f;
-        FVector P(0,(Glyph-2)*445000.f,0);
-        if(Glyph==0||Glyph==4)
-        {
-            const FVector2D Corners[]={{-180000,240000},{-95000,-240000},{0,65000},{95000,-240000},{180000,240000}};
-            const float Along=U*4;const int Segment=FMath::Min(3,FMath::FloorToInt(Along));
-            const FVector2D V=FMath::Lerp(Corners[Segment],Corners[Segment+1],Along-Segment);
-            P+=FVector(0,V.X+Offset,V.Y);
-        }
-        else
-        {
-            const float A=U*2*PI,Ry=Glyph==2?135000:180000,Rz=Glyph==2?155000:240000;
-            P+=FVector(0,FMath::Sin(A)*(Ry+Offset),FMath::Cos(A)*(Rz+Offset)+(Glyph==2?-85000:0));
-        }
-        const float Lean[]={-.13f,.09f,-.065f,.12f,-.16f},Width[]={1.f,.90f,1.f,1.06f,.92f},Lift[]={-26000,20000,0,-14000,32000};
-        const FVector Centre(0,(Glyph-2)*445000.f,Glyph==2?-85000.f:0.f);
-        FVector Letter=P-Centre;Letter.Y*=Width[Glyph];
-        Letter=FQuat(FVector::ForwardVector,Lean[Glyph]).RotateVector(Letter);
-        P=Centre+Letter+FVector(FMath::Sin(I*2.399f)*3500,0,Lift[Glyph]);
+        const auto& Point=EndingTitleLayout::Points[FMath::Min(UE_ARRAY_COUNT(EndingTitleLayout::Points)-1,I*UE_ARRAY_COUNT(EndingTitleLayout::Points)/Count)];
+        const int Glyph=Point.Glyph;
+        const FVector P(0,Point.Y*2400000.f,Point.Z*460000.f);
         TitleTargets.Add(P);TitleGlyphs.Add(Glyph);
     }
     // Neighbours choose different letters instead of moving as orderly rows.
@@ -142,7 +126,7 @@ void AEndingEmergence::UpdateCellTitle(float Alpha)
         const float Seed=.5f+.5f*FMath::Sin(Phase*7.13f);
         const float Progress=Finale::Ease(Alpha);
         const float Idle=Progress*(Shot==8?1-Finale::Ease(ShotTime/.95f):1);
-        const float CellScale=FMath::Lerp(1.f,.17f,Progress)*(1+Idle*.045f*FMath::Sin(Age*1.2f+Phase));
+        const float CellScale=FMath::Lerp(1.f,.24f,Progress)*(1+Idle*.045f*FMath::Sin(Age*1.2f+Phase));
         const float Rate=.12f+Seed*.18f;
         const FVector Float=FVector(
             .65f*FMath::Sin(Age*Rate+Phase)+.35f*FMath::Sin(Age*Rate*.43f+Phase*3),
@@ -151,7 +135,7 @@ void AEndingEmergence::UpdateCellTitle(float Alpha)
         const FVector Bend=FVector(FMath::Sin(Phase*1.7f)*.5f,FMath::Cos(Phase*.87f),FMath::Sin(Phase*1.31f))*(45000+Seed*125000)*FMath::Sin(PI*Progress);
         const int Glyph=TitleGlyphs[OwnerCell];const float Beat=Age*.85f+Glyph*1.43f;
         const FVector Pivot(0,(Glyph-2)*445000.f,Glyph==2?-85000.f:0.f);
-        const FVector Target=Pivot+FQuat(FVector::ForwardVector,.045f*Idle*FMath::Sin(Beat)).RotateVector(TitleTargets[OwnerCell]-Pivot)
+        const FVector Target=Pivot+FQuat(FVector::ForwardVector,.008f*Idle*FMath::Sin(Beat)).RotateVector(TitleTargets[OwnerCell]-Pivot)
             +FVector(9000*FMath::Sin(Beat*.8f),4000*FMath::Cos(Beat),11000*FMath::Sin(Beat))*Idle;
         const FVector Center=FMath::Lerp(TitleCenters[OwnerCell],Target,Progress)+Bend+Float;
         TitleAnimatedCenters[OwnerCell]=Center;TitleAnimatedScales[OwnerCell]=CellScale;
@@ -171,7 +155,7 @@ void AEndingEmergence::UpdateCellTitle(float Alpha)
         TitleBatches[Batch]->BatchUpdateInstancesTransforms(0,Poses,false,true,true);
     }
     const FVector Main=TitleAnimatedCenters[0]+FVector(0,12000,0);
-    const float MainProgress=Finale::Ease(Alpha),MainScale=FMath::Lerp(1.f,.17f,MainProgress);
+    const float MainProgress=Finale::Ease(Alpha),MainScale=FMath::Lerp(1.f,.24f,MainProgress);
     Cell->SetRelativeLocation(Main*MainProgress);Cell->SetRelativeScale3D(FVector(32*MainScale));
     Universe->SetRelativeLocation(Main*MainProgress);Universe->SetRelativeScale3D(FVector(MainScale));
     bTitleRestored=false;
@@ -233,6 +217,7 @@ void AEndingEmergence::BeginFinaleDrill()
     Mining->bUseDrillEnergy=true;Mining->bInfiniteDrillEnergy=true;Mining->DrillEnergy=Mining->MaxDrillEnergy;
     Mining->Radius=145;Mining->Reach=420;Mining->Interval=.30f;Mining->DrillIntervalMultiplier=.27f*260/Finale::Pace(0);Mining->DepthMultiplier=1;
     Mining->DownwardOffset=0;Mining->InsetFraction=.05f;Mining->bShowPreview=false;
+    Mining->bScriptedDrillAccess=true;
     Mining->SetInputSuspended(false);if(!Mining->bDrillMode)Mining->ActivateDrill();
     Mining->OnMiningHit.AddDynamic(this,&AEndingEmergence::FinaleDrillHit);
     PrepareFinaleRocks();
@@ -255,7 +240,7 @@ void AEndingEmergence::BeginFinaleDrill()
     PaperScene->SetVisibility(false,true);PaperScene->SetVisibility(true);
     PaperSurfaceMaterial->SetScalarParameterValue(TEXT("ApertureRadius"),37.5f);
     PaperSurface->SetVisibility(true);FinaleLight->SetVisibility(false);
-    ToolLight->SetVisibility(true);ToolLight->SetIntensity(1800);
+    ToolLight->SetAttenuationRadius(350);ToolLight->SetVisibility(true);ToolLight->SetIntensity(1800);
     Pose(Finale::Tunnel,Finale::Tunnel+FVector(1000,0,0),86);
     Mining->BeginMiningInput();SetAmbience(TEXT("Drill_Loop"),.24f);Sound(TEXT("DrillHit_01"),.16f,.82f);
 }
@@ -343,7 +328,7 @@ void AEndingEmergence::EndFinaleDrill(bool KeepVisuals)
             Effects->DrillSmokeStrength=SavedDrillSmoke;Effects->DrillDustStrength=SavedDrillDust;Effects->DrillSparkStrength=SavedDrillSparks;
             Effects->ResetEffects();
         }
-        Mining->EndMiningInput();Mining->OnMiningHit.RemoveDynamic(this,&AEndingEmergence::FinaleDrillHit);Mining->SelectPickaxe();Mining->SetInputSuspended(true);
+        Mining->EndMiningInput();Mining->OnMiningHit.RemoveDynamic(this,&AEndingEmergence::FinaleDrillHit);Mining->SelectPickaxe();Mining->bScriptedDrillAccess=false;Mining->SetInputSuspended(true);
         Mining->bInfiniteDrillEnergy=SavedInfiniteEnergy;Mining->bUseDrillEnergy=SavedUseEnergy;Mining->DrillEnergy=SavedEnergy;
         Mining->Radius=SavedRadius;Mining->Reach=SavedReach;Mining->Interval=SavedInterval;Mining->DrillIntervalMultiplier=SavedDrillMultiplier;
         Mining->DepthMultiplier=SavedDepth;Mining->DownwardOffset=SavedDownward;Mining->InsetFraction=SavedInset;Mining->bShowPreview=SavedPreview;

@@ -403,6 +403,7 @@ void AGeneratedMiningRock::ResetRock()
 
 bool AGeneratedMiningRock::MineSphere(FVector WorldCenter, float WorldRadius)
 {
+    if(ActorHasTag(TEXT("BM_UnmineableBoundary"))){LastStatus=TEXT("房间边界不可挖掘");return false;}
 	if (ActorHasTag(TEXT("BM_BombOnly"))) { LastStatus = TEXT("坚硬岩层：只能用炸弹破坏"); return false; }
 	if (SegmentIndex != INDEX_NONE && SegmentState != EMiningSegmentState::Active)
 	{
@@ -426,6 +427,7 @@ void AGeneratedMiningRock::SetSegmentState(EMiningSegmentState State)
 
 bool AGeneratedMiningRock::MinePickaxe(FTransform WorldFrame, FVector HalfSize, int32 Seed, float Roughness)
 {
+    if(ActorHasTag(TEXT("BM_UnmineableBoundary"))){LastStatus=TEXT("房间边界不可挖掘");return false;}
 	if (ActorHasTag(TEXT("BM_BombOnly"))) { LastStatus = TEXT("坚硬岩层：只能用炸弹破坏"); return false; }
 	if (SegmentIndex != INDEX_NONE && SegmentState != EMiningSegmentState::Active)
 	{
@@ -669,6 +671,7 @@ UDynamicMesh* AGeneratedMiningRock::GetCombinedMesh() const
 
 bool AGeneratedMiningRock::MineBlast(FVector WorldCenter, float WorldRadius, float Roughness, int32 Seed)
 {
+    if(ActorHasTag(TEXT("BM_UnmineableBoundary"))){LastStatus=TEXT("房间边界不可挖掘");return false;}
 	if (SegmentIndex != INDEX_NONE && SegmentState != EMiningSegmentState::Active) return false;
 	if (WorldCenter.ContainsNaN() || !FMath::IsFinite(WorldRadius) || WorldRadius <= 0 || !FMath::IsFinite(Roughness)) return false;
 	if (!bChunked) return Super::MineBlast(WorldCenter, WorldRadius, Roughness, Seed);

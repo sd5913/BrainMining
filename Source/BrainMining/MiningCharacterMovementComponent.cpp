@@ -171,6 +171,19 @@ void UMiningCharacterMovementComponent::UpdateFlightState(float DeltaSeconds)
 
 void UMiningCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
+	if (bEndingCellFloat && CharacterOwner && MovementMode == MOVE_Flying)
+	{
+		// Replace the walking axes once, before physics, so diagonals and gamepad
+		// input share the same acceleration and retain collision/sliding.
+		CharacterOwner->ConsumeMovementInputVector();
+		if (auto* PC=Cast<APlayerController>(CharacterOwner->GetController()); PC && !CharacterOwner->IsMoveInputIgnored())
+		{
+			const FVector2D Move=UMiningGamepadSubsystem::ReadMove(PC);
+			const FRotationMatrix View(PC->GetControlRotation());
+			const FVector Axis=View.GetUnitAxis(EAxis::X)*Move.Y+View.GetUnitAxis(EAxis::Y)*Move.X;
+			CharacterOwner->AddMovementInput(Axis.GetSafeNormal(),FMath::Min(1.,Axis.Size()));
+		}
+	}
 	if (CharacterOwner && CharacterOwner->IsPlayerControlled())
 	{
 		const FVector Position = CharacterOwner->GetActorLocation();
@@ -187,6 +200,24 @@ void UMiningCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTic
 	UpdateFlightState(DeltaTime);
 	UpdateJetpackHeat(DeltaTime, bCanThrust && bFlightInputHeld && (bJetpackEngaged || bCreativeFlight));
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
+
+void UMiningCharacterMovementComponent::SetEndingCellFloat(bool bEnabled)
+{
+	if (bEndingCellFloat == bEnabled) return;
+	bEndingCellFloat=bEnabled;
+	ResetFlightInput();StopMovementImmediately();
+	if (bEnabled)
+	{
+		SavedCellMovement=FVector(MaxFlySpeed,MaxAcceleration,BrakingDecelerationFlying);
+		MaxFlySpeed=260;MaxAcceleration=420;BrakingDecelerationFlying=180;
+		SetMovementMode(MOVE_Flying);
+	}
+	else
+	{
+		MaxFlySpeed=SavedCellMovement.X;MaxAcceleration=SavedCellMovement.Y;BrakingDecelerationFlying=SavedCellMovement.Z;
+		if (MovementMode == MOVE_Flying) SetMovementMode(MOVE_Walking);
+	}
 }
 
 void UMiningCharacterMovementComponent::UpdateJetpackHeat(float DeltaSeconds, bool bThrustRequested)

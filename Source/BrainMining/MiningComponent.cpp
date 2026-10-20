@@ -119,7 +119,7 @@ bool UMiningComponent::ActivateDrill()
 		SelectPickaxe();
 		return true;
 	}
-	if (bDrillMode || GetDrillCooldownRemaining() > 0) return false;
+	if (bDrillMode || (!bScriptedDrillAccess && GetDrillCooldownRemaining() > 0)) return false;
 	if (bUseDrillEnergy && !bInfiniteDrillEnergy && DrillEnergy <= UE_SMALL_NUMBER) return false;
 	if (auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>()) Bomb->Stow();
 	if (!bUseDrillEnergy) // Compatibility for explicitly configured legacy levels.
@@ -142,6 +142,7 @@ void UMiningComponent::SelectPickaxe()
 
 bool UMiningComponent::IsDrillUnlocked() const
 {
+    if(bScriptedDrillAccess)return true;
 	const auto* GI=GetOwner()?GetOwner()->GetGameInstance():nullptr;
 	const auto* Wallet=GI?GI->GetSubsystem<UMiningWalletSubsystem>():nullptr;
 	return !Wallet || !Wallet->bDrillSkillRequiresUnlock || Wallet->bDrillSkillUnlocked;

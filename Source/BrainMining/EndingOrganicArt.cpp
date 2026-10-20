@@ -61,7 +61,8 @@ void AEndingEmergence::CacheCellMotion()
 {
     CellBreathers.Empty();CellRestPoses.Empty();CellMotionPhases.Empty();
     TArray<USceneComponent*> Parts;Sets[0]->GetChildrenComponents(false,Parts);
-    for(auto* Part:Parts)if(Part->GetName().StartsWith(TEXT("CellDress")))
+    for(auto* Part:Parts)if(Part->GetName().StartsWith(TEXT("CellDress")) ||
+        (Part->GetOwner()!=this && Part->GetOwner()->ActorHasTag(TEXT("EndingDemo2Organelle"))))
     {
         CellBreathers.Add(Part);CellRestPoses.Add(Part->GetRelativeTransform());
         const FString Name=Part->GetName();

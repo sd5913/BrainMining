@@ -1,4 +1,5 @@
 #include "SMiningEscapeView.h"
+#include "MiningWaypoint.h"
 #include "BrainMiningFonts.h"
 #include "MiningRoomEscape.h"
 #include "MiningInteractionHUDWidget.h"
@@ -28,21 +29,5 @@ int32 SMiningEscapeView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSla
     }
     if (!UMiningInteractionHUDWidget::IsActiveFor(E->GetWorld()->GetFirstPlayerController())) Box(797,447,6,6,White);
     auto* PC=E->GetWorld()->GetFirstPlayerController();if(!PC)return L;
-    FVector2D P;const FVector Target=E->GuideTarget();
-    if(PC->ProjectWorldLocationToScreen(Target,P,true))
-    {
-        // Projection returns render pixels; this Slate overlay paints in local units.
-        int32 Width=0,Height=0;PC->GetViewportSize(Width,Height);
-        if(Width>0 && Height>0){P.X*=Size.X/Width;P.Y*=Size.Y/Height;}
-    }
-    else
-    {FVector Eye;FRotator Aim;PC->GetPlayerViewPoint(Eye,Aim);const FVector D=Target-Eye;P=Size*.5+FVector2D(FVector::DotProduct(D,FRotationMatrix(Aim).GetUnitAxis(EAxis::Y)),-FVector::DotProduct(D,FRotationMatrix(Aim).GetUnitAxis(EAxis::Z))).GetSafeNormal()*Size.Y*.7;}
-    P=(P-Origin)/S;P.X=FMath::Clamp(P.X,160.,1340.);P.Y=FMath::Clamp(P.Y,195.,720.);
-    Box(P.X-12,P.Y-12,24,24,Gold);Box(P.X-7,P.Y-7,14,14,Dark);
-    const FString Label=FString::Printf(TEXT("%.1f 米"),FMath::Max(0.f,E->ExitDistance()));
-    const auto DistanceFont=BrainMiningFonts::Style(TEXT("Medium"),FMath::Max(10,FMath::RoundToInt(18*S)));
-    const float LabelWidth=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Label,DistanceFont).X/S;
-    Text(Label,P.X-LabelWidth*.5f+1,P.Y+23,18,FLinearColor(0,0,0,.85f));
-    Text(Label,P.X-LabelWidth*.5f,P.Y+22,18,White);
-    return L;
+    return MiningWaypoint::Paint(G,Out,L,PC,E->GuideTarget(),FString::Printf(TEXT("%.1f 米"),FMath::Max(0.f,E->ExitDistance())));
 }

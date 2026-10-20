@@ -172,7 +172,9 @@ void AEndingEmergence::BuildPaperFinale()
         const float Y=FMath::Cos(A),Z=FMath::Sin(A);
         const float Edge=FMath::Min(1100/FMath::Max(FMath::Abs(Y),.001f),(Z>=0?1074.f:700.f)/FMath::Max(FMath::Abs(Z),.001f))*RockRandom.FRandRange(.88f,1.08f);
         Outer.Add(FVector(0,Y*Edge,700+Z*Edge));
-        const float InnerRadius=RockRandom.FRandRange(350.f,475.f);
+        // The rock is lowered 460 cm into the desktop. Keep the complete
+        // opening above that floor and well inside the visible ink silhouette.
+        const float InnerRadius=RockRandom.FRandRange(140.f,185.f);
         Inner.Add(FVector(0,Y*InnerRadius,700+Z*InnerRadius));
     }
     for(int I=0;I<Sides;++I)
@@ -205,7 +207,12 @@ void AEndingEmergence::BuildPaperFinale()
     UE::Geometry::FDynamicMesh3 VideoOpening;VideoOpening.EnableAttributes();
     const int VideoCentre=VideoOpening.AppendVertex(FVector::ZeroVector);
     TArray<int> VideoRim;
-    for(const FVector& Point:Inner)VideoRim.Add(VideoOpening.AppendVertex(Point-FVector(0,0,700)));
+    FinaleVideoRim.Empty();
+    for(const FVector& Point:Inner)
+    {
+        const FVector Rim=Point-FVector(0,0,700);
+        VideoRim.Add(VideoOpening.AppendVertex(Rim));FinaleVideoRim.Add(Rim);
+    }
     for(int I=0;I<Sides;++I)
     {
         VideoOpening.AppendTriangle(VideoCentre,VideoRim[(I+1)%Sides],VideoRim[I]);
@@ -268,7 +275,7 @@ void AEndingEmergence::StartFinaleVideo()
     }
     if(FinaleVideoPlayer&&FinaleVideoPlayer->IsReady())
     {
-        if(FinaleVideoSound)FinaleVideoSound->SetVolumeMultiplier(1);
+        if(FinaleVideoSound)FinaleVideoSound->SetVolumeMultiplier(0);
         if(Ambience)Ambience->AdjustVolume(.35f,0);
         FinaleVideoPlayer->Play();
     }
@@ -379,16 +386,17 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
 {
     if(bFinaleVideoRequested && FinaleVideoPlayer && FinaleVideoPlayer->IsPlaying())UpdateFinaleVideoPresentation();
     if(bFinaleVideoRequested&&FinaleVideoPlayer&&FinaleVideoPlayer->IsPlaying()&&FinaleVideoTexture&&FinaleVideoTexture->GetWidth()>0)
-        FinaleVideoMaterial->SetScalarParameterValue(TEXT("VideoBlend"),PaperEnding::Ease(float(FinaleVideoPlayer->GetTime().GetTotalSeconds()-.04)/.12f));
-    if(FinaleVideoPlayer&&!bFinaleVideoRequested&&FinaleVideoPlayer->IsPlaying()&&FinaleVideoPlayer->GetTime().GetTotalSeconds()>.08)
+        FinaleVideoMaterial->SetScalarParameterValue(TEXT("VideoBlend"),1.f);
+    if(FinaleVideoPlayer&&!bFinaleVideoRequested&&FinaleVideoPlayer->IsPlaying()&&FinaleVideoPlayer->GetTime().GetTotalSeconds()>1.f/60.f)
     {
-        FinaleVideoPlayer->Pause();FinaleVideoPlayer->Seek(FTimespan::Zero());
+        FinaleVideoPlayer->Pause(); // Keep the decoded sample; seeking flushed it and stalled the handoff.
     }
     if(FinaleVideoMaterial&&Player)
     {
         int32 Width=0,Height=0;Player->GetViewportSize(Width,Height);
         if(Height>0)FinaleVideoMaterial->SetScalarParameterValue(TEXT("ViewportAspect"),float(Width)/Height);
     }
+    if(Shot<12 && PaperCaveScene)PaperCaveScene->SetVisibility(false,true);
     auto PaperPose=[&](FVector P,FVector Direction,float Fov,float Roll=0.f)
     {
         const FTransform T=PaperScene->GetRelativeTransform();Pose(T.TransformPosition(P),T.TransformPosition(P+Direction*1000),Fov,Roll);
@@ -436,7 +444,7 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
         PaperPick->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.95f)/.65f)),0,0));
         // Submit the film surface while the upright, unbroken rock still covers
         // it. First-use shader preparation must finish before the cap flies away.
-        if(ShotTime>=4.75f&&!PaperCaveScene->IsVisible())PaperCaveScene->SetVisibility(true,true);
+        PaperCaveScene->SetVisibility(false,true); // The video can only appear after the rock breaks.
         UpdatePaperProps(X,Dt);
     }
     else if(Shot==12)
@@ -450,6 +458,7 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
         {
             if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("等一下！")),5.f);}
             bPaperRockBroken=true;PaperRockCap->SetVisibility(false,true);
+            StartFinaleVideo(); // Already decoded: motion starts with the opening, not at the rim.
             for(auto Chip:PaperRockChips)Chip->SetVisibility(true,true);
             PaperCaveScene->SetVisibility(true,true);
             Sound(TEXT("Connect"),.8f,.55f);
@@ -476,14 +485,14 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
         // Screen-space sampling makes this invisible; playback starts at the rim.
         if(X>=7950)
             PaperCaveScene->SetWorldLocation(Camera->GetActorLocation()+Camera->GetActorForwardVector()*50);
-        if(X>=8000&&!bFinaleVideoRequested)StartFinaleVideo();
+        if(X>=7800&&!bFinaleVideoRequested)StartFinaleVideo();
         UpdatePaperProps(X,Dt);
     }
     else if(Shot>=13)
     {
         // Once the aperture fills the view, keep the exact same video projection.
         // No ceiling scene, new camera, seek or full-screen player is introduced.
-        PaperPose(FVector(6200.f+PaperEnding::FlightSpeed*Duration(12),0,240),FVector::ForwardVector,108);
+        PaperPose(FVector(6200.f+PaperEnding::FlightSpeed*(Duration(12)+ShotTime),0,240),FVector::ForwardVector,108);
         PaperCaveScene->SetWorldLocation(Camera->GetActorLocation()+Camera->GetActorForwardVector()*50);
         if(!FinaleVideoSource)bComplete=true;
 

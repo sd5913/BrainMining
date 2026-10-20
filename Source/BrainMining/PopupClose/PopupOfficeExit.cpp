@@ -60,6 +60,13 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
     return {};
    });
   GEngine->GameViewport->AddViewportWidgetContent(PickupGuide.ToSharedRef(),9);
+  ExitGuide=SNew(SMiningWaypoint).Player(Owner.GetWorld()->GetFirstPlayerController()).Label(TEXT("按G使用炸弹炸开出口"))
+   .Target_Lambda([this]()->TOptional<FVector>
+   {
+    if(Owner.bAreaActive && !Owner.IsHidden() && Phase==3 && Owner.View==APopupCloseStage::EView::Free && Door.IsValid())return Door->Bounds.Origin;
+    return {};
+   });
+  GEngine->GameViewport->AddViewportWidgetContent(ExitGuide.ToSharedRef(),9);
  }
  auto Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
  auto BombMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/Bomb/SM_StickyBomb.SM_StickyBomb"));
@@ -77,16 +84,8 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
  // Restore it at runtime too: cooked maps retain those component overrides.
  Door->SetHiddenInGame(false);Door->SetVisibility(true);
  Door->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
- if(auto* DoorAsset=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/PopupClose/Maps/_GENERATED/Lenovo/office_doors_Submesh_704FAA0D.office_doors_Submesh_704FAA0D")))
- {
-  auto* Art=Make(TEXT("OfficeBlastDoorArt"),DoorAsset,FLinearColor::White);
-  Art->AttachToComponent(Door.Get(),FAttachmentTransformRules::KeepWorldTransform);
-  const FVector Size=DoorAsset->GetBounds().BoxExtent*2;
-  const FVector Scale(26/FMath::Max(1.,Size.X),200/FMath::Max(1.,Size.Y),290/FMath::Max(1.,Size.Z));
-  Art->SetWorldScale3D(Scale*Owner.GetActorScale3D());Art->SetWorldRotation(Owner.GetActorRotation());
-  Art->SetWorldLocation(Owner.GetActorTransform().TransformPosition(FVector(1000,0,145)-DoorAsset->GetBounds().Origin*Scale));
-  Art->SetCollisionEnabled(ECollisionEnabled::NoCollision);
- }
+ // The imported meeting-room leaf overlaps the authored grey exit door and
+ // leaves a brown panel across its left half. Keep the live blast door only.
  bool bConnected=false;for(TActorIterator<APopupCloseOffice> It(Owner.GetWorld());It;++It)
   if(FVector::DistSquared(It->GetActorLocation(),Owner.GetActorLocation())<2500.f)bConnected=It->bWalkThroughConnections;
  const float CorridorEnd=bConnected?1200.f:1750.f;
@@ -203,6 +202,8 @@ FPopupOfficeExit::~FPopupOfficeExit()
 {
  if(PickupGuide.IsValid() && GEngine && GEngine->GameViewport)GEngine->GameViewport->RemoveViewportWidgetContent(PickupGuide.ToSharedRef());
  PickupGuide.Reset();
+ if(ExitGuide.IsValid() && GEngine && GEngine->GameViewport)GEngine->GameViewport->RemoveViewportWidgetContent(ExitGuide.ToSharedRef());
+ ExitGuide.Reset();
  FinishExitTurn();
  if(Owner.GetWorld())Owner.GetWorld()->GetTimerManager().ClearTimer(Timer);
  if(auto Tool=BoundTool.Get())Tool->OnBombExploded.RemoveDynamic(&Owner,&APopupCloseStage::OnPlayerBombExploded);

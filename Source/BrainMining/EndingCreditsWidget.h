@@ -12,7 +12,7 @@ class BRAINMINING_API UEndingCreditsWidget : public UUserWidget
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Credits", meta=(ClampMin="0")) float BlackFadeSeconds=1.4f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Credits", meta=(ClampMin="0")) float TextFadeSeconds=1.6f;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Credits", meta=(ClampMin="0")) float PromptDelay=8.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Credits", meta=(ClampMin="0")) float PromptDelay=4.5f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Credits|CRT", meta=(ClampMin="0",ClampMax=".3")) float CRTStrength=.055f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Credits|CRT", meta=(ClampMin="2",ClampMax="12")) float ScanlineSpacing=4.f;
 protected:

@@ -35,6 +35,7 @@
 #include "Misc/App.h"
 #include "MediaPlayer.h"
 #include "MediaSoundComponent.h"
+#include "Components/AudioComponent.h"
 #include "MediaTexture.h"
 
 class FEndingTitleDrillPreview : public IAutomationLatentCommand
@@ -45,6 +46,7 @@ class FEndingTitleDrillPreview : public IAutomationLatentCommand
     bool EntryCaptured=false,FadeCaptured=false,OriginalEnabled=true,ExitStartCaptured=false,WhiteCaptured=false;
     float LastContact=0,MaxContactGap=0;
     bool EarlyPickCaptured=false;
+    bool VideoApertureCaptured=false;
     bool GroundTurnCaptured=false,PortalCaptured=false,PrintedPaperCaptured=false,PatternFrontCaptured=false;
     float LastBlackProbe=-1;int BlackMatchSamples=0;
     bool bMovie=FParse::Param(FCommandLine::Get(),TEXT("PaperFinaleMovie"));
@@ -72,6 +74,11 @@ public:
         if(bMovie&&D->Shot>=10&&D->Shot<=14)
             FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("PaperFinaleMovie")/FString::Printf(TEXT("frame-%04d.png"),MovieFrame++),true,false);
         auto* P=W->GetFirstPlayerController();auto* M=D->Mining.Get();auto* Effects=P->GetPawn()->FindComponentByClass<UMiningToolEffectsComponent>();
+        if(D->Shot==12&&D->ShotTime>1.4f&&D->ShotTime<1.8f&&!VideoApertureCaptured)
+        {
+            Test->TestFalse(TEXT("The moving video remains inside the physical aperture during approach"),D->VideoPresentation.IsValid());
+            Capture(TEXT("paper-video-aperture"));VideoApertureCaptured=true;
+        }
         if(D->Shot==8&&D->ShotTime<2.1f)
             Test->TestEqual(TEXT("Cave waits until the second half of the o dive"),D->FinalePreviewMaterials[0]->K2_GetScalarParameterValue(TEXT("Reveal")),0.f);
         if(D->Shot==11&&D->ShotTime>5.65f&&!EarlyPickCaptured)
@@ -355,6 +362,7 @@ public:
             {
                 Test->TestTrue(TEXT("Pickaxe strike opens a physical hole"),D->bPaperRockBroken&&!D->PaperRockCap->IsVisible());
                 Test->TestTrue(TEXT("The opening frame is already visible inside the hole"),D->PaperCaveScene->IsVisible());
+                Test->TestFalse(TEXT("Fullscreen video must not conceal the impact and physical aperture"),D->VideoPresentation.IsValid());
                 Test->TestTrue(TEXT("The movie starts immediately when the rock opens"),D->bFinaleVideoRequested&&D->FinaleVideoPlayer&&D->FinaleVideoPlayer->IsPlaying());
                 Test->TestNotNull(TEXT("The supplied movie is prepared before impact"),D->FinaleVideoPlayer.Get());
                 if(D->FinaleVideoPlayer)Test->TestTrue(TEXT("The movie decoder is ready before impact"),D->FinaleVideoPlayer->IsReady());
@@ -369,12 +377,13 @@ public:
                 Test->TestFalse(TEXT("Paper scenery is cleared only after crossing the rim"),D->PaperScene->IsVisible());
                 Test->TestNotNull(TEXT("The film material is ready for the supplied movie"),D->FinaleVideoMaterial.Get());
                 Test->TestTrue(TEXT("Crossing the rim starts video playback"),D->bFinaleVideoRequested&&D->FinaleVideoPlayer&&D->FinaleVideoPlayer->IsPlaying());
+                Test->TestFalse(TEXT("The aperture compositor remains the sole video presentation"),D->VideoPresentation.IsValid());
                 if(D->FinaleVideoPlayer)
                 {
                     Test->TestTrue(TEXT("The real media clock advances"),D->FinaleVideoPlayer->GetTime().GetTotalSeconds()>.1);
-                    Test->TestEqual(TEXT("The ending movie is silent and has no audio track"),D->FinaleVideoPlayer->GetNumTracks(EMediaPlayerTrack::Audio),0);
+                    Test->TestEqual(TEXT("Movie audio track stays disabled"),D->FinaleVideoPlayer->GetSelectedTrack(EMediaPlayerTrack::Audio),INDEX_NONE);
                 }
-                Test->TestTrue(TEXT("Video sound component is active"),D->FinaleVideoSound&&D->FinaleVideoSound->IsActive());
+                Test->TestNull(TEXT("Silent movie creates no audio output"),D->FinaleVideoSound.Get());
                 Capture(TEXT("paper-video-fullscreen"));Since=D->Age;++InputPhase;
             }
             else if(InputPhase==5&&D->ShotTime>1.5f){Capture(TEXT("paper-video-middle"));++InputPhase;}

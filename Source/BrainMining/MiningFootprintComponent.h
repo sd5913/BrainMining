@@ -13,6 +13,7 @@ class BRAINMINING_API UMiningFootprintComponent : public UActorComponent
     GENERATED_BODY()
 public:
     UMiningFootprintComponent();
+    virtual void BeginPlay() override;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Footprints",meta=(ClampMin="1")) float Lifetime=15.f;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Footprints",meta=(ClampMin="10")) float StepDistance=55.f;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Footprints") bool bEnabled=true;

@@ -47,9 +47,9 @@ AMiningOpening* AMiningOpening::EnsureMainGameOpening(AMiningExhibitHall* Hall)
     if(!Opening)return nullptr;
     Opening->Tags.Add(Hall->Areas[0].Tag);
     Opening->TitleTexture=Title;
-    Opening->SeatEye=RoomTransform.TransformPosition(FVector(-350,-160,175));
+    Opening->SeatEye=RoomTransform.TransformPosition(FVector(-390,-160,210));
     Opening->StandingLocation=RoomTransform.TransformPosition(FVector(-260,-70,98));
-    Opening->Facing=(RoomTransform.GetRotation()*FRotator(-8,32,0).Quaternion()).Rotator();
+    Opening->Facing=(RoomTransform.GetRotation()*FRotator(-14,24,0).Quaternion()).Rotator();
     Opening->Duration=2.6f;
     Opening->DoorTitleLocation=RoomTransform.TransformPosition(FVector(466,0,168));
     Opening->DoorTitleRotation=(RoomTransform.GetRotation()*FRotator(0,180,0).Quaternion()).Rotator();
@@ -154,6 +154,9 @@ bool AMiningOpening::IsOpening(UWorld* World)
 void AMiningOpening::Prepare(APlayerController* Controller)
 {
     Player=Controller;bPrepared=true;
+    if(TitleTexture){TitleTexture->SetForceMipLevelsToBeResident(60.f);TitleTexture->WaitForStreaming();}
+    if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/StartRoom/UI/M_OpeningTitleDecal")))
+        Material->EnsureIsComplete();
     APawn* Pawn=Controller->GetPawn();bOldCollision=Pawn->GetActorEnableCollision();Pawn->SetActorEnableCollision(false);
     if(auto* Character=Cast<ACharacter>(Pawn)){Character->GetCharacterMovement()->StopMovementImmediately();Character->GetCharacterMovement()->DisableMovement();}
     FMinimalViewInfo NativeView;Pawn->CalcCamera(0,NativeView);
@@ -163,7 +166,7 @@ void AMiningOpening::Prepare(APlayerController* Controller)
     if(const auto* Character=Cast<ACharacter>(Pawn))
         EyeOffset.Z=FMath::Max(EyeOffset.Z,Character->GetSimpleCollisionHalfHeight()*.95f);
     StandingEye=StandingLocation+EyeOffset;
-    SeatEye.Z=FMath::Min(SeatEye.Z,StandingEye.Z-50.f);
+    // Preserve the authored menu composition instead of forcing a low seated eye.
     SeatPawnLocation=SeatEye-EyeOffset;
     Pawn->SetActorLocation(SeatPawnLocation);Controller->SetControlRotation(Facing);
     Controller->SetIgnoreMoveInput(true);Controller->SetIgnoreLookInput(true);bInputLocked=true;
@@ -236,7 +239,7 @@ void AMiningOpening::EnsureTitleOnWall()
     auto* Decal=NewObject<UDecalComponent>(this,TEXT("MineableWallTitle"));
     AddInstanceComponent(Decal);Decal->SetupAttachment(RootComponent);
     Decal->SetDecalMaterial(Material);Decal->DecalSize=FVector(18.f,61.5f,104.96f);
-    Decal->SetFadeScreenSize(0.f);Decal->RegisterComponent();Decal->SetFadeIn(0.f,.9f);
+    Decal->SetFadeScreenSize(0.f);
     // Decal UVs use local Z for horizontal and local Y for vertical. Rotate
     // the projection frame from the widget frame so the projected bitmap is
     // upright instead of rotated 90 degrees on the wall.
@@ -245,6 +248,8 @@ void AMiningOpening::EnsureTitleOnWall()
     const FVector Horizontal = -WidgetFrame.GetUnitAxis(EAxis::Y);
     const FRotator DecalRotation = FRotationMatrix::MakeFromXZ(Projection, Horizontal).Rotator();
     Decal->SetWorldLocationAndRotation(DoorTitleLocation+Projection*10.f,DecalRotation);
+    // Configure the pose and fade before publishing the render proxy.
+    Decal->SetFadeIn(0.f,2.4f);Decal->RegisterComponent();
     WorldTitle->SetVisibility(false);
 }
 void AMiningOpening::Release()

@@ -1,4 +1,5 @@
 #include "CardRoomStage.h"
+#include "EngineUtils.h"
 #include "CardRoomRobot.h"
 #include "Components/ChildActorComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -296,6 +297,10 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     const auto Phase=Run.Phase;
     if(Phase!=LastPhase)
     {
+        if(Phase==ECardRoomPhase::Matching)
+            for(TActorIterator<AActor> It(GetWorld());It;++It)
+                if(It->ActorHasTag(TEXT("CardSeatGuide")) && FVector::DistSquared(It->GetActorLocation(),GetActorLocation())<FMath::Square(6000.f))
+                {It->SetActorHiddenInGame(true);It->SetActorEnableCollision(false);}
         PreviousAudioTime=0;
         if(SubtitleOverride.IsBound() && Phase==ECardRoomPhase::Matching)SubtitleOverride.Execute(TEXT("*正在匹配中*"),2.2f);
         if(SubtitleOverride.IsBound() && Phase==ECardRoomPhase::Arrival)SubtitleOverride.Execute(TEXT("*匹配成功！*"),1.4f);
@@ -319,7 +324,7 @@ void ACardRoomStage::Tick(float DeltaSeconds)
         if(Run.Round==4) SubtitleOverride.Execute(TEXT("*我一定会回来的！——*"),3.f);
     }
     PreviousAudioTime=T;
-    const bool bGhost=Phase==ECardRoomPhase::Seated || Phase==ECardRoomPhase::Matching || Phase==ECardRoomPhase::Victory || Phase==ECardRoomPhase::Collected;
+    const bool bGhost=Phase==ECardRoomPhase::Seated;
     for(const auto& Dot:GhostDots) Dot->SetVisibility(bGhost);
     const bool bOpponentVisible=RabbitSkeletalMesh ? (Phase!=ECardRoomPhase::Exploring && Phase!=ECardRoomPhase::Collected) : (bBattle || Phase==ECardRoomPhase::Arrival);
     ToyRoot->SetVisibility(bOpponentVisible,true);

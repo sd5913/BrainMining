@@ -49,7 +49,7 @@ private:
  APopupCloseStage& Owner;
  TWeakObjectPtr<UStaticMeshComponent> Door,Pickup,Shutter;
  TWeakObjectPtr<UPostProcessComponent> PickupOutline;
- TSharedPtr<class SMiningWaypoint> PickupGuide;
+ TSharedPtr<class SMiningWaypoint> PickupGuide,ExitGuide;
  TWeakObjectPtr<UBoxComponent> RuinBlocker;
  TWeakObjectPtr<UInstancedStaticMeshComponent> Bombs,Rubble,DoorFragments,ReturnGrille;
  TWeakObjectPtr<UMiningBombToolComponent> BoundTool;

@@ -297,7 +297,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FEndingPaintScope,"BrainMining.Ending.Painterly
 bool FEndingPaintScope::RunTest(const FString&)
 {
  TestEqual(TEXT("Opening cell is painted"),AEndingEmergence::PaintWeightForStage(0,-1,false,.85f,.7f),.85f);
- TestEqual(TEXT("Vessel is not painted"),AEndingEmergence::PaintWeightForStage(1,-1,false,.85f,.7f),0.f);
+ TestEqual(TEXT("Vessel uses its own oil-paint strength"),AEndingEmergence::PaintWeightForStage(1,-1,false,.85f,.7f),.7f);
  TestEqual(TEXT("Vessel exit immediately removes paint"),AEndingEmergence::PaintWeightForStage(1,-1,true,.85f,.7f),0.f);
  for(int32 Gate=2;Gate<=5;++Gate)TestEqual(TEXT("Neurons never inherit the oil shader"),AEndingEmergence::PaintWeightForStage(Gate,-1,false,.85f,.7f),0.f);
  for(int32 Shot=0;Shot<=11;++Shot)TestEqual(TEXT("Film and finale do not inherit paint"),AEndingEmergence::PaintWeightForStage(0,Shot,false,.85f,.7f),0.f);

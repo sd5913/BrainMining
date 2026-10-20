@@ -44,7 +44,7 @@ bool EndingCreditsInput::Handle(APlayerController* Player,const FKey& Key)
     }
     if(Key==EKeys::Escape)
     {
-        UKismetSystemLibrary::QuitGame(Player,Player,EQuitPreference::Quit,false);
+        if(Session && Session->TogglePauseMenu(true))Session->RequestQuitConfirmation();
         return true;
     }
     if(!Field)

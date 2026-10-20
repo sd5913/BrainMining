@@ -21,7 +21,7 @@ public:
     UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly) TArray<int32> CampaignCollection;
     bool ToggleMenu();
     bool ToggleDeveloperMenu();
-    UFUNCTION(BlueprintCallable) bool TogglePauseMenu();
+    UFUNCTION(BlueprintCallable) bool TogglePauseMenu(bool bFromCredits=false);
     bool ToggleMobileMenu(bool bUpgrade = false);
     UFUNCTION(BlueprintCallable) bool JumpToCollectible(int32 ItemId);
     UFUNCTION(BlueprintCallable) void OpenPauseCollection();

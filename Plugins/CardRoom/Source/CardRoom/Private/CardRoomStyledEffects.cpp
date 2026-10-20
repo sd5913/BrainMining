@@ -85,7 +85,7 @@ void ACardRoomStage::TickStyledEffects()
     if(StyledFX.IsValidIndex(5))
     {
         auto* Poison=StyledFX[5].Get();
-        const bool Burning=Resolve && Run.Round==3 && T>=1.f && T<1.28f;
+        const bool Burning=Resolve && Run.Round==3 && T>=1.f && T<1.7f;
         const bool KeepPoison=Run.bPoisoned || Burning || (Resolve && Run.Round==2 && T>=1.f);
         if(KeepPoison && !bStyledPoisonLive)
         {
@@ -101,6 +101,26 @@ void ACardRoomStage::TickStyledEffects()
             bStyledPoisonLive=false;
         }
         if(!Resolve && !Run.bPoisoned)Poison->DeactivateImmediate();
+    }
+    // A visible flame front occupies the gas volume while the Niagara smoke
+    // finishes. This stays readable even when the imported fire burst is faint.
+    if(Resolve && Run.Round==3 && T>=1.f && T<2.25f)
+    {
+        auto* Flame=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_CardRoomFlameSprite"));
+        for(int32 I=0;I<FMath::Min(10,Puffs.Num());++I)
+        {
+            const float Life=T-1.f-I*.045f;
+            if(Life<=0 || Life>=.85f)continue;
+            const float A=Life/.85f,Angle=I*2.39996f;
+            auto* P=Puffs[I].Get();
+            const FVector Position=Target+FVector(-45*S,FMath::Cos(Angle)*(45+65*A)*S,(FMath::Sin(Angle)*50+75*A)*S);
+            P->SetVisibility(true);P->SetRelativeLocation(Position);
+            P->SetRelativeScale3D(FVector(1.1f*S*(1-A*.5f),1.8f*S*(1-A*.25f),1));
+            P->SetRelativeRotation(FRotationMatrix::MakeFromZY((Eye-Position).GetSafeNormal(),FVector::UpVector).Rotator());
+            auto* M=Cast<UMaterialInstanceDynamic>(P->GetMaterial(0));
+            if(Flame && (!M || M->Parent!=Flame)){M=UMaterialInstanceDynamic::Create(Flame,this);P->SetMaterial(0,M);}
+            if(M){M->SetVectorParameterValue(TEXT("Color"),FMath::Lerp(FLinearColor(3,1.1f,.08f),FLinearColor(1.6f,.12f,.01f),A));M->SetScalarParameterValue(TEXT("Opacity"),FMath::SmoothStep(0.f,.1f,Life)*(1-A));}
+        }
     }
     if(Resolve && Run.Round==2 && T>=.25f && T<1.f)
     {

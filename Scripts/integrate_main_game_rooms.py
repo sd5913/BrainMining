@@ -128,6 +128,8 @@ try:
         cube('LINK_Museum_Header_'+str(x),o+unreal.Vector(x,0,390),unreal.Vector(20,400,60),museum['tag'],mat)
     areas=list(hall.areas)
     for index,spec in zip([1,3,5],cfg['rooms']):
+        # Digging through the television is enough to expose the card-room exit.
+        if spec['id']=='Journey':continue
         p=V(spec['exit'])+unreal.Vector(-55,0,84);gate=cube('LINK_'+spec['id']+'_CompletionGate',p,unreal.Vector(30,500,360),spec['tag'],door)
         areas[index].set_editor_property('progress_gate',gate)
     hall.set_editor_property('areas',areas,notify_mode=unreal.PropertyAccessChangeNotifyMode.NEVER)

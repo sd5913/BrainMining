@@ -19,7 +19,18 @@ void UMiningCollectionWidget::NativeConstruct()
     if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("NextButton"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Next);
     if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("CloseButton"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::CloseCollection);
     for(const TCHAR* Name:{TEXT("PreviousButton"),TEXT("NextButton"),TEXT("CloseButton"),TEXT("ItemButton0"),TEXT("ItemButton1"),TEXT("ItemButton2"),TEXT("ItemButton3")})
-        if(auto* B=Cast<UButton>(GetWidgetFromName(Name))){auto Style=B->GetStyle();Style.SetHovered(Style.Normal);Style.SetPressed(Style.Normal);Style.SetHoveredForeground(Style.NormalForeground);Style.SetPressedForeground(Style.NormalForeground);Style.SetPressedPadding(Style.NormalPadding);Style.SetDisabled(Style.Normal);B->SetStyle(Style);}
+        if(auto* B=Cast<UButton>(GetWidgetFromName(Name)))
+        {
+            auto Style=B->GetStyle();Style.SetHovered(Style.Normal);Style.SetPressed(Style.Normal);
+            if(B->GetFName()==TEXT("PreviousButton") || B->GetFName()==TEXT("NextButton"))
+            {
+                Style.Normal.TintColor=FSlateColor(FLinearColor(.65f,.45f,.015f));
+                Style.Hovered.TintColor=FSlateColor(FLinearColor(1.f,.80f,.12f));
+                Style.Pressed.TintColor=FSlateColor(FLinearColor(1.f,.95f,.65f));
+                Style.SetPressedPadding(Style.NormalPadding+FMargin(0,2,0,-2));
+            }
+            Style.SetDisabled(Style.Normal);B->SetStyle(Style);
+        }
     RefreshCollection();
 }
 void UMiningCollectionWidget::SetCollection(AMiningCollectionField* Field){Collection=Field;CurrentPage=Collection?FMath::Max(0,Collection->CatalogueIds().IndexOfByKey(Collection->SelectedId))/4:0;RefreshCollection();}

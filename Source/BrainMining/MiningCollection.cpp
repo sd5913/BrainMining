@@ -4,6 +4,7 @@
 #include "Subtitles/SubtitleLibrary.h"
 #include "Engine/GameInstance.h"
 #include "MiningInteractionTrace.h"
+#include "Showcase/MiningTreasure.h"
 #include "BrainMiningPlayerController.h"
 #include "SMiningCollectionView.h"
 #include "MiningCollectionWidget.h"
@@ -101,7 +102,7 @@ bool AMiningCollectionField::InitializePlayer()
     for(int i=0;i<2;++i)
     {
         auto* Light=NewObject<UPointLightComponent>(this); AddInstanceComponent(Light); Light->RegisterComponent();
-        Light->SetWorldLocation(FVector(-160,i==0?-160:160,-9850)); Light->SetIntensity(i==0?1300:850);
+        Light->SetWorldLocation(FVector(-160,i==0?-160:160,-9850)); Light->SetIntensity(i==0?1650:1100);
         Light->SetAttenuationRadius(700); Light->SetLightColor(i==0?FLinearColor(1,.84f,.65f):FLinearColor(.45f,.78f,1));
     }
     if(GEngine&&GEngine->GameViewport)
@@ -263,6 +264,10 @@ void AMiningCollectionField::Tick(float Dt)
         if(Item->LastObservedCuts==Item->HostRock->SuccessfulCuts) continue;
         Item->LastObservedCuts=Item->HostRock->SuccessfulCuts;
         Item->Exposure=Item->MeasureExposure();
+        // Pickup follows the mineral exposure rule. Physics release still waits
+        // for a completely clear body, so partially buried objects never eject.
+        if(AMiningTreasure::IsExposureEligible(Item->Exposure))
+            Item->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
         if(Item->CanRelease(ExposureThreshold))
         {
             Item->Release();
@@ -279,12 +284,12 @@ void AMiningCollectionField::RefreshTarget()
     {
         auto* Item=Cast<AMiningCollectible>(Candidate.GetActor());
         if(!Item && Candidate.GetActor()) Item=Cast<AMiningCollectible>(Candidate.GetActor()->GetOwner());
-        return Item && Item->bReleased && !Item->bCollected;
+        return Item && !Item->bCollected && (Item->bReleased || AMiningTreasure::IsExposureEligible(Item->Exposure));
     }))
     {
         auto* Item=Cast<AMiningCollectible>(Hit.GetActor());
         if(!Item && Hit.GetActor()) Item=Cast<AMiningCollectible>(Hit.GetActor()->GetOwner());
-        if(Item&&Item->bReleased&&!Item->bCollected) NewTarget=Item;
+        if(Item&&!Item->bCollected&&(Item->bReleased || AMiningTreasure::IsExposureEligible(Item->Exposure))) NewTarget=Item;
     }
     if(Target!=NewTarget)
     {

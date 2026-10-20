@@ -197,10 +197,11 @@ void ABrainMiningCharacter::PostInitializeComponents()
 		// Apply after blueprint defaults and player scaling. Keep head clearance
 		// unchanged while giving faceted excavated terrain a little more clearance.
 		const float BodyScale=GetCapsuleComponent()->GetShapeScale();
-		GetCapsuleComponent()->SetCapsuleRadius(30.f);
+		GetCapsuleComponent()->SetCapsuleRadius(26.f);
 		auto* Walking=GetCharacterMovement();
-		Walking->MaxStepHeight=FMath::Max(Walking->MaxStepHeight,60.f*BodyScale);
-		Walking->SetWalkableFloorAngle(FMath::Max(Walking->GetWalkableFloorAngle(),55.f));
+		Walking->MaxStepHeight=FMath::Max(Walking->MaxStepHeight,72.f*BodyScale);
+		Walking->SetWalkableFloorAngle(FMath::Max(Walking->GetWalkableFloorAngle(),60.f));
+		Walking->bUseFlatBaseForFloorChecks=true;
 		Walking->PerchRadiusThreshold=4.f*BodyScale;
 		Walking->PerchAdditionalHeight=24.f*BodyScale;
 		InitializePlayerFlight();

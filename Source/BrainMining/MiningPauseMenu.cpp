@@ -30,12 +30,12 @@
 #include "Widgets/SBoxPanel.h"
 #include "Styling/CoreStyle.h"
 
-bool UMiningExperienceSubsystem::TogglePauseMenu()
+bool UMiningExperienceSubsystem::TogglePauseMenu(bool bFromCredits)
 {
     auto* PC=GetWorld()?GetWorld()->GetFirstPlayerController():nullptr;
     if(auto* SettingsPC=Cast<ABrainMiningPlayerController>(PC);SettingsPC&&SettingsPC->IsAudioSettingsOpen()){SettingsPC->ToggleAudioSettings();return true;}
     if(Menu){CloseMenu();return true;}
-    if(EndingCreditsInput::Handle(PC,EKeys::Escape))return true;
+    if(!bFromCredits && EndingCreditsInput::Handle(PC,EKeys::Escape))return true;
     auto* Viewport=GetGameInstance()->GetGameViewportClient();
     if(!PC||!PC->IsLocalController()||!PC->GetPawn()||!Viewport||AMiningOpening::IsOpening(GetWorld()))return false;
     if(auto* Input=UMiningGamepadSubsystem::Find(PC);Input&&Input->GetContext()==EMiningInputContext::Blocked)return false;
@@ -62,7 +62,7 @@ bool UMiningExperienceSubsystem::TogglePauseMenu()
         return Choice;
     };
     ResumeButton=Button(TEXT("继续游戏"),[this](){CloseMenu();},false);
-    auto CollectionButton=Button(TEXT("收集界面"),[this](){OpenPauseCollection();},false);
+    auto CollectionButton=Button(TEXT("查看藏品"),[this](){OpenPauseCollection();},false);
     CollectionButton->SetEnabled(bFromGameplay);
     auto AudioButton=Button(TEXT("设置"),[this]()
     {

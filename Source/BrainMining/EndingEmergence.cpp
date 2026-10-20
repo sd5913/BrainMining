@@ -96,7 +96,7 @@ public:
     void Construct(const FArguments& A) { Owner=A._Owner; }
     virtual int32 OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRect&,FSlateWindowElementList& Out,int32 L,const FWidgetStyle&,bool) const override
     {
-        if(!Owner.IsValid() || Owner->bComplete)return L;
+        if(!Owner.IsValid())return L;
         const auto* D=Owner.Get();const FVector2D Size=G.GetLocalSize();
         // Composite the same decoded frame inside the projected physical hole.
         // Slate runs after scene exposure/ACES, preserving the supplied film's SDR.
@@ -104,9 +104,14 @@ public:
         {
             VideoBrush.DrawAs=ESlateBrushDrawType::Image;VideoBrush.SetResourceObject(D->FinaleVideoTexture);
             VideoBrush.ImageSize=FVector2D(D->FinaleVideoTexture->GetWidth(),D->FinaleVideoTexture->GetHeight());
+            const float Fit=FMath::Min(Size.X/FMath::Max(1.,VideoBrush.ImageSize.X),Size.Y/FMath::Max(1.,VideoBrush.ImageSize.Y));
+            const FVector2D VideoSize=VideoBrush.ImageSize*Fit,VideoOffset=(Size-VideoSize)*.5;
             const float Depth=FVector::DotProduct(D->PaperCaveScene->GetComponentLocation()-D->Camera->GetActorLocation(),D->Camera->GetActorForwardVector());
             if(D->Shot>=13||Depth<=65)
-                FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),&VideoBrush,ESlateDrawEffect::None,FLinearColor::White);
+            {
+                FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,FLinearColor::Black);
+                FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(FVector2f(VideoSize),FSlateLayoutTransform(FVector2f(VideoOffset))),&VideoBrush,ESlateDrawEffect::None,FLinearColor::White);
+            }
             else
             {
                 int32 W=0,H=0;D->Player->GetViewportSize(W,H);
@@ -115,7 +120,8 @@ public:
                 {
                     FVector2D Screen;
                     if(W<=0||H<=0||!D->Player->ProjectWorldLocationToScreen(D->PaperCaveScene->GetComponentTransform().TransformPosition(P),Screen,false))return false;
-                    const FVector2f UV(Screen.X/W,Screen.Y/H),Position(UV.X*Size.X,UV.Y*Size.Y);
+                    const FVector2f Position(Screen.X/W*Size.X,Screen.Y/H*Size.Y);
+                    const FVector2f UV((Position.X-VideoOffset.X)/FMath::Max(1.,VideoSize.X),(Position.Y-VideoOffset.Y)/FMath::Max(1.,VideoSize.Y));
                     V.Add(FSlateVertex::Make<ESlateVertexRounding::Disabled>(G.GetAccumulatedRenderTransform(),Position,UV,FColor::White));return true;
                 };
                 bool Valid=Add(FVector::ZeroVector);
@@ -127,6 +133,7 @@ public:
                 }
             }
         }
+        if(D->bComplete)return L; // Keep the same decoded frame beneath the credits.
         const float S=FMath::Min(Size.X/1600,Size.Y/900);
         // Retain controls, aim and target markers, without narrative or target labels.
         const float Fade=D->OverlayAlpha();
@@ -409,6 +416,7 @@ void AEndingEmergence::BuildJourney()
         Gate->RockSize=FVector(220,1300,1300);Gate->bUseCircularRockMesh=true;
         Gate->RockMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_RedMembrane"));
         Gate->ResetRock();Gates.Add(Gate);
+
     }
 }
 
@@ -830,7 +838,7 @@ void AEndingEmergence::BeginPlay()
     Camera->GetCameraComponent()->PostProcessSettings.bOverride_MotionBlurAmount=true;
     Camera->GetCameraComponent()->PostProcessSettings.MotionBlurAmount=0;
     Camera->GetCameraComponent()->PostProcessSettings.bOverride_VignetteIntensity=true;
-    Camera->GetCameraComponent()->PostProcessSettings.VignetteIntensity=.3;
+    Camera->GetCameraComponent()->PostProcessSettings.VignetteIntensity=0;
     // These shots use authored emissive shading. Avoid building a Lumen scene
     // for the crowd/city on its first reveal; the campaign camera is unchanged.
     auto& EndingPP=Camera->GetCameraComponent()->PostProcessSettings;
@@ -846,7 +854,9 @@ void AEndingEmergence::ReplaceBloodAssets()
     // A straightened section of SM_Vein retains its inner/outer wall and UVs.
     // The source asset is a complete winding vessel, not an X-aligned tube.
     auto* VesselMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/EndingEmergence/Meshes/SM_EE_BloodCirculationVeinSegment"));
-    auto* VesselMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/BloodCirculation/Materials/MaterialInstance/BloodVessel/MI_Vein"));
+    // Keep the imported wall's broad tissue pattern, with softer detail and
+    // restrained reflections scoped to the vessel rather than the whole camera.
+    auto* VesselMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/MI_EE_SoftVein"));
     auto* BloodMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/BloodCirculation/Mesh/Cell/SM_RedBloodCell"));
     auto* BloodMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/BloodCirculation/Materials/MaterialInstance/Cell/MI_RedBloodCell"));
     if(!VesselMesh||!BloodMesh)
@@ -923,7 +933,7 @@ void AEndingEmergence::ReplaceBloodAssets()
         AddInstanceComponent(Light);Light->SetupAttachment(Sets[0]);
         Light->SetMobility(EComponentMobility::Movable);
         Light->IntensityUnits=ELightUnits::Lumens;
-        Light->SetIntensity(18000);Light->SetAttenuationRadius(2300);
+        Light->SetIntensity(900);Light->SetAttenuationRadius(1600);
         Light->SetLightColor(FLinearColor(1.f,.82f,.72f));
         Light->SetCastShadows(false);
         const float Side=FMath::FloorToInt(Distance/1400)%2?1.f:-1.f;
@@ -961,10 +971,19 @@ bool AEndingEmergence::Initialize()
     if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MouseMuseum/MI_EndingOilPaint.MI_EndingOilPaint")))
         PainterlyMaterial=UMaterialInstanceDynamic::Create(Base,this);
     if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_PulseTransit")))
-    {TransitMaterial=UMaterialInstanceDynamic::Create(Base,this);Camera->GetCameraComponent()->AddOrUpdateBlendable(TransitMaterial,1);}
+    {TransitMaterial=UMaterialInstanceDynamic::Create(Base,this);}
     // The cell room floats without using or unlocking the campaign jetpack.
     if(auto* M=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())M->FlightSettings.bEnabled=false;
     CacheCellMotion();InitializeScaleMotion();
+    {auto* Set=Sets[0].Get();
+        // A thin gold rim follows the visible cell neck, in front of the plug.
+        for(int Segment=0;Segment<96;++Segment)
+        {
+            auto Point=[&](int N){const float A=N*2*PI/96;return FVector(1460,298*FMath::Cos(A),240+262*FMath::Sin(A));};
+            auto* Rim=Rod(Point(Segment),Point(Segment+1),5.f,FLinearColor(1.f,.65f,.10f),Set,TEXT("Glow"));
+            Rim->ComponentTags.Add(TEXT("EndingCellVisual"));
+        }
+    }
     // Keep transition audio resident: first playback must not flush loading on a cut.
     for(const TCHAR* Name:{TEXT("Cell"),TEXT("Blood"),TEXT("Brain"),TEXT("Street"),TEXT("Space"),TEXT("Connect"),TEXT("PulseFlight"),TEXT("Hit")})
         EndingSounds.Add(FName(Name),LoadObject<USoundBase>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Audio/S_EE_"))+Name)));
@@ -972,7 +991,7 @@ bool AEndingEmergence::Initialize()
     if(GEngine&&GEngine->GameViewport)
     {
         SAssignNew(View,SEmergenceEndingView).Owner(this);View->SetVisibility(EVisibility::HitTestInvisible);
-        GEngine->GameViewport->AddViewportWidgetContent(View.ToSharedRef(),100);
+        GEngine->GameViewport->AddViewportWidgetContent(View.ToSharedRef(),60);
     }
     if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_Exhaustion")))
     {ExhaustionMaterial=UMaterialInstanceDynamic::Create(Base,this);Camera->GetCameraComponent()->AddOrUpdateBlendable(ExhaustionMaterial,1);}
@@ -1058,6 +1077,7 @@ void AEndingEmergence::WarmStreetRendering()
 
 void AEndingEmergence::Sound(const TCHAR* Name,float Volume,float Pitch)
 {
+    if((Shot<0&&GateIndex>=5)||(Shot>=0&&Shot<=8)||bFinaleVideoRequested)return;
     auto& Cached=EndingSounds.FindOrAdd(FName(Name));
     if(!Cached)Cached=LoadObject<USoundBase>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Audio/S_EE_"))+Name));
     if(Cached)UGameplayStatics::PlaySound2D(this,Cached,Volume,Pitch);
@@ -1066,6 +1086,7 @@ void AEndingEmergence::Sound(const TCHAR* Name,float Volume,float Pitch)
 void AEndingEmergence::SetAmbience(const TCHAR* Name,float Volume)
 {
     if(Ambience){Ambience->FadeOut(.8f,0);Ambience->bAutoDestroy=true;Ambience=nullptr;}
+    if((Shot<0&&GateIndex>=5)||(Shot>=0&&Shot<=8)||bFinaleVideoRequested)return;
     const FString AssetName(Name);
     const FString Prefix=AssetName.EndsWith(TEXT("_Loop"))?TEXT("A_EE_"):TEXT("S_EE_");
     const FString Path=FString(TEXT("/Game/EndingEmergence/Audio/"))+Prefix+AssetName;
@@ -1159,7 +1180,7 @@ void AEndingEmergence::PreviewFilm()
 
 float AEndingEmergence::Duration(int32 Index)
 {
-    const float Seconds[]={5,13,8,11,35,20,18,12,4.5f,0,3.7f,6.6f,2.8f,3.f,0};
+    const float Seconds[]={5,16,10,11,35,20,18,12,4.5f,0,3.7f,6.6f,2.8f,3.f,0};
     return Index>=0&&Index<UE_ARRAY_COUNT(Seconds)?Seconds[Index]:0;
 }
 
@@ -1269,7 +1290,7 @@ void AEndingEmergence::UpdateFilm(float Dt)
     case 0: Pose(Ending::City+Ending::ScaleRail(FVector(38,0,195),FVector(-160,-80,650),T),Ending::City+FVector(0,0,160),75);break;
     case 1:
         if(!EyePerson->IsVisible())EyePerson->SetVisibility(true,true);
-        Pose(Ending::City+Ending::ScaleRail(FVector(-160,-80,650),FVector(-1000,-550,3200),T),Ending::City+FMath::Lerp(FVector(0,0,160),FVector(100,0,75),T),FMath::Lerp(75.f,64.f,T));break;
+        Pose(Ending::City+Ending::ScaleRail(FVector(-160,-80,650),FVector(-2400,-1300,6200),T),Ending::City+FMath::Lerp(FVector(0,0,160),FVector(100,0,1200),T),FMath::Lerp(75.f,64.f,T));break;
     case 2:
         Pose(Ending::City+Ending::ScaleRail(FVector(-110000,-30000,130000),FVector(-180000,-45000,220000),T),Ending::City+FVector(15000,0,-1000),60);break;
     case 3:
@@ -1698,7 +1719,7 @@ void AEndingEmergence::EnterBlood()
     if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->DisableMovement();}
     Camera->SetActorLocation(Eye);Camera->SetActorRotation(Player->GetControlRotation());Player->SetViewTarget(Camera);
     // A modest lamp follows the actual pulse camera, rather than the hidden pawn.
-    ToolLight->SetAttenuationRadius(1800);ToolLight->SetIntensity(1800);
+    ToolLight->SetAttenuationRadius(1200);ToolLight->SetIntensity(150);
     ToolLight->SetLightColor(FLinearColor(1,.72f,.62f));ToolLight->SetVisibility(true);
     SetAmbience(TEXT("Blood_Loop"),.25f);Sound(TEXT("Connect"),.45f);
 }
@@ -1758,18 +1779,20 @@ void AEndingEmergence::TransitEffects(float Strength)
 {
     Strength*=bComfortMode?.12f:1.f;
     Camera->GetCameraComponent()->PostProcessBlendWeight=1;
-    if(TransitMaterial)Camera->GetCameraComponent()->AddOrUpdateBlendable(TransitMaterial,Strength>0?1:0);
+    // Keep motion cues without the tinted peripheral overlay.
+    if(TransitMaterial)Camera->GetCameraComponent()->RemoveBlendable(TransitMaterial);
     if(TransitMaterial)TransitMaterial->SetScalarParameterValue(TEXT("Strength"),Strength);
     auto& PP=Camera->GetCameraComponent()->PostProcessSettings;
     PP.MotionBlurAmount=.25f*Strength;
     PP.bOverride_SceneFringeIntensity=true;PP.SceneFringeIntensity=1.1f*Strength;
-    PP.VignetteIntensity=.3f+.18f*Strength;
+    PP.VignetteIntensity=0.f;
 }
 
 void AEndingEmergence::BeginThought()
 {
     for(auto Gate:Gates)if(IsValid(Gate))Gate->SetActorHiddenInGame(true);
     GateIndex=5;BeatAt=Age+3.8f;TargetNeuron=INDEX_NONE;UpdateNerves();
+    if(Ambience){Ambience->FadeOut(.3f,0);Ambience->bAutoDestroy=true;Ambience=nullptr;}
     TArray<USceneComponent*> Parts;GetComponents(Parts);
     for(auto* Part:Parts)if(Part->ComponentHasTag(TEXT("EndingBloodVisual"))||Part->GetName().StartsWith(TEXT("EllipsoidalCellInterior"))||Part->GetName().StartsWith(TEXT("CellDress")))Part->SetVisibility(false,true);
     TArray<USceneComponent*> CellParts;Sets[0]->GetChildrenComponents(true,CellParts);
@@ -1938,7 +1961,11 @@ void AEndingEmergence::UpdatePulse(float Dt)
 void AEndingEmergence::Tick(float Dt)
 {
     Super::Tick(Dt);
-    if(!bReady){bReady=Initialize();if(!bReady)return;RestartDemo();}
+    if(!bReady)
+    {
+        bReady=Initialize();if(!bReady)return;RestartDemo();
+        if(Player->PlayerCameraManager)Player->PlayerCameraManager->StartCameraFade(1.f,0.f,1.4f,FLinearColor::Black,false,false);
+    }
     if(bComplete){Age+=Dt;ShotTime+=Dt;UpdateCredits();return;}
     // First-use resource uploads in cooked builds must not skip an entire short scale transition.
     if((Shot>=0 && Shot<=8) || (Shot<0 && GateIndex>=5))Dt=FMath::Min(Dt,1.f/15.f);

@@ -141,7 +141,7 @@ bool AMouseMuseumPortal::Advance(float Dt)
  EntryCamera->SetActorRotation(FQuat::Slerp(EntryRotation.Quaternion(),Look.Quaternion(),FMath::SmoothStep(0.f,.35f,T)));
  EntryCamera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(EntryFOV,52.f,Ease));
  Painting->SetScalarParameterValue(TEXT("Highlight"),1.f+T*2);
- PC->PlayerCameraManager->SetManualCameraFade(FMath::SmoothStep(.86f,1.f,T),FLinearColor(.19f,.035f,.055f),false);
+ PC->PlayerCameraManager->SetManualCameraFade(FMath::SmoothStep(.68f,1.f,T),FLinearColor::Black,false);
  if(T>=1 && !bTravelRequested)
  {
   bTravelRequested=true;

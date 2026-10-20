@@ -242,9 +242,7 @@ void AEndingEmergence::PrepareFinaleVideo()
     // (and preparing new shaders) during the final rush.
     FinaleVideoMaterial->SetTextureParameterValue(TEXT("VideoFrame"),FinaleVideoTexture);
     FinaleVideoMaterial->SetScalarParameterValue(TEXT("VideoBlend"),0);
-    FinaleVideoSound=NewObject<UMediaSoundComponent>(this,NAME_None,RF_Transient);
-    FinaleVideoSound->bIsUISound=true;FinaleVideoSound->SetMediaPlayer(FinaleVideoPlayer);
-    FinaleVideoSound->SetVolumeMultiplier(0);FinaleVideoSound->RegisterComponent();FinaleVideoSound->Start();
+    // No audio sink: the ending movie is intentionally silent.
     // Asynchronous preparation starts well before impact, never during the hit.
     if(!FinaleVideoPlayer->OpenSource(FinaleVideoSource))
         UE_LOG(LogTemp,Warning,TEXT("Ending video could not open; keeping the preview frame."));
@@ -255,6 +253,7 @@ void AEndingEmergence::FinaleVideoOpened(FString OpenedUrl)
     if(!FinaleVideoPlayer||!FinaleVideoMaterial)return;
     const float Aspect=FinaleVideoPlayer->GetVideoTrackAspectRatio(INDEX_NONE,INDEX_NONE);
     if(Aspect>0)FinaleVideoMaterial->SetScalarParameterValue(TEXT("VideoAspect"),Aspect);
+    FinaleVideoPlayer->SelectTrack(EMediaPlayerTrack::Audio,INDEX_NONE);
     // Decode a few samples silently, then park at frame zero while the player
     // approaches. The imported exact first frame covers the aperture meanwhile.
     FinaleVideoPlayer->Play();
@@ -264,15 +263,6 @@ void AEndingEmergence::FinaleVideoOpened(FString OpenedUrl)
 void AEndingEmergence::StartFinaleVideo()
 {
     bFinaleVideoRequested=true;
-    // The supplied movie bypasses the scene's exposure, vignette, temporal
-    // reconstruction and cinematic postprocessing from its first full frame.
-    if(Camera)
-    {
-        auto& PP=Camera->GetCameraComponent()->PostProcessSettings;
-        PP.WeightedBlendables.Array.Empty();PP.bOverride_VignetteIntensity=true;PP.VignetteIntensity=0;
-        PP.bOverride_SceneFringeIntensity=true;PP.SceneFringeIntensity=0;
-        PP.bOverride_MotionBlurAmount=true;PP.MotionBlurAmount=0;
-    }
     if(FinaleVideoPlayer&&FinaleVideoPlayer->IsReady())
     {
         if(FinaleVideoSound)FinaleVideoSound->SetVolumeMultiplier(0);
@@ -295,21 +285,23 @@ void AEndingEmergence::FinaleVideoEnded()
 void AEndingEmergence::UpdateFinaleVideoPresentation()
 {
     if(!bFinaleVideoRequested || !FinaleVideoTexture || !FinaleVideoPlayer || !GEngine || !GEngine->GameViewport)return;
+    // Playback begins inside the broken rock. Only replace the scene once the
+    // camera reaches the aperture; an earlier overlay hides the impact and hole.
+    const float ApertureTime=(7950.f-6200.f)/PaperEnding::FlightSpeed;
+    if(Shot<12 || (Shot==12 && ShotTime<ApertureTime))return;
     if(VideoPresentation.IsValid())return;
     const FIntPoint Dimensions=FinaleVideoPlayer->GetVideoTrackDimensions(INDEX_NONE,INDEX_NONE);
     if(Dimensions.X<=0 || Dimensions.Y<=0 || FinaleVideoTexture->GetWidth()<=0)return;
-    VideoPresentation=MakeShared<FEndingVideoPresentation>();
-    auto Presentation=VideoPresentation;
-    Presentation->SourceSize=FVector2D(Dimensions.X,Dimensions.Y);
-    Presentation->Frame.SetResourceObject(FinaleVideoTexture);Presentation->Frame.DrawAs=ESlateBrushDrawType::Image;
-    Presentation->Frame.ImageSize=Presentation->SourceSize;
-    Presentation->Widget=SNew(SOverlay)
-        +SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor::Black)]
-        +SOverlay::Slot()[SNew(SScaleBox).Stretch(EStretch::ScaleToFit)
-            [SNew(SBox).WidthOverride(Presentation->SourceSize.X).HeightOverride(Presentation->SourceSize.Y)
-                [SNew(SImage).Image(&Presentation->Frame)]]];
-    Presentation->Widget->SetVisibility(EVisibility::HitTestInvisible);
-    GEngine->GameViewport->AddViewportWidgetContent(Presentation->Widget.ToSharedRef(),60);
+    if(Camera)
+    {
+        auto& PP=Camera->GetCameraComponent()->PostProcessSettings;
+        PP.WeightedBlendables.Array.Empty();PP.bOverride_VignetteIntensity=true;PP.VignetteIntensity=0;
+        PP.bOverride_SceneFringeIntensity=true;PP.SceneFringeIntensity=0;
+        PP.bOverride_MotionBlurAmount=true;PP.MotionBlurAmount=0;
+    }
+    // SEmergenceEndingView composites one native-resolution texture throughout
+    // the aperture, full frame and credits; never replace it with another widget.
+
 }
 
 void AEndingEmergence::ResetFinaleVideo()

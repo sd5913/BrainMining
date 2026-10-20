@@ -60,7 +60,7 @@ try:
  drip=actor('COL_Heaven_ExposedClueDrip',unreal.HeavenPipeDrip,nozzle);drip.fall_distance=184.
  # Restore the exact two authored Niagara placements and their original scale.
  for i,p in enumerate([(-10500,0,8000),(-6300,0,10400)]):
-  a=actor('MAIN_GAME_CrystalMotes_'+str(i+1),unreal.NiagaraActor,unreal.Vector(*p));a.tags=['BM_Campaign_MainGame02','BM_RoutesV5'];a.set_actor_scale3d(unreal.Vector(3));a.get_component_by_class(unreal.NiagaraComponent).set_asset(unreal.load_asset('/Game/Variant_Horror/Blueprints/Light/Assets/NS_DustMote'))
+  a=actor('MAIN_GAME_CrystalMotes_'+str(i+1),unreal.NiagaraActor,unreal.Vector(*p));a.tags=['BM_Campaign_MainGame02','BM_RoutesV5'];a.set_actor_scale3d(unreal.Vector(3,3,3));a.get_component_by_class(unreal.NiagaraComponent).set_asset(unreal.load_asset('/Game/Variant_Horror/Blueprints/Light/Assets/NS_DustMote'))
  # Original ceiling aperture is 440 x 440 cm; preserve the added digging depth.
  soil=next(a for a in aa if a.get_actor_label()=='MAIN_GAME_Museum_DownwardSoil')
  mesh=box(unreal.MathLibrary.inverse_transform_location(soil.get_actor_transform(),unreal.Vector(47200,11750,15220)),unreal.Vector(440,440,840));assert DL.set_campaign_rock_source(soil,mesh)

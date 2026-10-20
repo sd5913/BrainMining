@@ -115,13 +115,13 @@ void AMiningCollectionField::MakeFeather(ADiggableRock* Rock,FVector Support,flo
     for(int i=0;i<2;++i)
     {
         auto* M=UMaterialInstanceDynamic::Create(Base,A);
-        M->SetVectorParameterValue(TEXT("Tint"),i==0?FLinearColor(.34f,.43f,.48f):FLinearColor(.60f,.65f,.63f)); Shape->SetMaterial(i,M);
+        M->SetVectorParameterValue(TEXT("Tint"),i==0?FLinearColor(.92f,.94f,.96f):FLinearColor(1.f,.99f,.96f)); Shape->SetMaterial(i,M);
     }
     auto* Quill=NewObject<UStaticMeshComponent>(A); A->AddInstanceComponent(Quill); Quill->SetupAttachment(Shape);
     Quill->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube")));
     Quill->SetCollisionEnabled(ECollisionEnabled::NoCollision); Quill->SetRelativeScale3D(FVector(.009,.012,.64));
     Quill->SetRelativeLocation(FVector(-.45,0,-2));
-    auto* Pale=UMaterialInstanceDynamic::Create(Base,A); Pale->SetVectorParameterValue(TEXT("Tint"),FLinearColor(.84f,.77f,.53f)); Quill->SetMaterial(0,Pale); Quill->RegisterComponent();
+    auto* Pale=UMaterialInstanceDynamic::Create(Base,A); Pale->SetVectorParameterValue(TEXT("Tint"),FLinearColor(.95f,.94f,.88f)); Quill->SetMaterial(0,Pale); Quill->RegisterComponent();
     A->SetActorLocation(Support-FVector(1.8,0,0)); A->SetActorRotation(FRotator(0,0,Angle));
     FCollectionClue C; C.Actor=A; C.Rock=Rock; C.Support=Support; C.bFeather=true; C.Phase=Clues.Num()*.9f; Clues.Add(C);
 }

@@ -15,12 +15,13 @@ public:
     virtual FReply OnMouseButtonDown(const FGeometry&,const FPointerEvent&) override;
     virtual FReply OnMouseButtonUp(const FGeometry&,const FPointerEvent&) override;
     virtual FReply OnMouseMove(const FGeometry&,const FPointerEvent&) override;
+    virtual void OnMouseLeave(const FPointerEvent& E) override { Mouse=FVector2D(-10000,-10000); SLeafWidget::OnMouseLeave(E); }
     virtual FReply OnKeyDown(const FGeometry&,const FKeyEvent&) override;
 private:
     TWeakObjectPtr<UCardRoomInteractionComponent> Owner;
     mutable TMap<FString,TStrongObjectPtr<UObject>> Resources;
     UObject* CardResource(const FString& Name) const;
-    FVector2D Mouse;
+    FVector2D Mouse=FVector2D(-10000,-10000);
     FVector2D ToVirtual(const FGeometry&,const FVector2D&) const;
     FSlateRect CardRect(int32 Index,const FCardRoomRun& Run) const;
     static bool In(const FVector2D& P,const FSlateRect& R) { return P.X>=R.Left&&P.X<=R.Right&&P.Y>=R.Top&&P.Y<=R.Bottom; }

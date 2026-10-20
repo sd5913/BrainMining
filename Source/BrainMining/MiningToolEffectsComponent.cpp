@@ -492,8 +492,8 @@ void UMiningToolEffectsComponent::TickComponent(float DeltaTime, ELevelTick Tick
 	}
 	const FVector Vibration = bDrillRunning ? FVector(0, FMath::Sin(DrillAnimationTime * 65) * .12, FMath::Sin(DrillAnimationTime * 87) * .1) : FVector::ZeroVector;
 	const FVector LeftVibration = bDrillRunning ? FVector(0, -Vibration.Y, FMath::Sin(DrillAnimationTime * 87 + 1) * .1) : FVector::ZeroVector;
-	ApplyToolMotion(DrillPivot, DrillLocation, DrillRotation, Lowered + Vibration, EquipTilt, DrillSpinDegrees, DrillMesh);
-	ApplyToolMotion(LeftDrillPivot, LeftDrillLocation, LeftDrillRotation, Lowered + LeftVibration, EquipTilt, -DrillSpinDegrees, LeftDrillMesh);
+	ApplyToolMotion(DrillPivot, DrillLocation + FVector(-14,0,-3), DrillRotation, Lowered + Vibration, EquipTilt, DrillSpinDegrees, DrillMesh);
+	ApplyToolMotion(LeftDrillPivot, LeftDrillLocation + FVector(-14,0,-3), LeftDrillRotation, Lowered + LeftVibration, EquipTilt, -DrillSpinDegrees, LeftDrillMesh);
 	if (Mining->bDrillMode) return;
 	if (!bSwinging)
 	{
@@ -520,8 +520,8 @@ void UMiningToolEffectsComponent::ResetEffects()
 	DrillSpinDegrees = 0;
 	EquipElapsed = ToolEquipDuration;
 	ApplyToolMotion(PickaxePivot, FVector(40, 20, -35), FRotator::ZeroRotator, FVector::ZeroVector, FRotator::ZeroRotator);
-	ApplyToolMotion(DrillPivot, DrillLocation, DrillRotation, FVector::ZeroVector, FRotator::ZeroRotator);
-	ApplyToolMotion(LeftDrillPivot, LeftDrillLocation, LeftDrillRotation, FVector::ZeroVector, FRotator::ZeroRotator);
+	ApplyToolMotion(DrillPivot, DrillLocation + FVector(-14,0,-3), DrillRotation, FVector::ZeroVector, FRotator::ZeroRotator);
+	ApplyToolMotion(LeftDrillPivot, LeftDrillLocation + FVector(-14,0,-3), LeftDrillRotation, FVector::ZeroVector, FRotator::ZeroRotator);
 	ApplyToolMotion(BombPivot, FVector(45, 23, -20), FRotator(-12, 0, -8), FVector::ZeroVector, FRotator::ZeroRotator);
 	for (const TWeakObjectPtr<AActor>& Actor : DebrisActors) if (Actor.IsValid())
 	{

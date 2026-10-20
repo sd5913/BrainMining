@@ -1,5 +1,7 @@
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningAudioComponent.h"
+#include "BrainMiningCharacter.h"
+#include "Components/LightComponent.h"
 #include "Showcase/SMiningCampaignMap.h"
 #include "MiningProgressionComponent.h"
 #include "Showcase/MiningTreasure.h"
@@ -158,10 +160,7 @@ bool AMiningExhibitHall::IsMuseumSkipChordCandidate() const
     return bLinearCampaign && Areas.IsValidIndex(ActiveArea) &&
         AreaKind(ActiveArea)==EMiningExperienceKind::Museum && MirrorMuseum &&
         MirrorMuseum->bAreaActive && Controller.IsValid() &&
-        // S and K are enough to reserve I for the chord while the user is
-        // still pressing the four keys in sequence; TickMuseumSkipChord
-        // requires all four keys for the actual three-second activation.
-        Controller->IsInputKeyDown(EKeys::S) && Controller->IsInputKeyDown(EKeys::K);
+        Controller->IsInputKeyDown(EKeys::P);
 }
 
 AMiningExhibitHall::AMiningExhibitHall()
@@ -468,9 +467,7 @@ void AMiningExhibitHall::TickMuseumSkipChord(float DeltaSeconds)
         return;
     }
 
-    const bool bKeyboardChord=Controller->IsInputKeyDown(EKeys::S) &&
-        Controller->IsInputKeyDown(EKeys::K) && Controller->IsInputKeyDown(EKeys::I) &&
-        Controller->IsInputKeyDown(EKeys::P);
+    const bool bKeyboardChord=Controller->IsInputKeyDown(EKeys::P);
     bool bCornerTouchChord=false;
     if(SVirtualJoystick::ShouldDisplayTouchInterface())
     {
@@ -521,6 +518,17 @@ void AMiningExhibitHall::Tick(float DeltaSeconds)
             if(AreaKind(Next)==EMiningExperienceKind::Mining)
             { LastJourneyPrewarm=GetWorld()->GetTimeSeconds(); AGeneratedMiningRock::PrewarmTerrainAt(GetWorld(),Areas[Next].Entry.GetLocation(),5000.f); break; }
     TickMuseumSkipChord(DeltaSeconds);
+    // Encounter policies may restore an already-hidden lamp after the handoff.
+    // Repair it only in the third mine, without changing authored room lighting.
+    if(bContinuousCampaign && Areas.IsValidIndex(ActiveArea) &&
+       Areas[ActiveArea].Tag==TEXT("BM_Campaign_MainGame03") && Controller.IsValid() && !IsInteractionOpen())
+        if(auto* Pawn=Cast<ABrainMiningCharacter>(Controller->GetPawn()))
+        {
+            TArray<ULightComponent*> Lights;Pawn->GetComponents(Lights);
+            for(auto* Light:Lights)if((Light->GetFName()==TEXT("MiningLight") || Light->GetFName()==TEXT("MiningFillLight")) &&
+                (!Light->IsVisible() || Light->Intensity<=0))
+            {Pawn->ConfigureMiningLighting(1.4f,.22f);break;}
+        }
     auto* GUI=Controller.IsValid()?Controller->MiningGUI.Get():nullptr;
     if(GUI)
     {

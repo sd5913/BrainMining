@@ -14,6 +14,13 @@ UMiningFootprintComponent::UMiningFootprintComponent()
     PrimaryComponentTick.TickInterval=.04f;
 }
 
+void UMiningFootprintComponent::BeginPlay()
+{
+    Super::BeginPlay();
+    FootprintMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/M_PlayerFootprint"));
+    if(FootprintMaterial)FootprintMaterial->EnsureIsComplete();
+}
+
 void UMiningFootprintComponent::TickComponent(float Dt,ELevelTick Type,FActorComponentTickFunction* Fn)
 {
     Super::TickComponent(Dt,Type,Fn);
@@ -41,11 +48,11 @@ void UMiningFootprintComponent::TickComponent(float Dt,ELevelTick Type,FActorCom
     if(!FootprintMaterial)return;
     Forward=FVector::VectorPlaneProject(Forward,Hit.ImpactNormal).GetSafeNormal();
     const FRotator Rotation=FRotationMatrix::MakeFromXZ(-Hit.ImpactNormal,Forward).Rotator();
-    const float Seconds=FMath::Max(1.f,Lifetime);
+    const float Seconds=FMath::Max(4.f,Lifetime);
     if(auto* Mark=UGameplayStatics::SpawnDecalAttached(FootprintMaterial,FVector(9,8,17)*Scale,Hit.GetComponent(),NAME_None,Hit.ImpactPoint+Hit.ImpactNormal*.8f,Rotation,EAttachLocation::KeepWorldPosition,Seconds))
     {
         Mark->ComponentTags.Add(TEXT("MiningFootprint"));
-        Mark->SetFadeOut(Seconds*.733333f,Seconds*.266667f,false);
+        Mark->SetFadeOut(3.f,Seconds-3.f,false);
         Mark->FadeScreenSize=.0001f;
     }
     bLeft=!bLeft;

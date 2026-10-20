@@ -434,21 +434,13 @@ void APopupCloseStage::Tick(float Dt)
  {
   auto* PC=GetWorld()->GetFirstPlayerController();
   APawn* Pawn=PC?PC->GetPawn():nullptr;
-  if(Pawn && !PC->IsPaused() && !PC->IsMoveInputIgnored() && !PC->IsLookInputIgnored())
-   for(APopupOfficeDevice* Device:Devices)
-   {
-    if(!IsValid(Device) || Device->IsPrinter())continue;
-    const FVector LocalPlayer=Device->GetActorTransform().InverseTransformPosition(Pawn->GetActorLocation());
-    // Use the computer's facing rather than the room's world axes, so rotated
-    // copies in MainGame retain the same workstation approach area.
-    if(LocalPlayer.X>-45.f || LocalPlayer.X< -320.f || FMath::Abs(LocalPlayer.Y)>230.f ||
-       FVector::Dist2D(Pawn->GetActorLocation(),Device->GetActorLocation())>320.f ||
-       FMath::Abs(Pawn->GetPawnViewLocation().Z-Device->InteractionPoint().Z)>180.f)continue;
-    FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(OfficeWorkstationStart),false,Pawn);
-    const bool bBlocked=GetWorld()->LineTraceSingleByChannel(Hit,Pawn->GetPawnViewLocation(),Device->InteractionPoint(),ECC_Visibility,Query);
-    if(bBlocked && Hit.GetActor()!=Device)continue;
-    StartOfficeRound();break;
-   }
+  if(Pawn && Floor && !PC->IsPaused() && !PC->IsMoveInputIgnored() && !PC->IsLookInputIgnored())
+  {
+   // Cover the office floor, including approaches beside partitions and desks.
+   // Camera visibility to one particular monitor must not delay the narration.
+   const FBox EntryBounds=Floor->Bounds.GetBox().ExpandBy(FVector(-25,-25,340));
+   if(EntryBounds.IsInside(Pawn->GetActorLocation()))StartOfficeRound();
+  }
  }
  if(!IsOfficeEscaped()) UMiningRoomAudioSubsystem::Loop(this,TEXT("A_Office_Loop"),.18f);
  if((Phase==EPhase::Spraying || Phase==EPhase::Complete) && Exit && !Exit->HasOfferedBomb())

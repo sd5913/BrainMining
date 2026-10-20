@@ -104,7 +104,9 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
         UObject* Font=CachedFont.Get();
         const TCHAR* Names[]={TEXT("激光"),TEXT("毒"),TEXT("火")};
         const TCHAR* Materials[]={TEXT("M_Card_Laser"),TEXT("M_Card_Poison"),TEXT("M_Card_Fire")};
-        const int32 Focused = Owner->bGamepadInput ? Owner->GetFocusedCardIndex() : INDEX_NONE;
+        int32 Focused = Owner->bGamepadInput ? Owner->GetFocusedCardIndex() : INDEX_NONE;
+        if(!Owner->bGamepadInput)
+            for(int32 I=R.Hand.Num()-1;I>=0;--I)if(In(Mouse,CardRect(I,R))){Focused=I;break;}
         TArray<int32> DrawOrder;
         for (int32 Index = 0; Index < R.Hand.Num(); ++Index) if (Index != Focused) DrawOrder.Add(Index);
         if (Focused != INDEX_NONE) DrawOrder.Add(Focused);
@@ -114,7 +116,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
             const bool Selected=R.Staged.Contains(I);
             Box(B.Left+4,B.Top+7,W,H,FLinearColor(0,0,0,.4f),9.f);
             const float Border = I == Focused ? 4.f : 2.f;
-            Box(B.Left-Border,B.Top-Border,W+Border*2,H+Border*2,I == Focused ? FLinearColor(.4f,.95f,1.f) : (Selected?FLinearColor(.95f,.78f,.4f):FLinearColor(.55f,.5f,.4f)),10.f);
+            Box(B.Left-Border,B.Top-Border,W+Border*2,H+Border*2,I == Focused ? FLinearColor::White : (Selected?FLinearColor(.95f,.78f,.4f):FLinearColor(.55f,.5f,.4f)),10.f);
             Art(Materials[static_cast<int32>(R.Hand[I])],B.Left,B.Top,W,H);
             // The name sits at the exposed upper-left edge even in the 17-card fan.
             const int32 N=static_cast<int32>(R.Hand[I]);
@@ -145,7 +147,7 @@ FReply SCardRoomView::OnTouchStarted(const FGeometry& G,const FPointerEvent& E)
     return OnMouseButtonDown(G,E);
 }
 FReply SCardRoomView::OnMouseButtonUp(const FGeometry& G,const FPointerEvent& E) { return FReply::Unhandled(); }
-FReply SCardRoomView::OnMouseMove(const FGeometry& G,const FPointerEvent& E) { Mouse=ToVirtual(G,E.GetScreenSpacePosition()); return FReply::Unhandled(); }
+FReply SCardRoomView::OnMouseMove(const FGeometry& G,const FPointerEvent& E) { if(Owner.IsValid())Owner->bGamepadInput=false; Mouse=ToVirtual(G,E.GetScreenSpacePosition()); Invalidate(EInvalidateWidgetReason::Paint); return FReply::Unhandled(); }
 
 FReply SCardRoomView::OnKeyDown(const FGeometry& G,const FKeyEvent& E)
 {

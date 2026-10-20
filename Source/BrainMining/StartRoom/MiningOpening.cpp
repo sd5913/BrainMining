@@ -34,7 +34,8 @@ AMiningOpening* AMiningOpening::EnsureMainGameOpening(AMiningExhibitHall* Hall)
     UWorld* World=Hall->GetWorld();
     if(!World || !World->GetMapName().EndsWith(TEXT("Lvl_MainGame")))return nullptr;
     // Keep any explicitly authored opening. This also makes repeated calls safe.
-    for(TActorIterator<AMiningOpening> It(World);It;++It)return *It;
+    TActorIterator<AMiningOpening> ExistingOpening(World);
+    if(ExistingOpening)return *ExistingOpening;
     auto* Room=AMiningStartRoom::Find(World);if(!Room)return nullptr;
     auto* Title=LoadObject<UTexture2D>(nullptr,TEXT("/Game/StartRoom/UI/T_OpeningTitle.T_OpeningTitle"));
     if(!Title)return nullptr;

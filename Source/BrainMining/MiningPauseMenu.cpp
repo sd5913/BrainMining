@@ -37,6 +37,7 @@ bool UMiningExperienceSubsystem::TogglePauseMenu()
     auto* Viewport=GetGameInstance()->GetGameViewportClient();
     if(!PC||!PC->IsLocalController()||!PC->GetPawn()||!Viewport||AMiningOpening::IsOpening(GetWorld()))return false;
     if(auto* Input=UMiningGamepadSubsystem::Find(PC);Input&&Input->GetContext()==EMiningInputContext::Blocked)return false;
+    if(auto* Mobile=Cast<ABrainMiningPlayerController>(PC);Mobile&&Mobile->IsUsingTouchControls())return ToggleMobileMenu();
     bool bAtCredits=false;for(TActorIterator<AEndingEmergence> It(GetWorld());It;++It)if(It->bComplete){bAtCredits=true;break;}
     const bool bFromGameplay=bAtCredits||(!PC->IsPaused()&&!PC->bShowMouseCursor&&!PC->IsMoveInputIgnored()&&!PC->IsLookInputIgnored());
     CaptureMenuInput(PC);
@@ -102,7 +103,7 @@ void UMiningExperienceSubsystem::OpenPauseCollection()
     if(!bPauseMenu)return;
     AMiningCollectionField* Field=nullptr;
     for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It)if(It->bUseAuthoredPlacements){Field=*It;break;}
-    if(!Field)for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It){Field=*It;break;}
+    if(!Field){TActorIterator<AMiningCollectionField> FirstField(GetWorld());if(FirstField)Field=*FirstField;}
     // The ending has no placed collection field before its credits begin.
     // Create a catalogue without spawning collectibles or resetting the player.
     if(!Field)

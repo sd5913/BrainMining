@@ -2,6 +2,11 @@
 
 
 #include "BrainMiningPlayerController.h"
+#include "MobileUIWidgets.h"
+#include "MiningExperienceSubsystem.h"
+#include "Widgets/Layout/SSafeZone.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "MiningHapticsSubsystem.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "MainGameDoor.h"
@@ -98,11 +103,17 @@ void ABrainMiningPlayerController::BeginPlay()
 	
 	if (IsLocalPlayerController() && ShouldUseTouchControls())
 	{
+        ActivateTouchInterface(nullptr);
 		if (auto* Viewport = GetWorld()->GetGameViewport())
 		{
 			MobileTouchControls = SNew(SMobileTouchControls).OwnerController(this);
-			Viewport->AddViewportWidgetContent(MobileTouchControls.ToSharedRef(), 0);
+            MobileTouchLayer = SNew(SSafeZone).Visibility(EVisibility::SelfHitTestInvisible)[MobileTouchControls.ToSharedRef()];
+			Viewport->AddViewportWidgetContent(MobileTouchLayer.ToSharedRef(), 0);
+            MobileToolbar = MiningMobileUI::MakeToolbar(this);
+            Viewport->AddViewportWidgetContent(MobileToolbar.ToSharedRef(), 2000);
 		}
+        if (!ApplicationActivationHandle.IsValid() && FSlateApplication::IsInitialized())
+            ApplicationActivationHandle = FSlateApplication::Get().OnApplicationActivationStateChanged().AddUObject(this, &ThisClass::OnApplicationActivationChanged);
 	}
 }
 
@@ -142,7 +153,7 @@ void ABrainMiningPlayerController::SetupInputComponent()
 bool ABrainMiningPlayerController::ShouldUseTouchControls() const
 {
 	// are we on a mobile platform? Should we force touch?
-	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
+	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls || FParse::Param(FCommandLine::Get(), TEXT("MobileUI"));
 }
 
 void ABrainMiningPlayerController::UseInputDefaultsFrom(const ABrainMiningPlayerController* Defaults)
@@ -158,7 +169,7 @@ void ABrainMiningPlayerController::SetMiningGUIEnabled(bool bEnabled)
 {
  if (!bEnabled) SetUpgradeMenuHeld(false);
  bMiningGUIEnabled = bEnabled;
- if (MiningGUI) MiningGUI->SetVisibility(bEnabled ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+ if (MiningGUI) MiningGUI->SetVisibility(bEnabled && !ShouldUseTouchControls() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 }
 
 void ABrainMiningPlayerController::PlayerTick(float DeltaTime)
@@ -169,7 +180,7 @@ void ABrainMiningPlayerController::PlayerTick(float DeltaTime)
         && Cards->Stage->Run.Phase != ECardRoomPhase::Exploring
         && Cards->Stage->Run.Phase != ECardRoomPhase::Collected;
     if (MiningGUI)
-        MiningGUI->SetVisibility(bMiningGUIEnabled && !bInCards ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+        MiningGUI->SetVisibility(bMiningGUIEnabled && !bInCards && !ShouldUseTouchControls() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
     if (bInCards && bUpgradeMenuHeld) SetUpgradeMenuHeld(false);
     const auto* Echo = FindComponentByClass<UEchoPassageInteractionComponent>();
     if (Echo && Echo->bExplorationActive && Echo->Stage && Echo->Stage->bLanded && !Echo->Stage->bCompleted)
@@ -200,7 +211,7 @@ void ABrainMiningPlayerController::UseAbilityV()
 void ABrainMiningPlayerController::HandleMobileLook(const FVector2D& Delta)
 {
 	if (IsPaused() || IsLookInputIgnored() || !GetPawn()) return;
-	const float Sensitivity=0.09f;
+	const float Sensitivity=FMath::Clamp(MobileLookSensitivity, .03f, .18f);
 	AddYawInput(Delta.X*Sensitivity);
 	AddPitchInput(Delta.Y*Sensitivity);
 }
@@ -361,6 +372,11 @@ void ABrainMiningPlayerController::HandleMobileEdit()
 void ABrainMiningPlayerController::HandleMobileUpgrade()
 {
 	if (!MiningGUI || !bMiningGUIEnabled || IsPaused() || IsMoveInputIgnored() || IsLookInputIgnored()) return;
+    if (ShouldUseTouchControls())
+    {
+        if (auto* Menu = GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()) Menu->ToggleMobileMenu(true);
+        return;
+    }
 	if (auto* Progression = GetPawn() ? GetPawn()->FindComponentByClass<UMiningProgressionComponent>() : nullptr)
 	{
 		if (!Progression->bInitialized) Progression->InitializeProgression();
@@ -583,11 +599,34 @@ void ABrainMiningPlayerController::SetUpgradeMenuHeld(bool bHeld)
 
 void ABrainMiningPlayerController::OnApplicationActivationChanged(bool bActive)
 {
-	if (!bActive) SetUpgradeMenuHeld(false);
+	if (!bActive) { SetUpgradeMenuHeld(false); ResetMobileInput(); }
+}
+
+void ABrainMiningPlayerController::ResetMobileInput()
+{
+    if (MobileTouchControls.IsValid()) MobileTouchControls->ResetInput();
+    HandleMobileMine(false);
+    HandleMobileJump(false);
+    HandleMobileMove(FVector2D::ZeroVector);
+    for (const FKey& Key : MobileVirtualKeys)
+        Super::InputKey(FInputKeyEventArgs::CreateSimulated(Key, IE_Released, 0.f));
+    MobileVirtualKeys.Reset();
+}
+
+void ABrainMiningPlayerController::HandleMobilePause()
+{
+    if (auto* Menu = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>() : nullptr)
+        Menu->TogglePauseMenu();
 }
 
 void ABrainMiningPlayerController::EndPlay(const EEndPlayReason::Type Reason)
 {
+    ResetMobileInput();
+    if (MobileToolbar.IsValid())
+    {
+        if (auto* Viewport = GetWorld() ? GetWorld()->GetGameViewport() : nullptr) Viewport->RemoveViewportWidgetContent(MobileToolbar.ToSharedRef());
+        MobileToolbar.Reset();
+    }
 	for (const FKey& Key : MobileVirtualKeys)
 		Super::InputKey(FInputKeyEventArgs::CreateSimulated(Key, IE_Released, 0.f));
 	MobileVirtualKeys.Reset();
@@ -600,7 +639,8 @@ void ABrainMiningPlayerController::EndPlay(const EEndPlayReason::Type Reason)
 	if (MobileTouchControls.IsValid())
 	{
 		if (auto* Viewport = GetWorld() ? GetWorld()->GetGameViewport() : nullptr)
-			Viewport->RemoveViewportWidgetContent(MobileTouchControls.ToSharedRef());
+			if (MobileTouchLayer.IsValid()) Viewport->RemoveViewportWidgetContent(MobileTouchLayer.ToSharedRef());
+		MobileTouchLayer.Reset();
 		MobileTouchControls.Reset();
 	}
 	if (bOwnsDesktopGUIInput && IsLocalPlayerController())

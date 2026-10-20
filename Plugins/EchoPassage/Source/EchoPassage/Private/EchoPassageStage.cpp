@@ -125,9 +125,14 @@ void AEchoPassageStage::OnConstruction(const FTransform& Transform)
         Line(FVector(-199,Side*199,360),FVector(-199,Side*199,860));
         Line(FVector(199,Side*199,360),FVector(199,Side*199,860));
     }
-    Box(Rock,FVector(-212,0,450),FVector(24,400,900));
+    // The shaft's black rear wall used to end on the purple floor's exact
+    // top plane. Its 24cm cap z-fought through the entrance floor in view.
+    Box(Rock,bWalkThroughConnections?FVector(-212,0,449):FVector(-212,0,450),bWalkThroughConnections?FVector(24,400,898):FVector(24,400,900));
     // Small lit departure vestibule; the center floor collapses as the player steps onto it.
-    Box(EntranceRock,FVector(-480,0,888),FVector(560,400,24));
+    // MainGame's generated approach ends at -700. The old slab began at
+    // -760, leaving sixty centimetres of coplanar floor under that terrain.
+    const float FloorStart=bWalkThroughConnections?-700.f:-760.f;
+    Box(EntranceRock,FVector((FloorStart-200.f)*.5f,0,888),FVector(-200.f-FloorStart,400,24));
     for(int Side:{-1,1}) Box(EntranceRock,FVector(-310,Side*222,1050),FVector(920,40,300));
     if(!bWalkThroughConnections)
     {

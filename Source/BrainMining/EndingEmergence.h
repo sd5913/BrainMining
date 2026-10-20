@@ -127,6 +127,7 @@ private:
     UFUNCTION() void FinaleVideoEnded();
     UPROPERTY(Transient) TObjectPtr<UMediaPlayer> FinaleVideoPlayer;
     UPROPERTY(Transient) TObjectPtr<UMediaTexture> FinaleVideoTexture;
+    TArray<FVector> FinaleVideoRim;
     UPROPERTY(Transient) TObjectPtr<UMediaSoundComponent> FinaleVideoSound;
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> FinaleVideoMaterial;
     bool bFinaleVideoRequested=false;
@@ -298,6 +299,7 @@ private:
     UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> TransitMaterial;
     TSharedPtr<SEmergenceEndingView> View;
     TSharedPtr<class SWidget> Credits;
+    UPROPERTY(Transient) TObjectPtr<class UEndingCreditsWidget> CreditsWidget;
     UPROPERTY(Transient) TObjectPtr<class AMiningCollectionField> EndingCatalogue;
     void UpdateCredits();
     void RemoveCredits();

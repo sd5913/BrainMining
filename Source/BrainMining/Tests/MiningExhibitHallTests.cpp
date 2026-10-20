@@ -211,7 +211,7 @@ namespace ExhibitHallTests
             else if(Step==3) Hall->EnterArea(1);
             else if(Step==4)
             {
-                Test->TestEqual(TEXT("Collection uses I"),Hall->Collection->CatalogueKey,EKeys::I);
+                Test->TestEqual(TEXT("Collection uses C"),Hall->Collection->CatalogueKey,EKeys::C);
                 for(AMiningCollectible* Item:Hall->Collection->Items) Test->TestTrue(TEXT("Collection props translated into their area"),FVector::Dist(Item->GetActorLocation(),Hall->Areas[1].Origin)<5000);
                 Shot(TEXT("02_Collection"));
                 Tutorial=Hall->Collection->Items.Last(); Aim(Tutorial->GetActorLocation());
@@ -221,13 +221,13 @@ namespace ExhibitHallTests
             {
                 Key(EKeys::E,IE_Released);
                 Test->TestTrue(TEXT("E collects tutorial after translation"),Hall->Collection->Inventory[2]>0);
-                Key(EKeys::I,IE_Pressed);
+                Key(EKeys::C,IE_Pressed);
                 Test->TestTrue(TEXT("I opens catalogue"),Hall->Collection->bCatalogueOpen);
                 Shot(TEXT("03_Catalogue"));
             }
             else if(Step==7)
             {
-                FSlateApplication::Get().ProcessKeyDownEvent(FKeyEvent(EKeys::I,FModifierKeysState(),0,false,0,0));
+                FSlateApplication::Get().ProcessKeyDownEvent(FKeyEvent(EKeys::C,FModifierKeysState(),0,false,0,0));
                 Test->TestFalse(TEXT("I closes catalogue"),Hall->Collection->bCatalogueOpen);
                 Key(EKeys::Tab,IE_Pressed);
             }
@@ -282,7 +282,7 @@ namespace ExhibitHallTests
             }
             else if(Step==23)
             {
-                Key(EKeys::I,IE_Pressed);
+                Key(EKeys::C,IE_Pressed);
                 Test->TestTrue(TEXT("Catalogue opens outside collection zone"),Hall->Collection->bCatalogueOpen);
                 Test->TestFalse(TEXT("Catalogue capture and its lights remain visible outside collection zone"),Hall->Collection->IsHidden());
                 Shot(TEXT("05_GlobalCatalogue"));

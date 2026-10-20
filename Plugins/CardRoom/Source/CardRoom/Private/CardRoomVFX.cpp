@@ -155,8 +155,8 @@ void ACardRoomStage::TickEffects()
     auto Puff=[&](FVector P,FVector2D Size,FLinearColor Color,float Alpha=1.f,float Angle=0.f)
     {if(Next<FxShards.Num())Sprite(FxShards[Next++],P,Size,Color,Alpha,false,Angle);};
     // Aim at the actual plush torso; all gas and impacts follow this anchor after room edits.
-    const FVector Target=OpponentBaseLocal+FVector(-44*OpponentScale,0,60*OpponentScale);
-    const FVector Muzzle=S>1.f?CardLandingLocal+FVector(-40,0,180):FVector(-100,0,140);
+    const FVector Target=GetSpellTargetLocal();
+    const FVector Muzzle=GetSpellSourceLocal();
     auto Illuminate=[&](FVector P,FLinearColor Color,float Intensity)
     {SpellLight->SetRelativeLocation(P);SpellLight->SetLightColor(Color.GetClamped());SpellLight->SetIntensity(Intensity*S*S);};
     auto Flash=[&](FVector P,float Age,float Life,FLinearColor Color,float Radius,bool Grand=false)

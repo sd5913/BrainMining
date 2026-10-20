@@ -671,8 +671,8 @@ bool AWenSiMirrorPuzzle::SkipToReward()
  CancelSwap();
  if(bEditing)ToggleEdit();
  Thoughts[0].Reset();Thoughts[1].Reset();Aim.Reset();bAimReset=false;
- // Keep the remote hidden skip, but finish at the local mouse painting.
- // The player still enters its cell with E through the normal suction path.
+ // Finish inside the mouse gallery, facing the final painting.
+ // Normal E interaction still enters the ending.
  if(!SetPlayerWord(EWenSiMirrorWord::Small))return false;
  if(auto Block=Find(6)){Block->Word=EWenSiMirrorWord::Heavy;Block->Apply();Block->SetActorLocation(Block->Rest-FVector(0,0,WenSiMuseumMechanisms::BalanceTravel));}
  if(auto Ball=Find(9)){Ball->Word=EWenSiMirrorWord::Conductive;Ball->bBallLanded=true;Ball->Apply();Ball->SetActorLocation(RoomPoint(FVector(1900,120,80)));}
@@ -686,7 +686,7 @@ bool AWenSiMirrorPuzzle::SkipToReward()
  const auto ViewCamera=Pawn->FindComponentByClass<UCameraComponent>();
  PC->SetControlRotation((MousePortal->CellCenter()-(ViewCamera?ViewCamera->GetComponentLocation():Pawn->GetPawnViewLocation())).Rotation());
  if(UI)UI->Refresh();
- UE_LOG(LogWenSiMirror,Display,TEXT("Hidden museum skip accepted: small miner moved to mouse painting"));
+ UE_LOG(LogWenSiMirror,Display,TEXT("Hidden museum skip accepted: small miner moved inside mouse gallery"));
  return true;
 }
 void AWenSiMirrorPuzzle::EndPlay(const EEndPlayReason::Type Reason){if(MousePortal)MousePortal->Destroy();CancelSwap();if(bEditing)ToggleEdit();if(UI)UI->RemoveFromParent();Super::EndPlay(Reason);}

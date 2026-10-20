@@ -43,6 +43,18 @@ $argsUat = @(
 if ($ZenServer) { $argsUat += "-NoZenAutoLaunch=$ZenServer" }
 if ($SkipBuild) { $argsUat += '-skipbuild' } else { $argsUat += '-build' }
 if ($SkipCook) { $argsUat += '-skipcook' } else { $argsUat += '-cook' }
+# Audit actual saved references, since replaced editable scenery can leave unused
+# source assets on disk that are intentionally absent from the cooked game.
+$dependencyAuditStarted = Get-Date
+Start-MiningGuardedProcess -Executable "$EngineRoot/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" -Arguments @(
+    "$projectRoot/BrainMining.uproject", '/Engine/Maps/Entry', '-unattended', '-nosplash', '-nosound', '-nullrhi',
+    '-NoLiveCoding', '-EnablePlugins=GameFeatures', '-DisablePlugins=AllToolsets,ModelContextProtocol',
+    "-ExecutePythonScript=$projectRoot/Scripts/audit_ending_package_dependencies.py", "-abslog=$report/dependency-audit.log"
+) -ReportPath "$report/dependency-audit-resources.csv" -MaximumSeconds 180
+if (-not (Test-Path -LiteralPath "$report/ending-dependencies.json") -or (Get-Item -LiteralPath "$report/ending-dependencies.json").LastWriteTime -lt $dependencyAuditStarted) {
+    throw 'The ending dependency audit did not produce a fresh manifest.'
+}
+$endingDependencies = Get-Content -LiteralPath "$report/ending-dependencies.json" -Raw | ConvertFrom-Json
 @{output=$OutputDirectory;started=(Get-Date).ToString('o');configuration='Shipping';arguments=$argsUat} | ConvertTo-Json -Depth 4 | Set-Content "$report/request.json" -Encoding UTF8
 # Keep derived data on the project drive in all child tools, without changing user settings.
 $previousCache = [Environment]::GetEnvironmentVariable('UE-LocalDataCachePath', 'Process')
@@ -94,6 +106,15 @@ $requiredAssets = @(
     'EndingEmergence/Materials/M_EE_StarlightSpark.uasset',
     'EndingEmergence/Materials/M_EE_StarlightStream.uasset',
     'EndingEmergence/Materials/M_EE_UniverseShard.uasset',
+    'EndingEmergence/UI/WBP_EndingCredits.uasset',
+    'EndingEmergence/Meshes/SM_EE_BloodCirculationVeinSegment.uasset',
+    'EndingEmergence/Meshes/SM_EE_SealedCellNeck.uasset',
+    'EndingEmergence/PaperFinale/MS_EndingFinale.uasset',
+    'StartRoom/UI/M_OpeningTitlePerspective.uasset',
+    'StartRoom/UI/T_OpeningTitle.uasset',
+    'BloodCirculation/Mesh/Cell/SM_RedBloodCell.uasset',
+    'BloodCirculation/Materials/MaterialInstance/BloodVessel/MI_Vein.uasset',
+    'BloodCirculation/Materials/MaterialInstance/Cell/MI_RedBloodCell.uasset',
     'Rooms/CardDuel/Robot/SM_Robot_Head.uasset',
     'Rooms/CardDuel/Robot/SM_Robot_Body.uasset',
     'Rooms/CardDuel/Robot/SM_Robot_FootL.uasset',
@@ -103,18 +124,17 @@ $requiredAssets = @(
 Get-ChildItem -LiteralPath "$projectRoot/Content/Passages/Echo/ArtP2/Collision" -Filter '*_Walkable.uasset' -File | ForEach-Object {
     $requiredAssets += 'Passages/Echo/ArtP2/Collision/' + $_.Name
 }
-# The editable ending stores baked meshes/materials outside the old generator
-# directories. Require every saved baked asset in the Shipping container.
-$editableEnding = Join-Path $projectRoot 'Content/EndingEmergence/Editable'
-if (Test-Path -LiteralPath $editableEnding) {
-    Get-ChildItem -LiteralPath $editableEnding -Filter '*.uasset' -Recurse -File | ForEach-Object {
-        $requiredAssets += [IO.Path]::GetRelativePath((Join-Path $projectRoot 'Content'), $_.FullName).Replace('\','/')
-    }
-}
+$requiredAssets += @($endingDependencies.assets)
+$requiredAssets = @($requiredAssets | Sort-Object -Unique)
 foreach ($asset in $requiredAssets) {
     if (-not $containerText.Contains("../../../BrainMining/Content/$asset,")) {
         throw "Required runtime asset missing from packaged container: $asset"
     }
 }
 $requiredAssets | ConvertTo-Json | Set-Content "$report/required-container-assets.json" -Encoding UTF8
+$movie = 'Content/Movies/EndingEmergence/EndingFinale.mp4'
+$stagedMovie = Join-Path $OutputDirectory "Windows/BrainMining/$movie"
+if (-not (Test-Path -LiteralPath $stagedMovie) -or (Get-FileHash -LiteralPath $stagedMovie).Hash -ne (Get-FileHash -LiteralPath (Join-Path $projectRoot $movie)).Hash) {
+    throw 'The staged ending movie is missing or differs from the current silent source.'
+}
 Write-Host "MainGame Shipping package: $OutputDirectory/Windows/BrainMining.exe"

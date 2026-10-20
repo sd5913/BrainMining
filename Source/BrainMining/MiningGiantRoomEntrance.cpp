@@ -57,6 +57,7 @@ void AMiningGiantRoomEntrance::Tick(float DeltaSeconds)
     if(bExternalEncounterActive)return;
     const FVector P=GetActorTransform().InverseTransformPosition(PC->GetPawn()->GetActorLocation());
     const bool InRoom=P.X>RockSize.X*.5+35;
+    PC->EncounterPolicy->SetFlightAllowed(InRoom);
     const bool NearWall=P.X> -MiningZoneDepth && FMath::Abs(P.Y)<470;
     const bool Seated=PC->CardInteraction->Stage && PC->CardInteraction->Stage->Run.Phase!=ECardRoomPhase::Exploring;
     PC->EncounterPolicy->SetMiningAllowed((NearWall || InRoom) && !Seated);

@@ -19,10 +19,11 @@ public:
     void Apply(APawn* Pawn);
     void Release();
     void SetMiningAllowed(bool bAllowed);
+    void SetFlightAllowed(bool bAllowed);
     bool IsMiningAllowed() const {return !bMiningBlocked;}
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 private:
-    bool bMiningBlocked=false,bOldInputContextEnabled=true;
+    bool bMiningBlocked=false,bOldInputContextEnabled=true,bFlightBlocked=false;
     bool bFallResetOverridden=false;
     float OldFallResetDistance=0.f;
     TWeakObjectPtr<APawn> AppliedPawn;

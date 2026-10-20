@@ -14,9 +14,17 @@ class BRAINMININGEDITOR_API UMiningGUIEditorLibrary : public UBlueprintFunctionL
 {
 	GENERATED_BODY()
 public:
+    /** Creates an editable ending card once; preserves all subsequent Designer edits. */
+    UFUNCTION(BlueprintCallable, Category="Mining GUI|Editor")
+    static bool CreateEndingCreditsAsset();
+    UFUNCTION(BlueprintCallable,Category="Mining GUI|Editor")
+    static bool UpdateEndingCreditsFeedback();
     /** PIE inspection of native transient state without exposing it to shipping Blueprints. */
     UFUNCTION(BlueprintPure, Category="Mining GUI|Validation")
     static UObject* ReadPreviewObject(UObject* Object,FName PropertyName);
+    /** Read native array/scalar state in PIE without exposing gameplay internals. */
+    UFUNCTION(BlueprintPure, Category="Mining GUI|Validation")
+    static FString ReadPreviewState(UObject* Object,FName PropertyName);
     UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
     static bool WritePreviewState(UObject* Object,FName PropertyName,const FString& Value);
     UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")

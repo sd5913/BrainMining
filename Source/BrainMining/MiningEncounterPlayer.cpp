@@ -35,7 +35,7 @@ void UMiningEncounterPlayerPolicy::Apply(APawn* Pawn)
         }
         Mining->PushEncounterBlock();bMiningBlocked=true;
     }
-    // Flight and heat remain owned by the shared player progression.
+    SetFlightAllowed(false);
     if(auto* Character=Cast<ACharacter>(Pawn))Character->StopJumping();
     TArray<ULightComponent*> Found;Pawn->GetComponents(Found);
     for(auto* Light:Found)
@@ -47,6 +47,7 @@ void UMiningEncounterPlayerPolicy::Apply(APawn* Pawn)
 }
 void UMiningEncounterPlayerPolicy::Release()
 {
+    SetFlightAllowed(true);
     if(Mining.IsValid())
     {
         Mining->CancelMining();if(bMiningBlocked)Mining->PopEncounterBlock();
@@ -57,6 +58,12 @@ void UMiningEncounterPlayerPolicy::Release()
     if(Movement.IsValid()) Movement->ResetFlightInput();
     for(auto& Light:Lights)if(Light.Key.IsValid())Light.Key->SetVisibility(Light.Value);
     Lights.Reset();Movement.Reset();Mining.Reset();AppliedPawn.Reset();
+}
+void UMiningEncounterPlayerPolicy::SetFlightAllowed(bool bAllowed)
+{
+    if(!Movement.IsValid())return;
+    if(!bAllowed&&!bFlightBlocked){Movement->PushFlightBlock();bFlightBlocked=true;}
+    else if(bAllowed&&bFlightBlocked){Movement->PopFlightBlock();bFlightBlocked=false;}
 }
 void UMiningEncounterPlayerPolicy::EndPlay(const EEndPlayReason::Type Reason) {Release();Super::EndPlay(Reason);}
 AMiningEncounterPlayerController::AMiningEncounterPlayerController()

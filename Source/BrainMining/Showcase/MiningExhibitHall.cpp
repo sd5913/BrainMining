@@ -62,14 +62,20 @@ void AMiningExhibitController::OnPossess(APawn* InPawn)
 
 bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
 {
-    if(AMiningOpening::IsOpening(GetWorld()))return true;
+    if(AMiningOpening::IsOpening(GetWorld()))
+    {
+        if(Params.Key==EKeys::F10 || Params.Key==EKeys::LeftControl || Params.Key==EKeys::RightControl)return Super::InputKey(Params);
+        return true;
+    }
     if (IsAudioSettingsOpen() || Params.Key == EKeys::F8) return Super::InputKey(Params);
     if (auto* Room = AMiningStartRoom::Find(GetWorld()))
     {
         if (Params.Key == EKeys::E && Params.Event == IE_Pressed && !bUpgradeMenuHeld)
             if (Room->Interact(this)) return true;
         // Preserve the introductory pickups; the main game's tools/UI resume once both are acquired.
-        if ((!Room->bPickaxeUnlocked || !Room->bJetpackUnlocked) &&
+        const auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
+        const bool ToolsOwned=Wallet && Wallet->bBombSkillUnlocked && Wallet->bDrillSkillUnlocked;
+        if (!ToolsOwned && (!Room->bPickaxeUnlocked || !Room->bJetpackUnlocked) &&
             (Params.Key == EKeys::G || Params.Key == EKeys::V || Params.Key == EKeys::Tab)) return true;
     }
     auto* Hall=AMiningExhibitHall::Find(GetWorld());
@@ -77,10 +83,9 @@ bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
     {
         if (Params.Key==EKeys::M) { if(Params.Event==IE_Pressed) Hall->ToggleMap(); return true; }
         if (Hall->IsMapOpen()) { if(Params.Key==EKeys::Escape && Params.Event==IE_Pressed) Hall->CloseMap(); return true; }
-        // I is part of the museum's hidden SKIP chord. Consume that press so
-        // it cannot open the catalogue while the three other keys are held.
-        if (Params.Key==EKeys::I && Params.Event==IE_Pressed && Hall->IsMuseumSkipChordCandidate()) return true;
-        if (Params.Key==EKeys::I || Params.Key==EKeys::C) { if(Params.Event==IE_Pressed) Hall->ToggleCatalogue(); return true; }
+        // Let PlayerInput track I, including its release, for the hidden SKIP
+        // chord. Only C opens the catalogue.
+        if (Params.Key==EKeys::C) { if(Params.Event==IE_Pressed) Hall->ToggleCatalogue(); return true; }
         if (!IsPaused() && Hall->HandleMirrorInput(Params)) return true;
         if (Params.Key==EKeys::F6) { if(Params.Event==IE_Pressed) Hall->ReturnToLobby(); return true; }
         if (Params.Key==EKeys::F7) { if(Params.Event==IE_Pressed) Hall->SkipCurrentRoom(); return true; }

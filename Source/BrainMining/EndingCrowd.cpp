@@ -7,8 +7,10 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "GameFramework/Actor.h"
+#if PLATFORM_WINDOWS
 #include "CrowdInstancer.h"
 #include "OverCrowdDataAsset.h"
+#endif
 
 namespace
 {
@@ -35,6 +37,7 @@ FTransform HeadBind(USkeletalMesh* Mesh)
     return T;
 }
 
+#if PLATFORM_WINDOWS
 UInstancedStaticMeshComponent* MovingCrowdBatch(ACrowdInstancer* Owner, UStaticMesh* Mesh)
 {
     if(!Owner||!Mesh)return nullptr;
@@ -48,6 +51,7 @@ UInstancedStaticMeshComponent* MovingCrowdBatch(ACrowdInstancer* Owner, UStaticM
     C->bAllowCullDistanceVolume=false;
     return C;
 }
+#endif
 }
 
 bool UEndingCrowdComponent::Build(UEndingCrowdAssets* Assets)
@@ -175,6 +179,7 @@ bool UEndingCrowdComponent::BuildBaked(UEndingCrowdAssets* Assets)
     for(auto Mesh:Assets->BakedWalkers)if(!Mesh)return false;
     AActor* Owner=GetOwner();
     if(!Owner||!Owner->GetWorld())return false;
+#if PLATFORM_WINDOWS
     FActorSpawnParameters SpawnInfo;SpawnInfo.Owner=Owner;SpawnInfo.Name=TEXT("EndingOverCrowdInstancer");
     // The crowd component is attached to the city set (Sets[1]); spawn the
     // OverCrowd owner at that component transform so its local lanes land
@@ -189,6 +194,7 @@ bool UEndingCrowdComponent::BuildBaked(UEndingCrowdAssets* Assets)
     OverCrowdInstancer->SetActorTickEnabled(false);
     OverCrowdInstancer->SetActorEnableCollision(false);
     OverCrowdInstancer->SetActorHiddenInGame(true);
+#endif
     // JapaneseCity uses lit surface materials, while the original ending
     // street was built from emissive materials. Provide a cheap two-light rig
     // for the imported city; shadows stay off to keep the preview lightweight.
@@ -209,12 +215,20 @@ bool UEndingCrowdComponent::BuildBaked(UEndingCrowdAssets* Assets)
     for(int32 I=0;I<9;++I)
     {
         UStaticMesh* Mesh=I==8?Assets->BakedHero:Assets->BakedWalkers[I];
-        auto* C=MovingCrowdBatch(OverCrowdInstancer,Mesh);
+#if PLATFORM_WINDOWS
+        auto* C=MovingCrowdBatch(Cast<ACrowdInstancer>(OverCrowdInstancer),Mesh);
         if(!C){OverCrowdInstancer->Destroy();OverCrowdInstancer=nullptr;return false;}
+#else
+        auto* C=Part<UInstancedStaticMeshComponent>(Owner,this);
+        C->SetStaticMesh(Mesh);
+        C->SetCullDistances(0,0);
+        C->bNeverDistanceCull=true;
+        C->bAllowCullDistanceVolume=false;
+#endif
         C->SetNumCustomDataFloats(8);CheapMesh(C);C->SetBoundsScale(1.6f);
-        // Only the four intersection lamps cast local shadows. All walkers
-        // participate, including their VAT motion; no distance-based toggles.
+#if PLATFORM_WINDOWS
         C->SetCastShadow(true);
+#endif
         Batches.Add(C);BatchTransforms.AddDefaulted();BatchOrigins.AddDefaulted();BatchVelocities.AddDefaulted();
     }
     FRandomStream Random(9127);

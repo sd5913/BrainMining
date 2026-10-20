@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "DynamicMesh/DynamicMesh3.h"
+#include "Async/Future.h"
 #include "GameFramework/Actor.h"
 #include "DiggableRock.generated.h"
 
@@ -9,6 +10,7 @@ class UDynamicMeshComponent;
 class UMaterialInterface;
 class UFogChamberComponent;
 class FMiningTerrainQuery;
+struct FMiningRockCutResult;
 
 // Emitted before returning a committed terrain edit, so inclusions and rock are
 // submitted to the renderer in the same frame. Invalid bounds mean a full reset.
@@ -25,6 +27,8 @@ public:
 	FMiningTerrainCommitted OnTerrainCommitted;
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+	virtual bool IsTerrainCutPending() const;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining")
 	TObjectPtr<UDynamicMeshComponent> RockMesh;
@@ -93,5 +97,10 @@ protected:
 	bool bUseProceduralCutFallback = false;
 
 private:
+	bool DeferCut(UE::Geometry::FDynamicMesh3 Source, UE::Geometry::FDynamicMesh3 Cutter, FVector WorldCenter, float WorldRadius, bool bPreserveEdges);
+	void PollRockCut();
+	TFuture<TSharedPtr<FMiningRockCutResult, ESPMode::ThreadSafe>> PendingRockCut;
+	FTimerHandle RockCutTimer;
+	uint64 TerrainRevision = 0;
 	UE::Geometry::FDynamicMesh3 UnitCutter;
 };

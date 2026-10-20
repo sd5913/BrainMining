@@ -128,16 +128,16 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 	if (!IsValid(Rock) || !Hit.bBlockingHit || Hit.ImpactPoint.ContainsNaN() || Hit.ImpactNormal.ContainsNaN() ||
 		Hit.ImpactNormal.IsNearlyZero() || bDrillMode || bInputSuspended || IsEncounterBlocked()) return false;
 	if(Rock->ActorHasTag(TEXT("CardEscapeTelevision")))return MineTelevision(Hit);
+	if (Rock->IsTerrainCutPending())
+	{
+		Status = TEXT("Rock is breaking");
+		return false;
+	}
 	if (const auto* Segment = Cast<AGeneratedMiningRock>(Rock))
 	{
 		if (Segment->SegmentIndex != INDEX_NONE && Segment->SegmentState != EMiningSegmentState::Active)
 		{
 			Status = TEXT("This segment is not available for mining");
-			return false;
-		}
-		if (Segment->bCutPending)
-		{
-			Status = TEXT("Rock is breaking");
 			return false;
 		}
 	}
@@ -307,8 +307,7 @@ void UMiningComponent::RefreshPickaxePatches()
 			continue;
 		}
 		if (!Patch.bPending) continue;
-		const auto* Segment = Cast<AGeneratedMiningRock>(Patch.Rock.Get());
-		if (Segment && Segment->bCutPending) continue;
+		if (Patch.Rock->IsTerrainCutPending()) continue;
 		Patch.bPending = false;
 		Patch.Strikes = FMath::Max(0, Patch.Strikes - 1);
 	}

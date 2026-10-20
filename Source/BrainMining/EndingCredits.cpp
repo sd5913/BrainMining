@@ -84,6 +84,8 @@ void AEndingEmergence::UpdateCredits()
         const auto Class=LoadClass<UEndingCreditsWidget>(nullptr,TEXT("/Game/EndingEmergence/UI/WBP_EndingCredits.WBP_EndingCredits_C"));
         if(!Class){UE_LOG(LogTemp,Error,TEXT("Missing editable ending credits widget"));return;}
         CreditsWidget=CreateWidget<UEndingCreditsWidget>(Player,Class);
+        if(const auto* Mobile=Cast<ABrainMiningPlayerController>(Player);Mobile && Mobile->IsUsingTouchControls())
+            if(auto* Prompt=CreditsWidget->GetWidgetFromName(TEXT("Prompt")))Prompt->SetVisibility(ESlateVisibility::Collapsed);
         CreditsWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
         Credits=CreditsWidget->TakeWidget();
         GEngine->GameViewport->AddViewportWidgetContent(Credits.ToSharedRef(),90);

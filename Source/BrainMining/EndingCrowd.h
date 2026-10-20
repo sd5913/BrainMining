@@ -10,7 +10,6 @@ class UStaticMesh;
 class USkeletalMeshComponent;
 class ULightComponent;
 class UInstancedStaticMeshComponent;
-class ACrowdInstancer;
 
 USTRUCT(BlueprintType)
 struct FEndingPedestrian
@@ -52,7 +51,7 @@ private:
     bool BuildBaked(UEndingCrowdAssets* Assets);
     UPROPERTY(Transient) TArray<TObjectPtr<UInstancedStaticMeshComponent>> Batches;
     /** OverCrowd actor owns moving ISM batches for the VAT crowd path. */
-    UPROPERTY(Transient) TObjectPtr<ACrowdInstancer> OverCrowdInstancer;
+    UPROPERTY(Transient) TObjectPtr<AActor> OverCrowdInstancer;
     TArray<TArray<FTransform>> BatchTransforms;
     TArray<TArray<FVector>> BatchOrigins;
     TArray<TArray<FVector>> BatchVelocities;

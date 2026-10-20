@@ -30,7 +30,7 @@ FSlateRect SCardRoomView::CardRect(int32 Index,const FCardRoomRun& Run) const
 }
 int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRect&,FSlateWindowElementList& Out,int32 Layer,const FWidgetStyle&,bool) const
 {
-    if(!Owner.IsValid() || !Owner->Stage) return Layer;
+    if(!Owner.IsValid() || !Owner->bRoomActive || !Owner->Stage) return Layer;
     const auto& R=Owner->Stage->Run;
     if(R.Phase==ECardRoomPhase::Exploring || R.Phase==ECardRoomPhase::Collected) return Layer;
     const FVector2D Size=G.GetLocalSize(); const float S=FMath::Min(Size.X/1600,Size.Y/900);
@@ -97,6 +97,41 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
         };
         Health(false,R.RivalHP,110); Health(true,R.PlayerHP,755);
     }
+    if(R.Phase==ECardRoomPhase::Choosing || R.Phase==ECardRoomPhase::Victory)
+    {
+        const auto Confirm = ConfirmRect();
+        const bool Reward = R.Phase == ECardRoomPhase::Victory;
+        const bool Ready = Reward || R.CanConfirm() || R.Round == 4;
+        const FLinearColor Ink(.12f,.10f,.08f,1.f);
+        const FLinearColor Accent = Ready ? FLinearColor(.95f,.78f,.40f) : FLinearColor(.42f,.37f,.28f);
+        Box(Confirm.Left,Confirm.Top,144,144,Accent,36);
+        Box(Confirm.Left+3,Confirm.Top+3,138,138,Ink,33);
+        if(Reward)
+        {
+            TArray<FVector2D> Points = {
+                FVector2D(50,76),FVector2D(50,36),FVector2D(54,30),FVector2D(63,30),FVector2D(68,36),
+                FVector2D(68,67),FVector2D(68,50),FVector2D(73,45),FVector2D(81,45),FVector2D(86,50),
+                FVector2D(86,70),FVector2D(86,59),FVector2D(91,54),FVector2D(99,54),FVector2D(104,59),
+                FVector2D(104,88),FVector2D(97,104),FVector2D(84,113),FVector2D(67,113),FVector2D(54,104),
+                FVector2D(29,76),FVector2D(27,68),FVector2D(35,64),FVector2D(50,82)};
+            for(auto& Point : Points) Point = (FVector2D(Confirm.Left,Confirm.Top)+Point)*S+Origin;
+            FSlateDrawElement::MakeLines(Out,++L,G.ToPaintGeometry(),Points,ESlateDrawEffect::None,Accent,true,6*S);
+        }
+        else if(R.Round == 4 && !R.CanConfirm())
+        {
+            for(int32 Card = 0; Card < 3; ++Card)
+            {
+                Box(Confirm.Left+32+Card*16,Confirm.Top+30+Card*10,46,62,Accent,6);
+                Box(Confirm.Left+35+Card*16,Confirm.Top+33+Card*10,40,56,Ink,4);
+            }
+        }
+        else
+        {
+            TArray<FVector2D> Points = {FVector2D(40,74),FVector2D(62,96),FVector2D(105,49)};
+            for(auto& Point : Points) Point = (FVector2D(Confirm.Left,Confirm.Top)+Point)*S+Origin;
+            FSlateDrawElement::MakeLines(Out,++L,G.ToPaintGeometry(),Points,ESlateDrawEffect::None,Accent,true,7*S);
+        }
+    }
     if(R.Phase==ECardRoomPhase::Choosing)
     {
         auto& CachedFont=Resources.FindOrAdd(TEXT("CardFont"));
@@ -130,16 +165,28 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
 }
 FReply SCardRoomView::OnMouseButtonDown(const FGeometry& G,const FPointerEvent& E)
 {
-    if(!Owner.IsValid() || !Owner->Stage || (!E.IsTouchEvent() && E.GetEffectingButton()!=EKeys::LeftMouseButton))return FReply::Unhandled();
+    if(!Owner.IsValid() || !Owner->bRoomActive || !Owner->Stage || (!E.IsTouchEvent() && E.GetEffectingButton()!=EKeys::LeftMouseButton))return FReply::Unhandled();
     Owner->bGamepadInput = false;
     Mouse=ToVirtual(G,E.GetScreenSpacePosition());auto& R=Owner->Stage->Run;
     if(R.Phase==ECardRoomPhase::Exploring)return FReply::Unhandled();
+    if(R.Phase==ECardRoomPhase::Victory && In(Mouse,ConfirmRect()))
+    {
+        Owner->Interact();
+        return FReply::Handled();
+    }
     if(R.Phase==ECardRoomPhase::Choosing)
+    {
+        if(In(Mouse,ConfirmRect()))
+        {
+            Owner->ConfirmCards();
+            return FReply::Handled().SetUserFocus(SharedThis(this));
+        }
         for(int32 I=R.Hand.Num()-1;I>=0;--I)if(In(Mouse,CardRect(I,R)))
         {
             Owner->ToggleCardSelection(I);
             break;
         }
+    }
     return FReply::Handled().SetUserFocus(SharedThis(this));
 }
 FReply SCardRoomView::OnTouchStarted(const FGeometry& G,const FPointerEvent& E)

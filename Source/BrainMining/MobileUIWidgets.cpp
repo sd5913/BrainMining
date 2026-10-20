@@ -6,6 +6,9 @@
 #include "MiningCharacterMovementComponent.h"
 #include "MiningComponent.h"
 #include "MiningExperienceSubsystem.h"
+#include "MiningCollection.h"
+#include "EndingEmergence.h"
+#include "EngineUtils.h"
 #include "MiningHapticsSubsystem.h"
 #include "MiningPickaxeSettings.h"
 #include "MiningProgressionComponent.h"
@@ -105,6 +108,7 @@ namespace
         {
             Controller = Args._Controller;
             Owner = Args._Owner;
+            bCanOpenCollection = MiningMobileUI::CanOpenCollection(Controller.Get());
             ChangePage(Args._Upgrade ? EMobileMenuPage::Upgrade : EMobileMenuPage::Pause);
         }
 
@@ -149,7 +153,13 @@ namespace
                 [SNew(SBox).WidthOverride(80).HeightOverride(80)[CloseButton]];
             if (Page == EMobileMenuPage::Pause)
             {
-                Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 24)[RowButton(TEXT("play"), [this]() { Close(); }, true)];
+                auto Resume = RowButton(TEXT("play"), [this]() { Close(); }, true);
+                auto Collection = RowButton(TEXT("gem"), [this]() { if (Owner.IsValid()) Owner->OpenPauseCollection(); });
+                Collection->SetEnabled(bCanOpenCollection);
+                Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 24)
+                    [SNew(SHorizontalBox)
+                        + SHorizontalBox::Slot().FillWidth(1).Padding(0, 0, 12, 0)[Resume]
+                        + SHorizontalBox::Slot().FillWidth(1)[Collection]];
                 Rows->AddSlot().AutoHeight().Padding(0, 0, 0, 24)
                     [SNew(SHorizontalBox)
                         + SHorizontalBox::Slot().FillWidth(1).Padding(0, 0, 12, 0)[RowButton(TEXT("sound"), [this]() { ChangePage(EMobileMenuPage::Sound); })]
@@ -266,7 +276,17 @@ namespace
         TWeakObjectPtr<UMiningExperienceSubsystem> Owner;
         EMobileMenuPage Page = EMobileMenuPage::Pause;
         bool bSettingsChanged = false;
+        bool bCanOpenCollection = false;
     };
+}
+
+bool MiningMobileUI::CanOpenCollection(const ABrainMiningPlayerController* Controller)
+{
+    if (!Controller || !Controller->GetWorld()) return false;
+    for (TActorIterator<AMiningCollectionField> Field(Controller->GetWorld()); Field; ++Field)
+        if (Field->bCatalogueOpen) return false;
+    if (const auto* Ending = AEndingEmergence::FindForPlayer(Controller); Ending && Ending->bComplete) return true;
+    return !Controller->bShowMouseCursor && !Controller->IsMoveInputIgnored() && !Controller->IsLookInputIgnored();
 }
 
 TSharedRef<SWidget> MiningMobileUI::MakeToolbar(ABrainMiningPlayerController* Controller)
@@ -275,7 +295,8 @@ TSharedRef<SWidget> MiningMobileUI::MakeToolbar(ABrainMiningPlayerController* Co
     auto Back = IconButton(TEXT("back"), [Player]()
     {
         if (!Player.IsValid()) return;
-        if (Player->GetMobileActionLabel() == TEXT("CLICK")) Player->HandleMobileInteract();
+        if (Player->IsMobileBackVisible()) Player->HandleMobileBack();
+        else if (Player->GetMobileActionLabel() == TEXT("CLICK")) Player->HandleMobileInteract();
         else if (Player->IsMobileThoughtVisible() && Player->bShowMouseCursor) Player->HandleMobileEdit();
         else Player->HandleMobileBack();
     });

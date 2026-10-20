@@ -35,11 +35,11 @@ bool UMiningExperienceSubsystem::TogglePauseMenu(bool bFromCredits)
     auto* PC=GetWorld()?GetWorld()->GetFirstPlayerController():nullptr;
     if(auto* SettingsPC=Cast<ABrainMiningPlayerController>(PC);SettingsPC&&SettingsPC->IsAudioSettingsOpen()){SettingsPC->ToggleAudioSettings();return true;}
     if(Menu){CloseMenu();return true;}
+    if(auto* Mobile=Cast<ABrainMiningPlayerController>(PC);Mobile&&Mobile->IsUsingTouchControls())return ToggleMobileMenu();
     if(!bFromCredits && EndingCreditsInput::Handle(PC,EKeys::Escape))return true;
     auto* Viewport=GetGameInstance()->GetGameViewportClient();
     if(!PC||!PC->IsLocalController()||!PC->GetPawn()||!Viewport||AMiningOpening::IsOpening(GetWorld()))return false;
     if(auto* Input=UMiningGamepadSubsystem::Find(PC);Input&&Input->GetContext()==EMiningInputContext::Blocked)return false;
-    if(auto* Mobile=Cast<ABrainMiningPlayerController>(PC);Mobile&&Mobile->IsUsingTouchControls())return ToggleMobileMenu();
     bool bAtCredits=false;for(TActorIterator<AEndingEmergence> It(GetWorld());It;++It)if(It->bComplete){bAtCredits=true;break;}
     const bool bFromGameplay=bAtCredits||(!PC->IsPaused()&&!PC->bShowMouseCursor&&!PC->IsMoveInputIgnored()&&!PC->IsLookInputIgnored());
     CaptureMenuInput(PC);

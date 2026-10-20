@@ -99,14 +99,14 @@ TSharedRef<SWidget> UWenSiPuzzleWidget::RebuildWidget()
  {
   return WenSiThoughtBubble::MakeCard(Index,&ThoughtBrushes[Index],Rows[Index],FOnClicked::CreateLambda([this,Index](){if(Puzzle.IsValid())Puzzle->CloseThought(Index);return FReply::Handled();}));
  };
- auto Overlay=SNew(SOverlay)
+ auto Overlay=SNew(SOverlay).Visibility(EVisibility::SelfHitTestInvisible)
   +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center).Padding(24,0)[SAssignNew(Cards[0],SBorder).BorderImage(FCoreStyle::Get().GetBrush(TEXT("NoBrush")))[MakeCard(0)]]
   +SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center).Padding(24,0)[SAssignNew(Cards[1],SBorder).BorderImage(FCoreStyle::Get().GetBrush(TEXT("NoBrush")))[MakeCard(1)]]
   +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("·"))).Font(PuzzleThoughtFont(24)).Visibility_Lambda([this](){return !UMiningInteractionHUDWidget::IsActiveFor(GetOwningPlayer()) && Puzzle.IsValid() && !Puzzle->bEditing && (!Puzzle->bComplete || Puzzle->ResetButton) ? EVisibility::HitTestInvisible:EVisibility::Collapsed;})]
-  +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,40)[SAssignNew(Hint,STextBlock).Font(PuzzleThoughtFont(18)).ColorAndOpacity(FLinearColor::White).ShadowOffset(FVector2D(1,1))];
+  +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,40)[SAssignNew(Hint,STextBlock).Visibility(EVisibility::HitTestInvisible).Font(PuzzleThoughtFont(18)).ColorAndOpacity(FLinearColor::White).ShadowOffset(FVector2D(1,1))];
  Signature.Empty();
- return SNew(SScaleBox).Stretch(EStretch::ScaleToFit)
-  [SNew(SBox).WidthOverride(1600).HeightOverride(900)[Overlay]];
+ return SNew(SScaleBox).Visibility(EVisibility::SelfHitTestInvisible).Stretch(EStretch::ScaleToFit)
+  [SNew(SBox).Visibility(EVisibility::SelfHitTestInvisible).WidthOverride(1600).HeightOverride(900)[Overlay]];
 }
 FReply UWenSiPuzzleWidget::NativeOnKeyDown(const FGeometry& G,const FKeyEvent& E)
 {

@@ -121,8 +121,7 @@ bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
     {
         if (Params.Key==EKeys::M) { if(Params.Event==IE_Pressed) Hall->ToggleMap(); return true; }
         if (Hall->IsMapOpen()) { if(Params.Key==EKeys::Escape && Params.Event==IE_Pressed) Hall->CloseMap(); return true; }
-        // Let PlayerInput track I, including its release, for the hidden SKIP
-        // chord. Only C opens the catalogue.
+        // Only C opens the catalogue; PlayerInput tracks P for hold-to-skip.
         if (Params.Key==EKeys::C) { if(Params.Event==IE_Pressed) Hall->ToggleCatalogue(); return true; }
         if (!IsPaused() && Hall->HandleMirrorInput(Params)) return true;
         if (Params.Key==EKeys::F6) { if(Params.Event==IE_Pressed) Hall->ReturnToLobby(); return true; }

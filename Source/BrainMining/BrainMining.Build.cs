@@ -33,7 +33,7 @@ public class BrainMining : ModuleRules
         RuntimeDependencies.Add("$(ProjectDir)/Content/UI/Mobile/*.svg", StagedFileType.NonUFS);
 		PrivateDependencyModuleNames.Add("AudioMixer");
 		PrivateDependencyModuleNames.Add("MediaAssets");
-		PrivateDependencyModuleNames.Add("OverCrowd");
+		if (Target.Platform == UnrealTargetPlatform.Win64) PrivateDependencyModuleNames.Add("OverCrowd");
 		PrivateDependencyModuleNames.Add("GameplayTags");
 		PrivateDependencyModuleNames.AddRange(new[] { "GeometryAlgorithms", "AssetRegistry" });
 		if (Target.bBuildEditor) PrivateDependencyModuleNames.AddRange(new[] { "UnrealEd", "MeshConversion", "MeshDescription", "StaticMeshDescription" });

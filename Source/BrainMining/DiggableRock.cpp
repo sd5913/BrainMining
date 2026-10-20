@@ -1,5 +1,10 @@
 #include "DiggableRock.h"
 #include "MiningTerrainFragments.h"
+#include "MiningBackgroundTasks.h"
+#include "MiningChunkGeometry.h"
+#include "Async/Async.h"
+#include "HAL/IConsoleManager.h"
+#include "TimerManager.h"
 #include "MiningBlastGeometry.h"
 #include "MiningPickaxeGeometry.h"
 #include "Engine/World.h"
@@ -18,6 +23,92 @@
 #include "UDynamicMesh.h"
 
 using namespace UE::Geometry;
+
+namespace
+{
+TAutoConsoleVariable<float> RockCutBudget(TEXT("bm.Mining.RockBudgetMs"), 35.f,
+    TEXT("Synchronous non-chunked terrain budget; unfinished cuts use the shared background job limit."));
+}
+
+struct FMiningRockCutResult
+{
+    FDynamicMesh3 Mesh;
+    TSharedPtr<FMiningTaskPermit, ESPMode::ThreadSafe> Permit;
+    FTransform Transform;
+    FVector Center;
+    float Radius = 0;
+    uint64 Revision = 0;
+    double Milliseconds = 0;
+    bool bValid = false;
+};
+
+bool ADiggableRock::IsTerrainCutPending() const
+{
+    return PendingRockCut.IsValid();
+}
+
+void ADiggableRock::EndPlay(const EEndPlayReason::Type Reason)
+{
+    GetWorldTimerManager().ClearTimer(RockCutTimer);
+    PendingRockCut = {};
+    ++TerrainRevision;
+    Super::EndPlay(Reason);
+}
+
+bool ADiggableRock::DeferCut(FDynamicMesh3 Source, FDynamicMesh3 Cutter, FVector WorldCenter, float WorldRadius, bool bPreserveEdges)
+{
+    auto Permit = AcquireMiningTaskPermit();
+    if (!Permit) { LastStatus = TEXT("Terrain workers busy; retry next strike"); return false; }
+    TSharedPtr<FMiningRockCutResult, ESPMode::ThreadSafe> Work = MakeShared<FMiningRockCutResult, ESPMode::ThreadSafe>();
+    Work->Permit = MoveTemp(Permit);
+    Work->Revision = TerrainRevision;
+    Work->Transform = GetActorTransform();
+    Work->Center = WorldCenter;
+    Work->Radius = WorldRadius;
+    const int32 Budget = FMath::Clamp(MaxTriangles, 1000, 100000);
+    PendingRockCut = Async(EAsyncExecution::ThreadPool, [Work, Source = MoveTemp(Source), Cutter = MoveTemp(Cutter), Budget, bPreserveEdges]()
+    {
+        const double Started = FPlatformTime::Seconds();
+        Work->bValid = MiningChunks::Subtract(Source, Cutter, Work->Mesh, bPreserveEdges, 2.0);
+        if (Work->bValid && Work->Mesh.TriangleCount() > Budget)
+            MiningChunks::Simplify(Work->Mesh, Source, FBox(Source.GetBounds().Min, Source.GetBounds().Max), .05);
+        Work->bValid = Work->bValid && Work->Mesh.TriangleCount() <= Budget && !Source.IsSameAs(Work->Mesh, FDynamicMesh3::FSameAsOptions());
+        if (Work->bValid)
+        {
+            const auto OriginalBounds=Source.GetBounds();
+            MiningTerrainFragments::RemoveSmallFloatingPieces(Work->Mesh,FBox(FVector(OriginalBounds.Min),FVector(OriginalBounds.Max)),false,40.f/Work->Transform.GetScale3D().GetMin());
+            MiningChunks::Normals(Work->Mesh);
+        }
+        Work->Milliseconds = (FPlatformTime::Seconds() - Started) * 1000;
+        return Work;
+    });
+    GetWorldTimerManager().SetTimer(RockCutTimer, this, &ADiggableRock::PollRockCut, .01f, true);
+    LastStatus = TEXT("Hit accepted: finishing terrain cut");
+    return true;
+}
+
+void ADiggableRock::PollRockCut()
+{
+    if (!PendingRockCut.IsValid() || !PendingRockCut.IsReady()) return;
+    auto Work = PendingRockCut.Get();
+    PendingRockCut = {};
+    GetWorldTimerManager().ClearTimer(RockCutTimer);
+    if (Work->Revision != TerrainRevision || !Work->Transform.Equals(GetActorTransform())) return;
+    if (!Work->bValid) { LastStatus = TEXT("Cut rejected: original rock preserved"); return; }
+    const double Started = FPlatformTime::Seconds();
+    CommitMesh(MoveTemp(Work->Mesh));
+    LastBooleanMilliseconds = Work->Milliseconds;
+    const FVector LocalCenter = GetActorTransform().InverseTransformPosition(Work->Center);
+    const double LocalRadius = Work->Radius / GetActorScale3D().GetMin();
+    RockMesh->GetDynamicMesh()->ProcessMesh([this, LocalCenter, LocalRadius](const FDynamicMesh3& Mesh)
+    {
+        FogChamber->ObserveCut(Mesh, LocalCenter, LocalRadius);
+    });
+    ++SuccessfulCuts;
+    OnTerrainCommitted.Broadcast(FBox::BuildAABB(Work->Center, FVector(Work->Radius + 1.f)));
+    LastTotalMilliseconds = (FPlatformTime::Seconds() - Started) * 1000;
+    LastStatus = TriangleCount > 0 ? TEXT("Cut committed") : TEXT("Rock depleted");
+}
 
 ADiggableRock::ADiggableRock()
 {
@@ -56,6 +147,7 @@ void ADiggableRock::OnConstruction(const FTransform& Transform)
 
 void ADiggableRock::CommitMesh(FDynamicMesh3&& Mesh)
 {
+	++TerrainRevision;
 	TriangleCount = Mesh.TriangleCount();
 	// Also enforce this for components serialized in older maps.
 	RockMesh->SetEnableRaytracing(false);
@@ -79,6 +171,8 @@ void ADiggableRock::BakeAuthoredMesh(UDynamicMesh* Mesh)
 
 void ADiggableRock::ResetRock()
 {
+	PendingRockCut = {};
+	if (GetWorld()) GetWorldTimerManager().ClearTimer(RockCutTimer);
 	if(AuthoredRestMesh && AuthoredRestMesh->GetMeshRef().TriangleCount()>0)
 	{
 		FDynamicMesh3 Mesh=AuthoredRestMesh->GetMeshRef();
@@ -158,6 +252,7 @@ bool ADiggableRock::MineBlast(FVector WorldCenter, float WorldRadius, float Roug
 
 bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDynamicMesh3* WorldCutter)
 {
+	if (PendingRockCut.IsValid()) { LastStatus = TEXT("Rock is breaking"); return false; }
 	const double OperationStart = FPlatformTime::Seconds();
 	LastBooleanMilliseconds = 0.0f;
 	LastCollisionMilliseconds = 0.0f;
@@ -209,7 +304,9 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 	FMeshBoolean Operation(&SourceMesh, &Cutter, &Result, FMeshBoolean::EBooleanOp::Difference);
 	// Interactive edits must never run the editor's unbounded retry sequence.
 	const bool bInteractive = GetWorld() && GetWorld()->IsGameWorld();
-	const double Deadline = bInteractive ? FPlatformTime::Seconds() + .035 : 0;
+	const double BudgetSeconds = FMath::Clamp(RockCutBudget.GetValueOnGameThread(), 0.f, 35.f) / 1000.;
+	if (bInteractive && BudgetSeconds == 0) return DeferCut(MoveTemp(SourceMesh), MoveTemp(Cutter), WorldCenter, WorldRadius, WorldCutter != nullptr);
+	const double Deadline = bInteractive ? FPlatformTime::Seconds() + BudgetSeconds : 0;
 	FProgressCancel Progress;
 	Progress.CancelF = [Deadline](){ return Deadline > 0 && FPlatformTime::Seconds() >= Deadline; };
 	Operation.Progress = &Progress;
@@ -275,6 +372,7 @@ bool ADiggableRock::MineCutter(FVector WorldCenter, float WorldRadius, const FDy
 	}
 	if (!bSucceeded)
 	{
+		if (bInteractive) return DeferCut(MoveTemp(SourceMesh), MoveTemp(Cutter), WorldCenter, WorldRadius, WorldCutter != nullptr);
 		LastStatus = TEXT("Cut rejected: original rock preserved");
 		UE_LOG(LogBrainMining, Warning, TEXT("Mining rejected invalid boolean result on %s"), *GetName());
 		return false;

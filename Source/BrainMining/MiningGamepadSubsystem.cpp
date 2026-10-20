@@ -158,6 +158,8 @@ FVector2D UMiningGamepadSubsystem::ApplyDeadZone(FVector2D Axis, float DeadZone)
 FVector2D UMiningGamepadSubsystem::ReadMove(const APlayerController* Player)
 {
     if (!Player) return FVector2D::ZeroVector;
+    if (const auto* Mobile = Cast<ABrainMiningPlayerController>(Player))
+        if (const FVector2D TouchAxis = Mobile->GetMobileMoveAxis(); !TouchAxis.IsNearlyZero()) return TouchAxis;
     FVector2D Axis(float(Player->IsInputKeyDown(EKeys::D)) - float(Player->IsInputKeyDown(EKeys::A)),
         float(Player->IsInputKeyDown(EKeys::W)) - float(Player->IsInputKeyDown(EKeys::S)));
     if (const auto* Input = Find(Player); Input && Input->GetContext() == EMiningInputContext::Exploration)

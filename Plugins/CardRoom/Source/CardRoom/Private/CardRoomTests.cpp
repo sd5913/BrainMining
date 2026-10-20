@@ -4,7 +4,100 @@
 #include "CardRoomStage.h"
 #include "SCardRoomView.h"
 #include "Engine/World.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 #if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCardRoomTouchTest,"CardRoom.Input.TouchFullEncounter",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FCardRoomTouchTest::RunTest(const FString& Parameters)
+{
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game,false);
+    auto* Controller = World->SpawnActor<APlayerController>();
+    auto* Pawn = World->SpawnActor<ACharacter>();
+    Controller->Possess(Pawn);
+    auto* Cards = NewObject<UCardRoomInteractionComponent>(Controller);
+    Cards->Stage = World->SpawnActor<ACardRoomStage>();
+    int32 RewardCount = 0;
+    Cards->Stage->AudioOverride.BindLambda([&RewardCount](FName Cue,float)
+    {
+        if(Cue == TEXT("S_Reward")) ++RewardCount;
+    });
+    const auto View = SNew(SCardRoomView).Owner(Cards);
+    Cards->View = View;
+    for(const FVector2D Size : {FVector2D(1280,720),FVector2D(2400,1080),FVector2D(800,360),FVector2D(1024,768)})
+    {
+        const FGeometry Geometry = FGeometry::MakeRoot(Size,FSlateLayoutTransform(1.25f,FVector2D(37,21)));
+        const float Scale = FMath::Min(Size.X/1600,Size.Y/900);
+        const FVector2D Origin = (Size-FVector2D(1600,900)*Scale)*.5;
+        auto Touch = [&](FVector2D Position)
+        {
+            const FVector2D Screen = Geometry.LocalToAbsolute(Origin+Position*Scale);
+            return View->OnTouchStarted(Geometry,FPointerEvent(0,1,Screen,Screen,1.f,true));
+        };
+        auto& Run = Cards->Stage->Run;
+        Cards->EntryLocation = FVector(123,456,789);
+        Cards->EntryMovementMode = MOVE_Walking;
+        Cards->bEntryCollision = true;
+        Cards->SeatedPawn = Pawn;
+        Cards->bSeated = true;
+        Cards->SetRoomActive(true);
+        Controller->SetIgnoreMoveInput(true);
+        Controller->SetIgnoreLookInput(true);
+        Controller->bShowMouseCursor = true;
+        Pawn->SetActorEnableCollision(false);
+        Pawn->GetCharacterMovement()->DisableMovement();
+        Run = FCardRoomRun();
+        Run.Seat(); Run.Match(); Run.Tick(2.3f); Run.Tick(1.5f);
+        for(int32 Round = 1; Round <= 4; ++Round)
+        {
+            TestEqual(TEXT("Touch battle reaches each round"),Run.Round,Round);
+            Touch(FVector2D(1322,762));
+            TestTrue(TEXT("Empty confirm cannot skip combat"),Run.Phase == ECardRoomPhase::Choosing);
+            if(Round == 4)
+                TestEqual(TEXT("First tap selects all seventeen cards"),Run.Staged.Num(),17);
+            else
+            {
+                const FVector2D FirstCard(Round == 3 ? 720 : 800,760);
+                TestTrue(TEXT("Card view handles real touch input"),Touch(FirstCard).IsEventHandled());
+                TestTrue(TEXT("Touch selects the first card"),Run.Staged.Contains(0));
+                Touch(FirstCard);
+                TestTrue(TEXT("Second touch cancels selection"),Run.Staged.IsEmpty());
+                Touch(FirstCard);
+                if(Round == 3)
+                {
+                    Touch(FVector2D(1322,762));
+                    TestTrue(TEXT("Combination requires both cards"),Run.Phase == ECardRoomPhase::Choosing);
+                    Touch(FVector2D(880,760));
+                }
+            }
+            TestTrue(TEXT("Same card surface handles confirm touch"),Touch(FVector2D(1322,762)).IsEventHandled());
+            TestTrue(TEXT("Touch alone plays the selected hand"),Run.Phase == ECardRoomPhase::Resolving);
+            Run.Tick(.5f);
+            Touch(FVector2D(1322,762));
+            TestEqual(TEXT("Repeated confirm does not restart resolution"),Run.PhaseTime,.5f);
+            Run.Tick(5.f);
+        }
+        TestTrue(TEXT("Touch-only battle reaches victory"),Run.Phase == ECardRoomPhase::Victory);
+        const int32 BeforeReward = RewardCount;
+        Touch(FVector2D(800,500));
+        TestTrue(TEXT("Victory requires explicit reward pickup"),Run.Phase == ECardRoomPhase::Victory);
+        const FReply Pickup = Touch(FVector2D(1322,762));
+        TestTrue(TEXT("Victory action handles reward touch"),Pickup.IsEventHandled());
+        TestFalse(TEXT("Pickup does not refocus the dismissed modal"),Pickup.GetUserFocusRecepient().IsValid());
+        TestTrue(TEXT("Touch claims reward"),Run.Phase == ECardRoomPhase::Collected);
+        TestEqual(TEXT("Reward is granted once"),RewardCount,BeforeReward+1);
+        TestFalse(TEXT("Pickup deactivates card input"),Cards->bRoomActive || Cards->bSeated);
+        TestTrue(TEXT("Pickup removes the card overlay"),View->GetVisibility() == EVisibility::Collapsed);
+        TestFalse(TEXT("Pickup restores camera and movement input"),Controller->IsMoveInputIgnored() || Controller->IsLookInputIgnored() || Controller->bShowMouseCursor);
+        TestTrue(TEXT("Pickup restores entry position and collision"),Pawn->GetActorLocation().Equals(Cards->EntryLocation) && Pawn->GetActorEnableCollision());
+        TestEqual(TEXT("Pickup restores walking"),Pawn->GetCharacterMovement()->MovementMode.GetValue(),MOVE_Walking);
+        TestFalse(TEXT("Inactive card view ignores touches"),Touch(FVector2D(1322,762)).IsEventHandled());
+        TestEqual(TEXT("Repeated touches cannot grant reward twice"),RewardCount,BeforeReward+1);
+    }
+    Controller->UnPossess();
+    World->DestroyWorld(false);
+    return true;
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCardRoomMouseTest,"CardRoom.Input.MouseAndSpace",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FCardRoomMouseTest::RunTest(const FString& Parameters)
 {

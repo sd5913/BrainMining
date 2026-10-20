@@ -1,5 +1,6 @@
 #include "GeneratedMiningRock.h"
 #include "MiningTerrainFragments.h"
+#include "MiningBackgroundTasks.h"
 #include "MiningPickaxeGeometry.h"
 #include "MiningTerrainSource.h"
 #include "MiningBlastGeometry.h"
@@ -40,12 +41,10 @@ double MiningCommitWindowStart = 0;
 double MiningCommitWindowSeconds = 0;
 uint64 TerrainPreparationFrame = MAX_uint64;
 double TerrainPreparationSeconds = 0;
+}
 
-struct FMiningTaskPermit
-{
-	FMiningTaskPermit() { MiningBackgroundTasks.Increment(); }
-	~FMiningTaskPermit() { MiningBackgroundTasks.Decrement(); }
-};
+FMiningTaskPermit::FMiningTaskPermit() { MiningBackgroundTasks.Increment(); }
+FMiningTaskPermit::~FMiningTaskPermit() { MiningBackgroundTasks.Decrement(); }
 
 TSharedPtr<FMiningTaskPermit, ESPMode::ThreadSafe> AcquireMiningTaskPermit()
 {
@@ -53,6 +52,9 @@ TSharedPtr<FMiningTaskPermit, ESPMode::ThreadSafe> AcquireMiningTaskPermit()
 	if (MiningBackgroundTasks.GetValue() >= FMath::Clamp(CVarMiningMaxBackgroundTasks.GetValueOnGameThread(), 1, 4)) return nullptr;
 	return MakeShared<FMiningTaskPermit, ESPMode::ThreadSafe>();
 }
+
+namespace
+{
 
 // FullJourney contains over 15,000 terrain components. Keep their solid meshes
 // and collision, but allocate render proxies only around the player's view.

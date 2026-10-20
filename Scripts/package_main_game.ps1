@@ -127,7 +127,7 @@ Get-ChildItem -LiteralPath "$projectRoot/Content/Passages/Echo/ArtP2/Collision" 
 $requiredAssets += @($endingDependencies.assets)
 $requiredAssets = @($requiredAssets | Sort-Object -Unique)
 foreach ($asset in $requiredAssets) {
-    if (-not $containerText.Contains("../../../BrainMining/Content/$asset,")) {
+    if ($containerText.IndexOf("../../../BrainMining/Content/$asset,", [StringComparison]::OrdinalIgnoreCase) -lt 0) {
         throw "Required runtime asset missing from packaged container: $asset"
     }
 }

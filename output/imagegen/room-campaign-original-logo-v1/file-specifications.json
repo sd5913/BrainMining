@@ -1,0 +1,66 @@
+[
+  {
+    "Name": "promo-1920x1080.png",
+    "Width": 1920,
+    "Height": 1080,
+    "Bytes": 3122274,
+    "MB": 3.12,
+    "MeetsLimit": true
+  },
+  {
+    "Name": "promo-1920x1080.jpg",
+    "Width": 1920,
+    "Height": 1080,
+    "Bytes": 381875,
+    "MB": 0.38,
+    "MeetsLimit": true
+  },
+  {
+    "Name": "landscape-cover-1840x860.png",
+    "Width": 1840,
+    "Height": 860,
+    "Bytes": 2337553,
+    "MB": 2.34,
+    "MeetsLimit": true
+  },
+  {
+    "Name": "landscape-cover-1840x860.jpg",
+    "Width": 1840,
+    "Height": 860,
+    "Bytes": 313811,
+    "MB": 0.31,
+    "MeetsLimit": true
+  },
+  {
+    "Name": "portrait-cover-1200x1800.png",
+    "Width": 1200,
+    "Height": 1800,
+    "Bytes": 2958150,
+    "MB": 2.96,
+    "MeetsLimit": true
+  },
+  {
+    "Name": "portrait-cover-1200x1800.jpg",
+    "Width": 1200,
+    "Height": 1800,
+    "Bytes": 405188,
+    "MB": 0.41,
+    "MeetsLimit": true
+  },
+  {
+    "Name": "library-background-3840x1240.png",
+    "Width": 3840,
+    "Height": 1240,
+    "Bytes": 3975879,
+    "MB": 3.98,
+    "MeetsLimit": true
+  },
+  {
+    "Name": "library-background-3840x1240.jpg",
+    "Width": 3840,
+    "Height": 1240,
+    "Bytes": 507946,
+    "MB": 0.51,
+    "MeetsLimit": true
+  }
+]

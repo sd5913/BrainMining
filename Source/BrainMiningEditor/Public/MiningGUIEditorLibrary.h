@@ -34,6 +34,9 @@ public:
 	static bool SimulatePreviewButton(UButton* Button, bool bPressed);
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
 	static void StartFloatingPreview();
+    /** Resize only the current PIE game's client area for responsive UI checks. */
+    UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
+    static bool ResizePreviewViewport(APlayerController* Controller,int32 Width,int32 Height);
 	/** Capture the PIE game viewport, rather than the editor's active viewport. */
 	UFUNCTION(BlueprintCallable, Category="Mining GUI|Validation")
 	static bool CapturePreview(APlayerController* Controller, const FString& Filename);

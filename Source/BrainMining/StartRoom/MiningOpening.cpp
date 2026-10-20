@@ -97,6 +97,11 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
         else {ExitButton=Button;Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);}
     };
     AddButton(TEXT("开始游戏"),true);AddButton(TEXT("退出游戏"),false);
+    auto* DesignSize=WidgetTree->ConstructWidget<USizeBox>();
+    DesignSize->SetWidthOverride(1600);DesignSize->SetHeightOverride(900);DesignSize->AddChild(Canvas);
+    auto* Responsive=WidgetTree->ConstructWidget<UScaleBox>();Responsive->SetStretch(EStretch::ScaleToFit);
+    Responsive->AddChild(DesignSize);WidgetTree->RootWidget=Responsive;
+
     return Super::RebuildWidget();
 }
 void UMiningOpeningMenu::NativeTick(const FGeometry& Geometry,float Dt)

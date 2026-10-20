@@ -1,4 +1,9 @@
 #include "EndingEmergence.h"
+#include "EndingCreditsInput.h"
+#include "BrainMiningPlayerController.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Widgets/Text/SRichTextBlock.h"
+#include "Styling/SlateStyle.h"
 #include "BrainMiningFonts.h"
 #include "Engine/Font.h"
 #include "UObject/StrongObjectPtr.h"
@@ -26,6 +31,42 @@ static FSlateFontInfo CreditsFont(float Size, bool bEnglish=false)
     auto& Font=bEnglish?English:Chinese;
     if(!Font.IsValid())Font.Reset(LoadObject<UFont>(nullptr,bEnglish?TEXT("/Game/Fonts/F_CreditsRockwell"):TEXT("/Game/Fonts/F_CreditsHiragino")));
     return Font.IsValid()?FSlateFontInfo(Font.Get(),Size,TEXT("Regular")):BrainMiningFonts::Body(Size);
+}
+
+bool EndingCreditsInput::Handle(APlayerController* Player,const FKey& Key)
+{
+    if(!Player || !Player->IsLocalController() || !Player->GetWorld() || (Key!=EKeys::C && Key!=EKeys::Escape))return false;
+    auto* World=Player->GetWorld();
+    auto* Session=World->GetGameInstance()?World->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>():nullptr;
+    if(Session&&Session->IsMenuOpen())return false;
+    if(auto* PC=Cast<ABrainMiningPlayerController>(Player);PC&&PC->IsAudioSettingsOpen())return false;
+    bool AtCredits=false;
+    for(TActorIterator<AEndingEmergence> It(World);It;++It)
+        if(It->bComplete && !It->IsHidden()){AtCredits=true;break;}
+    if(!AtCredits)return false;
+    AMiningCollectionField* Field=nullptr;
+    for(TActorIterator<AMiningCollectionField> It(World);It;++It)
+    {
+        if(It->bCatalogueOpen){It->ToggleCatalogue();return true;}
+        if(It->bCatalogueOnly)Field=*It;
+    }
+    if(Key==EKeys::Escape)
+    {
+        UKismetSystemLibrary::QuitGame(Player,Player,EQuitPreference::Quit,false);
+        return true;
+    }
+    if(!Field)
+    {
+        Field=World->SpawnActorDeferred<AMiningCollectionField>(AMiningCollectionField::StaticClass(),FTransform::Identity);
+        if(Field)
+        {
+            Field->bCatalogueOnly=true;Field->bSharedAbilities=true;
+            Field->bUseAuthoredPlacements=true;Field->bShowExplorationHUD=false;
+            Field->FinishSpawning(FTransform::Identity);
+        }
+    }
+    if(Field)Field->ToggleCatalogue();
+    return true;
 }
 
 void AEndingEmergence::UpdateCredits()
@@ -60,25 +101,27 @@ void AEndingEmergence::UpdateCredits()
         Text(TEXT("The best way out is always through."),true,44,205,312,1190,80,ETextJustify::Center);
         Text(TEXT("罗伯特·弗罗斯特"),false,38,720,451,665,78,ETextJustify::Right);
         Text(TEXT("Robert Frost 1914"),true,39,720,526,665,74,ETextJustify::Right);
-        Layout->AddSlot().Offset(FMargin(270,676,1060,60)).Anchors(FAnchors(0)).Alignment(FVector2D::ZeroVector)
-            [SNew(SHorizontalBox)
-                +SHorizontalBox::Slot().FillWidth(1)
-                +SHorizontalBox::Slot().AutoWidth().Padding(0,0,40,0)[SNew(STextBlock).Text(FText::FromString(TEXT("铁皮辣妹"))).Font(CreditsFont(24))]
-                +SHorizontalBox::Slot().AutoWidth().Padding(0,0,40,0)[SNew(STextBlock).Text(FText::FromString(TEXT("空空道人"))).Font(CreditsFont(24))]
-                +SHorizontalBox::Slot().AutoWidth().Padding(0,0,40,0)[SNew(STextBlock).Text(FText::FromString(TEXT("Seven"))).Font(CreditsFont(26,true))]
-                +SHorizontalBox::Slot().AutoWidth()[SNew(STextBlock).Text(FText::FromString(TEXT("Rasimet"))).Font(CreditsFont(26,true))]
-                +SHorizontalBox::Slot().FillWidth(1)];
+        // Rich text lays mixed fonts out on one baseline, including CJK and
+        // Latin ascenders/descenders; centering four independent widgets cannot.
+        static FSlateStyleSet Styles(TEXT("EndingCreditTypography"));
+        Styles.Set("cn",FTextBlockStyle().SetFont(CreditsFont(24)).SetColorAndOpacity(FLinearColor(.96f,.95f,.92f)));
+        Styles.Set("en",FTextBlockStyle().SetFont(CreditsFont(26,true)).SetColorAndOpacity(FLinearColor(.96f,.95f,.92f)));
+        Layout->AddSlot().Offset(FMargin(270,676,1060,65)).Anchors(FAnchors(0)).Alignment(FVector2D::ZeroVector)
+            [SNew(SRichTextBlock).DecoratorStyleSet(&Styles).TextStyle(&Styles.GetWidgetStyle<FTextBlockStyle>("cn"))
+                .Text(FText::FromString(TEXT("<cn>铁皮辣妹</>    <cn>空空道人</>    <en>Seven</>    <en>Rasimet</>")))
+                .Justification(ETextJustify::Center)];
         auto Prompt=SNew(SConstraintCanvas);
-        Prompt->AddSlot().Offset(FMargin(500,812,600,60)).Anchors(FAnchors(0)).Alignment(FVector2D::ZeroVector)
-            [SNew(STextBlock).Text(FText::FromString(TEXT("[ESC]"))).Font(CreditsFont(26,true)).Justification(ETextJustify::Center)
+        Prompt->AddSlot().Offset(FMargin(240,812,1120,65)).Anchors(FAnchors(0)).Alignment(FVector2D::ZeroVector)
+            [SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("NoBrush")).Padding(0)
                 .ColorAndOpacity_Lambda([this,CreditsStartedAt]()
                 {
-                    // Black fades in for 1.4 s, text for 1.6 s; wait five more
-                    // seconds after the text is fully present before breathing.
                     const float T=Age-CreditsStartedAt-8.f;
                     const float Alpha=T<0?0.f:FMath::Min(1.f,T/.8f)*(.35f+.65f*(.5f+.5f*FMath::Cos(T*2.f*PI/3.6f)));
-                    return FSlateColor(FLinearColor(1,1,1,Alpha));
-                })];
+                    return FLinearColor(1,1,1,Alpha);
+                })
+                [SNew(SRichTextBlock).DecoratorStyleSet(&Styles).TextStyle(&Styles.GetWidgetStyle<FTextBlockStyle>("cn"))
+                    .Text(FText::FromString(TEXT("<en>[C]</> <cn>收集界面</>     <en>[ESC]</> <cn>退出游戏</>")))
+                    .Justification(ETextJustify::Center)]];
         Credits=SNew(SOverlay)
             +SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
                 .BorderBackgroundColor_Lambda([this,CreditsStartedAt](){return FLinearColor(0,0,0,FMath::SmoothStep(0.f,1.f,FMath::Clamp((Age-CreditsStartedAt)/1.4f,0.f,1.f)));})]

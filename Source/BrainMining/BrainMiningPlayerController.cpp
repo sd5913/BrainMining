@@ -2,6 +2,7 @@
 
 
 #include "BrainMiningPlayerController.h"
+#include "EndingCreditsInput.h"
 #include "MobileUIWidgets.h"
 #include "MiningExperienceSubsystem.h"
 #include "Widgets/Layout/SSafeZone.h"
@@ -485,6 +486,7 @@ FString ABrainMiningPlayerController::GetMobileActionLabel() const
 
 bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 {
+    if(Params.Event==IE_Pressed && EndingCreditsInput::Handle(this,Params.Key))return true;
 	if (Params.Key == EKeys::F8 || (IsAudioSettingsOpen() && Params.Key == EKeys::Escape))
 	{
 		if (Params.Event == IE_Pressed) ToggleAudioSettings();

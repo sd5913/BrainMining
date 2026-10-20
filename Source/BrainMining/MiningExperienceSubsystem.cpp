@@ -1,5 +1,6 @@
 #include "MiningExperienceSubsystem.h"
 #include "BrainMiningPlayerController.h"
+#include "EndingCreditsInput.h"
 #include "BrainMiningFonts.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningComponent.h"
@@ -72,6 +73,15 @@ namespace MiningExperiences
             if (Event.GetKey() == EKeys::F6 && !Owner->IsMenuOpen())
                 if (auto* Hall = AMiningExhibitHall::Find(Owner->GetWorld())) { Hall->ReturnToLobby(); return true; }
             if (Event.GetKey() == EKeys::F4) return Owner->ToggleMenu();
+            if(Event.GetKey()==EKeys::C || Event.GetKey()==EKeys::Escape)
+            {
+                auto* World=Owner->GetWorld();
+                auto* PC=World?World->GetFirstPlayerController():nullptr;
+                auto* Viewport=World?World->GetGameViewport():nullptr;
+                auto Widget=Viewport?Viewport->GetGameViewportWidget():nullptr;
+                if(Widget&&(Widget->HasKeyboardFocus()||Widget->HasFocusedDescendants()))
+                    if(EndingCreditsInput::Handle(PC,Event.GetKey()))return true;
+            }
             if (Event.GetKey() == EKeys::Escape)
             {
                 // Close settings before opening another modal. Consuming this press

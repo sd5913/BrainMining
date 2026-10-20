@@ -2,6 +2,7 @@
 #include "BrainMiningFonts.h"
 #include "MiningMenuStyle.h"
 #include "EndingEmergence.h"
+#include "EndingCreditsInput.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningGamepadSubsystem.h"
 #include "StartRoom/MiningOpening.h"
@@ -34,6 +35,7 @@ bool UMiningExperienceSubsystem::TogglePauseMenu()
     auto* PC=GetWorld()?GetWorld()->GetFirstPlayerController():nullptr;
     if(auto* SettingsPC=Cast<ABrainMiningPlayerController>(PC);SettingsPC&&SettingsPC->IsAudioSettingsOpen()){SettingsPC->ToggleAudioSettings();return true;}
     if(Menu){CloseMenu();return true;}
+    if(EndingCreditsInput::Handle(PC,EKeys::Escape))return true;
     auto* Viewport=GetGameInstance()->GetGameViewportClient();
     if(!PC||!PC->IsLocalController()||!PC->GetPawn()||!Viewport||AMiningOpening::IsOpening(GetWorld()))return false;
     if(auto* Input=UMiningGamepadSubsystem::Find(PC);Input&&Input->GetContext()==EMiningInputContext::Blocked)return false;
@@ -72,13 +74,7 @@ bool UMiningExperienceSubsystem::TogglePauseMenu()
     Button(TEXT("退出游戏"),[this](){RequestQuitConfirmation();},false);
     CancelQuitButton=Button(TEXT("取消"),[this](){CancelQuitConfirmation();},true);
     Button(TEXT("确认退出"),[this](){auto* PC=MenuController.Get();CloseMenu();UKismetSystemLibrary::QuitGame(this,PC,EQuitPreference::Quit,false);},true);
-    Choices->AddSlot().AutoHeight().Padding(0,24)[SNew(STextBlock).Text_Lambda([this]()
-    {
-        if(UMiningGamepadSubsystem::UsesGamepad(MenuController.Get()))
-            return FText::FromString(bQuitConfirmation?TEXT("A 确认选项 · B 取消退出"):TEXT("方向键 导航 · A 确认 · B / Menu 返回"));
-        return FText::FromString(bQuitConfirmation?TEXT("Esc 取消退出"):TEXT("Esc 返回游戏"));
-    }).Font(BrainMiningFonts::Body(12)).Justification(ETextJustify::Center)];
-    Menu=MiningMenuStyle::Frame(Choices,650,720);
+    Menu=MiningMenuStyle::Frame(Choices,650,0);
     PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);bPausedByMenu=!PC->IsPaused()&&PC->SetPause(true);
     Viewport->AddViewportWidgetContent(Menu.ToSharedRef(),1500);
     FInputModeUIOnly Mode;Mode.SetWidgetToFocus(FirstButton);PC->SetInputMode(Mode);PC->bShowMouseCursor=true;return true;

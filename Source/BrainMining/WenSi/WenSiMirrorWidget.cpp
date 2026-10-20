@@ -2,6 +2,7 @@
 #include "BrainMiningFonts.h"
 #include "WenSi/MouseMuseumPortal.h"
 #include "WenSi/WenSiThoughtBubble.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Engine/Texture2D.h"
 #include "Input/DragAndDrop.h"
 #include "InputCoreTypes.h"
@@ -153,7 +154,8 @@ TSharedRef<SWidget> UWenSiMirrorWidget::RebuildWidget()
   +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("·"))).Font(ThoughtFont(24)).Visibility_Lambda([this](){return Puzzle.IsValid() && !Puzzle->bEditing && (!Puzzle->bComplete || true) ? EVisibility::HitTestInvisible:EVisibility::Collapsed;})]
   +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0,0,0,40)[SAssignNew(Hint,STextBlock).Font(ThoughtFont(18)).ColorAndOpacity(FLinearColor::White).ShadowOffset(FVector2D(1,1))];
  Signature.Empty();
- return Overlay;
+ return SNew(SScaleBox).Stretch(EStretch::ScaleToFit)
+  [SNew(SBox).WidthOverride(1600).HeightOverride(900)[Overlay]];
 }
 FReply UWenSiMirrorWidget::NativeOnKeyDown(const FGeometry& G,const FKeyEvent& E)
 {
@@ -216,9 +218,7 @@ void UWenSiMirrorWidget::Refresh()
  else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("E 重置谜题");
  else if (!Puzzle->bComplete)
  {
-  if (Puzzle->Aim.IsValid()) Message=TEXT("E 思考    ");
-  if(!Puzzle->IsSwapping() && Puzzle->Thoughts[0].IsValid() && Puzzle->Thoughts[1].IsValid()) Message+=TEXT("R 交换红词并关闭    ");
-  if(Puzzle->Thoughts[0].IsValid() || Puzzle->Thoughts[1].IsValid()) Message+=TEXT("Q 放下全部思考");
+  Message=TEXT("R 重组    Q 停止思考");
  }
  Hint->SetText(FText::FromString(Message));
 }

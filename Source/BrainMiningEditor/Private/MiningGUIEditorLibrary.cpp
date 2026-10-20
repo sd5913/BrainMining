@@ -480,6 +480,17 @@ void UMiningGUIEditorLibrary::StartFloatingPreview()
 	GEditor->RequestPlaySession(Params);
 }
 
+bool UMiningGUIEditorLibrary::ResizePreviewViewport(APlayerController* Controller,int32 Width,int32 Height)
+{
+    auto* World=Controller?Controller->GetWorld():nullptr;
+    if(!World || World->WorldType!=EWorldType::PIE || Width<640 || Height<360 || Width>3840 || Height>2160)return false;
+    auto* Viewport=World->GetGameViewport();
+    auto Window=Viewport?Viewport->GetWindow():nullptr;
+    if(!Window)return false;
+    Window->Resize(FVector2D(Width,Height));
+    return true;
+}
+
 bool UMiningGUIEditorLibrary::RepairMissingGUIFonts()
 {
 	using namespace MiningGUIEditor;

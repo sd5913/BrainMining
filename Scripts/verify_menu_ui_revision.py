@@ -37,6 +37,9 @@ def tick(dt):
             path='/Game/MainGame/Maps/Lvl_MainGame' if mode=='main' else '/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo'
             assert levels.load_level(path);helper.start_floating_preview();s.update(phase='ready',next=now+7);return
         w=ed.get_game_world()
+        if phase=='ending_exit':
+            if w:return
+            check(True,'Credits Escape exits the game directly');finish();return
         if not w:return
         pc=unreal.GameplayStatics.get_player_controller(w,0)
         if not pc or not pc.get_controlled_pawn():return
@@ -99,15 +102,14 @@ def tick(dt):
         if phase=='ending_prompt':
             shot('credits_escape_bright');s.update(phase='ending_breathe',next=now+1.8);return
         if phase=='ending_breathe':
-            shot('credits_escape_dim');key('Escape');s.update(phase='ending_pause',next=now+.4);return
-        if phase=='ending_pause':
-            check(unreal.GameplayStatics.is_game_paused(w),'Credits Escape opens the styled pause menu')
-            s['session'].open_pause_collection()
+            shot('credits_escape_dim');key('C');s.update(phase='ending_collection',next=now+.4);return
+        if phase=='ending_collection':
             fields=actors(unreal.MiningCollectionField)
-            check(any(f.catalogue_open for f in fields),'Ending pause can still open collection')
-            for f in fields:
-                if f.catalogue_open:f.toggle_catalogue()
-            finish();return
+            check(any(f.catalogue_open for f in fields),'Credits C opens the collection directly')
+            key('Escape');s.update(phase='ending_return',next=now+.4);return
+        if phase=='ending_return':
+            check(not any(f.catalogue_open for f in actors(unreal.MiningCollectionField)),'Collection Escape returns to credits')
+            key('Escape');s.update(phase='ending_exit',next=now+.5);return
     except Exception:finish(traceback.format_exc())
     finally:
         s['busy']=False

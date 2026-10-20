@@ -71,7 +71,7 @@ namespace MiningMenuStyle
             +SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0,0,0,.48f))]
             +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(28)
                 [SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
-                    [SNew(SBox).WidthOverride(Width).HeightOverride(Height)
+                    [SNew(SBox).WidthOverride(Width).HeightOverride(Height>0.f?FOptionalSize(Height):FOptionalSize())
                         [SNew(SBorder).BorderImage(Brush(0)).Padding(38)[Content]]]];
     }
 }

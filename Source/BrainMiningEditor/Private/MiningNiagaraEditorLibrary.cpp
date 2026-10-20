@@ -5,6 +5,28 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "UObject/UnrealType.h"
+#include "NiagaraSpriteRendererProperties.h"
+#include "NiagaraEmitter.h"
+#include "UObject/UObjectHash.h"
+
+int32 UMiningNiagaraEditorLibrary::BindRendererScalar(UNiagaraSystem* System,FName MaterialParameter,FName UserParameter)
+{
+    if(!System || !UserParameter.ToString().StartsWith(TEXT("User.")))return 0;
+    System->Modify();
+    const FNiagaraVariable Variable(FNiagaraTypeDefinition::GetFloatDef(),UserParameter);
+    System->GetExposedParameters().SetParameterValue(0.f,Variable,true);
+    TArray<UObject*> Objects;GetObjectsWithOuter(System,Objects,true);int32 Count=0;
+    for(auto* Object:Objects)if(auto* Renderer=Cast<UNiagaraSpriteRendererProperties>(Object))
+    {
+        Renderer->Modify();
+        auto& Bindings=Renderer->MaterialParameters.AttributeBindings;
+        Bindings.RemoveAll([&](const auto& B){return B.MaterialParameterName==MaterialParameter;});
+        auto& Binding=Bindings.AddDefaulted_GetRef();Binding.MaterialParameterName=MaterialParameter;
+        Binding.NiagaraVariable=Variable;Binding.CacheValues(Renderer->GetTypedOuter<UNiagaraEmitter>());
+        Renderer->PostEditChange();++Count;
+    }
+    System->MarkPackageDirty();return Count;
+}
 
 FString UMiningNiagaraEditorLibrary::InspectObject(UObject* Object)
 {

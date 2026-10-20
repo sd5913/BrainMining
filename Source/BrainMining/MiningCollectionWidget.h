@@ -24,6 +24,7 @@ public:
 protected:
     virtual void NativeConstruct() override;
     virtual void NativeTick(const FGeometry&,float) override;
+    virtual int32 NativePaint(const FPaintArgs&,const FGeometry&,const FSlateRect&,FSlateWindowElementList&,int32,const FWidgetStyle&,bool) const override;
     virtual FReply NativeOnMouseButtonDown(const FGeometry&,const FPointerEvent&) override;
     virtual FReply NativeOnMouseButtonUp(const FGeometry&,const FPointerEvent&) override;
     virtual FReply NativeOnMouseButtonDoubleClick(const FGeometry&,const FPointerEvent&) override;

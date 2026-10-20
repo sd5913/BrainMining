@@ -13,4 +13,5 @@ public:
     UFUNCTION(BlueprintCallable) static FString InspectStack(UNiagaraSystem* System,FName Emitter=NAME_None,FName Script=NAME_None,FName Module=NAME_None);
     UFUNCTION(BlueprintCallable) static bool SetStackValue(UNiagaraSystem* System,FName Emitter,FName Script,FName Module,const TArray<FName>& Inputs,const FString& StructPath,const FString& Json);
     UFUNCTION(BlueprintCallable) static bool CompileSystem(UNiagaraSystem* System);
+    UFUNCTION(BlueprintCallable) static int32 BindRendererScalar(UNiagaraSystem* System,FName MaterialParameter,FName UserParameter);
 };

@@ -264,9 +264,9 @@ void AMiningCollectionField::Tick(float Dt)
         if(Item->LastObservedCuts==Item->HostRock->SuccessfulCuts) continue;
         Item->LastObservedCuts=Item->HostRock->SuccessfulCuts;
         Item->Exposure=Item->MeasureExposure();
-        // Pickup follows the mineral exposure rule. Physics release still waits
+        // Collectibles require 70% exposure. Physics release still waits
         // for a completely clear body, so partially buried objects never eject.
-        if(AMiningTreasure::IsExposureEligible(Item->Exposure))
+        if(AMiningCollectible::IsPickupEligible(Item->Exposure))
             Item->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
         if(Item->CanRelease(ExposureThreshold))
         {
@@ -284,12 +284,12 @@ void AMiningCollectionField::RefreshTarget()
     {
         auto* Item=Cast<AMiningCollectible>(Candidate.GetActor());
         if(!Item && Candidate.GetActor()) Item=Cast<AMiningCollectible>(Candidate.GetActor()->GetOwner());
-        return Item && !Item->bCollected && (Item->bReleased || AMiningTreasure::IsExposureEligible(Item->Exposure));
+        return Item && !Item->bCollected && (Item->bReleased || AMiningCollectible::IsPickupEligible(Item->Exposure));
     }))
     {
         auto* Item=Cast<AMiningCollectible>(Hit.GetActor());
         if(!Item && Hit.GetActor()) Item=Cast<AMiningCollectible>(Hit.GetActor()->GetOwner());
-        if(Item&&!Item->bCollected&&(Item->bReleased || AMiningTreasure::IsExposureEligible(Item->Exposure))) NewTarget=Item;
+        if(Item&&!Item->bCollected&&(Item->bReleased || AMiningCollectible::IsPickupEligible(Item->Exposure))) NewTarget=Item;
     }
     if(Target!=NewTarget)
     {

@@ -997,15 +997,6 @@ bool AEndingEmergence::Initialize()
     // The cell room floats without using or unlocking the campaign jetpack.
     if(auto* M=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())M->FlightSettings.bEnabled=false;
     CacheCellMotion();InitializeScaleMotion();
-    {auto* Set=Sets[0].Get();
-        // A thin gold rim follows the visible cell neck, in front of the plug.
-        for(int Segment=0;Segment<96;++Segment)
-        {
-            auto Point=[&](int N){const float A=N*2*PI/96;return FVector(1460,298*FMath::Cos(A),240+262*FMath::Sin(A));};
-            auto* Rim=Rod(Point(Segment),Point(Segment+1),5.f,FLinearColor(1.f,.65f,.10f),Set,TEXT("Glow"));
-            Rim->ComponentTags.Add(TEXT("EndingCellVisual"));
-        }
-    }
     // Keep transition audio resident: first playback must not flush loading on a cut.
     for(const TCHAR* Name:{TEXT("Cell"),TEXT("Blood"),TEXT("Brain"),TEXT("Street"),TEXT("Space"),TEXT("Connect"),TEXT("PulseFlight"),TEXT("Hit")})
         EndingSounds.Add(FName(Name),LoadObject<USoundBase>(nullptr,*(FString(TEXT("/Game/EndingEmergence/Audio/S_EE_"))+Name)));

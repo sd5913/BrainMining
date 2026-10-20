@@ -29,6 +29,26 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/SBoxPanel.h"
 #include "Styling/CoreStyle.h"
+#include "Rendering/DrawElements.h"
+
+// Preserve keyboard/gamepad focus, using the menu's gold outline instead of
+// Slate's default blue focus rectangle.
+class SMiningPauseButton : public SButton
+{
+public:
+    virtual TOptional<bool> OnQueryShowFocus(EFocusCause) const override { return false; }
+    virtual int32 OnPaint(const FPaintArgs& Args,const FGeometry& G,const FSlateRect& Clip,FSlateWindowElementList& Elements,int32 Layer,const FWidgetStyle& WidgetStyle,bool Enabled) const override
+    {
+        Layer=SButton::OnPaint(Args,G,Clip,Elements,Layer,WidgetStyle,Enabled);
+        if(HasKeyboardFocus())
+        {
+            const auto S=G.GetLocalSize();
+            TArray<FVector2D> P={{2,2},{S.X-10,2},{S.X-2,10},{S.X-2,S.Y-2},{10,S.Y-2},{2,S.Y-10},{2,2}};
+            FSlateDrawElement::MakeLines(Elements,++Layer,G.ToPaintGeometry(),P,ESlateDrawEffect::None,MiningMenuStyle::Gold,true,2.f);
+        }
+        return Layer;
+    }
+};
 
 bool UMiningExperienceSubsystem::TogglePauseMenu(bool bFromCredits)
 {
@@ -53,7 +73,7 @@ bool UMiningExperienceSubsystem::TogglePauseMenu(bool bFromCredits)
     TSharedPtr<SButton> FirstButton;
     auto Button=[&](const TCHAR* Text,TFunction<void()> Action,bool Confirm)
     {
-        auto Choice=SNew(SButton).ButtonStyle(MiningMenuStyle::Button()).HAlign(HAlign_Left).ContentPadding(FMargin(28,16))
+        auto Choice=SNew(SMiningPauseButton).ButtonStyle(MiningMenuStyle::Button()).HAlign(HAlign_Left).ContentPadding(FMargin(28,16))
             .Visibility_Lambda([this,Confirm](){return bQuitConfirmation==Confirm?EVisibility::Visible:EVisibility::Collapsed;})
             .OnClicked_Lambda([Action](){Action();return FReply::Handled();})
             [SNew(STextBlock).Text(FText::FromString(Text)).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())];

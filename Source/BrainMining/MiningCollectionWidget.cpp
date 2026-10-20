@@ -7,6 +7,7 @@
 #include "Components/BackgroundBlur.h"
 #include "Engine/Texture2D.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Rendering/DrawElements.h"
 
 void UMiningCollectionWidget::NativeConstruct()
 {
@@ -34,6 +35,23 @@ void UMiningCollectionWidget::NativeConstruct()
     RefreshCollection();
 }
 void UMiningCollectionWidget::SetCollection(AMiningCollectionField* Field){Collection=Field;CurrentPage=Collection?FMath::Max(0,Collection->CatalogueIds().IndexOfByKey(Collection->SelectedId))/4:0;RefreshCollection();}
+int32 UMiningCollectionWidget::NativePaint(const FPaintArgs& Args,const FGeometry& G,const FSlateRect& Clip,FSlateWindowElementList& Elements,int32 Layer,const FWidgetStyle& Style,bool Enabled) const
+{
+    Layer=Super::NativePaint(Args,G,Clip,Elements,Layer,Style,Enabled);
+    for(int32 I=0;I<4;++I)
+        if(auto* B=Cast<UButton>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemButton%d"),I))));
+           B && B->IsVisible() && B->GetIsEnabled() && (B->IsHovered() || B->HasKeyboardFocus()))
+        {
+            const auto& BG=B->GetCachedGeometry();const FVector2D Size=BG.GetLocalSize();
+            const float Cut=10.f,Inset=1.5f;
+            TArray<FVector2D> Points={{Inset,Inset},{Size.X-Cut,Inset},{Size.X-Inset,Cut},{Size.X-Inset,Size.Y-Inset},
+                {Cut,Size.Y-Inset},{Inset,Size.Y-Cut},{Inset,Inset}};
+            for(auto& P:Points)P=G.AbsoluteToLocal(BG.LocalToAbsolute(P));
+            FSlateDrawElement::MakeLines(Elements,++Layer,G.ToPaintGeometry(),Points,ESlateDrawEffect::None,
+                B->IsPressed()?MiningMenuStyle::Gold:FLinearColor::White,true,2.5f);
+        }
+    return Layer;
+}
 void UMiningCollectionWidget::RevealCollection()
 {
     CurrentPage=IsValid(Collection)?FMath::Max(0,Collection->CatalogueIds().IndexOfByKey(Collection->SelectedId))/4:0;

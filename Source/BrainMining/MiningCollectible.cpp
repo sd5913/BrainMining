@@ -407,7 +407,7 @@ float AMiningCollectible::MeasureExposure() const
 }
 bool AMiningCollectible::CanRelease(float Threshold) const
 {
-    return !bReleased&&!bCollected&&Exposure>=FMath::Clamp(Threshold,ItemId==9?.8f:.1f,1.f);
+    return !bReleased&&!bCollected&&Exposure>=FMath::Clamp(Threshold,ItemId==9?.8f:PickupExposure,1.f);
 }
 void AMiningCollectible::Release()
 {

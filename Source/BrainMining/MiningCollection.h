@@ -79,6 +79,8 @@ class BRAINMINING_API AMiningCollectible : public AActor
 public:
     AMiningCollectible();
     static constexpr int32 ItemTypeCount = 12;
+    static constexpr float PickupExposure = .70f;
+    static bool IsPickupEligible(float Value) { return FMath::IsFinite(Value) && Value >= PickupExposure; }
     UPROPERTY(VisibleAnywhere) TObjectPtr<UBoxComponent> Body;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UDynamicMeshComponent> Model;
     UPROPERTY() TObjectPtr<UDynamicMeshComponent> Outline;

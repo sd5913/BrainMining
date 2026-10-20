@@ -58,8 +58,8 @@ void ACardRoomStage::TickStyledEffects()
     StyledLastTime=T;
     Beam->SetVisibility(false);Ball->SetVisibility(false);for(auto& P:Trails)P->SetVisibility(false);
     for(auto& Ring:StyledRings)Ring->SetVisibility(false);
-    // P2 uses the original, unmodified Niagara poison resource. Suppress the
-    // legacy card-room sprites instead of drawing both presentations together.
+    // Keep the authored Niagara cloud; its material burn parameter controls
+    // the visible consumption instead of killing green particles at impact.
     for(auto& P:FxShards)P->SetVisibility(false);
     for(auto& P:Puffs)P->SetVisibility(false);
     SpellLight->SetIntensity(0);
@@ -85,8 +85,9 @@ void ACardRoomStage::TickStyledEffects()
     if(StyledFX.IsValidIndex(5))
     {
         auto* Poison=StyledFX[5].Get();
-        const bool Burning=Resolve && Run.Round==3 && T>=1.f && T<1.7f;
+        const bool Burning=Resolve && Run.Round==3 && T>=1.f && T<2.85f;
         const bool KeepPoison=Run.bPoisoned || Burning || (Resolve && Run.Round==2 && T>=1.f);
+        Poison->SetVariableFloat(TEXT("User.PoisonBurn"),Resolve&&Run.Round==3?FMath::Clamp((T-1.f)/1.8f,0.f,1.f):0.f);
         if(KeepPoison && !bStyledPoisonLive)
         {
             Poison->SetRelativeLocation(Target);Poison->SetRelativeScale3D(FVector(S));
@@ -94,10 +95,8 @@ void ACardRoomStage::TickStyledEffects()
         }
         else if(!KeepPoison && bStyledPoisonLive)
         {
-            // Stop emission after the flame front enters the cloud. Existing
-            // particles finish naturally, so fire visibly consumes the poison.
-            if(Resolve && Run.Round==3)Poison->Deactivate();
-            else Poison->DeactivateImmediate();
+            // The entire cloud is already transparent before the emitter stops.
+            Poison->DeactivateImmediate();
             bStyledPoisonLive=false;
         }
         if(!Resolve && !Run.bPoisoned)Poison->DeactivateImmediate();

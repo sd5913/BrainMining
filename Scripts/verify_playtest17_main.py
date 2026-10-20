@@ -18,10 +18,19 @@ run='''def run():
  hall=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningExhibitHall)[0];hall.set_actor_tick_enabled(False)
  pawn=pc.get_controlled_pawn();room=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningStartRoom)[0]
  assert H.write_preview_state(room,'bHeadlampUnlocked','True')
+ for c in pawn.get_components_by_class(unreal.LightComponent):
+  if c.get_name() in ['MiningLight','MiningFillLight']:c.set_visibility(True);c.set_intensity(1.4 if c.get_name()=='MiningLight' else .22)
  field=next(a for a in unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningCollectionField) if a.use_authored_placements)
  assert H.write_preview_state(field,'Inventory','(1,1,1,1,1,1,1,1,1,1,1,1)')
  field.toggle_catalogue();yield .7;field.catalogue_widget.select_collection_item(2);yield .3
- H.capture_preview(pc,str(OUT/'02_collection_centered.png'));field.catalogue_widget.close_collection()
+ H.capture_preview(pc,str(OUT/'02_collection_centered.png'))
+ button=unreal.CollectionUMGEditorLibrary.find_inspect_control(field.catalogue_widget,'ItemButton1')
+ pc.set_mouse_location(350,620);yield .5
+ H.capture_preview(pc,str(OUT/'02b_collection_hover.png'));r['collection_button_hovered']=button.is_hovered()
+ field.catalogue_widget.close_collection()
+ gi=unreal.GameplayStatics.get_game_instance(w)
+ session=next(o for o in unreal.ObjectIterator(unreal.MiningExperienceSubsystem) if o.get_outer()==gi)
+ assert session.toggle_pause_menu();yield .4;H.capture_preview(pc,str(OUT/'02c_pause_focus.png'));session.toggle_pause_menu()
  # Verify current copper surfaces in the main campaign, not only source transforms.
  import json
  data=json.loads((root/'Saved/Validation/Playtest17/copper.json').read_text(encoding='utf8'))
@@ -35,20 +44,24 @@ run='''def run():
  H.capture_preview(pc,str(OUT/'04_white_feather.png'))
  # Isolated cut fixture, retaining the real campaign field and collection input.
  loc=unreal.Vector(0,0,50000)
+ # Delay only physical release in this airborne fixture; exercise the real
+ # pickup threshold while the item remains partly buried, without a floor.
+ field.set_editor_property('exposure_threshold',.95)
  rock=unreal.GameplayStatics.get_all_actors_with_tag(w,'Playtest17CutFixture')[0]
  rock.set_editor_property('rock_size',unreal.Vector(500,500,500));rock.reset_rock()
  item=H.spawn_preview_collectible(field,2,loc);assert item
  H.write_preview_state(item,'HostRock',rock.get_path_name());assert H.write_preview_state(item,'bReleased','False');assert H.write_preview_state(item,'Exposure','0')
- item.body.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+ item.get_editor_property('Body').set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
  pose(loc+unreal.Vector(-340,0,0),loc);yield .4
  assert field.target!=item,'Cannot collect through intact soil'
  r['exposures']=[]
- for radius in range(200,341,10):
+ for radius in range(220,231):
   rock.mine_sphere(loc+unreal.Vector(-220,0,0),radius);yield .3
   r['exposures'].append([radius,item.exposure,item.released])
-  if .5<item.exposure<.95 and not item.released:break
- assert .5<item.exposure<.95 and not item.released,r['exposures']
- assert not item.body.is_simulating_physics()
+  if item.exposure<.7:assert field.target!=item,'Below 70% must not be collectible'
+  if .7<=item.exposure<.95:break
+ assert .7<=item.exposure<.95,r['exposures']
+ assert not item.released and not item.get_editor_property('Body').is_simulating_physics()
  pose(loc+unreal.Vector(-340,0,0),loc);yield .3
  assert field.target==item,'Exposed model supports the normal pickup trace'
  H.capture_preview(pc,str(OUT/'05_partial_pickup.png'))
@@ -66,11 +79,11 @@ run='''def run():
  assert H.prepare_collection_preview_area(pc,5,False);yield 1
  puzzle=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.WenSiMirrorPuzzle)[0]
  H.send_preview_key(pc,'P',True);yield 1;H.send_preview_key(pc,'P',False);yield .2
- assert H.read_preview_state(puzzle,'bRewardUnlocked')=='False'
+ assert 'reward=0' in puzzle.mirror_status()
  H.send_preview_key(pc,'P',True);yield 2
- assert H.read_preview_state(puzzle,'bRewardUnlocked')=='False'
+ assert 'reward=0' in puzzle.mirror_status()
  yield 1.2;H.send_preview_key(pc,'P',False)
- assert H.read_preview_state(puzzle,'bRewardUnlocked')=='True'
+ assert 'reward=1' in puzzle.mirror_status()
  H.capture_preview(pc,str(OUT/'06_museum_p_skip.png'));r['hold_p_three_seconds']=True
  r['passed']=True;finish()
 '''

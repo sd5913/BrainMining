@@ -767,6 +767,7 @@ void AEndingEmergence::BuildDemo()
 void AEndingEmergence::BeginPlay()
 {
     Super::BeginPlay();
+    ReplaceBloodAssets();
     if(CrowdAssets&&Sets.IsValidIndex(1))
     {
         StreetCrowd=NewObject<UEndingCrowdComponent>(this,TEXT("CitySamplePedestrians"));
@@ -804,6 +805,74 @@ void AEndingEmergence::BeginPlay()
     EndingPP.DynamicGlobalIlluminationMethod=EDynamicGlobalIlluminationMethod::None;
     EndingPP.bOverride_ReflectionMethod=true;
     EndingPP.ReflectionMethod=EReflectionMethod::None;
+}
+
+void AEndingEmergence::ReplaceBloodAssets()
+{
+    if(VesselPath.Num()<2||!Sets.IsValidIndex(0))return;
+    auto* VesselMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/BloodCirculation/Mesh/BloodVessel/SM_Vein"));
+    auto* VesselMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/BloodCirculation/Materials/MaterialInstance/BloodVessel/MI_Vein"));
+    auto* BloodMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/BloodCirculation/Mesh/Cell/SM_RedBloodCell"));
+    auto* BloodMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/BloodCirculation/Materials/MaterialInstance/Cell/MI_RedBloodCell"));
+    if(!VesselMesh||!BloodMesh)
+    {
+        UE_LOG(LogTemp,Warning,TEXT("ENDING_BLOOD_ASSETS_MISSING: vessel=%s blood=%s"),VesselMesh?TEXT("ok"):TEXT("missing"),BloodMesh?TEXT("ok"):TEXT("missing"));
+        return;
+    }
+
+    // Keep the saved curved shell for collision and the authored camera route.
+    // Only replace its rendered presentation.
+    TArray<USceneComponent*> Parts;GetComponents(Parts);
+    for(auto* Part:Parts)
+    {
+        if(!Part->ComponentHasTag(TEXT("EndingBloodVisual")))continue;
+        if(auto* BloodPart=Cast<UStaticMeshComponent>(Part);Blood.Contains(BloodPart))continue;
+        Part->SetVisibility(false,true);
+    }
+
+    if(BloodVessels.IsEmpty())
+    {
+        const FVector MeshSize=VesselMesh->GetBoundingBox().GetSize();
+        const int32 Step=8;
+        auto VesselRadius=[&](float T)
+        {
+            const float Flare=Ending::Ease((T-.77f)/.23f);
+            return FVector2D(FMath::Lerp(242.25f,850.f,Ending::Ease((T-.10f)/.12f))+Flare*400,
+                             FMath::Lerp(212.5f,850.f,Ending::Ease((T-.10f)/.12f))+Flare*400);
+        };
+        for(int32 I=0;I<VesselPath.Num()-1;I+=Step)
+        {
+            const int32 J=FMath::Min(I+Step,VesselPath.Num()-1);
+            auto* S=NewObject<USplineMeshComponent>(this,MakeUniqueObjectName(this,USplineMeshComponent::StaticClass(),TEXT("BloodCirculationVessel")),RF_Transient);
+            AddInstanceComponent(S);S->ComponentTags.Add(Ending::Tag);S->ComponentTags.Add(TEXT("EndingBloodVisual"));S->SetupAttachment(Sets[0]);
+            S->SetMobility(EComponentMobility::Movable);S->SetStaticMesh(VesselMesh);S->SetForwardAxis(ESplineMeshAxis::X,false);
+            S->SetCollisionProfileName(TEXT("NoCollision"));S->SetGenerateOverlapEvents(false);S->SetCastShadow(false);S->SetCanEverAffectNavigation(false);
+            if(VesselMaterial)S->SetMaterial(0,VesselMaterial);
+            const float T0=VesselDistances.IsValidIndex(I)?VesselDistances[I]/VesselDistances.Last():float(I)/VesselPath.Num();
+            const float T1=VesselDistances.IsValidIndex(J)?VesselDistances[J]/VesselDistances.Last():float(J)/VesselPath.Num();
+            const FVector2D R0=VesselRadius(T0),R1=VesselRadius(T1);
+            const FVector StartTangent=VesselPath[FMath::Min(I+1,J)]-VesselPath[I];
+            const FVector EndTangent=VesselPath[J]-VesselPath[FMath::Max(I,J-1)];
+            S->SetStartAndEnd(VesselPath[I],StartTangent,VesselPath[J],EndTangent,false);
+            S->SetStartScale(FVector2D(2*R0.X/FMath::Max(1.f,MeshSize.Y),2*R0.Y/FMath::Max(1.f,MeshSize.Z)),false);
+            S->SetEndScale(FVector2D(2*R1.X/FMath::Max(1.f,MeshSize.Y),2*R1.Y/FMath::Max(1.f,MeshSize.Z)),false);
+            S->RegisterComponent();S->UpdateMesh();BloodVessels.Add(S);
+        }
+    }
+
+    BloodScales.Empty(Blood.Num());
+    const FVector BloodSize(220,210,62);
+    const FVector CellMeshSize=BloodMesh->GetBoundingBox().GetSize();
+    for(int32 BloodIndex=0;BloodIndex<Blood.Num();++BloodIndex)
+    {
+        auto* B=Blood[BloodIndex].Get();
+        if(!B)continue;
+        B->SetStaticMesh(BloodMesh);if(BloodMaterial)B->SetMaterial(0,BloodMaterial);
+        B->SetCollisionProfileName(TEXT("NoCollision"));B->SetCastShadow(false);
+        const FVector Base(BloodSize.X/FMath::Max(1.f,CellMeshSize.X),BloodSize.Y/FMath::Max(1.f,CellMeshSize.Y),BloodSize.Z/FMath::Max(1.f,CellMeshSize.Z));
+        B->SetRelativeScale3D(Base);BloodScales.Add(Base);B->SetVisibility(true,true);
+    }
+    UE_LOG(LogTemp,Display,TEXT("ENDING_BLOOD_ASSETS_REPLACED: vesselSegments=%d redCells=%d mesh=SM_Vein/SM_RedBloodCell"),BloodVessels.Num(),Blood.Num());
 }
 
 bool AEndingEmergence::Initialize()
@@ -1878,7 +1947,8 @@ void AEndingEmergence::Tick(float Dt)
             const FVector Offset=FVector(0,Origin.Y+FMath::Sin(Age*1.4f+I)*18,Origin.Z+FMath::Cos(Age*1.8f+I)*22)*NeckScale;
             Blood[I]->SetRelativeLocation(VesselPoint(D)+Frame.RotateVector(Offset));
             Blood[I]->SetRelativeRotation(Frame.Quaternion()*FRotator(I*31+FMath::Sin(Age+I)*14,I*43+Age*8,22).Quaternion());
-            Blood[I]->SetRelativeScale3D(FVector(2.2,2.1,.62)*Ending::Ease(D/180)*Ending::Ease((VesselDistances.Last()-D)/450));
+            const FVector Base=BloodScales.IsValidIndex(I)?BloodScales[I]:FVector(2.2,2.1,.62);
+            Blood[I]->SetRelativeScale3D(Base*Ending::Ease(D/180)*Ending::Ease((VesselDistances.Last()-D)/450));
         }
     }
     if(StreetCrowd)StreetCrowd->UpdateCrowd(Shot>=0&&Shot<=1,Dt);

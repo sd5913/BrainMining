@@ -26,6 +26,7 @@ class UMediaSource;
 class UMediaPlayer;
 class UMediaTexture;
 class UMediaSoundComponent;
+class USplineMeshComponent;
 
 /** Standalone playable ending study; never changes the campaign or shared pawn defaults. */
 UCLASS()
@@ -239,6 +240,8 @@ private:
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Nerves;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Sketch;
     UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Blood;
+    UPROPERTY() TArray<TObjectPtr<USplineMeshComponent>> BloodVessels;
+    UPROPERTY() TArray<FVector> BloodScales;
     UPROPERTY() TArray<FVector> BloodOrigins;
     UPROPERTY() TArray<FVector> VesselPath;
     UPROPERTY() TArray<float> VesselDistances;
@@ -333,6 +336,7 @@ private:
     UInstancedStaticMeshComponent* Instances(const TCHAR* Name,const TCHAR* Mesh,FLinearColor Tint,USceneComponent* Parent,const TCHAR* Material=TEXT("Surface"));
     void Person(FVector Position,float Scale,FLinearColor Tint,USceneComponent* Parent);
     void BuildJourney();
+    void ReplaceBloodAssets();
     void BuildBrainSurface();
     void EnterBlood();
     void EnterBrain();

@@ -91,7 +91,7 @@ static bool BuildCollectionInspectWidget(bool bReplace)
         FSlateBrush Normal;Normal.SetResourceObject(Art(Skin));Normal.DrawAs=ESlateBrushDrawType::Image;Normal.ImageSize=FVector2D(W,H);
         if(Mirror)Normal.Mirroring=ESlateBrushMirrorType::Horizontal;
         FSlateBrush Hover=Normal,Pressed=Normal;
-        Hover.TintColor=FLinearColor::White;Pressed.TintColor=FLinearColor(2.2f,3.f,.65f);
+        Hover=Normal;Pressed=Normal;
         Style.SetNormal(Normal).SetHovered(Hover).SetPressed(Pressed).SetDisabled(Normal);
         Style.SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));B->SetStyle(Style);return B;
     };
@@ -113,7 +113,7 @@ static bool BuildCollectionInspectWidget(bool bReplace)
     Image(BP,Info,TEXT("DescriptionDivider"),190,441,118,1,nullptr,FLinearColor(.58f,.62f,.59f));
     auto* Description=Text(BP,Info,TEXT("ItemDescription"),TEXT("加点这个……再加点那个……"),190,465,300,185,15,FLinearColor(.61f,.68f,.64f));Description->SetAutoWrapText(true);
     IconButton(Info,TEXT("CloseButton"),448,44,30,24,TEXT("Back"));
-    auto* Help=Text(BP,Canvas,TEXT("PreviewHelp"),TEXT("拖动旋转   滚轮缩放   双击复位"),285,695,540,24,12,FLinearColor(.64f,.69f,.65f));Help->SetJustification(ETextJustify::Center);
+    auto* Help=Text(BP,Canvas,TEXT("PreviewHelp"),TEXT(""),285,695,540,24,12,FLinearColor(.64f,.69f,.65f));Help->SetVisibility(ESlateVisibility::Collapsed);
     auto* Bar=Make<UCanvasPanel>(BP,TEXT("CollectionBar"));Place(Canvas,Bar,50,728,1010,100);
     for(int32 I=0;I<4;++I)
     {

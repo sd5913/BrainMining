@@ -56,7 +56,7 @@ AMiningOpening* AMiningOpening::EnsureMainGameOpening(AMiningExhibitHall* Hall)
 TSharedRef<SWidget> UMiningOpeningTitle::RebuildWidget()
 {
     auto* Picture=WidgetTree->ConstructWidget<UImage>();WidgetTree->RootWidget=Picture;
-    Picture->SetBrushFromTexture(Texture);
+    Picture->SetBrushFromTexture(Texture,true);
     if(bCornerLayout)
     {
         auto* Canvas=WidgetTree->ConstructWidget<UCanvasPanel>();WidgetTree->RootWidget=Canvas;
@@ -71,12 +71,12 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
     auto* Fit=WidgetTree->ConstructWidget<UScaleBox>();Fit->SetStretch(EStretch::ScaleToFit);
     auto* TitleSlot=Canvas->AddChildToCanvas(Fit);TitleSlot->SetAnchors(FAnchors(.045f,.08f,.47f,.53f));TitleSlot->SetOffsets(FMargin(0));
     TitleImage=WidgetTree->ConstructWidget<UImage>();Fit->AddChild(TitleImage);
-    if(Opening.IsValid())TitleImage->SetBrushFromTexture(Opening->TitleTexture);
-    Fit->SetRenderShear(FVector2D(-4,-5));Fit->SetRenderTransformAngle(-3.f);
+    if(Opening.IsValid())TitleImage->SetBrushFromTexture(Opening->TitleTexture,true);
+    // The supplied title stays flat; only the menu text shares the room perspective.
     auto* Column=WidgetTree->ConstructWidget<UVerticalBox>();
     auto* CanvasSlot=Canvas->AddChildToCanvas(Column);
     CanvasSlot->SetAnchors(FAnchors(.81f,.65f));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
-    Column->SetRenderShear(FVector2D(-4,-4));Column->SetRenderTransformAngle(-4.f);
+    Column->SetRenderShear(FVector2D(0,0));
     auto AddButton=[&](const TCHAR* Label,bool Start)
     {
         auto* Box=WidgetTree->ConstructWidget<USizeBox>();Box->SetWidthOverride(240);Box->SetHeightOverride(62);
@@ -87,6 +87,8 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
         Style.SetNormal(Empty).SetHovered(Empty).SetPressed(Empty);
         Style.SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));Button->SetStyle(Style);
         Button->SetRenderTransformPivot(FVector2D(.5f,.5f));
+        Button->SetRenderTransformAngle(Start?-3.f:3.f);
+        Button->SetRenderShear(FVector2D(Start?-4.f:4.f,0));
         auto* Text=WidgetTree->ConstructWidget<UTextBlock>();Text->SetText(FText::FromString(Label));
         Text->SetFont(BrainMiningFonts::Title(34));Text->SetColorAndOpacity(FSlateColor(FLinearColor(.94f,.95f,.91f)));
         Button->AddChild(Text);

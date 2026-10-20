@@ -1,5 +1,6 @@
 #include "MiningHapticsSubsystem.h"
 #include "BrainMiningFonts.h"
+#include "MiningMenuStyle.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Misc/Paths.h"
 #include "HAL/FileManager.h"
@@ -42,10 +43,10 @@ TSharedRef<SWidget> UMiningHapticsSubsystem::MakeSettingsWidget()
 {
     TWeakObjectPtr<UMiningHapticsSubsystem> Weak(this);
     auto Rows = SNew(SVerticalBox);
-    Rows->AddSlot().AutoHeight().Padding(0, 14, 0, 6)[SNew(STextBlock).Font(BrainMiningFonts::Title(18)).Text(FText::FromString(TEXT("手柄震动")))];
+    Rows->AddSlot().AutoHeight().Padding(0,18,0,8)[MiningMenuStyle::Section(TEXT("手柄震动"))];
     for (int32 Option = 0; Option < 3; ++Option)
     {
-        Rows->AddSlot().AutoHeight().Padding(0, 4)[SNew(SButton).ContentPadding(FMargin(8, 6))
+        Rows->AddSlot().AutoHeight().Padding(0, 4)[SNew(SButton).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(FMargin(18,10))
             .OnClicked_Lambda([Weak, Option]()
             {
                 if (Weak.IsValid())
@@ -55,18 +56,18 @@ TSharedRef<SWidget> UMiningHapticsSubsystem::MakeSettingsWidget()
                     else Weak->SetOptionalEnabled(!Weak->bOptional);
                 }
                 return FReply::Handled();
-            })[SNew(STextBlock).Font(BrainMiningFonts::Style("Regular", 16)).Text_Lambda([Weak, Option]()
+            })[SNew(STextBlock).Font(BrainMiningFonts::Body(17)).ColorAndOpacity(FSlateColor::UseForeground()).Text_Lambda([Weak, Option]()
             {
                 const bool Enabled = Weak.IsValid() && (Option == 0 ? Weak->bEnabled : Option == 1 ? Weak->bContinuous : Weak->bOptional);
                 const TCHAR* Label = Option == 0 ? TEXT("震动总开关") : Option == 1 ? TEXT("钻机与喷气持续震动") : TEXT("轻微交互与演出提示");
-                return FText::FromString(FString::Printf(TEXT("%s：%s"), Label, Enabled ? TEXT("开启") : TEXT("关闭")));
+                return FText::FromString(FString::Printf(TEXT("%s     [ %s ]"), Label, Enabled ? TEXT("×") : TEXT(" ")));
             })]];
     }
     Rows->AddSlot().AutoHeight().Padding(0, 8)[SNew(STextBlock).Font(BrainMiningFonts::Style("Regular", 16)).Text_Lambda([Weak]()
     {
         return FText::FromString(FString::Printf(TEXT("震动强度   %d%%"), Weak.IsValid() ? FMath::RoundToInt(Weak->Strength * 100) : 0));
     })];
-    Rows->AddSlot().AutoHeight()[SNew(SSlider).StepSize(.05f).Value_Lambda([Weak]() { return Weak.IsValid() ? Weak->Strength : 0.f; })
+    Rows->AddSlot().AutoHeight()[SNew(SSlider).Style(MiningMenuStyle::Slider()).StepSize(.05f).Value_Lambda([Weak]() { return Weak.IsValid() ? Weak->Strength : 0.f; })
         .OnValueChanged_Lambda([Weak](float Value) { if (Weak.IsValid()) Weak->SetStrength(Value); })];
     return Rows;
 }

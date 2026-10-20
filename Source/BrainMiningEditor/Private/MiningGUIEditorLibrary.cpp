@@ -34,6 +34,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Editor.h"
 #include "Engine/GameViewportClient.h"
+#include "UnrealClient.h"
 #include "ImageUtils.h"
 #include "Misc/FileHelper.h"
 #include "Widgets/SWindow.h"
@@ -529,6 +530,20 @@ bool UMiningGUIEditorLibrary::CapturePreview(APlayerController* Controller, cons
 	for (FColor& Pixel : Pixels) Pixel.A = 255;
 	TArray64<uint8> Compressed;
 	FImageUtils::PNGCompressImageArray(Size.X, Size.Y, Pixels, Compressed);
+	return FFileHelper::SaveArrayToFile(Compressed, *Filename);
+}
+
+bool UMiningGUIEditorLibrary::CapturePreviewVideoFrame(APlayerController* Controller, const FString& Filename, int32 Quality)
+{
+	if (!Controller || Controller->GetWorld()->WorldType != EWorldType::PIE) return false;
+	auto* Client = Controller->GetWorld()->GetGameViewport();
+	if (!Client || !Client->Viewport) return false;
+	const FIntPoint Size = Client->Viewport->GetSizeXY();
+	if (Size.X < 2 || Size.Y < 2) return false;
+	TArray<FColor> Pixels;
+	if (!Client->Viewport->ReadPixels(Pixels) || Pixels.Num() != Size.X * Size.Y) return false;
+	TArray64<uint8> Compressed;
+	if (!FImageUtils::CompressImage(Compressed, TEXT("jpg"), FImageView(Pixels.GetData(), Size.X, Size.Y), FMath::Clamp(Quality, 1, 100))) return false;
 	return FFileHelper::SaveArrayToFile(Compressed, *Filename);
 }
 

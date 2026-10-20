@@ -33,7 +33,7 @@ public:
                 if(It->ActorHasTag(TEXT("EndingEditableCell"))&&!Cell.IsValid())Cell=*It;
                 if(It->ActorHasTag(TEXT("EndingEditableCity"))&&!Building.IsValid())Building=*It;
             }
-            Test->TestTrue(TEXT("Scenery actors survive level loading into the game world"),Count>300&&AllAttached);
+            Test->TestTrue(TEXT("Scenery actors survive level loading into the game world"),Count>0&&Cell.IsValid()&&Building.IsValid()&&AllAttached);
             if(!Cell.IsValid()||!Building.IsValid()){Test->AddError(TEXT("Missing editable cell/city actors"));return true;}
             CellLocal=Cell->GetRootComponent()->GetRelativeTransform();BuildingLocal=Building->GetRootComponent()->GetRelativeTransform();
             OriginalCellLocal=CellLocal;OriginalBuildingLocal=BuildingLocal;

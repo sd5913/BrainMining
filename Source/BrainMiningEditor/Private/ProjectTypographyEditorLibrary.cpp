@@ -217,5 +217,18 @@ bool UProjectTypographyEditorLibrary::InstallCreditsFonts()
         auto& Entry=Composite.DefaultTypeface.Fonts.AddDefaulted_GetRef();Entry.Name=TEXT("Regular");Entry.Font=FFontData(Face);Composite.MakeDirty();
         if(!Save(Font))return false;
     }
-    return true;
+    // A single composite keeps mixed Chinese text and Latin key labels on one
+    // baseline, using the same original faces as the quote above them.
+    auto* Chinese=LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_CreditsHiragino"));
+    auto* English=LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_CreditsRockwell"));
+    auto* Bilingual=Asset<UFont>(TEXT("F_CreditsBilingual"));
+    Bilingual->Modify();Bilingual->FontCacheType=EFontCacheType::Runtime;
+    auto& Composite=Bilingual->GetMutableInternalCompositeFont();
+    Composite=*Chinese->GetCompositeFont();Composite.SubTypefaces.Reset();
+    auto& Latin=Composite.SubTypefaces.AddDefaulted_GetRef();
+    Latin.Typeface=English->GetCompositeFont()->DefaultTypeface;
+    Latin.CharacterRanges.Add(FInt32Range(0,0x0250));
+    Latin.EditorName=TEXT("Rockwell Latin");
+    Composite.MakeDirty();
+    return Save(Bilingual);
 }

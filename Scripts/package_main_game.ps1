@@ -78,6 +78,9 @@ $containerText = Get-Content -LiteralPath $containerList -Raw
 $requiredAssets = @(
     'Audio/Rooms/S_OfficeMouseClick.uasset',
     'Subtitles/DA_CardsVictory.uasset',
+    'Fonts/F_CreditsBilingual.uasset',
+    'Fonts/FF_CreditsHiragino.uasset',
+    'Fonts/FF_CreditsRockwell.uasset',
     'MainGame/Maps/Lvl_MainGame.umap',
     'MainGame/Blueprints/BP_MainGameCharacter.uasset',
     'Showcase/Blueprints/BP_SharedMiningCharacter.uasset',

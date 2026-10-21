@@ -599,13 +599,21 @@ bool UMiningGUIEditorLibrary::UpdateEndingCreditsFeedback()
     if(!BP->WidgetVariableNameToGuidMap.Contains(Thanks->GetFName()))
         BP->WidgetVariableNameToGuidMap.Add(Thanks->GetFName(),FGuid::NewGuid());
     Thanks->SetText(FText::FromString(TEXT("感谢游玩！")));Thanks->SetJustification(ETextJustify::Center);
-    auto* Font=LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_CreditsHiragino"));Thanks->SetFont(FSlateFontInfo(Font,27,TEXT("Regular")));
+    auto* Font=LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_CreditsBilingual"));if(!Font)return false;
+    Thanks->SetFont(FSlateFontInfo(Font,27,TEXT("Regular")));
     Thanks->SetColorAndOpacity(FSlateColor(FLinearColor(.96f,.95f,.92f)));Thanks->SetRenderOpacity(0);
     if(auto* Names=Tree->FindWidget(TEXT("Contributors")))
     {
         Names->SetRenderOpacity(0);
         if(auto* Slot=Cast<UCanvasPanelSlot>(Names->Slot))Slot->SetPosition(FVector2D(270,710));
+        if(auto* Text=Cast<URichTextBlock>(Names))
+        {
+            Text->SetTextStyleSet(nullptr);Text->SetDefaultFont(FSlateFontInfo(Font,24,TEXT("Regular")));
+            Text->SetDefaultColorAndOpacity(FSlateColor(FLinearColor(.96f,.95f,.92f)));
+            Text->SetText(FText::FromString(TEXT("铁皮辣妹    空空道人    Seven    Rasimet")));
+        }
     }
+    if(auto* Prompt=Cast<UTextBlock>(Tree->FindWidget(TEXT("Prompt"))))Prompt->SetFont(FSlateFontInfo(Font,24,TEXT("Regular")));
     return MiningGUIEditor::Complete(BP,FVector2D(1600,900));
 }
 

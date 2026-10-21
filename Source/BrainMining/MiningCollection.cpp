@@ -92,13 +92,35 @@ bool AMiningCollectionField::InitializePlayer()
     Preview=GetWorld()->SpawnActor<AMiningCollectible>(FVector(0,0,-10000),FRotator::ZeroRotator);
     Preview->Tags.Add(TEXT("CollectionPreview"));
     Preview->BuildModel(0); Preview->SetActorHiddenInGame(true); Capture->ShowOnlyActors.Add(Preview);
-    for(const auto& Placement:AuthoredPlacements)if(Placement.ItemId==0 && IsValid(Placement.PresentationActor) && Placement.PresentationActor->IsA<AHeavenToilet>())
+    auto* PresentationSession=GetGameInstance()?GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>():nullptr;
+    for(const auto& Placement:AuthoredPlacements)if(Placement.ItemId==0)
+    {
+        auto* Toilet=Cast<AHeavenToilet>(Placement.PresentationActor);if(!IsValid(Toilet) || !PresentationSession)continue;
+        // Retain asset references and scale across map travel, rather than an
+        // actor in the departing world. Credits use the same presentation.
+        PresentationSession->CampaignToiletScale=Toilet->GetActorScale3D();
+        PresentationSession->CampaignToiletBody=Toilet->Body->GetStaticMesh();
+        PresentationSession->CampaignToiletLid=Toilet->Lid->GetStaticMesh();
+        PresentationSession->CampaignToiletBodyMaterials.Reset();
+        for(auto* Material:Toilet->Body->GetMaterials())PresentationSession->CampaignToiletBodyMaterials.Add(Material);
+        PresentationSession->CampaignToiletLidMaterials.Reset();
+        for(auto* Material:Toilet->Lid->GetMaterials())PresentationSession->CampaignToiletLidMaterials.Add(Material);
+        break;
+    }
+    if(bUseAuthoredPlacements || bCatalogueOnly)
     {
         PreviewToilet=GetWorld()->SpawnActor<AHeavenToilet>(FVector(0,0,-10065),FRotator(0,60,0));
-        PreviewToilet->SetActorScale3D(Placement.PresentationActor->GetActorScale3D());
+        if(PresentationSession)
+        {
+            PreviewToilet->SetActorScale3D(PresentationSession->CampaignToiletScale);
+            if(PresentationSession->CampaignToiletBody)PreviewToilet->Body->SetStaticMesh(PresentationSession->CampaignToiletBody);
+            if(PresentationSession->CampaignToiletLid)PreviewToilet->Lid->SetStaticMesh(PresentationSession->CampaignToiletLid);
+            for(int32 I=0;I<PresentationSession->CampaignToiletBodyMaterials.Num();++I)PreviewToilet->Body->SetMaterial(I,PresentationSession->CampaignToiletBodyMaterials[I]);
+            for(int32 I=0;I<PresentationSession->CampaignToiletLidMaterials.Num();++I)PreviewToilet->Lid->SetMaterial(I,PresentationSession->CampaignToiletLidMaterials[I]);
+        }
         PreviewToilet->SetActorEnableCollision(false);PreviewToilet->SetActorTickEnabled(false);
         PreviewToilet->WaterJet->DeactivateImmediate();PreviewToilet->OpeningSplash->DeactivateImmediate();
-        PreviewToilet->SetActorHiddenInGame(true);Capture->ShowOnlyActors.Add(PreviewToilet);break;
+        PreviewToilet->SetActorHiddenInGame(true);Capture->ShowOnlyActors.Add(PreviewToilet);
     }
     for(int i=0;i<2;++i)
     {

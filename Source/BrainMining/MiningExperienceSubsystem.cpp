@@ -4,6 +4,10 @@
 #include "BrainMiningFonts.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "MiningComponent.h"
+#include "MiningProgressionComponent.h"
+#include "MiningWalletSubsystem.h"
+#include "MiningBombToolComponent.h"
+#include "StartRoom/MiningStartRoom.h"
 #include "MiningCollection.h"
 #include "EngineUtils.h"
 #include "MiningCharacterMovementComponent.h"
@@ -149,6 +153,35 @@ bool UMiningExperienceSubsystem::ToggleDeveloperMenu()
     return BuildMenu(true);
 }
 
+bool UMiningExperienceSubsystem::DeveloperGrantTool(int32 ToolIndex)
+{
+    auto* PC=MenuController.Get();
+    if(!Menu || !bDeveloperMenu || !PC || !PC->GetPawn() || ToolIndex<0 || ToolIndex>2)return false;
+    APawn* Pawn=PC->GetPawn();
+    if(ToolIndex==0)
+    {
+        auto* Progress=Pawn->FindComponentByClass<UMiningProgressionComponent>();
+        auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
+        if(!Progress || !Wallet || !Progress->InitializeProgression())return false;
+        if(Wallet->UpgradeLevels.Num()<4)Wallet->UpgradeLevels.SetNum(4);
+        Wallet->UpgradeLevels[0]=FMath::Clamp(Wallet->UpgradeLevels[0]+1,1,4);
+        Progress->ApplyUpgrades();
+        if(auto* Room=AMiningStartRoom::Find(GetWorld()))Room->UnlockDeveloperPickaxe();
+        MenuError=FString::Printf(TEXT("矿镐已升级至等级 %d%s"),Wallet->UpgradeLevels[0],Wallet->UpgradeLevels[0]==4?TEXT(" · 钻石大矿镐"):TEXT(""));
+    }
+    else if(ToolIndex==1)
+    {
+        auto* Bomb=Pawn->FindComponentByClass<UMiningBombToolComponent>();if(!Bomb)return false;
+        Bomb->UnlockSkill();Bomb->BombCount=Bomb->MaxBombs;MenuError=TEXT("炸弹已解锁");
+    }
+    else
+    {
+        auto* Drill=Pawn->FindComponentByClass<UMiningComponent>();if(!Drill)return false;
+        Drill->UnlockDrill();Drill->DrillEnergy=Drill->MaxDrillEnergy;MenuError=TEXT("钻机已解锁，按 V 切换");
+    }
+    return true;
+}
+
 bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
 {
     UWorld* World = GetWorld();
@@ -174,6 +207,12 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
     auto Choices = SNew(SVerticalBox);
     if (bDeveloper)
     {
+        Choices->AddSlot().AutoHeight().Padding(0,10)[SNew(STextBlock).Text(FText::FromString(TEXT("GM · 装备"))).Font(BrainMiningFonts::Style("Bold",18))];
+        const TCHAR* Tools[]={TEXT("升级矿镐一级（最高：钻石大矿镐）"),TEXT("解锁炸弹"),TEXT("解锁钻机")};
+        for(int32 Tool=0;Tool<3;++Tool)
+            Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ContentPadding(12)
+                .OnClicked_Lambda([this,Tool](){DeveloperGrantTool(Tool);return FReply::Handled();})
+                [SNew(STextBlock).Text(FText::FromString(Tools[Tool])).Font(BrainMiningFonts::Body(18))]];
         auto* Hall = AMiningExhibitHall::Find(World);
         Choices->AddSlot().AutoHeight().Padding(0, 10)
             [SNew(STextBlock).Text(FText::FromString(Hall ? TEXT("当前地图 · 跳转到区域入口（保留房间进度）") : TEXT("当前地图无主流程区域，请使用下方独立玩法入口。")))

@@ -2170,5 +2170,21 @@
       "crossfade": true,
       "peak_target": 0.25
     }
+  },
+  {
+    "asset": "S_HeavenAngelChoir",
+    "file": "Wav/S_HeavenAngelChoir.wav",
+    "sha256": "a0b47201a02dbf404fa481d30456d87dbde1f5009a1eb9569dcba8fb0a1d4fad",
+    "loop": false,
+    "category": "Effects",
+    "max_count": 1,
+    "channels": 1,
+    "seconds": 18.312,
+    "sources": [
+      {
+        "pack": "user",
+        "member": "Originals/User/dragon-studio-angel-choir-463220.mp3"
+      }
+    ]
   }
 ]

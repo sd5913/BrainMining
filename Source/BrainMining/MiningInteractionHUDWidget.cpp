@@ -116,7 +116,7 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
     for (TActorIterator<AWenSiMirrorPuzzle> Mirror(GetWorld()); Mirror; ++Mirror)
         if(Mirror->bAreaActive && !Mirror->bEditing)
         {
-            if(Mirror->MousePortal && Mirror->MousePortal->IsFocused())return TEXT("进入画中的圆环");
+            if(Mirror->MousePortal && Mirror->MousePortal->IsFocused())return TEXT("进入画中的圆圈");
             if(Mirror->bAimReset)return TEXT("重置谜题");
             if(Mirror->bComplete || Mirror->IsSwapping() || !Mirror->Aim.IsValid())continue;
             const auto* Object=Mirror->Aim.Get();

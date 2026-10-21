@@ -2,6 +2,9 @@
 #include "Misc/AutomationTest.h"
 #include "CardRoomPlayer.h"
 #include "CardRoomStage.h"
+#include "CardRoomRobot.h"
+#include "Components/ChildActorComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "SCardRoomView.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
@@ -199,6 +202,53 @@ bool FCardRoomTimingTest::RunTest(const FString& Parameters)
         }
         TestTrue(TEXT("Victory independent of frame rate"),R.Phase==ECardRoomPhase::Victory); TestEqual(TEXT("Stable final HP"),R.PlayerHP,1);
     }
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCardRoomSingedBrowTest,"CardRoom.Presentation.PermanentSingedBrow",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FCardRoomSingedBrowTest::RunTest(const FString&)
+{
+    auto* World=UWorld::CreateWorld(EWorldType::Game,false);
+    auto* Stage=World->SpawnActor<ACardRoomStage>();
+    Stage->bUseRobotOpponent=true;Stage->DispatchBeginPlay();
+    auto* Child=Stage->FindComponentByClass<UChildActorComponent>();
+    auto* Robot=Child?Cast<ACardRoomRobot>(Child->GetChildActor()):nullptr;
+    if(!TestNotNull(TEXT("Encounter creates the supplied robot"),Robot)){World->DestroyWorld(false);return false;}
+    auto& Run=Stage->Run;
+    Run.Seat();Run.Match();Stage->Tick(2.3f);Stage->Tick(1.5f);
+    for(int32 Round=1;Round<=3;++Round)
+    {
+        for(int32 Index=0;Index<Run.Hand.Num();++Index)Run.Stage(Index);
+        TestTrue(TEXT("Real card sequence confirms"),Run.Confirm());
+        Stage->Tick(.9f);
+        if(Round==3)TestFalse(TEXT("Eyebrow is intact before fire hits"),Robot->bEyebrowSinged);
+        Stage->Tick(.2f);
+        TestEqual(TEXT("Only the fire reaction breaks the eyebrow"),Robot->bEyebrowSinged,Round==3);
+        Stage->Tick(4.f);
+    }
+    for(const FName Expression:{FName(TEXT("Sick")),FName(TEXT("Attack")),FName(TEXT("Fly"))})
+    {
+        Robot->GetRootComponent()->SetVisibility(true,true);
+        Robot->Pose(Expression,2.f,.1f);
+        TArray<UStaticMeshComponent*> Parts;Robot->GetComponents(Parts);
+        int32 BrokenMeshes=0;
+        for(auto* Part:Parts)
+        {
+            const FName Name=Part->GetFName();
+            if(Name==TEXT("BrowL"))TestFalse(TEXT("Expressions never restore the intact brow"),Cast<UStaticMeshComponent>(Part)->IsVisible());
+            if(Name==TEXT("BrowR") || Name==TEXT("SingedBrowInner") || Name==TEXT("SingedBrowOuter"))
+                TestTrue(TEXT("Other brow and separated brow pieces remain visible"),Cast<UStaticMeshComponent>(Part)->IsVisible());
+            if(Name==TEXT("SingedBrowInner") || Name==TEXT("SingedBrowOuter"))
+            {
+                ++BrokenMeshes;
+                TestNotNull(TEXT("The original brow with a central gap is available"),Part->GetStaticMesh().Get());
+                TestTrue(TEXT("Broken eyebrow adds no rotation, offset or scaling"),Part->GetRelativeTransform().Equals(FTransform::Identity));
+            }
+        }
+        TestEqual(TEXT("One untransformed cut mesh replaces the eyebrow"),BrokenMeshes,1);
+    }
+    Stage->RestartEncounter();
+    TestFalse(TEXT("A new encounter restores the brow"),Robot->bEyebrowSinged);
+    World->DestroyWorld(false);
     return true;
 }
 #endif

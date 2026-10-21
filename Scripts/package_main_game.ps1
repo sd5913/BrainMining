@@ -77,6 +77,8 @@ Start-MiningGuardedProcess -Executable "$EngineRoot/Engine/Binaries/Win64/Unreal
 $containerText = Get-Content -LiteralPath $containerList -Raw
 $requiredAssets = @(
     'Audio/Rooms/S_OfficeMouseClick.uasset',
+    'Audio/Rooms/S_HeavenAngelChoir.uasset',
+    'Pickaxe/SM_Pickaxe_max.uasset',
     'Subtitles/DA_CardsVictory.uasset',
     'Fonts/F_CreditsBilingual.uasset',
     'Fonts/FF_CreditsHiragino.uasset',
@@ -127,6 +129,7 @@ $requiredAssets = @(
     'BloodCirculation/Materials/MaterialInstance/BloodVessel/MI_Vein.uasset',
     'BloodCirculation/Materials/MaterialInstance/Cell/MI_RedBloodCell.uasset',
     'Rooms/CardDuel/Robot/SM_Robot_Head.uasset',
+    'Rooms/CardDuel/Robot/SM_Robot_BrowL_Singed.uasset',
     'Rooms/CardDuel/Robot/SM_Robot_Body.uasset',
     'Rooms/CardDuel/Robot/SM_Robot_FootL.uasset',
     'Rooms/CardDuel/Robot/SM_Robot_FootR.uasset',

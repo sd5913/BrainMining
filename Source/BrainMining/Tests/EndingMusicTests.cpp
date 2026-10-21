@@ -44,7 +44,8 @@ public:
             Test->TestEqual(TEXT("Music stays stereo"), Wave->NumChannels, 2);
             Test->TestTrue(TEXT("Loop duration is 150.2 seconds"), FMath::IsNearlyEqual(Wave->Duration, 150.2f, .05f));
             Test->TestTrue(TEXT("Music is playing"), Ending->Music->IsPlaying());
-            Test->TestEqual(TEXT("Music gain remains audible"), Ending->Music->VolumeMultiplier, .45f);
+            Test->TestTrue(TEXT("Entrance music fades towards its target gain"), Ending->Music->VolumeMultiplier>=0 && Ending->Music->VolumeMultiplier<=.45f);
+            Test->TestEqual(TEXT("Music retains the intended final gain"), Ending->MusicTargetVolume,.45f);
             Test->TestTrue(TEXT("Collection pause preserves music"), Ending->Music->bIsUISound);
             auto* Settings = World->GetGameInstance()->GetSubsystem<UMiningAudioSettings>();
             Test->TestTrue(TEXT("Music follows the music slider"), Settings && Ending->Music->SoundClassOverride == Settings->GetClass(1));
@@ -56,6 +57,12 @@ public:
         }
         if(Now < CheckAt) return false;
         auto* Ending = Director.Get();
+        if(Step==100)
+        {
+            if(Ending->MusicFadeAge<4.5f)return false;
+            Test->TestTrue(TEXT("Entrance fade reaches the intended music gain"),FMath::IsNearlyEqual(Ending->Music->VolumeMultiplier,.45f,.001f));
+            return true;
+        }
         if(Step == 0)
         {
             Test->TestTrue(TEXT("Playback survives the loop boundary"), Ending->Music->IsPlaying());
@@ -82,8 +89,10 @@ public:
         Test->TestTrue(TEXT("Replay replaces the previous music component"), Ending->Music && Ending->Music.Get() != OriginalMusic.Get());
         Test->TestTrue(TEXT("Replay starts the same soundtrack"), Ending->Music && Ending->Music->IsPlaying()
             && Ending->Music->Sound->GetFName() == FName(TEXT("M_EE_LightThought_Loop")));
+        Test->TestEqual(TEXT("Replay music begins silently before fading in"),Ending->Music->VolumeMultiplier,0.f);
         Ending->SetActorTickEnabled(true);
-        return true;
+        Step=100;
+        return false;
     }
 };
 

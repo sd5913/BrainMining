@@ -5,6 +5,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Math/RotationMatrix.h"
 #include "Engine/World.h"
 
@@ -18,7 +19,14 @@ void UMiningFootprintComponent::BeginPlay()
 {
     Super::BeginPlay();
     FootprintMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/M_PlayerFootprint"));
-    if(FootprintMaterial)FootprintMaterial->EnsureIsComplete();
+    if(FootprintMaterial)
+    {
+        FootprintMaterial->EnsureIsComplete();
+        LeftFootMaterial=UMaterialInstanceDynamic::Create(FootprintMaterial,this);
+        RightFootMaterial=UMaterialInstanceDynamic::Create(FootprintMaterial,this);
+        LeftFootMaterial->SetScalarParameterValue(TEXT("FootSide"),-1.f);
+        RightFootMaterial->SetScalarParameterValue(TEXT("FootSide"),1.f);
+    }
 }
 
 void UMiningFootprintComponent::TickComponent(float Dt,ELevelTick Type,FActorComponentTickFunction* Fn)
@@ -49,7 +57,8 @@ void UMiningFootprintComponent::TickComponent(float Dt,ELevelTick Type,FActorCom
     Forward=FVector::VectorPlaneProject(Forward,Hit.ImpactNormal).GetSafeNormal();
     const FRotator Rotation=FRotationMatrix::MakeFromXZ(-Hit.ImpactNormal,Forward).Rotator();
     const float Seconds=FMath::Max(4.f,Lifetime);
-    if(auto* Mark=UGameplayStatics::SpawnDecalAttached(FootprintMaterial,FVector(9,8,17)*Scale,Hit.GetComponent(),NAME_None,Hit.ImpactPoint+Hit.ImpactNormal*.8f,Rotation,EAttachLocation::KeepWorldPosition,Seconds))
+    UMaterialInterface* Sole=bLeft?LeftFootMaterial.Get():RightFootMaterial.Get();
+    if(auto* Mark=UGameplayStatics::SpawnDecalAttached(Sole?Sole:FootprintMaterial.Get(),FVector(9,8,17)*Scale,Hit.GetComponent(),NAME_None,Hit.ImpactPoint+Hit.ImpactNormal*.8f,Rotation,EAttachLocation::KeepWorldPosition,Seconds))
     {
         Mark->ComponentTags.Add(TEXT("MiningFootprint"));
         Mark->SetFadeOut(3.f,Seconds-3.f,false);

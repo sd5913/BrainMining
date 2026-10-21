@@ -22,6 +22,19 @@ ACardRoomRobot::ACardRoomRobot()
     Mouth->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube")));
     Mouth->SetRelativeLocation(FVector(-18.6,0,15));Mouth->SetRelativeScale3D(FVector(.009,.16,.018));
     Mouth->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    auto* Singed=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SingedBrowInner"));
+    Singed->SetupAttachment(Parts[6]);
+    // The derived mesh only removes a short central section. Its remaining
+    // vertices and UVs are unchanged, so the brow keeps its original pose.
+    Singed->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/Rooms/CardDuel/Robot/SM_Robot_BrowL_Singed.SM_Robot_BrowL_Singed")));
+    Singed->SetCollisionEnabled(ECollisionEnabled::NoCollision);Singed->SetVisibility(false);BrokenBrow.Add(Singed);
+}
+void ACardRoomRobot::SetEyebrowSinged(bool bSinged)
+{
+    bEyebrowSinged=bSinged;
+    // The replacement inherits the intact brow's exact transform and expression.
+    Parts[6]->SetVisibility(!bSinged,false);
+    for(const auto& Piece:BrokenBrow)Piece->SetVisibility(bSinged);
 }
 void ACardRoomRobot::OnConstruction(const FTransform& Transform)
 {
@@ -36,6 +49,7 @@ void ACardRoomRobot::Tick(float Dt)
 }
 void ACardRoomRobot::Pose(FName State,float Time,float Dt,const FRotator& Look)
 {
+    SetEyebrowSinged(bEyebrowSinged);
     Expression=State;
     const bool Hurt=State==TEXT("Hurt"),Sick=State==TEXT("Sick"),Panic=State==TEXT("Panic"),Attack=State==TEXT("Attack"),Arrival=State==TEXT("Arrival"),Fly=State==TEXT("Fly");
     const float Wave=FMath::Sin(Time*1.8f),Flail=FMath::Sin(Time*7.f);

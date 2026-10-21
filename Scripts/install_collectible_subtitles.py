@@ -40,7 +40,12 @@ for item_id, name, text in PICKUP_LINES:
     line = unreal.SubtitleLine()
     line.set_editor_property('text', text)
     line.set_editor_property('audio', None)
-    segment.set_editor_property('lines', [line])
+    lines = [line]
+    if item_id == 11:
+        followup = unreal.SubtitleLine()
+        followup.set_editor_property('text', '继续往前走走')
+        lines.append(followup)
+    segment.set_editor_property('lines', lines)
     assert unreal.EditorAssetLibrary.save_loaded_asset(segment), path
     rows.append(dict(item_id=item_id, name=name, id=str(segment.segment_id), text=text, asset=path, no_audio_file=True))
 

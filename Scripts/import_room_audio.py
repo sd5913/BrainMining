@@ -26,7 +26,7 @@ for entry in entries:
     sound.set_editor_property('volume', 1.)
     sound.set_editor_property('sound_class_object', classes[entry['category']])
     concurrency = unreal.SoundConcurrencySettings()
-    concurrency.set_editor_property('max_count', 3 if not entry['loop'] else 2)
+    concurrency.set_editor_property('max_count', entry.get('max_count', 3 if not entry['loop'] else 2))
     concurrency.set_editor_property('resolution_rule', unreal.MaxConcurrentResolutionRule.STOP_OLDEST)
     sound.set_editor_property('override_concurrency', True)
     sound.set_editor_property('concurrency_overrides', concurrency)

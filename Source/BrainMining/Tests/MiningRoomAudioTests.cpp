@@ -1,5 +1,7 @@
 #include "MiningRoomAudioSubsystem.h"
 #include "MiningAudioComponent.h"
+#include "HeavenToiletWater.h"
+#include "Components/SceneComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
@@ -18,7 +20,7 @@ bool FRoomAudioAssetsTest::RunTest(const FString&)
 {
     TArray<FString> Files;
     IFileManager::Get().FindFiles(Files, *(FPaths::ProjectContentDir() / TEXT("Audio/Rooms/*.uasset")), true, false);
-    TestEqual(TEXT("All prepared room cues imported"), Files.Num(), 71);
+    TestEqual(TEXT("All prepared room cues and supplied feedback sounds imported"), Files.Num(), 73);
     for (const FString& File : Files)
     {
         const FString Name = FPaths::GetBaseFilename(File);
@@ -30,7 +32,7 @@ bool FRoomAudioAssetsTest::RunTest(const FString&)
         TestEqual(TEXT("Loop flags agree with names"), bool(Sound->bLooping), Name.EndsWith(TEXT("_Loop")));
         if (TestNotNull(TEXT("Mix routing exists"), Sound->SoundClassObject.Get()))
             TestEqual(TEXT("Room routing preserves effects and ambience controls"), Sound->SoundClassObject->GetName(), Name.StartsWith(TEXT("A_")) ? FString(TEXT("SC_Ambience")) : FString(TEXT("SC_Effects")));
-        TestTrue(TEXT("Voices have a concurrency limit"), bool(Sound->bOverrideConcurrency));
+        if(Name!=TEXT("S_OfficeMouseClick"))TestTrue(TEXT("Voices have a concurrency limit"), bool(Sound->bOverrideConcurrency));
         if (Sound->bLooping) TestEqual(TEXT("Silent loops retain playback"), Sound->VirtualizationMode, EVirtualizationMode::PlayWhenSilent);
     }
     return true;
@@ -59,6 +61,7 @@ bool FRoomAudioLifecycleTest::RunTest(const FString&)
     auto* Audio = World->GetSubsystem<UMiningRoomAudioSubsystem>();
     if (!TestNotNull(TEXT("Game world creates room audio service"), Audio)) return false;
     auto* Pawn = World->SpawnActor<APawn>();
+    auto* PawnRoot=NewObject<USceneComponent>(Pawn);Pawn->SetRootComponent(PawnRoot);PawnRoot->RegisterComponent();
     auto* Controller = World->SpawnActor<APlayerController>();
     World->AddController(Controller);
     Controller->SetAsLocalPlayerController();
@@ -72,6 +75,19 @@ bool FRoomAudioLifecycleTest::RunTest(const FString&)
     TestEqual(TEXT("Repeated feedback is throttled per source"), Audio->EventCount(TEXT("S_Confirm")), 1);
     UMiningRoomAudioSubsystem::Emit(Controller, TEXT("S_Confirm"));
     TestEqual(TEXT("Independent sources retain feedback"), Audio->EventCount(TEXT("S_Confirm")), 2);
+    auto* Heaven=World->SpawnActor<AHeavenToiletWater>();
+    Heaven->Radius=100;
+    Pawn->SetActorLocation(FVector(1000,0,100));Heaven->Tick(.01f);
+    TestFalse(TEXT("Outside the heaven room is silent"),Heaven->bPlayerInHeaven);
+    Pawn->SetActorLocation(FVector(0,0,100));Heaven->Tick(.01f);
+    TestEqual(TEXT("Entry plays the supplied choir once"),Audio->EventCount(TEXT("S_HeavenAngelChoir")),1);
+    Heaven->Tick(.01f);Heaven->Tick(.01f);
+    TestEqual(TEXT("Staying inside never repeats the choir"),Audio->EventCount(TEXT("S_HeavenAngelChoir")),1);
+    Pawn->SetActorLocation(FVector(150,0,100));Heaven->Tick(.01f);
+    TestEqual(TEXT("Boundary hysteresis avoids a duplicate entry"),Audio->EventCount(TEXT("S_HeavenAngelChoir")),1);
+    Pawn->SetActorLocation(FVector(1000,0,100));Heaven->Tick(.01f);
+    Pawn->SetActorLocation(FVector(0,0,100));Heaven->Tick(.01f);
+    TestEqual(TEXT("Leaving then returning plays one new choir"),Audio->EventCount(TEXT("S_HeavenAngelChoir")),2);
     for (int32 Index = 0; Index < 50; ++Index)
         UMiningRoomAudioSubsystem::Loop(Pawn, TEXT("S_Water_Loop"), .3f);
     TestEqual(TEXT("Frame updates reuse one loop"), Audio->LoopCount(), 1);

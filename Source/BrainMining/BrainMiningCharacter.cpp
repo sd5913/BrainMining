@@ -159,6 +159,9 @@ void ABrainMiningCharacter::RefreshPickaxeVisual(int32 PickaxeLevel)
 		{
 			// Restore the new mesh's own materials when upgrading inside the echo passage.
 			if (MiningToolEffects) MiningToolEffects->PreparePickaxeMeshChange();
+			// Saved character components can retain the previous tier's material
+			// overrides even after the mesh changes to the diamond pickaxe.
+			PickaxeModel->EmptyOverrideMaterials();
 			PickaxeModel->SetStaticMesh(NewPickaxeMesh);
 			if (MiningToolEffects && PresentedPickaxeLevel != INDEX_NONE && Level > PresentedPickaxeLevel)
 				MiningToolEffects->PlayPickaxeUpgrade();

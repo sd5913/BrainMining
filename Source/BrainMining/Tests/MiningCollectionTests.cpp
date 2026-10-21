@@ -125,7 +125,10 @@ bool FCollectionExpansionTest::RunTest(const FString& Parameters)
     Calculator->Exposure=Calculator->MeasureExposure();Calculator->Release();
     TestTrue(TEXT("Excavated calculator releases for pickup"),Calculator->bReleased);
     TestFalse(TEXT("Calculator cannot fall through freshly rebuilt terrain"),Calculator->Body->IsSimulatingPhysics());
-    TestTrue(TEXT("Calculator retains its readable orientation and location"),Calculator->GetActorTransform().Equals(Pose));
+    TestTrue(TEXT("Calculator retains its readable orientation after release"),Calculator->GetActorQuat().Equals(Pose.GetRotation()));
+    const FVector Pop=Calculator->GetActorLocation()-Pose.GetLocation();
+    TestTrue(TEXT("Calculator only pops a short distance towards the excavated opening"),
+        Pop.Size()<=252.01f && FVector::DotProduct(Pop,-Pose.GetRotation().GetForwardVector())>=0);
     return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCollectionEchoTest,"BrainMining.Collection.AuthoredEchoSharesRoomPulse",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)

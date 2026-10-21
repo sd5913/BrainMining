@@ -4,6 +4,11 @@
 #include "StartRoom/MiningStartRoom.h"
 #include "StartRoom/MiningOpening.h"
 #include "MiningComponent.h"
+#include "BrainMiningCharacter.h"
+#include "MiningProgressionComponent.h"
+#include "MiningBombToolComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "MiningCollection.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningWalletSubsystem.h"
@@ -79,6 +84,24 @@ namespace MiningRoomDebugTests
                 if (!Test->TestTrue(TEXT("Ctrl F10 opens developer menu in main game"), Menu->IsMenuOpen())) return true;
                 Test->TestTrue(TEXT("Menu pauses game"), Controller->IsPaused());
                 Test->TestTrue(TEXT("Menu suspends mining"), Mining->IsInputSuspended());
+                auto* Progress=Controller->GetPawn()->FindComponentByClass<UMiningProgressionComponent>();
+                auto* Character=Cast<ABrainMiningCharacter>(Controller->GetPawn());
+                if(!Test->TestNotNull(TEXT("GM upgrades target the actual player"),Character) || !Progress)return true;
+                const int32 InitialPickaxeLevel=Progress->GetLevel(0);
+                for(int32 Level=InitialPickaxeLevel;Level<4;++Level)
+                    Test->TestTrue(TEXT("GM grants one free pickaxe level"),Menu->DeveloperGrantTool(0));
+                Test->TestTrue(TEXT("Repeated max-level grant is safe"),Menu->DeveloperGrantTool(0));
+                Test->TestEqual(TEXT("GM caps the pickaxe at level four"),Progress->GetLevel(0),4);
+                Test->TestEqual(TEXT("GM preserves collected upgrade materials"),Wallet->GetMineralCount(EMiningMineral::Copper),Copper);
+                auto* MaxMesh=LoadObject<UStaticMesh>(nullptr,TEXT("/Game/Pickaxe/SM_Pickaxe_max.SM_Pickaxe_max"));
+                auto* Model=Character->GetPickaxeModel();
+                Test->TestTrue(TEXT("Max-level player holds the authored diamond mesh"),MaxMesh && Model->GetStaticMesh()==MaxMesh);
+                for(int32 Slot=0;MaxMesh && Slot<MaxMesh->GetStaticMaterials().Num();++Slot)
+                    Test->TestTrue(TEXT("Diamond materials replace earlier tier overrides"),Model->GetMaterial(Slot)==MaxMesh->GetMaterial(Slot));
+                Test->TestTrue(TEXT("GM unlocks bombs"),Menu->DeveloperGrantTool(1));
+                Test->TestTrue(TEXT("GM unlocks drilling"),Menu->DeveloperGrantTool(2));
+                Test->TestTrue(TEXT("Equipment grants leave the GM menu paused and open"),Menu->IsMenuOpen() && Controller->IsPaused());
+                Test->TestFalse(TEXT("Invalid GM tool is rejected"),Menu->DeveloperGrantTool(3));
                 Test->TestFalse(TEXT("Invalid room rejected"), Menu->JumpToDeveloperArea(-1));
                 Test->TestFalse(TEXT("Invalid map rejected"), Menu->OpenDeveloperExperience(-1));
                 Test->TestTrue(TEXT("Failure leaves menu open"), Menu->IsMenuOpen());

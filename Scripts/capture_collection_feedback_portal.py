@@ -22,7 +22,7 @@ def tick(dt):
    s.update(hall=hall,pc=unreal.GameplayStatics.get_player_controller(w,0),pawn=unreal.GameplayStatics.get_player_pawn(w,0))
    area(5);hall.set_actor_tick_enabled(False);puzzle=actors(unreal.WenSiMirrorPuzzle)[0];check('Museum skip stops at painting',puzzle.skip_to_reward());s.update(phase=2,next=now+2);return
   if ph==2:
-   hud=next(h for h in unreal.ObjectIterator(unreal.MiningInteractionHUDWidget) if h.get_owning_player()==s['pc']);check('Painting uses shared E action',hud.interaction_action=='进入画中的圆环');shot('museum_common_e_prompt')
+   hud=next(h for h in unreal.ObjectIterator(unreal.MiningInteractionHUDWidget) if h.get_owning_player()==s['pc']);check('Painting uses shared E action',hud.interaction_action=='进入画中的圆圈');shot('museum_common_e_prompt')
    unreal.MiningGUIEditorLibrary.send_preview_key(s['pc'],'E',True);s.update(phase=3,next=now+.15);return
   if ph==3:
    unreal.MiningGUIEditorLibrary.send_preview_key(s['pc'],'E',False);s.update(phase=4,next=now+.5);return

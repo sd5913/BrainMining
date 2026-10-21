@@ -38,6 +38,7 @@ public:
     // Identity retains legacy world coordinates; copied rooms provide their placement frame.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Water") FTransform SpillCoordinateFrame;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Water") bool bSpilling=false;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Water") bool bPlayerInHeaven=false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Water") int32 ConnectedCells=0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Water") int32 BreachCount=0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Water") float SpillStrength=0;

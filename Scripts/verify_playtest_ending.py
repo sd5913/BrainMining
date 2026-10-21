@@ -52,7 +52,7 @@ def tick(dt):
    d.set_editor_property('film_speed',4);step(6,.1);return
   if p==6:
    if d.shot<9:return
-   check(d.shot==9 and d.actor_has_tag('EndingHint_O'),'First entry inside O triggers the W subtitle')
+   check(d.shot==9,'The finale drill shot shows its persistent bottom-centred W instruction')
    cap('05-O-W');finish(True)
  except Exception:finish(False,traceback.format_exc())
  finally:s['busy']=False

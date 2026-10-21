@@ -14,9 +14,12 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Robot") bool bEncounterDriven=false;
     UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Robot") FName Expression=TEXT("Idle");
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Robot") bool bEyebrowSinged=false;
+    void SetEyebrowSinged(bool bSinged);
     void Pose(FName State,float Time,float DeltaSeconds,const FRotator& Look=FRotator::ZeroRotator);
 private:
     UPROPERTY() TObjectPtr<USceneComponent> Head;
     UPROPERTY() TArray<TObjectPtr<class UStaticMeshComponent>> Parts;
     UPROPERTY() TObjectPtr<class UStaticMeshComponent> Mouth;
+    UPROPERTY() TArray<TObjectPtr<class UStaticMeshComponent>> BrokenBrow;
 };

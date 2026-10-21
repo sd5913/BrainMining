@@ -1,4 +1,5 @@
 #include "HeavenToiletWater.h"
+#include "MiningRoomAudioSubsystem.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
 #include "DiggableRock.h"
@@ -94,6 +95,9 @@ void AHeavenToiletWater::RebuildWater()
 void AHeavenToiletWater::BeginPlay()
 {
     Super::BeginPlay(); RebuildWater();
+    // Entry detection must observe departures, including GM jumps to another
+    // region, so returning to the room can play its one-shot cue again.
+    Tags.AddUnique(TEXT("BM_PlayerEffect"));
     if(WaterMaterial) { BasinMID=UMaterialInstanceDynamic::Create(WaterMaterial,this); Basin->SetMaterial(0,BasinMID); }
     if(SpillMaterial) { SpillMID=UMaterialInstanceDynamic::Create(SpillMaterial,this); Spill->SetMaterial(0,SpillMID); }
     RefreshBreach();
@@ -185,6 +189,14 @@ void AHeavenToiletWater::RefreshBreach()
 void AHeavenToiletWater::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    if(const APawn* Pawn=UGameplayStatics::GetPlayerPawn(this,0))
+    {
+        const FVector P=Pawn->GetActorLocation(),Center=GetActorLocation();
+        const float EntryRadius=Radius+(bPlayerInHeaven?100.f:0.f);
+        const bool Inside=FVector::DistSquared2D(P,Center)<FMath::Square(EntryRadius) && P.Z>Center.Z-100 && P.Z<Center.Z+1800;
+        if(Inside && !bPlayerInHeaven)UMiningRoomAudioSubsystem::Emit(this,TEXT("S_HeavenAngelChoir"),.45f,false,0.f);
+        bPlayerInHeaven=Inside;
+    }
     CheckTime+=DeltaSeconds;
     if(CheckTime>=.25f)
     {

@@ -97,9 +97,13 @@ def tick(dt):
             cap('07-fire-laser-hand');s['cards'].toggle_card_selection(0);s['cards'].toggle_card_selection(1);step(12,.3);return
         if p==12:space();step(13,1.12);return
         if p==13:
+            opponent=next(a for a in actors(unreal.CardRoomRobot) if a.get_editor_property('bEncounterDriven'))
+            check(opponent.get_editor_property('bEyebrowSinged'),'Fire leaves a permanent broken eyebrow')
             cap('08-fire-ignites-poison');step(13.5,.3);return
         if p==13.5:cap('08b-fire-spread');step(14,3.4);return
         if p==14:
+            opponent=next(a for a in actors(unreal.CardRoomRobot) if a.get_editor_property('bEncounterDriven'))
+            check(opponent.get_editor_property('bEyebrowSinged'),'Broken eyebrow survives the following round')
             check(str(s['pc'].interaction_hud.interaction_action)=='全选','Final hand first offers select all')
             cap('09-overlapping-final-hand');space();step(15,.4);return
         if p==15:

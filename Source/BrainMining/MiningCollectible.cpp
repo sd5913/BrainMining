@@ -326,7 +326,7 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
         }
     }
     FMeshNormals::InitializeOverlayToPerTriangleNormals(B.Mesh.Attributes()->PrimaryNormals());
-    if(ItemId==9)
+    if(ItemId==8 || ItemId==9)
     {
         FVector Extent=FVector::ZeroVector;
         for(int V:B.Mesh.VertexIndicesItr())Extent=Extent.ComponentMax(FVector(B.Mesh.GetVertex(V)).GetAbs());

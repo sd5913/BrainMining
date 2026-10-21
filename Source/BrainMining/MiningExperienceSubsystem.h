@@ -19,8 +19,14 @@ public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
     UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly) TArray<int32> CampaignCollection;
+    UPROPERTY(Transient) FVector CampaignToiletScale=FVector(.491739f);
+    UPROPERTY(Transient) TObjectPtr<class UStaticMesh> CampaignToiletBody;
+    UPROPERTY(Transient) TObjectPtr<class UStaticMesh> CampaignToiletLid;
+    UPROPERTY(Transient) TArray<TObjectPtr<class UMaterialInterface>> CampaignToiletBodyMaterials;
+    UPROPERTY(Transient) TArray<TObjectPtr<class UMaterialInterface>> CampaignToiletLidMaterials;
     bool ToggleMenu();
-    bool ToggleDeveloperMenu();
+    UFUNCTION(BlueprintCallable) bool ToggleDeveloperMenu();
+    UFUNCTION(BlueprintCallable) bool DeveloperGrantTool(int32 ToolIndex);
     UFUNCTION(BlueprintCallable) bool TogglePauseMenu(bool bFromCredits=false);
     bool ToggleMobileMenu(bool bUpgrade = false);
     UFUNCTION(BlueprintCallable) bool JumpToCollectible(int32 ItemId);

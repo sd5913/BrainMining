@@ -20,6 +20,8 @@ public:
     virtual void TickComponent(float DeltaTime,ELevelTick TickType,FActorComponentTickFunction* TickFunction) override;
 private:
     UPROPERTY() TObjectPtr<UMaterialInterface> FootprintMaterial;
+    UPROPERTY() TObjectPtr<class UMaterialInstanceDynamic> LeftFootMaterial;
+    UPROPERTY() TObjectPtr<class UMaterialInstanceDynamic> RightFootMaterial;
     FVector Previous=FVector::ZeroVector;
     float Distance=0;
     bool bHavePrevious=false,bLeft=false;

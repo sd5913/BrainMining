@@ -14,7 +14,7 @@ for entry in entries:
     assert sound.get_editor_property('sound_class_object').get_name() == 'SC_' + entry['category'], path
     assert sound.get_editor_property('override_concurrency'), path
     concurrency = sound.get_editor_property('concurrency_overrides')
-    assert concurrency.get_editor_property('max_count') == (2 if entry['loop'] else 3), path
+    assert concurrency.get_editor_property('max_count') == entry.get('max_count', 2 if entry['loop'] else 3), path
     duration = sound.get_editor_property('duration')
     assert abs(duration - entry['seconds']) < .01, path
     if entry['loop']:

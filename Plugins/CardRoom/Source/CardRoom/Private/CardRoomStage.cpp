@@ -286,7 +286,7 @@ bool ACardRoomStage::CollectReward()
     if(!Run.Collect()) return false;
     Sound(TEXT("S_Reward")); OnCollectibleClaimed.Broadcast(RoomId); return true;
 }
-void ACardRoomStage::RestartEncounter() { Run.Restart(); ResetRabbitPhysicsDrop(); bWinSent=false; bReplySound=false; bImpactSent=false; }
+void ACardRoomStage::RestartEncounter() { Run.Restart(); ResetRabbitPhysicsDrop(); bWinSent=false; bReplySound=false; bImpactSent=false; if(auto* Robot=Cast<ACardRoomRobot>(RobotOpponent->GetChildActor()))Robot->SetEyebrowSinged(false); }
 bool ACardRoomStage::IsPlayerNear(const FVector& Position) const
 {
     return FVector::Dist2D(Position,GetApproachLocation())<GetApproachRadius() && FMath::Abs(Position.Z-GetApproachLocation().Z)<220;
@@ -317,6 +317,8 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     const bool bResolve=Phase==ECardRoomPhase::Resolving;
     if(AudioOverride.IsBound() && bResolve && PreviousAudioTime<1.f && T>=1.f)
         Sound(Run.Round==3?TEXT("S_CardFire"):Run.Round==2?TEXT("S_CardPoison"):TEXT("S_Impact"),Run.Round==3?.7f:.3f);
+    if(bResolve && Run.Round==3 && PreviousAudioTime<1.f && T>=1.f)
+        if(auto* Robot=Cast<ACardRoomRobot>(RobotOpponent->GetChildActor()))Robot->SetEyebrowSinged(true);
     if(SubtitleOverride.IsBound() && bResolve && PreviousAudioTime<1.f && T>=1.f)
     {
         if(Run.Round==2) SubtitleOverride.Execute(TEXT("*呕——好臭臭*"),2.4f);

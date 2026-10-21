@@ -330,6 +330,8 @@ private:
     bool bRestoring = false;
     float Age = 0;
     float CellArrivalAge = 0;
+    float MusicFadeAge = 0;
+    float MusicTargetVolume = 0;
     float BeatAt = 0;
     float PullbackBoost = 0;
     float BloodAt = 0;

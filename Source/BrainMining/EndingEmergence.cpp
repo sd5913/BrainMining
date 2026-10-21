@@ -140,6 +140,15 @@ public:
         const float Fade=D->OverlayAlpha();
         if(Fade>0)FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,FLinearColor(0,0,0,Fade));
         if(Fade>.995f)return L;
+        if(D->Shot==9)
+        {
+            const FString Hint=TEXT("W 加速前进");
+            const auto Font=BrainMiningFonts::Body(18);
+            const FVector2D TextSize=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Hint,Font);
+            const FVector2D Position((Size.X-TextSize.X)*.5f,Size.Y-40.f-TextSize.Y);
+            FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(TextSize),FSlateLayoutTransform(FVector2f(Position+FVector2D(1,1)))),Hint,Font,ESlateDrawEffect::None,FLinearColor::Black);
+            FSlateDrawElement::MakeText(Out,++L,G.ToPaintGeometry(FVector2f(TextSize),FSlateLayoutTransform(FVector2f(Position))),Hint,Font,ESlateDrawEffect::None,FLinearColor::White);
+        }
         if(D->Shot<0&&D->GateIndex<5)
         {
             auto Rect=[&](float X,float Y,float W,float H,FLinearColor C){FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(X,Y))),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,C);};
@@ -1125,7 +1134,8 @@ void AEndingEmergence::SetMusic(const TCHAR* Name,float Volume)
     {
         if(Music && Music->Sound==S && Music->IsPlaying())
         {
-            Music->SetVolumeMultiplier(Volume);
+            MusicTargetVolume=Volume;
+            if(MusicFadeAge>=4.5f)Music->SetVolumeMultiplier(Volume);
             return;
         }
         if(Music){Music->Stop();Music->DestroyComponent();Music=nullptr;}
@@ -1135,7 +1145,8 @@ void AEndingEmergence::SetMusic(const TCHAR* Name,float Volume)
             if(GetGameInstance())
                 if(auto* Settings=GetGameInstance()->GetSubsystem<UMiningAudioSettings>())Music->SoundClassOverride=Settings->GetClass(1);
             Music->bIsUISound=true;
-            Music->SetVolumeMultiplier(Volume);Music->FadeIn(.8f,1.f);
+            MusicFadeAge=0;MusicTargetVolume=Volume;
+            Music->SetVolumeMultiplier(0.f);Music->Play();
             UE_LOG(LogTemp,Display,TEXT("ENDING_MUSIC_PLAY %s volume=%.2f duration=%.2f"),*Path,Volume,S->GetDuration());
         }
     }
@@ -1232,7 +1243,7 @@ void AEndingEmergence::SetShot(int32 Index)
     }
     if(Shot>=1&&Shot<=6)Sound(Shot%2?TEXT("ScaleWhoosh_01"):TEXT("ScaleWhoosh_02"),.22f,.9f+Shot*.035f);
     if(Shot==8){UpdateCellTitle(1);Sound(TEXT("PulseFlight"),.7f,.6f);Sound(TEXT("NeuralPulse_01"),.3f,.92f);}
-    if(Shot==9){BeginFinaleDrill();Ending::TravelHintOnce(this,TEXT("EndingHint_O"),TEXT("按W加速前进"));}
+    if(Shot==9)BeginFinaleDrill();
     if(Shot==10)
     {
         PrepareFinaleVideo();
@@ -1977,6 +1988,13 @@ void AEndingEmergence::Tick(float Dt)
     if(!bReady)
     {
         bReady=Initialize();if(!bReady)return;RestartDemo();
+    }
+    if(Music && MusicFadeAge<4.5f)
+    {
+        // Level-loading hitches cannot consume the entrance fade before the
+        // player sees the cell room.
+        MusicFadeAge+=FMath::Clamp(Dt,0.f,.05f);
+        Music->SetVolumeMultiplier(MusicTargetVolume*FMath::SmoothStep(.35f,4.35f,MusicFadeAge));
     }
     if(bComplete){Age+=Dt;ShotTime+=Dt;UpdateCredits();return;}
     // Count rendered gameplay updates, so a first-use loading hitch cannot

@@ -5,6 +5,31 @@
 #include "Components/RichTextBlock.h"
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
+#include "BrainMiningFonts.h"
+
+void UEndingCreditsWidget::NativeConstruct()
+{
+    Super::NativeConstruct();Elapsed=0;
+    if(Contributors)
+    {
+        // Keep authored names independent of the embedded rich-text style table,
+        // using the same cooked font as the shared UI.
+        FString Names;bool bTag=false;
+        for(TCHAR C:Contributors->GetText().ToString())
+            if(C==TEXT('<'))bTag=true;
+            else if(C==TEXT('>'))bTag=false;
+            else if(!bTag)Names.AppendChar(C);
+        if(Names.TrimStartAndEnd().IsEmpty())Names=TEXT("铁皮辣妹    空空道人    Seven    Rasimet");
+        Contributors->SetTextStyleSet(nullptr);
+        Contributors->SetDefaultFont(BrainMiningFonts::Body(24));
+        Contributors->SetDefaultColorAndOpacity(FSlateColor(FLinearColor(.96f,.95f,.92f)));
+        Contributors->SetText(FText::FromString(Names));
+        Contributors->SetVisibility(ESlateVisibility::HitTestInvisible);
+        Contributors->SetRenderOpacity(0);
+    }
+    if(ThankYou)ThankYou->SetRenderOpacity(0);
+    if(Prompt)Prompt->SetRenderOpacity(0);
+}
 
 void UEndingCreditsWidget::NativeTick(const FGeometry& G,float Dt)
 {

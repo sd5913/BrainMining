@@ -90,6 +90,7 @@ bool AMiningCollectionField::InitializePlayer()
     if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/UI/Redesign/M_CollectionPreview.M_CollectionPreview")))
     {PreviewMaterial=UMaterialInstanceDynamic::Create(Material,this);PreviewMaterial->SetTextureParameterValue(TEXT("Preview"),PreviewTexture);}
     Preview=GetWorld()->SpawnActor<AMiningCollectible>(FVector(0,0,-10000),FRotator::ZeroRotator);
+    Preview->Tags.Add(TEXT("CollectionPreview"));
     Preview->BuildModel(0); Preview->SetActorHiddenInGame(true); Capture->ShowOnlyActors.Add(Preview);
     for(const auto& Placement:AuthoredPlacements)if(Placement.ItemId==0 && IsValid(Placement.PresentationActor) && Placement.PresentationActor->IsA<AHeavenToilet>())
     {
@@ -264,11 +265,8 @@ void AMiningCollectionField::Tick(float Dt)
         if(Item->LastObservedCuts==Item->HostRock->SuccessfulCuts) continue;
         Item->LastObservedCuts=Item->HostRock->SuccessfulCuts;
         Item->Exposure=Item->MeasureExposure();
-        // Collectibles require 70% exposure. Physics release still waits
-        // for a completely clear body, so partially buried objects never eject.
-        if(AMiningCollectible::IsPickupEligible(Item->Exposure))
-            Item->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-        if(Item->CanRelease(ExposureThreshold))
+        // Exposure triggers release; only released items become interaction targets.
+        if(Item->CanRelease(AMiningCollectible::PickupExposure))
         {
             Item->Release();
             if(Item->bReleased) { Toast=AMiningCollectible::ItemName(Item->ItemId)+TEXT(" 已松动掉落，瞄准后按 E 收集"); ToastRemaining=5; }
@@ -284,12 +282,12 @@ void AMiningCollectionField::RefreshTarget()
     {
         auto* Item=Cast<AMiningCollectible>(Candidate.GetActor());
         if(!Item && Candidate.GetActor()) Item=Cast<AMiningCollectible>(Candidate.GetActor()->GetOwner());
-        return Item && !Item->bCollected && (Item->bReleased || AMiningCollectible::IsPickupEligible(Item->Exposure));
+        return Item && Item->IsCollectible();
     }))
     {
         auto* Item=Cast<AMiningCollectible>(Hit.GetActor());
         if(!Item && Hit.GetActor()) Item=Cast<AMiningCollectible>(Hit.GetActor()->GetOwner());
-        if(Item&&!Item->bCollected&&(Item->bReleased || AMiningCollectible::IsPickupEligible(Item->Exposure))) NewTarget=Item;
+        if(Item&&Item->IsCollectible()) NewTarget=Item;
     }
     if(Target!=NewTarget)
     {
@@ -313,7 +311,7 @@ bool AMiningCollectionField::TryCollectTarget()
 {
     if(bCatalogueOpen||!Player || (bAreaManaged && !bAreaActive)) return false;
     RefreshTarget();
-    if(!IsValid(Target)||!Inventory.IsValidIndex(Target->ItemId)) return false;
+    if(!IsValid(Target)||!Target->IsCollectible()||!Inventory.IsValidIndex(Target->ItemId)) return false;
     const bool bFirstCollection=UniqueCount()==0;
     AMiningCollectible* Item=Target; Item->SetHighlighted(false); Item->bCollected=true;
     Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);

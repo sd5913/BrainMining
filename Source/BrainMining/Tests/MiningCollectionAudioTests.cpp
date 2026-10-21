@@ -79,8 +79,9 @@ bool FCollectionPickupAudioTest::RunTest(const FString&)
         auto* Item = World->SpawnActor<AMiningCollectible>(Eye + Direction.Vector() * 200.f, FRotator::ZeroRotator);
         Item->ItemId = ItemId;
         Item->Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        Item->Exposure=1.f;
         const FName PreviousSound = Audio->GetLastPlayedSound();
-        TestFalse(TEXT("Buried collectible cannot be picked up"), Field->TryCollectTarget());
+        TestFalse(TEXT("Even fully exposed collectibles require release before pickup"), Field->TryCollectTarget());
         TestEqual(TEXT("Failed pickup stays silent"), Audio->GetLastPlayedSound(), PreviousSound);
         Item->bReleased = true;
         Field->bCatalogueOpen = true;

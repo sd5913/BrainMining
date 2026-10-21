@@ -45,8 +45,8 @@ bool FCollectionExposureTest::RunTest(const FString& Parameters)
     {
         auto* Item=World->SpawnActor<AMiningCollectible>(); Item->BuildModel(Id); Item->HostRock=Rock;
         TestTrue(TEXT("A fully buried model has zero exposure"),Item->MeasureExposure()<.01f);
-        Item->Exposure=.64f; TestFalse(TEXT("Below threshold remains buried"),Item->CanRelease(.65f));
-        Item->Exposure=.65f; TestTrue(TEXT("Exact configured threshold qualifies"),Item->CanRelease(.65f));
+        Item->Exposure=.69f; TestFalse(TEXT("Below 70% remains buried"),Item->CanRelease(.65f));
+        Item->Exposure=.70f; TestTrue(TEXT("70% exposure triggers release"),Item->CanRelease(.65f));
         Item->Release(); TestFalse(TEXT("No release or physics inside solid rock despite forced ratio"),Item->bReleased);
         TestFalse(TEXT("Buried object never simulates physics"),Item->Body->IsSimulatingPhysics());
         Item->Destroy();

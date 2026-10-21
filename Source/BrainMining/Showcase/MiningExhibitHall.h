@@ -100,6 +100,7 @@ public:
     bool IsInteractionOpen() const;
     bool HandleMirrorInput(const FInputKeyEventArgs& Params);
     bool IsMuseumSkipChordCandidate() const;
+    UFUNCTION(BlueprintPure, Category="Museum") float GetMuseumSkipProgress() const { return bMuseumSkipTriggered?0.f:FMath::Clamp(MuseumSkipHoldSeconds/3.f,0.f,1.f); }
     static AMiningExhibitHall* Find(UWorld* World);
 private:
     struct FAreaActor

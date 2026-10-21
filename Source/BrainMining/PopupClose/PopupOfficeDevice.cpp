@@ -160,7 +160,6 @@ void APopupOfficeDevice::BeginPlay()
     if(auto Self=WeakThis.Get();Self && !Self->IsLocked())
     {
      AwardOfficeCoins(*Self,20);Self->RefreshWarning();
-     UMiningRoomAudioSubsystem::Emit(Self,TEXT("S_Reply"),.4f);
     }
    };
   }
@@ -246,7 +245,11 @@ void APopupOfficeDevice::SetScreenInteractive(bool bEnabled)
 void APopupOfficeDevice::HandleGamepadPointer(bool bPressed)
 {
  if(!Pointer)return;
- if(bPressed && !bLocked && Pointer->bEnableHitTesting)Pointer->PressPointerKey(EKeys::LeftMouseButton);
+ if(bPressed && !bLocked && Pointer->bEnableHitTesting)
+ {
+  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_OfficeMouseClick"),.65f,false,0.f);
+  Pointer->PressPointerKey(EKeys::LeftMouseButton);
+ }
  else Pointer->ReleasePointerKey(EKeys::LeftMouseButton);
 }
 void APopupOfficeDevice::TickScreen(float Dt,APlayerController* PC)
@@ -260,7 +263,7 @@ void APopupOfficeDevice::TickScreen(float Dt,APlayerController* PC)
  }
  else Pointer->InteractionSource=EWidgetInteractionSource::Mouse;
  FitCamera();Pointer->TickComponent(Dt,LEVELTICK_All,nullptr);
- if(PC->WasInputKeyJustPressed(EKeys::LeftMouseButton))Pointer->PressPointerKey(EKeys::LeftMouseButton);
+ if(PC->WasInputKeyJustPressed(EKeys::LeftMouseButton))HandleGamepadPointer(true);
  if(PC->WasInputKeyJustReleased(EKeys::LeftMouseButton))Pointer->ReleasePointerKey(EKeys::LeftMouseButton);
 }
 bool APopupOfficeDevice::TraceDesktopGlass(const FVector& Origin,const FVector& Direction,FHitResult& WidgetHit) const
@@ -335,6 +338,7 @@ bool APopupOfficeDevice::ClickReplyForMobile()
  }
  const int32 Before=Pending();Pointer->InteractionSource=EWidgetInteractionSource::Custom;
  Pointer->SetCustomHitResult(Hit);Pointer->TickComponent(0,LEVELTICK_All,nullptr);
+ UMiningRoomAudioSubsystem::Emit(this,TEXT("S_OfficeMouseClick"),.65f,false,0.f);
  Pointer->PressPointerKey(EKeys::LeftMouseButton);Pointer->ReleasePointerKey(EKeys::LeftMouseButton);
  Pointer->InteractionSource=EWidgetInteractionSource::Mouse;
  return Pending()==Before-1;

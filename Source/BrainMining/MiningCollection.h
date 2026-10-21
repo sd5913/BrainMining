@@ -81,6 +81,7 @@ public:
     static constexpr int32 ItemTypeCount = 12;
     static constexpr float PickupExposure = .70f;
     static bool IsPickupEligible(float Value) { return FMath::IsFinite(Value) && Value >= PickupExposure; }
+    bool IsCollectible() const { return bReleased && !bCollected; }
     UPROPERTY(VisibleAnywhere) TObjectPtr<UBoxComponent> Body;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UDynamicMeshComponent> Model;
     UPROPERTY() TObjectPtr<UDynamicMeshComponent> Outline;
@@ -125,7 +126,7 @@ public:
     bool IsAreaActive() const { return bAreaActive; }
     virtual void Tick(float DeltaSeconds) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection", meta=(ClampMin="0.1", ClampMax="1.0")) float ExposureThreshold = .65f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection", meta=(ClampMin="0.7", ClampMax="0.7")) float ExposureThreshold = .70f;
     // Zero chooses a new seed each run. A positive seed reproduces a layout.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection") int32 RandomSeed = 0;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|V02") bool bDeepField = false;

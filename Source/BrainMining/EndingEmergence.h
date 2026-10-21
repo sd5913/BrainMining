@@ -329,6 +329,7 @@ private:
     void WarmStreetRendering();
     bool bRestoring = false;
     float Age = 0;
+    float CellArrivalAge = 0;
     float BeatAt = 0;
     float PullbackBoost = 0;
     float BloodAt = 0;

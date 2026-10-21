@@ -48,7 +48,7 @@ AMiningOpening* AMiningOpening::EnsureMainGameOpening(AMiningExhibitHall* Hall)
     Opening->Tags.Add(Hall->Areas[0].Tag);
     Opening->TitleTexture=Title;
     Opening->SeatEye=RoomTransform.TransformPosition(FVector(-390,-160,210));
-    Opening->StandingLocation=RoomTransform.TransformPosition(FVector(-260,-70,98));
+    Opening->StandingLocation=RoomTransform.TransformPosition(FVector(-410,-160,98));
     Opening->Facing=(RoomTransform.GetRotation()*FRotator(-14,24,0).Quaternion()).Rotator();
     Opening->Duration=2.6f;
     Opening->DoorTitleLocation=RoomTransform.TransformPosition(FVector(466,0,168));
@@ -206,17 +206,11 @@ void AMiningOpening::Tick(float Dt)
     const float T=FMath::Clamp(Elapsed/Duration,0.f,1.f);const float A=FMath::SmoothStep(0.f,1.f,T);
     const FVector Eye=StandingEye;
     if(APawn* Pawn=Player->GetPawn())Pawn->SetActorLocation(FMath::Lerp(SeatPawnLocation,StandingLocation,A));
-    // Shift weight over the feet, rise, then take a small step beside the bed.
-    // The endpoint is cached, so idle head animation cannot bend this camera rail.
-    const float Rise=FMath::SmoothStep(.18f,.86f,T),Step=FMath::SmoothStep(.12f,.94f,T);
-    FVector P=FMath::Lerp(SeatEye,Eye,Step);P.Z=FMath::Lerp(SeatEye.Z,Eye.Z,Rise);
-    const float Lean=FMath::SmoothStep(0.f,.22f,T)*(1-FMath::SmoothStep(.38f,.9f,T));
-    P+=Facing.Vector().GetSafeNormal2D()*12.f*Lean;P.Z-=3.f*Lean;
-    Camera->SetActorLocation(P);
+    // Keep the menu pose. A small upward arc and short backwards weight shift
+    // replace the former forward step and head dip, ending beside the bed.
+    Camera->SetActorLocation(FMath::Lerp(SeatEye,Eye,A)+FVector(0,0,18.f*FMath::Sin(A*PI)));
     Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(80.f,StandingFOV,A));
-    const FRotator FinalAim=Player->GetControlRotation();
-    FRotator Look=FQuat::Slerp(Facing.Quaternion(),FinalAim.Quaternion(),A).Rotator();Look.Pitch-=2.f*Lean;
-    Camera->SetActorRotation(Look);
+    Camera->SetActorRotation(Facing);
     if(T>=1.f)
     {
         Release();

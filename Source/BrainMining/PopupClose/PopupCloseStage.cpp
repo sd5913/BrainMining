@@ -29,6 +29,7 @@
 #include "MiningInteractionHUDWidget.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/LocalPlayer.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -372,6 +373,7 @@ void APopupCloseStage::BeginScreenSession(APlayerController* PC,APopupOfficeDevi
 {
  if(!PC || !PC->GetPawn() || !Device || Device->IsPrinter() || Device->IsLocked() || View!=EView::Free)return;
  ActiveComputer=Device;LockedController=PC;LockedPawn=PC->GetPawn();View=EView::Entering;ViewTime=0;
+ if(auto* Audio=GetWorld()->GetSubsystem<UMiningRoomAudioSubsystem>())Audio->Resolve(TEXT("S_OfficeMouseClick"));
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Open"),.25f);
  if(auto Character=Cast<ACharacter>(PC->GetPawn()))
  {
@@ -386,6 +388,7 @@ void APopupCloseStage::ExitScreen()
 {
  if(View==EView::Free || View==EView::Exiting)return;
  if(ActiveComputer)ActiveComputer->SetScreenInteractive(false);
+ ConfigureScreenCursor(false);
  View=EView::Exiting;ViewTime=0;
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Close"),.25f);
  if(auto PC=LockedController.Get())
@@ -397,6 +400,7 @@ void APopupCloseStage::ExitScreen()
 }
 void APopupCloseStage::RestorePlayerControl()
 {
+ ConfigureScreenCursor(false);
  if(bMoveSuppressed)
  {
   if(auto Character=Cast<ACharacter>(LockedPawn.Get()))Character->GetCharacterMovement()->SetMovementMode(static_cast<EMovementMode>(SavedMovementMode));
@@ -404,6 +408,21 @@ void APopupCloseStage::RestorePlayerControl()
   bMoveSuppressed=false;
  }
  if(bLookSuppressed){if(auto PC=LockedController.Get())PC->SetIgnoreLookInput(false);bLookSuppressed=false;}
+}
+void APopupCloseStage::ConfigureScreenCursor(bool bEnabled)
+{
+ if(bEnabled && !bComputerCursorActive)
+ {
+  auto* PC=LockedController.Get();auto* Viewport=PC && PC->GetLocalPlayer()?PC->GetLocalPlayer()->ViewportClient.Get():nullptr;
+  if(!Viewport)return;
+  CursorViewport=Viewport;SavedDefaultCursor=Viewport->GetSoftwareCursorWidget(EMouseCursor::Default);
+  Viewport->SetSoftwareCursorWidget(EMouseCursor::Default,MakePopupCloseComputerCursor());bComputerCursorActive=true;
+ }
+ else if(!bEnabled && bComputerCursorActive)
+ {
+  if(auto* Viewport=CursorViewport.Get())Viewport->SetSoftwareCursorWidget(EMouseCursor::Default,SavedDefaultCursor);
+  SavedDefaultCursor.Reset();CursorViewport.Reset();bComputerCursorActive=false;
+ }
 }
 void APopupCloseStage::TickView(float Dt)
 {
@@ -414,6 +433,7 @@ void APopupCloseStage::TickView(float Dt)
   UE_LOG(LogPopupClose,Display,TEXT("Computer view ready after %.3f s"),ViewTime);
   View=EView::InScreen;ViewTime=0;
   ActiveComputer->SetScreenInteractive(true);
+  ConfigureScreenCursor(true);
   if(PC){FInputModeGameOnly Mode;Mode.SetConsumeCaptureMouseDown(false);PC->SetInputMode(Mode);PC->SetShowMouseCursor(true);}
  }
  else if(View==EView::InScreen)
@@ -585,6 +605,10 @@ FString APopupCloseStage::ValidateOffice()
  FString Report;int32 Checks=0,Failures=0;
  auto Check=[&](bool Pass,const TCHAR* Label){++Checks;if(!Pass)++Failures;Report+=FString::Printf(TEXT("%s: %s\n"),Pass?TEXT("PASS"):TEXT("FAIL"),Label);};
  auto PC=LockedController.Get();auto Pawn=LockedPawn.Get();
+ auto* CursorClient=CursorViewport.Get();const auto OriginalCursor=SavedDefaultCursor;
+ Check(bComputerCursorActive && CursorClient && CursorClient->GetSoftwareCursorWidget(EMouseCursor::Default)!=OriginalCursor,TEXT("computer session uses its dedicated desktop cursor"));
+ auto* Audio=GetWorld()->GetSubsystem<UMiningRoomAudioSubsystem>();
+ const int32 ClicksBefore=Audio?Audio->EventCount(TEXT("S_OfficeMouseClick")):0;
  auto Wallet=GetGameInstance()?GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>():nullptr;
  auto Balance=[Wallet]()->int64{return Wallet?Wallet->Balance:0;};
  const int64 ReplyReward=Wallet && Wallet->UsesMineralInventory()?0:20;
@@ -592,12 +616,18 @@ FString APopupCloseStage::ValidateOffice()
  Check(Wallet!=nullptr,TEXT("office uses the shared game wallet"));
  Check(Devices.Num()==4 && !Devices[0]->IsPrinter() && !Devices[1]->IsPrinter() && Devices[2]->IsPrinter() && Devices[3]->IsPrinter(),TEXT("two computers and two printers"));
  float MinDistance=FLT_MAX;for(int32 I=0;I<4;++I)for(int32 J=I+1;J<4;++J)MinDistance=FMath::Min(MinDistance,float(FVector::Dist(Devices[I]->GetActorLocation(),Devices[J]->GetActorLocation())));
- Check(MinDistance>=500,TEXT("devices remain separated by at least five meters in the smaller office"));
- Check(Devices[0]->GetActorLocation().Equals(GetActorLocation()),TEXT("original computer remains at room center"));
+ // These dimensions describe the standalone office fixture. MainGame keeps its
+ // own authored workstation transforms, rather than the fallback layout.
+ if(GetWorld()->GetOutermost()->GetName().Contains(TEXT("Lvl_PopupClose")))
+ {
+  Check(MinDistance>=500,TEXT("devices remain separated by at least five meters in the smaller office"));
+  Check(Devices[0]->GetActorLocation().Equals(GetActorLocation()),TEXT("original computer remains at room center"));
+ }
  Check(ActiveComputer->GetSurface()->GetWidgetSpace()==EWidgetSpace::World && PC->GetViewTarget()==ActiveComputer,TEXT("physical monitor and bezel used for computer view"));
  if(ActiveComputer->Pending()==0)ActiveComputer->AddProblem();
  const int64 BeforeReply=Balance();
  Check(ActiveComputer->ClickReplyForValidation(),TEXT("actual reply button removes exactly one message"));
+ Check(Audio && Audio->EventCount(TEXT("S_OfficeMouseClick"))==ClicksBefore+1,TEXT("one reply click plays the supplied mouse sound once"));
  Check(Wallet && Balance()-BeforeReply==ReplyReward,TEXT("popup reply follows the active economy; MainGame awards no coins"));
  ActiveComputer->AddProblem();ActiveComputer->AddProblem();const int32 PendingBefore=ActiveComputer->Pending();
  Check(Balance()==BeforeReply+ReplyReward,TEXT("new pending messages award no coins"));
@@ -605,6 +635,7 @@ FString APopupCloseStage::ValidateOffice()
  // Finish the same exit path immediately for deterministic checks in this one-frame validation.
  if(PC->PlayerCameraManager)PC->PlayerCameraManager->UpdateCamera(ScreenExitSeconds+.01f);
  RestorePlayerControl();PC->SetViewTarget(Pawn);View=EView::Free;ActiveComputer=nullptr;
+ Check(!bComputerCursorActive && CursorClient && CursorClient->GetSoftwareCursorWidget(EMouseCursor::Default)==OriginalCursor,TEXT("leaving the computer restores the original cursor"));
  Check(First->Pending()==PendingBefore && !PC->IsMoveInputIgnored() && !PC->IsLookInputIgnored() && !PC->bShowMouseCursor,TEXT("exiting preserves unresolved messages and restores controls"));
  Check(Balance()==BeforeReply+ReplyReward,TEXT("exiting a computer awards no coins"));
  auto AimAt=[&](APopupOfficeDevice* Device)

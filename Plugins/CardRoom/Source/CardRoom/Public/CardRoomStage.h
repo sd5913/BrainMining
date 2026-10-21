@@ -105,6 +105,8 @@ private:
     int32 StyledRound=0;
     float StyledLastTime=0;
     bool bStyledPoisonLive=false;
+    float StyledPoisonRefreshAt=0;
+    bool bStyledPoisonAlternate=false;
     bool bRabbitPhysicsDropped=false;
     bool bRabbitPhysicsSettled=false;
     FTransform RabbitInitialRelativeTransform;

@@ -309,7 +309,8 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
             const float A=Flies.FRandRange(0,2*PI),Radius=Flies.FRandRange(2,21);
             const FVector P(FMath::Cos(A)*Radius,FMath::Sin(A)*Radius,Flies.FRandRange(-32,30));
             B.Ellipsoid(P,FVector(Flies.FRandRange(.55,1.25)),9,8,5);
-            B.Ellipsoid(P,FVector(2.7f),10,12,8);
+            const bool bPreview=ActorHasTag(TEXT("CollectionPreview"));
+            B.Ellipsoid(P,FVector(bPreview?5.2f:2.7f),10,bPreview?32:12,bPreview?20:8);
             if(I%4==0) B.Ellipsoid(P+FVector(0,0,1.5),FVector(.5,.7,1),1,6,4);
         }
     }
@@ -349,7 +350,14 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
         if(Edge) { Outline->SetMaterial(8,Edge); Outline->SetMaterial(9,Edge); }
     }
     if(ItemId==10)
-        if(auto* Halo=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionFireflyHalo")))Model->SetMaterial(10,Halo);
+        if(auto* Halo=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionFireflyHalo")))
+        {
+            auto* Glow=UMaterialInstanceDynamic::Create(Halo,this);
+            const bool bPreview=ActorHasTag(TEXT("CollectionPreview"));
+            Glow->SetScalarParameterValue(TEXT("GlowGain"),bPreview?2.2f:1.f);
+            Glow->SetScalarParameterValue(TEXT("GlowOpacity"),bPreview?.32f:.18f);
+            Model->SetMaterial(10,Glow);
+        }
     if(ItemId==10)
         if(auto* Glass=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionGlass"))) Model->SetMaterial(8,Glass);
 }
@@ -405,47 +413,58 @@ float AMiningCollectible::MeasureExposure() const
     int Free=0;for(bool Solid:Covered)Free+=!Solid;
     return Covered.Num()>0?float(Free)/Covered.Num():0;
 }
-bool AMiningCollectible::CanRelease(float Threshold) const
+bool AMiningCollectible::CanRelease(float) const
 {
-    return !bReleased&&!bCollected&&Exposure>=FMath::Clamp(Threshold,ItemId==9?.8f:PickupExposure,1.f);
+    return !bReleased&&!bCollected&&IsPickupEligible(Exposure);
 }
 void AMiningCollectible::Release()
 {
     if(bReleased||bCollected) return;
-    if(ItemId==4 || ItemId==9)
-    {
-        if(MeasureExposure()<(ItemId==9?.8f:.65f))return;
-        // Keep the excavated calculator facing the player, with no Chaos impulse
-        // that can throw it through a terrain chunk awaiting collision cooking.
-        bReleased=true;
-        if(ItemId==9)Body->SetBoxExtent(FVector(48,48,125));
-        Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-        return;
-    }
-    // Before enabling physics, require a clear body volume and an air path to it.
-    // This prevents a partly buried rigid body being explosively ejected by Chaos.
-    FVector Position=GetActorLocation(); bool Clear=!IsValid(HostRock)||HostRock->TriangleCount==0;
+    Exposure=MeasureExposure();
+    if(!IsPickupEligible(Exposure))return;
+    if(ItemId==9)Body->SetBoxExtent(FVector(48,48,125));
+    // Pop towards the excavated air at 70%, instead of waiting for every corner
+    // of the collision box to be dug free. Chaos is enabled only in a clear box.
+    FVector Position=GetActorLocation(),PopDirection=-GetActorForwardVector(); bool Clear=!IsValid(HostRock)||HostRock->TriangleCount==0;
     if(!Clear)
     {
-        auto Air=[&](FVector P)
-        {
-            TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints({HostRock},{P},Covered);
-            return !Covered[0];
-        };
         const FVector Start=Position;
-        for(int Step=0;Step<=10;++Step)
+        auto* PC=GetWorld()->GetFirstPlayerController();FVector Eye=Start-GetActorForwardVector()*300;FRotator View;
+        if(PC)PC->GetPlayerViewPoint(Eye,View);
+        const FVector TowardsAir=(Eye-Start).GetSafeNormal();
+        PopDirection=TowardsAir;
+        const FVector Directions[]={TowardsAir,-GetActorForwardVector(),FVector::UpVector};
+        TArray<FVector> Candidates,Samples;
+        for(const FVector& Direction:Directions)for(int Step=0;Step<=12;++Step)
         {
-            const FVector Candidate=Start-GetActorForwardVector()*(Step*20);
-            if(!Air(Candidate)) break;
-            Clear=true;
+            const FVector Candidate=Start+Direction*(Step*20);
+            if(PC && FVector::Dist(Candidate,Eye)<80)continue;
+            Candidates.Add(Candidate);Samples.Add(Candidate);
             for(int X=-1;X<=1;++X) for(int Y=-1;Y<=1;++Y) for(int Z=-1;Z<=1;++Z)
-                Clear &= Air(Candidate+GetActorQuat().RotateVector((Body->GetScaledBoxExtent()+FVector(2))*FVector(X,Y,Z)));
-            if(Clear) { Position=Candidate; break; }
+                Samples.Add(Candidate+GetActorQuat().RotateVector((Body->GetScaledBoxExtent()+FVector(2))*FVector(X,Y,Z)));
+        }
+        TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints({HostRock},Samples,Covered);
+        bool FoundAir=false;
+        for(int Index=0;Index<Candidates.Num();++Index)
+        {
+            if(Covered[Index*28])continue;
+            FHitResult Hit;
+            if(PC && HostRock->ActorLineTraceSingle(Hit,Candidates[Index],Eye,ECC_Visibility,FCollisionQueryParams(NAME_None,true)))continue;
+            if(!FoundAir){Position=Candidates[Index];FoundAir=true;}
+            Clear=true;
+            for(int Sample=1;Sample<28;++Sample)Clear &= !Covered[Index*28+Sample];
+            if(Clear){Position=Candidates[Index];break;}
         }
     }
-    if(!Clear) return;
-    SetActorLocation(Position); bReleased=true;
+    SetActorLocation(Position);bReleased=true;
+    if(!Clear || ItemId==4 || ItemId==9)
+    {
+        // A released item in a narrow opening stays stable and collectible,
+        // rather than receiving a penetrating physics impulse.
+        SetActorLocation(Position+PopDirection*12.f);
+        Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);return;
+    }
     Body->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     Body->SetSimulatePhysics(true); Body->SetMassOverrideInKg(NAME_None,3,true);
-    Body->AddImpulse(-GetActorForwardVector()*55+FVector(0,0,35),NAME_None,true);
+    Body->AddImpulse(PopDirection*55+FVector(0,0,35),NAME_None,true);
 }

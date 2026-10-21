@@ -76,6 +76,8 @@ Start-MiningGuardedProcess -Executable "$EngineRoot/Engine/Binaries/Win64/Unreal
 ) -ReportPath "$report/container-resources.csv" -MaximumSeconds 120
 $containerText = Get-Content -LiteralPath $containerList -Raw
 $requiredAssets = @(
+    'Audio/Rooms/S_OfficeMouseClick.uasset',
+    'Subtitles/DA_CardsVictory.uasset',
     'MainGame/Maps/Lvl_MainGame.umap',
     'MainGame/Blueprints/BP_MainGameCharacter.uasset',
     'Showcase/Blueprints/BP_SharedMiningCharacter.uasset',
@@ -85,6 +87,7 @@ $requiredAssets = @(
     'MainGame/Materials/M_PlayerFootprint.uasset',
     'MainGame/VFX/NS_MushroomCrystalMotes.uasset',
     'CollectionPrototype/Materials/M_CollectionFeatherFade.uasset',
+    'CollectionPrototype/Materials/M_CollectionFireflyHalo.uasset',
     'Passages/Echo/ArtP2/VFX/NS_P2_Poison.uasset',
     'Rooms/CardDuel/Materials/PoisonBurn/M_Smoke_2.uasset',
     'MainGame/UI/T_MainGameTitle.uasset',

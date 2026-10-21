@@ -36,7 +36,7 @@ void AMainGameSubtitleDirector::PlayOnce(FName SegmentId)
 
 void AMainGameSubtitleDirector::OnCardsCompleted(FName RoomId)
 {
-    PlayOnce(TEXT("卡牌玩法2"));
+    PlayOnce(TEXT("卡牌胜利提示"));
 }
 
 void AMainGameSubtitleDirector::Tick(float Dt)
@@ -45,8 +45,10 @@ void AMainGameSubtitleDirector::Tick(float Dt)
     auto* PC = GetWorld()->GetFirstPlayerController();
     if(!PC || PC->IsPaused() || !PC->GetPawn()) return;
     for(TActorIterator<ACardRoomStage> It(GetWorld()); It; ++It)
-        if(It->Run.Round == 1 && It->Run.Phase == ECardRoomPhase::Choosing)
-            PlayOnce(TEXT("卡牌玩法1"));
+    {
+        if(It->Run.Round == 1 && It->Run.Phase == ECardRoomPhase::Choosing)PlayOnce(TEXT("卡牌玩法1"));
+        if(It->Run.Phase == ECardRoomPhase::Collected)PlayOnce(TEXT("卡牌玩法2"));
+    }
     for(TActorIterator<AMiningRoomEscape> It(GetWorld()); It; ++It)
         if(It->Phase == EMiningEscapePhase::Flooding)
         {

@@ -128,7 +128,7 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
         }
     for (TActorIterator<AMiningCollectionField> Collection(GetWorld()); Collection; ++Collection)
         if (Collection->IsAreaActive() && !Collection->bCatalogueOpen && IsValid(Collection->Target)
-            && !Collection->Target->bCollected && Collection->Target->bReleased)
+            && Collection->Target->IsCollectible())
             return AMiningCollectible::ItemName(Collection->Target->ItemId);
     for (TActorIterator<AMiningTreasureField> Treasure(GetWorld()); Treasure; ++Treasure)
         if (Treasure->IsAreaActive() && IsValid(Treasure->Target) && !Treasure->Target->bCollected
@@ -173,7 +173,9 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
     const FWidgetStyle& WidgetStyle, bool bParentEnabled) const
 {
     int32 Layer = Super::NativePaint(Args, Geometry, CullingRect, DrawElements, LayerId, WidgetStyle, bParentEnabled);
-    if (!bExplorationVisible && !CoinFeedback.IsVisible()) return Layer;
+    const auto* Hall=AMiningExhibitHall::Find(GetWorld());
+    const float SkipProgress=Hall?Hall->GetMuseumSkipProgress():0.f;
+    if (!bExplorationVisible && !CoinFeedback.IsVisible() && SkipProgress<=0.f) return Layer;
     const FVector2D Size = Geometry.GetLocalSize();
     const FVector2D Center = Size * .5f;
     const float Scale = FMath::Max(.5f, FMath::Min(Size.X / 1920.f, Size.Y / 1080.f));
@@ -221,6 +223,16 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
         Box(FVector2D(-HalfKey, 73), FVector2D(HalfKey*2, 34), Key, FLinearColor(.015f, .02f, .025f, .85f));
         Box(FVector2D(-HalfKey+2, 74), FVector2D(HalfKey*2-4, 30), Key, FLinearColor(.96f, .95f, .89f));
         Text(bGamepad ? TEXT("X") : (bPlayCard ? TEXT("空格") : TEXT("E")), FVector2D(0, 77), 19, FLinearColor(.04f, .045f, .05f), true);
+    }
+    if(SkipProgress>0.f)
+    {
+        const float Y=Size.Y/(2.f*Scale)-208.f;
+        const FString Label=TouchController && TouchController->IsUsingTouchControls()?TEXT("继续按住以跳过"):TEXT("长按 P 跳过");
+        Text(Label,FVector2D(1,Y-35),20,FLinearColor(0,0,0,.85f),true);
+        Text(Label,FVector2D(0,Y-36),20,FLinearColor::White,true);
+        Box(FVector2D(-152,Y-2),FVector2D(304,12),Key,FLinearColor(.015f,.02f,.025f,.85f));
+        Box(FVector2D(-150,Y),FVector2D(300,8),Key,FLinearColor(.18f,.18f,.18f));
+        Box(FVector2D(-150,Y),FVector2D(300*SkipProgress,8),Key,FLinearColor(1.f,.72f,.15f));
     }
     if (CoinFeedback.IsVisible())
     {

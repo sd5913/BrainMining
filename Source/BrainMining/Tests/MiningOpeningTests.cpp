@@ -43,7 +43,7 @@ bool FOpeningBootstrapTest::RunTest(const FString&)
     if(TestNotNull(TEXT("Latest MainGame can bootstrap without an authored opening actor"),Opening))
     {
         TestNotNull(TEXT("Published title asset loads"),Opening->TitleTexture.Get());
-        TestTrue(TEXT("Seat follows source-room transform"),Opening->SeatEye.Equals(Transform.TransformPosition(FVector(-350,-160,175)),.01));
+        TestTrue(TEXT("Seat follows source-room transform"),Opening->SeatEye.Equals(Transform.TransformPosition(FVector(-390,-160,210)),.01));
         TestTrue(TEXT("Door follows source-room transform"),Opening->DoorTitleLocation.Equals(Transform.TransformPosition(FVector(466,0,168)),.01));
         TestTrue(TEXT("Opening belongs to the active start area"),Opening->ActorHasTag(Hall->Areas[0].Tag));
         Opening->Duration=4.25f;

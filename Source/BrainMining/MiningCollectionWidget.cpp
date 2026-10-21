@@ -100,7 +100,13 @@ void UMiningCollectionWidget::RefreshCollection()
             Image->SetBrush(*MiningMenuStyle::Brush(1));
             Image->SetColorAndOpacity(Has?FLinearColor::White:FLinearColor(.5f,.5f,.5f,.65f));
         }
-        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):TEXT("尚未发现")));
+        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))
+        {
+            // The card is 222 units wide. Auto-wrap on an auto-sized canvas
+            // label can reuse a collapsed width and stack a short name vertically.
+            T->SetAutoWrapText(false);T->SetWrapTextAt(208.f);T->SetJustification(ETextJustify::Center);
+            T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):TEXT("尚未发现")));
+        }
         if(auto* W=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I)))))
         {
             W->SetBrush(*MiningMenuStyle::Brush(2));

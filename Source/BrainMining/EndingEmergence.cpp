@@ -1147,7 +1147,7 @@ void AEndingEmergence::RestartDemo()
     if(bRestoring||!Player||!Mining)return;
     TGuardValue<bool> Guard(bRestoring,true);
     RemoveCredits();ResetFinale();ResetScaleMotion();PrepareFinaleRocks();
-    GateIndex=0;Shot=-1;ShotTime=0;Age=0;BeatAt=0;LastCuts=0;bComplete=false;BloodTravel=0;
+    GateIndex=0;Shot=-1;ShotTime=0;Age=0;CellArrivalAge=0;BeatAt=0;LastCuts=0;bComplete=false;BloodTravel=0;
     CurrentNeuron=TargetNeuron=TravellingToNeuron=INDEX_NONE;PossessionCount=0;VisitedNeurons.Empty();BloodSpeed=480;VesselDistance=150;BloodY=0;PulseAt=-100;BufferedJumpAt=-100;bEnteringBrain=false;TransitEffects(0);
     if(DroppedPickaxe){DroppedPickaxe->DestroyComponent();DroppedPickaxe=nullptr;}
     DriftOffset=DriftVelocity=FVector::ZeroVector;
@@ -1977,9 +1977,11 @@ void AEndingEmergence::Tick(float Dt)
     if(!bReady)
     {
         bReady=Initialize();if(!bReady)return;RestartDemo();
-        if(Player->PlayerCameraManager)Player->PlayerCameraManager->StartCameraFade(1.f,0.f,1.4f,FLinearColor::Black,false,false);
     }
     if(bComplete){Age+=Dt;ShotTime+=Dt;UpdateCredits();return;}
+    // Count rendered gameplay updates, so a first-use loading hitch cannot
+    // consume the entire arrival fade before the cell has appeared on screen.
+    CellArrivalAge+=FMath::Clamp(Dt,0.f,1.f/20.f);
     // First-use resource uploads in cooked builds must not skip an entire short scale transition.
     if((Shot>=0 && Shot<=8) || (Shot<0 && GateIndex>=5))Dt=FMath::Min(Dt,1.f/15.f);
     Age+=Dt;UpdateCellMotion();UpdatePainterly();
@@ -2130,6 +2132,7 @@ FString AEndingEmergence::Subtitle() const
 
 float AEndingEmergence::OverlayAlpha() const
 {
+    if(Shot<0 && GateIndex==0)return 1.f-FMath::SmoothStep(.2f,1.8f,CellArrivalAge);
     if(Shot<0)return 0;
     if(Shot>=10)return 0;
 

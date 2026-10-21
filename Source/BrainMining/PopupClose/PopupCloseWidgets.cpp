@@ -15,15 +15,45 @@
 #include "Widgets/Layout/SBox.h"
 #include "Engine/Texture2D.h"
 #include "Brushes/SlateNoResource.h"
+#include "Rendering/DrawElements.h"
+#include "Widgets/SLeafWidget.h"
 
 namespace
 {
+	class SPopupCloseComputerCursor : public SLeafWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(SPopupCloseComputerCursor) {} SLATE_END_ARGS()
+		void Construct(const FArguments&) { SetVisibility(EVisibility::HitTestInvisible); }
+		virtual FVector2D ComputeDesiredSize(float) const override { return FVector2D(64,80); }
+		virtual int32 OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRect&,FSlateWindowElementList& Out,int32 Layer,const FWidgetStyle& Style,bool) const override
+		{
+			// Center is the cursor hotspot. Integer blocks preserve the crisp
+			// black-and-white arrow used by early desktop operating systems.
+			static const TCHAR* Rows[]={
+				TEXT("B"),TEXT("BB"),TEXT("BWB"),TEXT("BWWB"),TEXT("BWWWB"),
+				TEXT("BWWWWB"),TEXT("BWWWWWB"),TEXT("BWWWWWWB"),TEXT("BWWWWWWWB"),
+				TEXT("BWWWWBBBBB"),TEXT("BWWBWB"),TEXT("BWB BWB"),TEXT("BB  BWB"),
+				TEXT("B    BWB"),TEXT("     BWB"),TEXT("      BB")};
+			const FVector2D Hotspot=G.GetLocalSize()*.5f;
+			const auto* Brush=FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"));
+			for(int32 Y=0;Y<UE_ARRAY_COUNT(Rows);++Y)
+				for(int32 X=0;Rows[Y][X];++X)
+					if(Rows[Y][X]!=TEXT(' '))
+						FSlateDrawElement::MakeBox(Out,Layer+1,G.ToPaintGeometry(FVector2f(2,2),
+							FSlateLayoutTransform(FVector2f(Hotspot+FVector2D(X*2,Y*2)))),Brush,ESlateDrawEffect::None,
+							(Rows[Y][X]==TEXT('W')?FLinearColor::White:FLinearColor::Black)*Style.GetColorAndOpacityTint());
+			return Layer+1;
+		}
+	};
 	FSlateFontInfo PopupFont(float Size)
 	{
         return BrainMiningFonts::Body(Size);
     }
 
 }
+
+TSharedRef<SWidget> MakePopupCloseComputerCursor() { return SNew(SPopupCloseComputerCursor); }
 
 TSharedRef<SWidget> UPopupClosePromptWidget::RebuildWidget()
 {

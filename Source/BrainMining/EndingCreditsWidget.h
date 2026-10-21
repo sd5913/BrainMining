@@ -16,6 +16,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Credits|CRT", meta=(ClampMin="0",ClampMax=".3")) float CRTStrength=.055f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Credits|CRT", meta=(ClampMin="2",ClampMax="12")) float ScanlineSpacing=4.f;
 protected:
+    virtual void NativeConstruct() override;
     virtual void NativeTick(const FGeometry& Geometry,float DeltaSeconds) override;
     virtual int32 NativePaint(const FPaintArgs& Args,const FGeometry& Geometry,const FSlateRect& CullingRect,FSlateWindowElementList& Out,int32 Layer,const FWidgetStyle& Style,bool bEnabled) const override;
     UPROPERTY(meta=(BindWidgetOptional)) TObjectPtr<class UImage> BlackBackground;

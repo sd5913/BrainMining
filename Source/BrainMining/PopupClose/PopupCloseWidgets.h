@@ -8,6 +8,8 @@ class SConstraintCanvas;
 class UTexture2D;
 struct FSlateBrush;
 
+TSharedRef<SWidget> MakePopupCloseComputerCursor();
+
 UCLASS()
 class BRAINMINING_API UPopupClosePromptWidget : public UUserWidget
 {

@@ -14,10 +14,10 @@ void ACardRoomStage::InitializeStyledEffects()
     for(auto& System:StyledSystems)if(System)System->WaitForCompilationComplete(true,false);
 #endif
     // Independent components avoid teleporting the particles of a previous cast.
-    const int32 Assets[]={0,1,2,1,3,4,1,1,1,1,1,1};
+    const int32 Assets[]={0,1,2,1,3,4,1,1,1,1,1,1,4};
     for(int32 I=0;I<UE_ARRAY_COUNT(Assets);++I)
     {
-        auto* FX=NewObject<UNiagaraComponent>(this,I==5?FName(TEXT("P2Fx_PoisonHit")):FName(*FString::Printf(TEXT("StyledSpell%d"),I)));
+        auto* FX=NewObject<UNiagaraComponent>(this,I==5?FName(TEXT("P2Fx_PoisonHit")):I==12?FName(TEXT("P2Fx_PoisonSustain")):FName(*FString::Printf(TEXT("StyledSpell%d"),I)));
         AddInstanceComponent(FX);FX->SetupAttachment(RootComponent);FX->SetAutoActivate(false);
         if(StyledSystems.IsValidIndex(Assets[I]))FX->SetAsset(StyledSystems[Assets[I]]);
         FX->SetCastShadow(false);FX->RegisterComponent();StyledFX.Add(FX);
@@ -52,7 +52,7 @@ void ACardRoomStage::TickStyledEffects()
     const FLinearColor Cyan(.06f,.62f,1.f),Amber(1.f,.28f,.045f),Cream(1.f,.75f,.32f);
     if(!Resolve || StyledRound!=Run.Round || T<StyledLastTime)
     {
-        for(int32 I=0;I<StyledFX.Num();++I)if(I!=5)StyledFX[I]->DeactivateImmediate();
+        for(int32 I=0;I<StyledFX.Num();++I)if(I!=5 && I!=12)StyledFX[I]->DeactivateImmediate();
         StyledFired=0;StyledRound=Run.Round;
     }
     StyledLastTime=T;
@@ -82,24 +82,45 @@ void ACardRoomStage::TickStyledEffects()
             FX->Activate(true);StyledFired|=1u<<Index;
         }
     };
-    if(StyledFX.IsValidIndex(5))
+    if(StyledFX.IsValidIndex(12))
     {
         auto* Poison=StyledFX[5].Get();
+        auto* Sustain=StyledFX[12].Get();
         const bool Burning=Resolve && Run.Round==3 && T>=1.f && T<2.85f;
         const bool KeepPoison=Run.bPoisoned || Burning || (Resolve && Run.Round==2 && T>=1.f);
-        Poison->SetVariableFloat(TEXT("User.PoisonBurn"),Resolve&&Run.Round==3?FMath::Clamp((T-1.f)/1.8f,0.f,1.f):0.f);
-        if(KeepPoison && !bStyledPoisonLive)
+        const float Burn=Resolve&&Run.Round==3?FMath::Clamp((T-1.f)/1.8f,0.f,1.f):0.f;
+        for(auto* FX:{Poison,Sustain})
         {
-            Poison->SetRelativeLocation(Target);Poison->SetRelativeScale3D(FVector(S));
-            Poison->Activate(true);bStyledPoisonLive=true;
+            FX->SetRelativeLocation(Target);FX->SetRelativeScale3D(FVector(S));
+            FX->SetVariableFloat(TEXT("User.PoisonBurn"),Burn);
+        }
+        if(KeepPoison)
+        {
+            const float Now=GetWorld()->GetTimeSeconds();
+            if(!bStyledPoisonLive)
+            {
+                Sustain->DeactivateImmediate();Poison->Activate(true);
+                for(FName Name:{FName(TEXT("spark")),FName(TEXT("impact")),FName(TEXT("spark_l")),FName(TEXT("refr"))})Poison->SetEmitterEnable(Name,true);
+                StyledPoisonRefreshAt=Now+1.8f;bStyledPoisonAlternate=true;
+            }
+            else if(!(Resolve && Run.Round==3) && Now>=StyledPoisonRefreshAt)
+            {
+                // Overlap the authored one-shot clouds, replenishing smoke
+                // throughout an arbitrarily long wait for the player's action.
+                auto* Next=bStyledPoisonAlternate?Sustain:Poison;
+                Next->Activate(true);
+                for(FName Name:{FName(TEXT("spark")),FName(TEXT("impact")),FName(TEXT("spark_l")),FName(TEXT("refr"))})Next->SetEmitterEnable(Name,false);
+                bStyledPoisonAlternate=!bStyledPoisonAlternate;StyledPoisonRefreshAt=Now+1.8f;
+            }
+            bStyledPoisonLive=true;
         }
         else if(!KeepPoison && bStyledPoisonLive)
         {
             // The entire cloud is already transparent before the emitter stops.
-            Poison->DeactivateImmediate();
+            Poison->DeactivateImmediate();Sustain->DeactivateImmediate();
             bStyledPoisonLive=false;
         }
-        if(!Resolve && !Run.bPoisoned)Poison->DeactivateImmediate();
+        if(!Resolve && !Run.bPoisoned){Poison->DeactivateImmediate();Sustain->DeactivateImmediate();}
     }
     // A visible flame front occupies the gas volume while the Niagara smoke
     // finishes. This stays readable even when the imported fire burst is faint.
@@ -230,6 +251,6 @@ void ACardRoomStage::TickStyledEffects()
     }
     // Each authored burst has a bounded lifetime; source pack loops cannot leak
     // into the next hand or into exploration after collecting the reward.
-    if(Resolve && T>2.6f)for(int32 I=0;I<StyledFX.Num();++I)if(I!=5)StyledFX[I]->Deactivate();
+    if(Resolve && T>2.6f)for(int32 I=0;I<StyledFX.Num();++I)if(I!=5 && I!=12)StyledFX[I]->Deactivate();
     // The reward is the player's physical drill; keep its authored materials.
 }

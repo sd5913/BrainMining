@@ -76,15 +76,15 @@ void AMiningCollectionField::SpawnAuthoredClues(const FMiningCollectionPlacement
     }
     else if(Id==3)
     {
-        for(int I=0;I<3;++I)
+        for(int I=0;I<7;++I)
         {
-            FVector Surface(1,-60+I*60,-30+(I%2)*35);FHitResult Hit;
+            FVector Surface(1,-90+I*30,-30+(I%3)*22);FHitResult Hit;
             if(Rock->ActorLineTraceSingle(Hit,T.TransformPosition(Surface-FVector(50,0,0)),T.TransformPosition(Surface+FVector(70,0,0)),ECC_Visibility,FCollisionQueryParams(NAME_None,true)))
                 Surface=T.InverseTransformPosition(Hit.ImpactPoint)+FVector(1.8,0,0);
-            MakeFeather(Rock,Surface,-30+I*28);
+            MakeFeather(Rock,Surface,-35+(I*23)%76);
         }
         const FVector End=T.InverseTransformPosition(P.Transform.GetLocation());
-        for(int I=1;I<8;++I) MakeFeather(Rock,FMath::Lerp(FVector(3,0,0),End,float(I)/8)+FVector(0,-40+(I%3)*40,-35),I%2?22:-18);
+        for(int I=1;I<15;++I) MakeFeather(Rock,FMath::Lerp(FVector(3,0,0),End,float(I)/15)+FVector(0,FMath::Sin(I*2.4f)*48,-35+(I%3)*12),I%2?22:-18);
         for(int I=0;I<5;++I)
         {
             auto* Twig=MakeProp(FVector(-20,-45+I*22,-110),FVector(50,7,6),FLinearColor(.37f,.22f,.07f));

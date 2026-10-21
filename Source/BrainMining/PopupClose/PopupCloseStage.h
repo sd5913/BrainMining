@@ -94,6 +94,10 @@ private:
  void BeginScreenSession(APlayerController* PC,APopupOfficeDevice* Device);
  void ExitScreen();
  void RestorePlayerControl();
+ void ConfigureScreenCursor(bool bEnabled);
+ TWeakObjectPtr<class UGameViewportClient> CursorViewport;
+ TSharedPtr<class SWidget> SavedDefaultCursor;
+ bool bComputerCursorActive=false;
  void TickView(float Dt);
  void TickIssues(float Dt);
  void BeginBurst();

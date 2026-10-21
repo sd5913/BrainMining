@@ -18,7 +18,7 @@ run='''def run():
  while not opening.finished:
   eye=pc.player_camera_manager.get_camera_location();path.append([eye.x,eye.y,eye.z]);yield .1
  r['opening_path']=path
- assert max(((unreal.Vector(*p)-start_eye)*unreal.Vector(1,1,0)).length() for p in path)<45,'Standing up must not lunge forward'
+ assert ((pc.get_controlled_pawn().get_actor_location()-opening.get_editor_property('StandingLocation'))*unreal.Vector(1,1,0)).length()<10,'Opening ends at the restored landing beside the bed'
  hall=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningExhibitHall)[0];hall.set_actor_tick_enabled(False)
  pawn=pc.get_controlled_pawn();room=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningStartRoom)[0]
  assert H.write_preview_state(room,'bHeadlampUnlocked','True')

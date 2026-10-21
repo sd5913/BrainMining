@@ -142,7 +142,8 @@ public:
         if(Fade>.995f)return L;
         if(D->Shot==9)
         {
-            const FString Hint=TEXT("W 加速前进");
+            const auto* Controller=Cast<ABrainMiningPlayerController>(D->GetWorld()->GetFirstPlayerController());
+            const FString Hint=Controller && Controller->IsUsingTouchControls()?TEXT("上推摇杆加速"):TEXT("W 加速前进");
             const auto Font=BrainMiningFonts::Body(18);
             const FVector2D TextSize=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Hint,Font);
             const FVector2D Position((Size.X-TextSize.X)*.5f,Size.Y-40.f-TextSize.Y);

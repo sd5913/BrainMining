@@ -245,6 +245,24 @@ bool FMiningMobileLifecycleTest::RunTest(const FString&)
     TestEqual(TEXT("Menu releases the mining pointer"), Controls->MinePointer, -1);
     TestEqual(TEXT("Menu releases look pointer"), Controls->LookPointer, -1);
     TestEqual(TEXT("Menu releases movement pointer"), Controls->JoystickPointer, -1);
+    TFunction<bool(const TSharedRef<SWidget>&, FName)> HasTag;
+    HasTag = [&HasTag](const TSharedRef<SWidget>& Widget, FName Tag)
+    {
+        if (Widget->GetTag() == Tag) return true;
+        auto* Children = Widget->GetChildren();
+        for (int32 Index = 0; Index < Children->Num(); ++Index)
+            if (HasTag(Children->GetChildAt(Index), Tag)) return true;
+        return false;
+    };
+    TestTrue(TEXT("Pause shows its collection action"), HasTag(Menu->Menu.ToSharedRef(), TEXT("gem")));
+    Menu->RequestQuitConfirmation();
+    Menu->Menu->Tick(Geometry, 0, .016f);
+    TestTrue(TEXT("External quit request shows the actual touch confirmation"), HasTag(Menu->Menu.ToSharedRef(), TEXT("check")));
+    TestFalse(TEXT("Quit confirmation replaces pause actions"), HasTag(Menu->Menu.ToSharedRef(), TEXT("gem")));
+    Menu->CancelQuitConfirmation();
+    Menu->Menu->Tick(Geometry, 0, .016f);
+    TestTrue(TEXT("Cancelling quit restores the actual touch pause actions"), HasTag(Menu->Menu.ToSharedRef(), TEXT("gem")));
+    TestFalse(TEXT("Cancelling quit removes the exit confirmation action"), HasTag(Menu->Menu.ToSharedRef(), TEXT("check")));
     Menu->CloseMenu();
     TestFalse(TEXT("Resume restores input suspension"), Mining->IsInputSuspended());
     TestFalse(TEXT("Resume restores movement and camera input"), Controller->IsMoveInputIgnored() || Controller->IsLookInputIgnored());
@@ -266,6 +284,7 @@ bool FMiningMobileLifecycleTest::RunTest(const FString&)
     TestFalse(TEXT("Mobile back closes the catalogue without a widget key event"), Collection->bCatalogueOpen);
     TestFalse(TEXT("Catalogue back restores gameplay input"), Controller->IsMoveInputIgnored() || Controller->IsLookInputIgnored() || Controller->bShowMouseCursor || Controller->IsPaused());
     TestTrue(TEXT("Catalogue back restores the mining tick"), Mining->IsComponentTickEnabled());
+    if (!Collection->HasActorBegunPlay()) Collection->EndPlay(EEndPlayReason::Destroyed);
     Collection->Destroy();
     Controller->SetIgnoreMoveInput(true);
     Controller->SetIgnoreLookInput(true);

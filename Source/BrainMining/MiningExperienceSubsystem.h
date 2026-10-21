@@ -37,6 +37,7 @@ public:
     bool OpenExperience(int32 Index);
     static TArray<FString> MapPaths();
 private:
+    friend class FMiningMobileLifecycleTest;
     bool BuildMenu(bool bDeveloper);
     void CaptureMenuInput(APlayerController* Controller);
     void RestoreMenuInput(APlayerController* Controller);

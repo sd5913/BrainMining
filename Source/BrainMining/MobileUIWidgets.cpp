@@ -87,7 +87,7 @@ namespace
 
     TSharedRef<SButton> IconButton(FName Name, TFunction<void()> Action, bool bPrimary = false)
     {
-        return SNew(SButton).ButtonStyle(MobileButtonStyle()).HAlign(HAlign_Center).VAlign(VAlign_Center)
+        return SNew(SButton).Tag(Name).ButtonStyle(MobileButtonStyle()).HAlign(HAlign_Center).VAlign(VAlign_Center)
             .ButtonColorAndOpacity(bPrimary ? Gold() : Ink())
             .OnClicked_Lambda([Action]() { Action(); return FReply::Handled(); })
             [Glyph(Name, 52, bPrimary ? Ink() : Cream())];
@@ -124,6 +124,7 @@ namespace
         virtual void Tick(const FGeometry& Geometry, double Time, float Delta) override
         {
             SCompoundWidget::Tick(Geometry, Time, Delta);
+            if (Page != EMobileMenuPage::Quit && Owner.IsValid() && Owner->bQuitConfirmation) ChangePage(EMobileMenuPage::Quit);
             if (Page == EMobileMenuPage::Quit && Owner.IsValid() && !Owner->bQuitConfirmation) ChangePage(EMobileMenuPage::Pause);
         }
 

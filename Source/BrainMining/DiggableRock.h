@@ -91,6 +91,7 @@ public:
 	void BakeAuthoredMesh(UDynamicMesh* Mesh);
 
 protected:
+    friend class UMiningSaveSubsystem;
 	virtual void InitializeForPlay();
 	void CommitMesh(UE::Geometry::FDynamicMesh3&& Mesh);
 	bool MineCutter(FVector WorldCenter, float WorldRadius, const UE::Geometry::FDynamicMesh3* WorldCutter);

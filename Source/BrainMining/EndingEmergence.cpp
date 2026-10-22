@@ -140,10 +140,11 @@ public:
         const float Fade=D->OverlayAlpha();
         if(Fade>0)FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,FLinearColor(0,0,0,Fade));
         if(Fade>.995f)return L;
-        if(D->Shot==9)
+        if(D->Shot==9 || (D->Shot<0 && D->GateIndex==2 && !D->bEnteringBrain))
         {
             const auto* Controller=Cast<ABrainMiningPlayerController>(D->GetWorld()->GetFirstPlayerController());
-            const FString Hint=Controller && Controller->IsUsingTouchControls()?TEXT("上推摇杆加速"):TEXT("W 加速前进");
+            const bool Touch=Controller && Controller->IsUsingTouchControls();
+            const FString Hint=D->Shot==9?(Touch?TEXT("上推摇杆加速"):TEXT("W 加速前进")):(Touch?TEXT("跃迁键 跃迁"):TEXT("空格键 跃迁"));
             const auto Font=BrainMiningFonts::Body(18);
             const FVector2D TextSize=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Hint,Font);
             const FVector2D Position((Size.X-TextSize.X)*.5f,Size.Y-40.f-TextSize.Y);

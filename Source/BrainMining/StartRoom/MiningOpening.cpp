@@ -1,5 +1,7 @@
 #include "StartRoom/MiningOpening.h"
 #include "TimerManager.h"
+#include "MiningSaveSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "MiningHapticsSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "Blueprint/WidgetTree.h"
@@ -106,6 +108,11 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
         if(Start){StartButton=Button;Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);}
         else {ExitButton=Button;Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);}
     };
+    if(auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();Saves && Saves->HasSave())
+    {
+        AddButton(TEXT("继续游戏"),true);
+        StartButton->OnClicked.Clear();StartButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::ContinueGame);
+    }
     AddButton(TEXT("开始游戏"),true);AddButton(TEXT("退出游戏"),false);
     auto* DesignSize=WidgetTree->ConstructWidget<USizeBox>();
     DesignSize->SetWidthOverride(1600);DesignSize->SetHeightOverride(900);DesignSize->AddChild(Canvas);
@@ -183,9 +190,19 @@ void AMiningOpening::Prepare(APlayerController* Controller)
     Controller->PlayerCameraManager->UpdateCamera(0.f);
     if(auto* MiningPC=Cast<AMiningExhibitController>(Controller))MiningPC->RevealOpening();
 }
+void UMiningOpeningMenu::ContinueGame(){if(Opening.IsValid())Opening->ContinueSavedGame();}
+void AMiningOpening::ContinueSavedGame()
+{
+    if(!bPrepared || bStarted || bFinished)return;
+    auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();
+    if(!Saves || !Saves->LoadProgress())return;
+    bStarted=true;bFinished=true;Release();
+    if(Player.IsValid())Player->SetViewTarget(Player->GetPawn());
+}
 void AMiningOpening::StartGame()
 {
     if(!bPrepared || bStarted || bFinished)return;
+    GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->StartNewGame();
     bStarted=true;Elapsed=0;
     if(Menu)Menu->SetVisibility(ESlateVisibility::HitTestInvisible);
     WorldTitle->SetVisibility(false);

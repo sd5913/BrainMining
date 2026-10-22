@@ -1,4 +1,5 @@
 #include "MiningCollection.h"
+#include "Subtitles/SubtitleSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "MiningExperienceSubsystem.h"
 #include "Subtitles/SubtitleLibrary.h"
@@ -402,9 +403,12 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         if(SelectedId==INDEX_NONE){const auto Ids=CatalogueIds();if(!Ids.IsEmpty())SelectedId=Ids[0];}
         SelectItem(SelectedId);
         if(CatalogueWidget)CatalogueWidget->RevealCollection();
+        if(UniqueCount()==0)if(auto* Subtitles=USubtitleSubsystem::Get(this))
+            Subtitles->PlayInteractionLines(TEXT("EmptyCollection"),{FText::FromString(TEXT("挖掘就能找到灵感啦~"))});
     }
     else
     {
+        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->StopInteraction(TEXT("EmptyCollection"));
         Player->SetPause(false); Player->ResetIgnoreLookInput(); Player->ResetIgnoreMoveInput();
         Player->GetPawn()->EnableInput(Player); Player->bShowMouseCursor=false; Player->SetInputMode(FInputModeGameOnly());
         if(CatalogueWidget)CatalogueWidget->SetVisibility(ESlateVisibility::Collapsed);

@@ -2,6 +2,10 @@
 #include "MiningAudioComponent.h"
 #include "BrainMiningCharacter.h"
 #include "Components/LightComponent.h"
+#include "Components/LocalLightComponent.h"
+#include "Components/WidgetComponent.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "NiagaraComponent.h"
 #include "Showcase/SMiningCampaignMap.h"
 #include "MiningProgressionComponent.h"
 #include "Showcase/MiningTreasure.h"
@@ -235,6 +239,33 @@ void AMiningExhibitHall::UpdateActorVisibility()
     {
         auto* Actor=Entry.Actor.Get(); if(!Actor) continue;
         const bool bActive=Entry.Area==ActiveArea;
+        const bool bFar=bContinuousCampaign && ActiveArea!=INDEX_NONE && Entry.Area!=INDEX_NONE && FMath::Abs(Entry.Area-ActiveArea)>1;
+        if(bFar && !Entry.bEffectsSuspended)
+        {
+            TArray<USceneComponent*> Components;Actor->GetComponents(Components);
+            for(auto* Component:Components)
+            {
+                auto* FX=Cast<UNiagaraComponent>(Component);
+                auto* Capture=Cast<USceneCaptureComponent2D>(Component);
+                if(!FX && !Capture && !Component->IsA<UWidgetComponent>() && !Component->IsA<ULocalLightComponent>())continue;
+                FEffectState State;State.Component=Component;State.bTick=Component->IsComponentTickEnabled();State.bVisible=Component->IsVisible();
+                if(FX){State.bPaused=FX->IsPaused();FX->SetPaused(true);}
+                if(Capture){State.bCapture=Capture->bCaptureEveryFrame;Capture->bCaptureEveryFrame=false;}
+                Component->SetComponentTickEnabled(false);Component->SetVisibility(false);
+                Entry.Effects.Add(State);
+            }
+            Entry.bEffectsSuspended=true;
+        }
+        else if(!bFar && Entry.bEffectsSuspended)
+        {
+            for(const auto& State:Entry.Effects)if(auto* Component=State.Component.Get())
+            {
+                Component->SetComponentTickEnabled(State.bTick);Component->SetVisibility(State.bVisible);
+                if(auto* FX=Cast<UNiagaraComponent>(Component))FX->SetPaused(State.bPaused);
+                if(auto* Capture=Cast<USceneCaptureComponent2D>(Component))Capture->bCaptureEveryFrame=State.bCapture;
+            }
+            Entry.Effects.Reset();Entry.bEffectsSuspended=false;
+        }
         if(!bActive && !Entry.bSuspended)
         {
             Entry.bHidden=Actor->IsHidden(); Entry.bTick=Actor->IsActorTickEnabled();

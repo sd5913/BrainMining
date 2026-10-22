@@ -191,4 +191,11 @@ protected:
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> PickaxeRequirementCounts;
 	UPROPERTY(Transient) TArray<TObjectPtr<UImage>> PickaxeRequirementIcons;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> PickaxeUpgradeHint;
+    void RefreshTutorial(float DeltaSeconds);
+    UPROPERTY(Transient) TObjectPtr<UCanvasPanel> TutorialPanel;
+    UPROPERTY(Transient) TObjectPtr<UImage> TutorialBackplate;
+    UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> TutorialRows;
+    float TutorialAge=0;
+    float TutorialDoneAge[5]={0,0,0,0,0};
+    int32 DisplayedPrototype=1;
 };

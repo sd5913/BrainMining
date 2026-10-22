@@ -148,6 +148,7 @@ void APopupOfficeDevice::BuildModel()
 void APopupOfficeDevice::BeginPlay()
 {
  Super::BeginPlay();BuildModel();Pool.Reserve(102);PaperStack->ClearInstances();
+ Surface->SetRedrawTime(.2f);
  if(auto PC=GetWorld()->GetFirstPlayerController())
  {
   WarningUI=CreateWidget<UPopupCloseWarningWidget>(PC);WarningUI->SetVisibility(ESlateVisibility::HitTestInvisible);Warning->SetDrawSize(FVector2D(80,110));Warning->SetWidget(WarningUI);
@@ -169,6 +170,10 @@ void APopupOfficeDevice::BeginPlay()
 void APopupOfficeDevice::Tick(float DeltaSeconds)
 {
  Super::Tick(DeltaSeconds);
+ // Projected screens need offscreen ticks, but only the focused desktop needs full refresh.
+ const auto* Viewer=GetWorld()->GetFirstPlayerController();
+ const bool Focused=Viewer && Viewer->GetViewTarget()==this;
+ Surface->SetRedrawTime(Focused?0.f:(IsHidden()?2.f:.2f));
  if(Desktop && ScreenProjectionMaterial && Surface->GetRenderTarget())
  {
   if(!ProjectedDesktop)
@@ -176,7 +181,8 @@ void APopupOfficeDevice::Tick(float DeltaSeconds)
    ProjectedDesktop=UMaterialInstanceDynamic::Create(ScreenProjectionMaterial,this);
    ArtShell->SetMaterial(1,ProjectedDesktop);
   }
-  ProjectedDesktop->SetTextureParameterValue(TEXT("DesktopTexture"),Surface->GetRenderTarget());
+  if(ProjectedDesktop->K2_GetTextureParameterValue(TEXT("DesktopTexture"))!=Surface->GetRenderTarget())
+   ProjectedDesktop->SetTextureParameterValue(TEXT("DesktopTexture"),Surface->GetRenderTarget());
  }
  if(!WarningUI || !Warning->IsVisible())return;
  auto PC=GetWorld()->GetFirstPlayerController();if(!PC)return;

@@ -13,6 +13,7 @@
 #include "InputKeyEventArgs.h"
 #include "StartRoom/MiningOpening.h"
 #include "Subtitles/SubtitleLibrary.h"
+#include "Subtitles/SubtitleSubsystem.h"
 #include "DiggableRock.h"
 #include "Components/LightComponent.h"
 #include "Components/MeshComponent.h"
@@ -213,7 +214,21 @@ bool AMiningStartRoom::Interact(APlayerController* Controller)
     if(!Pickup && Controller && !Controller->bShowMouseCursor)
     {
         const FName Segment=GetViewedProp(Controller);
-        if(!Segment.IsNone()){USubtitleLibrary::PlaySubtitleSegment(this,Segment);return true;}
+        if(!Segment.IsNone())
+        {
+            TArray<FText> Lines;
+            const auto Add=[&](const TCHAR* Text){Lines.Add(FText::FromString(Text));};
+            if(Segment==TEXT("StartRoomView_Computer"))Add(TEXT("这次gamejam的主题是“涌现”。嗯……得想一想……"));
+            else if(Segment==TEXT("StartRoomView_Book")){Add(TEXT("想到好的点子就记下来吧！"));Add(TEXT("按C可以查看灵感藏品"));}
+            else if(Segment==TEXT("StartRoomView_BookLeft"))Add(TEXT("纸上得来终觉浅"));
+            else if(Segment==TEXT("StartRoomView_BookRight"))Add(TEXT("绝知此事要躬行！"));
+            else if(Segment==TEXT("StartRoomView_Plant"))Add(TEXT("别转悠啦！这里只是休息室，该出门开开脑洞了！"));
+            else if(Segment==TEXT("StartRoomView_Toilet"))Add(TEXT("谢谢你。"));
+            else if(Segment==TEXT("StartRoomView_Robot"))Add(TEXT("你好。"));
+            else if(Segment==TEXT("StartRoomView_Pear"))Add(TEXT("哦！美味被你发现~"));
+            if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayInteractionLines(Segment,Lines);
+            return true;
+        }
     }
     if (!Pickup || Controller->bShowMouseCursor) return false;
     if (Pickup->Equipment == EMiningStarterEquipment::Pickaxe)
@@ -235,6 +250,24 @@ bool AMiningStartRoom::Interact(APlayerController* Controller)
     if (auto* Audio = Controller->GetPawn()->FindComponentByClass<UMiningAudioComponent>())
         Audio->PlayStarterPickup(Pickup->Equipment == EMiningStarterEquipment::Jetpack);
     return true;
+}
+
+void AMiningStartRoom::RestoreEquipment(bool Pickaxe, bool Jetpack, bool Headlamp)
+{
+    if(Pickaxe)UnlockDeveloperPickaxe();
+    if(Jetpack)
+    {
+        if(bOwnFlightBlock && Flight.IsValid()){Flight->PopFlightBlock();bOwnFlightBlock=false;}
+        bJetpackUnlocked=true;
+        for(TActorIterator<AMiningStarterPickup> It(GetWorld());It;++It)
+            if(It->Equipment==EMiningStarterEquipment::Jetpack)It->Collect();
+    }
+    bHeadlampUnlocked=Headlamp;
+    if(Player.IsValid())
+    {
+        TArray<ULightComponent*> Lights;Player->GetComponents(Lights);
+        for(auto* Light:Lights)if(Light->GetFName()==TEXT("MiningLight")||Light->GetFName()==TEXT("MiningFillLight"))Light->SetVisibility(Headlamp);
+    }
 }
 
 void AMiningStartRoom::UnlockDeveloperPickaxe()

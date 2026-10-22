@@ -15,6 +15,7 @@
 #include "BrainMiningFonts.h"
 #include "MiningMenuStyle.h"
 #include "MiningAudioSettings.h"
+#include "Camera/CameraComponent.h"
 #include "MiningAudioComponent.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -180,6 +181,8 @@ void ABrainMiningPlayerController::SetMiningGUIEnabled(bool bEnabled)
 void ABrainMiningPlayerController::PlayerTick(float DeltaTime)
 {
     Super::PlayerTick(DeltaTime);
+    if(GetPawn()) if(auto* Camera=GetPawn()->FindComponentByClass<UCameraComponent>())
+        if(auto* Settings=GetGameInstance()->GetSubsystem<UMiningAudioSettings>())Camera->SetFieldOfView(Settings->GetFieldOfView());
     const auto* Cards = FindComponentByClass<UCardRoomInteractionComponent>();
     const bool bInCards = Cards && Cards->bRoomActive && Cards->Stage
         && Cards->Stage->Run.Phase != ECardRoomPhase::Exploring
@@ -821,6 +824,9 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
     SliderRow(TEXT("镜头移动"),TAttribute<float>::CreateLambda([WeakSettings](){return WeakSettings.IsValid()?(WeakSettings->GetLookSensitivity()-.2f)/2.8f:2.f/7.f;}),
         TAttribute<FText>::CreateLambda([WeakSettings](){return FText::FromString(FString::Printf(TEXT("%.2f ×"),WeakSettings.IsValid()?WeakSettings->GetLookSensitivity():1.f));}),
         FOnFloatValueChanged::CreateLambda([WeakSettings](float Value){if(WeakSettings.IsValid())WeakSettings->SetLookSensitivity(.2f+Value*2.8f);}));
+    SliderRow(TEXT("视野 FOV"),TAttribute<float>::CreateLambda([WeakSettings](){return WeakSettings.IsValid()?(WeakSettings->GetFieldOfView()-80.f)/35.f:20.f/35.f;}),
+        TAttribute<FText>::CreateLambda([WeakSettings](){return FText::AsNumber(FMath::RoundToInt(WeakSettings.IsValid()?WeakSettings->GetFieldOfView():100.f));}),
+        FOnFloatValueChanged::CreateLambda([WeakSettings](float Value){if(WeakSettings.IsValid())WeakSettings->SetFieldOfView(80.f+Value*35.f);}));
     if(auto* Haptics=UMiningHapticsSubsystem::Find(this))Rows->AddSlot().AutoHeight()[Haptics->MakeSettingsWidget()];
     auto Page=SNew(SVerticalBox)
         +SVerticalBox::Slot().FillHeight(1.f)[SNew(SScrollBox).ScrollWhenFocusChanges(EScrollWhenFocusChanges::InstantScroll)+SScrollBox::Slot()[Rows]]

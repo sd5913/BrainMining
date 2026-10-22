@@ -49,6 +49,7 @@ void AMiningTreasureField::SpawnAuthored()
         {UE_LOG(LogTemp,Error,TEXT("Invalid campaign mineral placement %s"),*Placement.TreasureId.ToString());continue;}
         FActorSpawnParameters Params;Params.Owner=this;
         auto* Item=GetWorld()->SpawnActor<AMiningTreasure>(Placement.Transform.GetLocation(),Placement.Transform.Rotator(),Params);
+        Item->SavePlacementIndex=PlacementIndex;
         Item->Tags.Add(Placement.AreaTag);Item->Tags.Add(TEXT("CampaignMineral"));
         Item->CoveringRocks=Placement.Hosts;
         if(bDeferAreas)

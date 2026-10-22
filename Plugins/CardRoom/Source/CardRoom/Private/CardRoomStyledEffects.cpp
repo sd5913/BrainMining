@@ -50,7 +50,7 @@ void ACardRoomStage::TickStyledEffects()
     auto* Camera=UGameplayStatics::GetPlayerCameraManager(this,0);
     const FVector Eye=Camera?GetActorTransform().InverseTransformPosition(Camera->GetCameraLocation()):Muzzle;
     const FLinearColor Cyan(.06f,.62f,1.f),Amber(1.f,.28f,.045f),Cream(1.f,.75f,.32f);
-    if(!Resolve || StyledRound!=Run.Round || T<StyledLastTime)
+    if((!Resolve && StyledFired!=0) || StyledRound!=Run.Round || T<StyledLastTime)
     {
         for(int32 I=0;I<StyledFX.Num();++I)if(I!=5 && I!=12)StyledFX[I]->DeactivateImmediate();
         StyledFired=0;StyledRound=Run.Round;
@@ -105,9 +105,9 @@ void ACardRoomStage::TickStyledEffects()
             }
             else if(!(Resolve && Run.Round==3) && Now>=StyledPoisonRefreshAt)
             {
-                // Overlap the authored one-shot clouds, replenishing smoke
-                // throughout an arbitrarily long wait for the player's action.
+                // Recycle one cloud at a time to bound translucent overdraw during long turns.
                 auto* Next=bStyledPoisonAlternate?Sustain:Poison;
+                (bStyledPoisonAlternate?Poison:Sustain)->DeactivateImmediate();
                 Next->Activate(true);
                 for(FName Name:{FName(TEXT("spark")),FName(TEXT("impact")),FName(TEXT("spark_l")),FName(TEXT("refr"))})Next->SetEmitterEnable(Name,false);
                 bStyledPoisonAlternate=!bStyledPoisonAlternate;StyledPoisonRefreshAt=Now+1.8f;
@@ -170,9 +170,9 @@ void ACardRoomStage::TickStyledEffects()
         {
             // Ignite the volume around the robot in a quick outward succession,
             // rather than replacing the entire poison cloud with one impact.
-            for(int32 I=0;I<6;++I)
+            for(int32 I=0;I<3;++I)
             {
-                const float Angle=I*PI/3.f;
+                const float Angle=I*2.f*PI/3.f;
                 const FVector Spread(18*S,FMath::Cos(Angle)*72*S,FMath::Sin(Angle)*62*S);
                 Fire(6+I,1.04f+I*.055f,Target+Spread,.60f,Amber);
             }
@@ -218,7 +218,7 @@ void ACardRoomStage::TickStyledEffects()
                 Energy(Trails[I],W,FVector((T<.65f?.32f:.55f)*(1-I/25.f)*S),CardColor,.85f);
             }
         }
-        Fire(2,1.f,Impact,7.f,Cyan);
+        Fire(2,1.f,Impact,3.5f,Cyan);
         if(T>=1.f && T<2.6f)
         {
             const float A=(T-1.f)/1.6f;

@@ -95,6 +95,8 @@ $requiredAssets = @(
     'CollectionPrototype/Materials/M_CollectionFireflyHalo.uasset',
     'Passages/Echo/ArtP2/VFX/NS_P2_Poison.uasset',
     'Rooms/CardDuel/Materials/PoisonBurn/M_Smoke_2.uasset',
+    'MainGame/Materials/M_BombWallIcon.uasset',
+    'MainGame/UI/T_BombWallIcon.uasset',
     'MainGame/UI/T_MainGameTitle.uasset',
     'MainGame/UI/T_MainGameStart.uasset',
     'MainGame/UI/T_MainGameExit.uasset',

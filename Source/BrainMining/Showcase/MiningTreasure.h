@@ -64,6 +64,7 @@ class BRAINMINING_API AMiningTreasure : public AActor
     GENERATED_BODY()
 public:
     AMiningTreasure();
+    int32 SavePlacementIndex=INDEX_NONE;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<UBoxComponent> DropBody;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Model;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UPointLightComponent> GlowLight;

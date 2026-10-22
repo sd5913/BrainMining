@@ -22,6 +22,12 @@ public:
 	// Time-sensitive gameplay status uses the same subtitle widget and styling.
 	UFUNCTION(BlueprintCallable, Category="字幕")
 	void PlayStatusLine(FText Text, float Duration);
+	// Immediate interaction feedback replaces older interaction lines without a queue.
+	void PlayInteractionLines(FName Id, const TArray<FText>& Lines);
+	void StopInteraction(FName Id);
+	bool IsPlaying() const { return bPlaying; }
+    UFUNCTION(BlueprintPure) FText GetActiveText() const;
+    UFUNCTION(BlueprintPure) int32 GetPendingSegmentCount() const { return Queue.Num(); }
 
 	UFUNCTION(BlueprintCallable, Category="字幕")
 	void StopAll();

@@ -26,10 +26,13 @@ public:
     void SaveVolumes(const FString& Filename) const;
     void Save() const;
     float GetLookSensitivity() const { return LookSensitivity; }
+    float GetFieldOfView() const { return FieldOfView; }
+    void SetFieldOfView(float Value) { if(FMath::IsFinite(Value)) FieldOfView=FMath::Clamp(Value,80.f,115.f); }
     void SetLookSensitivity(float Value) { if (FMath::IsFinite(Value)) LookSensitivity=FMath::Clamp(Value,.2f,3.f); }
     USoundClass* GetClass(int32 Channel) const;
 private:
     float LookSensitivity=1.f;
+    float FieldOfView=100.f;
     void Apply();
     TArray<float> Volumes = {1.f, 1.f, .85f, .8f, 1.f};
     UPROPERTY(Transient) TArray<TObjectPtr<USoundClass>> Classes;

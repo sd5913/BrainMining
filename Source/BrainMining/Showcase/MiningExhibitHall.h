@@ -102,7 +102,18 @@ public:
     bool IsMuseumSkipChordCandidate() const;
     UFUNCTION(BlueprintPure, Category="Museum") float GetMuseumSkipProgress() const { return bMuseumSkipTriggered?0.f:FMath::Clamp(MuseumSkipHoldSeconds/3.f,0.f,1.f); }
     static AMiningExhibitHall* Find(UWorld* World);
+public:
+    const TSet<int32>& GetCompletedAreas() const { return CompletedAreas; }
+    void RestoreCompletedAreas(const TSet<int32>& AreasToRestore) { CompletedAreas=AreasToRestore; }
 private:
+    struct FEffectState
+    {
+        TWeakObjectPtr<class USceneComponent> Component;
+        bool bTick=false;
+        bool bVisible=false;
+        bool bPaused=false;
+        bool bCapture=false;
+    };
     struct FAreaActor
     {
         TWeakObjectPtr<AActor> Actor;
@@ -112,6 +123,8 @@ private:
         bool bSuspended = false;
         TArray<TPair<TWeakObjectPtr<UPostProcessComponent>, bool>> PostProcesses;
         bool bVolumeEnabled = false;
+        bool bEffectsSuspended=false;
+        TArray<FEffectState> Effects;
     };
     TArray<FAreaActor> ManagedActors;
     TArray<TWeakObjectPtr<AActor>> PendingActors;

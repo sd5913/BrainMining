@@ -598,7 +598,7 @@ bool UMiningGUIEditorLibrary::UpdateEndingCreditsFeedback()
     {Slot->SetPosition(FVector2D(270,621));Slot->SetSize(FVector2D(1060,48));}
     if(!BP->WidgetVariableNameToGuidMap.Contains(Thanks->GetFName()))
         BP->WidgetVariableNameToGuidMap.Add(Thanks->GetFName(),FGuid::NewGuid());
-    Thanks->SetText(FText::FromString(TEXT("感谢游玩！")));Thanks->SetJustification(ETextJustify::Center);
+    Thanks->SetText(FText::FromString(TEXT("恭喜你挖出来了！《挖哦》也因此诞生！感谢游玩！")));Thanks->SetJustification(ETextJustify::Center);
     auto* Font=LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_CreditsBilingual"));if(!Font)return false;
     Thanks->SetFont(FSlateFontInfo(Font,27,TEXT("Regular")));
     Thanks->SetColorAndOpacity(FSlateColor(FLinearColor(.96f,.95f,.92f)));Thanks->SetRenderOpacity(0);

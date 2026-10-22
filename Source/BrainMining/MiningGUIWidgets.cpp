@@ -1,4 +1,5 @@
 #include "MiningGUIWidgets.h"
+#include "MiningSaveSubsystem.h"
 #include "StartRoom/MiningStartRoom.h"
 #include "BrainMiningFonts.h"
 #include "MiningGamepadSubsystem.h"
@@ -451,6 +452,7 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 	Scale(PlusContent, PlusSpring.Value);
 	PanelSpring.Step(DeltaTime, PanelSpringStiffness, PanelSpringDamping);
 	if (bMineralProgression) RefreshMineralProgression();
+    RefreshTutorial(DeltaTime);
 	if (UpgradePanel && !bMineralProgression)
 	{
 		const float Progress = PanelSpring.Value;
@@ -630,4 +632,59 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
     const bool bReady = Progression->CanUpgradePickaxe();
     SetText(PickaxeUpgradeHint, FText::FromString(Level >= 4 ? TEXT("已满级") : (UMiningGamepadSubsystem::UsesGamepad(GetOwningPlayer()) ? TEXT("[ LT ] 升级") : TEXT("[ Tab ] 升级"))));
     PickaxeUpgradeHint->SetColorAndOpacity(bReady ? FLinearColor(.42f,.95f,.65f) : FLinearColor(.82f,.85f,.83f));
+}
+
+void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
+{
+    auto* Saves=GetGameInstance()?GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>():nullptr;
+    if(!Saves || !Saves->TutorialActive || !MineralPanel)return;
+    if(!TutorialPanel)
+    {
+        TutorialPanel=WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("GuidancePanel"));
+        TutorialPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
+        auto* PanelSlot=MineralPanel->AddChildToCanvas(TutorialPanel);
+        PanelSlot->SetPosition(FVector2D(24,184));PanelSlot->SetSize(FVector2D(300,182));
+        TutorialPanel->SetRenderShear(FVector2D(0,2));
+        TutorialBackplate=WidgetTree->ConstructWidget<UImage>();
+        auto* PlateSlot=TutorialPanel->AddChildToCanvas(TutorialBackplate);
+        PlateSlot->SetSize(FVector2D(300,182));PlateSlot->SetZOrder(-1);
+        TutorialBackplate->SetBrushFromMaterial(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/UI/MiningGUI/Immersive/MI_UpgradeBackplate")));
+        if(auto* M=TutorialBackplate->GetDynamicMaterial())
+        {M->SetVectorParameterValue(TEXT("PanelSize"),FLinearColor(300,182,0,0));M->SetScalarParameterValue(TEXT("OuterSide"),0);M->SetScalarParameterValue(TEXT("BackdropOpacity"),.58f);}
+        for(int32 I=0;I<5;++I)
+        {
+            auto* Label=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),*FString::Printf(TEXT("GuidanceRow%d"),I));
+            Label->SetFont(BrainMiningFonts::Body(18));Label->SetShadowOffset(FVector2D(0,1));Label->SetShadowColorAndOpacity(FLinearColor(0,0,0,.45f));
+            auto* RowSlot=TutorialPanel->AddChildToCanvas(Label);RowSlot->SetSize(FVector2D(275,28));
+            TutorialRows.Add(Label);
+        }
+        // A continued game only displays the next outstanding prototype.
+        DisplayedPrototype=FMath::Clamp(Saves->PrototypesFound+1,1,5);
+    }
+    TutorialAge+=Dt;
+    const TCHAR* Basic[]={TEXT("挖到1个铜矿"),TEXT("挖到1个铁矿"),TEXT("升级1次矿镐"),TEXT("找到1个灵感藏品")};
+    const TCHAR* Prototype[]={TEXT("发现1个灵感原型"),TEXT("发现第2个灵感原型"),TEXT("发现第三个灵感原型"),TEXT("发现第4个灵感原型")};
+    int32 VisibleRows=0;
+    for(int32 I=0;I<5;++I)
+    {
+        auto* Row=TutorialRows[I].Get();
+        const bool Done=I<4?(Saves->TutorialCompleted&(1<<I))!=0:Saves->PrototypesFound>=DisplayedPrototype;
+        if(Done)TutorialDoneAge[I]+=Dt;
+        if(I==4 && TutorialDoneAge[I]>1.4f && DisplayedPrototype<5)
+        {++DisplayedPrototype;TutorialDoneAge[I]=0;TutorialAge=0;}
+        const bool Hidden=I<4?TutorialDoneAge[I]>1.4f:DisplayedPrototype>4;
+        Row->SetVisibility(Hidden?ESlateVisibility::Collapsed:ESlateVisibility::HitTestInvisible);
+        if(Hidden)continue;
+        const bool Checked=I<4?Done:Saves->PrototypesFound>=DisplayedPrototype;
+        Row->SetText(FText::FromString(FString(Checked?TEXT("✓  "):TEXT("·  "))+(I<4?Basic[I]:Prototype[DisplayedPrototype-1])));
+        Row->SetColorAndOpacity(Checked?FLinearColor(.42f,.95f,.66f):FLinearColor(.94f,.95f,.92f));
+        Row->SetRenderOpacity(Checked?FMath::Clamp((1.4f-TutorialDoneAge[I])/.4f,0.f,1.f):1.f);
+        CastChecked<UCanvasPanelSlot>(Row->Slot)->SetPosition(FVector2D(16,14+VisibleRows*31));++VisibleRows;
+    }
+    TutorialPanel->SetVisibility(VisibleRows?ESlateVisibility::HitTestInvisible:ESlateVisibility::Collapsed);
+    // Three gentle pulses draw attention without obscuring gameplay.
+    TutorialPanel->SetRenderOpacity(TutorialAge<2.4f?.70f+.30f*FMath::Cos(TutorialAge*2.f*PI/.8f):1.f);
+    const float Height=28+VisibleRows*31;
+    CastChecked<UCanvasPanelSlot>(TutorialBackplate->Slot)->SetSize(FVector2D(300,Height));
+    if(auto* M=TutorialBackplate->GetDynamicMaterial())M->SetVectorParameterValue(TEXT("PanelSize"),FLinearColor(300,Height,0,0));
 }

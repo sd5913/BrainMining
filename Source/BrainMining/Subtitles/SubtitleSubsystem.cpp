@@ -69,7 +69,7 @@ void USubtitleSubsystem::PlaySegment(FName SegmentId)
 
 	if (bPlaying)
 	{
-		Queue.Add(SegmentId);
+		if (!ActiveSegment || ActiveSegment->SegmentId != SegmentId) Queue.AddUnique(SegmentId);
 		return;
 	}
 
@@ -80,6 +80,27 @@ void USubtitleSubsystem::PlaySegment(FName SegmentId)
 		return;
 	}
 	StartSegment(Segment);
+}
+
+void USubtitleSubsystem::PlayInteractionLines(FName Id, const TArray<FText>& Lines)
+{
+    if (!GetWorld() || SuppressedWorld.Get()==GetWorld() || Lines.IsEmpty()) return;
+    if (bPlaying && ActiveSegment && ActiveSegment->SegmentId==Id) return;
+    StopAll();
+    auto* Segment=NewObject<USubtitleSegment>(this);
+    Segment->SegmentId=Id;
+    for (const FText& Text:Lines) Segment->Lines.AddDefaulted_GetRef().Text=Text;
+    StartSegment(Segment);
+}
+
+void USubtitleSubsystem::StopInteraction(FName Id)
+{
+    if(ActiveSegment && ActiveSegment->SegmentId==Id)StopAll();
+}
+
+FText USubtitleSubsystem::GetActiveText() const
+{
+    return ActiveSegment && ActiveSegment->Lines.IsValidIndex(LineIndex) ? ActiveSegment->Lines[LineIndex].Text : FText::GetEmpty();
 }
 
 void USubtitleSubsystem::PlayStatusLine(FText Text, float Duration)
@@ -160,7 +181,7 @@ void USubtitleSubsystem::EnsureWidget()
 	}
 
 	Widget->SetVisibility(ESlateVisibility::HitTestInvisible);
-	Widget->AddToViewport(40);
+	Widget->AddToViewport(90);
 	Widget->SetAnchorsInViewport(FAnchors(0.f, 0.f, 1.f, 1.f));
 	Widget->SetAlignmentInViewport(FVector2D::ZeroVector);
 }

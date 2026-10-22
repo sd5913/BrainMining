@@ -96,7 +96,7 @@ def run():
  check(H.prepare_ending_credits_preview(pc,[1]*12),'Open real ending credits');yield 4
  ui=H.read_preview_object(d,'CreditsWidget');group=H.read_preview_object(ui,'TextGroup');names=H.read_preview_object(ui,'Contributors');thanks=H.read_preview_object(ui,'ThankYou');prompt=H.read_preview_object(ui,'Prompt')
  check(names and thanks and prompt,'All late credits elements bind to the editable widget');check(group.get_render_opacity()>.99 and names.get_render_opacity()==0 and thanks.get_render_opacity()==0 and prompt.get_render_opacity()==0,'Quote appears alone before the credits delay');shot('08_quote_alone')
- check(str(thanks.get_text())=='感谢游玩！','Separate thank-you line uses the requested text')
+ check(str(thanks.get_text())=='恭喜你挖出来了！《挖哦》也因此诞生！感谢游玩！','Separate thank-you line uses the requested text')
  check(thanks.slot.get_position().y+thanks.slot.get_size().y<names.slot.get_position().y,'Thank-you line is above the developers')
  for prop,limit in [('AuthorChinese',29),('AuthorEnglish',30)]:check(next(o for o in unreal.ObjectIterator(unreal.TextBlock) if o.get_name()==prop and o.get_path_name().startswith(ui.get_path_name())).get_editor_property('font').size==limit,'Smaller attribution '+prop)
  yield 5

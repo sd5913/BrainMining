@@ -25,7 +25,7 @@ void UEndingCreditsWidget::NativeConstruct()
         Contributors->SetVisibility(ESlateVisibility::HitTestInvisible);
         Contributors->SetRenderOpacity(0);
     }
-    if(ThankYou)ThankYou->SetRenderOpacity(0);
+    if(ThankYou){ThankYou->SetText(FText::FromString(TEXT("恭喜你挖出来了！《挖哦》也因此诞生！感谢游玩！")));ThankYou->SetRenderOpacity(0);}
     if(Prompt)Prompt->SetRenderOpacity(0);
 }
 

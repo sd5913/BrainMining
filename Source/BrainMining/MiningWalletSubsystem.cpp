@@ -1,5 +1,7 @@
 #include "MiningWalletSubsystem.h"
 #include "Engine/World.h"
+#include "Engine/GameInstance.h"
+#include "MiningSaveSubsystem.h"
 
 bool UMiningWalletSubsystem::UsesMineralInventory() const
 {
@@ -16,6 +18,7 @@ bool UMiningWalletSubsystem::AddMineral(FName TreasureId, int32 Amount)
     else return false;
     if (Amount <= 0 || GetMineralCount(Mineral) > MAX_int32 - Amount) return false;
     Minerals.FindOrAdd(Mineral) += Amount;
+    if(auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>())Saves->RecordMineral(Mineral);
     return true;
 }
 

@@ -1,4 +1,5 @@
 #include "MiningComponent.h"
+#include "Subtitles/SubtitleSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "DiggableRock.h"
 #include "GeneratedMiningRock.h"
@@ -128,6 +129,13 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 	if (!IsValid(Rock) || !Hit.bBlockingHit || Hit.ImpactPoint.ContainsNaN() || Hit.ImpactNormal.ContainsNaN() ||
 		Hit.ImpactNormal.IsNearlyZero() || bDrillMode || bInputSuspended || IsEncounterBlocked()) return false;
 	if(Rock->ActorHasTag(TEXT("CardEscapeTelevision")))return MineTelevision(Hit);
+	if (Rock->ActorHasTag(TEXT("BM_BombOnly")))
+	{
+		if(auto* Subtitles=USubtitleSubsystem::Get(this))
+            Subtitles->PlayInteractionLines(TEXT("BombWallHint"),{FText::FromString(TEXT("这堵墙很硬，用炸弹试试"))});
+		Status.Empty();
+		TargetPickaxeHits = 0; bLastPickaxeBreak = false; return false;
+	}
 	if (Rock->IsTerrainCutPending())
 	{
 		Status = TEXT("Rock is breaking");
@@ -140,14 +148,6 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 			Status = TEXT("This segment is not available for mining");
 			return false;
 		}
-	}
-	if (Rock->ActorHasTag(TEXT("BM_BombOnly")))
-	{
-		// Bomb-only layers deliberately stay silent under the mouse reticle.
-		// Showing a mining failure prompt makes the cursor look actionable and
-		// competes with the bomb interaction prompt.
-		Status.Empty();
-		TargetPickaxeHits = 0; bLastPickaxeBreak = false; return false;
 	}
 	if (GetPickaxeDepthMultiplier(Rock)<=0)
 	{

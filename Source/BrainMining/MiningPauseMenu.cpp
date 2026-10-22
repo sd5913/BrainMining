@@ -1,4 +1,6 @@
 #include "MiningExperienceSubsystem.h"
+#include "MiningSaveSubsystem.h"
+#include "Subtitles/SubtitleSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "MiningMenuStyle.h"
 #include "EndingEmergence.h"
@@ -91,9 +93,15 @@ bool UMiningExperienceSubsystem::TogglePauseMenu(bool bFromCredits)
         if(Controller)Controller->ToggleAudioSettings();
     },false);
     AudioButton->SetEnabled(bFromGameplay&&Cast<ABrainMiningPlayerController>(PC)!=nullptr);
+    auto SaveButton=Button(TEXT("保存进度"),[this](){
+        const bool Saved=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->SaveProgress();
+        CloseMenu();
+        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayInteractionLines(TEXT("SaveResult"),{FText::FromString(Saved?TEXT("进度已保存"):TEXT("当前暂时无法保存，请回到探索状态后重试"))});
+    },false);
+    SaveButton->SetEnabled(bFromGameplay && GetWorld()->GetMapName().EndsWith(TEXT("Lvl_MainGame")));
     Button(TEXT("退出游戏"),[this](){RequestQuitConfirmation();},false);
     CancelQuitButton=Button(TEXT("取消"),[this](){CancelQuitConfirmation();},true);
-    Button(TEXT("确认退出"),[this](){auto* PC=MenuController.Get();CloseMenu();UKismetSystemLibrary::QuitGame(this,PC,EQuitPreference::Quit,false);},true);
+    Button(TEXT("确认退出"),[this](){auto* PC=MenuController.Get();GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->SaveProgress();CloseMenu();UKismetSystemLibrary::QuitGame(this,PC,EQuitPreference::Quit,false);},true);
     Menu=MiningMenuStyle::Frame(Choices,650,0);
     PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);bPausedByMenu=!PC->IsPaused()&&PC->SetPause(true);
     Viewport->AddViewportWidgetContent(Menu.ToSharedRef(),1500);

@@ -38,6 +38,7 @@ public:
     static AMiningStartRoom* Find(UWorld* World);
     void InitializePlayer(APawn* Pawn);
     void UnlockDeveloperEquipment();
+    void RestoreEquipment(bool Pickaxe, bool Jetpack, bool Headlamp);
     void UnlockDeveloperPickaxe();
     UFUNCTION(BlueprintCallable, Category="Start Room") bool Interact(APlayerController* Controller);
     UFUNCTION(BlueprintPure, Category="Start Room") AMiningStarterPickup* GetTarget(APlayerController* Controller) const;

@@ -147,6 +147,7 @@ protected:
 	virtual void InitializeForPlay() override;
 
 private:
+    friend class UMiningSaveSubsystem;
 	bool bRuntimeInitializationEnabled = false;
 	FBox RuntimeChunkBounds = FBox(ForceInit);
 	UPROPERTY(Transient)

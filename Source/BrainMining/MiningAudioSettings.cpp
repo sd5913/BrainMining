@@ -1,5 +1,6 @@
 #include "MiningAudioSettings.h"
 #include "Engine/World.h"
+#include "GameFramework/GameUserSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Misc/Paths.h"
@@ -17,6 +18,13 @@ void UMiningAudioSettings::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
     LoadVolumes(AudioSettingsFile());
+#if PLATFORM_WINDOWS
+    if(auto* Graphics=UGameUserSettings::GetGameUserSettings();Graphics && Graphics->GetFrameRateLimit()<=0)
+    {
+        Graphics->SetFrameRateLimit(60.f);
+        Graphics->ApplyNonResolutionSettings();
+    }
+#endif
     for (int32 Channel = 1; Channel < 5; ++Channel)
         Classes.Add(LoadObject<USoundClass>(nullptr, *FString::Printf(TEXT("/Game/Audio/Mix/SC_%s.SC_%s"), ChannelNames[Channel], ChannelNames[Channel])));
     Mix = LoadObject<USoundMix>(nullptr, TEXT("/Game/Audio/Mix/SM_Player.SM_Player"));
@@ -32,12 +40,14 @@ void UMiningAudioSettings::SetVolume(int32 Channel, float Value)
     Apply();
 }
 
-void UMiningAudioSettings::RestoreDefaults() { Volumes = {1.f, 1.f, .85f, .8f, 1.f}; LookSensitivity=1.f; Apply(); }
+void UMiningAudioSettings::RestoreDefaults() { Volumes = {1.f, 1.f, .85f, .8f, 1.f}; LookSensitivity=1.f; FieldOfView=100.f; Apply(); }
 
 void UMiningAudioSettings::LoadVolumes(const FString& Filename)
 {
     FConfigFile Config;
     Config.Read(Filename);
+    float Fov=100.f;
+    if(Config.GetFloat(TEXT("BrainMining.Controls"),TEXT("FieldOfView"),Fov)) SetFieldOfView(Fov);
     float Sensitivity=1.f;
     if(Config.GetFloat(TEXT("BrainMining.Controls"),TEXT("LookSensitivity"),Sensitivity)) SetLookSensitivity(Sensitivity);
     for (int32 Channel = 0; Channel < 5; ++Channel)
@@ -53,6 +63,7 @@ void UMiningAudioSettings::SaveVolumes(const FString& Filename) const
     FConfigFile Config;
     Config.Read(Filename);
     Config.SetFloat(TEXT("BrainMining.Controls"),TEXT("LookSensitivity"),LookSensitivity);
+    Config.SetFloat(TEXT("BrainMining.Controls"),TEXT("FieldOfView"),FieldOfView);
     for (int32 Channel = 0; Channel < 5; ++Channel)
         Config.SetFloat(TEXT("BrainMining.Audio"), ChannelNames[Channel], Volumes[Channel]);
     IFileManager::Get().MakeDirectory(*FPaths::GetPath(Filename), true);

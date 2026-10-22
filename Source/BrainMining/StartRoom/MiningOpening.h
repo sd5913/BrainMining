@@ -30,6 +30,7 @@ public:
     virtual TSharedRef<SWidget> RebuildWidget() override;
     UFUNCTION() void StartGame();
     UFUNCTION() void QuitGame();
+    UFUNCTION() void ContinueGame();
     UPROPERTY(Transient) TObjectPtr<UButton> StartButton;
     UPROPERTY(Transient) TObjectPtr<UButton> ExitButton;
     UPROPERTY(Transient) TObjectPtr<UImage> TitleImage;
@@ -50,6 +51,7 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     UFUNCTION(BlueprintCallable) void StartGame();
+    UFUNCTION(BlueprintCallable) void ContinueSavedGame();
     void BeginTitleToWall(class AMainGameDoor* Door);
     bool HasTitleLanded() const { return bTitleLanded; }
     static bool IsOpening(UWorld* World);

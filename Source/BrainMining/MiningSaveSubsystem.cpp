@@ -45,13 +45,24 @@ namespace
         if(PIE!=INDEX_NONE){const int32 End=Level.Find(TEXT("_"),ESearchCase::CaseSensitive,ESearchDir::FromStart,PIE+7);Level.RemoveAt(PIE,End-PIE+1);}
         return Level+TEXT(":")+Actor->GetName();
     }
+    bool ValidSnapshot(const UMiningSaveGame* Data)
+    {
+        return Data && Data->Version==1 && Data->Upgrades.Num()==4 && Data->Area>=0 &&
+            !Data->PlayerTransform.ContainsNaN() && !Data->ViewRotation.ContainsNaN();
+    }
+    TArray<FString> RecoverySlots()
+    {
+        const FString Slot=GetSaveSlot();
+        // A complete staging write can be newer than the backup after interruption.
+        return {Slot,Slot+TEXT("_pending"),Slot+TEXT("_backup")};
+    }
 }
 
 bool UMiningSaveSubsystem::HasSave() const
 {
-    if(!UGameplayStatics::DoesSaveGameExist(GetSaveSlot(),0))return false;
-    const auto* Data=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(GetSaveSlot(),0));
-    return Data && Data->Version==1 && Data->Upgrades.Num()==4;
+    for(const FString& Slot:RecoverySlots())
+        if(UGameplayStatics::DoesSaveGameExist(Slot,0) && ValidSnapshot(Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(Slot,0))))return true;
+    return false;
 }
 void UMiningSaveSubsystem::StartNewGame()
 {
@@ -109,7 +120,8 @@ bool UMiningSaveSubsystem::SaveProgress()
     // Write a staging slot first; preserve the last working save if writing fails.
     if(!UGameplayStatics::SaveGameToSlot(Data,GetSaveSlot()+TEXT("_pending"),0))return false;
     if(UGameplayStatics::DoesSaveGameExist(GetSaveSlot(),0))
-        if(auto* Previous=UGameplayStatics::LoadGameFromSlot(GetSaveSlot(),0))UGameplayStatics::SaveGameToSlot(Previous,GetSaveSlot()+TEXT("_backup"),0);
+        if(auto* Previous=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(GetSaveSlot(),0));ValidSnapshot(Previous))
+            UGameplayStatics::SaveGameToSlot(Previous,GetSaveSlot()+TEXT("_backup"),0);
     const bool Saved=UGameplayStatics::SaveGameToSlot(Data,GetSaveSlot(),0);
     if(Saved){SaveAge=0;UE_LOG(LogTemp,Display,TEXT("Progress saved: area %d, %d edited meshes"),Data->Area,Data->Meshes.Num());}
     return Saved;
@@ -117,20 +129,28 @@ bool UMiningSaveSubsystem::SaveProgress()
 
 bool UMiningSaveSubsystem::LoadProgress()
 {
-    auto* Data=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(GetSaveSlot(),0));
     auto* Hall=AMiningExhibitHall::Find(GetWorld());
     auto* PC=GetWorld()?GetWorld()->GetFirstPlayerController():nullptr;
-    if(!Data || Data->Version!=1 || Data->Upgrades.Num()!=4 || !Hall || !Hall->bReady || !PC || !PC->GetPawn() ||
-       !Hall->Areas.IsValidIndex(Data->Area) || Data->PlayerTransform.ContainsNaN())return false;
+    if(!Hall || !Hall->bReady || !PC || !PC->GetPawn())return false;
     TMap<FString,ADiggableRock*> Rocks;
     for(TActorIterator<ADiggableRock> It(GetWorld());It;++It)Rocks.Add(RockKey(*It),*It);
-    // Validate references before changing live state.
-    for(const auto& Saved:Data->Meshes)
+    UMiningSaveGame* Data=nullptr;
+    // Validate references before changing live state, including recovery candidates.
+    for(const FString& Slot:RecoverySlots())
     {
-        auto* Rock=Rocks.FindRef(Saved.ActorKey);if(!Rock)return false;
-        if(Saved.Chunk!=INDEX_NONE)
-        {auto* Generated=Cast<AGeneratedMiningRock>(Rock);if(!Generated || !Generated->Chunks.IsValidIndex(Saved.Chunk))return false;}
+        if(!UGameplayStatics::DoesSaveGameExist(Slot,0))continue;
+        auto* Candidate=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(Slot,0));
+        if(!ValidSnapshot(Candidate) || !Hall->Areas.IsValidIndex(Candidate->Area))continue;
+        bool Valid=true;
+        for(const auto& Saved:Candidate->Meshes)
+        {
+            auto* Rock=Rocks.FindRef(Saved.ActorKey);if(!Rock){Valid=false;break;}
+            if(Saved.Chunk!=INDEX_NONE)
+            {auto* Generated=Cast<AGeneratedMiningRock>(Rock);if(!Generated || !Generated->Chunks.IsValidIndex(Saved.Chunk)){Valid=false;break;}}
+        }
+        if(Valid){Data=Candidate;break;}
     }
+    if(!Data)return false;
     bRestoring=true;
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     Wallet->Balance=Data->Balance;Wallet->Minerals=Data->Minerals;Wallet->UpgradeLevels=Data->Upgrades;

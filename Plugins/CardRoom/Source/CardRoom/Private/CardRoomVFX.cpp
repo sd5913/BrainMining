@@ -127,6 +127,24 @@ void ACardRoomStage::TickEffects()
     }
     RewardOutline->bEnabled=RewardVisible;
     const float T=Run.PhaseTime,Time=GetWorld()->GetTimeSeconds();
+    Reward->SetVisibility(RewardVisible);
+    Reward->SetRelativeLocation(RewardLocal+FVector(0,0,FMath::Sin(Time*2)*8));
+    Reward->SetRelativeRotation(FRotator(0,Time*25,15));Reward->SetRelativeScale3D(FVector(2.5f));
+    Reward->SetRenderCustomDepth(RewardVisible);Reward->SetCustomDepthStencilValue(2);
+    if(bStyledEffects)
+    {
+        // Styled effects replace the prototype presentation. Running both first
+        // rebuilt smoke/flame MIDs and transforms only to hide them in the same
+        // frame, particularly throughout the poison ignition in round three.
+        if(Resolve && (Run.Round==1 || Run.Round==3) && T>=1.75f && T<2.35f && !bReplySound)
+        {
+            Sound(TEXT("S_Impact"));
+            if(AudioOverride.IsBound())Sound(Run.Round==1?TEXT("S_CardFire"):TEXT("S_LowHealth"),Run.Round==1?.3f:.45f);
+            bReplySound=true;
+        }
+        TickStyledEffects();
+        return;
+    }
     const float S=FMath::Clamp(SpellPresentationScale,1.f,4.f);
     const FLinearColor Fire(2.8f,.27f,.012f),Hot(4.f,2.f,.30f),Blue(.025f,.55f,3.f),Ice(.65f,2.3f,3.8f),Gold(3.f,1.5f,.18f);
     auto* Camera=UGameplayStatics::GetPlayerCameraManager(this,0);
@@ -270,14 +288,9 @@ void ACardRoomStage::TickEffects()
     if(Resolve&&Run.Round==3)Flash(Target,T-1,.9f,Fire,170);
     if(Resolve&&Run.Round==4)Flash(Target,T-1,1.35f,Blue,260,true);
     if(Resolve&&(Run.Round==1||Run.Round==3))Flash(CameraLocal+FVector(100,0,-20),T-2.35f,.5f,Fire,Run.Round==3?115:75);
-    Reward->SetVisibility(RewardVisible);
-    Reward->SetRelativeLocation(RewardLocal+FVector(0,0,FMath::Sin(Time*2)*8));
-    Reward->SetRelativeRotation(FRotator(0,Time*25,15));Reward->SetRelativeScale3D(FVector(2.5f));
-    Reward->SetRenderCustomDepth(RewardVisible);Reward->SetCustomDepthStencilValue(2);
     if(RewardVisible)
     {
         const FVector P=Reward->GetRelativeLocation();
         Illuminate(P,FLinearColor(1,.85f,.65f),1800);
     }
-    if(bStyledEffects)TickStyledEffects();
 }

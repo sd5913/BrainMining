@@ -2,6 +2,7 @@
 #include "MiningSaveSubsystem.h"
 #include "MiningGUIWidgets.h"
 #include "Components/TextBlock.h"
+#include "Components/Button.h"
 #include "UObject/UObjectIterator.h"
 #include "MiningWalletSubsystem.h"
 #include "MiningProgressionComponent.h"
@@ -89,6 +90,18 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     };
     if(Op==TEXT("start")){if(auto* Opening=First<AMiningOpening>(W))Opening->StartGame();else Ok=false;}
     else if(Op==TEXT("continue")){if(auto* Opening=First<AMiningOpening>(W))Opening->ContinueSavedGame();else Ok=false;}
+    else if(Op==TEXT("menu_click"))
+    {
+        Ok=false;
+        for(TObjectIterator<UMiningOpeningMenu> It;It;++It)
+        {
+            if(It->IsTemplate() || It->GetWorld()!=W || !It->IsInViewport())continue;
+            const FString Action=C->GetStringField(TEXT("action"));
+            UButton* Button=Action==TEXT("continue")?It->ContinueButton.Get():(Action==TEXT("start")?It->StartButton.Get():nullptr);
+            if(Button && Button->IsVisible() && Button->GetIsEnabled()){Button->OnClicked.Broadcast();Ok=true;}
+            break;
+        }
+    }
     else if(Op==TEXT("save"))Ok=Save->SaveProgress();
     else if(Op==TEXT("load"))Ok=Save->LoadProgress();
     else if(Op==TEXT("area_fixture") && Hall)
@@ -187,6 +200,25 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Result->SetStringField(TEXT("ending_hint"),Ending->Hint());
     }
     if(auto* Sub=USubtitleSubsystem::Get(this))Result->SetStringField(TEXT("subtitle"),Sub->GetActiveText().ToString());
+    TArray<TSharedPtr<FJsonValue>> MenuButtons;
+    for(TObjectIterator<UMiningOpeningMenu> It;It;++It)
+    {
+        if(It->IsTemplate() || It->GetWorld()!=W || !It->IsInViewport())continue;
+        for(UButton* Button:{It->ContinueButton.Get(),It->StartButton.Get(),It->ExitButton.Get()})
+        {
+            if(!Button)continue;
+            auto Item=MakeShared<FJsonObject>();Item->SetStringField(TEXT("name"),Button->GetName());
+            if(auto* Label=Cast<UTextBlock>(Button->GetContent()))Item->SetStringField(TEXT("text"),Label->GetText().ToString());
+            Item->SetBoolField(TEXT("visible"),Button->IsVisible());Item->SetBoolField(TEXT("focused"),Button->HasKeyboardFocus());
+            const auto Transform=Button->GetRenderTransform();
+            Item->SetNumberField(TEXT("angle"),Transform.Angle);Item->SetNumberField(TEXT("shear"),Transform.Shear.X);Item->SetNumberField(TEXT("scale"),Transform.Scale.X);
+            const FVector2D Position=Button->GetCachedGeometry().GetAbsolutePosition();
+            Item->SetArrayField(TEXT("position"),{MakeShared<FJsonValueNumber>(Position.X),MakeShared<FJsonValueNumber>(Position.Y)});
+            MenuButtons.Add(MakeShared<FJsonValueObject>(Item));
+        }
+        break;
+    }
+    Result->SetArrayField(TEXT("menu_buttons"),MenuButtons);
     if(auto* Office=First<APopupCloseStage>(W)){Result->SetStringField(TEXT("office"),Office->GetSessionStatus());Result->SetStringField(TEXT("office_exit"),Office->GetExitStatus());}
     if(auto* Cards=First<ACardRoomStage>(W)){Result->SetNumberField(TEXT("card_phase"),int32(Cards->Run.Phase));Result->SetNumberField(TEXT("card_round"),Cards->Run.Round);}
     for(TObjectIterator<UMiningGUIHUDWidget> It;It;++It)

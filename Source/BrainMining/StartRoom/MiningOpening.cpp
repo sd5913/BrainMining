@@ -88,32 +88,39 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
     }
     auto* Column=WidgetTree->ConstructWidget<UVerticalBox>();
     auto* CanvasSlot=Canvas->AddChildToCanvas(Column);
-    CanvasSlot->SetAnchors(FAnchors(.81f,.65f));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
+    const auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();
+    const bool bHasSave=Saves && Saves->HasSave();
+    // Insert Continue one row above the existing pair; Start and Exit retain
+    // their authored screen positions at every aspect ratio.
+    CanvasSlot->SetAnchors(FAnchors(.81f,.65f-(bHasSave?86.f/900.f:0.f)));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
     Column->SetRenderShear(FVector2D(0,0));
-    auto AddButton=[&](const TCHAR* Label,bool Start)
+    auto AddButton=[&](const TCHAR* Name,const TCHAR* Label,float Angle,float Shear)
     {
         auto* Box=WidgetTree->ConstructWidget<USizeBox>();Box->SetWidthOverride(240);Box->SetHeightOverride(62);
         auto* Row=Column->AddChildToVerticalBox(Box);Row->SetPadding(FMargin(0,12));
-        auto* Button=WidgetTree->ConstructWidget<UButton>();Box->AddChild(Button);
+        auto* Button=WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(),Name);Box->AddChild(Button);
         FButtonStyle Style;
         FSlateBrush Empty;Empty.DrawAs=ESlateBrushDrawType::NoDrawType;
         Style.SetNormal(Empty).SetHovered(Empty).SetPressed(Empty);
         Style.SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));Button->SetStyle(Style);
         Button->SetRenderTransformPivot(FVector2D(.5f,.5f));
-        Button->SetRenderTransformAngle(Start?-3.f:3.f);
-        Button->SetRenderShear(FVector2D(Start?-4.f:4.f,0));
+        Button->SetRenderTransformAngle(Angle);
+        Button->SetRenderShear(FVector2D(Shear,0));
         auto* Text=WidgetTree->ConstructWidget<UTextBlock>();Text->SetText(FText::FromString(Label));
         Text->SetFont(BrainMiningFonts::Title(34));Text->SetColorAndOpacity(FSlateColor(FLinearColor(.94f,.95f,.91f)));
         Button->AddChild(Text);
-        if(Start){StartButton=Button;Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);}
-        else {ExitButton=Button;Button->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);}
+        return Button;
     };
-    if(auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();Saves && Saves->HasSave())
+    ContinueButton=nullptr;
+    if(bHasSave)
     {
-        AddButton(TEXT("继续游戏"),true);
-        StartButton->OnClicked.Clear();StartButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::ContinueGame);
+        ContinueButton=AddButton(TEXT("OpeningContinueButton"),TEXT("继续游戏"),-6.f,-8.f);
+        ContinueButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::ContinueGame);
     }
-    AddButton(TEXT("开始游戏"),true);AddButton(TEXT("退出游戏"),false);
+    StartButton=AddButton(TEXT("OpeningStartButton"),TEXT("开始游戏"),-3.f,-4.f);
+    StartButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);
+    ExitButton=AddButton(TEXT("OpeningExitButton"),TEXT("退出游戏"),3.f,4.f);
+    ExitButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);
     auto* DesignSize=WidgetTree->ConstructWidget<USizeBox>();
     DesignSize->SetWidthOverride(1600);DesignSize->SetHeightOverride(900);DesignSize->AddChild(Canvas);
     auto* Responsive=WidgetTree->ConstructWidget<UScaleBox>();Responsive->SetStretch(EStretch::ScaleToFit);
@@ -125,12 +132,15 @@ void UMiningOpeningMenu::NativeTick(const FGeometry& Geometry,float Dt)
 {
     Super::NativeTick(Geometry,Dt);
     const bool bStarting=Opening.IsValid()&&Opening->bStarted;
+    ContinueScale=FMath::FInterpTo(ContinueScale,ContinueButton&&(ContinueButton->IsHovered()||ContinueButton->HasKeyboardFocus())?1.07f:1.f,Dt,10.f);
     StartScale=FMath::FInterpTo(StartScale,StartButton&&(StartButton->IsHovered()||StartButton->HasKeyboardFocus())?1.07f:1.f,Dt,10.f);
     ExitScale=FMath::FInterpTo(ExitScale,ExitButton&&(ExitButton->IsHovered()||ExitButton->HasKeyboardFocus())?1.07f:1.f,Dt,10.f);
     if(StartButton)StartButton->SetRenderScale(FVector2D(StartScale));
+    if(ContinueButton)ContinueButton->SetRenderScale(FVector2D(ContinueScale));
     if(ExitButton)ExitButton->SetRenderScale(FVector2D(ExitScale));
     if(bStarting)
     {
+        if(ContinueButton)ContinueButton->SetVisibility(ESlateVisibility::Collapsed);
         if(StartButton)StartButton->SetVisibility(ESlateVisibility::Collapsed);
         if(ExitButton)ExitButton->SetVisibility(ESlateVisibility::Collapsed);
         TitleFade=FMath::Max(0.f,TitleFade-Dt/.75f);
@@ -186,7 +196,9 @@ void AMiningOpening::Prepare(APlayerController* Controller)
     InitialRotation=(Facing+FRotator(0,180,0)).Quaternion();
     WorldTitle->SetWorldLocationAndRotation(InitialTitle,InitialRotation);WorldTitle->SetWorldScale3D(FVector(.19f));WorldTitle->SetVisibility(false);
     Menu=CreateWidget<UMiningOpeningMenu>(Controller);Menu->Opening=this;Menu->SetIsFocusable(true);Menu->AddToViewport(500);
-    Controller->bShowMouseCursor=true;FInputModeUIOnly Mode;Mode.SetWidgetToFocus(Menu->StartButton ? Menu->StartButton->TakeWidget() : Menu->TakeWidget());Controller->SetInputMode(Mode);
+    Controller->bShowMouseCursor=true;FInputModeUIOnly Mode;
+    UButton* DefaultButton=Menu->ContinueButton?Menu->ContinueButton.Get():Menu->StartButton.Get();
+    Mode.SetWidgetToFocus(DefaultButton?DefaultButton->TakeWidget():Menu->TakeWidget());Controller->SetInputMode(Mode);
     Controller->PlayerCameraManager->UpdateCamera(0.f);
     if(auto* MiningPC=Cast<AMiningExhibitController>(Controller))MiningPC->RevealOpening();
 }

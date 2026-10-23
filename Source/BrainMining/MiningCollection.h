@@ -147,6 +147,7 @@ public:
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> PreviewMaterial;
     UPROPERTY() TObjectPtr<USceneCaptureComponent2D> Capture;
     UPROPERTY() TObjectPtr<AHeavenToilet> PreviewToilet;
+    FVector ToiletPreviewCenter=FVector::ZeroVector;
     UPROPERTY() TObjectPtr<UPostProcessComponent> HighlightPostProcess;
     bool TryCollectTarget();
     UFUNCTION(BlueprintCallable) void CollectTarget();

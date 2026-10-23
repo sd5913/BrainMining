@@ -99,28 +99,24 @@ void ACardRoomStage::TickStyledEffects()
             const float Now=GetWorld()->GetTimeSeconds();
             if(!bStyledPoisonLive)
             {
-                Sustain->DeactivateImmediate();Poison->Activate(true);
+                Sustain->DeactivateImmediate();Poison->SetPaused(false);Poison->Activate(true);
                 for(FName Name:{FName(TEXT("spark")),FName(TEXT("impact")),FName(TEXT("spark_l")),FName(TEXT("refr"))})Poison->SetEmitterEnable(Name,true);
-                StyledPoisonRefreshAt=Now+1.8f;bStyledPoisonAlternate=true;
+                StyledPoisonRefreshAt=Now+1.4f;
             }
-            else if(!(Resolve && Run.Round==3) && Now>=StyledPoisonRefreshAt)
-            {
-                // Recycle one cloud at a time to bound translucent overdraw during long turns.
-                auto* Next=bStyledPoisonAlternate?Sustain:Poison;
-                (bStyledPoisonAlternate?Poison:Sustain)->DeactivateImmediate();
-                Next->Activate(true);
-                for(FName Name:{FName(TEXT("spark")),FName(TEXT("impact")),FName(TEXT("spark_l")),FName(TEXT("refr"))})Next->SetEmitterEnable(Name,false);
-                bStyledPoisonAlternate=!bStyledPoisonAlternate;StyledPoisonRefreshAt=Now+1.8f;
-            }
+            // Hold the mature cloud, rather than restarting its birth animation.
+            // A small breathing motion keeps it alive without accumulating particles.
+            const bool Mature=Now>=StyledPoisonRefreshAt;
+            Poison->SetPaused(Mature && !Burning);
+            if(Mature && !Burning)Poison->SetRelativeScale3D(FVector(S*(1.f+.018f*FMath::Sin(Now*.8f))));
             bStyledPoisonLive=true;
         }
         else if(!KeepPoison && bStyledPoisonLive)
         {
             // The entire cloud is already transparent before the emitter stops.
-            Poison->DeactivateImmediate();Sustain->DeactivateImmediate();
+            Poison->SetPaused(false);Poison->DeactivateImmediate();Sustain->DeactivateImmediate();
             bStyledPoisonLive=false;
         }
-        if(!Resolve && !Run.bPoisoned){Poison->DeactivateImmediate();Sustain->DeactivateImmediate();}
+        if(!Resolve && !Run.bPoisoned){Poison->SetPaused(false);Poison->DeactivateImmediate();Sustain->DeactivateImmediate();}
     }
     // A visible flame front occupies the gas volume while the Niagara smoke
     // finishes. This stays readable even when the imported fire burst is faint.

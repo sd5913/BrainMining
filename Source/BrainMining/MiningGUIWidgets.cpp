@@ -1,5 +1,7 @@
 #include "MiningGUIWidgets.h"
 #include "MiningSaveSubsystem.h"
+#include "Sound/SoundBase.h"
+#include "Kismet/GameplayStatics.h"
 #include "StartRoom/MiningStartRoom.h"
 #include "BrainMiningFonts.h"
 #include "MiningGamepadSubsystem.h"
@@ -206,6 +208,7 @@ void UMiningGUIUpgradeWidget::NativeTick(const FGeometry& Geometry, float DeltaT
 void UMiningGUIHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+    CompletionSound=LoadObject<USoundBase>(nullptr,TEXT("/Game/Audio/UI/S_TaskComplete.S_TaskComplete"));
 	if (JetpackHeatWarning)
 	{
 		JetpackHeatWarning->SetRenderOpacity(0.f);
@@ -638,6 +641,34 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
 {
     auto* Saves=GetGameInstance()?GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>():nullptr;
     if(!Saves || !MineralPanel)return;
+    if(!CompletionToast)
+    {
+        auto* Root=Cast<UCanvasPanel>(WidgetTree->RootWidget);
+        if(Root)
+        {
+            CompletionToast=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("TaskCompletionToast"));
+            CompletionToast->SetFont(BrainMiningFonts::Body(28));CompletionToast->SetJustification(ETextJustify::Center);
+            CompletionToast->SetColorAndOpacity(FLinearColor(.65f,1.f,.79f));
+            CompletionToast->SetShadowOffset(FVector2D(1,2));CompletionToast->SetShadowColorAndOpacity(FLinearColor(0,0,0,.85f));
+            auto* ToastSlot=Root->AddChildToCanvas(CompletionToast);ToastSlot->SetAnchors(FAnchors(.5f,.2f));ToastSlot->SetAlignment(FVector2D(.5f,.5f));ToastSlot->SetSize(FVector2D(720,64));ToastSlot->SetZOrder(100);
+            CompletionToast->SetRenderTransformPivot(FVector2D(.5f,.5f));
+        }
+    }
+    if(CompletionToast)
+    {
+        CompletionToastAge+=Dt;
+        if(CompletionToastAge>=2.6f && !Saves->CompletionNotices.IsEmpty())
+        {
+            CompletionToast->SetText(FText::FromString(TEXT("✓  ")+Saves->CompletionNotices[0]));Saves->CompletionNotices.RemoveAt(0);CompletionToastAge=0;
+            if(CompletionSound)UGameplayStatics::PlaySound2D(this,CompletionSound,.65f);
+        }
+        const float T=CompletionToastAge;
+        CompletionToast->SetVisibility(T<2.6f?ESlateVisibility::HitTestInvisible:ESlateVisibility::Collapsed);
+        const float Fade=FMath::Clamp(T/.15f,0.f,1.f)*FMath::Clamp((2.6f-T)/.45f,0.f,1.f);
+        CompletionToast->SetRenderOpacity(Fade*(T<.8f?.82f+.18f*FMath::Cos(T*4*PI):1.f));
+        CompletionToast->SetRenderScale(FVector2D(1.f+.10f*FMath::Sin(FMath::Clamp(T/.3f,0.f,1.f)*PI)));
+        CompletionToast->SetRenderTranslation(FVector2D(0,-12.f*(1-FMath::SmoothStep(0.f,.3f,T))));
+    }
     if(!CollectionShortcut)
     {
         CollectionShortcut=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("CollectionShortcut"));
@@ -709,7 +740,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
     if(DisplayedUpgrade==1 && TutorialDoneAge[2]>1.4f)
     {DisplayedUpgrade=2;TutorialDoneAge[2]=0;TutorialAge=0;UpgradeAttentionAge=0;}
     const TCHAR* Basic[]={TEXT("收集1个铜矿"),TEXT("收集1个铁矿"),DisplayedUpgrade==1?TEXT("升级1次矿镐"):TEXT("将矿镐升至2级"),TEXT("找到1个灵感藏品")};
-    const TCHAR* Prototype[]={TEXT("发现1个灵感原型"),TEXT("发现第2个灵感原型"),TEXT("发现第三个灵感原型"),TEXT("发现第4个灵感原型")};
+    const TCHAR* Prototype[]={TEXT("发现1个灵感原型"),TEXT("发现第2个灵感原型"),TEXT("发现第3个灵感原型"),TEXT("发现第4个灵感原型")};
     int32 VisibleRows=0;
     for(int32 I=0;I<5;++I)
     {

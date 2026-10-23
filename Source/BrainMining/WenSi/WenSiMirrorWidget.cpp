@@ -215,7 +215,7 @@ void UWenSiMirrorWidget::Refresh()
  FString Message;
  if(Puzzle->MousePortal && Puzzle->MousePortal->IsEntering()) Message=TEXT("");
  else if(Puzzle->MousePortal && Puzzle->MousePortal->IsFocused()) Message=FString();
- else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("E 重置谜题");
+ else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("长按E-重置谜题");
  else if (!Puzzle->bComplete)
  {
   Message=TEXT("R-交换词组    Q-关闭思考");

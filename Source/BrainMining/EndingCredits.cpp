@@ -10,6 +10,7 @@
 #include "UObject/StrongObjectPtr.h"
 #include "MiningCollection.h"
 #include "MiningExperienceSubsystem.h"
+#include "MiningSaveSubsystem.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/GameInstance.h"
@@ -67,6 +68,7 @@ void AEndingEmergence::UpdateCredits()
     const bool NeedFocus=!Credits.IsValid() || Credits->GetVisibility()!=EVisibility::Visible;
     if(!Credits.IsValid())
     {
+        if(auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>())Saves->MarkCampaignComplete();
         // Retain the shared catalogue so the pause menu can still inspect the
         // player's collection after the film, without spawning world pickups.
         for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It)

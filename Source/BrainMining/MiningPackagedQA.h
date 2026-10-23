@@ -20,5 +20,8 @@ private:
     FString Directory, LastId, SampleLabel;
     double LastFrame=0, NextPoll=0;
     TArray<double> FrameSamples;
+    FVector SampleCamera=FVector::ZeroVector;
+    double MaxCameraStep=0;
+    bool bCameraSampleStarted=false;
     void Execute(const TSharedPtr<class FJsonObject>& Command);
 };

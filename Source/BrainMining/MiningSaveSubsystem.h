@@ -4,7 +4,9 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "MiningMineralInventory.h"
 #include "Tickable.h"
+#include "Async/Future.h"
 #include "MiningSaveSubsystem.generated.h"
+class ADiggableRock;
 
 USTRUCT()
 struct FMiningSavedMesh
@@ -44,6 +46,7 @@ public:
     UPROPERTY() bool TutorialSoilPassed=false;
     UPROPERTY() int32 TutorialCompleted=0;
     UPROPERTY() int32 PrototypesFound=0;
+    UPROPERTY() bool CampaignComplete=false;
 };
 
 UCLASS()
@@ -60,8 +63,14 @@ public:
     void StartNewGame(bool bKeepCollection=false);
     TArray<int32> GetCollectionProgress() const;
     bool HasCollectionProgress() const;
-    void EndSession() { bSessionStarted=false; bLoadedProgress=false; RunCollectedItems.Reset(); RestoredMinerals.Reset(); }
-    void RecordCollectible(int32 Id) { RunCollectedItems.Add(Id); TutorialCompleted|=8; }
+    void EndSession();
+    virtual void Deinitialize() override;
+    void MarkCampaignComplete();
+    bool IsSaveInFlight() const { return WriteTask.IsValid(); }
+    int32 AutosavesCompleted=0;
+    double LastSnapshotMilliseconds=0;
+    void RecordCollectible(int32 Id);
+    TArray<FString> CompletionNotices;
     bool WasCollectedThisRun(int32 Id) const { return RunCollectedItems.Contains(Id); }
     UPROPERTY(BlueprintReadOnly) bool TutorialActive=false;
     UPROPERTY(BlueprintReadOnly) bool TutorialSoilPassed=false;
@@ -82,5 +91,12 @@ private:
     TSet<int32> RestoredMinerals;
     TSet<int32> RunCollectedItems;
     void RestoreCollectedItems();
-    void UpdateBombWallSigns();
+    bool SaveProgressInternal(bool bAsync);
+    bool PrepareMeshCache();
+    void FinishPendingWrite();
+    TMap<FString,FMiningSavedMesh> MeshCache;
+    TFuture<FMiningSavedMesh> MeshTask;
+    TFuture<bool> WriteTask;
+    mutable TOptional<bool> CachedHasSave;
+    TWeakObjectPtr<ADiggableRock> TutorialSoil;
 };

@@ -1724,7 +1724,10 @@ void AEndingEmergence::EnterBlood()
     UpdatePainterly(); // Clear both views before the camera handoff, not a tick later.
     const FVector Eye=Player->PlayerCameraManager->GetCameraLocation();
     const FVector LocalEye=GetActorTransform().InverseTransformPosition(Eye);
-    VesselDistance=FMath::Max(150.f,float(LocalEye.X)-1600);BloodStartZ=LocalEye.Z-VesselPoint(VesselDistance).Z;
+    VesselDistance=FMath::Max(0.f,float(LocalEye.X)-1600);
+    BloodEntryOffset=LocalEye-VesselPoint(VesselDistance);
+    BloodEntryFOV=Player->PlayerCameraManager->GetFOVAngle();
+    Camera->GetCameraComponent()->SetFieldOfView(BloodEntryFOV);
     VesselLook=Player->GetControlRotation();VesselLook.Roll=0;
     VesselLookOffset=FRotator::ZeroRotator;VesselLookInputAt=Age-2;
     Player->ResetIgnoreLookInput();
@@ -1842,9 +1845,9 @@ void AEndingEmergence::UpdatePulse(float Dt)
         BloodSpeed=FMath::FInterpTo(BloodSpeed,FMath::Lerp(480.f,950.f,FMath::Max(0.f,float(UMiningGamepadSubsystem::ReadMove(Player).Y))),Dt,3);
         VesselDistance=FMath::Min(VesselDistance+BloodSpeed*Dt,VesselDistances.Last());
         BloodY=FMath::Clamp(BloodY+Dt*150*UMiningGamepadSubsystem::ReadMove(Player).X,-240.f,240.f);
-        const float Z=BloodStartZ*(1-Ending::Ease(T/1.8f));
+        const FVector EntryOffset=BloodEntryOffset*(1-Ending::Ease(T/1.8f));
         const FRotator Frame=VesselRotation(VesselDistance);
-        Camera->SetActorLocation(GetActorTransform().TransformPosition(VesselPoint(VesselDistance)+Frame.RotateVector(FVector(0,BloodY,Z))));
+        Camera->SetActorLocation(GetActorTransform().TransformPosition(VesselPoint(VesselDistance)+EntryOffset+Frame.RotateVector(FVector(0,BloodY,0))));
         // Observe mouse rotation supplied by the normal player controller before
         // writing the automatic heading. Keep the player's offset independent
         // from bends, and only ease it home after a deliberate idle grace period.
@@ -1879,7 +1882,7 @@ void AEndingEmergence::UpdatePulse(float Dt)
         VesselLook=FMath::RInterpTo(VesselLook,Forward,Dt,6.f);VesselLook.Roll=0;
         FRotator Look=(VesselLook+VesselLookOffset).GetNormalized();Look.Roll=0;Look.Pitch=FMath::Clamp(Look.Pitch,-85.f,85.f);
         Player->SetControlRotation(Look);Camera->SetActorRotation(Look);
-        Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(90.f,95.f,(BloodSpeed-480)/470));
+        Camera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(BloodEntryFOV,FMath::Lerp(90.f,95.f,(BloodSpeed-480)/470),Ending::Ease(T/1.8f)));
         if(DroppedPickaxe)
         {
             DroppedPickaxe->SetRelativeLocation(PickaxeStart+FVector(600*T,50*T,120*T-260*T*T));

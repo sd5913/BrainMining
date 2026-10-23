@@ -44,11 +44,8 @@ mask=custom(glow,'''
 float d=length(P-Center)/max(Radius,1.0);
 float h=1.0-smoothstep(.08,1.0,d);
 float core=h*h*h*h;
-// World-locked, low-contrast grain keeps the signal attached to the rock.
-// No time input: the mineral hint must not shimmer or swim as the camera moves.
-float3 q=(P-Center)*.075;
-float grain=.72+.28*smoothstep(-.4,.4,sin(q.x+q.z*.41)*sin(q.y-q.z*.63));
-return saturate(Amount)*(.62*core+.025*h*h)*grain;
+// Continuous radial falloff avoids the old visibly periodic checker pattern.
+return saturate(Amount)*(.62*core+.025*h*h);
 ''',{'P':(pos,'XYZ'),'Center':(center,'RGB'),'Radius':(radius,''),'Amount':(amount,'')},unreal.CustomMaterialOutputType.CMOT_FLOAT1)
 emission=custom(glow,'return pow(saturate(Color),1.2)*clamp(Strength,0.0,.65);',{'Color':(color,'RGB'),'Strength':(strength,'')},unreal.CustomMaterialOutputType.CMOT_FLOAT3)
 output(mask,'',unreal.MaterialProperty.MP_OPACITY);output(emission,'',unreal.MaterialProperty.MP_EMISSIVE_COLOR)

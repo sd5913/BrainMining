@@ -2,6 +2,8 @@
 #include "DiggableRock.h"
 #include "Showcase/MiningTreasure.h"
 #include "Components/BoxComponent.h"
+#include "HeavenToilet.h"
+#include "Components/StaticMeshComponent.h"
 #include "Components/DynamicMeshComponent.h"
 #include "DynamicMesh/DynamicMeshAttributeSet.h"
 #include "DynamicMesh/MeshNormals.h"
@@ -382,6 +384,9 @@ void AMiningCollectible::SetHighlighted(bool Enabled)
     // Keep the old inverted hull disabled: it can cover surfaces or outline internal seams.
     Outline->SetVisibility(bEchoPresentation&&!bCollected);
     Model->SetRenderCustomDepth(Enabled&&!bCollected);
+    if(auto* Toilet=Cast<AHeavenToilet>(PresentationActor))
+        for(auto* Part:{Toilet->Body.Get(),Toilet->Lid.Get()})
+        {Part->SetCustomDepthStencilValue(Model->CustomDepthStencilValue);Part->SetRenderCustomDepth(Enabled&&!bCollected);}
 }
 void AMiningCollectible::ApplyEchoPresentation(UMaterialInterface* Surface,UMaterialInterface* Contours)
 {
@@ -429,6 +434,7 @@ float AMiningCollectible::MeasureExposure() const
 }
 bool AMiningCollectible::CanRelease(float) const
 {
+    if(ActorHasTag(TEXT("BM_BombGateReward")) && IsValid(HostRock) && HostRock->SuccessfulCuts==0)return false;
     return !bReleased&&!bCollected&&IsPickupEligible(Exposure);
 }
 void AMiningCollectible::Release()
@@ -471,7 +477,7 @@ void AMiningCollectible::Release()
         }
     }
     SetActorLocation(Position);bReleased=true;
-    if(!Clear || ItemId==4 || ItemId==9)
+    if(!Clear || ItemId==4 || ItemId==9 || ActorHasTag(TEXT("BM_BombGateReward")))
     {
         // A released item in a narrow opening stays stable and collectible,
         // rather than receiving a penetrating physics impulse.

@@ -26,6 +26,9 @@
 #include "PopupClose/PopupCloseStage.h"
 #include "CardRoomStage.h"
 #include "CardRoomPlayer.h"
+#include "NiagaraComponent.h"
+#include "HeavenToilet.h"
+#include "Components/SceneCaptureComponent2D.h"
 #include "Subtitles/SubtitleSubsystem.h"
 #include "EngineUtils.h"
 #include "Engine/GameInstance.h"
@@ -83,6 +86,13 @@ void UMiningPackagedQA::Tick(float)
     const double Now=FPlatformTime::Seconds();
     if(!SampleLabel.IsEmpty() && LastFrame>0)FrameSamples.Add((Now-LastFrame)*1000.0);
     LastFrame=Now;
+    if(!SampleLabel.IsEmpty())
+        if(auto* Controller=GetWorld()?GetWorld()->GetFirstPlayerController():nullptr;Controller && Controller->PlayerCameraManager)
+        {
+            const FVector Camera=Controller->PlayerCameraManager->GetCameraLocation();
+            if(bCameraSampleStarted)MaxCameraStep=FMath::Max(MaxCameraStep,FVector::Dist(Camera,SampleCamera));
+            SampleCamera=Camera;bCameraSampleStarted=true;
+        }
     if(Now<NextPoll)return;NextPoll=Now+.1;
     auto* Hall=AMiningExhibitHall::Find(GetWorld());
     if(!GetWorld() || (Hall && !Hall->bReady) || !GetWorld()->GetFirstPlayerController() || !GetWorld()->GetFirstPlayerController()->GetPawn())return;
@@ -226,16 +236,29 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
             else if(Action==TEXT("restart") && Cards->Stage)Cards->Stage->RestartEncounter();else Ok=false;
         }
     }
-    else if(Op==TEXT("sample_start")){SampleLabel=C->GetStringField(TEXT("label"));FrameSamples.Reset();}
+    else if(Op==TEXT("credits_fixture"))
+    {if(auto* Ending=First<AEndingEmergence>(W))Ending->bComplete=true;else Ok=false;}
+    else if(Op==TEXT("walking_fixture")){Pawn->GetCharacterMovement()->SetMovementMode(MOVE_Walking);}
+    else if(Op==TEXT("catalogue_rotate"))
+    {if(auto* Field=First<AMiningCollectionField>(W)){Field->SelectItem(0);Field->RotatePreview(C->GetNumberField(TEXT("yaw")),C->GetNumberField(TEXT("pitch")));}else Ok=false;}
+    else if(Op==TEXT("sample_start")){SampleLabel=C->GetStringField(TEXT("label"));FrameSamples.Reset();MaxCameraStep=0;bCameraSampleStarted=false;}
     else if(Op==TEXT("sample_end"))
     {
         TArray<TSharedPtr<FJsonValue>> Samples;for(double Value:FrameSamples)Samples.Add(MakeShared<FJsonValueNumber>(Value));
         Result->SetStringField(TEXT("label"),SampleLabel);Result->SetArrayField(TEXT("frame_ms"),Samples);SampleLabel.Empty();FrameSamples.Reset();
+        Result->SetNumberField(TEXT("max_camera_step_cm"),MaxCameraStep);
     }
     else if(Op==TEXT("shot"))FScreenshotRequest::RequestScreenshot(Directory/(FPaths::MakeValidFileName(C->GetStringField(TEXT("name")))+TEXT(".png")),true,false);
     else if(Op==TEXT("quit"))FPlatformMisc::RequestExit(false);
     else if(Op!=TEXT("state") && Op!=TEXT("actors") && Op!=TEXT("neurons") && Op!=TEXT("slate_ui"))Ok=false;
     Result->SetStringField(TEXT("id"),LastId);Result->SetBoolField(TEXT("ok"),Ok);
+    Result->SetNumberField(TEXT("autosaves"),Save->AutosavesCompleted);
+    Result->SetBoolField(TEXT("save_in_flight"),Save->IsSaveInFlight());
+    Result->SetNumberField(TEXT("snapshot_ms"),Save->LastSnapshotMilliseconds);
+    if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()){Result->SetNumberField(TEXT("drill_capacity"),Mining->MaxDrillEnergy);Result->SetNumberField(TEXT("drill_energy"),Mining->DrillEnergy);}
+    if(auto* Museum=First<AWenSiMirrorPuzzle>(W))
+    {Result->SetBoolField(TEXT("aim_reset"),Museum->bAimReset);Result->SetNumberField(TEXT("reset_hold"),Museum->ResetHold.Progress());Result->SetNumberField(TEXT("reset_count"),Museum->ResetCount);}
+    if(auto* Toilet=First<AHeavenToilet>(W))Result->SetBoolField(TEXT("toilet_outline"),Toilet->Body->bRenderCustomDepth);
     Result->SetNumberField(TEXT("area"),Hall?Hall->ActiveArea:-1);Result->SetNumberField(TEXT("unlocked"),Hall?Hall->UnlockedArea:-1);
     Result->SetBoolField(TEXT("opening"),AMiningOpening::IsOpening(W));
     if(auto* Camera=PC->PlayerCameraManager.Get())
@@ -352,11 +375,19 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     }
     Result->SetArrayField(TEXT("menu_buttons"),MenuButtons);
     if(auto* Office=First<APopupCloseStage>(W)){Result->SetStringField(TEXT("office"),Office->GetSessionStatus());Result->SetStringField(TEXT("office_exit"),Office->GetExitStatus());}
-    if(auto* Cards=First<ACardRoomStage>(W)){Result->SetNumberField(TEXT("card_phase"),int32(Cards->Run.Phase));Result->SetNumberField(TEXT("card_round"),Cards->Run.Round);}
+    if(auto* Cards=First<ACardRoomStage>(W))
+    {
+        Result->SetNumberField(TEXT("card_phase"),int32(Cards->Run.Phase));Result->SetNumberField(TEXT("card_round"),Cards->Run.Round);
+        TArray<UNiagaraComponent*> FX;Cards->GetComponents(FX);
+        for(auto* Part:FX)if(Part->GetFName()==TEXT("P2Fx_PoisonHit"))
+        {Result->SetBoolField(TEXT("poison_paused"),Part->IsPaused());Result->SetArrayField(TEXT("poison_scale"),Vec(Part->GetRelativeScale3D()));}
+    }
     for(TObjectIterator<UMiningGUIHUDWidget> It;It;++It)
     {
         if(It->IsTemplate() || It->GetWorld()!=W)continue;
         if(auto* Shortcut=Cast<UTextBlock>(It->GetWidgetFromName(TEXT("CollectionShortcut"))))Result->SetStringField(TEXT("collection_shortcut"),Shortcut->GetText().ToString());
+        if(auto* Toast=Cast<UTextBlock>(It->GetWidgetFromName(TEXT("TaskCompletionToast"))))
+        {Result->SetStringField(TEXT("task_toast"),Toast->GetText().ToString());Result->SetBoolField(TEXT("task_toast_visible"),Toast->IsVisible());}
         if(auto* Panel=It->GetWidgetFromName(TEXT("GuidancePanel")))Result->SetNumberField(TEXT("guide_opacity"),Panel->GetRenderOpacity());
         if(auto* Panel=It->GetWidgetFromName(TEXT("PickaxeSummaryPanel")))Result->SetNumberField(TEXT("upgrade_opacity"),Panel->GetRenderOpacity());
         TArray<TSharedPtr<FJsonValue>> Rows;

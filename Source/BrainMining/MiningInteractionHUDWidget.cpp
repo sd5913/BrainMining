@@ -217,12 +217,24 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
         const auto* Cards = GetOwningPlayer()->FindComponentByClass<UCardRoomInteractionComponent>();
         const bool bPlayCard = Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing;
         const bool bGamepad = UMiningGamepadSubsystem::UsesGamepad(GetOwningPlayer());
-        const float HalfKey = bPlayCard && !bGamepad ? 35.f : 17.f;
+        const bool HoldReset=InteractionAction==TEXT("重置谜题");
+        float HoldProgress=0;
+        if(HoldReset)
+        {
+            for(TActorIterator<AWenSiMirrorPuzzle> It(GetWorld());It;++It)if(It->bAreaActive && It->bAimReset)HoldProgress=It->ResetHold.Progress();
+            for(TActorIterator<AWenSiPuzzle> It(GetWorld());It;++It)if(It->bAreaActive && It->bAimReset)HoldProgress=It->ResetHold.Progress();
+        }
+        const float HalfKey = HoldReset?43.f:bPlayCard && !bGamepad ? 35.f : 17.f;
         Text(InteractionAction, FVector2D(1, 39), 20, FLinearColor(0, 0, 0, .85f), true);
         Text(InteractionAction, FVector2D(0, 38), 20, FLinearColor::White, true);
         Box(FVector2D(-HalfKey, 73), FVector2D(HalfKey*2, 34), Key, FLinearColor(.015f, .02f, .025f, .85f));
         Box(FVector2D(-HalfKey+2, 74), FVector2D(HalfKey*2-4, 30), Key, FLinearColor(.96f, .95f, .89f));
-        Text(bGamepad ? TEXT("X") : (bPlayCard ? TEXT("空格") : TEXT("E")), FVector2D(0, 77), 19, FLinearColor(.04f, .045f, .05f), true);
+        Text(HoldReset?(bGamepad?TEXT("长按X"):TEXT("长按E")):(bGamepad ? TEXT("X") : (bPlayCard ? TEXT("空格") : TEXT("E"))), FVector2D(0, 77), 19, FLinearColor(.04f, .045f, .05f), true);
+        if(HoldReset && HoldProgress>0)
+        {
+            Box(FVector2D(-81,116),FVector2D(162,10),Key,FLinearColor(.02f,.02f,.025f,.9f));
+            Box(FVector2D(-79,118),FVector2D(158*HoldProgress,6),Key,FLinearColor(1.f,.78f,.3f));
+        }
     }
     if(SkipProgress>0.f)
     {

@@ -505,7 +505,7 @@ bool AWenSiMirrorPuzzle::HandleInteractionInput(APlayerController* PC)
   if(MousePortal->IsEntering())return true;
   if(MousePortal->TryEnter()){if(UI)UI->Refresh();return true;}
  }
- if(bAimReset){ResetPuzzle();return true;}
+ if(bAimReset)return true; // Tick owns the cancellable three-second hold.
  if(Aim.IsValid() && !bComplete){Think();return true;}
  return false;
 }
@@ -620,11 +620,11 @@ void AWenSiMirrorPuzzle::UpdateMechanism()
 }
 void AWenSiMirrorPuzzle::Tick(float Dt)
 {
- Super::Tick(Dt);auto PC=GetWorld()->GetFirstPlayerController();if(!PC || !bAreaActive || PC->IsPaused())return;
+ Super::Tick(Dt);auto PC=GetWorld()->GetFirstPlayerController();if(!PC || !bAreaActive || PC->IsPaused()){ResetHold.Reset();return;}
  // Suction owns a look-input lock. Advance it before the hall interprets that
  // lock as an open UI, otherwise the transition would suspend itself forever.
  if(MousePortal && MousePortal->Advance(Dt)){if(UI)UI->Refresh();return;}
- if(auto Hall=AMiningExhibitHall::Find(GetWorld());Hall && !bEditing && Hall->IsInteractionOpen())return;
+ if(auto Hall=AMiningExhibitHall::Find(GetWorld());Hall && !bEditing && Hall->IsInteractionOpen()){ResetHold.Reset();return;}
  AdvanceSwap(Dt);
  if(bAreaManaged && GetPlayerWord()==EWenSiMirrorWord::Floating && !bEditing)
   if(auto Character=Cast<ACharacter>(PC->GetPawn())){auto Move=Character->GetCharacterMovement();if(Move->IsMovingOnGround())Move->SetMovementMode(MOVE_Falling);Move->Velocity.Z=FMath::Min(350.f,Move->Velocity.Z+(1700.f+FMath::Abs(GetWorld()->GetGravityZ()))*Dt);}
@@ -651,12 +651,14 @@ void AWenSiMirrorPuzzle::Tick(float Dt)
   }
   if(PC->WasInputKeyJustPressed(EKeys::Q))CloseThoughts();
  }
+ if(ResetHold.Update(bAimReset && !bEditing,PC->IsInputKeyDown(EKeys::E) || UMiningGamepadSubsystem::ReadResetInteractionHeld(PC),Dt))ResetPuzzle();
  if(PC->WasInputKeyJustPressed(EKeys::R))SwapThoughts();
  if(PC->GetPawn() && PC->GetPawn()->GetActorLocation().X>RoomPoint(FVector(1000,0,0)).X)bSecondRoom=true;
  for(auto Exhibit:Exhibits)Exhibit->Highlight(Exhibit==Aim.Get());if(UI)UI->Refresh();
 }
 void AWenSiMirrorPuzzle::ResetPuzzle()
 {
+ ++ResetCount;
  if(MousePortal)MousePortal->Cancel();
  CancelSwap();
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reset"),.4f);

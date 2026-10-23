@@ -291,15 +291,15 @@ void AWenSiPuzzle::SetAreaActive(bool bActive)
 bool AWenSiPuzzle::HandleInteractionInput(APlayerController* PC)
 {
  if(!PC || (bAreaManaged && !bAreaActive) || bEditing)return false;
- if(bAimReset){ResetPuzzle();return true;}
+ if(bAimReset)return true; // Tick owns the cancellable three-second hold.
  if(!bComplete && Aim!=INDEX_NONE){Think();return true;}
  return false;
 }
 void AWenSiPuzzle::Tick(float Dt)
 {
  Super::Tick(Dt);
- if (bAreaManaged && !bAreaActive) return;
- auto PC=GetWorld()->GetFirstPlayerController(); if (!PC) return;
+ if (bAreaManaged && !bAreaActive){ResetHold.Reset();return;}
+ auto PC=GetWorld()->GetFirstPlayerController(); if (!PC || PC->IsPaused()){ResetHold.Reset();return;}
  Aim=INDEX_NONE;
  bAimReset=false;
  AWenSiResetButton* AimedResetButton=nullptr;
@@ -324,6 +324,7 @@ void AWenSiPuzzle::Tick(float Dt)
   if (PC->WasInputKeyJustPressed(EKeys::Q)) CloseThought(0);
   if (PC->WasInputKeyJustPressed(EKeys::R)) CloseThought(1);
  }
+ if(ResetHold.Update(bAimReset && !bEditing && !PC->bShowMouseCursor,PC->IsInputKeyDown(EKeys::E) || UMiningGamepadSubsystem::ReadResetInteractionHeld(PC),Dt))ResetPuzzle();
  if (PC->WasInputKeyJustPressed(EKeys::G)) ToggleEdit();
  if (bExtendedPuzzle && !bCircuitPuzzle && PC->GetPawn() && PC->GetPawn()->GetActorLocation().Z<-80.f)
  {
@@ -354,7 +355,7 @@ void AWenSiPuzzle::CloseThought(int32 Index)
 { if (Index>=0 && Index<2) { Thoughts[Index].Reset(); if (UI) UI->Refresh(); } }
 void AWenSiPuzzle::ToggleEdit()
 {
- auto PC=GetWorld()->GetFirstPlayerController(); if (!PC) return;
+ auto PC=GetWorld()->GetFirstPlayerController(); if (!PC || PC->IsPaused()){ResetHold.Reset();return;}
  if (!bEditing && (bComplete || (!Thoughts[0].IsValid() && !Thoughts[1].IsValid()))) return;
  bEditing=!bEditing; PC->SetIgnoreMoveInput(bEditing); PC->SetIgnoreLookInput(bEditing); PC->bShowMouseCursor=bEditing;
  if (UI) UI->Refresh();

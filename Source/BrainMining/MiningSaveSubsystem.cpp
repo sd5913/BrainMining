@@ -27,6 +27,9 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "CardRoomStage.h"
+#include "Async/Async.h"
+#include "SaveGameSystem.h"
+#include "PlatformFeatures.h"
 
 namespace
 {
@@ -70,14 +73,18 @@ namespace
 
 bool UMiningSaveSubsystem::HasSave() const
 {
+    if(CachedHasSave.IsSet())return CachedHasSave.GetValue();
+    if(auto* End=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(GetSaveSlot()+TEXT("_completion"),0));End && End->CampaignComplete)
+    {CachedHasSave=false;return false;}
     for(const FString& Slot:RecoverySlots())
-        if(UGameplayStatics::DoesSaveGameExist(Slot,0) && ValidSnapshot(Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(Slot,0))))return true;
-    return false;
+        if(UGameplayStatics::DoesSaveGameExist(Slot,0) && ValidSnapshot(Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(Slot,0)))){CachedHasSave=true;return true;}
+    CachedHasSave=false;return false;
 }
 TArray<int32> UMiningSaveSubsystem::GetCollectionProgress() const
 {
     TArray<int32> Result=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection;
-    for(const FString& Slot:RecoverySlots())
+    TArray<FString> Slots=RecoverySlots();Slots.Insert(GetSaveSlot()+TEXT("_completion"),0);
+    for(const FString& Slot:Slots)
         if(auto* Data=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(Slot,0));ValidSnapshot(Data))
         {
             Result.SetNumZeroed(FMath::Max(Result.Num(),Data->Collection.Num()));
@@ -92,9 +99,10 @@ bool UMiningSaveSubsystem::HasCollectionProgress() const
 }
 void UMiningSaveSubsystem::StartNewGame(bool bKeepCollection)
 {
+    FinishPendingWrite();MeshTask=TFuture<FMiningSavedMesh>();MeshCache.Reset();TutorialSoil.Reset();
     bSessionStarted=true;bLoadedProgress=false;SessionWorld=GetWorld();SaveAge=0;PreviousArea=INDEX_NONE;
     FallingSeconds=0;UpgradeHintLevel=INDEX_NONE;RestoredMinerals.Reset();
-    TutorialActive=false;TutorialSoilPassed=false;TutorialCompleted=0;PrototypesFound=0;
+    CompletionNotices.Reset();TutorialActive=false;TutorialSoilPassed=false;TutorialCompleted=0;PrototypesFound=0;
     const TArray<int32> Collection=bKeepCollection?GetCollectionProgress():TArray<int32>();
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     Wallet->Balance=0;Wallet->Minerals.Reset();Wallet->UpgradeLevels={0,0,0,0};Wallet->MineralDoubleChance=0;
@@ -108,10 +116,71 @@ void UMiningSaveSubsystem::StartNewGame(bool bKeepCollection)
         if(auto* Progression=PC->GetPawn()->FindComponentByClass<UMiningProgressionComponent>())Progression->ApplyUpgrades();
     // A confirmed new run must never fall back to the previous run on restart.
     for(const FString& Slot:RecoverySlots())UGameplayStatics::DeleteGameInSlot(Slot,0);
+    UGameplayStatics::DeleteGameInSlot(GetSaveSlot()+TEXT("_completion"),0);CachedHasSave=false;
 }
 
 bool UMiningSaveSubsystem::SaveProgress()
 {
+    FinishPendingWrite();return SaveProgressInternal(false);
+}
+void UMiningSaveSubsystem::FinishPendingWrite()
+{
+    if(!WriteTask.IsValid())return;
+    const bool Saved=WriteTask.Get();WriteTask=TFuture<bool>();
+    if(Saved){SaveAge=0;CachedHasSave=true;++AutosavesCompleted;}
+    else UE_LOG(LogTemp,Error,TEXT("Background progress write failed; previous save retained"));
+}
+void UMiningSaveSubsystem::EndSession()
+{
+    FinishPendingWrite();bSessionStarted=false;bLoadedProgress=false;RunCollectedItems.Reset();RestoredMinerals.Reset();CompletionNotices.Reset();
+    MeshTask=TFuture<FMiningSavedMesh>();MeshCache.Reset();TutorialSoil.Reset();
+}
+void UMiningSaveSubsystem::Deinitialize(){FinishPendingWrite();Super::Deinitialize();}
+void UMiningSaveSubsystem::MarkCampaignComplete()
+{
+    FinishPendingWrite();
+    auto* End=NewObject<UMiningSaveGame>(this);End->Version=4;End->Upgrades={0,0,0,0};End->CampaignComplete=true;
+    End->Collection=GetCollectionProgress();
+    if(UGameplayStatics::SaveGameToSlot(End,GetSaveSlot()+TEXT("_completion"),0))CachedHasSave=false;
+    bSessionStarted=false;
+}
+bool UMiningSaveSubsystem::PrepareMeshCache()
+{
+    if(MeshTask.IsValid())
+    {
+        if(!MeshTask.IsReady())return false;
+        auto Mesh=MeshTask.Get();MeshTask=TFuture<FMiningSavedMesh>();
+        const FString Key=Mesh.ActorKey+FString::Printf(TEXT("#%d"),Mesh.Chunk);MeshCache.Add(Key,MoveTemp(Mesh));
+    }
+    // Copy at most one changed chunk per frame; only immutable geometry goes
+    // to the worker. The final snapshot is taken after every revision matches.
+    for(TActorIterator<ADiggableRock> It(GetWorld());It;++It)
+    {
+        auto* Rock=*It;auto* Generated=Cast<AGeneratedMiningRock>(Rock);
+        if(Rock->IsTerrainCutPending() || (Generated && Generated->bSimplificationPending))return false;
+        const FString ActorKey=RockKey(Rock);
+        const auto Queue=[&](UDynamicMeshComponent* Component,int32 Chunk,int32 Cuts)
+        {
+            if(!Component || Cuts<=0)return false;
+            const FString Key=ActorKey+FString::Printf(TEXT("#%d"),Chunk);
+            if(auto* Cached=MeshCache.Find(Key);Cached && Cached->Cuts==Cuts){Cached->ActorCuts=Rock->SuccessfulCuts;return false;}
+            FMiningSavedMesh Saved;Saved.ActorKey=ActorKey;Saved.Chunk=Chunk;Saved.Cuts=Cuts;Saved.ActorCuts=Rock->SuccessfulCuts;
+            auto Copy=MakeShared<UE::Geometry::FDynamicMesh3,ESPMode::ThreadSafe>();
+            Component->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Source){*Copy=Source;});
+            MeshTask=Async(EAsyncExecution::ThreadPool,[Copy,Saved=MoveTemp(Saved)]() mutable
+            {FMemoryWriter Writer(Saved.Data,true);Copy->Serialize(Writer);return MoveTemp(Saved);});
+            return true;
+        };
+        if(Generated && Generated->bChunked)
+        {for(int32 I=0;I<Generated->Chunks.Num();++I)if(Queue(Generated->Chunks[I].Mesh,I,Generated->Chunks[I].Cuts))return false;}
+        else if(Queue(Rock->RockMesh,INDEX_NONE,Rock->SuccessfulCuts))return false;
+    }
+    return true;
+}
+bool UMiningSaveSubsystem::SaveProgressInternal(bool bAsync)
+{
+    if(WriteTask.IsValid())return false;
+    const double Started=FPlatformTime::Seconds();
     UWorld* World=GetWorld();
     auto* Hall=AMiningExhibitHall::Find(World);
     auto* PC=World?World->GetFirstPlayerController():nullptr;
@@ -150,6 +219,12 @@ bool UMiningSaveSubsystem::SaveProgress()
         const auto Capture=[&](UDynamicMeshComponent* Component,int32 Chunk,int32 Cuts)
         {
             if(!Component || Cuts<=0)return;
+            if(bAsync)
+            {
+                const FString Key=RockKey(*It)+FString::Printf(TEXT("#%d"),Chunk);
+                const auto* Cached=MeshCache.Find(Key);check(Cached && Cached->Cuts==Cuts);
+                Data->Meshes.Add(*Cached);Data->Meshes.Last().ActorCuts=It->SuccessfulCuts;return;
+            }
             auto& Mesh=Data->Meshes.AddDefaulted_GetRef();Mesh.ActorKey=RockKey(*It);Mesh.Chunk=Chunk;Mesh.Cuts=Cuts;Mesh.ActorCuts=It->SuccessfulCuts;
             FMemoryWriter Writer(Mesh.Data,true);
             Component->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Source){auto Copy=Source;Copy.Serialize(Writer);});
@@ -158,18 +233,28 @@ bool UMiningSaveSubsystem::SaveProgress()
         {for(int32 I=0;I<Generated->Chunks.Num();++I)Capture(Generated->Chunks[I].Mesh,I,Generated->Chunks[I].Cuts);}
         else Capture(It->RockMesh,INDEX_NONE,It->SuccessfulCuts);
     }
-    // Write a staging slot first; preserve the last working save if writing fails.
-    if(!UGameplayStatics::SaveGameToSlot(Data,GetSaveSlot()+TEXT("_pending"),0))return false;
-    if(UGameplayStatics::DoesSaveGameExist(GetSaveSlot(),0))
-        if(auto* Previous=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(GetSaveSlot(),0));ValidSnapshot(Previous))
-            UGameplayStatics::SaveGameToSlot(Previous,GetSaveSlot()+TEXT("_backup"),0);
-    const bool Saved=UGameplayStatics::SaveGameToSlot(Data,GetSaveSlot(),0);
-    if(Saved){SaveAge=0;UE_LOG(LogTemp,Display,TEXT("Progress saved: area %d, %d edited meshes"),Data->Area,Data->Meshes.Num());}
+    TArray<uint8> Bytes;if(!UGameplayStatics::SaveGameToMemory(Data,Bytes))return false;
+    auto* System=IPlatformFeaturesModule::Get().GetSaveGameSystem();if(!System)return false;
+    auto Write=[System,Slot=GetSaveSlot(),Bytes=MoveTemp(Bytes)]()
+    {
+        if(!System->SaveGame(false,*(Slot+TEXT("_pending")),0,Bytes))return false;
+        TArray<uint8> Previous;
+        if(System->LoadGame(false,*Slot,0,Previous))
+            if(!System->SaveGame(false,*(Slot+TEXT("_backup")),0,Previous))return false;
+        return System->SaveGame(false,*Slot,0,Bytes);
+    };
+    LastSnapshotMilliseconds=(FPlatformTime::Seconds()-Started)*1000;
+    UE_LOG(LogTemp,Display,TEXT("Progress snapshot: area %d, %d meshes, game thread %.2f ms, async=%d"),Data->Area,Data->Meshes.Num(),LastSnapshotMilliseconds,bAsync);
+    if(bAsync){WriteTask=Async(EAsyncExecution::ThreadPool,MoveTemp(Write));return true;}
+    const bool Saved=Write();
+    if(Saved){SaveAge=0;CachedHasSave=true;UE_LOG(LogTemp,Display,TEXT("Progress saved: area %d, %d edited meshes"),Data->Area,Data->Meshes.Num());}
     return Saved;
 }
 
 bool UMiningSaveSubsystem::LoadProgress()
 {
+    FinishPendingWrite();if(!HasSave())return false;CompletionNotices.Reset();
+    MeshCache.Reset();MeshTask=TFuture<FMiningSavedMesh>();TutorialSoil.Reset();
     auto* Hall=AMiningExhibitHall::Find(GetWorld());
     auto* PC=GetWorld()?GetWorld()->GetFirstPlayerController():nullptr;
     if(!Hall || !Hall->bReady || !PC || !PC->GetPawn())return false;
@@ -215,6 +300,7 @@ bool UMiningSaveSubsystem::LoadProgress()
     for(const auto& Saved:Data->Meshes)
     {
         if(IsLegacyTransientTVMesh(Data,Saved))continue;
+        MeshCache.Add(Saved.ActorKey+FString::Printf(TEXT("#%d"),Saved.Chunk),Saved);
         auto* Rock=Rocks.FindRef(Saved.ActorKey);
         FMemoryReader Reader(Saved.Data,true);UE::Geometry::FDynamicMesh3 Geometry;Geometry.Serialize(Reader);
         if(auto* Generated=Cast<AGeneratedMiningRock>(Rock);Generated && Saved.Chunk!=INDEX_NONE)
@@ -248,10 +334,10 @@ bool UMiningSaveSubsystem::LoadProgress()
 void UMiningSaveSubsystem::RestoreCollectedItems()
 {
     for(TActorIterator<AMiningTreasure> It(GetWorld());It;++It)
-        if(RestoredMinerals.Contains(It->SavePlacementIndex))
+        if(!It->bCollected && RestoredMinerals.Contains(It->SavePlacementIndex))
         {It->bCollected=true;It->DropBody->SetSimulatePhysics(false);It->SetActorHiddenInGame(true);It->SetActorEnableCollision(false);}
     for(TActorIterator<AMiningCollectible> It(GetWorld());It;++It)
-        if(!It->ActorHasTag(TEXT("CollectionPreview")) && RunCollectedItems.Contains(It->ItemId))
+        if(!It->bCollected && !It->ActorHasTag(TEXT("CollectionPreview")) && RunCollectedItems.Contains(It->ItemId))
         {
             It->bCollected=true;It->Body->SetSimulatePhysics(false);It->SetActorHiddenInGame(true);It->SetActorEnableCollision(false);
             if(IsValid(It->PresentationActor)){It->PresentationActor->SetActorHiddenInGame(true);It->PresentationActor->SetActorEnableCollision(false);}
@@ -260,6 +346,7 @@ void UMiningSaveSubsystem::RestoreCollectedItems()
 
 void UMiningSaveSubsystem::Tick(float Dt)
 {
+    if(WriteTask.IsValid() && WriteTask.IsReady())FinishPendingWrite();
     auto* World=GetWorld();if(!World || !World->IsGameWorld() || !World->GetMapName().EndsWith(TEXT("Lvl_MainGame")))return;
     auto* Hall=AMiningExhibitHall::Find(World);auto* PC=World->GetFirstPlayerController();
     auto* Character=PC?Cast<ACharacter>(PC->GetPawn()):nullptr;
@@ -281,31 +368,44 @@ void UMiningSaveSubsystem::Tick(float Dt)
         }
     }
     ProbeAge+=Dt;SaveAge+=Dt;
+    const bool WantsSave=Hall->ActiveArea!=PreviousArea || SaveAge>=60.f;
+    if(WantsSave && !WriteTask.IsValid() && !PC->IsMoveInputIgnored() && !PC->bShowMouseCursor && Movement->IsMovingOnGround())
+        if(PrepareMeshCache() && SaveProgressInternal(true))PreviousArea=Hall->ActiveArea;
     if(ProbeAge<.5f)return;ProbeAge=0;
     if(bLoadedProgress)RestoreCollectedItems();
-    UpdateBombWallSigns();
     UpdateTutorial();
     if(auto* Progression=Character->FindComponentByClass<UMiningProgressionComponent>();Progression && Progression->CanUpgradePickaxe() && UpgradeHintLevel!=Progression->GetLevel(0))
         if(auto* Subtitles=USubtitleSubsystem::Get(this);Subtitles && !Subtitles->IsPlaying() && !PC->bShowMouseCursor)
         {Subtitles->PlayStatusLine(FText::FromString(TEXT("材料充足！按[Tab]升级矿镐")),4.f);UpgradeHintLevel=Progression->GetLevel(0);}
-    if((Hall->ActiveArea!=PreviousArea || SaveAge>=60.f) && !PC->IsMoveInputIgnored() && !PC->bShowMouseCursor && Movement->IsMovingOnGround())
-        if(SaveProgress())PreviousArea=Hall->ActiveArea;
+
 }
 
+void UMiningSaveSubsystem::RecordCollectible(int32 Id)
+{
+    if(!(TutorialCompleted&8) && TutorialActive && TutorialSoilPassed)CompletionNotices.Add(TEXT("找到1个灵感藏品"));
+    RunCollectedItems.Add(Id);TutorialCompleted|=8;
+}
 void UMiningSaveSubsystem::RecordMineral(EMiningMineral Mineral)
 {
+    if(TutorialActive && TutorialSoilPassed)
+    {
+        if(Mineral==EMiningMineral::Copper && !(TutorialCompleted&1))CompletionNotices.Add(TEXT("收集1个铜矿"));
+        if(Mineral==EMiningMineral::Iron && !(TutorialCompleted&2))CompletionNotices.Add(TEXT("收集1个铁矿"));
+    }
     if(Mineral==EMiningMineral::Copper)TutorialCompleted|=1;
     if(Mineral==EMiningMineral::Iron)TutorialCompleted|=2;
 }
 
 void UMiningSaveSubsystem::UpdateTutorial()
 {
+    const int32 Before=TutorialCompleted,BeforePrototypes=PrototypesFound;
     auto* Hall=AMiningExhibitHall::Find(GetWorld());
     APawn* Pawn=GetWorld()->GetFirstPlayerController()->GetPawn();
     const FVector Position=Pawn->GetActorLocation();
-    ADiggableRock* Soil=nullptr;
-    for(TActorIterator<ADiggableRock> It(GetWorld());It;++It)
-        if(It->ActorHasTag(TEXT("BM_MainGame_StartRoomJunction"))){Soil=*It;break;}
+    if(!TutorialSoilPassed && !TutorialSoil.IsValid())
+        for(TActorIterator<ADiggableRock> It(GetWorld());It;++It)
+            if(It->ActorHasTag(TEXT("BM_MainGame_StartRoomJunction"))){TutorialSoil=*It;break;}
+    ADiggableRock* Soil=TutorialSoil.Get();
     if(!TutorialActive)
     {
         // The second soil wall is the upper-shaft junction, before the first mine.
@@ -327,7 +427,7 @@ void UMiningSaveSubsystem::UpdateTutorial()
         const float LocalRadius=Radius/FMath::Max(FMath::Abs(Soil->GetActorScale3D().X),.01f);
         if(Local.X>Half.X+LocalRadius && Local.X<Half.X+2000.f && FMath::Abs(Local.Y)<Half.Y && FMath::Abs(Local.Z)<Half.Z)
         {
-            TutorialSoilPassed=true;
+            TutorialSoilPassed=true;CompletionNotices.Add(TEXT("穿过1个泥土层"));
             if(auto* Subtitles=USubtitleSubsystem::Get(this))
                 Subtitles->PlayInteractionLines(TEXT("TutorialSoilPassed"),{FText::FromString(TEXT("哦！软软的泥土，这边一定是路"))});
         }
@@ -350,22 +450,11 @@ void UMiningSaveSubsystem::UpdateTutorial()
         }
     }
     if(Kind==EMiningExperienceKind::Museum)PrototypesFound=4;
-}
-
-void UMiningSaveSubsystem::UpdateBombWallSigns()
-{
-    auto* PC=GetWorld()->GetFirstPlayerController();if(!PC || !PC->GetPawn())return;
-    FVector Eye;FRotator View;PC->GetPlayerViewPoint(Eye,View);
-    // Generated guide meshes can be offset far from their actor origin. Trace the
-    // visible surface itself, so winding/offset walls receive the icon reliably.
-    FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(BombWallSign),true,PC->GetPawn());
-    if(!GetWorld()->LineTraceSingleByChannel(Hit,Eye,Eye+View.Vector()*2200.f,ECC_Visibility,Query))return;
-    auto* Rock=Cast<ADiggableRock>(Hit.GetActor());
-    if(!Rock || !Rock->ActorHasTag(TEXT("BM_BombOnly")))return;
-    TArray<UDecalComponent*> Decals;Rock->GetComponents(Decals);
-    if(Decals.ContainsByPredicate([](const UDecalComponent* Decal){return Decal->GetFName()==TEXT("BombWallIcon");}))return;
-    auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/M_BombWallIcon"));if(!Material)return;
-    auto* Sign=NewObject<UDecalComponent>(Rock,TEXT("BombWallIcon"));Rock->AddInstanceComponent(Sign);Sign->SetupAttachment(Rock->GetRootComponent());
-    Sign->SetDecalMaterial(Material);Sign->DecalSize=FVector(16,110,110);Sign->SetFadeScreenSize(.002f);
-    Sign->RegisterComponent();Sign->SetWorldLocationAndRotation(Hit.ImpactPoint+Hit.ImpactNormal*4,FRotationMatrix::MakeFromXY(-Hit.ImpactNormal,-FVector::UpVector).Rotator());
+    if(TutorialActive && TutorialSoilPassed)
+    {
+        if(!(Before&4) && (TutorialCompleted&4) && (TutorialCompleted&3)==3)CompletionNotices.Add(TEXT("升级1次矿镐"));
+        if(!(Before&16) && (TutorialCompleted&16) && (TutorialCompleted&3)==3)CompletionNotices.Add(TEXT("将矿镐升至2级"));
+        const TCHAR* Names[]={TEXT("发现1个灵感原型"),TEXT("发现第2个灵感原型"),TEXT("发现第3个灵感原型"),TEXT("发现第4个灵感原型")};
+        for(int32 I=BeforePrototypes;I<PrototypesFound && I<4;++I)CompletionNotices.Add(Names[I]);
+    }
 }

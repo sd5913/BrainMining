@@ -34,6 +34,7 @@ public:
     static UMiningGamepadSubsystem* Find(const APlayerController* Controller);
     static FVector2D ReadMove(const APlayerController* Controller);
     static bool ReadJumpHeld(const APlayerController* Controller);
+    static bool ReadResetInteractionHeld(const APlayerController* Controller);
     static bool ReadDescendHeld(const APlayerController* Controller);
     static bool ReadJumpPressed(const APlayerController* Controller);
     static bool UsesGamepad(const APlayerController* Controller);

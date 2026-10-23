@@ -9,7 +9,7 @@ import unreal
 
 # These IDs are the existing catalogue/inventory IDs, not the order in a table.
 PICKUP_LINES = [
-    (0, '来自天堂的马桶', '马桶堵住了然后上涌……不太优雅的想法'),
+    (0, '来自天堂的马桶', '马桶堵住了然后上涌……有点味道的想法'),
     (1, '电脑里的蚂蚁窝', '蚂蚁一直挖掘 涌现出了复杂的通路'),
     (2, '化学试剂', '化学元素通过反应产生新的物质 很涌现呢'),
     (3, '肉鸽', '肉鸽游戏很适合做连携 算是"1+1>2"的涌现吧'),

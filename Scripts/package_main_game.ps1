@@ -97,6 +97,7 @@ $requiredAssets = @(
     'Rooms/CardDuel/Materials/PoisonBurn/M_Smoke_2.uasset',
     'MainGame/Materials/M_BombWallIcon.uasset',
     'MainGame/Materials/M_BedrockDark.uasset',
+    'Audio/UI/S_TaskComplete.uasset',
     'UI/MiningGUI/Art/T_IconBlast.uasset',
     'DBStylizedSketchShader/Textures/T_GrungeA_MASK.uasset',
     'Fonts/F_SourceHanSansCN_Medium.uasset',

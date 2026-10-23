@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/GameModeBase.h"
 #include "Blueprint/UserWidget.h"
+#include "MiningHoldInteraction.h"
 #include "WenSiPuzzle.generated.h"
 
 class UStaticMeshComponent;
@@ -116,6 +117,7 @@ public:
  bool FirstBarrierClear() const;
  void UpdateCircuitProgress();
  UFUNCTION(BlueprintCallable, Category="WenSi") void ResetPuzzle();
+ FMiningHoldInteraction ResetHold;
  void ToggleEdit();
  void CloseThought(int32 Index);
  void SwapRules(int32 From, int32 To);

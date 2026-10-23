@@ -284,8 +284,8 @@ void UMiningGamepadSubsystem::ResetContext()
     }
     else if (TActorIterator<AEndingEmergence>(Player->GetWorld())) return;
     UWorld* World = Player->GetWorld();
-    if (auto* Mirror = FindGamepadActionActor<AWenSiMirrorPuzzle>(World, [](auto* Puzzle) { return Puzzle->bAreaActive; })) { Mirror->ResetPuzzle(); return; }
-    if (auto* Puzzle = FindGamepadActionActor<AWenSiPuzzle>(World, [](auto* Candidate) { return Candidate->bAreaActive; })) { Puzzle->ResetPuzzle(); return; }
+    if (auto* Mirror = FindGamepadActionActor<AWenSiMirrorPuzzle>(World, [](auto* Puzzle) { return Puzzle->bAreaActive; })) { return; } // Reset now requires holding at the physical reset button.
+    if (auto* Puzzle = FindGamepadActionActor<AWenSiPuzzle>(World, [](auto* Candidate) { return Candidate->bAreaActive; })) { return; }
     if (auto* Encounter = Cast<AMiningEncounterPlayerController>(Player); Encounter && Encounter->IsCardRoomContext()) return;
     if (auto* Field = FindGamepadActionActor<AMiningCollectionField>(World, [](auto* Candidate) { return Candidate->IsAreaActive() && !Candidate->bUseAuthoredPlacements; })) { Field->ResetCollection(); return; }
     if (auto* Echo = Player->FindComponentByClass<UEchoPassageInteractionComponent>(); Echo && Echo->bExplorationActive) { Echo->Restart(); return; }

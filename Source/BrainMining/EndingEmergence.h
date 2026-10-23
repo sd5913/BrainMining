@@ -363,6 +363,8 @@ private:
     void ReplaceBloodAssets();
     void BuildBrainSurface();
     void EnterBlood();
+    FVector BloodEntryOffset=FVector::ZeroVector;
+    float BloodEntryFOV=90;
     void EnterBrain();
     void HideCellAndBloodVisuals();
     void PossessNeuron(int32 Index);

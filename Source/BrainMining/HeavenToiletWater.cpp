@@ -192,7 +192,7 @@ void AHeavenToiletWater::Tick(float DeltaSeconds)
     if(const APawn* Pawn=UGameplayStatics::GetPlayerPawn(this,0))
     {
         const FVector P=Pawn->GetActorLocation(),Center=GetActorLocation();
-        const float EntryRadius=Radius+(bPlayerInHeaven?100.f:0.f);
+        const float EntryRadius=FMath::Max(100.f,Radius-180.f)+(bPlayerInHeaven?60.f:0.f);
         const bool Inside=FVector::DistSquared2D(P,Center)<FMath::Square(EntryRadius) && P.Z>Center.Z-100 && P.Z<Center.Z+1800;
         if(Inside && !bPlayerInHeaven)UMiningRoomAudioSubsystem::Emit(this,TEXT("S_HeavenAngelChoir"),.45f,false,0.f);
         bPlayerInHeaven=Inside;

@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/GameModeBase.h"
 #include "Blueprint/UserWidget.h"
+#include "MiningHoldInteraction.h"
 #include "WenSiMirrorPuzzle.generated.h"
 
 class UStaticMeshComponent;
@@ -152,6 +153,8 @@ public:
  void RefreshSelfThoughts();
  AWenSiMirrorExhibit* Find(int32 Kind) const;
  UFUNCTION(BlueprintCallable, Category="WenSi") void ResetPuzzle();
+ FMiningHoldInteraction ResetHold;
+ int32 ResetCount=0;
  UFUNCTION(BlueprintCallable, Category="WenSi|Developer") bool SkipToReward();
  UFUNCTION(BlueprintCallable, Category="WenSi|Validation") FString ValidateMirrorPuzzle();
  UFUNCTION(BlueprintCallable, Category="WenSi|Validation") FString MirrorStatus();

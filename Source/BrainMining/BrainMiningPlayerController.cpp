@@ -614,9 +614,9 @@ bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 		for (TActorIterator<APopupCloseStage> It(GetWorld()); It; ++It)
 			if (It->HandleInteractionInput(this)) return true;
 		for (TActorIterator<AWenSiPuzzle> It(GetWorld()); It; ++It)
-			if (It->HandleInteractionInput(this)) return true;
+			if (It->HandleInteractionInput(this)) { if(It->bAimReset)Super::InputKey(Params);return true; }
 		for (TActorIterator<AWenSiMirrorPuzzle> It(GetWorld()); It; ++It)
-			if (It->HandleInteractionInput(this)) return true;
+			if (It->HandleInteractionInput(this)) { if(It->bAimReset)Super::InputKey(Params);return true; }
         if (auto* Cards = FindComponentByClass<UCardRoomInteractionComponent>(); Cards && Cards->bRoomActive
             && Cards->Stage
             && (Cards->Stage->Run.Phase == ECardRoomPhase::Exploring || Cards->Stage->Run.Phase == ECardRoomPhase::Victory)

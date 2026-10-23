@@ -204,4 +204,7 @@ protected:
     int32 DisplayedPrototype=1;
     int32 DisplayedUpgrade=1;
     UPROPERTY(Transient) TObjectPtr<UTextBlock> CollectionShortcut;
+    UPROPERTY(Transient) TObjectPtr<UTextBlock> CompletionToast;
+    UPROPERTY(Transient) TObjectPtr<class USoundBase> CompletionSound;
+    float CompletionToastAge=3.f;
 };

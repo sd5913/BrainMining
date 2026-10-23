@@ -153,7 +153,7 @@ void UWenSiPuzzleWidget::Refresh()
  }
  FString Message;
  const bool SharedHUD = UMiningInteractionHUDWidget::IsActiveFor(GetOwningPlayer());
- if(Puzzle->bAimReset && !Puzzle->bEditing) { if (!SharedHUD) Message=TEXT("E 重置谜题"); }
+ if(Puzzle->bAimReset && !Puzzle->bEditing) { if (!SharedHUD) Message=TEXT("长按E-重置谜题"); }
  else if (!Puzzle->bComplete)
  {
   if (Puzzle->bEditing) Message=TEXT("拖动红词交换    G 返回    Q 放下思考");

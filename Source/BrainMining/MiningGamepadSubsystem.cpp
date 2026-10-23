@@ -167,6 +167,13 @@ FVector2D UMiningGamepadSubsystem::ReadMove(const APlayerController* Player)
     return FVector2D(FMath::Clamp(Axis.X, -1., 1.), FMath::Clamp(Axis.Y, -1., 1.));
 }
 
+bool UMiningGamepadSubsystem::ReadResetInteractionHeld(const APlayerController* Player)
+{
+    const auto* Input = Find(Player);
+    return Input && Input->GetContext() == EMiningInputContext::Exploration &&
+        (Input->HeldButtons.Contains(EKeys::Gamepad_FaceButton_Left) || Input->HeldButtons.Contains(EKeys::Gamepad_DPad_Down));
+}
+
 bool UMiningGamepadSubsystem::ReadJumpHeld(const APlayerController* Player)
 {
     const auto* Input = Find(Player);

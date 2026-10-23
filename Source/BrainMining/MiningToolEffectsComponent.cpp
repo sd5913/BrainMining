@@ -79,6 +79,12 @@ void UMiningToolEffectsComponent::BeginPlay()
 		DrillMesh = Character->GetDrillRightModel();
 		LeftDrillPivot = Character->GetDrillLeftMotion();
 		LeftDrillMesh = Character->GetDrillLeftModel();
+        for(int32 I=0;I<2;++I)
+        {
+            auto* Model=I?LeftDrillMesh.Get():DrillMesh.Get();auto* Motion=I?LeftDrillPivot.Get():DrillPivot.Get();
+            Motion->GetAttachParent()->SetRelativeLocationAndRotation(FVector(I?95:85,I?-28:28,3),FRotator(14,I?18:-18,0));
+            Model->SetRelativeTransform(FTransform(FRotator(-10,0,0),FVector(I?-31.280714:-21.432637,0,I?-14.638632:-16.375114),FVector(.72,I?-.72:.72,.72)));
+        }
 	}
 	else
 	{

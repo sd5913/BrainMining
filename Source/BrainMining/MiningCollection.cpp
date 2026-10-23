@@ -120,6 +120,10 @@ bool AMiningCollectionField::InitializePlayer()
             for(int32 I=0;I<PresentationSession->CampaignToiletBodyMaterials.Num();++I)PreviewToilet->Body->SetMaterial(I,PresentationSession->CampaignToiletBodyMaterials[I]);
             for(int32 I=0;I<PresentationSession->CampaignToiletLidMaterials.Num();++I)PreviewToilet->Lid->SetMaterial(I,PresentationSession->CampaignToiletLidMaterials[I]);
         }
+        FBox ToiletBounds(ForceInit);
+        for(auto* Part:{PreviewToilet->Body.Get(),PreviewToilet->Lid.Get()})
+            if(Part->GetStaticMesh())ToiletBounds+=Part->GetStaticMesh()->GetBoundingBox().TransformBy(Part->GetComponentTransform().GetRelativeTransform(PreviewToilet->GetActorTransform()));
+        ToiletPreviewCenter=ToiletBounds.IsValid?ToiletBounds.GetCenter():FVector::ZeroVector;
         PreviewToilet->SetActorEnableCollision(false);PreviewToilet->SetActorTickEnabled(false);
         PreviewToilet->WaterJet->DeactivateImmediate();PreviewToilet->OpeningSplash->DeactivateImmediate();
         PreviewToilet->SetActorHiddenInGame(true);Capture->ShowOnlyActors.Add(PreviewToilet);
@@ -185,6 +189,7 @@ void AMiningCollectionField::SpawnField()
             if(bBuriedWithClues && Placement.HostRock)
             {
                 Item->HostRock=Placement.HostRock; Item->BuriedTransform=Item->GetActorTransform();
+                if(Placement.ItemId==3 && Placement.HostRock->ActorHasTag(TEXT("BM_BombOnly")))Item->Tags.Add(TEXT("BM_BombGateReward"));
                 if(Placement.ItemId==3) ResidentBird=Item;
                 SpawnAuthoredClues(Placement);
             }
@@ -430,13 +435,17 @@ void AMiningCollectionField::SelectItem(int32 Id)
     ResetPreview();
     if(CatalogueWidget)CatalogueWidget->RefreshCollection();
 }
-void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=SelectedId==9?850:330; RotatePreview(0,0); }
+void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=SelectedId==9?850:(SelectedId==0?480:330); RotatePreview(0,0); }
 void AMiningCollectionField::RotatePreview(float Yaw,float Pitch)
 {
     if(!Preview) return;
     PreviewYaw=FRotator::NormalizeAxis(PreviewYaw+Yaw); PreviewPitch=FMath::Clamp(PreviewPitch+Pitch,-80.f,80.f);
     Preview->SetActorRotation(FRotator(PreviewPitch,PreviewYaw,0));
-    if(PreviewToilet)PreviewToilet->SetActorRotation(FRotator(PreviewPitch,PreviewYaw+90,0));
+    if(PreviewToilet)
+    {
+        const FQuat Rotation=FRotator(PreviewPitch,PreviewYaw+90,0).Quaternion();
+        PreviewToilet->SetActorLocationAndRotation(FVector(0,0,-9990)-Rotation.RotateVector(ToiletPreviewCenter*PreviewToilet->GetActorScale3D()),Rotation);
+    }
     Capture->SetWorldLocation(FVector(-PreviewDistance,0,SelectedId==9?-10125:-9990)); Capture->SetWorldRotation(FRotator(0,0,0));
     Capture->CaptureScene();
     PreviewRefreshFrames=3;

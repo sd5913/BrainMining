@@ -56,7 +56,10 @@ def run():
  check(str(s['subtitle'].get_active_text())=='没思路的话就看看左侧引导栏吧','Guidance subtitle')
  shot('guidance-start')
  check(s['wallet'].add_mineral('2',1),'Acquire a copper ore');yield .6
- check(s['save'].tutorial_completed&1,'Copper objective completes')
+ check(not(s['save'].tutorial_completed&1),'Wallet fixture is not a physical collection')
+ # Seed historical progress for this legacy persistence fixture. Real pickups are
+ # covered by verify_packaged25.py, including exposure without collection.
+ H.write_preview_state(s['save'],'TutorialCompleted','3')
  shot('guidance-check')
  H.write_preview_state(s['wallet'],'Minerals','()');yield 1.5
  check(s['save'].tutorial_completed&1,'Spending minerals cannot undo completed objective')

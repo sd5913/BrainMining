@@ -43,10 +43,21 @@ if args.phase == 'setup':
     rock=next(a for a in actors('BM_StartRoom_ExitBlocker') if 'cuts' in a)
     check(rock['cuts']>0,'starter wall excavation committed')
     (c.directory/'terrain-expected.json').write_text(json.dumps(rock),encoding='utf-8')
+    # Collection objectives now require successful physical pickups.
+    for mineral in ('2','4'):
+        item=next(a for a in actors('MiningTreasure') if a.get('mineral')==mineral and -30000<a['position'][0]<-18000 and not a['collected'])
+        point=item['position']
+        command('pose',eye=[point[0]-150,point[1],point[2]+70],target=point)
+        for host in item['hosts']:
+            c.command('mine',actor=host,point=point,radius=300);time.sleep(1)
+        time.sleep(2)
+        item=next(a for a in actors('MiningTreasure') if a['path']==item['path']);point=item['position']
+        command('pose',eye=[point[0]-90,point[1],point[2]+35],target=point);time.sleep(.2)
+        command('aim',target=point);time.sleep(.2);command('treasure')
     command('mineral_fixture',mineral='2',amount=4)
     command('mineral_fixture',mineral='4',amount=2)
     time.sleep(.6)
-    check(c.command('state')['completed'] & 3 == 3,'copper and iron events complete objectives')
+    check(c.command('state')['completed'] & 3 == 3,'copper and iron pickups complete objectives')
     command('shot',name='tutorial-ore-checks')
     command('upgrade');time.sleep(2)
     r=c.command('state')

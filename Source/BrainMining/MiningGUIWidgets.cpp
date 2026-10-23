@@ -661,8 +661,17 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         // A continued game only displays the next outstanding prototype.
         DisplayedPrototype=FMath::Clamp(Saves->PrototypesFound+1,1,5);
     }
-    TutorialAge+=Dt;
-    const TCHAR* Basic[]={TEXT("挖到1个铜矿"),TEXT("挖到1个铁矿"),TEXT("升级1次矿镐"),TEXT("找到1个灵感藏品")};
+    const bool UpgradeUnlocked=(Saves->TutorialCompleted&3)==3;
+    if(UpgradeUnlocked && !bTutorialUpgradeRevealed)
+    {
+        bTutorialUpgradeRevealed=true;
+        if(!(Saves->TutorialCompleted&4)){TutorialAge=0;UpgradeAttentionAge=0;}
+    }
+    TutorialAge+=Dt;UpgradeAttentionAge+=Dt;
+    // Use the same three gentle pulses for the new objective and its destination.
+    if(auto* PickaxePanel=GetWidgetFromName(TEXT("PickaxeSummaryPanel")))
+        PickaxePanel->SetRenderOpacity(UpgradeAttentionAge<2.4f?.70f+.30f*FMath::Cos(UpgradeAttentionAge*2.f*PI/.8f):1.f);
+    const TCHAR* Basic[]={TEXT("收集1个铜矿"),TEXT("收集1个铁矿"),TEXT("升级1次矿镐"),TEXT("找到1个灵感藏品")};
     const TCHAR* Prototype[]={TEXT("发现1个灵感原型"),TEXT("发现第2个灵感原型"),TEXT("发现第三个灵感原型"),TEXT("发现第4个灵感原型")};
     int32 VisibleRows=0;
     for(int32 I=0;I<5;++I)
@@ -672,7 +681,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         if(Done)TutorialDoneAge[I]+=Dt;
         if(I==4 && TutorialDoneAge[I]>1.4f && DisplayedPrototype<5)
         {++DisplayedPrototype;TutorialDoneAge[I]=0;TutorialAge=0;}
-        const bool Hidden=I<4?TutorialDoneAge[I]>1.4f:DisplayedPrototype>4;
+        const bool Hidden=(I==2 && !UpgradeUnlocked) || (I<4?TutorialDoneAge[I]>1.4f:DisplayedPrototype>4);
         Row->SetVisibility(Hidden?ESlateVisibility::Collapsed:ESlateVisibility::HitTestInvisible);
         if(Hidden)continue;
         const bool Checked=I<4?Done:Saves->PrototypesFound>=DisplayedPrototype;

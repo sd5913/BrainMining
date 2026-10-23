@@ -4,6 +4,7 @@
 #include "MiningInteractionTrace.h"
 #include "MiningAudioComponent.h"
 #include "MiningWalletSubsystem.h"
+#include "MiningSaveSubsystem.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningInteractionHUDWidget.h"
 #include "Engine/GameInstance.h"
@@ -804,6 +805,14 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
     if (Controller && Controller->GetPawn())
         if (auto* Audio = Controller->GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayCollect();
     Item->bCollected = true;
+    // Only a successful pickup advances the collection guide; exposing ore or
+    // changing the wallet directly must not complete a collection objective.
+    if (bMaterials)
+        if (auto* Saves = GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>())
+        {
+            if (Item->TreasureId == TEXT("2")) Saves->RecordMineral(EMiningMineral::Copper);
+            else if (Item->TreasureId == TEXT("4")) Saves->RecordMineral(EMiningMineral::Iron);
+        }
     Item->SetDropActive(false);
     Item->SetHighlighted(false);
     Item->CollectedValue = Item->Value;

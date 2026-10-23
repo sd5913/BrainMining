@@ -196,6 +196,8 @@ protected:
     UPROPERTY(Transient) TObjectPtr<UImage> TutorialBackplate;
     UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> TutorialRows;
     float TutorialAge=0;
+    float UpgradeAttentionAge=2.4f;
+    bool bTutorialUpgradeRevealed=false;
     float TutorialDoneAge[5]={0,0,0,0,0};
     int32 DisplayedPrototype=1;
 };

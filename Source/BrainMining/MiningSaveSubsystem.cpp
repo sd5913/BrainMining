@@ -262,7 +262,6 @@ void UMiningSaveSubsystem::UpdateTutorial()
                 Subtitles->PlayInteractionLines(TEXT("TutorialIntro"),{FText::FromString(TEXT("没思路的话就看看左侧引导栏吧"))});
     }
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
-    for(auto Mineral:{EMiningMineral::Copper,EMiningMineral::Iron})if(Wallet->GetMineralCount(Mineral)>0)RecordMineral(Mineral);
     if(Wallet->GetUpgradeLevel(0)>0)TutorialCompleted|=4;
     if(Hall->Collection && Hall->Collection->Inventory.ContainsByPredicate([](int32 Count){return Count>0;}))TutorialCompleted|=8;
     const auto Kind=Hall->AreaKind(Hall->ActiveArea);

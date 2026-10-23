@@ -1,5 +1,8 @@
 #include "MiningPackagedQA.h"
 #include "MiningSaveSubsystem.h"
+#include "MiningGUIWidgets.h"
+#include "Components/TextBlock.h"
+#include "UObject/UObjectIterator.h"
 #include "MiningWalletSubsystem.h"
 #include "MiningProgressionComponent.h"
 #include "MiningCollection.h"
@@ -185,6 +188,21 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     if(auto* Sub=USubtitleSubsystem::Get(this))Result->SetStringField(TEXT("subtitle"),Sub->GetActiveText().ToString());
     if(auto* Office=First<APopupCloseStage>(W)){Result->SetStringField(TEXT("office"),Office->GetSessionStatus());Result->SetStringField(TEXT("office_exit"),Office->GetExitStatus());}
     if(auto* Cards=First<ACardRoomStage>(W)){Result->SetNumberField(TEXT("card_phase"),int32(Cards->Run.Phase));Result->SetNumberField(TEXT("card_round"),Cards->Run.Round);}
+    for(TObjectIterator<UMiningGUIHUDWidget> It;It;++It)
+    {
+        if(It->IsTemplate() || It->GetWorld()!=W)continue;
+        if(auto* Panel=It->GetWidgetFromName(TEXT("GuidancePanel")))Result->SetNumberField(TEXT("guide_opacity"),Panel->GetRenderOpacity());
+        if(auto* Panel=It->GetWidgetFromName(TEXT("PickaxeSummaryPanel")))Result->SetNumberField(TEXT("upgrade_opacity"),Panel->GetRenderOpacity());
+        TArray<TSharedPtr<FJsonValue>> Rows;
+        for(int32 I=0;I<5;++I)
+            if(auto* Row=Cast<UTextBlock>(It->GetWidgetFromName(*FString::Printf(TEXT("GuidanceRow%d"),I))))
+            {
+                auto Value=MakeShared<FJsonObject>();Value->SetNumberField(TEXT("index"),I);
+                Value->SetStringField(TEXT("text"),Row->GetText().ToString());Value->SetBoolField(TEXT("visible"),Row->IsVisible());
+                Rows.Add(MakeShared<FJsonValueObject>(Value));
+            }
+        Result->SetArrayField(TEXT("guide_rows"),Rows);break;
+    }
     if(Op==TEXT("actors"))
     {
         FString Filter;C->TryGetStringField(TEXT("filter"),Filter);TArray<TSharedPtr<FJsonValue>> Actors;
@@ -196,7 +214,13 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
             A->SetArrayField(TEXT("extent"),Vec(It->GetComponentsBoundingBox(true).GetExtent()));A->SetArrayField(TEXT("forward"),Vec(It->GetActorForwardVector()));
             if(auto* Exhibit=Cast<AWenSiMirrorExhibit>(*It)){A->SetNumberField(TEXT("kind"),Exhibit->Kind);A->SetNumberField(TEXT("word"),int32(Exhibit->Word));}
             if(auto* Rock=Cast<ADiggableRock>(*It)){A->SetNumberField(TEXT("cuts"),Rock->SuccessfulCuts);A->SetNumberField(TEXT("triangles"),Rock->TriangleCount);A->SetArrayField(TEXT("rock_size"),Vec(Rock->RockSize));}
-            if(auto* Item=Cast<AMiningTreasure>(*It)){A->SetStringField(TEXT("mineral"),Item->TreasureId.ToString());A->SetBoolField(TEXT("released"),Item->bReleased);A->SetBoolField(TEXT("collected"),Item->bCollected);}
+            if(auto* Item=Cast<AMiningTreasure>(*It))
+            {
+                A->SetStringField(TEXT("mineral"),Item->TreasureId.ToString());A->SetBoolField(TEXT("released"),Item->bReleased);A->SetBoolField(TEXT("collected"),Item->bCollected);
+                A->SetNumberField(TEXT("placement"),Item->SavePlacementIndex);
+                TArray<TSharedPtr<FJsonValue>> Hosts;for(const auto& Host:Item->CoveringRocks)if(Host)Hosts.Add(MakeShared<FJsonValueString>(Host->GetPathName()));
+                A->SetArrayField(TEXT("hosts"),Hosts);
+            }
             if(auto* Item=Cast<AMiningCollectible>(*It)){A->SetNumberField(TEXT("item"),Item->ItemId);A->SetBoolField(TEXT("released"),Item->bReleased);A->SetBoolField(TEXT("collected"),Item->bCollected);A->SetStringField(TEXT("host"),Item->HostRock?Item->HostRock->GetName():TEXT(""));}
             Actors.Add(MakeShared<FJsonValueObject>(A));
         }

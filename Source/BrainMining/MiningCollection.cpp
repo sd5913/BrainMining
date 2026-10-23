@@ -1,4 +1,5 @@
 #include "MiningCollection.h"
+#include "MiningSaveSubsystem.h"
 #include "Subtitles/SubtitleSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "MiningExperienceSubsystem.h"
@@ -340,6 +341,7 @@ bool AMiningCollectionField::TryCollectTarget()
     Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);
     if(IsValid(Item->PresentationActor)) { Item->PresentationActor->Destroy(); Item->PresentationActor=nullptr; }
     ++Inventory[Item->ItemId];
+    GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->RecordCollectible(Item->ItemId);
     UMiningHapticsSubsystem::Emit(Player, EMiningHapticCue::Collectible);
     if(Player->GetPawn())
         if(auto* Audio=Player->GetPawn()->FindComponentByClass<UMiningAudioComponent>())Audio->PlayCollectible(Item->ItemId);

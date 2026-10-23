@@ -1,4 +1,9 @@
 #include "MiningPackagedQA.h"
+#include "MiningExperienceSubsystem.h"
+#include "MiningComponent.h"
+#include "MiningBombToolComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "MiningSaveSubsystem.h"
 #include "MiningGUIWidgets.h"
 #include "Components/TextBlock.h"
@@ -24,6 +29,7 @@
 #include "Subtitles/SubtitleSubsystem.h"
 #include "EngineUtils.h"
 #include "Engine/GameInstance.h"
+#include "Engine/GameViewportClient.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/PlayerCameraManager.h"
@@ -126,6 +132,14 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
             break;
         }
     }
+    else if(Op==TEXT("confirm_new")){if(auto* Opening=First<AMiningOpening>(W))Opening->ConfirmNewGame(C->GetBoolField(TEXT("keep")));else Ok=false;}
+    else if(Op==TEXT("return_menu"))GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->ReturnToMainMenu();
+    else if(Op==TEXT("pause"))Ok=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->TogglePauseMenu();
+    else if(Op==TEXT("toggle_ui"))GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->ToggleAllUI();
+    else if(Op==TEXT("gm_tool"))
+    {auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->DeveloperGrantTool(int32(C->GetNumberField(TEXT("tool"))));Session->CloseMenu();}
+    else if(Op==TEXT("gm_map")){auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->OpenDeveloperExperience(int32(C->GetNumberField(TEXT("index"))));}
+    else if(Op==TEXT("throw_bomb")){auto* Bomb=Pawn->FindComponentByClass<UMiningBombToolComponent>();Ok=Bomb && Bomb->ThrowBomb();}
     else if(Op==TEXT("save"))Ok=Save->SaveProgress();
     else if(Op==TEXT("load"))Ok=Save->LoadProgress();
     else if(Op==TEXT("area_fixture") && Hall)
@@ -152,7 +166,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     else if(Op==TEXT("film_fixture")){if(auto* Ending=First<AEndingEmergence>(W))Ending->PreviewFilm();else Ok=false;}
     else if(Op==TEXT("interact"))Ok=AMiningStartRoom::Find(W)->Interact(PC);
     else if(Op==TEXT("mineral_fixture"))Ok=Wallet->AddMineral(FName(*C->GetStringField(TEXT("mineral"))),int32(C->GetNumberField(TEXT("amount"))));
-    else if(Op==TEXT("upgrade"))Ok=Pawn->FindComponentByClass<UMiningProgressionComponent>()->Purchase(0,1);
+    else if(Op==TEXT("upgrade"))Ok=Pawn->FindComponentByClass<UMiningProgressionComponent>()->Purchase(0,Wallet->GetUpgradeLevel(0)+1);
     else if(Op==TEXT("mine"))
     {
         auto* Rock=Cast<ADiggableRock>(Actor);Ok=Rock!=nullptr;
@@ -183,10 +197,31 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     }
     else if(Op==TEXT("shot"))FScreenshotRequest::RequestScreenshot(Directory/(FPaths::MakeValidFileName(C->GetStringField(TEXT("name")))+TEXT(".png")),true,false);
     else if(Op==TEXT("quit"))FPlatformMisc::RequestExit(false);
-    else if(Op!=TEXT("state") && Op!=TEXT("actors"))Ok=false;
+    else if(Op!=TEXT("state") && Op!=TEXT("actors") && Op!=TEXT("neurons"))Ok=false;
     Result->SetStringField(TEXT("id"),LastId);Result->SetBoolField(TEXT("ok"),Ok);
     Result->SetNumberField(TEXT("area"),Hall?Hall->ActiveArea:-1);Result->SetNumberField(TEXT("unlocked"),Hall?Hall->UnlockedArea:-1);
     Result->SetBoolField(TEXT("opening"),AMiningOpening::IsOpening(W));
+    if(auto* Camera=PC->PlayerCameraManager.Get())
+    {
+        Result->SetArrayField(TEXT("camera"),Vec(Camera->GetCameraLocation()));
+        Result->SetNumberField(TEXT("camera_fade"),Camera->FadeAmount);
+        Result->SetNumberField(TEXT("camera_fov"),Camera->GetFOVAngle());
+    }
+    if(auto* Viewport=W->GetGameViewport())
+    {
+        Result->SetBoolField(TEXT("world_render_disabled"),Viewport->bDisableWorldRendering);
+        Result->SetBoolField(TEXT("rendering"),Viewport->EngineShowFlags.Rendering);
+        Result->SetBoolField(TEXT("game_show"),Viewport->EngineShowFlags.Game);
+    }
+    Result->SetStringField(TEXT("view_target"),GetNameSafe(PC->GetViewTarget()));
+
+    Result->SetBoolField(TEXT("collection_choice"),First<AMiningOpening>(W) && First<AMiningOpening>(W)->IsChoosingCollection());
+    Result->SetBoolField(TEXT("ui_hidden"),GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->bAllUIHidden);
+    if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>())Result->SetBoolField(TEXT("mining_suspended"),Mining->IsInputSuspended());
+    TArray<UStaticMeshComponent*> ToolParts;Pawn->GetComponents(ToolParts);
+    for(auto* Part:ToolParts)if(Part->GetName()==TEXT("PickaxeModel"))Result->SetBoolField(TEXT("pickaxe_visible"),Part->IsVisible());
+    TArray<TSharedPtr<FJsonValue>> RunItems;for(int32 I=0;I<AMiningCollectible::ItemTypeCount;++I)if(Save->WasCollectedThisRun(I))RunItems.Add(MakeShared<FJsonValueNumber>(I));
+    Result->SetArrayField(TEXT("run_items"),RunItems);
     Result->SetBoolField(TEXT("tutorial"),Save->TutorialActive);Result->SetNumberField(TEXT("completed"),Save->TutorialCompleted);
     Result->SetBoolField(TEXT("soil_passed"),Save->TutorialSoilPassed);
     Result->SetNumberField(TEXT("prototypes"),Save->PrototypesFound);Result->SetNumberField(TEXT("copper"),Wallet->GetMineralCount(EMiningMineral::Copper));
@@ -222,6 +257,25 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Result->SetNumberField(TEXT("ending_gate"),Ending->GateIndex);Result->SetNumberField(TEXT("ending_shot"),Ending->Shot);
         Result->SetNumberField(TEXT("neuron"),Ending->CurrentNeuron);Result->SetBoolField(TEXT("ending_complete"),Ending->bComplete);
         Result->SetStringField(TEXT("ending_hint"),Ending->Hint());
+        Result->SetNumberField(TEXT("target_neuron"),Ending->TargetNeuron);
+        Result->SetNumberField(TEXT("travelling_neuron"),Ending->TravellingToNeuron);
+        if(Op==TEXT("neurons"))
+        {
+            TArray<UStaticMeshComponent*> Meshes;Ending->GetComponents(Meshes);
+            TArray<TSharedPtr<FJsonValue>> Neurons;
+            for(int32 I=0;I<Ending->NeuronPositions.Num();++I)
+            {
+                auto Item=MakeShared<FJsonObject>();Item->SetNumberField(TEXT("index"),I);
+                const FVector Position=Ending->NeuronWorldPosition(I);Item->SetArrayField(TEXT("position"),Vec(Position));
+                Item->SetBoolField(TEXT("reachable"),Ending->CanPossess(I));
+                for(auto* Mesh:Meshes)
+                    if((Mesh->GetName().StartsWith(TEXT("PossessableNeuron"))||Mesh->GetName().StartsWith(TEXT("LargestNeuron")))&&Mesh->GetComponentLocation().Equals(Position,1.f))
+                        if(auto* Material=Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(0)))
+                        {const auto Tint=Material->K2_GetVectorParameterValue(TEXT("Tint"));Item->SetArrayField(TEXT("tint"),Vec(FVector(Tint.R,Tint.G,Tint.B)));break;}
+                Neurons.Add(MakeShared<FJsonValueObject>(Item));
+            }
+            Result->SetArrayField(TEXT("neurons"),Neurons);
+        }
     }
     if(auto* Sub=USubtitleSubsystem::Get(this))Result->SetStringField(TEXT("subtitle"),Sub->GetActiveText().ToString());
     TArray<TSharedPtr<FJsonValue>> MenuButtons;
@@ -249,6 +303,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     for(TObjectIterator<UMiningGUIHUDWidget> It;It;++It)
     {
         if(It->IsTemplate() || It->GetWorld()!=W)continue;
+        if(auto* Shortcut=Cast<UTextBlock>(It->GetWidgetFromName(TEXT("CollectionShortcut"))))Result->SetStringField(TEXT("collection_shortcut"),Shortcut->GetText().ToString());
         if(auto* Panel=It->GetWidgetFromName(TEXT("GuidancePanel")))Result->SetNumberField(TEXT("guide_opacity"),Panel->GetRenderOpacity());
         if(auto* Panel=It->GetWidgetFromName(TEXT("PickaxeSummaryPanel")))Result->SetNumberField(TEXT("upgrade_opacity"),Panel->GetRenderOpacity());
         TArray<TSharedPtr<FJsonValue>> Rows;
@@ -271,7 +326,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
             A->SetArrayField(TEXT("position"),Vec(It->GetActorLocation()));A->SetArrayField(TEXT("center"),Vec(It->GetComponentsBoundingBox(true).GetCenter()));
             A->SetArrayField(TEXT("extent"),Vec(It->GetComponentsBoundingBox(true).GetExtent()));A->SetArrayField(TEXT("forward"),Vec(It->GetActorForwardVector()));
             if(auto* Exhibit=Cast<AWenSiMirrorExhibit>(*It)){A->SetNumberField(TEXT("kind"),Exhibit->Kind);A->SetNumberField(TEXT("word"),int32(Exhibit->Word));}
-            if(auto* Rock=Cast<ADiggableRock>(*It)){A->SetNumberField(TEXT("cuts"),Rock->SuccessfulCuts);A->SetNumberField(TEXT("triangles"),Rock->TriangleCount);A->SetArrayField(TEXT("rock_size"),Vec(Rock->RockSize));}
+            if(auto* Rock=Cast<ADiggableRock>(*It)){A->SetBoolField(TEXT("collision"),Rock->GetActorEnableCollision());A->SetNumberField(TEXT("cuts"),Rock->SuccessfulCuts);A->SetNumberField(TEXT("triangles"),Rock->TriangleCount);A->SetArrayField(TEXT("rock_size"),Vec(Rock->RockSize));}
             if(auto* Item=Cast<AMiningTreasure>(*It))
             {
                 A->SetStringField(TEXT("mineral"),Item->TreasureId.ToString());A->SetBoolField(TEXT("released"),Item->bReleased);A->SetBoolField(TEXT("collected"),Item->bCollected);

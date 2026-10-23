@@ -1,4 +1,5 @@
 #include "EndingEmergence.h"
+#include "MiningWaypoint.h"
 #include "EngineUtils.h"
 #include "Subtitles/SubtitleSubsystem.h"
 #include "MiningGamepadSubsystem.h"
@@ -140,11 +141,13 @@ public:
         const float Fade=D->OverlayAlpha();
         if(Fade>0)FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,FLinearColor(0,0,0,Fade));
         if(Fade>.995f)return L;
+        if(D->Shot<0 && D->GateIndex==0 && D->Gates.IsValidIndex(0))
+            L=MiningWaypoint::Paint(G,Out,L,D->Player,D->Gates[0]->GetActorLocation(),TEXT("涌入"));
         if(D->Shot==9 || (D->Shot<0 && D->GateIndex==2 && !D->bEnteringBrain))
         {
             const auto* Controller=Cast<ABrainMiningPlayerController>(D->GetWorld()->GetFirstPlayerController());
             const bool Touch=Controller && Controller->IsUsingTouchControls();
-            const FString Hint=D->Shot==9?(Touch?TEXT("上推摇杆加速"):TEXT("W 加速前进")):(Touch?TEXT("跃迁键 跃迁"):TEXT("空格键 跃迁"));
+            const FString Hint=D->Shot==9?(Touch?TEXT("上推摇杆加速"):TEXT("W-加速前进")):(Touch?TEXT("跃迁键-连接"):TEXT("空格-连接"));
             const auto Font=BrainMiningFonts::Body(18);
             const FVector2D TextSize=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Hint,Font);
             const FVector2D Position((Size.X-TextSize.X)*.5f,Size.Y-40.f-TextSize.Y);
@@ -415,7 +418,7 @@ void AEndingEmergence::BuildJourney()
     TArray<USceneComponent*> BrainParts;Set->GetChildrenComponents(false,BrainParts);
     for(auto* Part:BrainParts)if(!BeforeBrain.Contains(Part))Part->SetRelativeLocation(Part->GetRelativeLocation()+FVector(3200,0,0));
     for(FVector& Host:NeuronPositions)Host+=FVector(3200,0,0);
-    // Only the final cell membrane is excavatable. Blood and brain need no tool.
+    // The final cell membrane is a visual threshold; crossing it starts the vessel ride.
     for(int I=0;I<1;++I)
     {
         const float X=Ending::GateX[I],Y=Ending::GateY[I];
@@ -424,7 +427,7 @@ void AEndingEmergence::BuildJourney()
         auto* Gate=GetWorld()->SpawnActor<ADiggableRock>(ADiggableRock::StaticClass(),GetActorTransform().TransformPosition(FVector(X,Y,Z)),GetActorRotation());
         Gate->AttachToActor(this,FAttachmentTransformRules::KeepWorldTransform);Gate->Tags.Add(Ending::Tag);
         // The circular plug spans the whole cell-to-vessel cross-section, so
-        // the blood tube cannot be seen through the room before the first cut.
+        // the blood tube is revealed by crossing the membrane.
         Gate->RockSize=FVector(220,1300,1300);Gate->bUseCircularRockMesh=true;
         Gate->RockMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/EndingEmergence/Materials/M_EE_RedMembrane"));
         Gate->ResetRock();Gates.Add(Gate);
@@ -981,7 +984,7 @@ FEndingTouchInput AEndingEmergence::GetTouchInput() const
     if(!bReady||bComplete||bEnteringBrain)return {};
     if(Shot<0)
     {
-        if(GateIndex==0)return {true,true,true,false};
+        if(GateIndex==0)return {false,true,true,false};
         if(GateIndex==1)return {false,true,true,false};
         if(GateIndex==2)return {false,false,true,true};
     }
@@ -1165,7 +1168,7 @@ void AEndingEmergence::RestartDemo()
     if(DroppedPickaxe){DroppedPickaxe->DestroyComponent();DroppedPickaxe=nullptr;}
     DriftOffset=DriftVelocity=FVector::ZeroVector;
     PullbackBoost=0;PullbackRate=1;
-    for(ADiggableRock* G:Gates)if(IsValid(G)){G->ResetRock();G->SetActorHiddenInGame(false);}
+    for(ADiggableRock* G:Gates)if(IsValid(G)){G->ResetRock();G->SetActorHiddenInGame(false);G->SetActorEnableCollision(false);}
     for(int I=0;I<Sets.Num();++I)Sets[I]->SetVisibility(I==0,true);
     if(PulseTrail)PulseTrail->SetVisibility(false);
     const FLinearColor GoalBlue=Ending::GoalBlue;
@@ -1185,7 +1188,7 @@ void AEndingEmergence::RestartDemo()
     Player->SetControlRotation(GetActorRotation());
     if(auto* M=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()){M->SetEndingCellFloat(false);M->SetEndingCellFloat(true);}
     if(auto* C=Player->GetPawn()->FindComponentByClass<UCameraComponent>()){C->SetFieldOfView(90);if(FisheyeMaterial)C->AddOrUpdateBlendable(FisheyeMaterial,0);}
-    Player->SetViewTarget(Player->GetPawn());Mining->SetInputSuspended(false);Mining->SetInputContextEnabled(true);
+    Player->SetViewTarget(Player->GetPawn());Mining->SetInputSuspended(true);Mining->SetInputContextEnabled(false);
     bFinalResolvePlayed=false;UpdatePainterly();UpdateNerves();SetAmbience(TEXT("Cell_Loop"),.26f);
     if(Music){Music->Stop();Music->DestroyComponent();Music=nullptr;}
     SetMusic(TEXT("LightThought_Loop"),.45f);
@@ -1725,21 +1728,6 @@ void AEndingEmergence::EnterBlood()
     VesselLook=Player->GetControlRotation();VesselLook.Roll=0;
     VesselLookOffset=FRotator::ZeroRotator;VesselLookInputAt=Age-2;
     Player->ResetIgnoreLookInput();
-    // A visible copy leaves the hand before the hidden pawn becomes a pulse.
-    TArray<UStaticMeshComponent*> Parts;Player->GetPawn()->GetComponents(Parts);
-    for(auto* Part:Parts)if(Part->GetName()==TEXT("PickaxeModel")&&Part->GetStaticMesh())
-    {
-        DroppedPickaxe=NewObject<UStaticMeshComponent>(this,NAME_None,RF_Transient);
-        DroppedPickaxe->SetupAttachment(RootComponent);DroppedPickaxe->SetStaticMesh(Part->GetStaticMesh());
-        DroppedPickaxe->SetCollisionEnabled(ECollisionEnabled::NoCollision);DroppedPickaxe->SetCastShadow(false);
-        for(int I=0;I<Part->GetNumMaterials();++I)DroppedPickaxe->SetMaterial(I,Part->GetMaterial(I));
-        DroppedPickaxe->RegisterComponent();DroppedPickaxe->SetWorldTransform(Part->GetComponentTransform());
-        // First-person meshes use a separate render transform. Place the dropped
-        // world mesh ahead of the eye so it visibly leaves the frame, not behind it.
-        const FRotationMatrix ViewAxes(Player->GetControlRotation());
-        PickaxeStart=LocalEye+GetActorTransform().InverseTransformVectorNoScale(ViewAxes.GetUnitAxis(EAxis::X)*130+ViewAxes.GetUnitAxis(EAxis::Y)*55-ViewAxes.GetUnitAxis(EAxis::Z)*40);
-        DroppedPickaxe->SetRelativeLocation(PickaxeStart);break;
-    }
     Mining->SetInputSuspended(true);Mining->SetInputContextEnabled(false);
     Player->SetIgnoreMoveInput(true);Player->GetPawn()->SetActorHiddenInGame(true);
     if(auto* C=Cast<ACharacter>(Player->GetPawn())){C->GetCharacterMovement()->StopMovementImmediately();C->GetCharacterMovement()->DisableMovement();}
@@ -1948,7 +1936,9 @@ void AEndingEmergence::UpdatePulse(float Dt)
     const float EntryReveal=GateIndex>=5?1.f:(GateIndex==2||bEnteringBrain)?Ending::Ease((Age-BrainEntryAt-.9f)/1.1f):0.f;
     auto NeuronTint=[&](int I)
     {
-        const bool Selected=GateIndex==2&&(I==TargetNeuron||I==TravellingToNeuron);
+        // Landed hosts retain the selected gold while connecting. The takeoff
+        // changes GateIndex to 5, restoring the original blue neural panorama.
+        const bool Selected=GateIndex==2&&(I==TargetNeuron||I==TravellingToNeuron||VisitedNeurons.Contains(I));
         const bool Goal=I==NeuronPositions.Num()-1;
         if(Selected)return Ending::Gold*1.5f;
         const FLinearColor Base=Goal?Ending::GoalBlue*(2.f+.2f*FMath::Sin(Age*2)):GateIndex>=5?FLinearColor(.20f,.65f,1.1f)*1.4f:FLinearColor(.15f,.65f,1.1f)*(VisitedNeurons.Contains(I)?1.2f:1.f);
@@ -2016,17 +2006,10 @@ void AEndingEmergence::Tick(float Dt)
         if(GateIndex==0&&Gates.IsValidIndex(0))
         {
             auto* Gate=Gates[GateIndex].Get();
-            if(Gate->SuccessfulCuts!=LastCuts){LastCuts=Gate->SuccessfulCuts;Sound(TEXT("Hit"),.36f,1+GateIndex*.08f);}
-            if(Gate->SuccessfulCuts>0 && P.X>Ending::GateX[GateIndex]+50)
-            {
-                // Hand over to the floating camera once the player has entered
-                // a through-hole. Waiting for the entire walking capsule to
-                // clear the far rim can strand it at the narrower vessel neck.
-                FHitResult RemainingMembrane;
-                const FVector Exit=GetActorTransform().TransformPosition(FVector(Ending::GateX[GateIndex]+Gate->RockSize.X*.5f+80,P.Y,P.Z));
-                if(!Gate->ActorLineTraceSingle(RemainingMembrane,Player->GetPawn()->GetActorLocation(),Exit,ECC_Visibility,FCollisionQueryParams(SCENE_QUERY_STAT(EndingMembraneExit),true)))
-                {LastCuts=0;EnterBlood();}
-            }
+            const FVector Local=Gate->GetActorTransform().InverseTransformPosition(Player->GetPawn()->GetActorLocation());
+            if(Local.X>50.f && Local.X<Gate->RockSize.X*.5f+500.f &&
+                FVector2D(Local.Y,Local.Z).Size()<Gate->RockSize.Y*.5f)
+                EnterBlood();
         }
         if(auto* C=Player->GetPawn()->FindComponentByClass<UCameraComponent>())
         {
@@ -2138,10 +2121,10 @@ FString AEndingEmergence::Subtitle() const
 {
     if(Shot<0)
     {
-        if(GateIndex==0&&Age<9)return TEXT("最后一块矿里，好像有光在流动。");
+        if(GateIndex==0&&Age<9)return TEXT("微光正在涌向细胞的出口。");
         if(bEnteringBrain)return TEXT("血流的尽头，微光开始彼此连接。");
         if(GateIndex==1&&Age<BeatAt+5)return TEXT("它和更多的微光，汇进了同一条河。");
-        if(GateIndex==2&&Age<BeatAt)return TEXT("你不再拿着镐子。你就是那一道脉冲。");
+        if(GateIndex==2&&Age<BeatAt)return TEXT("你就是那一道脉冲。");
         if(GateIndex>=5)return TEXT("一个念头，出现了。");
         return TEXT("");
     }

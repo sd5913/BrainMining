@@ -32,6 +32,7 @@ public:
     UPROPERTY() TMap<EMiningMineral,int32> Minerals;
     UPROPERTY() TArray<int32> Upgrades;
     UPROPERTY() TArray<int32> Collection;
+    UPROPERTY() TSet<int32> RunCollectedItems;
     UPROPERTY() TSet<int32> CollectedMinerals;
     UPROPERTY() bool Bomb=false;
     UPROPERTY() bool Drill=false;
@@ -56,7 +57,12 @@ public:
     UFUNCTION(BlueprintPure) bool HasSave() const;
     UFUNCTION(BlueprintCallable) bool SaveProgress();
     UFUNCTION(BlueprintCallable) bool LoadProgress();
-    void StartNewGame();
+    void StartNewGame(bool bKeepCollection=false);
+    TArray<int32> GetCollectionProgress() const;
+    bool HasCollectionProgress() const;
+    void EndSession() { bSessionStarted=false; bLoadedProgress=false; RunCollectedItems.Reset(); RestoredMinerals.Reset(); }
+    void RecordCollectible(int32 Id) { RunCollectedItems.Add(Id); TutorialCompleted|=8; }
+    bool WasCollectedThisRun(int32 Id) const { return RunCollectedItems.Contains(Id); }
     UPROPERTY(BlueprintReadOnly) bool TutorialActive=false;
     UPROPERTY(BlueprintReadOnly) bool TutorialSoilPassed=false;
     UPROPERTY(BlueprintReadOnly) int32 TutorialCompleted=0;
@@ -74,6 +80,7 @@ private:
     int32 UpgradeHintLevel=INDEX_NONE;
     TWeakObjectPtr<UWorld> SessionWorld;
     TSet<int32> RestoredMinerals;
+    TSet<int32> RunCollectedItems;
     void RestoreCollectedItems();
     void UpdateBombWallSigns();
 };

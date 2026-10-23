@@ -38,7 +38,7 @@ void AMiningCollectionEffects::Initialize(int32 EffectKind, AMiningCollectible* 
         if(Base)
         {
             auto* Material=UMaterialInstanceDynamic::Create(Base,this);
-            Material->SetVectorParameterValue(TEXT("Tint"),Spark?FLinearColor(.25,1,.07):Kind==3?Colors[C]:FLinearColor(.38,.12,.025));
+            Material->SetVectorParameterValue(TEXT("Tint"),Spark?FLinearColor(.25,1,.07):Kind==3?Colors[C]:FLinearColor(.52f,.83f,.94f));
             Pool->SetMaterial(0,Material);
         }
         Pool->RegisterComponent(); Pools.Add(Pool);
@@ -124,9 +124,15 @@ void AMiningCollectionEffects::Tick(float Dt)
             }
             else
             {
-                const float T=FMath::Fmod(Age*95/FMath::Max(100.f,FlowHeight)+float(I)/Pool->GetInstanceCount(),1.f);
-                P=FVector(FMath::Sin(Seed+Age)*12,FMath::Cos(Seed+Age*.7f)*12,T*FlowHeight);
-                Scale=FVector(.018f+.036f*T);
+                FRandomStream Random(8791+I*7919);
+                const float Speed=Random.FRandRange(68.f,132.f),Phase=Random.FRandRange(0.f,1.f);
+                const float T=FMath::Fmod(Age*Speed/FMath::Max(100.f,FlowHeight)+Phase,1.f);
+                const float Angle=Random.FRandRange(0.f,2.f*PI)+Age*Random.FRandRange(-.35f,.35f);
+                const float Radius=(3.f+52.f*T*T)*FMath::Sqrt(Random.FRand());
+                const float Wander=T*Random.FRandRange(2.f,11.f);
+                P=FVector(FMath::Cos(Angle)*Radius+FMath::Sin(Age*1.3f+Seed)*Wander,
+                    FMath::Sin(Angle)*Radius+FMath::Cos(Age*.9f+Seed)*Wander,T*FlowHeight);
+                Scale=FVector(Random.FRandRange(.012f,.025f)*(1.f+1.5f*T)*FMath::Clamp((1.f-T)*12.f,0.f,1.f));
             }
             Pool->UpdateInstanceTransform(I,FTransform(Rotation,P,Scale),false,false,true);
         }

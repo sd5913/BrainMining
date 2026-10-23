@@ -1,4 +1,8 @@
 #include "MiningToolEffectsComponent.h"
+#include "PopupClose/PopupCloseStage.h"
+#include "EndingEmergence.h"
+#include "Showcase/MiningExhibitHall.h"
+#include "EngineUtils.h"
 #include "MiningComponent.h"
 #include "MiningBombToolComponent.h"
 #include "MiningDebrisBurst.h"
@@ -204,6 +208,10 @@ void UMiningToolEffectsComponent::UpdateToolMode(bool bDrillMode)
 
 bool UMiningToolEffectsComponent::CanShowEffects() const
 {
+    if(auto* PC=GetWorld()->GetFirstPlayerController())
+        if(auto* Ending=AEndingEmergence::FindForPlayer(PC);Ending && Ending->Shot<0)return false;
+    for(TActorIterator<APopupCloseStage> It(GetWorld());It;++It)
+        if(It->bAreaActive && It->GetCompletedSessions()==0)return false;
 	const APawn* Pawn = Cast<APawn>(GetOwner());
 	return bEnabled && IsValid(PickaxePivot) && IsValid(Mining) && Pawn && Pawn->IsLocallyControlled();
 }

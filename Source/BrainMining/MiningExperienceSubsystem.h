@@ -26,6 +26,9 @@ public:
     UPROPERTY(Transient) TArray<TObjectPtr<class UMaterialInterface>> CampaignToiletLidMaterials;
     bool ToggleMenu();
     UFUNCTION(BlueprintCallable) bool ToggleDeveloperMenu();
+    UFUNCTION(BlueprintCallable) void ToggleAllUI();
+    UFUNCTION(BlueprintCallable) void ReturnToMainMenu();
+    bool bAllUIHidden=false;
     UFUNCTION(BlueprintCallable) bool DeveloperGrantTool(int32 ToolIndex);
     UFUNCTION(BlueprintCallable) bool TogglePauseMenu(bool bFromCredits=false);
     bool ToggleMobileMenu(bool bUpgrade = false);

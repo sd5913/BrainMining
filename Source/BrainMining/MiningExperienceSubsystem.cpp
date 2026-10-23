@@ -1,4 +1,5 @@
 #include "MiningExperienceSubsystem.h"
+#include "MiningSaveSubsystem.h"
 #include "BrainMiningPlayerController.h"
 #include "EndingCreditsInput.h"
 #include "BrainMiningFonts.h"
@@ -66,6 +67,14 @@ namespace MiningExperiences
         {
             auto* Owner = Subsystem.Get();
             if (!Owner || Event.IsRepeat()) return false;
+            if(Event.GetKey()==EKeys::F9 && Event.IsControlDown())
+            {
+                auto* Viewport=Owner->GetWorld()?Owner->GetWorld()->GetGameViewport():nullptr;
+                auto Widget=Viewport?Viewport->GetGameViewportWidget():nullptr;
+                if(Widget && (Widget->HasKeyboardFocus() || Widget->HasFocusedDescendants() || Owner->IsMenuOpen()))
+                {Owner->CloseMenu();Owner->ToggleAllUI();return true;}
+            }
+            if(Event.GetKey()==EKeys::Escape && Owner->bAllUIHidden){Owner->ToggleAllUI();return true;}
             if (Event.GetKey() == EKeys::F10 && Event.IsControlDown())
             {
                 auto* Viewport = Owner->GetWorld() ? Owner->GetWorld()->GetGameViewport() : nullptr;
@@ -207,6 +216,9 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
     auto Choices = SNew(SVerticalBox);
     if (bDeveloper)
     {
+        Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ContentPadding(12)
+            .OnClicked_Lambda([this](){CloseMenu();ToggleAllUI();return FReply::Handled();})
+            [SNew(STextBlock).Text(FText::FromString(TEXT("隐藏全部 UI · Ctrl + F9（再次按下恢复）"))).Font(BrainMiningFonts::Body(18))]];
         Choices->AddSlot().AutoHeight().Padding(0,10)[SNew(STextBlock).Text(FText::FromString(TEXT("GM · 装备"))).Font(BrainMiningFonts::Style("Bold",18))];
         const TCHAR* Tools[]={TEXT("升级矿镐一级（最高：钻石大矿镐）"),TEXT("解锁炸弹"),TEXT("解锁钻机")};
         for(int32 Tool=0;Tool<3;++Tool)
@@ -383,6 +395,7 @@ bool UMiningExperienceSubsystem::OpenDeveloperExperience(int32 Index)
     }
     const FName Map(*Paths[Index]);
     CloseMenu();
+    GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->EndSession();
     UGameplayStatics::OpenLevel(GetWorld(), Map);
     return true;
 }
@@ -394,6 +407,7 @@ bool UMiningExperienceSubsystem::OpenExperience(int32 Index)
     const FString Map = MiningExperiences::Entries[Index].Map;
     if (!FPackageName::DoesPackageExist(Map)) return false;
     CloseMenu();
+    GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->EndSession();
     UGameplayStatics::OpenLevel(GetWorld(), FName(*Map));
     return true;
 }
@@ -401,4 +415,9 @@ bool UMiningExperienceSubsystem::OpenExperience(int32 Index)
 bool UMiningExperienceSubsystem::IsMenuOpen() const
 {
     return Menu.IsValid();
+}
+
+void UMiningExperienceSubsystem::ToggleAllUI()
+{
+    bAllUIHidden=!bAllUIHidden;
 }

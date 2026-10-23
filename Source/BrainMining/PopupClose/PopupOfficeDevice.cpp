@@ -63,7 +63,7 @@ APopupOfficeDevice::APopupOfficeDevice()
  Pointer->VirtualUserIndex=1;Pointer->bEnableHitTesting=false;Pointer->SetComponentTickEnabled(false);
  Warning=CreateDefaultSubobject<UWidgetComponent>(TEXT("PendingWarning"));Warning->SetupAttachment(SceneRoot);
  Warning->SetWidgetSpace(EWidgetSpace::Screen);Warning->SetDrawSize(FVector2D(80,110));
- Warning->SetRelativeLocation(FVector(15,0,225));Warning->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ Warning->SetRelativeLocation(FVector(15,0,150));Warning->SetCollisionEnabled(ECollisionEnabled::NoCollision);
  Warning->SetWindowFocusable(false);Warning->SetVisibility(false);
 }
 void APopupOfficeDevice::OnConstruction(const FTransform& Transform)
@@ -187,7 +187,7 @@ void APopupOfficeDevice::Tick(float DeltaSeconds)
  if(!WarningUI || !Warning->IsVisible())return;
  auto PC=GetWorld()->GetFirstPlayerController();if(!PC)return;
  int32 Width=0,Height=0;PC->GetViewportSize(Width,Height);if(Width<=0 || Height<=0)return;
- const FVector Anchor=GetActorTransform().TransformPosition(FVector(15,0,225));
+ const FVector Anchor=GetActorTransform().TransformPosition(FVector(15,0,150));
  FVector2D Screen;
  const bool bTaskView=Cast<APopupOfficeDevice>(PC->GetViewTarget())!=nullptr;
  const bool bInFront=PC->ProjectWorldLocationToScreen(Anchor,Screen);

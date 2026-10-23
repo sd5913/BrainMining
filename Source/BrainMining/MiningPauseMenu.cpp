@@ -99,6 +99,7 @@ bool UMiningExperienceSubsystem::TogglePauseMenu(bool bFromCredits)
         if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayInteractionLines(TEXT("SaveResult"),{FText::FromString(Saved?TEXT("进度已保存"):TEXT("当前暂时无法保存，请回到探索状态后重试"))});
     },false);
     SaveButton->SetEnabled(bFromGameplay && GetWorld()->GetMapName().EndsWith(TEXT("Lvl_MainGame")));
+    Button(TEXT("返回主界面"),[this](){ReturnToMainMenu();},false);
     Button(TEXT("退出游戏"),[this](){RequestQuitConfirmation();},false);
     CancelQuitButton=Button(TEXT("取消"),[this](){CancelQuitConfirmation();},true);
     Button(TEXT("确认退出"),[this](){auto* PC=MenuController.Get();GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->SaveProgress();CloseMenu();UKismetSystemLibrary::QuitGame(this,PC,EQuitPreference::Quit,false);},true);
@@ -192,4 +193,17 @@ bool UMiningExperienceSubsystem::JumpToCollectible(int32 Id)
     PC->GetPawn()->SetActorLocation(Destination,false,nullptr,ETeleportType::TeleportPhysics);PC->SetControlRotation(Facing);
     if(Id==11)for(TActorIterator<AMiningRoomEscape> Room(GetWorld());Room;++Room)if(Room->StageRibbon)Room->Phase=EMiningEscapePhase::Escaped;
     CloseMenu();return true;
+}
+
+void UMiningExperienceSubsystem::ReturnToMainMenu()
+{
+    auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();
+    if(GetWorld()->GetMapName().EndsWith(TEXT("Lvl_MainGame")) && !Saves->SaveProgress())
+    {
+        CloseMenu();
+        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayStatusLine(FText::FromString(TEXT("地形还在更新，稍等片刻后再返回主界面吧")),4.f);
+        return;
+    }
+    CloseMenu();bAllUIHidden=false;Saves->EndSession();
+    UGameplayStatics::OpenLevel(this,TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
 }

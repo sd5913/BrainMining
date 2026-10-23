@@ -255,6 +255,24 @@ bool AMiningStartRoom::Interact(APlayerController* Controller)
 void AMiningStartRoom::RestoreEquipment(bool Pickaxe, bool Jetpack, bool Headlamp)
 {
     if(Pickaxe)UnlockDeveloperPickaxe();
+    else
+    {
+        bPickaxeUnlocked=false;
+        if(Mining.IsValid() && !bOwnMiningBlock){Mining->PushEncounterBlock();bOwnMiningBlock=true;}
+        if(Effects.IsValid())Effects->bEnabled=false;
+    }
+    if(!Jetpack)
+    {
+        bJetpackUnlocked=false;
+        if(Flight.IsValid() && !bOwnFlightBlock){Flight->PushFlightBlock();bOwnFlightBlock=true;}
+    }
+    for(TActorIterator<AMiningStarterPickup> It(GetWorld());It;++It)
+        if((It->Equipment==EMiningStarterEquipment::Pickaxe && !Pickaxe) || (It->Equipment==EMiningStarterEquipment::Jetpack && !Jetpack))
+        {
+            It->bCollected=false;It->SetActorHiddenInGame(false);It->SetActorEnableCollision(true);
+            TArray<AActor*> PickupVisuals;It->GetAttachedActors(PickupVisuals,true,true);
+            for(auto* Child:PickupVisuals){Child->SetActorHiddenInGame(false);Child->SetActorEnableCollision(true);}
+        }
     if(Jetpack)
     {
         if(bOwnFlightBlock && Flight.IsValid()){Flight->PopFlightBlock();bOwnFlightBlock=false;}

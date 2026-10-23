@@ -1,4 +1,6 @@
 #include "MiningCollection.h"
+#include "MiningSaveSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "DiggableRock.h"
 #include "Showcase/MiningTreasure.h"
 #include "GameFramework/PlayerController.h"
@@ -197,7 +199,7 @@ void AMiningCollectionField::TickAmbient(float Dt)
     UpdateAntTrails();
     for(FCollectionAnt& Ant:Ants) if(Ant.Actor.IsValid())
     {
-        const bool ComputerCollected=Inventory.IsValidIndex(1)&&Inventory[1]>0;
+        const bool ComputerCollected=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->WasCollectedThisRun(1);
         if(ComputerCollected)
         {
             Ant.Fade=FMath::Max(0.f,Ant.Fade-Dt/2.5f);

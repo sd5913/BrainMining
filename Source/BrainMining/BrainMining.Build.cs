@@ -27,7 +27,7 @@ public class BrainMining : ModuleRules
 		});
 
 		PublicDependencyModuleNames.AddRange(new string[] { "GeometryCore", "GeometryFramework", "DynamicMesh" });
-		PrivateDependencyModuleNames.Add("RenderCore");
+		PrivateDependencyModuleNames.AddRange(new[] { "RenderCore", "MoviePlayer" });
         PrivateDependencyModuleNames.Add("Json");
         PrivateDependencyModuleNames.Add("ApplicationCore");
         RuntimeDependencies.Add("$(ProjectDir)/Content/UI/Gamepad/*.svg", StagedFileType.NonUFS);

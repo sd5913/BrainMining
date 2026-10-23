@@ -248,8 +248,10 @@ public:
    }
    else if(Step==7)
    {
-    // Fixture opens the membrane; the real gameplay tick performs camera handoff.
-    auto Gate=Ending->Gates[0];Gate->SuccessfulCuts=1;Gate->SetActorEnableCollision(false);
+    // Approach fixture only: the uncut, pass-through gate performs the real handoff.
+    auto Gate=Ending->Gates[0];
+    Test->TestFalse(TEXT("Cell gate is pass-through"),Gate->GetActorEnableCollision());
+    Test->TestEqual(TEXT("No excavation required at the cell gate"),Gate->SuccessfulCuts,0);
     Pawn->SetActorLocation(Gate->GetActorLocation()+Ending->GetActorForwardVector()*(Gate->RockSize.X*.5f+120));
    }
    else if(Step==8)

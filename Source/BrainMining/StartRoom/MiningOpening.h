@@ -53,6 +53,8 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     UFUNCTION(BlueprintCallable) void StartGame();
+    UFUNCTION(BlueprintCallable) void ConfirmNewGame(bool bKeepCollection);
+    bool IsChoosingCollection() const { return CollectionChoice.IsValid(); }
     UFUNCTION(BlueprintCallable) void ContinueSavedGame();
     void BeginTitleToWall(class AMainGameDoor* Door);
     bool HasTitleLanded() const { return bTitleLanded; }
@@ -84,6 +86,7 @@ private:
     FQuat InitialRotation;
     float Elapsed = 0;
     bool bPrepared = false;
+    TSharedPtr<class SWidget> CollectionChoice;
     bool bInputLocked = false;
     bool bOldCollision = true;
     bool bOldHUD = true;

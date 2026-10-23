@@ -44,12 +44,21 @@ namespace
         FString Level=Actor->GetLevel()->GetOutermost()->GetName();
         const int32 PIE=Level.Find(TEXT("UEDPIE_"));
         if(PIE!=INDEX_NONE){const int32 End=Level.Find(TEXT("_"),ESearchCase::CaseSensitive,ESearchDir::FromStart,PIE+7);Level.RemoveAt(PIE,End-PIE+1);}
+        for(const FName Tag:Actor->Tags)if(Tag.ToString().StartsWith(TEXT("BM_SaveId_")))return Level+TEXT(":")+Tag.ToString();
         return Level+TEXT(":")+Actor->GetName();
     }
     bool ValidSnapshot(const UMiningSaveGame* Data)
     {
-        return Data && Data->Version>=1 && Data->Version<=2 && Data->Upgrades.Num()==4 && Data->Area>=0 &&
+        return Data && Data->Version>=1 && Data->Version<=4 && Data->Upgrades.Num()==4 && Data->Area>=0 &&
             !Data->PlayerTransform.ContainsNaN() && !Data->ViewRotation.ContainsNaN();
+    }
+    bool IsLegacyTransientTVMesh(const UMiningSaveGame* Data,const FMiningSavedMesh& Mesh)
+    {
+        // Pre-v4 saves used session-specific UObject numbers for these generated
+        // room sections. There is no safe mapping back to a section in those files.
+        // Rebuild that room terrain while retaining the valid campaign snapshot.
+        return Data->Version<4 && Mesh.ActorKey.Contains(TEXT("/Passages/Echo/Maps/")) &&
+            Mesh.ActorKey.Contains(TEXT(":DiggableRock_214"));
     }
     TArray<FString> RecoverySlots()
     {
@@ -65,12 +74,40 @@ bool UMiningSaveSubsystem::HasSave() const
         if(UGameplayStatics::DoesSaveGameExist(Slot,0) && ValidSnapshot(Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(Slot,0))))return true;
     return false;
 }
-void UMiningSaveSubsystem::StartNewGame()
+TArray<int32> UMiningSaveSubsystem::GetCollectionProgress() const
+{
+    TArray<int32> Result=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection;
+    for(const FString& Slot:RecoverySlots())
+        if(auto* Data=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(Slot,0));ValidSnapshot(Data))
+        {
+            Result.SetNumZeroed(FMath::Max(Result.Num(),Data->Collection.Num()));
+            for(int32 I=0;I<Data->Collection.Num();++I)Result[I]=FMath::Max(Result[I],Data->Collection[I]);
+            break;
+        }
+    return Result;
+}
+bool UMiningSaveSubsystem::HasCollectionProgress() const
+{
+    return GetCollectionProgress().ContainsByPredicate([](int32 Count){return Count>0;});
+}
+void UMiningSaveSubsystem::StartNewGame(bool bKeepCollection)
 {
     bSessionStarted=true;bLoadedProgress=false;SessionWorld=GetWorld();SaveAge=0;PreviousArea=INDEX_NONE;
     FallingSeconds=0;UpgradeHintLevel=INDEX_NONE;RestoredMinerals.Reset();
     TutorialActive=false;TutorialSoilPassed=false;TutorialCompleted=0;PrototypesFound=0;
-    // Keep the previous slot until a new valid snapshot has successfully saved.
+    const TArray<int32> Collection=bKeepCollection?GetCollectionProgress():TArray<int32>();
+    auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
+    Wallet->Balance=0;Wallet->Minerals.Reset();Wallet->UpgradeLevels={0,0,0,0};Wallet->MineralDoubleChance=0;
+    Wallet->bBombSkillUnlocked=false;Wallet->bDrillSkillUnlocked=false;
+    RunCollectedItems.Reset();
+    GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection=Collection;
+    for(TActorIterator<AMiningCollectionField> It(GetWorld());It;++It)
+    {It->Inventory=Collection;It->Inventory.SetNumZeroed(AMiningCollectible::ItemTypeCount);}
+    if(auto* Room=AMiningStartRoom::Find(GetWorld()))Room->RestoreEquipment(false,false,false);
+    if(auto* PC=GetWorld()->GetFirstPlayerController();PC && PC->GetPawn())
+        if(auto* Progression=PC->GetPawn()->FindComponentByClass<UMiningProgressionComponent>())Progression->ApplyUpgrades();
+    // A confirmed new run must never fall back to the previous run on restart.
+    for(const FString& Slot:RecoverySlots())UGameplayStatics::DeleteGameInSlot(Slot,0);
 }
 
 bool UMiningSaveSubsystem::SaveProgress()
@@ -89,7 +126,7 @@ bool UMiningSaveSubsystem::SaveProgress()
         if(auto* Generated=Cast<AGeneratedMiningRock>(*It);Generated && Generated->bSimplificationPending)return false;
     }
     auto* Data=Cast<UMiningSaveGame>(UGameplayStatics::CreateSaveGameObject(UMiningSaveGame::StaticClass()));
-    Data->Version=2;
+    Data->Version=4;
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     Data->Area=Hall->ActiveArea;Data->UnlockedArea=Hall->UnlockedArea;Data->CompletedAreas=Hall->GetCompletedAreas();
     Data->PlayerTransform=Character->GetActorTransform();Data->ViewRotation=PC->GetControlRotation();
@@ -104,6 +141,7 @@ bool UMiningSaveSubsystem::SaveProgress()
     if(Hall->Collection)Data->Collection=Hall->Collection->Inventory;
     if(auto* Room=AMiningStartRoom::Find(World))
     {Data->Pickaxe=Room->bPickaxeUnlocked;Data->Jetpack=Room->bJetpackUnlocked;Data->Headlamp=Room->bHeadlampUnlocked;}
+    Data->RunCollectedItems=RunCollectedItems;
     Data->CollectedMinerals=RestoredMinerals;
     for(TActorIterator<AMiningTreasure> It(World);It;++It)
         if(It->bCollected && It->SavePlacementIndex!=INDEX_NONE)Data->CollectedMinerals.Add(It->SavePlacementIndex);
@@ -147,6 +185,7 @@ bool UMiningSaveSubsystem::LoadProgress()
         bool Valid=true;
         for(const auto& Saved:Candidate->Meshes)
         {
+            if(IsLegacyTransientTVMesh(Candidate,Saved))continue;
             auto* Rock=Rocks.FindRef(Saved.ActorKey);if(!Rock){Valid=false;break;}
             if(Saved.Chunk!=INDEX_NONE)
             {auto* Generated=Cast<AGeneratedMiningRock>(Rock);if(!Generated || !Generated->Chunks.IsValidIndex(Saved.Chunk)){Valid=false;break;}}
@@ -175,6 +214,7 @@ bool UMiningSaveSubsystem::LoadProgress()
     Hall->RestoreCompletedAreas(Data->CompletedAreas);
     for(const auto& Saved:Data->Meshes)
     {
+        if(IsLegacyTransientTVMesh(Data,Saved))continue;
         auto* Rock=Rocks.FindRef(Saved.ActorKey);
         FMemoryReader Reader(Saved.Data,true);UE::Geometry::FDynamicMesh3 Geometry;Geometry.Serialize(Reader);
         if(auto* Generated=Cast<AGeneratedMiningRock>(Rock);Generated && Saved.Chunk!=INDEX_NONE)
@@ -198,6 +238,8 @@ bool UMiningSaveSubsystem::LoadProgress()
     if(auto* Move=PC->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()){Move->StopMovementImmediately();Move->ResetFlightInput();}
     if(auto* Room=AMiningStartRoom::Find(GetWorld()))Room->RestoreEquipment(Data->Pickaxe,Data->Jetpack,Data->Headlamp);
     if(auto* Progression=PC->GetPawn()->FindComponentByClass<UMiningProgressionComponent>())Progression->ApplyUpgrades();
+    RunCollectedItems=Data->RunCollectedItems;
+    if(Data->Version<3)for(int32 I=0;I<Data->Collection.Num();++I)if(Data->Collection[I]>0)RunCollectedItems.Add(I);
     RestoredMinerals=Data->CollectedMinerals;RestoreCollectedItems();
     bRestoring=false;bLoadedProgress=true;bSessionStarted=true;SessionWorld=GetWorld();SaveAge=0;PreviousArea=Data->Area;
     return true;
@@ -208,9 +250,8 @@ void UMiningSaveSubsystem::RestoreCollectedItems()
     for(TActorIterator<AMiningTreasure> It(GetWorld());It;++It)
         if(RestoredMinerals.Contains(It->SavePlacementIndex))
         {It->bCollected=true;It->DropBody->SetSimulatePhysics(false);It->SetActorHiddenInGame(true);It->SetActorEnableCollision(false);}
-    const auto& Owned=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection;
     for(TActorIterator<AMiningCollectible> It(GetWorld());It;++It)
-        if(!It->ActorHasTag(TEXT("CollectionPreview")) && Owned.IsValidIndex(It->ItemId) && Owned[It->ItemId]>0)
+        if(!It->ActorHasTag(TEXT("CollectionPreview")) && RunCollectedItems.Contains(It->ItemId))
         {
             It->bCollected=true;It->Body->SetSimulatePhysics(false);It->SetActorHiddenInGame(true);It->SetActorEnableCollision(false);
             if(IsValid(It->PresentationActor)){It->PresentationActor->SetActorHiddenInGame(true);It->PresentationActor->SetActorEnableCollision(false);}
@@ -293,7 +334,8 @@ void UMiningSaveSubsystem::UpdateTutorial()
     }
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     if(Wallet->GetUpgradeLevel(0)>0)TutorialCompleted|=4;
-    if(Hall->Collection && Hall->Collection->Inventory.ContainsByPredicate([](int32 Count){return Count>0;}))TutorialCompleted|=8;
+    if(Wallet->GetUpgradeLevel(0)>=2)TutorialCompleted|=16;
+    if(!RunCollectedItems.IsEmpty())TutorialCompleted|=8;
     const auto Kind=Hall->AreaKind(Hall->ActiveArea);
     if(Kind==EMiningExperienceKind::Office)PrototypesFound=FMath::Max(PrototypesFound,1);
     if(Kind==EMiningExperienceKind::Journey)
@@ -324,6 +366,6 @@ void UMiningSaveSubsystem::UpdateBombWallSigns()
     if(Decals.ContainsByPredicate([](const UDecalComponent* Decal){return Decal->GetFName()==TEXT("BombWallIcon");}))return;
     auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/M_BombWallIcon"));if(!Material)return;
     auto* Sign=NewObject<UDecalComponent>(Rock,TEXT("BombWallIcon"));Rock->AddInstanceComponent(Sign);Sign->SetupAttachment(Rock->GetRootComponent());
-    Sign->SetDecalMaterial(Material);Sign->DecalSize=FVector(16,65,65);Sign->SetFadeScreenSize(.002f);
+    Sign->SetDecalMaterial(Material);Sign->DecalSize=FVector(16,110,110);Sign->SetFadeScreenSize(.002f);
     Sign->RegisterComponent();Sign->SetWorldLocationAndRotation(Hit.ImpactPoint+Hit.ImpactNormal*4,FRotationMatrix::MakeFromXY(-Hit.ImpactNormal,-FVector::UpVector).Rotator());
 }

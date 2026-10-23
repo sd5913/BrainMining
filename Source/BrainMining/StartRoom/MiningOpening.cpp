@@ -1,4 +1,11 @@
 #include "StartRoom/MiningOpening.h"
+#include "MiningLoadingScreen.h"
+#include "MiningMenuStyle.h"
+#include "Engine/GameViewportClient.h"
+#include "Widgets/SBoxPanel.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Text/STextBlock.h"
 #include "TimerManager.h"
 #include "MiningSaveSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -91,11 +98,11 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
     auto* CanvasSlot=Canvas->AddChildToCanvas(Column);
     const auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();
     const bool bHasSave=Saves && Saves->HasSave();
-    // Insert Continue one row above the existing pair; Start and Exit retain
-    // their authored screen positions at every aspect ratio.
-    CanvasSlot->SetAnchors(FAnchors(.81f,.65f-(bHasSave?86.f/900.f:0.f)));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
+    // Keep the labels clear of the chair. Rows stagger toward the right while
+    // sharing the room's perspective direction, rather than opposing tilts.
+    CanvasSlot->SetAnchors(FAnchors(.865f,.65f-(bHasSave?86.f/900.f:0.f)));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
     Column->SetRenderShear(FVector2D(0,0));
-    auto AddButton=[&](const TCHAR* Name,const TCHAR* Label,float Angle,float Shear)
+    auto AddButton=[&](const TCHAR* Name,const TCHAR* Label,float Angle,float Shear,float Offset)
     {
         auto* Box=WidgetTree->ConstructWidget<USizeBox>();Box->SetWidthOverride(240);Box->SetHeightOverride(62);
         auto* Row=Column->AddChildToVerticalBox(Box);Row->SetPadding(FMargin(0,12));
@@ -107,20 +114,22 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
         Button->SetRenderTransformPivot(FVector2D(.5f,.5f));
         Button->SetRenderTransformAngle(Angle);
         Button->SetRenderShear(FVector2D(Shear,0));
+        Button->SetRenderTranslation(FVector2D(Offset,0));
         auto* Text=WidgetTree->ConstructWidget<UTextBlock>();Text->SetText(FText::FromString(Label));
-        Text->SetFont(BrainMiningFonts::Title(34));Text->SetColorAndOpacity(FSlateColor(FLinearColor(.94f,.95f,.91f)));
+        Text->SetFont(BrainMiningFonts::Title(36));Text->SetColorAndOpacity(FSlateColor(FLinearColor(.94f,.95f,.91f)));
+        Text->SetShadowColorAndOpacity(FLinearColor(.035f,.018f,.012f,.65f));Text->SetShadowOffset(FVector2D(2,3));
         Button->AddChild(Text);
         return Button;
     };
     ContinueButton=nullptr;
     if(bHasSave)
     {
-        ContinueButton=AddButton(TEXT("OpeningContinueButton"),TEXT("继续游戏"),-6.f,-8.f);
+        ContinueButton=AddButton(TEXT("OpeningContinueButton"),TEXT("继续游戏"),-10.f,-12.f,-12.f);
         ContinueButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::ContinueGame);
     }
-    StartButton=AddButton(TEXT("OpeningStartButton"),TEXT("开始游戏"),-3.f,-4.f);
+    StartButton=AddButton(TEXT("OpeningStartButton"),TEXT("开始游戏"),-7.f,-10.f,4.f);
     StartButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);
-    ExitButton=AddButton(TEXT("OpeningExitButton"),TEXT("退出游戏"),3.f,4.f);
+    ExitButton=AddButton(TEXT("OpeningExitButton"),TEXT("退出游戏"),-4.f,-8.f,18.f);
     ExitButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);
     auto* DesignSize=WidgetTree->ConstructWidget<USizeBox>();
     DesignSize->SetWidthOverride(1600);DesignSize->SetHeightOverride(900);DesignSize->AddChild(Canvas);
@@ -217,7 +226,8 @@ void AMiningOpening::Prepare(APlayerController* Controller)
 void UMiningOpeningMenu::ContinueGame(){if(Opening.IsValid())Opening->ContinueSavedGame();}
 void AMiningOpening::ContinueSavedGame()
 {
-    if(!bPrepared || bStarted || bFinished)return;
+    if(!bPrepared || bStarted || bFinished || CollectionChoice)return;
+    FMiningLoadingScreen Loading;
     auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();
     if(!Saves || !Saves->LoadProgress())return;
     bStarted=true;bFinished=true;Release();
@@ -226,7 +236,32 @@ void AMiningOpening::ContinueSavedGame()
 void AMiningOpening::StartGame()
 {
     if(!bPrepared || bStarted || bFinished)return;
-    GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->StartNewGame();
+    if(CollectionChoice)return;
+    if(GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->HasCollectionProgress())
+    {
+        auto Choices=SNew(SVerticalBox);
+        Choices->AddSlot().AutoHeight().Padding(0,0,0,28)
+            [SNew(STextBlock).Text(FText::FromString(TEXT("发现有藏品进度，是否要保留藏品进度")))
+                .Font(BrainMiningFonts::Body(24)).ColorAndOpacity(MiningMenuStyle::Gold).AutoWrapText(true)];
+        TSharedPtr<SButton> Keep;
+        Choices->AddSlot().AutoHeight().Padding(0,8)[SAssignNew(Keep,SButton).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(20)
+            .OnClicked_Lambda([this](){ConfirmNewGame(true);return FReply::Handled();})
+            [SNew(STextBlock).Text(FText::FromString(TEXT("保留"))).Font(BrainMiningFonts::Body(24))]];
+        Choices->AddSlot().AutoHeight().Padding(0,8)[SNew(SButton).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(20)
+            .OnClicked_Lambda([this](){ConfirmNewGame(false);return FReply::Handled();})
+            [SNew(STextBlock).Text(FText::FromString(TEXT("清除"))).Font(BrainMiningFonts::Body(24)).ColorAndOpacity(FLinearColor(1.f,.16f,.12f,1.f))]];
+        CollectionChoice=MiningMenuStyle::Frame(Choices,640,0);
+        GetGameInstance()->GetGameViewportClient()->AddViewportWidgetContent(CollectionChoice.ToSharedRef(),2000);
+        FInputModeUIOnly Mode;Mode.SetWidgetToFocus(Keep);Player->SetInputMode(Mode);
+        return;
+    }
+    ConfirmNewGame(false);
+}
+void AMiningOpening::ConfirmNewGame(bool bKeepCollection)
+{
+    if(!bPrepared || bStarted || bFinished)return;
+    if(CollectionChoice){GetGameInstance()->GetGameViewportClient()->RemoveViewportWidgetContent(CollectionChoice.ToSharedRef());CollectionChoice.Reset();}
+    GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->StartNewGame(bKeepCollection);
     bStarted=true;Elapsed=0;
     if(Menu)Menu->SetVisibility(ESlateVisibility::HitTestInvisible);
     WorldTitle->SetVisibility(false);
@@ -318,4 +353,4 @@ void AMiningOpening::Release()
         Camera=nullptr;
     }
 }
-void AMiningOpening::EndPlay(const EEndPlayReason::Type Reason){if(CornerTitle)CornerTitle->RemoveFromParent();if(bPrepared&&!bFinished)Release();Super::EndPlay(Reason);}
+void AMiningOpening::EndPlay(const EEndPlayReason::Type Reason){if(CollectionChoice){GetGameInstance()->GetGameViewportClient()->RemoveViewportWidgetContent(CollectionChoice.ToSharedRef());CollectionChoice.Reset();}if(CornerTitle)CornerTitle->RemoveFromParent();if(bPrepared&&!bFinished)Release();Super::EndPlay(Reason);}

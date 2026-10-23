@@ -202,4 +202,6 @@ protected:
     float TutorialSoilDoneAge=0;
     float TutorialDoneAge[5]={0,0,0,0,0};
     int32 DisplayedPrototype=1;
+    int32 DisplayedUpgrade=1;
+    UPROPERTY(Transient) TObjectPtr<UTextBlock> CollectionShortcut;
 };

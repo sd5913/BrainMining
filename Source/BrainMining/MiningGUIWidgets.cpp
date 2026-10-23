@@ -637,7 +637,19 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
 void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
 {
     auto* Saves=GetGameInstance()?GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>():nullptr;
-    if(!Saves || !Saves->TutorialActive || !MineralPanel)return;
+    if(!Saves || !MineralPanel)return;
+    if(!CollectionShortcut)
+    {
+        CollectionShortcut=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("CollectionShortcut"));
+        CollectionShortcut->SetText(FText::FromString(TEXT("[C]查看藏品")));
+        CollectionShortcut->SetFont(BrainMiningFonts::Body(18));
+        CollectionShortcut->SetColorAndOpacity(FLinearColor(.94f,.95f,.92f));
+        CollectionShortcut->SetShadowOffset(FVector2D(0,1));CollectionShortcut->SetShadowColorAndOpacity(FLinearColor(0,0,0,.65f));
+        CollectionShortcut->SetVisibility(ESlateVisibility::HitTestInvisible);
+        auto* ShortcutSlot=MineralPanel->AddChildToCanvas(CollectionShortcut);ShortcutSlot->SetPosition(FVector2D(40,195));ShortcutSlot->SetSize(FVector2D(275,28));
+        CollectionShortcut->SetRenderShear(FVector2D(0,2));
+    }
+    if(!Saves->TutorialActive)return;
     if(!TutorialPanel)
     {
         TutorialPanel=WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("GuidancePanel"));
@@ -660,6 +672,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         }
         // A continued game only displays the next outstanding prototype.
         DisplayedPrototype=FMath::Clamp(Saves->PrototypesFound+1,1,5);
+        DisplayedUpgrade=(Saves->TutorialCompleted&4)?2:1;
     }
     if(!Saves->TutorialSoilPassed || bTutorialSoilPresented)
     {
@@ -678,6 +691,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
             TutorialPanel->SetRenderOpacity(TutorialAge<2.4f?.70f+.30f*FMath::Cos(TutorialAge*2.f*PI/.8f):1.f);
             CastChecked<UCanvasPanelSlot>(TutorialBackplate->Slot)->SetSize(FVector2D(300,59));
             if(auto* M=TutorialBackplate->GetDynamicMaterial())M->SetVectorParameterValue(TEXT("PanelSize"),FLinearColor(300,59,0,0));
+            CastChecked<UCanvasPanelSlot>(CollectionShortcut->Slot)->SetPosition(FVector2D(40,254));
             return;
         }
         bTutorialSoilPresented=false;TutorialAge=0;
@@ -692,13 +706,15 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
     // Use the same three gentle pulses for the new objective and its destination.
     if(auto* PickaxePanel=GetWidgetFromName(TEXT("PickaxeSummaryPanel")))
         PickaxePanel->SetRenderOpacity(UpgradeAttentionAge<2.4f?.70f+.30f*FMath::Cos(UpgradeAttentionAge*2.f*PI/.8f):1.f);
-    const TCHAR* Basic[]={TEXT("收集1个铜矿"),TEXT("收集1个铁矿"),TEXT("升级1次矿镐"),TEXT("找到1个灵感藏品")};
+    if(DisplayedUpgrade==1 && TutorialDoneAge[2]>1.4f)
+    {DisplayedUpgrade=2;TutorialDoneAge[2]=0;TutorialAge=0;UpgradeAttentionAge=0;}
+    const TCHAR* Basic[]={TEXT("收集1个铜矿"),TEXT("收集1个铁矿"),DisplayedUpgrade==1?TEXT("升级1次矿镐"):TEXT("将矿镐升至2级"),TEXT("找到1个灵感藏品")};
     const TCHAR* Prototype[]={TEXT("发现1个灵感原型"),TEXT("发现第2个灵感原型"),TEXT("发现第三个灵感原型"),TEXT("发现第4个灵感原型")};
     int32 VisibleRows=0;
     for(int32 I=0;I<5;++I)
     {
         auto* Row=TutorialRows[I].Get();
-        const bool Done=I<4?(Saves->TutorialCompleted&(1<<I))!=0:Saves->PrototypesFound>=DisplayedPrototype;
+        const bool Done=I<4?(Saves->TutorialCompleted&(I==2 && DisplayedUpgrade==2?16:1<<I))!=0:Saves->PrototypesFound>=DisplayedPrototype;
         if(Done)TutorialDoneAge[I]+=Dt;
         if(I==4 && TutorialDoneAge[I]>1.4f && DisplayedPrototype<5)
         {++DisplayedPrototype;TutorialDoneAge[I]=0;TutorialAge=0;}
@@ -715,6 +731,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
     // Three gentle pulses draw attention without obscuring gameplay.
     TutorialPanel->SetRenderOpacity(TutorialAge<2.4f?.70f+.30f*FMath::Cos(TutorialAge*2.f*PI/.8f):1.f);
     const float Height=28+VisibleRows*31;
+    CastChecked<UCanvasPanelSlot>(CollectionShortcut->Slot)->SetPosition(FVector2D(40,195+(VisibleRows?Height:0)));
     CastChecked<UCanvasPanelSlot>(TutorialBackplate->Slot)->SetSize(FVector2D(300,Height));
     if(auto* M=TutorialBackplate->GetDynamicMaterial())M->SetVectorParameterValue(TEXT("PanelSize"),FLinearColor(300,Height,0,0));
 }

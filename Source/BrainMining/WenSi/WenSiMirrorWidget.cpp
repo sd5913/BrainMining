@@ -218,7 +218,7 @@ void UWenSiMirrorWidget::Refresh()
  else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("E 重置谜题");
  else if (!Puzzle->bComplete)
  {
-  Message=TEXT("R 重组    Q 停止思考");
+  Message=TEXT("R-交换词组    Q-关闭思考");
  }
  Hint->SetText(FText::FromString(Message));
 }

@@ -175,6 +175,7 @@ void AMiningRoomEscape::BuildStudyLayout()
         if(auto* CRT=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_EscapeCRTScreen")))ScreenMaterial=UMaterialInstanceDynamic::Create(CRT,this);
         TelevisionScreen=Rock(ComputerEntry+FVector(-308,0,0),FVector(100,1100,840),ScreenMaterial,FRotator::ZeroRotator);
     }
+    if(!AuthoredTelevisionScreen)TelevisionScreen->Tags.AddUnique(TEXT("BM_SaveId_TVScreen"));
     ComputerRocks.Add(TelevisionScreen);
     TelevisionScreen->Tags.AddUnique(TEXT("CardEscapeTelevision"));
     Beacon=Light(ComputerEntry+FVector(-500,0,400),180000,2200);
@@ -214,7 +215,9 @@ void AMiningRoomEscape::BuildStudyLayout()
     for(int32 i=0;i<14;++i)
     {
         auto* Fill=Rock(TunnelPoint(FVector(250+i*500,0,0)),FVector(500,W*2,H*2),Interior,Rotation);
-        Fill->Tags.AddUnique(TEXT("CardEscapeTelevision"));ComputerRocks.Add(Fill);
+        Fill->Tags.AddUnique(TEXT("CardEscapeTelevision"));
+        Fill->Tags.AddUnique(FName(*FString::Printf(TEXT("BM_SaveId_TVFill_%d"),ComputerRocks.Num())));
+        ComputerRocks.Add(Fill);
     }
     for(float Along:{120.f,800.f,1600.f,2400.f,3200.f,4000.f,4800.f,5600.f,6400.f})
     {

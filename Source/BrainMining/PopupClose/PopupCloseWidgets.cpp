@@ -297,11 +297,6 @@ TSharedRef<SWidget> UPopupCloseWarningWidget::RebuildWidget()
  WarningTexture=LoadObject<UTexture2D>(nullptr,TEXT("/Game/PopupClose/PopupArt/T_PendingWarning.T_PendingWarning"));
  WarningBrush=MakeShared<FSlateBrush>();WarningBrush->SetResourceObject(WarningTexture);
  WarningBrush->DrawAs=ESlateBrushDrawType::Image;WarningBrush->ImageSize=FVector2D(24,76);
- return SNew(SVerticalBox)
- + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
- [SNew(SBox).WidthOverride(24).HeightOverride(76)
- [SNew(SImage).Image(WarningBrush.Get())]]
- + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
- [SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.08f,.025f,.01f,.9f)).Padding(FMargin(8.f,2.f))
- [SNew(STextBlock).Text_Lambda([this] { return FText::AsNumber(PendingCount); }).Font(PopupFont(20.f)).ColorAndOpacity(FLinearColor(1.f,.85f,.3f))]];
+ return SNew(SBox).WidthOverride(24).HeightOverride(76).HAlign(HAlign_Center).VAlign(VAlign_Center)
+ [SNew(SImage).Image(WarningBrush.Get())];
 }

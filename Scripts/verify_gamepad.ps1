@@ -22,7 +22,8 @@ if (-not $SkipBuild) {
 }
 Assert-MiningLaunchResources
 $runArguments = @(
-    $project, '/Engine/Maps/Entry', '-unattended', '-nosplash', '-nosound', '-NoLiveCoding', '-nullrhi', '-NoAsyncLoadingThread',
+    $project, '/Engine/Maps/Entry', '-unattended', '-nosplash', '-nosound', '-NoLiveCoding', '-nullrhi', '-NoAsyncLoadingThread', '-NoAssetRegistryCache',
+    '-corelimit=2', '-asyncassetcompilationmaxconcurrency=1', '-asynctexturecompilationmaxconcurrency=1',
     '-EnablePlugins=GameFeatures', '-DisablePlugins=AllToolsets,ModelContextProtocol', "-UserDir=$report/User",
     "-ExecCmds=Slate.SkipWidgetDrawingInHeadlessMode 0,Automation RunTests $TestFilter", '-TestExit=Automation Test Queue Empty',
     "-ReportExportPath=$report", "-abslog=$report/runtime.log", "-LocalDataCachePath=$projectRoot/Saved/DerivedDataCache",

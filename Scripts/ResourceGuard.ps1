@@ -98,7 +98,12 @@ function Start-MiningGuardedProcess {
             $process.Refresh()
             if ($process.HasExited) { break }
             if ($TrimCookWorkingSet -and $snapshot.AvailablePhysicalGB -lt 3.5 -and $snapshot.AvailableCommitGB -gt 8 -and ([DateTime]::UtcNow - $lastTrim).TotalSeconds -ge 10) {
-                $cookChildren = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($process.Id) AND Name = 'UnrealEditor-Cmd.exe'" | Where-Object { $_.CommandLine -match '(?i)-run=Cook\b' })
+                $cookChildren = @()
+                try {
+                    $cookChildren = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($process.Id) AND Name = 'UnrealEditor-Cmd.exe'" -OperationTimeoutSec 3 -ErrorAction Stop | Where-Object { $_.CommandLine -match '(?i)-run=Cook\b' })
+                } catch {
+                    Write-Warning "Cook working-set lookup failed; memory limits remain active: $_"
+                }
                 foreach ($child in $cookChildren) {
                     $cookProcess = Get-Process -Id $child.ProcessId -ErrorAction SilentlyContinue
                     if ($cookProcess -and $cookProcess.WorkingSet64 -gt 1GB) {
@@ -135,8 +140,13 @@ function Start-MiningGuardedProcess {
     finally {
         if (-not $process.HasExited) {
             Write-Warning "Stopping only the process tree started by this script (PID $($process.Id)). $stopReason"
-            & "$env:SystemRoot\System32\taskkill.exe" /PID $process.Id /T /F | Out-Null
-            if (-not $process.WaitForExit(10000)) { Write-Warning 'The launched process did not exit within ten seconds.' }
+            if ([System.Diagnostics.Process].GetMethod('Kill', [type[]]@([bool]))) {
+                $process.Kill($true)
+            } else {
+                & "$env:SystemRoot\System32\taskkill.exe" /PID $process.Id /T /F | Out-Null
+                if ($LASTEXITCODE -ne 0) { throw "Could not terminate launched process tree (PID $($process.Id)); taskkill failed." }
+            }
+            if (-not $process.WaitForExit(10000)) { throw "Launched process (PID $($process.Id)) did not exit within ten seconds." }
         }
     }
     if ($stopReason) { throw "$stopReason Report: $ReportPath" }

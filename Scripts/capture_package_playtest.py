@@ -1,7 +1,7 @@
 """Render the changed campaign scenes in PIE without saving gameplay or editor state."""
-import unreal,time,json,traceback
+import unreal,time,json,traceback,os
 from pathlib import Path
-ROOT=Path(unreal.Paths.project_dir());OUT=ROOT/'Saved/Validation/PackagePlaytest';OUT.mkdir(parents=True,exist_ok=True)
+ROOT=Path(unreal.Paths.project_dir());OUT=Path(os.environ.get('BRAINMINING_CAPTURE_DIR', str(ROOT/'Saved/Validation/PackagePlaytest')));OUT.mkdir(parents=True,exist_ok=True)
 ed=unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem);levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 helper=unreal.MiningGUIEditorLibrary
 unreal.EditorPythonScripting.set_keep_python_script_alive(True)

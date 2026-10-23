@@ -6,8 +6,9 @@ levels=unreal.get_editor_subsystem(unreal.LevelEditorSubsystem);actors=unreal.ge
 r={}
 # Credits are updated separately after the widget binding compile check.
 seg=unreal.load_asset('/Game/Subtitles/DA_LeaveStartRoom');lines=list(seg.get_editor_property('lines'))
-if not any('软软的泥土' in str(x.text) for x in lines):
- line=unreal.SubtitleLine();line.set_editor_property('text','软软的泥土，这边一定是路');lines.append(line);seg.set_editor_property('lines',lines);assert unreal.EditorAssetLibrary.save_loaded_asset(seg)
+# Soil discovery is now played by the completed crossing objective.
+lines=[x for x in lines if '软软的泥土' not in str(x.text)]
+seg.set_editor_property('lines',lines);assert unreal.EditorAssetLibrary.save_loaded_asset(seg)
 r['subtitle_lines']=[str(x.text) for x in seg.get_editor_property('lines')]
 assert levels.load_level('/Game/MainGame/Maps/Lvl_MainGame');all=actors.get_all_level_actors();sealed=[]
 for a in all:

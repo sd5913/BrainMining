@@ -151,6 +151,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     Result->SetNumberField(TEXT("area"),Hall?Hall->ActiveArea:-1);Result->SetNumberField(TEXT("unlocked"),Hall?Hall->UnlockedArea:-1);
     Result->SetBoolField(TEXT("opening"),AMiningOpening::IsOpening(W));
     Result->SetBoolField(TEXT("tutorial"),Save->TutorialActive);Result->SetNumberField(TEXT("completed"),Save->TutorialCompleted);
+    Result->SetBoolField(TEXT("soil_passed"),Save->TutorialSoilPassed);
     Result->SetNumberField(TEXT("prototypes"),Save->PrototypesFound);Result->SetNumberField(TEXT("copper"),Wallet->GetMineralCount(EMiningMineral::Copper));
     Result->SetNumberField(TEXT("iron"),Wallet->GetMineralCount(EMiningMineral::Iron));Result->SetNumberField(TEXT("upgrade"),Wallet->GetUpgradeLevel(0));
     Result->SetBoolField(TEXT("has_save"),Save->HasSave());Result->SetArrayField(TEXT("position"),Vec(Pawn->GetActorLocation()));

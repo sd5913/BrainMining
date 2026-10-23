@@ -13,6 +13,7 @@
 #include "Components/DynamicMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/DecalComponent.h"
 #include "Materials/MaterialInterface.h"
 #include "UDynamicMesh.h"
@@ -47,7 +48,7 @@ namespace
     }
     bool ValidSnapshot(const UMiningSaveGame* Data)
     {
-        return Data && Data->Version==1 && Data->Upgrades.Num()==4 && Data->Area>=0 &&
+        return Data && Data->Version>=1 && Data->Version<=2 && Data->Upgrades.Num()==4 && Data->Area>=0 &&
             !Data->PlayerTransform.ContainsNaN() && !Data->ViewRotation.ContainsNaN();
     }
     TArray<FString> RecoverySlots()
@@ -68,7 +69,7 @@ void UMiningSaveSubsystem::StartNewGame()
 {
     bSessionStarted=true;bLoadedProgress=false;SessionWorld=GetWorld();SaveAge=0;PreviousArea=INDEX_NONE;
     FallingSeconds=0;UpgradeHintLevel=INDEX_NONE;RestoredMinerals.Reset();
-    TutorialActive=false;TutorialCompleted=0;PrototypesFound=0;
+    TutorialActive=false;TutorialSoilPassed=false;TutorialCompleted=0;PrototypesFound=0;
     // Keep the previous slot until a new valid snapshot has successfully saved.
 }
 
@@ -88,6 +89,7 @@ bool UMiningSaveSubsystem::SaveProgress()
         if(auto* Generated=Cast<AGeneratedMiningRock>(*It);Generated && Generated->bSimplificationPending)return false;
     }
     auto* Data=Cast<UMiningSaveGame>(UGameplayStatics::CreateSaveGameObject(UMiningSaveGame::StaticClass()));
+    Data->Version=2;
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     Data->Area=Hall->ActiveArea;Data->UnlockedArea=Hall->UnlockedArea;Data->CompletedAreas=Hall->GetCompletedAreas();
     Data->PlayerTransform=Character->GetActorTransform();Data->ViewRotation=PC->GetControlRotation();
@@ -96,6 +98,7 @@ bool UMiningSaveSubsystem::SaveProgress()
     {Data->PlayerTransform=Hall->Areas[Data->Area].Entry;Data->ViewRotation=Data->PlayerTransform.Rotator();}
     Data->Balance=Wallet->Balance;Data->Minerals=Wallet->Minerals;Data->Upgrades=Wallet->UpgradeLevels;
     Data->TutorialActive=TutorialActive;Data->TutorialCompleted=TutorialCompleted;Data->PrototypesFound=PrototypesFound;
+    Data->TutorialSoilPassed=TutorialSoilPassed;
     Data->Bomb=Wallet->bBombSkillUnlocked;Data->Drill=Wallet->bDrillSkillUnlocked;
     Data->Collection=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection;
     if(Hall->Collection)Data->Collection=Hall->Collection->Inventory;
@@ -155,6 +158,16 @@ bool UMiningSaveSubsystem::LoadProgress()
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     Wallet->Balance=Data->Balance;Wallet->Minerals=Data->Minerals;Wallet->UpgradeLevels=Data->Upgrades;
     TutorialActive=Data->TutorialActive;TutorialCompleted=Data->TutorialCompleted;PrototypesFound=Data->PrototypesFound;
+    TutorialSoilPassed=Data->TutorialSoilPassed;
+    // Older releases already showed the later objectives. Keep progressed saves
+    // there, including players past this wall who have not collected anything yet.
+    if(Data->Version==1)
+    {
+        TutorialSoilPassed=Data->Area>0 || TutorialCompleted!=0 || PrototypesFound>0;
+        for(const auto& Pair:Rocks)
+            if(Pair.Value->ActorHasTag(TEXT("BM_MainGame_StartRoomJunction")))
+                TutorialSoilPassed|=Pair.Value->GetActorTransform().InverseTransformPosition(Data->PlayerTransform.GetLocation()).X>Pair.Value->RockSize.X*.5f;
+    }
     Wallet->bBombSkillUnlocked=Data->Bomb;Wallet->bDrillSkillUnlocked=Data->Drill;
     GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection=Data->Collection;
     if(Hall->Collection)Hall->Collection->Inventory=Data->Collection;
@@ -249,17 +262,34 @@ void UMiningSaveSubsystem::UpdateTutorial()
     auto* Hall=AMiningExhibitHall::Find(GetWorld());
     APawn* Pawn=GetWorld()->GetFirstPlayerController()->GetPawn();
     const FVector Position=Pawn->GetActorLocation();
+    ADiggableRock* Soil=nullptr;
+    for(TActorIterator<ADiggableRock> It(GetWorld());It;++It)
+        if(It->ActorHasTag(TEXT("BM_MainGame_StartRoomJunction"))){Soil=*It;break;}
     if(!TutorialActive)
     {
         // The second soil wall is the upper-shaft junction, before the first mine.
-        for(TActorIterator<ADiggableRock> It(GetWorld());It;++It)
-            if(It->ActorHasTag(TEXT("BM_MainGame_StartRoomJunction")) &&
-               It->GetComponentsBoundingBox(true).ComputeSquaredDistanceToPoint(Position)<FMath::Square(650.f))
-            {TutorialActive=true;break;}
+        if(Soil && Soil->GetComponentsBoundingBox(true).ComputeSquaredDistanceToPoint(Position)<FMath::Square(650.f))TutorialActive=true;
         if(Hall->ActiveArea>0)TutorialActive=true;
         if(TutorialActive)
             if(auto* Subtitles=USubtitleSubsystem::Get(this))
                 Subtitles->PlayInteractionLines(TEXT("TutorialIntro"),{FText::FromString(TEXT("没思路的话就看看左侧引导栏吧"))});
+    }
+    if(TutorialActive && !TutorialSoilPassed && Soil && Soil->SuccessfulCuts>0 && !Soil->IsTerrainCutPending())
+    {
+        // Authored dimensions remain stable after excavation changes mesh bounds.
+        // Require the entire capsule beyond this specific wall's exit face, inside
+        // its corridor. Mining a hole while standing in front is not completion.
+        const FVector Local=Soil->GetActorTransform().InverseTransformPosition(Position);
+        const FVector Half=Soil->RockSize*.5f;
+        const auto* Character=Cast<ACharacter>(Pawn);
+        const float Radius=Character?Character->GetCapsuleComponent()->GetScaledCapsuleRadius():34.f;
+        const float LocalRadius=Radius/FMath::Max(FMath::Abs(Soil->GetActorScale3D().X),.01f);
+        if(Local.X>Half.X+LocalRadius && Local.X<Half.X+2000.f && FMath::Abs(Local.Y)<Half.Y && FMath::Abs(Local.Z)<Half.Z)
+        {
+            TutorialSoilPassed=true;
+            if(auto* Subtitles=USubtitleSubsystem::Get(this))
+                Subtitles->PlayInteractionLines(TEXT("TutorialSoilPassed"),{FText::FromString(TEXT("哦！软软的泥土，这边一定是路"))});
+        }
     }
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     if(Wallet->GetUpgradeLevel(0)>0)TutorialCompleted|=4;

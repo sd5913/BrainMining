@@ -37,6 +37,10 @@ if args.phase == 'setup':
     command('pose', target=[-30150,0,12140], offset=[-450,0,40]);time.sleep(.7)
     check(c.command('state')['tutorial'], 'second soil activates guide')
     command('shot', name='tutorial-start')
+    soil=next(a for a in c.command('actors',filter='BM_MainGame_StartRoomJunction')['actors'] if 'rock_size' in a)
+    command('mine',actor=soil['path'],point=soil['position'],radius=230);time.sleep(2)
+    command('pose',eye=[-29850,0,12180],target=[-29000,0,12180]);time.sleep(3)
+    check(c.command('state')['soil_passed'],'crossing the authored soil unlocks later tasks')
     # Real terrain mutation is retained across process restarts.
     command('mine', actor='BM_StartRoom_ExitBlocker', point=[-33730,0,11225],radius=120)
     time.sleep(3)

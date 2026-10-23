@@ -661,6 +661,27 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         // A continued game only displays the next outstanding prototype.
         DisplayedPrototype=FMath::Clamp(Saves->PrototypesFound+1,1,5);
     }
+    if(!Saves->TutorialSoilPassed || bTutorialSoilPresented)
+    {
+        if(!Saves->TutorialSoilPassed){bTutorialSoilPresented=true;TutorialSoilDoneAge=0;}
+        else TutorialSoilDoneAge+=Dt;
+        if(TutorialSoilDoneAge<1.4f)
+        {
+            TutorialAge+=Dt;
+            for(int32 I=0;I<5;++I)TutorialRows[I]->SetVisibility(I==0?ESlateVisibility::HitTestInvisible:ESlateVisibility::Collapsed);
+            auto* Row=TutorialRows[0].Get();
+            Row->SetText(FText::FromString(Saves->TutorialSoilPassed?TEXT("✓  穿过1个泥土层"):TEXT("·  穿过1个泥土层")));
+            Row->SetColorAndOpacity(Saves->TutorialSoilPassed?FLinearColor(.42f,.95f,.66f):FLinearColor(.94f,.95f,.92f));
+            Row->SetRenderOpacity(Saves->TutorialSoilPassed?FMath::Clamp((1.4f-TutorialSoilDoneAge)/.4f,0.f,1.f):1.f);
+            CastChecked<UCanvasPanelSlot>(Row->Slot)->SetPosition(FVector2D(16,14));
+            TutorialPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
+            TutorialPanel->SetRenderOpacity(TutorialAge<2.4f?.70f+.30f*FMath::Cos(TutorialAge*2.f*PI/.8f):1.f);
+            CastChecked<UCanvasPanelSlot>(TutorialBackplate->Slot)->SetSize(FVector2D(300,59));
+            if(auto* M=TutorialBackplate->GetDynamicMaterial())M->SetVectorParameterValue(TEXT("PanelSize"),FLinearColor(300,59,0,0));
+            return;
+        }
+        bTutorialSoilPresented=false;TutorialAge=0;
+    }
     const bool UpgradeUnlocked=(Saves->TutorialCompleted&3)==3;
     if(UpgradeUnlocked && !bTutorialUpgradeRevealed)
     {

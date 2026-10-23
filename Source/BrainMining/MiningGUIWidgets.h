@@ -198,6 +198,8 @@ protected:
     float TutorialAge=0;
     float UpgradeAttentionAge=2.4f;
     bool bTutorialUpgradeRevealed=false;
+    bool bTutorialSoilPresented=false;
+    float TutorialSoilDoneAge=0;
     float TutorialDoneAge[5]={0,0,0,0,0};
     int32 DisplayedPrototype=1;
 };

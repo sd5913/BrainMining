@@ -40,6 +40,7 @@ public:
     UPROPERTY() bool Headlamp=false;
     UPROPERTY() TArray<FMiningSavedMesh> Meshes;
     UPROPERTY() bool TutorialActive=false;
+    UPROPERTY() bool TutorialSoilPassed=false;
     UPROPERTY() int32 TutorialCompleted=0;
     UPROPERTY() int32 PrototypesFound=0;
 };
@@ -57,6 +58,7 @@ public:
     UFUNCTION(BlueprintCallable) bool LoadProgress();
     void StartNewGame();
     UPROPERTY(BlueprintReadOnly) bool TutorialActive=false;
+    UPROPERTY(BlueprintReadOnly) bool TutorialSoilPassed=false;
     UPROPERTY(BlueprintReadOnly) int32 TutorialCompleted=0;
     UPROPERTY(BlueprintReadOnly) int32 PrototypesFound=0;
     void RecordMineral(EMiningMineral Mineral);

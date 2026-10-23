@@ -45,6 +45,7 @@ try:
  check(c.command('state')['upgrade']==1 and c.command('state')['drill'],'campaign equipment survives both loads')
  cmd('gm_map',index=5);s=wait(lambda s:s.get('ending_gate')==0);time.sleep(2);s=c.command('state')
  check(s['mining_suspended'] and not s['pickaxe_visible'],'cell entry hides pickaxe and blocks excavation')
+ s=cmd('neurons');check(s['visible_cell_parts']>0 and s['visible_blood_parts']>0,'cell and blood scenery remain visible before neural arrival')
  gate=next(a for a in c.command('actors',filter='DiggableRock')['actors'] if '/EndingEmergence/' in a['path'])
  check(not gate['collision'] and gate['cuts']==0,'cell membrane is intact and has no actor collision')
  p=gate['position'];cmd('pose',eye=[p[0]-310,p[1],p[2]+60],target=[p[0]+400,p[1],p[2]+60]);time.sleep(1)
@@ -57,7 +58,9 @@ try:
  check(s['ending_gate']==1,'ordinary forward input crosses membrane into vessel')
  cmd('shot',name='cell-vessel-entry');s=wait(lambda s:s.get('ending_gate')==2,90)
  check(not s['pickaxe_visible'],'pickaxe remains hidden through vessel and neurons')
+ s=cmd('neurons');check(s['visible_cell_parts']==0 and s['visible_blood_parts']==0,'cell and blood hidden immediately upon neural arrival')
  cmd('shot',name='neuron-key-hint')
+ cmd('aim',target=gate['position']);time.sleep(.6);cmd('shot',name='neurons-look-back-no-cell-blood')
  visited={0}
  for index in (2,0,4,9,14,19,24,29,34,39,44,46):
   ns=cmd('neurons')['neurons'];target=ns[index];check(target['reachable'],'neuron reachable: '+str(index))

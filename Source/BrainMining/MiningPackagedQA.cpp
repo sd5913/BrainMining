@@ -261,6 +261,14 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Result->SetNumberField(TEXT("travelling_neuron"),Ending->TravellingToNeuron);
         if(Op==TEXT("neurons"))
         {
+            TArray<USceneComponent*> SceneParts;Ending->GetRootComponent()->GetChildrenComponents(true,SceneParts);
+            int32 VisibleBlood=0,VisibleCell=0;
+            for(auto* Part:SceneParts)if(Part->IsVisible())
+            {
+                if(Part->ComponentHasTag(TEXT("EndingBloodVisual")))++VisibleBlood;
+                if(Part->ComponentHasTag(TEXT("EndingCellVisual"))||Part->GetName().StartsWith(TEXT("EllipsoidalCellInterior"))||Part->GetName().StartsWith(TEXT("CellDress")))++VisibleCell;
+            }
+            Result->SetNumberField(TEXT("visible_blood_parts"),VisibleBlood);Result->SetNumberField(TEXT("visible_cell_parts"),VisibleCell);
             TArray<UStaticMeshComponent*> Meshes;Ending->GetComponents(Meshes);
             TArray<TSharedPtr<FJsonValue>> Neurons;
             for(int32 I=0;I<Ending->NeuronPositions.Num();++I)

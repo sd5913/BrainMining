@@ -98,7 +98,7 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
     auto* CanvasSlot=Canvas->AddChildToCanvas(Column);
     const auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();
     const bool bHasSave=Saves && Saves->HasSave();
-    // Keep the labels clear of the chair. Rows stagger toward the right while
+    // Keep the labels clear of the chair. Rows stagger toward the left while
     // sharing the room's perspective direction, rather than opposing tilts.
     CanvasSlot->SetAnchors(FAnchors(.865f,.65f-(bHasSave?86.f/900.f:0.f)));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
     Column->SetRenderShear(FVector2D(0,0));
@@ -124,12 +124,12 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
     ContinueButton=nullptr;
     if(bHasSave)
     {
-        ContinueButton=AddButton(TEXT("OpeningContinueButton"),TEXT("继续游戏"),-10.f,-12.f,-12.f);
+        ContinueButton=AddButton(TEXT("OpeningContinueButton"),TEXT("继续游戏"),-10.f,-12.f,18.f);
         ContinueButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::ContinueGame);
     }
     StartButton=AddButton(TEXT("OpeningStartButton"),TEXT("开始游戏"),-7.f,-10.f,4.f);
     StartButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);
-    ExitButton=AddButton(TEXT("OpeningExitButton"),TEXT("退出游戏"),-4.f,-8.f,18.f);
+    ExitButton=AddButton(TEXT("OpeningExitButton"),TEXT("退出游戏"),-4.f,-8.f,-12.f);
     ExitButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);
     auto* DesignSize=WidgetTree->ConstructWidget<USizeBox>();
     DesignSize->SetWidthOverride(1600);DesignSize->SetHeightOverride(900);DesignSize->AddChild(Canvas);

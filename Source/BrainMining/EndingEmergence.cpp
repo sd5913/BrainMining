@@ -1802,15 +1802,20 @@ void AEndingEmergence::TransitEffects(float Strength)
     PP.VignetteIntensity=0.f;
 }
 
+void AEndingEmergence::HideCellAndBloodVisuals()
+{
+    TArray<USceneComponent*> Parts;GetComponents(Parts);
+    for(auto* Part:Parts)if(Part->ComponentHasTag(TEXT("EndingBloodVisual"))||Part->GetName().StartsWith(TEXT("EllipsoidalCellInterior"))||Part->GetName().StartsWith(TEXT("CellDress")))Part->SetVisibility(false,true);
+    TArray<USceneComponent*> CellParts;Sets[0]->GetChildrenComponents(true,CellParts);
+    for(auto* Part:CellParts)if(Part->ComponentHasTag(TEXT("EndingCellVisual")))Part->SetVisibility(false,true);
+}
+
 void AEndingEmergence::BeginThought()
 {
     for(auto Gate:Gates)if(IsValid(Gate))Gate->SetActorHiddenInGame(true);
     GateIndex=5;BeatAt=Age+3.8f;TargetNeuron=INDEX_NONE;UpdateNerves();
     if(Ambience){Ambience->FadeOut(.3f,0);Ambience->bAutoDestroy=true;Ambience=nullptr;}
-    TArray<USceneComponent*> Parts;GetComponents(Parts);
-    for(auto* Part:Parts)if(Part->ComponentHasTag(TEXT("EndingBloodVisual"))||Part->GetName().StartsWith(TEXT("EllipsoidalCellInterior"))||Part->GetName().StartsWith(TEXT("CellDress")))Part->SetVisibility(false,true);
-    TArray<USceneComponent*> CellParts;Sets[0]->GetChildrenComponents(true,CellParts);
-    for(auto* Part:CellParts)if(Part->ComponentHasTag(TEXT("EndingCellVisual")))Part->SetVisibility(false,true);
+    HideCellAndBloodVisuals();
     TakeoffStart=GetActorTransform().InverseTransformPosition(Camera->GetActorLocation());
     TakeoffLook=TakeoffStart+GetActorTransform().InverseTransformVectorNoScale(Player->GetControlRotation().Vector())*850;
     Player->SetIgnoreLookInput(true);Sound(TEXT("Connect"),.65f,.85f);
@@ -1898,6 +1903,7 @@ void AEndingEmergence::UpdatePulse(float Dt)
         if(T>=1)
         {
             bEnteringBrain=false;TransitEffects(0);GateIndex=2;CurrentNeuron=0;VisitedNeurons.Add(0);BeatAt=Age+4;NeuralWave();
+            HideCellAndBloodVisuals();
             Player->SetControlRotation(ArriveLook);Player->ResetIgnoreLookInput();Sound(TEXT("Connect"),.3f,1.3f);
         }
     }

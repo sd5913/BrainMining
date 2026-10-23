@@ -364,6 +364,7 @@ private:
     void BuildBrainSurface();
     void EnterBlood();
     void EnterBrain();
+    void HideCellAndBloodVisuals();
     void PossessNeuron(int32 Index);
     void UpdatePulse(float DeltaSeconds);
     void BeginThought();

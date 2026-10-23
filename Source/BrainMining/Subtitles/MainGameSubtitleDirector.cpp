@@ -44,6 +44,8 @@ void AMainGameSubtitleDirector::Tick(float Dt)
     Super::Tick(Dt);
     auto* PC = GetWorld()->GetFirstPlayerController();
     if(!PC || PC->IsPaused() || !PC->GetPawn()) return;
+    for(TActorIterator<AEchoPassageStage> It(GetWorld()); It; ++It)
+        if(It->bLanded) PlayOnce(TEXT("盲人敲地玩法"));
     for(TActorIterator<ACardRoomStage> It(GetWorld()); It; ++It)
     {
         if(It->Run.Round == 1 && It->Run.Phase == ECardRoomPhase::Choosing)PlayOnce(TEXT("卡牌玩法1"));

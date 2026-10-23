@@ -17,6 +17,8 @@
 #include "Components/ButtonSlot.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Components/RichTextBlock.h"
+#include "Components/ScrollBox.h"
 #include "Materials/MaterialInterface.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/BlueprintEditorUtils.h"
@@ -111,7 +113,15 @@ static bool BuildCollectionInspectWidget(bool bReplace)
     Picture(Info,TEXT("InfoBackground"),0,0,528,900,TEXT("Info"));
     Text(BP,Info,TEXT("ItemName"),TEXT("化学试剂"),182,363,320,70,32,FLinearColor(.91f,.93f,.86f));
     Image(BP,Info,TEXT("DescriptionDivider"),190,441,118,1,nullptr,FLinearColor(.58f,.62f,.59f));
-    auto* Description=Text(BP,Info,TEXT("ItemDescription"),TEXT("加点这个……再加点那个……"),190,465,300,185,15,FLinearColor(.61f,.68f,.64f));Description->SetAutoWrapText(true);
+    auto* DescriptionScroll=Make<UScrollBox>(BP,TEXT("DescriptionScroll"));
+    DescriptionScroll->SetVisibility(ESlateVisibility::Visible);
+    DescriptionScroll->SetConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible);
+    Place(Info,DescriptionScroll,190,465,300,300);
+    auto* Description=Make<URichTextBlock>(BP,TEXT("ItemDescription"));
+    Description->SetTextStyleSet(LoadObject<UDataTable>(nullptr,TEXT("/Game/CollectionPrototype/UI/DT_CollectionDescriptionStyles.DT_CollectionDescriptionStyles")));
+    Description->SetText(FText::FromString(AMiningCollectible::Description(2).Replace(TEXT("\n\n"),TEXT("\n\n<Quote>"))+TEXT("</>")));
+    Description->SetAutoWrapText(true);Description->SetWrapTextAt(286.f);Description->SetLineHeightPercentage(1.2f);
+    DescriptionScroll->AddChild(Description);
     IconButton(Info,TEXT("CloseButton"),448,44,30,24,TEXT("Back"));
     auto* Help=Text(BP,Canvas,TEXT("PreviewHelp"),TEXT(""),285,695,540,24,12,FLinearColor(.64f,.69f,.65f));Help->SetVisibility(ESlateVisibility::Collapsed);
     auto* Bar=Make<UCanvasPanel>(BP,TEXT("CollectionBar"));Place(Canvas,Bar,50,728,1010,100);

@@ -74,7 +74,7 @@ def run():
     origin=echo.get_actor_location();pose(origin+unreal.Vector(-590,0,1030),origin+unreal.Vector(245,0,1000));yield .5;shot('04_echo_join')
     echo.emit_echo(origin,True);yield .4
     director=actors(unreal.MainGameSubtitleDirector)[0]
-    check(not director.has_triggered('盲人敲地玩法'),'Echo landing does not dispatch gameplay narration')
+    check(director.has_triggered('盲人敲地玩法'),'Echo landing dispatches gameplay narration once')
     gi=unreal.GameplayStatics.get_game_instance(s['w']);sub=next(o for o in unreal.ObjectIterator(unreal.SubtitleSubsystem) if o.get_outer()==gi)
     sub.stop_all();sub.play_segment('收集物拾取_06');yield .25
     segment=H.read_preview_object(sub,'ActiveSegment')

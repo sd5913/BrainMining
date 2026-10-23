@@ -29,7 +29,7 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
     const auto* Brush=FCoreStyle::Get().GetBrush("WhiteBrush"); int L=Layer;
     auto Geo=[&](float X,float Y,float W,float H) { return G.ToPaintGeometry(FVector2f(W*S,H*S),FSlateLayoutTransform(FVector2f(O+FVector2D(X,Y)*S))); };
     auto Box=[&](float X,float Y,float W,float H,FLinearColor C) { FSlateDrawElement::MakeBox(Out,++L,Geo(X,Y,W,H),Brush,ESlateDrawEffect::None,C); };
-    auto Text=[&](FString T,float X,float Y,int Font,FLinearColor C,bool bTitle=false) { FSlateDrawElement::MakeText(Out,++L,Geo(X,Y,1500,90),T,BrainMiningFonts::Style(bTitle ? TEXT("Bold") : TEXT("Medium"),FMath::Max(8,FMath::RoundToInt(Font*S))),ESlateDrawEffect::None,C); };
+    auto Text=[&](FString T,float X,float Y,int Font,FLinearColor C,bool bTitle=false,bool bItalic=false) { auto Info=BrainMiningFonts::Style(bTitle ? TEXT("Bold") : TEXT("Medium"),FMath::Max(8,FMath::RoundToInt(Font*S)));Info.SkewAmount=bItalic?.18f:0.f;FSlateDrawElement::MakeText(Out,++L,Geo(X,Y,1500,90),T,Info,ESlateDrawEffect::None,C); };
     if(!F->bCatalogueOpen)
     {
         Box(40,35,395,104,Ink); Box(40,35,4,104,Gold);
@@ -78,7 +78,12 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
             Current.AppendChar(Character);
         }
         if(!Current.IsEmpty())Lines.Add(Current);
-        for(int i=0;i<Lines.Num();++i) Text(Lines[i],1223,379+i*35,15,Muted);
+        bool bQuote=false;
+        for(int i=0;i<Lines.Num();++i)
+        {
+            if(Lines[i].IsEmpty())bQuote=true;
+            Text(Lines[i],1223,379+i*25,15,Muted,false,bQuote);
+        }
     }
     else
     {

@@ -4,6 +4,8 @@
 #include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Components/RichTextBlock.h"
+#include "Components/ScrollBox.h"
 #include "Components/BackgroundBlur.h"
 #include "Engine/Texture2D.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -85,7 +87,21 @@ void UMiningCollectionWidget::RefreshCollection()
         I->SetVisibility(Owned?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
     }
     if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemName"))))T->SetText(FText::FromString(Owned?AMiningCollectible::ItemName(Id):TEXT("尚未发现")));
-    if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))T->SetText(FText::FromString(Owned?AMiningCollectible::Description(Id):TEXT("")));
+    const FString Description=Owned?AMiningCollectible::Description(Id):FString();
+    if(auto* T=Cast<URichTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))
+    {
+        const auto Escape=[](FString Value)
+        {return Value.Replace(TEXT("&"),TEXT("&amp;")).Replace(TEXT("<"),TEXT("&lt;")).Replace(TEXT(">"),TEXT("&gt;"));};
+        FString Body,Quote;
+        const FString Markup=Description.Split(TEXT("\n\n"),&Body,&Quote)
+            ?Escape(Body)+TEXT("\n\n<Quote>")+Escape(Quote)+TEXT("</>"):Escape(Description);
+        if(!T->GetText().EqualTo(FText::FromString(Markup)))
+        {
+            T->SetText(FText::FromString(Markup));
+            if(auto* Scroll=Cast<UScrollBox>(GetWidgetFromName(TEXT("DescriptionScroll"))))Scroll->ScrollToStart();
+        }
+    }
+    else if(auto* PlainText=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))PlainText->SetText(FText::FromString(Description));
     if(auto* W=GetWidgetFromName(TEXT("PreviewHelp")))W->SetVisibility(ESlateVisibility::Collapsed);
     const auto Ids=Collection->CatalogueIds();
     const int32 Page=CurrentPage;

@@ -108,7 +108,20 @@ FString AMiningCollectible::ItemName(int32 Id)
 }
 FString AMiningCollectible::Description(int32 Id)
 {
-    const TCHAR* Lines[]={TEXT("不觉得这很神圣吗？"),TEXT("一台正在运行一个游戏的电脑……这是什么游戏？"),TEXT("加点这个……再加点那个……"),TEXT("好肥的鸟！"),
+    const TCHAR* Descriptions[]={
+        TEXT("这也许是一场令人措手不及的涌现。"),
+        TEXT("每只蚂蚁只顾着挖掘、搬运，再循着同伴留下的气味前进。没有谁拿着整个巢穴的设计图，复杂的通路却在无数次微小的行动中逐渐成形。也许，宏大的结构就藏在这些简单规则里。"),
+        TEXT("单独看，每一种试剂都有自己的性质。混合之后，分子之间的相互作用却可能带来新的颜色、气味，甚至一种全新的物质。把简单的东西放在一起，有时会得到超出直觉的结果——试管里似乎藏着更多可能。"),
+        TEXT("一件道具增加弹射，另一件让命中产生爆炸，再来一件，让爆炸也能触发弹射。原本普通的效果开始相互放大，最后形成连设计者都未必预料到的打法。"),
+        TEXT("把两个东西放在一起，它们之间便多了一种关系；当关系足够丰富，整体就可能表现出单个部分所没有的能力。"),
+        TEXT("把磁带扯出来……大概只会让桌上涌现一团乱麻。"),
+        TEXT("音符之间有了先后、间隔与重复，旋律和情绪便逐渐浮现。同样几个音，换一种关系，就能涌现出完全不同的世界。"),
+        TEXT("相片只留住了一个瞬间，却能牵出当时的声音、气味，以及早已忘记的人。一个细节唤醒另一个细节，零散的记忆彼此连接，往事便重新变得鲜活。"),
+        TEXT("无数气泡迅速生长，推动液体一起冲出瓶口，涌现出一次剧烈的喷发。"),
+        TEXT("大量简单的计算单元经过训练与连接，逐渐表现出组织语言、关联概念的复杂能力。"),
+        TEXT("每只萤火虫都按自己的节奏闪烁，也会根据附近同伴的闪光调整时机。局部的微小调整不断传递，原本零散的亮点便可能逐渐同步。没有统一指挥，秩序依然能从彼此回应中涌现。"),
+        TEXT("成千上万根彩带喷涌而出，一起旋转、碰撞、落下。")};
+    const TCHAR* Quotes[]={TEXT("不觉得这很神圣吗？"),TEXT("一台正在运行一个游戏的电脑……这是什么游戏？"),TEXT("加点这个……再加点那个……"),TEXT("好肥的鸟！"),
         TEXT("这个年代计算器也有自我意识了吗？"),
         TEXT("小时候最喜欢的一集。"),
         TEXT("长得很像蝌蚪，它会变成青蛙吗？"),
@@ -117,7 +130,8 @@ FString AMiningCollectible::Description(int32 Id)
         TEXT("AI大人牛逼。"),
         TEXT("科学小知识，最具教育意义的一集。"),
         TEXT("恭喜！")};
-    return Id>=0&&Id<ItemTypeCount?Lines[Id]:FString();
+    // Plain text remains useful outside UMG; the inspect widget styles the quote separately.
+    return Id>=0&&Id<ItemTypeCount?FString(Descriptions[Id])+TEXT("\n\n“")+Quotes[Id]+TEXT("”"):FString();
 }
 FString AMiningCollectible::Clue(int32 Id)
 {

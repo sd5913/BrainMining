@@ -54,7 +54,7 @@ def tick(dt):
             echo=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.EchoPassageStage)[0]
             echo.emit_echo(echo.get_actor_location(),True)
         elif phase == 3:
-            check(not state['d'].has_triggered('盲人敲地玩法'), 'Echo landing keeps gameplay narration silent')
+            check(state['d'].has_triggered('盲人敲地玩法'), 'Echo landing dispatches gameplay narration once')
             pc=unreal.GameplayStatics.get_player_controller(w,0)
             check(unreal.MiningGUIEditorLibrary.prepare_collection_preview_area(pc,3,False),'Activate journey in PIE fixture')
             escape=unreal.GameplayStatics.get_all_actors_of_class(w,unreal.MiningRoomEscape)[0]

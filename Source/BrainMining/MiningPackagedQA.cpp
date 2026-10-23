@@ -3,6 +3,8 @@
 #include "MiningGUIWidgets.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Widgets/SWindow.h"
 #include "UObject/UObjectIterator.h"
 #include "MiningWalletSubsystem.h"
 #include "MiningProgressionComponent.h"
@@ -90,6 +92,28 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     };
     if(Op==TEXT("start")){if(auto* Opening=First<AMiningOpening>(W))Opening->StartGame();else Ok=false;}
     else if(Op==TEXT("continue")){if(auto* Opening=First<AMiningOpening>(W))Opening->ContinueSavedGame();else Ok=false;}
+    else if(Op==TEXT("menu_pointer"))
+    {
+        Ok=false;
+        for(TObjectIterator<UMiningOpeningMenu> It;It;++It)
+        {
+            if(It->IsTemplate() || It->GetWorld()!=W || !It->IsInViewport())continue;
+            const FString Action=C->GetStringField(TEXT("action")),Phase=C->GetStringField(TEXT("phase"));
+            UButton* Button=Action==TEXT("continue")?It->ContinueButton.Get():(Action==TEXT("start")?It->StartButton.Get():(Action==TEXT("exit")?It->ExitButton.Get():nullptr));
+            auto& Slate=FSlateApplication::Get();
+            const FVector2D Point=Button?Button->GetCachedGeometry().LocalToAbsolute(Button->GetCachedGeometry().GetLocalSize()*.5f):It->GetCachedGeometry().LocalToAbsolute(FVector2D(20,20));
+            const FVector2D Previous=Slate.GetCursorPos();Slate.SetCursorPos(Point);
+            TSet<FKey> Held;if(Phase==TEXT("down"))Held.Add(EKeys::LeftMouseButton);
+            const FPointerEvent Event(0,Point,Previous,Held,Phase==TEXT("move")?EKeys::Invalid:EKeys::LeftMouseButton,0,FModifierKeysState());
+            // Route through Slate hit testing and UButton handlers, never set a
+            // hover/pressed flag or broadcast a click to test pointer feedback.
+            if(Phase==TEXT("move")){Slate.ProcessMouseMoveEvent(Event);Ok=true;}
+            else if(Phase==TEXT("down"))
+            {auto Window=Slate.FindWidgetWindow(It->TakeWidget());if(Window){Slate.ProcessMouseButtonDownEvent(Window->GetNativeWindow(),Event);Ok=true;}}
+            else if(Phase==TEXT("up")){Slate.ProcessMouseButtonUpEvent(Event);Ok=true;}
+            break;
+        }
+    }
     else if(Op==TEXT("menu_click"))
     {
         Ok=false;
@@ -210,6 +234,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
             auto Item=MakeShared<FJsonObject>();Item->SetStringField(TEXT("name"),Button->GetName());
             if(auto* Label=Cast<UTextBlock>(Button->GetContent()))Item->SetStringField(TEXT("text"),Label->GetText().ToString());
             Item->SetBoolField(TEXT("visible"),Button->IsVisible());Item->SetBoolField(TEXT("focused"),Button->HasKeyboardFocus());
+            Item->SetBoolField(TEXT("hovered"),Button->IsHovered());Item->SetBoolField(TEXT("pressed"),Button->IsPressed());
             const auto Transform=Button->GetRenderTransform();
             Item->SetNumberField(TEXT("angle"),Transform.Angle);Item->SetNumberField(TEXT("shear"),Transform.Shear.X);Item->SetNumberField(TEXT("scale"),Transform.Scale.X);
             const FVector2D Position=Button->GetCachedGeometry().GetAbsolutePosition();

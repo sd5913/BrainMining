@@ -62,7 +62,7 @@ def menu(state,has_save):
     check([r['text'] for r in rows if r['visible']]==expected,'menu choices match save availability: '+str(has_save))
     check(all(abs(r['angle'])>0 and abs(r['shear'])>0 for r in rows),'every button retains tilted perspective')
     check(all(b['position'][1]>a['position'][1]+30 for a,b in zip(rows,rows[1:])),'buttons are ordered vertically without overlap')
-    check(rows[0]['focused'] and rows[0]['scale']>1.02,'preferred action has focus and matching focus animation')
+    check(rows[0]['focused'],'preferred action retains default keyboard focus')
 
 
 try:

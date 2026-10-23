@@ -31,6 +31,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MainGameDoor.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
+#include "Widgets/SWidget.h"
 
 AMiningOpening* AMiningOpening::EnsureMainGameOpening(AMiningExhibitHall* Hall)
 {
@@ -132,12 +133,23 @@ void UMiningOpeningMenu::NativeTick(const FGeometry& Geometry,float Dt)
 {
     Super::NativeTick(Geometry,Dt);
     const bool bStarting=Opening.IsValid()&&Opening->bStarted;
-    ContinueScale=FMath::FInterpTo(ContinueScale,ContinueButton&&(ContinueButton->IsHovered()||ContinueButton->HasKeyboardFocus())?1.07f:1.f,Dt,10.f);
-    StartScale=FMath::FInterpTo(StartScale,StartButton&&(StartButton->IsHovered()||StartButton->HasKeyboardFocus())?1.07f:1.f,Dt,10.f);
-    ExitScale=FMath::FInterpTo(ExitScale,ExitButton&&(ExitButton->IsHovered()||ExitButton->HasKeyboardFocus())?1.07f:1.f,Dt,10.f);
-    if(StartButton)StartButton->SetRenderScale(FVector2D(StartScale));
-    if(ContinueButton)ContinueButton->SetRenderScale(FVector2D(ContinueScale));
-    if(ExitButton)ExitButton->SetRenderScale(FVector2D(ExitScale));
+    const auto AnimateButton=[&](UButton* Button,float& Scale)
+    {
+        if(!Button)return;
+        const auto SlateButton=Button->GetCachedWidget();
+        const auto FocusCause=SlateButton.IsValid()?SlateButton->HasUserFocus(0):TOptional<EFocusCause>();
+        const bool Navigated=FocusCause.IsSet() && FocusCause.GetValue()==EFocusCause::Navigation;
+        // SetInputMode gives Continue automatic focus. That must not pre-apply
+        // the hover animation before the pointer ever reaches the button.
+        const float Target=Button->IsPressed()?.96f:(Button->IsHovered()?1.12f:(Navigated?1.07f:1.f));
+        Scale=FMath::FInterpTo(Scale,Target,Dt,Button->IsPressed()?18.f:10.f);
+        Button->SetRenderScale(FVector2D(Scale));
+        if(auto* Label=Cast<UTextBlock>(Button->GetContent()))
+            Label->SetColorAndOpacity(FSlateColor(Button->IsHovered()||Navigated?FLinearColor::White:FLinearColor(.94f,.95f,.91f)));
+    };
+    AnimateButton(ContinueButton,ContinueScale);
+    AnimateButton(StartButton,StartScale);
+    AnimateButton(ExitButton,ExitScale);
     if(bStarting)
     {
         if(ContinueButton)ContinueButton->SetVisibility(ESlateVisibility::Collapsed);

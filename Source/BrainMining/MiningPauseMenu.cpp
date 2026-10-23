@@ -71,38 +71,34 @@ bool UMiningExperienceSubsystem::TogglePauseMenu(bool bFromCredits)
     if(auto* Move=PC->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()){Move->ResetFlightInput();Move->StopMovementImmediately();}
     auto Choices=SNew(SVerticalBox);
     Choices->AddSlot().AutoHeight().Padding(0,0,0,32)[SNew(STextBlock).Justification(ETextJustify::Center)
-        .Text_Lambda([this](){return FText::FromString(bQuitConfirmation?TEXT("确定退出游戏？"):TEXT("暂停"));}).Font(BrainMiningFonts::Title(32)).ColorAndOpacity(MiningMenuStyle::Gold)];
+        .Text(FText::FromString(TEXT("暂停"))).Font(BrainMiningFonts::Title(32)).ColorAndOpacity(MiningMenuStyle::Gold)];
     TSharedPtr<SButton> FirstButton;
-    auto Button=[&](const TCHAR* Text,TFunction<void()> Action,bool Confirm)
+    auto Button=[&](const TCHAR* Text,TFunction<void()> Action)
     {
-        auto Choice=SNew(SMiningPauseButton).ButtonStyle(MiningMenuStyle::Button()).HAlign(HAlign_Left).ContentPadding(FMargin(28,16))
-            .Visibility_Lambda([this,Confirm](){return bQuitConfirmation==Confirm?EVisibility::Visible:EVisibility::Collapsed;})
+        auto Choice=SNew(SMiningPauseButton).Tag(FName(*(FString(TEXT("PauseAction_"))+Text))).ButtonStyle(MiningMenuStyle::Button()).HAlign(HAlign_Left).ContentPadding(FMargin(28,16))
             .OnClicked_Lambda([Action](){Action();return FReply::Handled();})
             [SNew(STextBlock).Text(FText::FromString(Text)).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())];
         Choices->AddSlot().AutoHeight().Padding(0,7)[Choice];
         if(!FirstButton)FirstButton=Choice;
         return Choice;
     };
-    ResumeButton=Button(TEXT("继续游戏"),[this](){CloseMenu();},false);
-    auto CollectionButton=Button(TEXT("查看藏品"),[this](){OpenPauseCollection();},false);
+    ResumeButton=Button(TEXT("继续游戏"),[this](){CloseMenu();});
+    auto CollectionButton=Button(TEXT("查看藏品"),[this](){OpenPauseCollection();});
     CollectionButton->SetEnabled(bFromGameplay);
     auto AudioButton=Button(TEXT("设置"),[this]()
     {
         auto* Controller=Cast<ABrainMiningPlayerController>(MenuController.Get());
         CloseMenu();
         if(Controller)Controller->ToggleAudioSettings();
-    },false);
+    });
     AudioButton->SetEnabled(bFromGameplay&&Cast<ABrainMiningPlayerController>(PC)!=nullptr);
     auto SaveButton=Button(TEXT("保存进度"),[this](){
         const bool Saved=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->SaveProgress();
         CloseMenu();
         if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayInteractionLines(TEXT("SaveResult"),{FText::FromString(Saved?TEXT("进度已保存"):TEXT("当前暂时无法保存，请回到探索状态后重试"))});
-    },false);
+    });
     SaveButton->SetEnabled(bFromGameplay && GetWorld()->GetMapName().EndsWith(TEXT("Lvl_MainGame")));
-    Button(TEXT("返回主界面"),[this](){ReturnToMainMenu();},false);
-    Button(TEXT("退出游戏"),[this](){RequestQuitConfirmation();},false);
-    CancelQuitButton=Button(TEXT("取消"),[this](){CancelQuitConfirmation();},true);
-    Button(TEXT("确认退出"),[this](){auto* PC=MenuController.Get();GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->SaveProgress();CloseMenu();UKismetSystemLibrary::QuitGame(this,PC,EQuitPreference::Quit,false);},true);
+    Button(TEXT("返回主界面"),[this](){ReturnToMainMenu();});
     Menu=MiningMenuStyle::Frame(Choices,650,0);
     PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);bPausedByMenu=!PC->IsPaused()&&PC->SetPause(true);
     Viewport->AddViewportWidgetContent(Menu.ToSharedRef(),1500);
@@ -110,18 +106,32 @@ bool UMiningExperienceSubsystem::TogglePauseMenu(bool bFromCredits)
 }
 void UMiningExperienceSubsystem::RequestQuitConfirmation()
 {
-    if(!bPauseMenu)return;
-    bQuitConfirmation=true;
-    auto* PC=MenuController.Get();
-    if(PC&&PC->GetLocalPlayer()&&CancelQuitButton&&FSlateApplication::IsInitialized())
-        FSlateApplication::Get().SetUserFocus(PC->GetLocalPlayer()->GetControllerId(),CancelQuitButton,EFocusCause::Navigation);
+    auto* PC=GetWorld()?GetWorld()->GetFirstPlayerController():nullptr;
+    if(bPauseMenu)if(auto* Mobile=Cast<ABrainMiningPlayerController>(PC);Mobile&&Mobile->IsUsingTouchControls()){bQuitConfirmation=true;return;}
+    auto* Viewport=GetGameInstance()->GetGameViewportClient();
+    if(Menu || !PC || !Viewport || !AMiningOpening::IsOpening(GetWorld()))return;
+    CaptureMenuInput(PC);MenuController=PC;MenuWorld=GetWorld();bQuitConfirmation=true;
+    // Balance CloseMenu's input locks while preserving the opening's own locks.
+    PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);
+    auto Choices=SNew(SVerticalBox);
+    Choices->AddSlot().AutoHeight().Padding(0,0,0,28)
+        [SNew(STextBlock).Text(FText::FromString(TEXT("确定退出游戏？"))).Justification(ETextJustify::Center)
+            .Font(BrainMiningFonts::Title(32)).ColorAndOpacity(MiningMenuStyle::Gold)];
+    Choices->AddSlot().AutoHeight().Padding(0,7)
+        [SAssignNew(CancelQuitButton,SMiningPauseButton).Tag(TEXT("OpeningQuitCancel")).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(FMargin(28,16))
+            .OnClicked_Lambda([this](){CancelQuitConfirmation();return FReply::Handled();})
+            [SNew(STextBlock).Text(FText::FromString(TEXT("取消"))).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())]];
+    Choices->AddSlot().AutoHeight().Padding(0,7)
+        [SNew(SMiningPauseButton).Tag(TEXT("OpeningQuitConfirm")).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(FMargin(28,16))
+            .OnClicked_Lambda([this](){auto* Controller=MenuController.Get();CloseMenu();UKismetSystemLibrary::QuitGame(this,Controller,EQuitPreference::Quit,false);return FReply::Handled();})
+            [SNew(STextBlock).Text(FText::FromString(TEXT("确认退出"))).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())]];
+    Menu=MiningMenuStyle::Frame(Choices,560,0);Viewport->AddViewportWidgetContent(Menu.ToSharedRef(),2000);
+    FInputModeUIOnly Mode;Mode.SetWidgetToFocus(CancelQuitButton);PC->SetInputMode(Mode);PC->bShowMouseCursor=true;
 }
 void UMiningExperienceSubsystem::CancelQuitConfirmation()
 {
-    bQuitConfirmation=false;
-    auto* PC=MenuController.Get();
-    if(PC&&PC->GetLocalPlayer()&&ResumeButton&&FSlateApplication::IsInitialized())
-        FSlateApplication::Get().SetUserFocus(PC->GetLocalPlayer()->GetControllerId(),ResumeButton,EFocusCause::Navigation);
+    if(bPauseMenu){bQuitConfirmation=false;return;}
+    if(bQuitConfirmation)CloseMenu();
 }
 void UMiningExperienceSubsystem::OpenPauseCollection()
 {

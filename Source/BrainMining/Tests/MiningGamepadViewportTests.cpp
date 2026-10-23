@@ -157,19 +157,13 @@ public:
             if (MenuStep == 4)
             {
                 if (MenuNavigationStep++ < 3) { Tap(EKeys::Gamepad_DPad_Down); return false; }
-                Tap(EKeys::Gamepad_FaceButton_Bottom);
+                const auto Focused = Slate.GetUserFocusedWidget(User);
+                Test->TestTrue(TEXT("Pause navigation ends at Return to main menu"), Focused.IsValid() && WidgetText(Focused.ToSharedRef()).Contains(TEXT("返回主界面")));
                 MenuStep = 5;
                 return false;
             }
             auto* Experience = Player->GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();
-            if (MenuStep == 5)
-            {
-                Test->TestTrue(TEXT("Quit requires a separate confirmation"), Experience->bQuitConfirmation);
-                Tap(EKeys::Gamepad_FaceButton_Bottom);
-                MenuStep = 6;
-                return false;
-            }
-            Test->TestFalse(TEXT("Quit confirmation initially focuses safe cancellation"), Experience->bQuitConfirmation);
+            Test->TestTrue(TEXT("Pause remains open without a quit confirmation"), Experience->IsMenuOpen() && !Experience->bQuitConfirmation);
             Tap(EKeys::Gamepad_FaceButton_Right);
             Test->TestFalse(TEXT("B closes pause without leaking another pause action"), Player->IsPaused());
             for (TActorIterator<APopupOfficeDevice> Device(World); Device; ++Device)

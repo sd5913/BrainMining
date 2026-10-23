@@ -155,9 +155,7 @@ namespace MiningRoomDebugTests
                 Test->TestTrue(TEXT("Escape pause opens"),Menu->TogglePauseMenu());
                 Test->TestTrue(TEXT("Pause owns input and time"),Controller->IsPaused()&&Mining->IsInputSuspended());
                 Menu->RequestQuitConfirmation();
-                Test->TestTrue(TEXT("Quit requires a second confirmation"),Menu->bQuitConfirmation&&Menu->IsMenuOpen());
-                Menu->CancelQuitConfirmation();
-                Test->TestTrue(TEXT("Cancel quit preserves pause menu"),!Menu->bQuitConfirmation&&Menu->IsMenuOpen());
+                Test->TestTrue(TEXT("Desktop pause has no quit confirmation; exit belongs to opening menu"),!Menu->bQuitConfirmation&&Menu->IsMenuOpen());
                 Menu->OpenPauseCollection();
                 AMiningCollectionField* Collection=nullptr;
                 for(TActorIterator<AMiningCollectionField> It(World);It;++It)if(It->bUseAuthoredPlacements){Collection=*It;break;}

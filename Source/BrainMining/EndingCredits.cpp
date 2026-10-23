@@ -44,7 +44,7 @@ bool EndingCreditsInput::Handle(APlayerController* Player,const FKey& Key)
     }
     if(Key==EKeys::Escape)
     {
-        if(Session && Session->TogglePauseMenu(true))Session->RequestQuitConfirmation();
+        if(Session)Session->TogglePauseMenu(true);
         return true;
     }
     if(!Field)

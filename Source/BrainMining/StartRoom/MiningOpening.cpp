@@ -8,6 +8,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "TimerManager.h"
 #include "MiningSaveSubsystem.h"
+#include "MiningExperienceSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "MiningHapticsSubsystem.h"
 #include "BrainMiningFonts.h"
@@ -124,12 +125,12 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
     ContinueButton=nullptr;
     if(bHasSave)
     {
-        ContinueButton=AddButton(TEXT("OpeningContinueButton"),TEXT("继续游戏"),-10.f,-12.f,18.f);
+        ContinueButton=AddButton(TEXT("OpeningContinueButton"),TEXT("继续游戏"),7.f,10.f,18.f);
         ContinueButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::ContinueGame);
     }
-    StartButton=AddButton(TEXT("OpeningStartButton"),TEXT("开始游戏"),-7.f,-10.f,4.f);
+    StartButton=AddButton(TEXT("OpeningStartButton"),TEXT("开始游戏"),7.f,10.f,4.f);
     StartButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);
-    ExitButton=AddButton(TEXT("OpeningExitButton"),TEXT("退出游戏"),-4.f,-8.f,-12.f);
+    ExitButton=AddButton(TEXT("OpeningExitButton"),TEXT("退出游戏"),7.f,10.f,-12.f);
     ExitButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);
     auto* DesignSize=WidgetTree->ConstructWidget<USizeBox>();
     DesignSize->SetWidthOverride(1600);DesignSize->SetHeightOverride(900);DesignSize->AddChild(Canvas);
@@ -169,7 +170,7 @@ void UMiningOpeningMenu::NativeTick(const FGeometry& Geometry,float Dt)
     }
 }
 void UMiningOpeningMenu::StartGame(){if(Opening.IsValid())Opening->StartGame();}
-void UMiningOpeningMenu::QuitGame(){UKismetSystemLibrary::QuitGame(this,GetOwningPlayer(),EQuitPreference::Quit,false);}
+void UMiningOpeningMenu::QuitGame(){GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->RequestQuitConfirmation();}
 
 AMiningOpening::AMiningOpening()
 {

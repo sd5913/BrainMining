@@ -53,6 +53,21 @@ namespace
         const TArray<TSharedPtr<FJsonValue>>* A=nullptr;
         return J.TryGetArrayField(Name,A)&&A->Num()==3?FVector((*A)[0]->AsNumber(),(*A)[1]->AsNumber(),(*A)[2]->AsNumber()):Default;
     }
+    TSharedPtr<SWidget> FindVisibleTag(const TSharedRef<SWidget>& Widget,FName Tag)
+    {
+        if(!Widget->GetVisibility().IsVisible())return nullptr;
+        if(Widget->GetTag()==Tag)return Widget;
+        auto* Children=Widget->GetChildren();
+        for(int32 I=0;I<Children->Num();++I)if(auto Found=FindVisibleTag(Children->GetChildAt(I),Tag))return Found;
+        return nullptr;
+    }
+    void ReadMenuTags(const TSharedRef<SWidget>& Widget,TArray<TSharedPtr<FJsonValue>>& Tags)
+    {
+        if(!Widget->GetVisibility().IsVisible())return;
+        const FString Tag=Widget->GetTag().ToString();
+        if(Tag.StartsWith(TEXT("PauseAction_"))||Tag.StartsWith(TEXT("OpeningQuit")))Tags.Add(MakeShared<FJsonValueString>(Tag));
+        auto* Children=Widget->GetChildren();for(int32 I=0;I<Children->Num();++I)ReadMenuTags(Children->GetChildAt(I),Tags);
+    }
 }
 void UMiningPackagedQA::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -119,6 +134,28 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
             else if(Phase==TEXT("up")){Slate.ProcessMouseButtonUpEvent(Event);Ok=true;}
             break;
         }
+    }
+    else if(Op==TEXT("slate_pointer"))
+    {
+        auto& Slate=FSlateApplication::Get();auto View=W->GetGameViewport()->GetGameViewportWidget();
+        auto Window=View?Slate.FindWidgetWindow(View.ToSharedRef()):nullptr;
+        auto Button=Window?FindVisibleTag(Window.ToSharedRef(),FName(*C->GetStringField(TEXT("tag")))):nullptr;Ok=Button.IsValid();
+        if(Button)
+        {
+            const FString Phase=C->GetStringField(TEXT("phase"));const auto& Geometry=Button->GetCachedGeometry();
+            const FVector2D Point=Geometry.LocalToAbsolute(Geometry.GetLocalSize()*.5f),Previous=Slate.GetCursorPos();Slate.SetCursorPos(Point);
+            TSet<FKey> Held;if(Phase==TEXT("down"))Held.Add(EKeys::LeftMouseButton);
+            const FPointerEvent Event(0,Point,Previous,Held,Phase==TEXT("move")?EKeys::Invalid:EKeys::LeftMouseButton,0,FModifierKeysState());
+            if(Phase==TEXT("move"))Slate.ProcessMouseMoveEvent(Event);
+            else if(Phase==TEXT("down"))Slate.ProcessMouseButtonDownEvent(Window->GetNativeWindow(),Event);
+            else if(Phase==TEXT("up"))Slate.ProcessMouseButtonUpEvent(Event);
+            else Ok=false;
+        }
+    }
+    else if(Op==TEXT("slate_key"))
+    {
+        const FKeyEvent Event(FKey(*C->GetStringField(TEXT("key"))),FModifierKeysState(),0,false,0,0);
+        FSlateApplication::Get().ProcessKeyDownEvent(Event);FSlateApplication::Get().ProcessKeyUpEvent(Event);
     }
     else if(Op==TEXT("menu_click"))
     {
@@ -197,7 +234,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     }
     else if(Op==TEXT("shot"))FScreenshotRequest::RequestScreenshot(Directory/(FPaths::MakeValidFileName(C->GetStringField(TEXT("name")))+TEXT(".png")),true,false);
     else if(Op==TEXT("quit"))FPlatformMisc::RequestExit(false);
-    else if(Op!=TEXT("state") && Op!=TEXT("actors") && Op!=TEXT("neurons"))Ok=false;
+    else if(Op!=TEXT("state") && Op!=TEXT("actors") && Op!=TEXT("neurons") && Op!=TEXT("slate_ui"))Ok=false;
     Result->SetStringField(TEXT("id"),LastId);Result->SetBoolField(TEXT("ok"),Ok);
     Result->SetNumberField(TEXT("area"),Hall?Hall->ActiveArea:-1);Result->SetNumberField(TEXT("unlocked"),Hall?Hall->UnlockedArea:-1);
     Result->SetBoolField(TEXT("opening"),AMiningOpening::IsOpening(W));
@@ -217,6 +254,14 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
 
     Result->SetBoolField(TEXT("collection_choice"),First<AMiningOpening>(W) && First<AMiningOpening>(W)->IsChoosingCollection());
     Result->SetBoolField(TEXT("ui_hidden"),GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->bAllUIHidden);
+    Result->SetBoolField(TEXT("quit_confirmation"),GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->bQuitConfirmation);
+    Result->SetBoolField(TEXT("menu_open"),GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->IsMenuOpen());
+    Result->SetBoolField(TEXT("move_ignored"),PC->IsMoveInputIgnored());Result->SetBoolField(TEXT("look_ignored"),PC->IsLookInputIgnored());
+    if(Op==TEXT("slate_ui"))
+    {
+        auto View=W->GetGameViewport()->GetGameViewportWidget();auto Window=View?FSlateApplication::Get().FindWidgetWindow(View.ToSharedRef()):nullptr;
+        TArray<TSharedPtr<FJsonValue>> Tags;if(Window)ReadMenuTags(Window.ToSharedRef(),Tags);Result->SetArrayField(TEXT("slate_tags"),Tags);
+    }
     if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>())Result->SetBoolField(TEXT("mining_suspended"),Mining->IsInputSuspended());
     TArray<UStaticMeshComponent*> ToolParts;Pawn->GetComponents(ToolParts);
     for(auto* Part:ToolParts)if(Part->GetName()==TEXT("PickaxeModel"))Result->SetBoolField(TEXT("pickaxe_visible"),Part->IsVisible());

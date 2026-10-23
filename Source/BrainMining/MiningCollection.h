@@ -78,7 +78,10 @@ class BRAINMINING_API AMiningCollectible : public AActor
     GENERATED_BODY()
 public:
     AMiningCollectible();
-    static constexpr int32 ItemTypeCount = 12;
+    static constexpr int32 WorldItemTypeCount = 12;
+    static constexpr int32 ItemTypeCount = 16;
+    static bool IsMineralReward(int32 Id) { return Id>=12 && Id<16; }
+    static int32 UnlockThreshold(int32 Id);
     static constexpr float PickupExposure = .70f;
     static bool IsPickupEligible(float Value) { return FMath::IsFinite(Value) && Value >= PickupExposure; }
     bool IsCollectible() const { return bReleased && !bCollected; }
@@ -102,6 +105,10 @@ public:
     static FString ItemName(int32 Id);
     static FString Description(int32 Id);
     static FString Clue(int32 Id);
+    void AnimateEmergence(float Time);
+    void BuildEmergenceParts();
+    UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> EmergenceParts;
+    TArray<FTransform> EmergenceHomes;
     bool bEchoPresentation=false;
 };
 
@@ -161,6 +168,17 @@ public:
     UFUNCTION(BlueprintCallable) void ResetPreview();
     int32 UniqueCount() const;
     TArray<int32> CatalogueIds() const;
+    FString UnlockCondition(int32 Id) const;
+    void CheckMineralRewards(bool bAnimate=true);
+    void QueuePickup(int32 Id);
+    void BeginPickupPreview(int32 Id);
+    void UpdatePickupPreview(float Time);
+    void EndPickupPreview();
+    UPROPERTY(Transient) TObjectPtr<UTextureRenderTarget2D> PickupTexture;
+    UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> PickupMaterial;
+    UPROPERTY(Transient) TObjectPtr<USceneCaptureComponent2D> PickupCapture;
+    int32 PickupPreviewId=INDEX_NONE;
+    float PreviewAnimationTime=0, PreviewCaptureAge=0;
     FString Toast;
     float ToastRemaining = 0;
 private:

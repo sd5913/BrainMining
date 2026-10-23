@@ -61,7 +61,7 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
     Text(FString::Printf(TEXT("%02d / %02d"),F->UniqueCount(),Total),230,48,12,Muted);
     Box(1408,35,132,44,Panel); Text(FString::Printf(TEXT("返回  %s"),*F->CatalogueKey.GetDisplayName().ToString()),1426,47,14,Cream);
     Box(1178,140,1,585,FLinearColor(.12f,.17f,.16f));
-    if(Owned)
+    if(Owned || AMiningCollectible::IsMineralReward(F->SelectedId))
     {
         Text(AMiningCollectible::ItemName(F->SelectedId),1220,280,32,Cream,true);
         Box(1223,344,46,2,Gold);
@@ -70,7 +70,7 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
         TArray<FString> Lines; FString Current;
         const auto Font=BrainMiningFonts::Body(FMath::Max(8,FMath::RoundToInt(15*S)));
         const auto Measure=FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
-        for(const TCHAR Character:AMiningCollectible::Description(F->SelectedId))
+        for(const TCHAR Character:(Owned?AMiningCollectible::Description(F->SelectedId):F->UnlockCondition(F->SelectedId)))
         {
             if(Character==TEXT('\n')) { Lines.Add(Current); Current.Empty(); continue; }
             const FString Next=Current+FString::Chr(Character);

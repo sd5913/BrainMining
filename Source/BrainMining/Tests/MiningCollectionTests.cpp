@@ -99,7 +99,7 @@ bool FCollectionExpansionTest::RunTest(const FString& Parameters)
         }
         Item->Destroy();
     }
-    TestEqual(TEXT("All twelve names are distinct"),Names.Num(),12);
+    TestEqual(TEXT("All sixteen names are distinct"),Names.Num(),16);
     for(int Id:{5,6,7}) TestTrue(TEXT("Direct displays have no excavation clue"),AMiningCollectible::Clue(Id).IsEmpty());
     Field->bUseAuthoredPlacements=true;
     FMiningCollectionPlacement Placement; Placement.ItemId=11; Field->AuthoredPlacements.Add(Placement); Field->AuthoredPlacements.Add(Placement);

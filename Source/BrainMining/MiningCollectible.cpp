@@ -87,6 +87,7 @@ namespace
             for(int I=1;I<=Steps;++I) { const float T=float(I)/Steps,S=1-T; const FVector P=S*S*S*A+3*S*S*T*ControlA+3*S*T*T*ControlB+T*T*T*End; Rod(Prev,P,FMath::Lerp(Radius,.22f,T),Mat); Prev=P; }
         }
         #include "MiningCollectibleDetails.inl"
+        #include "MiningMineralModels.inl"
     };
 }
 
@@ -105,7 +106,7 @@ AMiningCollectible::AMiningCollectible()
 
 FString AMiningCollectible::ItemName(int32 Id)
 {
-    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("罐子里的萤火虫"),TEXT("散落的彩带")};
+    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("罐子里的萤火虫"),TEXT("散落的彩带"),TEXT("接上了！"),TEXT("突然有了方向"),TEXT("石头里的山水"),TEXT("一束光的万花筒")};
     return Id>=0&&Id<ItemTypeCount?Names[Id]:TEXT("未知藏品");
 }
 FString AMiningCollectible::Description(int32 Id)
@@ -122,7 +123,11 @@ FString AMiningCollectible::Description(int32 Id)
         TEXT("无数气泡迅速生长，推动液体一起冲出瓶口，涌现出一次剧烈的喷发。"),
         TEXT("大量简单的计算单元经过训练与连接，逐渐表现出组织语言、关联概念的复杂能力。"),
         TEXT("每只萤火虫都按自己的节奏闪烁，也会根据附近同伴的闪光调整时机。局部的微小调整不断传递，原本零散的亮点便可能逐渐同步。没有统一指挥，秩序依然能从彼此回应中涌现。"),
-        TEXT("成千上万根彩带喷涌而出，一起旋转、碰撞、落下。")};
+        TEXT("成千上万根彩带喷涌而出，一起旋转、碰撞、落下。"),
+        TEXT("散乱的铜线各自闪着微弱的火花。直到最后一道缺口接通，电流沿着完整的回路奔跑，灯泡里亮起了一个小小的脑海。想法，也许就诞生在这些连接之间。"),
+        TEXT("小铁钉原本各朝各的方向。彼此影响、慢慢靠拢后，它们竟拼出了一枚指南针的指针。没有哪一根知道整条路，却一起有了方向。"),
+        TEXT("层层绿色纹带藏在一小块孔雀石里。换个角度，起伏成了远山，留白成了河流，一条小路穿过山间。零散的纹理，在眼中涌现成了一整个世界。"),
+        TEXT("一束光穿过钻石，在镜面间反复折返。寥寥几片颜色经过旋转、对称与组合，便生出不断变化的花朵与星芒。复杂的美，可以来自简单的重复。")};
     const TCHAR* Quotes[]={TEXT("不觉得这很神圣吗？"),TEXT("一台正在运行一个游戏的电脑……这是什么游戏？"),TEXT("加点这个……再加点那个……"),TEXT("好肥的鸟！"),
         TEXT("这个年代计算器也有自我意识了吗？"),
         TEXT("小时候最喜欢的一集。"),
@@ -131,18 +136,20 @@ FString AMiningCollectible::Description(int32 Id)
         TEXT("曼妥思VS可乐，你们知道吗？"),
         TEXT("AI大人牛逼。"),
         TEXT("科学小知识，最具教育意义的一集。"),
-        TEXT("恭喜！")};
+        TEXT("恭喜！"),TEXT("原来不是没想法，是还没接上。"),TEXT("刚才还各想各的，怎么突然就有方向了？"),TEXT("山一直在里面，只是刚才没看出来。"),TEXT("就这么几片，怎么还有没见过的样子？")};
     // Plain text remains useful outside UMG; the inspect widget styles the quote separately.
     return Id>=0&&Id<ItemTypeCount?FString(Descriptions[Id])+TEXT("\n\n“")+Quotes[Id]+TEXT("”"):FString();
 }
 FString AMiningCollectible::Clue(int32 Id)
 {
     const TCHAR* Lines[]={TEXT("滴水的管道"),TEXT("沿土层爬向蚁穴的蚂蚁"),TEXT("彩色液滴"),TEXT("高处的鸟巢"),TEXT("土里错落埋藏的数字 1"),TEXT(""),TEXT(""),TEXT(""),TEXT("连通地下空腔、持续向上冒泡的孔洞"),TEXT("土面上的一簇微光小花"),TEXT("沿土层延伸的闪烁光点"),TEXT("红幕布后的庆祝舞台")};
-    return Id>=0&&Id<ItemTypeCount?Lines[Id]:FString();
+    return Id>=0&&Id<WorldItemTypeCount?Lines[Id]:FString();
 }
 
 void AMiningCollectible::BuildModel(int32 Id,bool Flying)
 {
+    for(auto Part:EmergenceParts)if(IsValid(Part))Part->DestroyComponent();
+    EmergenceParts.Reset();EmergenceHomes.Reset();
     ItemId=FMath::Clamp(Id,0,ItemTypeCount-1);
     Body->SetBoxExtent(ItemId==9?FVector(190,190,330):ItemId==11?FVector(12,54,9):FVector(49,45,61));
     FCollectibleMesh B;
@@ -341,21 +348,30 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
             B.Rod(A+FVector(3,0,0),C+FVector(3,0,0),1.2f,7);
         }
     }
+    if(IsMineralReward(ItemId))
+    {
+        Colors[5]=FLinearColor(.65f,.26f,.075f);Colors[4]=FLinearColor(1,.72f,.16f);
+        if(ItemId==14){Colors[0]=FLinearColor(.32f,.87f,.57f);Colors[2]=FLinearColor(.012f,.16f,.07f);Colors[6]=FLinearColor(.05f,.43f,.22f);}
+        if(ItemId==15){Colors[0]=FLinearColor(.65f,.94f,1);Colors[6]=FLinearColor(.2f,.63f,.85f);Colors[3]=FLinearColor(.19f,.11f,.35f);}
+        B.MineralReward(ItemId);
+    }
     FMeshNormals::InitializeOverlayToPerTriangleNormals(B.Mesh.Attributes()->PrimaryNormals());
-    if(ItemId==8 || ItemId==9)
+    if(ItemId==8 || ItemId==9 || IsMineralReward(ItemId))
     {
         FVector Extent=FVector::ZeroVector;
         for(int V:B.Mesh.VertexIndicesItr())Extent=Extent.ComponentMax(FVector(B.Mesh.GetVertex(V)).GetAbs());
         Body->SetBoxExtent(Extent+FVector(2));
     }
     Model->SetMesh(FDynamicMesh3(B.Mesh)); Outline->SetMesh(MoveTemp(B.Mesh));
-    auto* Base=LoadObject<UMaterialInterface>(nullptr,(ItemId==1||ItemId==4||ItemId==8)?TEXT("/Game/MainGame/Materials/ScenePolish/M_CollectibleDetail"):TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
+    auto* Base=LoadObject<UMaterialInterface>(nullptr,(ItemId==1||ItemId==4||ItemId==8||IsMineralReward(ItemId))?TEXT("/Game/MainGame/Materials/ScenePolish/M_CollectibleDetail"):TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
     auto* Edge=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionOutline"));
     for(int i=0;i<UE_ARRAY_COUNT(Colors);++i)
     {
         if(Base) { auto* Mat=UMaterialInstanceDynamic::Create(Base,this); Mat->SetVectorParameterValue(TEXT("Tint"),Colors[i]);
             if(ItemId==8 && i==6){Mat->SetScalarParameterValue(TEXT("Metallic"),.82f);Mat->SetScalarParameterValue(TEXT("Roughness"),.28f);}
             if(ItemId==1 && i==2){Mat->SetScalarParameterValue(TEXT("Glow"),.35f);Mat->SetScalarParameterValue(TEXT("Roughness"),.25f);}
+            if(IsMineralReward(ItemId)){Mat->SetScalarParameterValue(TEXT("Roughness"),ItemId==14?.27f:.32f);Mat->SetScalarParameterValue(TEXT("Metallic"),ItemId==14?.12f:.4f);Mat->SetScalarParameterValue(TEXT("Glow"),.3f);}
+            if(ItemId==12 && i==4)Mat->SetScalarParameterValue(TEXT("Glow"),2.f);
             Model->SetMaterial(i,Mat); }
         if(Edge) Outline->SetMaterial(i,Edge);
     }
@@ -374,8 +390,9 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
             Glow->SetScalarParameterValue(TEXT("GlowOpacity"),bPreview?.32f:.18f);
             Model->SetMaterial(10,Glow);
         }
-    if(ItemId==10)
+    if(ItemId==10 || ItemId==12)
         if(auto* Glass=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionGlass"))) Model->SetMaterial(8,Glass);
+    if(IsMineralReward(ItemId))BuildEmergenceParts();
 }
 
 void AMiningCollectible::SetHighlighted(bool Enabled)

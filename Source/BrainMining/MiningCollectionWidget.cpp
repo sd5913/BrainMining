@@ -1,5 +1,6 @@
 #include "MiningCollectionWidget.h"
 #include "MiningCollection.h"
+#include "MiningMineralRewards.h"
 #include "MiningMenuStyle.h"
 #include "Components/Button.h"
 #include "Components/Image.h"
@@ -86,14 +87,14 @@ void UMiningCollectionWidget::RefreshCollection()
         if(Collection->PreviewMaterial)I->SetBrushFromMaterial(Collection->PreviewMaterial);
         I->SetVisibility(Owned?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
     }
-    if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemName"))))T->SetText(FText::FromString(Owned?AMiningCollectible::ItemName(Id):TEXT("尚未发现")));
-    const FString Description=Owned?AMiningCollectible::Description(Id):FString();
+    if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemName"))))T->SetText(FText::FromString(Owned||AMiningCollectible::IsMineralReward(Id)?AMiningCollectible::ItemName(Id):TEXT("尚未发现")));
+    const FString Description=Owned?AMiningCollectible::Description(Id):Collection->UnlockCondition(Id);
     if(auto* T=Cast<URichTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))
     {
         const auto Escape=[](FString Value)
         {return Value.Replace(TEXT("&"),TEXT("&amp;")).Replace(TEXT("<"),TEXT("&lt;")).Replace(TEXT(">"),TEXT("&gt;"));};
         FString Body,Quote;
-        const FString Markup=Description.Split(TEXT("\n\n"),&Body,&Quote)
+        const FString Markup=Owned && Description.Split(TEXT("\n\n"),&Body,&Quote)
             ?Escape(Body)+TEXT("\n\n<Quote>")+Escape(Quote)+TEXT("</>"):Escape(Description);
         if(!T->GetText().EqualTo(FText::FromString(Markup)))
         {
@@ -121,7 +122,7 @@ void UMiningCollectionWidget::RefreshCollection()
             // The card is 222 units wide. Auto-wrap on an auto-sized canvas
             // label can reuse a collapsed width and stack a short name vertically.
             T->SetAutoWrapText(false);T->SetWrapTextAt(208.f);T->SetJustification(ETextJustify::Center);
-            T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):TEXT("尚未发现")));
+            T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):AMiningCollectible::IsMineralReward(Item)?FString::Printf(TEXT("收集%d个%s"),AMiningCollectible::UnlockThreshold(Item),*FMiningMineralCost::Name(MineralRewardType(Item))):TEXT("尚未发现")));
         }
         if(auto* W=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I)))))
         {
@@ -131,14 +132,14 @@ void UMiningCollectionWidget::RefreshCollection()
         if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemButton%d"),I))))
         {
             W->SetVisibility(Item==INDEX_NONE?ESlateVisibility::Hidden:ESlateVisibility::Visible);
-            W->SetIsEnabled(Has);
+            W->SetIsEnabled(Has||AMiningCollectible::IsMineralReward(Item));
         }
         if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetColorAndOpacity(Has&&Id==Item?FLinearColor(.025f,.02f,.005f):Has?MiningMenuStyle::Cream:FLinearColor(.42f,.42f,.40f));
     }
 }
 void UMiningCollectionWidget::SelectCollectionItem(int32 Id)
 {
-    if(IsValid(Collection)&&Collection->Inventory.IsValidIndex(Id)&&Collection->Inventory[Id]>0)
+    if(IsValid(Collection)&&Collection->Inventory.IsValidIndex(Id)&&(Collection->Inventory[Id]>0||AMiningCollectible::IsMineralReward(Id)))
     {CurrentPage=FMath::Max(0,Collection->CatalogueIds().IndexOfByKey(Id))/4;Collection->SelectItem(Id);}
 }
 void UMiningCollectionWidget::TurnCollectionPage(int32 Direction)
@@ -151,7 +152,7 @@ void UMiningCollectionWidget::TurnCollectionPage(int32 Direction)
     CurrentPage=Page;
     int32 Selection=INDEX_NONE;
     for(int32 I=Page*4;I<FMath::Min((Page+1)*4,Ids.Num());++I)
-        if(Collection->Inventory.IsValidIndex(Ids[I])&&Collection->Inventory[Ids[I]]>0){Selection=Ids[I];break;}
+        if(Collection->Inventory.IsValidIndex(Ids[I])&&(Collection->Inventory[Ids[I]]>0||AMiningCollectible::IsMineralReward(Ids[I]))){Selection=Ids[I];break;}
     Collection->SelectItem(Selection);
     RefreshCollection();
 }

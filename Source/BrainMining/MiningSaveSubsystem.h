@@ -32,6 +32,7 @@ public:
     UPROPERTY() FRotator ViewRotation;
     UPROPERTY() int64 Balance=0;
     UPROPERTY() TMap<EMiningMineral,int32> Minerals;
+    UPROPERTY() TMap<EMiningMineral,int32> CollectedMineralTotals;
     UPROPERTY() TArray<int32> Upgrades;
     UPROPERTY() TArray<int32> Collection;
     UPROPERTY() TSet<int32> RunCollectedItems;

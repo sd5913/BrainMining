@@ -146,6 +146,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="GUI|Display") void SetItemUnlocked(int32 ItemIndex, bool bUnlocked);
 	void EnableProgressionPanel();
 	void RefreshMineralProgression();
+    void QueueCollectionPickup(class AMiningCollectionField* Field,int32 Id);
+    int32 ActivePickupId=INDEX_NONE;
+    int32 CompletedPickupFlights=0;
+    float PickupAge=0;
 	UPROPERTY(BlueprintReadOnly, Category="GUI|State") bool bMineralProgression = false;
 	UMiningGUIUpgradeWidget* GetUpgradeCard(int32 Index) const { return Item(Index); }
 	void SetUpgradeDetails(int32 Index, FText Name, FText Description, int64 Price, bool bAffordable);
@@ -207,4 +211,10 @@ protected:
     UPROPERTY(Transient) TObjectPtr<UTextBlock> CompletionToast;
     UPROPERTY(Transient) TObjectPtr<class USoundBase> CompletionSound;
     float CompletionToastAge=3.f;
+    void TickCollectionPickup(const FGeometry& Geometry,float Dt);
+    TArray<TPair<TWeakObjectPtr<class AMiningCollectionField>,int32>> PickupQueue;
+    TWeakObjectPtr<class AMiningCollectionField> PickupField;
+    UPROPERTY(Transient) TObjectPtr<UImage> PickupImage;
+    UPROPERTY(Transient) TObjectPtr<UTextBlock> PickupLabel;
+    float PickupCaptureAge=0,CollectionArrivalAge=1;
 };

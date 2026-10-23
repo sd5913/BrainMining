@@ -242,7 +242,7 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
             if (!Hall->bReady) MenuError = TEXT("房间仍在加载，稍后重新打开面板即可跳转。");
         }
         Choices->AddSlot().AutoHeight().Padding(0,12)[SNew(STextBlock).Text(FText::FromString(TEXT("GM · 收集物附近"))).Font(BrainMiningFonts::Style("Bold",18))];
-        for(int32 Id=0;Id<AMiningCollectible::ItemTypeCount;++Id)
+        for(int32 Id=0;Id<AMiningCollectible::WorldItemTypeCount;++Id)
             Choices->AddSlot().AutoHeight().Padding(0,2)[SNew(SButton).ContentPadding(10)
                 .OnClicked_Lambda([this,Id](){JumpToCollectible(Id);return FReply::Handled();})
                 [SNew(STextBlock).Font(BrainMiningFonts::Body(12)).Text(FText::FromString(AMiningCollectible::ItemName(Id)))]];

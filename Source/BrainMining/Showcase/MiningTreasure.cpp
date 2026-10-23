@@ -812,6 +812,8 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
         {
             if (Item->TreasureId == TEXT("2")) Saves->RecordMineral(EMiningMineral::Copper);
             else if (Item->TreasureId == TEXT("4")) Saves->RecordMineral(EMiningMineral::Iron);
+            else if (Item->TreasureId == TEXT("6")) Saves->RecordMineral(EMiningMineral::Malachite);
+            else if (Item->TreasureId == TEXT("9")) Saves->RecordMineral(EMiningMineral::Diamond);
         }
     Item->SetDropActive(false);
     Item->SetHighlighted(false);

@@ -13,6 +13,8 @@ class BRAINMINING_API UMiningWalletSubsystem : public UGameInstanceSubsystem
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Inventory") bool bUseMineralInventory = false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Inventory") TMap<EMiningMineral, int32> Minerals;
+    // Actual pickups this run, independent of the spendable balance and GM grants.
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Inventory") TMap<EMiningMineral, int32> CollectedMineralTotals;
     UFUNCTION(BlueprintPure, Category="Mining|Inventory") bool UsesMineralInventory() const;
     UFUNCTION(BlueprintCallable, Category="Mining|Inventory") bool AddMineral(FName TreasureId, int32 Amount = 1);
     UFUNCTION(BlueprintPure, Category="Mining|Inventory") int32 GetMineralCount(EMiningMineral Mineral) const { return Minerals.FindRef(Mineral); }

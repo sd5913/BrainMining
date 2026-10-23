@@ -6,6 +6,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MiningSaveSubsystem.h"
 #include "MiningGUIWidgets.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Components/SceneCaptureComponent2D.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "Framework/Application/SlateApplication.h"
@@ -240,7 +242,42 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     {if(auto* Ending=First<AEndingEmergence>(W))Ending->bComplete=true;else Ok=false;}
     else if(Op==TEXT("walking_fixture")){Pawn->GetCharacterMovement()->SetMovementMode(MOVE_Walking);}
     else if(Op==TEXT("catalogue_rotate"))
-    {if(auto* Field=First<AMiningCollectionField>(W)){Field->SelectItem(0);Field->RotatePreview(C->GetNumberField(TEXT("yaw")),C->GetNumberField(TEXT("pitch")));}else Ok=false;}
+    {if(auto* Field=First<AMiningCollectionField>(W)){Field->SelectItem(C->HasField(TEXT("item"))?int32(C->GetNumberField(TEXT("item"))):0);Field->RotatePreview(C->GetNumberField(TEXT("yaw")),C->GetNumberField(TEXT("pitch")));}else Ok=false;}
+    else if(Op==TEXT("reward_check_fixture") && Hall && Hall->Collection){Hall->Collection->CheckMineralRewards();}
+    else if(Op==TEXT("pickup_replay_fixture") && Hall && Hall->Collection){Hall->Collection->QueuePickup(int32(C->GetNumberField(TEXT("item"))));}
+    else if(Op==TEXT("pickup_debug") && Hall && Hall->Collection)
+    {
+        auto* Field=Hall->Collection.Get();
+        if(Field->PickupTexture)
+        {
+            TArray<FLinearColor> Pixels;Field->PickupTexture->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(Pixels);
+            int32 Visible=0;float Bright=0;for(const auto& P:Pixels){Visible+=P.A<.99f;Bright=FMath::Max(Bright,P.GetMax());}
+            Result->SetNumberField(TEXT("pickup_visible_pixels"),Visible);Result->SetNumberField(TEXT("pickup_brightness"),Bright);
+            Result->SetArrayField(TEXT("pickup_camera"),Vec(Field->PickupCapture->GetComponentLocation()));
+            Result->SetBoolField(TEXT("pickup_preview_hidden"),Field->Preview->IsHidden());
+        }
+    }
+    else if(Op==TEXT("legacy_collection_save_fixture"))
+    {
+        Ok=Save->SaveProgress();
+        auto* Legacy=Ok?Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("BrainMiningProgress_v1"),0)):nullptr;
+        Ok=Legacy!=nullptr;
+        if(Legacy)
+        {
+            Legacy->Version=4;Legacy->CollectedMineralTotals.Reset();Legacy->Collection.SetNum(12);
+            for(int32 Id=12;Id<16;++Id)Legacy->RunCollectedItems.Remove(Id);
+            Ok=UGameplayStatics::SaveGameToSlot(Legacy,TEXT("BrainMiningProgress_v1"),0);
+        }
+    }
+    else if(Op==TEXT("mineral_progress_fixture"))
+    {const auto Mineral=EMiningMineral(int32(C->GetNumberField(TEXT("mineral"))));Ok=FMiningMineralCost::IsSupported(Mineral);if(Ok)Wallet->CollectedMineralTotals.FindOrAdd(Mineral)=FMath::Max(0,int32(C->GetNumberField(TEXT("amount"))));}
+    else if(Op==TEXT("mineral_pickup_fixture") && Actor)
+    {
+        // Expose/reposition a real ore actor in this isolated QA profile. The
+        // normal treasure command must still aim, award, count and hide it.
+        auto* Ore=Cast<AMiningTreasure>(Actor);Ok=Ore && !Ore->bCollected;
+        if(Ok){Ore->CoveringRocks.Reset();Ore->Exposure=1;Ore->bReleased=true;Ore->SetDropActive(false);Ore->SetActorLocation(ReadVec(*C,TEXT("point")));Ore->SetActorHiddenInGame(false);Ore->SetActorEnableCollision(true);}
+    }
     else if(Op==TEXT("sample_start")){SampleLabel=C->GetStringField(TEXT("label"));FrameSamples.Reset();MaxCameraStep=0;bCameraSampleStarted=false;}
     else if(Op==TEXT("sample_end"))
     {
@@ -296,6 +333,13 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     Result->SetNumberField(TEXT("iron"),Wallet->GetMineralCount(EMiningMineral::Iron));Result->SetNumberField(TEXT("upgrade"),Wallet->GetUpgradeLevel(0));
     Result->SetBoolField(TEXT("has_save"),Save->HasSave());Result->SetArrayField(TEXT("position"),Vec(Pawn->GetActorLocation()));
     Result->SetNumberField(TEXT("collection"),Hall && Hall->Collection?Hall->Collection->UniqueCount():0);
+    TArray<TSharedPtr<FJsonValue>> Totals,Owned,Conditions;
+    for(auto M:{EMiningMineral::Copper,EMiningMineral::Iron,EMiningMineral::Malachite,EMiningMineral::Diamond})Totals.Add(MakeShared<FJsonValueNumber>(Wallet->CollectedMineralTotals.FindRef(M)));
+    Result->SetArrayField(TEXT("mineral_totals"),Totals);
+    if(Hall && Hall->Collection)
+    {for(int32 V:Hall->Collection->Inventory)Owned.Add(MakeShared<FJsonValueNumber>(V));for(int32 Id=12;Id<16;++Id)Conditions.Add(MakeShared<FJsonValueString>(Hall->Collection->UnlockCondition(Id)));}
+    Result->SetArrayField(TEXT("collection_counts"),Owned);Result->SetArrayField(TEXT("unlock_conditions"),Conditions);
+    if(auto* MPC=Cast<ABrainMiningPlayerController>(PC);MPC && MPC->MiningGUI){Result->SetNumberField(TEXT("pickup_id"),MPC->MiningGUI->ActivePickupId);Result->SetNumberField(TEXT("pickup_age"),MPC->MiningGUI->PickupAge);Result->SetNumberField(TEXT("pickup_flights"),MPC->MiningGUI->CompletedPickupFlights);}
     TArray<TSharedPtr<FJsonValue>> Areas;
     for(int32 I=0;Hall && I<Hall->Areas.Num();++I)
     {

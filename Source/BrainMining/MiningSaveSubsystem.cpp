@@ -52,7 +52,7 @@ namespace
     }
     bool ValidSnapshot(const UMiningSaveGame* Data)
     {
-        return Data && Data->Version>=1 && Data->Version<=4 && Data->Upgrades.Num()==4 && Data->Area>=0 &&
+        return Data && Data->Version>=1 && Data->Version<=5 && Data->Upgrades.Num()==4 && Data->Area>=0 &&
             !Data->PlayerTransform.ContainsNaN() && !Data->ViewRotation.ContainsNaN();
     }
     bool IsLegacyTransientTVMesh(const UMiningSaveGame* Data,const FMiningSavedMesh& Mesh)
@@ -105,7 +105,7 @@ void UMiningSaveSubsystem::StartNewGame(bool bKeepCollection)
     CompletionNotices.Reset();TutorialActive=false;TutorialSoilPassed=false;TutorialCompleted=0;PrototypesFound=0;
     const TArray<int32> Collection=bKeepCollection?GetCollectionProgress():TArray<int32>();
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
-    Wallet->Balance=0;Wallet->Minerals.Reset();Wallet->UpgradeLevels={0,0,0,0};Wallet->MineralDoubleChance=0;
+    Wallet->Balance=0;Wallet->Minerals.Reset();Wallet->CollectedMineralTotals.Reset();Wallet->UpgradeLevels={0,0,0,0};Wallet->MineralDoubleChance=0;
     Wallet->bBombSkillUnlocked=false;Wallet->bDrillSkillUnlocked=false;
     RunCollectedItems.Reset();
     GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection=Collection;
@@ -139,7 +139,7 @@ void UMiningSaveSubsystem::Deinitialize(){FinishPendingWrite();Super::Deinitiali
 void UMiningSaveSubsystem::MarkCampaignComplete()
 {
     FinishPendingWrite();
-    auto* End=NewObject<UMiningSaveGame>(this);End->Version=4;End->Upgrades={0,0,0,0};End->CampaignComplete=true;
+    auto* End=NewObject<UMiningSaveGame>(this);End->Version=5;End->Upgrades={0,0,0,0};End->CampaignComplete=true;
     End->Collection=GetCollectionProgress();
     if(UGameplayStatics::SaveGameToSlot(End,GetSaveSlot()+TEXT("_completion"),0))CachedHasSave=false;
     bSessionStarted=false;
@@ -195,14 +195,14 @@ bool UMiningSaveSubsystem::SaveProgressInternal(bool bAsync)
         if(auto* Generated=Cast<AGeneratedMiningRock>(*It);Generated && Generated->bSimplificationPending)return false;
     }
     auto* Data=Cast<UMiningSaveGame>(UGameplayStatics::CreateSaveGameObject(UMiningSaveGame::StaticClass()));
-    Data->Version=4;
+    Data->Version=5;
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     Data->Area=Hall->ActiveArea;Data->UnlockedArea=Hall->UnlockedArea;Data->CompletedAreas=Hall->GetCompletedAreas();
     Data->PlayerTransform=Character->GetActorTransform();Data->ViewRotation=PC->GetControlRotation();
     // Room minigames restart at their entrance; inventory and finished sections persist.
     if(Hall->AreaKind(Data->Area)!=EMiningExperienceKind::Mining)
     {Data->PlayerTransform=Hall->Areas[Data->Area].Entry;Data->ViewRotation=Data->PlayerTransform.Rotator();}
-    Data->Balance=Wallet->Balance;Data->Minerals=Wallet->Minerals;Data->Upgrades=Wallet->UpgradeLevels;
+    Data->Balance=Wallet->Balance;Data->Minerals=Wallet->Minerals;Data->CollectedMineralTotals=Wallet->CollectedMineralTotals;Data->Upgrades=Wallet->UpgradeLevels;
     Data->TutorialActive=TutorialActive;Data->TutorialCompleted=TutorialCompleted;Data->PrototypesFound=PrototypesFound;
     Data->TutorialSoilPassed=TutorialSoilPassed;
     Data->Bomb=Wallet->bBombSkillUnlocked;Data->Drill=Wallet->bDrillSkillUnlocked;
@@ -280,7 +280,7 @@ bool UMiningSaveSubsystem::LoadProgress()
     if(!Data)return false;
     bRestoring=true;
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
-    Wallet->Balance=Data->Balance;Wallet->Minerals=Data->Minerals;Wallet->UpgradeLevels=Data->Upgrades;
+    Wallet->Balance=Data->Balance;Wallet->Minerals=Data->Minerals;Wallet->CollectedMineralTotals=Data->CollectedMineralTotals;Wallet->UpgradeLevels=Data->Upgrades;
     TutorialActive=Data->TutorialActive;TutorialCompleted=Data->TutorialCompleted;PrototypesFound=Data->PrototypesFound;
     TutorialSoilPassed=Data->TutorialSoilPassed;
     // Older releases already showed the later objectives. Keep progressed saves
@@ -294,7 +294,7 @@ bool UMiningSaveSubsystem::LoadProgress()
     }
     Wallet->bBombSkillUnlocked=Data->Bomb;Wallet->bDrillSkillUnlocked=Data->Drill;
     GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection=Data->Collection;
-    if(Hall->Collection)Hall->Collection->Inventory=Data->Collection;
+    if(Hall->Collection){Hall->Collection->Inventory=Data->Collection;Hall->Collection->Inventory.SetNumZeroed(AMiningCollectible::ItemTypeCount);}
     Hall->UnlockedArea=FMath::Clamp(Data->UnlockedArea,Data->Area,Hall->Areas.Num()-1);
     Hall->RestoreCompletedAreas(Data->CompletedAreas);
     for(const auto& Saved:Data->Meshes)
@@ -327,6 +327,17 @@ bool UMiningSaveSubsystem::LoadProgress()
     RunCollectedItems=Data->RunCollectedItems;
     if(Data->Version<3)for(int32 I=0;I<Data->Collection.Num();++I)if(Data->Collection[I]>0)RunCollectedItems.Add(I);
     RestoredMinerals=Data->CollectedMinerals;RestoreCollectedItems();
+    // Migrate old saves from stable authored placement IDs, never the spendable
+    // wallet (which may contain GM grants or have paid for upgrades).
+    if(Data->Version<5 && Hall->Treasure)
+        for(int32 Index:Data->CollectedMinerals)
+            if(Hall->Treasure->AuthoredPlacements.IsValidIndex(Index))
+            {
+                const FName Id=Hall->Treasure->AuthoredPlacements[Index].TreasureId;
+                const EMiningMineral M=Id==TEXT("2")?EMiningMineral::Copper:Id==TEXT("4")?EMiningMineral::Iron:Id==TEXT("6")?EMiningMineral::Malachite:Id==TEXT("9")?EMiningMineral::Diamond:EMiningMineral::None;
+                if(FMiningMineralCost::IsSupported(M))++Wallet->CollectedMineralTotals.FindOrAdd(M);
+            }
+    if(Hall->Collection)Hall->Collection->CheckMineralRewards(Data->Version<5);
     bRestoring=false;bLoadedProgress=true;bSessionStarted=true;SessionWorld=GetWorld();SaveAge=0;PreviousArea=Data->Area;
     return true;
 }
@@ -387,6 +398,10 @@ void UMiningSaveSubsystem::RecordCollectible(int32 Id)
 }
 void UMiningSaveSubsystem::RecordMineral(EMiningMineral Mineral)
 {
+    if(!FMiningMineralCost::IsSupported(Mineral) || bRestoring)return;
+    auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
+    int32& Total=Wallet->CollectedMineralTotals.FindOrAdd(Mineral);Total=FMath::Min(Total,MAX_int32-1)+1;
+    if(auto* Hall=AMiningExhibitHall::Find(GetWorld());Hall && Hall->Collection)Hall->Collection->CheckMineralRewards();
     if(TutorialActive && TutorialSoilPassed)
     {
         if(Mineral==EMiningMineral::Copper && !(TutorialCompleted&1))CompletionNotices.Add(TEXT("收集1个铜矿"));

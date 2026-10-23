@@ -1,5 +1,6 @@
 #include "MiningGUIWidgets.h"
 #include "MiningSaveSubsystem.h"
+#include "MiningCollection.h"
 #include "Sound/SoundBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "StartRoom/MiningStartRoom.h"
@@ -456,6 +457,7 @@ void UMiningGUIHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 	PanelSpring.Step(DeltaTime, PanelSpringStiffness, PanelSpringDamping);
 	if (bMineralProgression) RefreshMineralProgression();
     RefreshTutorial(DeltaTime);
+    TickCollectionPickup(Geometry,DeltaTime);
 	if (UpgradePanel && !bMineralProgression)
 	{
 		const float Progress = PanelSpring.Value;

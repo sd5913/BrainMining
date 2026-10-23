@@ -11,7 +11,8 @@ FName UMiningAudioComponent::CollectibleSoundName(int32 ItemId)
         TEXT("S_Collect_Calculator"), TEXT("S_Collect_Cassette"),
         TEXT("S_Collect_Note"), TEXT("S_Collect_Photo"),
         TEXT("S_Collect_Cola"), TEXT("S_Collect_Flower"),
-        TEXT("S_Collect_Fireflies"), TEXT("S_Collect_Ribbon")
+        TEXT("S_Collect_Fireflies"), TEXT("S_Collect_Ribbon"),
+        TEXT("S_Collect_Copper"),TEXT("S_Collect_Iron"),TEXT("S_Collect_Malachite"),TEXT("S_Collect_Diamond")
     };
     static_assert(UE_ARRAY_COUNT(Names) == AMiningCollectible::ItemTypeCount);
     return ItemId >= 0 && ItemId < UE_ARRAY_COUNT(Names) ? Names[ItemId] : NAME_None;

@@ -1,5 +1,7 @@
 #include "MiningCollection.h"
 #include "MiningSaveSubsystem.h"
+#include "MiningWalletSubsystem.h"
+#include "MiningGUIWidgets.h"
 #include "Subtitles/SubtitleSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "MiningExperienceSubsystem.h"
@@ -86,6 +88,7 @@ bool AMiningCollectionField::InitializePlayer()
     if(auto* Edge=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionSilhouette"))) HighlightPostProcess->Settings.AddBlendable(Edge,1);
     if(ActorHasTag(TEXT("BM_MainGame_Collections")) || ActorHasTag(TEXT("BM_MainGame_SystemIntegration")) || bCatalogueOnly)
         if(auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>(); Session && !Session->CampaignCollection.IsEmpty())Inventory=Session->CampaignCollection;
+    Inventory.SetNumZeroed(AMiningCollectible::ItemTypeCount);
     if(!bCatalogueOnly) SpawnField();
     PreviewTexture=NewObject<UTextureRenderTarget2D>(this); PreviewTexture->ClearColor=FLinearColor(0,0,0,1);
     PreviewTexture->InitAutoFormat(1536,1024); Capture->TextureTarget=PreviewTexture;
@@ -281,7 +284,10 @@ void AMiningCollectionField::Tick(float Dt)
     if(!Player||!Player->GetPawn()) return;
     if(bCatalogueOpen)
     {
-        if(PreviewRefreshFrames>0) { Capture->CaptureScene(); --PreviewRefreshFrames; }
+        PreviewAnimationTime+=Dt;PreviewCaptureAge+=Dt;
+        if(AMiningCollectible::IsMineralReward(SelectedId) && SelectedId!=14 && PreviewCaptureAge>=1.f/30.f)
+        {Preview->AnimateEmergence(PreviewAnimationTime);Capture->CaptureScene();PreviewCaptureAge=0;}
+        else if(PreviewRefreshFrames>0) { Capture->CaptureScene(); --PreviewRefreshFrames; }
         return;
     }
     if(bDeepField || bBuriedWithClues) TickAmbient(Dt);
@@ -346,6 +352,7 @@ bool AMiningCollectionField::TryCollectTarget()
     Item->Body->SetSimulatePhysics(false); Item->SetActorEnableCollision(false); Item->SetActorHiddenInGame(true);
     if(IsValid(Item->PresentationActor)) { Item->PresentationActor->Destroy(); Item->PresentationActor=nullptr; }
     ++Inventory[Item->ItemId];
+    QueuePickup(Item->ItemId);
     GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->RecordCollectible(Item->ItemId);
     UMiningHapticsSubsystem::Emit(Player, EMiningHapticCue::Collectible);
     if(Player->GetPawn())
@@ -371,9 +378,10 @@ TArray<int32> AMiningCollectionField::CatalogueIds() const
         for(const auto& Placement:AuthoredPlacements)
             if(Placement.ItemId>=0 && Placement.ItemId<AMiningCollectible::ItemTypeCount) Result.AddUnique(Placement.ItemId);
         // The authored TV room owns this reward; show its locked entry before escaping.
-        if(ActorHasTag(TEXT("BM_MainGame_Collections")))Result.AddUnique(11);
+        if(ActorHasTag(TEXT("BM_MainGame_Collections")))
+            for(int32 Id=11;Id<AMiningCollectible::ItemTypeCount;++Id)Result.AddUnique(Id);
     }
-    else for(int32 Id=0;Id<(bDeepField && bExpandedCollection?AMiningCollectible::ItemTypeCount:4);++Id) Result.Add(Id);
+    else for(int32 Id=0;Id<(bDeepField && bExpandedCollection?AMiningCollectible::WorldItemTypeCount:4);++Id) Result.Add(Id);
     for(const auto& Item:Items)if(IsValid(Item))Result.AddUnique(Item->ItemId);
     Result.Sort();
     return Result;
@@ -426,7 +434,9 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
 }
 void AMiningCollectionField::SelectItem(int32 Id)
 {
-    SelectedId=Id;
+    SelectedId=Id;PreviewAnimationTime=0;
+    if(bCatalogueOpen && AMiningCollectible::IsMineralReward(Id))
+        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->StopInteraction(TEXT("EmptyCollection"));
     if(!Preview) return;
     const bool Owned=Inventory.IsValidIndex(Id)&&Inventory[Id]>0;
     Preview->SetActorHiddenInGame(!Owned || (PreviewToilet && Id==0));

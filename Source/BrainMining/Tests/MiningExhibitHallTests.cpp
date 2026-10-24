@@ -309,8 +309,8 @@ namespace ExhibitHallTests
             else if(Step==27)
             {
                 Test->TestEqual(TEXT("Inactive escape timer is suspended"),Hall->Journey->Elapsed,FrozenElapsed);
-                Key(EKeys::F6,IE_Pressed);
-                Test->TestEqual(TEXT("F6 returns same pawn to lobby"),Hall->ActiveArea,INDEX_NONE);
+                Hall->ReturnToLobby();
+                Test->TestEqual(TEXT("Return action returns same pawn to lobby"),Hall->ActiveArea,INDEX_NONE);
                 Test->TestTrue(TEXT("World identity preserved through all actions"),World==InitialWorld.Get()&&Pawn==InitialPawn.Get());
                 Test->TestEqual(TEXT("All coins retained"),Wallet->Balance,Balance);
                 Hall->EnterArea(5);

@@ -288,8 +288,8 @@ public:
         {
             if(!Hall->bCampaignComplete) return false;
             Test->TestTrue(TEXT("Completed campaign can revisit mine one"),Hall->EnterArea(0));
-            Key(EKeys::F6,IE_Pressed);
-            Test->TestEqual(TEXT("F6 rescues within current section"),Hall->ActiveArea,0);
+            Hall->ReturnToLobby();
+            Test->TestEqual(TEXT("Rescue action stays within current section"),Hall->ActiveArea,0);
             Test->TestEqual(TEXT("Rescue keeps all four collectibles"),Collection->UniqueCount(),4);
             Test->TestTrue(TEXT("Completed run still uses original pawn"),InitialPawn.Get()==Pawn);
             return true;
@@ -446,16 +446,16 @@ public:
             Test->TestTrue(TEXT("Flock animates along excavated flight path"),Bird.IsValid() && !Bird->GetActorLocation().Equals(BirdPosition,5));
             Test->TestEqual(TEXT("Animation leaves resident collectible available"),C->Inventory[3],0);
             const auto Inventory=C->Inventory;
-            auto Skip=[&](){PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::F7,IE_Pressed,1));PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::F7,IE_Released,0));};
-            Skip();Test->TestEqual(TEXT("F7 does not skip mining"),H->ActiveArea,4);
+            auto Skip=[&](){H->SkipCurrentRoom();};
+            Skip();Test->TestEqual(TEXT("Skip action does not skip mining"),H->ActiveArea,4);
             for(int I:{1,3,5})
             {
-                H->EnterArea(I);Skip();Test->TestEqual(TEXT("F7 skips current minigame"),H->ActiveArea,I+1);
+                H->EnterArea(I);Skip();Test->TestEqual(TEXT("Skip action skips current minigame"),H->ActiveArea,I+1);
                 Test->TestFalse(TEXT("Skip opens room exit"),H->Areas[I].ProgressGate->GetActorEnableCollision());
                 Test->TestFalse(TEXT("Skip restores movement and mining"),PC->IsMoveInputIgnored() || P->FindComponentByClass<UMiningComponent>()->IsInputSuspended());
                 Test->TestTrue(TEXT("Skip preserves inventory"),C->Inventory==Inventory);
             }
-            Skip();Test->TestEqual(TEXT("F7 does not skip ending"),H->ActiveArea,6);return true;
+            Skip();Test->TestEqual(TEXT("Skip action does not skip ending"),H->ActiveArea,6);return true;
         }
         ++Step;Changed=FPlatformTime::Seconds();return false;
     }

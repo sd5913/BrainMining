@@ -9,7 +9,8 @@
 void UMiningGameViewportClient::Draw(FViewport* InViewport,FCanvas* SceneCanvas)
 {
     const auto* Session=GetGameInstance()?GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>():nullptr;
-    const bool Hidden=Session && Session->bAllUIHidden;
+    // Keep GM accessible so recording mode can be restored through its button.
+    const bool Hidden=Session && Session->bAllUIHidden && !Session->IsMenuOpen();
     if(auto Layers=GetGameLayerManager())Layers->AsWidget()->SetVisibility(Hidden?EVisibility::Hidden:EVisibility::SelfHitTestInvisible);
     auto* PC=GetWorld()?GetWorld()->GetFirstPlayerController():nullptr;
     auto* HUD=PC?PC->GetHUD():nullptr;

@@ -8,7 +8,7 @@ MainGame 通过 Always Loaded 子关卡引用本源地图，沿用 MainGame 角�
 
 上层通路与第一区原入口的接缝使用不可挖基岩封口墙，覆盖矿区整个入口截面并与原外壳重叠。仅保留与通路一致的 3 米宽、3.3 米高开口，开口内用 1.8 米厚的可挖堵塞层封住，沿用矿区引导岩层材质。挖开堵塞层后，周围基岩和通路四壁继续阻止玩家离开地图；R 会恢复这块堵塞层。
 
-MainGame 的炸弹、钻机与 Tab 升级面板在拿齐两件初始装备后开放；独立 StartRoom 仍保持原来的教学工具限制。第一区内按 R 恢复本区及卧室出口的岩层，保留已拾取装备、金币和升级；按 F6 返回卧室入口，其它区域仍返回本段入口。
+MainGame 的炸弹、钻机与 Tab 升级面板在拿齐两件初始装备后开放；独立 StartRoom 仍保持原来的教学工具限制。第一区内按 R 恢复本区及卧室出口的岩层，保留已拾取装备、金币和升级；在 GM 窗口点击返回起点可回到卧室入口，其它区域仍返回本段入口。
 
 只在 MainGame 实例中禁用源房间末端的 FutureConnectionCap 与全局曝光体积，源地图无需开洞或改灯光。房间内模型和拾取物仍在源子关卡中编辑，连接段位于 MainGame/StartRoomConnection。首次整合脚本为 `Scripts/integrate_main_game_start_room.py`，缩短竖井及封口调整为 `Scripts/refine_main_game_start_room.py`，专项游戏验证为 `Scripts/verify_main_game_start_room.py`，报告位于 `Saved/Validation/MainGameStartRoom`。整合前备份位于 `Saved/Backups/MainGame_StartRoom*`。
 

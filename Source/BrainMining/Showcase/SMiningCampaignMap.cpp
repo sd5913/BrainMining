@@ -115,6 +115,6 @@ int32 SMiningCampaignMap::OnPaint(const FPaintArgs&,const FGeometry& Allotted,co
     Text({955,570},FString::Printf(TEXT("沿主路剩余约 %.0f 米"),(Arcs.Last()-NearestArc(Player))/100),22,Cyan);
     Text({955,615},FString::Printf(TEXT("低于入口 %.0f 米"),(Route[0].Z-Player.Z)/100),19,White);
     Text({955,683},TEXT("向绿点前进，到出口"),18,White);Text({955,713},TEXT("即可进入下一房间。"),18,White);
-    Text({955,770},TEXT("卡住可关闭地图后按 F6"),17,Muted);
+    Text({955,770},TEXT("卡住可在 GM 窗口返回起点"),17,Muted);
     return Layer+5;
 }

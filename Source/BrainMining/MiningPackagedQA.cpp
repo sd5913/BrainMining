@@ -10,8 +10,11 @@
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
+#include "Components/RichTextBlock.h"
+#include "MiningCollectionWidget.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SWindow.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "UObject/UObjectIterator.h"
 #include "MiningWalletSubsystem.h"
 #include "MiningProgressionComponent.h"
@@ -166,8 +169,26 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     }
     else if(Op==TEXT("slate_key"))
     {
-        const FKeyEvent Event(FKey(*C->GetStringField(TEXT("key"))),FModifierKeysState(),0,false,0,0);
+        bool Ctrl=false;C->TryGetBoolField(TEXT("ctrl"),Ctrl);
+        const FKeyEvent Event(FKey(*C->GetStringField(TEXT("key"))),FModifierKeysState(false,false,Ctrl,false,false,false,false,false,false),0,false,0,0);
         FSlateApplication::Get().ProcessKeyDownEvent(Event);FSlateApplication::Get().ProcessKeyUpEvent(Event);
+    }
+    else if(Op==TEXT("slate_focus") || Op==TEXT("slate_activate"))
+    {
+        auto& Slate=FSlateApplication::Get();auto View=W->GetGameViewport()->GetGameViewportWidget();
+        auto Window=View?Slate.FindWidgetWindow(View.ToSharedRef()):nullptr;
+        auto Button=Window?FindVisibleTag(Window.ToSharedRef(),FName(*C->GetStringField(TEXT("tag")))):nullptr;Ok=Button.IsValid();
+        if(Button)
+        {
+            if(auto Scroll=FindVisibleTag(Window.ToSharedRef(),TEXT("GM_Scroll")))
+                StaticCastSharedPtr<SScrollBox>(Scroll)->ScrollDescendantIntoView(Button,false,EDescendantScrollDestination::Center);
+            Slate.SetKeyboardFocus(Button,EFocusCause::Navigation);
+            if(Op==TEXT("slate_activate"))
+            {
+                const FKeyEvent Event(EKeys::SpaceBar,FModifierKeysState(),0,false,0,0);
+                Slate.ProcessKeyDownEvent(Event);Slate.ProcessKeyUpEvent(Event);
+            }
+        }
     }
     else if(Op==TEXT("menu_click"))
     {
@@ -187,6 +208,11 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     else if(Op==TEXT("toggle_ui"))GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->ToggleAllUI();
     else if(Op==TEXT("gm_tool"))
     {auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->DeveloperGrantTool(int32(C->GetNumberField(TEXT("tool"))));Session->CloseMenu();}
+    else if(Op==TEXT("gm_mineral"))
+    {auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->DeveloperUnlockMineral(int32(C->GetNumberField(TEXT("item"))));Session->CloseMenu();}
+    else if(Op==TEXT("gm_menu"))Ok=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->ToggleDeveloperMenu();
+    else if(Op==TEXT("gm_jump"))
+    {auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->JumpToDeveloperArea(int32(C->GetNumberField(TEXT("area"))));}
     else if(Op==TEXT("gm_map")){auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->OpenDeveloperExperience(int32(C->GetNumberField(TEXT("index"))));}
     else if(Op==TEXT("throw_bomb")){auto* Bomb=Pawn->FindComponentByClass<UMiningBombToolComponent>();Ok=Bomb && Bomb->ThrowBomb();}
     else if(Op==TEXT("save"))Ok=Save->SaveProgress();
@@ -243,6 +269,21 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     else if(Op==TEXT("walking_fixture")){Pawn->GetCharacterMovement()->SetMovementMode(MOVE_Walking);}
     else if(Op==TEXT("catalogue_rotate"))
     {if(auto* Field=First<AMiningCollectionField>(W)){Field->SelectItem(C->HasField(TEXT("item"))?int32(C->GetNumberField(TEXT("item"))):0);Field->RotatePreview(C->GetNumberField(TEXT("yaw")),C->GetNumberField(TEXT("pitch")));}else Ok=false;}
+    else if(Op==TEXT("catalogue_button"))
+    {
+        auto* Field=First<AMiningCollectionField>(W);
+        auto* Button=Field && Field->CatalogueWidget?Cast<UButton>(Field->CatalogueWidget->GetWidgetFromName(FName(*C->GetStringField(TEXT("name"))))):nullptr;
+        Ok=Button && Button->GetIsEnabled() && Button->IsVisible();
+        if(Ok)
+        {
+            // Authored cards are mouse-only/non-focusable. Exercise the actual
+            // SButton press/release handlers without moving the desktop cursor.
+            auto SlateButton=Button->TakeWidget();
+            const FKeyEvent Key(EKeys::SpaceBar,FModifierKeysState(),0,false,0,0);
+            Ok=SlateButton->OnKeyDown(SlateButton->GetCachedGeometry(),Key).IsEventHandled();
+            Ok=SlateButton->OnKeyUp(SlateButton->GetCachedGeometry(),Key).IsEventHandled() && Ok;
+        }
+    }
     else if(Op==TEXT("reward_check_fixture") && Hall && Hall->Collection){Hall->Collection->CheckMineralRewards();}
     else if(Op==TEXT("pickup_replay_fixture") && Hall && Hall->Collection){Hall->Collection->QueuePickup(int32(C->GetNumberField(TEXT("item"))));}
     else if(Op==TEXT("pickup_debug") && Hall && Hall->Collection)
@@ -292,6 +333,10 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     Result->SetNumberField(TEXT("autosaves"),Save->AutosavesCompleted);
     Result->SetBoolField(TEXT("save_in_flight"),Save->IsSaveInFlight());
     Result->SetNumberField(TEXT("snapshot_ms"),Save->LastSnapshotMilliseconds);
+    Result->SetStringField(TEXT("map"),UGameplayStatics::GetCurrentLevelName(W));
+    TArray<TSharedPtr<FJsonValue>> DebugMaps;
+    for(const auto& Map:UMiningExperienceSubsystem::DeveloperMapPaths())DebugMaps.Add(MakeShared<FJsonValueString>(Map));
+    Result->SetArrayField(TEXT("gm_maps"),DebugMaps);
     if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()){Result->SetNumberField(TEXT("drill_capacity"),Mining->MaxDrillEnergy);Result->SetNumberField(TEXT("drill_energy"),Mining->DrillEnergy);}
     if(auto* Museum=First<AWenSiMirrorPuzzle>(W))
     {Result->SetBoolField(TEXT("aim_reset"),Museum->bAimReset);Result->SetNumberField(TEXT("reset_hold"),Museum->ResetHold.Progress());Result->SetNumberField(TEXT("reset_count"),Museum->ResetCount);}
@@ -339,6 +384,14 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     if(Hall && Hall->Collection)
     {for(int32 V:Hall->Collection->Inventory)Owned.Add(MakeShared<FJsonValueNumber>(V));for(int32 Id=12;Id<16;++Id)Conditions.Add(MakeShared<FJsonValueString>(Hall->Collection->UnlockCondition(Id)));}
     Result->SetArrayField(TEXT("collection_counts"),Owned);Result->SetArrayField(TEXT("unlock_conditions"),Conditions);
+    if(auto* Field=First<AMiningCollectionField>(W);Field && Field->CatalogueWidget)
+    {
+        Result->SetNumberField(TEXT("selected_item"),Field->SelectedId);
+        auto* Widget=Field->CatalogueWidget.Get();
+        if(auto* Count=Cast<UTextBlock>(Widget->GetWidgetFromName(TEXT("CollectionCount"))))Result->SetStringField(TEXT("catalogue_count"),Count->GetText().ToString());
+        if(auto* Text=Cast<URichTextBlock>(Widget->GetWidgetFromName(TEXT("ItemDescription"))))Result->SetStringField(TEXT("catalogue_description"),Text->GetText().ToString());
+        if(auto* Preview=Widget->GetWidgetFromName(TEXT("PreviewImage")))Result->SetBoolField(TEXT("catalogue_preview_visible"),Preview->IsVisible());
+    }
     if(auto* MPC=Cast<ABrainMiningPlayerController>(PC);MPC && MPC->MiningGUI){Result->SetNumberField(TEXT("pickup_id"),MPC->MiningGUI->ActivePickupId);Result->SetNumberField(TEXT("pickup_age"),MPC->MiningGUI->PickupAge);Result->SetNumberField(TEXT("pickup_flights"),MPC->MiningGUI->CompletedPickupFlights);}
     TArray<TSharedPtr<FJsonValue>> Areas;
     for(int32 I=0;Hall && I<Hall->Areas.Num();++I)

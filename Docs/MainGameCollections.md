@@ -29,7 +29,7 @@
 & Scripts/Run_MainGameCollectionScript.ps1 -Script verify_main_game_collections.py -Render
 ```
 
-正式关卡双击 `Play_MainGame.cmd`；旧预览入口为 `Play_MainGame_CollectionsPreview.cmd`。按 E 拾取、I 打开图鉴、M 查看路线。Ctrl+F10 打开开发者区域跳转；F7 可跳过办公室、盲人通路等玩法房间，不能跳过矿道本身。
+正式关卡双击 `Play_MainGame.cmd`；旧预览入口为 `Play_MainGame_CollectionsPreview.cmd`。按 E 拾取、I 打开图鉴、M 查看路线。Ctrl+F10 打开开发者区域跳转；GM 窗口中的“跳过当前玩法房间”可跳过办公室、盲人通路等房间，不能跳过矿道本身。
 
 上面的生成、合入命令只用于尚未包含收集物的正式地图。正式合入后不要再次烘焙同一份地形；生成脚本会在改动预览前检查并拒绝重复布置。反馈修正后的日常复测使用 `Scripts/Run_CollectionFeedbackChecks.ps1 -Mode Render`，读取更新后的位置报告并验证正式 MainGame。
 

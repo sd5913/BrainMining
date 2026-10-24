@@ -2,6 +2,10 @@
 #include "MiningCollection.h"
 #include "MiningMineralRewards.h"
 #include "MiningMenuStyle.h"
+#include "BrainMiningFonts.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
@@ -15,6 +19,22 @@
 void UMiningCollectionWidget::NativeConstruct()
 {
     Super::NativeConstruct();SetIsFocusable(true);
+    if(auto* Title=Cast<UTextBlock>(GetWidgetFromName(TEXT("CollectionTitle"))))
+    {
+        Title->SetFont(BrainMiningFonts::Title(36));
+        if(auto* TitleSlot=Cast<UCanvasPanelSlot>(Title->Slot))
+        {
+            TitleSlot->SetSize(FVector2D(300,60));
+            if(!GetWidgetFromName(TEXT("CollectionCount")))
+                if(auto* Canvas=Cast<UCanvasPanel>(Title->GetParent()))
+                {
+                    auto* Count=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("CollectionCount"));
+                    Count->SetFont(BrainMiningFonts::Body(18));Count->SetColorAndOpacity(MiningMenuStyle::Cream);
+                    Count->SetVisibility(ESlateVisibility::HitTestInvisible);
+                    auto* CountSlot=Canvas->AddChildToCanvas(Count);CountSlot->SetPosition(TitleSlot->GetPosition()+FVector2D(0,56));CountSlot->SetSize(FVector2D(300,32));
+                }
+        }
+    }
     if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("ItemButton0"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Select0);
     if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("ItemButton1"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Select1);
     if(auto* B=Cast<UButton>(GetWidgetFromName(TEXT("ItemButton2"))))B->OnClicked.AddUniqueDynamic(this,&UMiningCollectionWidget::Select2);
@@ -80,6 +100,8 @@ void UMiningCollectionWidget::NativeTick(const FGeometry& G,float Dt)
 void UMiningCollectionWidget::RefreshCollection()
 {
     if(!IsValid(Collection))return;
+    if(auto* Count=Cast<UTextBlock>(GetWidgetFromName(TEXT("CollectionCount"))))
+        Count->SetText(FText::FromString(FString::Printf(TEXT("已收集%d/%d"),Collection->UniqueCount(),AMiningCollectible::ItemTypeCount)));
     const int32 Id=Collection->SelectedId;
     const bool Owned=Collection->Inventory.IsValidIndex(Id)&&Collection->Inventory[Id]>0;
     if(auto* I=Cast<UImage>(GetWidgetFromName(TEXT("PreviewImage"))))
@@ -127,19 +149,19 @@ void UMiningCollectionWidget::RefreshCollection()
         if(auto* W=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I)))))
         {
             W->SetBrush(*MiningMenuStyle::Brush(2));
-            W->SetVisibility(Has&&Id==Item?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
+            W->SetVisibility(Item!=INDEX_NONE&&Id==Item?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
         }
         if(auto* W=GetWidgetFromName(FName(*FString::Printf(TEXT("ItemButton%d"),I))))
         {
             W->SetVisibility(Item==INDEX_NONE?ESlateVisibility::Hidden:ESlateVisibility::Visible);
-            W->SetIsEnabled(Has||AMiningCollectible::IsMineralReward(Item));
+            W->SetIsEnabled(Item!=INDEX_NONE);
         }
-        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetColorAndOpacity(Has&&Id==Item?FLinearColor(.025f,.02f,.005f):Has?MiningMenuStyle::Cream:FLinearColor(.42f,.42f,.40f));
+        if(auto* T=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))T->SetColorAndOpacity(Id==Item?FLinearColor(.025f,.02f,.005f):Has?MiningMenuStyle::Cream:FLinearColor(.42f,.42f,.40f));
     }
 }
 void UMiningCollectionWidget::SelectCollectionItem(int32 Id)
 {
-    if(IsValid(Collection)&&Collection->Inventory.IsValidIndex(Id)&&(Collection->Inventory[Id]>0||AMiningCollectible::IsMineralReward(Id)))
+    if(IsValid(Collection)&&Collection->CatalogueIds().Contains(Id))
     {CurrentPage=FMath::Max(0,Collection->CatalogueIds().IndexOfByKey(Id))/4;Collection->SelectItem(Id);}
 }
 void UMiningCollectionWidget::TurnCollectionPage(int32 Direction)
@@ -150,9 +172,7 @@ void UMiningCollectionWidget::TurnCollectionPage(int32 Direction)
     const int32 Page=FMath::Clamp(CurrentPage+(Direction<0?-1:1),0,Pages-1);
     if(Page==CurrentPage)return;
     CurrentPage=Page;
-    int32 Selection=INDEX_NONE;
-    for(int32 I=Page*4;I<FMath::Min((Page+1)*4,Ids.Num());++I)
-        if(Collection->Inventory.IsValidIndex(Ids[I])&&(Collection->Inventory[Ids[I]]>0||AMiningCollectible::IsMineralReward(Ids[I]))){Selection=Ids[I];break;}
+    const int32 Selection=Ids[Page*4];
     Collection->SelectItem(Selection);
     RefreshCollection();
 }

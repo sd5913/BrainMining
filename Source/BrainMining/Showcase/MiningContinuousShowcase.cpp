@@ -142,7 +142,7 @@ void AMiningShowcaseDirector::SwitchContinuousRegion(int32 Index)
     }
     if (auto* Subtitles = USubtitleSubsystem::Get(this)) Subtitles->StopAll();
     if (bHasRegion) Visited.Add(Exhibits[Index].Id);
-    Status = FText::FromString(TEXT("F4 全部玩法 · F2 路线提示 · F8 退出交互 · 本地图内进度保留"));
+    Status = FText::FromString(TEXT("Ctrl + F10 打开 GM · F2 路线提示 · F8 退出交互 · 本地图内进度保留"));
 }
 
 void AMiningShowcaseDirector::RestartContinuousRegion()

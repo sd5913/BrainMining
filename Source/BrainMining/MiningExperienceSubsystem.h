@@ -30,6 +30,7 @@ public:
     UFUNCTION(BlueprintCallable) void ReturnToMainMenu();
     bool bAllUIHidden=false;
     UFUNCTION(BlueprintCallable) bool DeveloperGrantTool(int32 ToolIndex);
+    UFUNCTION(BlueprintCallable) bool DeveloperUnlockMineral(int32 ItemId);
     UFUNCTION(BlueprintCallable) bool TogglePauseMenu(bool bFromCredits=false);
     bool ToggleMobileMenu(bool bUpgrade = false);
     UFUNCTION(BlueprintCallable) bool JumpToCollectible(int32 ItemId);
@@ -38,6 +39,8 @@ public:
     UFUNCTION(BlueprintCallable) void CancelQuitConfirmation();
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bQuitConfirmation=false;
     bool JumpToDeveloperArea(int32 Index);
+    int32 PendingDeveloperArea=INDEX_NONE;
+    void FinishDeveloperTravel();
     bool OpenDeveloperExperience(int32 Index);
     static TArray<FString> DeveloperMapPaths();
     void CloseMenu();

@@ -147,7 +147,7 @@ public:
         {
             const auto* Controller=Cast<ABrainMiningPlayerController>(D->GetWorld()->GetFirstPlayerController());
             const bool Touch=Controller && Controller->IsUsingTouchControls();
-            const FString Hint=D->Shot==9?(Touch?TEXT("上推摇杆加速"):TEXT("W-加速前进")):(Touch?TEXT("跃迁键-连接"):TEXT("空格-连接"));
+            const FString Hint=D->Shot==9?(Touch?TEXT("上推摇杆加速"):TEXT("W-加速前进")):(Touch?TEXT("跃迁键-传导"):TEXT("空格-传导"));
             const auto Font=BrainMiningFonts::Body(18);
             const FVector2D TextSize=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Hint,Font);
             const FVector2D Position((Size.X-TextSize.X)*.5f,Size.Y-40.f-TextSize.Y);
@@ -1945,12 +1945,11 @@ void AEndingEmergence::UpdatePulse(float Dt)
     const float EntryReveal=GateIndex>=5?1.f:(GateIndex==2||bEnteringBrain)?Ending::Ease((Age-BrainEntryAt-.9f)/1.1f):0.f;
     auto NeuronTint=[&](int I)
     {
-        // Landed hosts retain the selected gold while connecting. The takeoff
-        // changes GateIndex to 5, restoring the original blue neural panorama.
-        const bool Selected=GateIndex==2&&(I==TargetNeuron||I==TravellingToNeuron||VisitedNeurons.Contains(I));
+        // Only the current aim/transit target is gold; visited hosts return to blue.
+        const bool Selected=GateIndex==2&&(I==TargetNeuron||I==TravellingToNeuron);
         const bool Goal=I==NeuronPositions.Num()-1;
         if(Selected)return Ending::Gold*1.5f;
-        const FLinearColor Base=Goal?Ending::GoalBlue*(2.f+.2f*FMath::Sin(Age*2)):GateIndex>=5?FLinearColor(.20f,.65f,1.1f)*1.4f:FLinearColor(.15f,.65f,1.1f)*(VisitedNeurons.Contains(I)?1.2f:1.f);
+        const FLinearColor Base=Goal?Ending::GoalBlue*(2.f+.2f*FMath::Sin(Age*2)):GateIndex>=5?FLinearColor(.20f,.65f,1.1f)*1.4f:FLinearColor(.15f,.65f,1.1f);
         return FMath::Lerp(Base,Goal?Ending::GoalBlue*3.f:FLinearColor(.65f,.98f,1.f)*5,NeuralFlash(I));
     };
     for(int I=0;I<NeuronCores.Num();++I)

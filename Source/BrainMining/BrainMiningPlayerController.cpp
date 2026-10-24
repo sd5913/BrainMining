@@ -562,28 +562,7 @@ bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
     if(Params.Key==EKeys::F10 && (IsInputKeyDown(EKeys::LeftControl) || IsInputKeyDown(EKeys::RightControl) ||
        (FSlateApplication::IsInitialized() && FSlateApplication::Get().GetModifierKeys().IsControlDown())))
     {
-        if(Params.Event==IE_Pressed && GetPawn())
-        {
-            auto* Progression=GetPawn()->FindComponentByClass<UMiningProgressionComponent>();
-            auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
-            if(Progression && Wallet && Progression->InitializeProgression())
-            {
-                if(Wallet->UpgradeLevels.Num()<4)Wallet->UpgradeLevels.SetNum(4);
-                Wallet->UpgradeLevels[0]=4;
-                Progression->ApplyUpgrades();
-                if(auto* Room=AMiningStartRoom::Find(GetWorld()))Room->UnlockDeveloperPickaxe();
-                if(auto* Mining=GetPawn()->FindComponentByClass<UMiningComponent>())
-                {Mining->UnlockDrill();Mining->DrillEnergy=Mining->MaxDrillEnergy;}
-                if(auto* Bomb=GetPawn()->FindComponentByClass<UMiningBombToolComponent>())Bomb->UnlockSkill();
-                if(MiningGUI)
-                {
-                    MiningGUI->SetItemLevel(0,4,false);
-                    MiningGUI->SetAbilityAvailable(TEXT("G"),true);MiningGUI->SetAbilityAvailable(TEXT("V"),true);
-                    MiningGUI->SetItemUnlocked(2,true);MiningGUI->SetItemUnlocked(3,true);
-                }
-                UE_LOG(LogBrainMining,Display,TEXT("Ctrl+F10: pickaxe level 4, drill and bomb unlocked"));
-            }
-        }
+        if(Params.Event==IE_Pressed)GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->ToggleDeveloperMenu();
         return true;
     }
     if(Params.Event==IE_Pressed && EndingCreditsInput::Handle(this,Params.Key))return true;

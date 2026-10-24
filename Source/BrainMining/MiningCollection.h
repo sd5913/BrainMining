@@ -170,6 +170,7 @@ public:
     TArray<int32> CatalogueIds() const;
     FString UnlockCondition(int32 Id) const;
     void CheckMineralRewards(bool bAnimate=true);
+    bool GrantMineralReward(int32 Id, bool bAnimate=true);
     void QueuePickup(int32 Id);
     void BeginPickupPreview(int32 Id);
     void UpdatePickupPreview(float Time);

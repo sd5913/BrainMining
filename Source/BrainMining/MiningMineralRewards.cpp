@@ -1,5 +1,5 @@
-#include "MiningCollection.h"
 #include "MiningMineralRewards.h"
+#include "MiningCollection.h"
 #include "MiningWalletSubsystem.h"
 #include "MiningSaveSubsystem.h"
 #include "MiningExperienceSubsystem.h"
@@ -22,10 +22,10 @@ int32 AMiningCollectible::UnlockThreshold(int32 Id)
 
 FString AMiningCollectionField::UnlockCondition(int32 Id) const
 {
-    if(!AMiningCollectible::IsMineralReward(Id))return FString();
+    if(!AMiningCollectible::IsMineralReward(Id))return TEXT("尚未解锁\n\n继续探索，寻找藏在旅途中的灵感吧。");
     const auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     const int32 Count=Wallet->CollectedMineralTotals.FindRef(MineralRewardType(Id));
-    return FString::Printf(TEXT("解锁条件：累计收集%d个%s\n当前进度：%d / %d\n\n本轮实际收集的矿石均会计入，升级消耗不扣进度。达成条件后自动收入藏品。"),
+    return FString::Printf(TEXT("尚未解锁\n\n解锁条件：累计收集%d个%s\n当前进度：%d / %d\n\n升级消耗不影响进度，达标自动解锁。"),
         AMiningCollectible::UnlockThreshold(Id),*FMiningMineralCost::Name(MineralRewardType(Id)),Count,AMiningCollectible::UnlockThreshold(Id));
 }
 
@@ -33,16 +33,24 @@ void AMiningCollectionField::CheckMineralRewards(bool bAnimate)
 {
     if(bCatalogueOnly || !GetGameInstance())return;
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
-    Inventory.SetNumZeroed(AMiningCollectible::ItemTypeCount);
     for(int32 Id=12;Id<16;++Id)
-        if(Inventory[Id]==0 && Wallet->CollectedMineralTotals.FindRef(MineralRewardType(Id))>=AMiningCollectible::UnlockThreshold(Id))
-        {
-            Inventory[Id]=1;
-            GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection=Inventory;
-            GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->RecordCollectible(Id);
-            if(bAnimate)QueuePickup(Id);
-        }
+        if(Wallet->CollectedMineralTotals.FindRef(MineralRewardType(Id))>=AMiningCollectible::UnlockThreshold(Id))
+            GrantMineralReward(Id,bAnimate);
     if(bCatalogueOpen && CatalogueWidget)SelectItem(SelectedId);
+}
+
+bool AMiningCollectionField::GrantMineralReward(int32 Id, bool bAnimate)
+{
+    if(bCatalogueOnly || !GetGameInstance() || !AMiningCollectible::IsMineralReward(Id))return false;
+    // Append missing slots only; never clear or truncate existing unlocks.
+    if(Inventory.Num()<AMiningCollectible::ItemTypeCount)Inventory.AddZeroed(AMiningCollectible::ItemTypeCount-Inventory.Num());
+    if(Inventory[Id]>0)return false;
+    Inventory[Id]=1;
+    GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection=Inventory;
+    GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->RecordCollectible(Id);
+    if(bAnimate)QueuePickup(Id);
+    if(bCatalogueOpen && CatalogueWidget)SelectItem(SelectedId);
+    return true;
 }
 
 void AMiningCollectionField::QueuePickup(int32 Id)

@@ -106,7 +106,7 @@ AMiningCollectible::AMiningCollectible()
 
 FString AMiningCollectible::ItemName(int32 Id)
 {
-    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("罐子里的萤火虫"),TEXT("散落的彩带"),TEXT("接上了！"),TEXT("突然有了方向"),TEXT("石头里的山水"),TEXT("一束光的万花筒")};
+    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("罐子里的萤火虫"),TEXT("散落的彩带"),TEXT("发光的灯泡"),TEXT("指南针"),TEXT("石头里的山水"),TEXT("光之万花筒")};
     return Id>=0&&Id<ItemTypeCount?Names[Id]:TEXT("未知藏品");
 }
 FString AMiningCollectible::Description(int32 Id)
@@ -124,19 +124,19 @@ FString AMiningCollectible::Description(int32 Id)
         TEXT("大量简单的计算单元经过训练与连接，逐渐表现出组织语言、关联概念的复杂能力。"),
         TEXT("每只萤火虫都按自己的节奏闪烁，也会根据附近同伴的闪光调整时机。局部的微小调整不断传递，原本零散的亮点便可能逐渐同步。没有统一指挥，秩序依然能从彼此回应中涌现。"),
         TEXT("成千上万根彩带喷涌而出，一起旋转、碰撞、落下。"),
-        TEXT("散乱的铜线各自闪着微弱的火花。直到最后一道缺口接通，电流沿着完整的回路奔跑，灯泡里亮起了一个小小的脑海。想法，也许就诞生在这些连接之间。"),
-        TEXT("小铁钉原本各朝各的方向。彼此影响、慢慢靠拢后，它们竟拼出了一枚指南针的指针。没有哪一根知道整条路，却一起有了方向。"),
+        TEXT("散乱的铜线看起来很普通。直到电流沿着回路涌动，灯泡亮了！"),
+        TEXT("铁针内部有许多微小的磁畴。磁化让更多磁畴的方向趋于一致，整根针便显出磁性。能够自由转动的磁针在地磁场作用下偏转，指向磁南北。微小的排列，汇成了看得见的方向。"),
         TEXT("层层绿色纹带藏在一小块孔雀石里。换个角度，起伏成了远山，留白成了河流，一条小路穿过山间。零散的纹理，在眼中涌现成了一整个世界。"),
-        TEXT("一束光穿过钻石，在镜面间反复折返。寥寥几片颜色经过旋转、对称与组合，便生出不断变化的花朵与星芒。复杂的美，可以来自简单的重复。")};
+        TEXT("一束白光进入钻石，经折射与色散显出不同的颜色。这些色彩再由镜筒内的镜片反复映照，随着转动，组合成不断变化的花朵与星芒。")};
     const TCHAR* Quotes[]={TEXT("不觉得这很神圣吗？"),TEXT("一台正在运行一个游戏的电脑……这是什么游戏？"),TEXT("加点这个……再加点那个……"),TEXT("好肥的鸟！"),
         TEXT("这个年代计算器也有自我意识了吗？"),
         TEXT("小时候最喜欢的一集。"),
         TEXT("长得很像蝌蚪，它会变成青蛙吗？"),
         TEXT("记忆是很宝贵的。"),
         TEXT("曼妥思VS可乐，你们知道吗？"),
-        TEXT("AI大人牛逼。"),
+        TEXT("好牛#的花。"),
         TEXT("科学小知识，最具教育意义的一集。"),
-        TEXT("恭喜！"),TEXT("原来不是没想法，是还没接上。"),TEXT("刚才还各想各的，怎么突然就有方向了？"),TEXT("山一直在里面，只是刚才没看出来。"),TEXT("就这么几片，怎么还有没见过的样子？")};
+        TEXT("恭喜！"),TEXT("我有一个想法！"),TEXT("海的那边是什么？"),TEXT("山在石头里，又或者，山在心里。"),TEXT("复杂的美，可以来自简单的重复。")};
     // Plain text remains useful outside UMG; the inspect widget styles the quote separately.
     return Id>=0&&Id<ItemTypeCount?FString(Descriptions[Id])+TEXT("\n\n“")+Quotes[Id]+TEXT("”"):FString();
 }

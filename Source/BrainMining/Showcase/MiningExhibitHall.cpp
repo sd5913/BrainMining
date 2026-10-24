@@ -128,8 +128,6 @@ bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
         // Only C opens the catalogue; PlayerInput tracks P for hold-to-skip.
         if (Params.Key==EKeys::C) { if(Params.Event==IE_Pressed) Hall->ToggleCatalogue(); return true; }
         if (!IsPaused() && Hall->HandleMirrorInput(Params)) return true;
-        if (Params.Key==EKeys::F6) { if(Params.Event==IE_Pressed) Hall->ReturnToLobby(); return true; }
-        if (Params.Key==EKeys::F7) { if(Params.Event==IE_Pressed) Hall->SkipCurrentRoom(); return true; }
         if (Params.Key==EKeys::E && Params.Event==IE_Pressed && !Hall->IsInteractionOpen() && Hall->Treasure && Hall->Treasure->IsAreaActive() && Hall->Treasure->CollectTarget(this)) return true;
         if (Params.Key==EKeys::E && Hall->ActiveArea==INDEX_NONE && !Hall->IsInteractionOpen())
         { if(Params.Event==IE_Pressed) Hall->InteractPortal(); return true; }

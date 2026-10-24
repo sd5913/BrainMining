@@ -91,8 +91,8 @@ namespace MiningMainTests
                 Test->TestTrue(TEXT("Real Tab input opens collection catalogue"), Field->bCatalogueOpen);
                 Test->TestFalse(TEXT("Main menu does not steal catalogue input"), Menu->ToggleMenu());
                 if (Field->bCatalogueOpen) Field->ToggleCatalogue();
-                FSlateApplication::Get().ProcessKeyDownEvent(FKeyEvent(EKeys::F4, FModifierKeysState(), 0, false, 0, 0));
-                Test->TestTrue(TEXT("F4 opens main menu in exploration"), Menu->IsMenuOpen());
+                Menu->ToggleDeveloperMenu();
+                Test->TestTrue(TEXT("GM window opens in exploration"), Menu->IsMenuOpen());
                 Test->TestTrue(TEXT("Menu pauses world and suspends mining"), Controller->IsPaused() && Mining->IsInputSuspended());
                 FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("MainIntegrationPreview/AllExperiences.png"), true, false);
             }

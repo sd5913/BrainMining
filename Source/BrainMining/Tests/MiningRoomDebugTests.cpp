@@ -173,17 +173,16 @@ namespace MiningRoomDebugTests
                     Test->TestFalse(TEXT("GM resumes controls"),Controller->IsPaused()||Controller->IsMoveInputIgnored()||Controller->IsLookInputIgnored());
                     Test->TestTrue(TEXT("GM does not award collectibles"),Collection->Inventory==CollectedBefore);
                 }
-                Test->TestFalse(TEXT("Travel without debug menu rejected"), Menu->OpenDeveloperExperience(3));
+                Test->TestFalse(TEXT("Travel without debug menu rejected"), Menu->OpenDeveloperExperience(4));
                 Test->TestTrue(TEXT("Open before independent room travel"), Menu->ToggleDeveloperMenu());
-                Test->TestTrue(TEXT("Start independent card room travel"), Menu->OpenDeveloperExperience(3));
+                Test->TestTrue(TEXT("Start independent ending travel"), Menu->OpenDeveloperExperience(4));
                 Test->TestFalse(TEXT("Travel closes menu"), Menu->IsMenuOpen());
                 ++Step;
                 return false;
             }
             if (Step == 1)
             {
-                if (UGameplayStatics::GetCurrentLevelName(World) != TEXT("Lvl_CardRoom_P1")) return false;
-                Test->TestTrue(TEXT("Independent card room exists"), TActorIterator<ACardRoomStage>(World) ? true : false);
+                if (UGameplayStatics::GetCurrentLevelName(World) != TEXT("Lvl_EndingEmergence_Demo")) return false;
                 Test->TestFalse(TEXT("Travel did not carry pause"), Controller->IsPaused());
                 Test->TestTrue(TEXT("Menu available in independent room"), Menu->ToggleDeveloperMenu());
                 Test->TestTrue(TEXT("Return to main game"), Menu->OpenDeveloperExperience(0));
@@ -210,7 +209,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningDeveloperRoomAssets, "BrainMining.RoomDe
 bool FMiningDeveloperRoomAssets::RunTest(const FString&)
 {
     const auto Paths = UMiningExperienceSubsystem::DeveloperMapPaths();
-    TestEqual(TEXT("All developer destinations registered"), Paths.Num(), 7);
+    TestEqual(TEXT("Requested standalone destinations removed"), Paths.Num(), 5);
+    TestFalse(TEXT("No standalone card-room entry"),Paths.Contains(TEXT("/Game/Rooms/CardDuel/Maps/Lvl_CardRoom_P1")));
+    TestFalse(TEXT("No legacy campaign entry"),Paths.Contains(TEXT("/Game/Campaign/Maps/Lvl_FullJourney")));
     for (const auto& Path : Paths) TestTrue(*Path, FPackageName::DoesPackageExist(Path));
     return true;
 }

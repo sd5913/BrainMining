@@ -271,11 +271,23 @@ void AMiningOpening::ConfirmNewGame(bool bKeepCollection)
 void AMiningOpening::Tick(float Dt)
 {
     Super::Tick(Dt);
-    if(bFinished)return;
+    auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();
+    if(bFinished){Session->FinishDeveloperTravel();return;}
     if(!bPrepared)
     {
         auto* PC=GetWorld()->GetFirstPlayerController();auto* Hall=AMiningExhibitHall::Find(GetWorld());
         if(PC && PC->GetPawn() && (!Hall || Hall->bReady))Prepare(PC);
+        return;
+    }
+    if(!bStarted && Session->PendingDeveloperArea!=INDEX_NONE)
+    {
+        auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();
+        if(Saves->HasSave())
+        {
+            ContinueSavedGame();
+            if(!bStarted)Session->PendingDeveloperArea=INDEX_NONE;
+        }
+        else ConfirmNewGame(true);
         return;
     }
     if(!bStarted || !Player.IsValid() || !Camera)return;

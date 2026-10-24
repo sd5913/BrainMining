@@ -46,7 +46,7 @@ void UMiningCollectionWidget::NativeConstruct()
         if(auto* B=Cast<UButton>(GetWidgetFromName(Name)))
         {
             auto Style=B->GetStyle();Style.SetHovered(Style.Normal);Style.SetPressed(Style.Normal);
-            if(B->GetFName()==TEXT("PreviousButton") || B->GetFName()==TEXT("NextButton"))
+            if(B->GetFName()==TEXT("PreviousButton") || B->GetFName()==TEXT("NextButton") || B->GetFName()==TEXT("CloseButton"))
             {
                 Style.Normal.TintColor=FSlateColor(FLinearColor(.65f,.45f,.015f));
                 Style.Hovered.TintColor=FSlateColor(FLinearColor(1.f,.80f,.12f));
@@ -55,6 +55,21 @@ void UMiningCollectionWidget::NativeConstruct()
             }
             Style.SetDisabled(Style.Normal);B->SetStyle(Style);
         }
+    // Enlarge only the empty gutters: cards start at x=51 and end at x=957.
+    for(const TCHAR* Name:{TEXT("PreviousButton"),TEXT("NextButton")})
+        if(auto* B=GetWidgetFromName(Name))if(auto* ButtonSlot=Cast<UCanvasPanelSlot>(B->Slot))
+        {ButtonSlot->SetPosition(FVector2D(B->GetFName()==TEXT("PreviousButton")?0:963,20));ButtonSlot->SetSize(FVector2D(46,54));}
+    for(int32 I=0;I<4;++I)
+        if(auto* Label=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))
+            if(auto* Canvas=Cast<UCanvasPanel>(Label->GetParent()))
+            {
+                const FName Name(*FString::Printf(TEXT("ItemCondition%d"),I));
+                if(GetWidgetFromName(Name))continue;
+                auto* Condition=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),Name);
+                Condition->SetFont(BrainMiningFonts::Body(14));Condition->SetJustification(ETextJustify::Center);
+                Condition->SetVisibility(ESlateVisibility::HitTestInvisible);
+                auto* ConditionSlot=Canvas->AddChildToCanvas(Condition);ConditionSlot->SetPosition(FVector2D(7,61));ConditionSlot->SetSize(FVector2D(208,28));
+            }
     RefreshCollection();
 }
 void UMiningCollectionWidget::SetCollection(AMiningCollectionField* Field){Collection=Field;CurrentPage=Collection?FMath::Max(0,Collection->CatalogueIds().IndexOfByKey(Collection->SelectedId))/4:0;RefreshCollection();}
@@ -87,6 +102,8 @@ void UMiningCollectionWidget::RevealCollection()
 void UMiningCollectionWidget::NativeTick(const FGeometry& G,float Dt)
 {
     Super::NativeTick(G,Dt);
+    if(auto* Back=Cast<UButton>(GetWidgetFromName(TEXT("CloseButton"))))
+        Back->SetRenderScale(FVector2D(Back->IsPressed()?.96f:Back->IsHovered()||Back->HasKeyboardFocus()?1.16f:1.f));
     if(!bRevealing)return;
     RevealElapsed+=Dt;
     const float T=FMath::Clamp(RevealElapsed/FMath::Max(.05f,PanelSlideDuration),0.f,1.f);
@@ -109,7 +126,7 @@ void UMiningCollectionWidget::RefreshCollection()
         if(Collection->PreviewMaterial)I->SetBrushFromMaterial(Collection->PreviewMaterial);
         I->SetVisibility(Owned?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
     }
-    if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemName"))))T->SetText(FText::FromString(Owned||AMiningCollectible::IsMineralReward(Id)?AMiningCollectible::ItemName(Id):TEXT("尚未发现")));
+    if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemName"))))T->SetText(FText::FromString(Owned?AMiningCollectible::ItemName(Id):TEXT("尚未发现")));
     const FString Description=Owned?AMiningCollectible::Description(Id):Collection->UnlockCondition(Id);
     if(auto* T=Cast<URichTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))
     {
@@ -144,7 +161,14 @@ void UMiningCollectionWidget::RefreshCollection()
             // The card is 222 units wide. Auto-wrap on an auto-sized canvas
             // label can reuse a collapsed width and stack a short name vertically.
             T->SetAutoWrapText(false);T->SetWrapTextAt(208.f);T->SetJustification(ETextJustify::Center);
-            T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):AMiningCollectible::IsMineralReward(Item)?FString::Printf(TEXT("收集%d个%s"),AMiningCollectible::UnlockThreshold(Item),*FMiningMineralCost::Name(MineralRewardType(Item))):TEXT("尚未发现")));
+            T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):TEXT("尚未发现")));
+            T->SetRenderTranslation(FVector2D(0,!Has&&AMiningCollectible::IsMineralReward(Item)?-14:0));
+        }
+        if(auto* Condition=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemCondition%d"),I)))))
+        {
+            const bool Show=!Has&&AMiningCollectible::IsMineralReward(Item);
+            Condition->SetText(FText::FromString(Show?FString::Printf(TEXT("收集%d个%s"),AMiningCollectible::UnlockThreshold(Item),*FMiningMineralCost::Name(MineralRewardType(Item))):FString()));
+            Condition->SetColorAndOpacity(Id==Item?FLinearColor(.12f,.10f,.025f):FLinearColor(.62f,.62f,.58f));
         }
         if(auto* W=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I)))))
         {

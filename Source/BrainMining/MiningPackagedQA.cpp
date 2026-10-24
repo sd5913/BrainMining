@@ -3,6 +3,7 @@
 #include "MiningComponent.h"
 #include "MiningBombToolComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/DynamicMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MiningSaveSubsystem.h"
 #include "MiningGUIWidgets.h"
@@ -269,6 +270,23 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     else if(Op==TEXT("walking_fixture")){Pawn->GetCharacterMovement()->SetMovementMode(MOVE_Walking);}
     else if(Op==TEXT("catalogue_rotate"))
     {if(auto* Field=First<AMiningCollectionField>(W)){Field->SelectItem(C->HasField(TEXT("item"))?int32(C->GetNumberField(TEXT("item"))):0);Field->RotatePreview(C->GetNumberField(TEXT("yaw")),C->GetNumberField(TEXT("pitch")));}else Ok=false;}
+    else if(Op==TEXT("catalogue_owned_fixture") && Hall && Hall->Collection)
+    {
+        // Isolated -MiningQA only: preview setup, never a player shortcut.
+        const int32 Id=int32(C->GetNumberField(TEXT("item")));Ok=Id>=0&&Id<AMiningCollectible::ItemTypeCount;
+        if(Ok){Hall->Collection->Inventory[Id]=1;Hall->Collection->SelectItem(Id);}
+    }
+    else if(Op==TEXT("catalogue_hover"))
+    {
+        auto* Field=First<AMiningCollectionField>(W);
+        auto* B=Field&&Field->CatalogueWidget?Cast<UButton>(Field->CatalogueWidget->GetWidgetFromName(FName(*C->GetStringField(TEXT("name"))))):nullptr;
+        Ok=B!=nullptr;if(B)
+        {
+            auto S=B->TakeWidget();const auto G=S->GetCachedGeometry();const FVector2D P=G.GetAbsolutePosition()+G.GetAbsoluteSize()*.5f;
+            const FPointerEvent E(0,P,P,TSet<FKey>(),EKeys::Invalid,0,FModifierKeysState());
+            if(C->GetBoolField(TEXT("hover")))S->OnMouseEnter(G,E);else S->OnMouseLeave(E);
+        }
+    }
     else if(Op==TEXT("catalogue_button"))
     {
         auto* Field=First<AMiningCollectionField>(W);
@@ -391,6 +409,19 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         if(auto* Count=Cast<UTextBlock>(Widget->GetWidgetFromName(TEXT("CollectionCount"))))Result->SetStringField(TEXT("catalogue_count"),Count->GetText().ToString());
         if(auto* Text=Cast<URichTextBlock>(Widget->GetWidgetFromName(TEXT("ItemDescription"))))Result->SetStringField(TEXT("catalogue_description"),Text->GetText().ToString());
         if(auto* Preview=Widget->GetWidgetFromName(TEXT("PreviewImage")))Result->SetBoolField(TEXT("catalogue_preview_visible"),Preview->IsVisible());
+        TArray<TSharedPtr<FJsonValue>> Labels,Buttons;
+        for(const TCHAR* WidgetName:{TEXT("ItemName"),TEXT("ItemLabel0"),TEXT("ItemLabel1"),TEXT("ItemLabel2"),TEXT("ItemLabel3"),TEXT("ItemCondition0"),TEXT("ItemCondition1"),TEXT("ItemCondition2"),TEXT("ItemCondition3")})
+            if(auto* T=Cast<UTextBlock>(Widget->GetWidgetFromName(WidgetName))){auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),WidgetName);J->SetStringField(TEXT("text"),T->GetText().ToString());Labels.Add(MakeShared<FJsonValueObject>(J));}
+        for(const TCHAR* WidgetName:{TEXT("PreviousButton"),TEXT("NextButton"),TEXT("CloseButton"),TEXT("ItemButton0"),TEXT("ItemButton3")})
+            if(auto* B=Cast<UButton>(Widget->GetWidgetFromName(WidgetName)))
+            {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),WidgetName);const auto G=B->GetCachedGeometry();J->SetArrayField(TEXT("position"),Vec(FVector(G.GetAbsolutePosition(),0)));J->SetArrayField(TEXT("size"),Vec(FVector(G.GetAbsoluteSize(),0)));J->SetBoolField(TEXT("hovered"),B->IsHovered());J->SetNumberField(TEXT("scale"),B->GetRenderTransform().Scale.X);Buttons.Add(MakeShared<FJsonValueObject>(J));}
+        Result->SetArrayField(TEXT("catalogue_labels"),Labels);Result->SetArrayField(TEXT("catalogue_buttons"),Buttons);
+        if(Field->Preview)
+        {
+            TArray<TSharedPtr<FJsonValue>> Motion;Motion.Add(MakeShared<FJsonValueString>(Field->Preview->Model->GetRelativeTransform().ToString()));
+            for(auto Part:Field->Preview->EmergenceParts)Motion.Add(MakeShared<FJsonValueString>(Part->GetRelativeTransform().ToString()));
+            Result->SetArrayField(TEXT("catalogue_motion"),Motion);
+        }
     }
     if(auto* MPC=Cast<ABrainMiningPlayerController>(PC);MPC && MPC->MiningGUI){Result->SetNumberField(TEXT("pickup_id"),MPC->MiningGUI->ActivePickupId);Result->SetNumberField(TEXT("pickup_age"),MPC->MiningGUI->PickupAge);Result->SetNumberField(TEXT("pickup_flights"),MPC->MiningGUI->CompletedPickupFlights);}
     TArray<TSharedPtr<FJsonValue>> Areas;

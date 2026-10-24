@@ -1,4 +1,5 @@
 #include "MiningAudioComponent.h"
+#include "Engine/GameInstance.h"
 #include "MiningCollection.h"
 #include "Components/BoxComponent.h"
 #include "Engine/Engine.h"
@@ -49,11 +50,15 @@ bool FCollectionPickupAudioTest::RunTest(const FString&)
     Enabled->SetWithCurrentPriority(1);
     EffectsVolume->SetWithCurrentPriority(1.f);
     auto* World = UWorld::CreateWorld(EWorldType::Game, false);
-    GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(World);
+    auto* Instance = NewObject<UGameInstance>(GEngine);
+    auto& Context = GEngine->CreateNewWorldContext(EWorldType::Game);
+    Context.SetCurrentWorld(World);Context.OwningGameInstance=Instance;
+    World->SetGameInstance(Instance);Instance->Init();
     UMiningAudioComponent* Audio = nullptr;
     ON_SCOPE_EXIT
     {
         if(Audio && Audio->HasBegunPlay()) Audio->EndPlay(EEndPlayReason::Destroyed);
+        Instance->Shutdown();
         GEngine->DestroyWorldContext(World);
         World->DestroyWorld(false);
         Enabled->SetWithCurrentPriority(PreviousEnabled);

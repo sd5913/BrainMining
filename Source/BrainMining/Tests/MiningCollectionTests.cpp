@@ -41,6 +41,13 @@ bool FCollectionExposureTest::RunTest(const FString& Parameters)
     ON_SCOPE_EXIT { World->DestroyWorld(false); };
     auto* Rock=World->SpawnActor<ADiggableRock>();
     Rock->RockSize=FVector(500); Rock->ResetRock();
+    auto* Bird=World->SpawnActor<AMiningCollectible>(FVector(600,0,0),FRotator::ZeroRotator);
+    Bird->BuildModel(3);Bird->HostRock=Rock;Bird->Tags.Add(TEXT("BM_ExcavationReward"));Bird->Exposure=1;
+    TestFalse(TEXT("Soil wall reward waits for excavation even when its model protrudes"),Bird->CanRelease(.7f));
+    Bird->Release();TestFalse(TEXT("Direct release cannot bypass intact soil gate"),Bird->bReleased);
+    Rock->SuccessfulCuts=1;
+    TestTrue(TEXT("One successful cut enables normal exposure release"),Bird->CanRelease(.7f));
+    Bird->Destroy();Rock->SuccessfulCuts=0;
     for(int Id=0;Id<4;++Id)
     {
         auto* Item=World->SpawnActor<AMiningCollectible>(); Item->BuildModel(Id); Item->HostRock=Rock;
@@ -97,9 +104,16 @@ bool FCollectionExpansionTest::RunTest(const FString& Parameters)
             if(Id>=4 && (FMath::Abs(P.X)>E.X+.01 || FMath::Abs(P.Y)>E.Y+.01 || FMath::Abs(P.Z)>E.Z+.01))
             { AddError(FString::Printf(TEXT("Item %d geometry exceeds interaction / release body"),Id)); break; }
         }
+        const FTransform ActorPose=Item->GetActorTransform();
+        Item->AnimateEmergence(.2f);const FTransform VisualA=Item->Model->GetRelativeTransform();
+        TArray<FTransform> PartsA;for(auto Part:Item->EmergenceParts)PartsA.Add(Part->GetRelativeTransform());
+        Item->AnimateEmergence(1.7f);bool Changed=!VisualA.Equals(Item->Model->GetRelativeTransform());
+        for(int I=0;I<PartsA.Num();++I)Changed|=!PartsA[I].Equals(Item->EmergenceParts[I]->GetRelativeTransform());
+        TestTrue(FString::Printf(TEXT("Item %d has visual motion"),Id),Changed);
+        TestTrue(TEXT("Animation never moves interaction body or saved actor"),ActorPose.Equals(Item->GetActorTransform()));
         Item->Destroy();
     }
-    TestEqual(TEXT("All sixteen names are distinct"),Names.Num(),16);
+    TestEqual(TEXT("All twenty-three names are distinct"),Names.Num(),AMiningCollectible::ItemTypeCount);
     for(int Id:{5,6,7}) TestTrue(TEXT("Direct displays have no excavation clue"),AMiningCollectible::Clue(Id).IsEmpty());
     Field->bUseAuthoredPlacements=true;
     FMiningCollectionPlacement Placement; Placement.ItemId=11; Field->AuthoredPlacements.Add(Placement); Field->AuthoredPlacements.Add(Placement);

@@ -193,6 +193,7 @@ void AMiningCollectionField::SpawnField()
             {
                 Item->HostRock=Placement.HostRock; Item->BuriedTransform=Item->GetActorTransform();
                 if(Placement.ItemId==3 && Placement.HostRock->ActorHasTag(TEXT("BM_BombOnly")))Item->Tags.Add(TEXT("BM_BombGateReward"));
+                if(Placement.ItemId==3 && Placement.HostRock->ActorHasTag(TEXT("BM_Collection23_PigeonSoil")))Item->Tags.Add(TEXT("BM_ExcavationReward"));
                 if(Placement.ItemId==3) ResidentBird=Item;
                 SpawnAuthoredClues(Placement);
             }
@@ -285,10 +286,27 @@ void AMiningCollectionField::Tick(float Dt)
     if(bCatalogueOpen)
     {
         PreviewAnimationTime+=Dt;PreviewCaptureAge+=Dt;
-        if(AMiningCollectible::IsMineralReward(SelectedId) && SelectedId!=14 && PreviewCaptureAge>=1.f/30.f)
-        {Preview->AnimateEmergence(PreviewAnimationTime);Capture->CaptureScene();PreviewCaptureAge=0;}
+        if(Inventory.IsValidIndex(SelectedId) && Inventory[SelectedId]>0 && PreviewCaptureAge>=1.f/24.f)
+        {
+            Preview->AnimateEmergence(PreviewAnimationTime);
+            if(SelectedId==0 && PreviewToilet)
+            {
+                const FQuat R=PreviewToilet->GetActorQuat();
+                PreviewToilet->SetActorLocation(FVector(0,0,-9990+FMath::Sin(PreviewAnimationTime)*2)-R.RotateVector(ToiletPreviewCenter*PreviewToilet->GetActorScale3D()));
+            }
+            Capture->CaptureScene();PreviewCaptureAge=0;
+        }
         else if(PreviewRefreshFrames>0) { Capture->CaptureScene(); --PreviewRefreshFrames; }
         return;
+    }
+    WorldAnimationTime+=Dt;WorldAnimationAge+=Dt;
+    if(WorldAnimationAge>=1.f/24.f)
+    {
+        WorldAnimationAge=0;
+        const FVector Eye=Player->GetPawn()->GetActorLocation();
+        for(AMiningCollectible* Item:Items)
+            if(IsValid(Item)&&!Item->bCollected&&(Item->bReleased||Item->Exposure>.05f)&&FVector::DistSquared(Eye,Item->GetActorLocation())<FMath::Square(2500.f))
+                Item->AnimateEmergence(WorldAnimationTime);
     }
     if(bDeepField || bBuriedWithClues) TickAmbient(Dt);
     if(!bUseAuthoredPlacements && Player->GetPawn()->GetActorLocation().Z<StartTransform.GetLocation().Z-2000) { ResetCollection(); return; }
@@ -445,7 +463,7 @@ void AMiningCollectionField::SelectItem(int32 Id)
     ResetPreview();
     if(CatalogueWidget)CatalogueWidget->RefreshCollection();
 }
-void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=SelectedId==9?850:(SelectedId==0?480:330); RotatePreview(0,0); }
+void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=SelectedId==9?1300:(SelectedId==0?480:330); RotatePreview(0,0); }
 void AMiningCollectionField::RotatePreview(float Yaw,float Pitch)
 {
     if(!Preview) return;
@@ -460,7 +478,7 @@ void AMiningCollectionField::RotatePreview(float Yaw,float Pitch)
     Capture->CaptureScene();
     PreviewRefreshFrames=3;
 }
-void AMiningCollectionField::ZoomPreview(float Steps) { PreviewDistance=FMath::Clamp(PreviewDistance-Steps*22,SelectedId==9?650.f:270.f,SelectedId==9?1200.f:550.f); RotatePreview(0,0); }
+void AMiningCollectionField::ZoomPreview(float Steps) { PreviewDistance=FMath::Clamp(PreviewDistance-Steps*22,SelectedId==9?900.f:270.f,SelectedId==9?1800.f:550.f); RotatePreview(0,0); }
 void AMiningCollectionField::ResetCollection()
 {
     if(bUseAuthoredPlacements) return; // Campaign retries must never erase global inventory.

@@ -79,7 +79,7 @@ class BRAINMINING_API AMiningCollectible : public AActor
 public:
     AMiningCollectible();
     static constexpr int32 WorldItemTypeCount = 12;
-    static constexpr int32 ItemTypeCount = 16;
+    static constexpr int32 ItemTypeCount = 23;
     static bool IsMineralReward(int32 Id) { return Id>=12 && Id<16; }
     static int32 UnlockThreshold(int32 Id);
     static constexpr float PickupExposure = .70f;
@@ -180,6 +180,7 @@ public:
     UPROPERTY(Transient) TObjectPtr<USceneCaptureComponent2D> PickupCapture;
     int32 PickupPreviewId=INDEX_NONE;
     float PreviewAnimationTime=0, PreviewCaptureAge=0;
+    float WorldAnimationTime=0,WorldAnimationAge=0;
     FString Toast;
     float ToastRemaining = 0;
 private:

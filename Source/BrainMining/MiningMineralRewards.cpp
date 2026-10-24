@@ -22,10 +22,10 @@ int32 AMiningCollectible::UnlockThreshold(int32 Id)
 
 FString AMiningCollectionField::UnlockCondition(int32 Id) const
 {
-    if(!AMiningCollectible::IsMineralReward(Id))return TEXT("尚未解锁\n\n继续探索，寻找藏在旅途中的灵感吧。");
+    if(!AMiningCollectible::IsMineralReward(Id))return TEXT("尚未解锁\n\n继续探索，寻找潜藏的灵感吧！");
     const auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     const int32 Count=Wallet->CollectedMineralTotals.FindRef(MineralRewardType(Id));
-    return FString::Printf(TEXT("尚未解锁\n\n解锁条件：累计收集%d个%s\n当前进度：%d / %d\n\n升级消耗不影响进度，达标自动解锁。"),
+    return FString::Printf(TEXT("尚未解锁\n\n解锁条件：累计收集%d个%s\n当前进度：%d / %d"),
         AMiningCollectible::UnlockThreshold(Id),*FMiningMineralCost::Name(MineralRewardType(Id)),Count,AMiningCollectible::UnlockThreshold(Id));
 }
 

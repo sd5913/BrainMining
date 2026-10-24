@@ -88,6 +88,7 @@ namespace
         }
         #include "MiningCollectibleDetails.inl"
         #include "MiningMineralModels.inl"
+        #include "MiningBranchModels.inl"
     };
 }
 
@@ -106,7 +107,7 @@ AMiningCollectible::AMiningCollectible()
 
 FString AMiningCollectible::ItemName(int32 Id)
 {
-    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("罐子里的萤火虫"),TEXT("散落的彩带"),TEXT("发光的灯泡"),TEXT("指南针"),TEXT("石头里的山水"),TEXT("光之万花筒")};
+    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("罐子里的萤火虫"),TEXT("散落的彩带"),TEXT("发光的灯泡"),TEXT("指南针"),TEXT("石头里的山水"),TEXT("光之万花筒"),TEXT("美味牛肉串"),TEXT("小小的鱼缸"),TEXT("一大袋金币"),TEXT("一杯鸡尾酒"),TEXT("太极"),TEXT("一段地铁车厢"),TEXT("一部大手机")};
     return Id>=0&&Id<ItemTypeCount?Names[Id]:TEXT("未知藏品");
 }
 FString AMiningCollectible::Description(int32 Id)
@@ -127,7 +128,14 @@ FString AMiningCollectible::Description(int32 Id)
         TEXT("散乱的铜线看起来很普通。直到电流沿着回路涌动，灯泡亮了！"),
         TEXT("铁针内部有许多微小的磁畴。磁化让更多磁畴的方向趋于一致，整根针便显出磁性。能够自由转动的磁针在地磁场作用下偏转，指向磁南北。微小的排列，汇成了看得见的方向。"),
         TEXT("层层绿色纹带藏在一小块孔雀石里。换个角度，起伏成了远山，留白成了河流，一条小路穿过山间。零散的纹理，在眼中涌现成了一整个世界。"),
-        TEXT("一束白光进入钻石，经折射与色散显出不同的颜色。这些色彩再由镜筒内的镜片反复映照，随着转动，组合成不断变化的花朵与星芒。")};
+        TEXT("一束白光进入钻石，经折射与色散显出不同的颜色。这些色彩再由镜筒内的镜片反复映照，随着转动，组合成不断变化的花朵与星芒。"),
+        TEXT("牛肉、盐和香料原本各有滋味。遇上火候，褐变反应让新的香气与颜色逐渐出现，几样食材竟变成让人垂涎的美味。"),
+        TEXT("鱼、水草与微生物住进同一片水里。呼吸、光合作用与分解彼此衔接，在光照、换水和照料下，小小的鱼缸形成了一张相互依存的生命网络。"),
+        TEXT("一枚金币的回报再投入下一轮，新的回报又加入其中。一次次积累，让增长逐渐加快；不过，袋子里也藏着风险，财富并不会凭空出现。"),
+        TEXT("酸、甜、苦与酒香各有棱角。经过比例、摇和与冰的稀释，它们在杯中相互衬托，涌现出单独品尝时没有的层次。"),
+        TEXT("黑与白相抱而行，各自又含着对方的一点。此消彼长，彼此转化，变化在关系中不断生发。"),
+        TEXT("每个人都有自己的目的地。车门一开，等待、让行、汇入与分流交织在一起，许多个体的脚步涌成了一股人潮。"),
+        TEXT("一条评论引来回应，回应又被更多人看见。零散的声音汇成话题，也可能把一句小事放大成满屏喧闹。")};
     const TCHAR* Quotes[]={TEXT("不觉得这很神圣吗？"),TEXT("一台正在运行一个游戏的电脑……这是什么游戏？"),TEXT("加点这个……再加点那个……"),TEXT("好肥的鸟！"),
         TEXT("这个年代计算器也有自我意识了吗？"),
         TEXT("小时候最喜欢的一集。"),
@@ -136,7 +144,7 @@ FString AMiningCollectible::Description(int32 Id)
         TEXT("曼妥思VS可乐，你们知道吗？"),
         TEXT("好牛#的花。"),
         TEXT("科学小知识，最具教育意义的一集。"),
-        TEXT("恭喜！"),TEXT("我有一个想法！"),TEXT("海的那边是什么？"),TEXT("山在石头里，又或者，山在心里。"),TEXT("复杂的美，可以来自简单的重复。")};
+        TEXT("恭喜！"),TEXT("我有一个想法！"),TEXT("海的那边是什么？"),TEXT("山在石头里，又或者，山在心里。"),TEXT("复杂的美，可以来自简单的重复。"),TEXT("高端的食材往往只需要最朴素的烹饪方式"),TEXT("这一小片水，也有自己的世界。"),TEXT("钱生钱~财富涌现！"),TEXT("再摇一下，灵感就来了。"),TEXT("道生一，一生二，二生三，三生万物"),TEXT("到站了，大家慢慢下！"),TEXT("其实有很多话都不重要")};
     // Plain text remains useful outside UMG; the inspect widget styles the quote separately.
     return Id>=0&&Id<ItemTypeCount?FString(Descriptions[Id])+TEXT("\n\n“")+Quotes[Id]+TEXT("”"):FString();
 }
@@ -150,6 +158,8 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
 {
     for(auto Part:EmergenceParts)if(IsValid(Part))Part->DestroyComponent();
     EmergenceParts.Reset();EmergenceHomes.Reset();
+    Model->SetRelativeLocationAndRotation(FVector::ZeroVector,FRotator::ZeroRotator);
+    Outline->SetRelativeLocationAndRotation(FVector::ZeroVector,FRotator::ZeroRotator);
     ItemId=FMath::Clamp(Id,0,ItemTypeCount-1);
     Body->SetBoxExtent(ItemId==9?FVector(190,190,330):ItemId==11?FVector(12,54,9):FVector(49,45,61));
     FCollectibleMesh B;
@@ -307,16 +317,12 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
         for(int F=0;F<7;++F)
         {
             const float Angle=F*2.39996f;
-            const FVector Head(FMath::Sin(Angle)*13,FMath::Cos(Angle)*(F?29:0),F==0?119:94+(F%3)*8);
-            const float Size=F==0?12:8.5f+(F%2)*1.5f;
+            const FVector Head(FMath::Sin(Angle)*24,FMath::Cos(Angle)*(F?55:0),F==0?145:112+(F%3)*13);
+            const float Size=F==0?26:18.f+(F%2)*3.f;
             B.Curve(FVector(0,0,7),FVector(0,Head.Y*.3,55),Head-FVector(4,4,23),Head,1.7,2,20);
             B.Ellipsoid(Head-FVector(0,Head.Y>0?6:-6,31),FVector(2,9,3.5),2);
             B.Ellipsoid(Head,FVector(2.3,Size,Size),9,24,12);
-            for(int L=0;L<6;++L) for(int J=0;J<24;++J)
-            {
-                auto Knot=[&](int K) { const float A=L*PI/3,T=K*2*PI/24,U=Size*(.47f+.39f*FMath::Cos(T)),V=Size*.34f*FMath::Sin(T);return Head+FVector(-3-.4f*FMath::Sin(T*2),U*FMath::Cos(A)-V*FMath::Sin(A),U*FMath::Sin(A)+V*FMath::Cos(A)); };
-                B.Rod(Knot(J),Knot(J+1),.65f,0);
-            }
+
         }
     }
     else if(ItemId==10)
@@ -355,15 +361,21 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
         if(ItemId==15){Colors[0]=FLinearColor(.65f,.94f,1);Colors[6]=FLinearColor(.2f,.63f,.85f);Colors[3]=FLinearColor(.19f,.11f,.35f);}
         B.MineralReward(ItemId);
     }
+    if(ItemId>=16)
+    {
+        if(ItemId==16){Colors[5]=FLinearColor(.30f,.11f,.035f);Colors[7]=FLinearColor(.58f,.20f,.065f);}
+        if(ItemId==19)Colors[7]=FLinearColor(.92f,.16f,.28f);
+        B.BranchCollectible(ItemId);
+    }
     FMeshNormals::InitializeOverlayToPerTriangleNormals(B.Mesh.Attributes()->PrimaryNormals());
-    if(ItemId==8 || ItemId==9 || IsMineralReward(ItemId))
+    if(ItemId==8 || ItemId==9 || IsMineralReward(ItemId) || ItemId>=16)
     {
         FVector Extent=FVector::ZeroVector;
         for(int V:B.Mesh.VertexIndicesItr())Extent=Extent.ComponentMax(FVector(B.Mesh.GetVertex(V)).GetAbs());
         Body->SetBoxExtent(Extent+FVector(2));
     }
     Model->SetMesh(FDynamicMesh3(B.Mesh)); Outline->SetMesh(MoveTemp(B.Mesh));
-    auto* Base=LoadObject<UMaterialInterface>(nullptr,(ItemId==1||ItemId==4||ItemId==8||IsMineralReward(ItemId))?TEXT("/Game/MainGame/Materials/ScenePolish/M_CollectibleDetail"):TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
+    auto* Base=LoadObject<UMaterialInterface>(nullptr,(ItemId==1||ItemId==4||ItemId==8||IsMineralReward(ItemId)||ItemId>=16)?TEXT("/Game/MainGame/Materials/ScenePolish/M_CollectibleDetail"):TEXT("/Game/CollectionPrototype/Materials/M_CollectionTint"));
     auto* Edge=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionOutline"));
     for(int i=0;i<UE_ARRAY_COUNT(Colors);++i)
     {
@@ -371,6 +383,7 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
             if(ItemId==8 && i==6){Mat->SetScalarParameterValue(TEXT("Metallic"),.82f);Mat->SetScalarParameterValue(TEXT("Roughness"),.28f);}
             if(ItemId==1 && i==2){Mat->SetScalarParameterValue(TEXT("Glow"),.35f);Mat->SetScalarParameterValue(TEXT("Roughness"),.25f);}
             if(IsMineralReward(ItemId)){Mat->SetScalarParameterValue(TEXT("Roughness"),ItemId==14?.27f:.32f);Mat->SetScalarParameterValue(TEXT("Metallic"),ItemId==14?.12f:.4f);Mat->SetScalarParameterValue(TEXT("Glow"),.3f);}
+            if(ItemId>=16)Mat->SetScalarParameterValue(TEXT("Glow"),.6f);
             if(ItemId==12 && i==4)Mat->SetScalarParameterValue(TEXT("Glow"),2.f);
             Model->SetMaterial(i,Mat); }
         if(Edge) Outline->SetMaterial(i,Edge);
@@ -390,9 +403,12 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
             Glow->SetScalarParameterValue(TEXT("GlowOpacity"),bPreview?.32f:.18f);
             Model->SetMaterial(10,Glow);
         }
-    if(ItemId==10 || ItemId==12)
-        if(auto* Glass=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionGlass"))) Model->SetMaterial(8,Glass);
-    if(IsMineralReward(ItemId))BuildEmergenceParts();
+    if(ItemId==10 || ItemId==12 || ItemId==17 || ItemId==19)
+        if(auto* Glass=LoadObject<UMaterialInterface>(nullptr,ItemId>=16?TEXT("/Game/CollectionPrototype/Materials/M_CollectionBranchGlass"):TEXT("/Game/CollectionPrototype/Materials/M_CollectionGlass"))) Model->SetMaterial(8,Glass);
+    if(ItemId==19)
+        if(auto* Liquid=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionCocktailLiquid")))
+            Model->SetMaterial(10,UMaterialInstanceDynamic::Create(Liquid,this));
+    BuildEmergenceParts();
 }
 
 void AMiningCollectible::SetHighlighted(bool Enabled)
@@ -451,14 +467,14 @@ float AMiningCollectible::MeasureExposure() const
 }
 bool AMiningCollectible::CanRelease(float) const
 {
-    if(ActorHasTag(TEXT("BM_BombGateReward")) && IsValid(HostRock) && HostRock->SuccessfulCuts==0)return false;
+    if((ActorHasTag(TEXT("BM_BombGateReward")) || ActorHasTag(TEXT("BM_ExcavationReward"))) && IsValid(HostRock) && HostRock->SuccessfulCuts==0)return false;
     return !bReleased&&!bCollected&&IsPickupEligible(Exposure);
 }
 void AMiningCollectible::Release()
 {
     if(bReleased||bCollected) return;
     Exposure=MeasureExposure();
-    if(!IsPickupEligible(Exposure))return;
+    if(!CanRelease(PickupExposure))return;
     if(ItemId==9)Body->SetBoxExtent(FVector(48,48,125));
     // Pop towards the excavated air at 70%, instead of waiting for every corner
     // of the collision box to be dug free. Chaos is enabled only in a clear box.
@@ -494,7 +510,7 @@ void AMiningCollectible::Release()
         }
     }
     SetActorLocation(Position);bReleased=true;
-    if(!Clear || ItemId==4 || ItemId==9 || ActorHasTag(TEXT("BM_BombGateReward")))
+    if(!Clear || ItemId==4 || ItemId==9 || ActorHasTag(TEXT("BM_BombGateReward")) || ActorHasTag(TEXT("BM_ExcavationReward")))
     {
         // A released item in a narrow opening stays stable and collectible,
         // rather than receiving a penetrating physics impulse.

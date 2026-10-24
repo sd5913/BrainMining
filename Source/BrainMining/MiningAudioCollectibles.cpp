@@ -12,7 +12,7 @@ FName UMiningAudioComponent::CollectibleSoundName(int32 ItemId)
         TEXT("S_Collect_Note"), TEXT("S_Collect_Photo"),
         TEXT("S_Collect_Cola"), TEXT("S_Collect_Flower"),
         TEXT("S_Collect_Fireflies"), TEXT("S_Collect_Ribbon"),
-        TEXT("S_Collect_Copper"),TEXT("S_Collect_Iron"),TEXT("S_Collect_Malachite"),TEXT("S_Collect_Diamond")
+        TEXT("S_Collect_Copper"),TEXT("S_Collect_Iron"),TEXT("S_Collect_Malachite"),TEXT("S_Collect_Diamond"),TEXT("S_Collect_Skewer"),TEXT("S_Collect_Aquarium"),TEXT("S_Collect_CoinBag"),TEXT("S_Collect_Cocktail"),TEXT("S_Collect_Taiji"),TEXT("S_Collect_Subway"),TEXT("S_Collect_Phone")
     };
     static_assert(UE_ARRAY_COUNT(Names) == AMiningCollectible::ItemTypeCount);
     return ItemId >= 0 && ItemId < UE_ARRAY_COUNT(Names) ? Names[ItemId] : NAME_None;

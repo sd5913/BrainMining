@@ -390,8 +390,9 @@ TArray<int32> AMiningCollectionField::CatalogueIds() const
     TArray<int32> Result;
     // MainGame's shared interaction field also accepts room-owned collectibles;
     // an empty spawn list must still show the full locked catalogue.
-    if(bCatalogueOnly || (bUseAuthoredPlacements && AuthoredPlacements.IsEmpty())){for(int32 I=0;I<AMiningCollectible::ItemTypeCount;++I)Result.Add(I);return Result;}
-    if(bUseAuthoredPlacements)
+    const bool FullCatalogue=bCatalogueOnly || (bUseAuthoredPlacements && AuthoredPlacements.IsEmpty());
+    if(FullCatalogue){for(int32 I=0;I<AMiningCollectible::ItemTypeCount;++I)Result.Add(I);}
+    else if(bUseAuthoredPlacements)
     {
         for(const auto& Placement:AuthoredPlacements)
             if(Placement.ItemId>=0 && Placement.ItemId<AMiningCollectible::ItemTypeCount) Result.AddUnique(Placement.ItemId);
@@ -402,6 +403,13 @@ TArray<int32> AMiningCollectionField::CatalogueIds() const
     else for(int32 Id=0;Id<(bDeepField && bExpandedCollection?AMiningCollectible::WorldItemTypeCount:4);++Id) Result.Add(Id);
     for(const auto& Item:Items)if(IsValid(Item))Result.AddUnique(Item->ItemId);
     Result.Sort();
+    if(FullCatalogue || ActorHasTag(TEXT("BM_MainGame_Collections")))
+    {
+        // Presentation order only: inventory, placement and save IDs stay stable.
+        // Room rewards follow the passage that leads into their room.
+        const TArray<int32> JourneyOrder={12,13,16,2,1,17,4,5,14,15,18,19,3,9,6,7,11,20,0,8,21,10,22};
+        Result.Sort([&](int32 A,int32 B){return JourneyOrder.IndexOfByKey(A)<JourneyOrder.IndexOfByKey(B);});
+    }
     return Result;
 }
 void AMiningCollectionField::ToggleCatalogue()

@@ -13,6 +13,7 @@
 #include "Components/SceneCaptureComponent2D.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "HeavenToilet.h"
+#include "Subtitles/SubtitleLibrary.h"
 
 int32 AMiningCollectible::UnlockThreshold(int32 Id)
 {
@@ -48,7 +49,11 @@ bool AMiningCollectionField::GrantMineralReward(int32 Id, bool bAnimate)
     Inventory[Id]=1;
     GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection=Inventory;
     GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->RecordCollectible(Id);
-    if(bAnimate)QueuePickup(Id);
+    if(bAnimate)
+    {
+        QueuePickup(Id);
+        USubtitleLibrary::PlaySubtitleSegment(this,FName(*FString::Printf(TEXT("收集物拾取_%02d"),Id)));
+    }
     if(bCatalogueOpen && CatalogueWidget)SelectItem(SelectedId);
     return true;
 }

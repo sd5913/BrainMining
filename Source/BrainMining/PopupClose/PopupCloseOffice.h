@@ -31,6 +31,7 @@ public:
  int32 GetDetailCount() const;
 private:
  void BuildOffice();
+ UPROPERTY() TObjectPtr<UMaterialInterface> CeilingWithoutGI;
  // Native components are assembled by the constructor; old maps must not reload a shorter registry.
  UPROPERTY(Transient) TArray<TObjectPtr<UInstancedStaticMeshComponent>> Groups;
  UPROPERTY(Transient) TArray<TObjectPtr<UMaterialInstanceDynamic>> Surfaces;

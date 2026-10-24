@@ -119,6 +119,13 @@ bool FCollectionExpansionTest::RunTest(const FString& Parameters)
     FMiningCollectionPlacement Placement; Placement.ItemId=11; Field->AuthoredPlacements.Add(Placement); Field->AuthoredPlacements.Add(Placement);
     TestEqual(TEXT("Authored catalogue deduplicates types"),Field->CatalogueIds().Num(),1);
     TestEqual(TEXT("Authored catalogue supports nonzero IDs"),Field->CatalogueIds()[0],11);
+    auto* Campaign=World->SpawnActor<AMiningCollectionField>();Campaign->bCatalogueOnly=true;
+    const auto Order=Campaign->CatalogueIds();TSet<int32> UniqueIds;for(int Id:Order)UniqueIds.Add(Id);
+    TestEqual(TEXT("Campaign order keeps all stable inventory IDs"),UniqueIds.Num(),AMiningCollectible::ItemTypeCount);
+    TestTrue(TEXT("Copper and iron rewards lead the catalogue"),Order[0]==12 && Order[1]==13);
+    for(int Id:{1,2,4,5,16,17})TestTrue(TEXT("First passage and office precede the malachite reward"),Order.IndexOfByKey(Id)<Order.IndexOfByKey(14));
+    TestEqual(TEXT("Diamond follows malachite"),Order.IndexOfByKey(15),Order.IndexOfByKey(14)+1);
+    for(int Id:{3,9,6,7,11,18,19})TestTrue(TEXT("Second passage and its rooms follow diamond and precede the third passage"),Order.IndexOfByKey(Id)>Order.IndexOfByKey(15) && Order.IndexOfByKey(Id)<Order.IndexOfByKey(20));
 
     auto* Soil=World->SpawnActor<ADiggableRock>(FVector(0,0,130),FRotator::ZeroRotator);
     Soil->RockSize=FVector(600,600,260); Soil->ResetRock();

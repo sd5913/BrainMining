@@ -2,12 +2,16 @@ param(
     [string]$EngineRoot = '',
     [string]$OutputDirectory = '',
     [string]$ZenServer = '',
+    [ValidateSet('', 'PCSize')][string]$CustomConfig = '',
+    [string]$ReportDirectory = '',
+    [string]$CookOutputDirectory = '',
+    [string]$StagingDirectory = '',
+    [switch]$PlanOnly,
     [switch]$SkipBuild,
     [switch]$SkipCook
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'ResourceGuard.ps1')
-Assert-MiningLaunchResources -MinimumPhysicalGB 6 -MinimumCommitGB 8
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (-not $EngineRoot) {
     foreach ($candidate in @($env:UE_ENGINE_ROOT, 'C:/UE_5.8', 'E:/UE5/UE_5.8', 'H:/UE_5.8')) {
@@ -22,13 +26,28 @@ if (-not $EngineRoot -or -not (Test-Path -LiteralPath "$EngineRoot/Engine/Binari
 }
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $projectRoot ('Builds/MainGame-Windows-' + (Get-Date -Format 'yyyyMMdd-HHmmss')) }
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
-$report = Join-Path $projectRoot 'Saved/Validation/MainGamePackage'
+$report = if ($ReportDirectory) { [IO.Path]::GetFullPath($ReportDirectory) } else { Join-Path $projectRoot 'Saved/Validation/MainGamePackage' }
 New-Item -ItemType Directory -Path $report -Force | Out-Null
-if ((Get-PSDrive -Name ([IO.Path]::GetPathRoot($OutputDirectory).Substring(0,1))).Free -lt 20GB) { throw 'Packaging requires at least 20 GB free on the output drive.' }
+if (-not $PlanOnly -and (Get-PSDrive -Name ([IO.Path]::GetPathRoot($OutputDirectory).Substring(0,1))).Free -lt 20GB) { throw 'Packaging requires at least 20 GB free on the output drive.' }
 $dotnet = Get-ChildItem "$EngineRoot/Engine/Binaries/ThirdParty/DotNet" -Filter dotnet.exe -Recurse -File | Where-Object { $_.Directory.Name -eq 'win-x64' } | Sort-Object FullName -Descending | Select-Object -First 1
 if (-not $dotnet) { throw 'Bundled .NET runtime not found.' }
 # Commandlet cooks ignore percentage-based shader limits. Bound all asset work as well,
 # since the finale's 8K crowd textures can each require several GB of temporary memory.
+$nativeMaterials = @()
+$cookOptions = "-LocalDataCachePath=$projectRoot/Saved/DerivedDataCache -corelimit=4 -asyncassetcompilationmaxconcurrency=1 -asynctexturecompilationmaxconcurrency=1 -ini:Engine:[DevOptions.Shaders]:NumUnusedShaderCompilingThreads=2 -ini:Editor:[CookSettings]:MemoryMinFreePhysical=4096"
+if ($CustomConfig) {
+    if ($SkipCook) { throw 'CustomConfig requires a fresh cook.' }
+    $nativeMaterials = @(Get-ChildItem -LiteralPath "$projectRoot/Source", "$projectRoot/Plugins" -Recurse -File -Include '*.cpp', '*.h' | ForEach-Object {
+        [regex]::Matches([IO.File]::ReadAllText($_.FullName), '/Game/MainGame/Materials/[A-Za-z0-9_./]+') | ForEach-Object { $_.Value.Split('.')[0] }
+    } | Sort-Object -Unique)
+    if (-not $nativeMaterials.Count) { throw 'No explicit native material cook roots found.' }
+    foreach ($material in $nativeMaterials) {
+        if (-not (Test-Path -LiteralPath (Join-Path $projectRoot ('Content/' + $material.Substring(6) + '.uasset')))) {
+            throw "Native material cook root does not exist: $material"
+        }
+    }
+    $cookOptions += " -CustomConfig=$CustomConfig -PACKAGE=" + ($nativeMaterials -join '+')
+}
 $argsUat = @(
     "$EngineRoot/Engine/Binaries/DotNET/AutomationTool/AutomationTool.dll",
     "-ScriptsForProject=$projectRoot/BrainMining.uproject", '-NoCompile', '-Utf8Output',
@@ -38,31 +57,42 @@ $argsUat = @(
     '-prereqs', '-nodebuginfo', '-archive', "-archivedirectory=$OutputDirectory",
     '-map=/Game/MainGame/Maps/Lvl_MainGame+/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo',
     '-UbtArgs=-MaxParallelActions=2 -NoUBA -NoXGE -NoFASTBuild -NoSNDBS',
-    "-AdditionalCookerOptions=-LocalDataCachePath=$projectRoot/Saved/DerivedDataCache -corelimit=4 -asyncassetcompilationmaxconcurrency=1 -asynctexturecompilationmaxconcurrency=1 -ini:Engine:[DevOptions.Shaders]:NumUnusedShaderCompilingThreads=2 -ini:Editor:[CookSettings]:MemoryMinFreePhysical=4096"
+    "-AdditionalCookerOptions=$cookOptions"
 )
+if ($CustomConfig) { $argsUat += "-CustomConfig=$CustomConfig" }
+if ($CookOutputDirectory) { $argsUat += "-CookOutputDir=$([IO.Path]::GetFullPath($CookOutputDirectory))" }
+if ($StagingDirectory) { $argsUat += "-stagingdirectory=$([IO.Path]::GetFullPath($StagingDirectory))" }
 if ($ZenServer) { $argsUat += "-NoZenAutoLaunch=$ZenServer" }
 if ($SkipBuild) { $argsUat += '-skipbuild' } else { $argsUat += '-build' }
 if ($SkipCook) { $argsUat += '-skipcook' } else { $argsUat += '-cook' }
+@{output=$OutputDirectory;started=(Get-Date).ToString('o');configuration='Shipping';custom_config=$CustomConfig;plan_only=[bool]$PlanOnly;native_materials=$nativeMaterials;arguments=$argsUat} | ConvertTo-Json -Depth 4 | Set-Content "$report/request.json" -Encoding UTF8
+if ($PlanOnly) { Write-Host "Packaging plan: $report/request.json"; return }
+Assert-MiningLaunchResources -MinimumPhysicalGB 6 -MinimumCommitGB 8
 # Audit actual saved references, since replaced editable scenery can leave unused
 # source assets on disk that are intentionally absent from the cooked game.
 $dependencyAuditStarted = Get-Date
-Start-MiningGuardedProcess -Executable "$EngineRoot/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" -Arguments @(
+$previousReport = [Environment]::GetEnvironmentVariable('BM_PACKAGE_REPORT_DIR', 'Process')
+try {
+    [Environment]::SetEnvironmentVariable('BM_PACKAGE_REPORT_DIR', $report, 'Process')
+    Start-MiningGuardedProcess -Executable "$EngineRoot/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" -Arguments @(
     "$projectRoot/BrainMining.uproject", '/Engine/Maps/Entry', '-unattended', '-nosplash', '-nosound', '-nullrhi',
     '-NoLiveCoding', '-EnablePlugins=GameFeatures', '-DisablePlugins=AllToolsets,ModelContextProtocol',
     "-ExecutePythonScript=$projectRoot/Scripts/audit_ending_package_dependencies.py", "-abslog=$report/dependency-audit.log"
 ) -ReportPath "$report/dependency-audit-resources.csv" -MaximumSeconds 180
+} finally {
+    [Environment]::SetEnvironmentVariable('BM_PACKAGE_REPORT_DIR', $previousReport, 'Process')
+}
 if (-not (Test-Path -LiteralPath "$report/ending-dependencies.json") -or (Get-Item -LiteralPath "$report/ending-dependencies.json").LastWriteTime -lt $dependencyAuditStarted) {
     throw 'The ending dependency audit did not produce a fresh manifest.'
 }
 $endingDependencies = Get-Content -LiteralPath "$report/ending-dependencies.json" -Raw | ConvertFrom-Json
-@{output=$OutputDirectory;started=(Get-Date).ToString('o');configuration='Shipping';arguments=$argsUat} | ConvertTo-Json -Depth 4 | Set-Content "$report/request.json" -Encoding UTF8
 # Keep derived data on the project drive in all child tools, without changing user settings.
 $previousCache = [Environment]::GetEnvironmentVariable('UE-LocalDataCachePath', 'Process')
 $previousLogs = [Environment]::GetEnvironmentVariable('uebp_LogFolder', 'Process')
 try {
     [Environment]::SetEnvironmentVariable('UE-LocalDataCachePath', "$projectRoot/Saved/DerivedDataCache", 'Process')
     [Environment]::SetEnvironmentVariable('uebp_LogFolder', "$report/UAT", 'Process')
-    Start-MiningGuardedProcess -Executable $dotnet.FullName -Arguments $argsUat -ReportPath "$report/package-resources.csv" -BelowNormal -MaximumSeconds 14400
+    Start-MiningGuardedProcess -Executable $dotnet.FullName -Arguments $argsUat -ReportPath "$report/package-resources.csv" -BelowNormal -TrimCookWorkingSet -MaximumSeconds 14400
 } finally {
     [Environment]::SetEnvironmentVariable('UE-LocalDataCachePath', $previousCache, 'Process')
     [Environment]::SetEnvironmentVariable('uebp_LogFolder', $previousLogs, 'Process')
@@ -164,6 +194,7 @@ Get-ChildItem -LiteralPath "$projectRoot/Content/Passages/Echo/ArtP2/Collision" 
     $requiredAssets += 'Passages/Echo/ArtP2/Collision/' + $_.Name
 }
 $requiredAssets += @($endingDependencies.assets)
+$requiredAssets += @($nativeMaterials | ForEach-Object { $_.Substring(6) + '.uasset' })
 $requiredAssets = @($requiredAssets | Sort-Object -Unique)
 foreach ($asset in $requiredAssets) {
     if ($containerText.IndexOf("../../../BrainMining/Content/$asset,", [StringComparison]::OrdinalIgnoreCase) -lt 0) {
@@ -171,6 +202,9 @@ foreach ($asset in $requiredAssets) {
     }
 }
 $requiredAssets | ConvertTo-Json | Set-Content "$report/required-container-assets.json" -Encoding UTF8
+if ($CustomConfig -and $containerText -match '(?i)/HDRIBackdrop/') {
+    throw 'PCSize unexpectedly contains HDRIBackdrop assets.'
+}
 $movie = 'Content/Movies/EndingEmergence/EndingFinale.mp4'
 $stagedMovie = Join-Path $OutputDirectory "Windows/BrainMining/$movie"
 if (-not (Test-Path -LiteralPath $stagedMovie) -or (Get-FileHash -LiteralPath $stagedMovie).Hash -ne (Get-FileHash -LiteralPath (Join-Path $projectRoot $movie)).Hash) {

@@ -1,5 +1,5 @@
 """Read-only inventory of the production ending's current saved dependencies."""
-import unreal,json
+import unreal,json,os
 from pathlib import Path
 root=Path(unreal.Paths.project_dir()).resolve()
 registry=unreal.AssetRegistryHelpers.get_asset_registry();registry.search_all_assets(True)
@@ -15,6 +15,6 @@ for package in sorted(seen):
  if not package.startswith('/Game/'):continue
  for suffix in ['.uasset','.umap']:
   if (root/'Content'/package.removeprefix('/Game/')).with_suffix(suffix).exists():assets.append(package.removeprefix('/Game/')+suffix);break
-out=root/'Saved/Validation/MainGamePackage';out.mkdir(parents=True,exist_ok=True)
+out=Path(os.environ.get('BM_PACKAGE_REPORT_DIR',str(root/'Saved/Validation/MainGamePackage')));out.mkdir(parents=True,exist_ok=True)
 (out/'ending-dependencies.json').write_text(json.dumps({'map':'/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo','assets':assets},ensure_ascii=False,indent=2),encoding='utf8')
 unreal.log('ENDING_PACKAGE_DEPENDENCIES '+str(len(assets)));unreal.SystemLibrary.quit_editor()

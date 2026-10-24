@@ -47,6 +47,27 @@ bool FCollectionExposureTest::RunTest(const FString& Parameters)
     Bird->Release();TestFalse(TEXT("Direct release cannot bypass intact soil gate"),Bird->bReleased);
     Rock->SuccessfulCuts=1;
     TestTrue(TEXT("One successful cut enables normal exposure release"),Bird->CanRelease(.7f));
+    Bird->Release();
+    const FTransform BirdPose=Bird->GetActorTransform();
+    TestEqual(TEXT("Resident pigeon has two separate feathered wings"),Bird->EmergenceParts.Num(),2);
+    if(Bird->EmergenceParts.Num()==2)
+    {
+        Bird->AnimateEmergence(.08f);
+        const FRotator Up=Bird->EmergenceParts[0]->GetRelativeRotation();
+        const FVector Shoulder=Bird->EmergenceParts[0]->GetRelativeLocation();
+        Bird->AnimateEmergence(.27f);
+        TestFalse(TEXT("Released pigeon beats its wings"),Up.Equals(Bird->EmergenceParts[0]->GetRelativeRotation()));
+        TestTrue(TEXT("Wing shoulder stays attached during flapping"),Shoulder.Equals(Bird->EmergenceParts[0]->GetRelativeLocation()));
+        TestTrue(TEXT("Left and right wing beats are mirrored"),FMath::IsNearlyZero(Bird->EmergenceParts[0]->GetRelativeRotation().Roll+Bird->EmergenceParts[1]->GetRelativeRotation().Roll));
+        Bird->SetHighlighted(true);
+        for(auto Part:Bird->EmergenceParts)
+        {
+            auto* Wing=Cast<UDynamicMeshComponent>(Part.Get());
+            TestTrue(TEXT("Hover outline includes moving feathers"),Wing && Wing->bRenderCustomDepth);
+            TestTrue(TEXT("Wing visuals never block interaction"),Wing && Wing->GetCollisionEnabled()==ECollisionEnabled::NoCollision);
+        }
+    }
+    TestTrue(TEXT("Hovering keeps the saved pickup transform stable"),BirdPose.Equals(Bird->GetActorTransform()));
     Bird->Destroy();Rock->SuccessfulCuts=0;
     for(int Id=0;Id<4;++Id)
     {

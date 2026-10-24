@@ -75,7 +75,21 @@ pwsh -NoProfile -File Scripts/Package_PC_SizeOptimized.ps1 -Mode Optimized
 
 发布前使用相同画质、分辨率与相机位置比较：主菜单和中文、近景收集物、办公室、卡牌房、镜子房、矿物发光、镐子/炸弹/钻机、博物馆及完整结局。优先回调具体资产的分辨率/RDO，不一次性关闭渲染功能。
 
-## 轻量测试
+## 2026-10-24 最新藏品与肉鸽版
+
+当前普通版 ZIP 为 1,904,661,599 字节。应用 PCSize 后，包含肉鸽扇翅更新的最终 ZIP 为 **1,097,293,012 字节**，减少 **42.39%**；解压后为 1,253,703,137 字节。
+
+交付文件：`Builds/PCSize-20261024-PigeonFinal/Optimized/BrainMining-Windows.zip`。
+
+SHA-256：`a3f56b064f89c53bddd425f6e2bed40056c6ed6e8f3e95cada62560f7ae496ef`。
+
+本次先基于 `3cd9427` 完成独立 PCSize Cook 和发布验证，再编译肉鸽羽翼、悬停和拾取描边的原生代码修改。由于重新 Stage 时临时 Zen oplog 已不可用，最终分发沿用已验证的优化资源并替换新编译的 Shipping 主程序；逐文件散列确认只有该主程序变化，所有资源容器、Shader、DLL 均与本次 PCSize Cook 的成品一致。最终 ZIP 回读和 442 项必需资源检查通过。
+
+可追溯报告：`Saved/Validation/PCSize/PCSize-20261024-Collection24`（Cook、DX11 电脑房、目录和旧存档兼容检查）以及 `Saved/Validation/PCSize/PCSize-20261024-PigeonFinal`（最终包、肉鸽和流程回归）。这是检查点与拾取/存档路径的验证，不代表连续完整通关或跨显卡测试。
+
+实际 Cook 数据示例：出口标牌、窗户颜色纹理各从约 10.67 MiB 降至 2.67 MiB；标题 UI 仍为 2,458,115 字节。未改变默认项目配置，后续出小包仍需显式启用 PCSize。
+
+## 报告脚本测试
 
 ```powershell
 python -m unittest discover -s Scripts/tests -p test_pc_package_report.py

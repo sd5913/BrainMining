@@ -110,6 +110,24 @@ void AMiningCollectible::AnimateEmergence(float Time)
         Model->SetRelativeRotation(FRotator(FMath::Sin(Time*.7f)*1.2f,0,FMath::Sin(Time*.9f+ItemId)*1.6f));
         Outline->SetRelativeLocationAndRotation(Model->GetRelativeLocation(),Model->GetRelativeRotation());
     }
+    if(ItemId==3)
+    {
+        const bool Flying=bReleased || ActorHasTag(TEXT("CollectionPreview"));
+        const float Beat=Time*2*PI*2.6f;
+        if(Flying)
+        {
+            Model->SetRelativeLocation(FVector(0,0,3.5f*FMath::Sin(Beat-.6f)+1.5f*FMath::Sin(Time*1.4f)));
+            Model->SetRelativeRotation(FRotator(3+2*FMath::Sin(Beat-.4f),0,1.5f*FMath::Sin(Time*1.7f)));
+            Outline->SetRelativeLocationAndRotation(Model->GetRelativeLocation(),Model->GetRelativeRotation());
+        }
+        for(int I=0;I<EmergenceParts.Num();++I)
+        {
+            // Both shoulders stay attached; mirrored rolls lift and lower the feathers together.
+            const float Side=I==0?-1.f:1.f;
+            EmergenceParts[I]->SetRelativeRotation(FRotator(0,0,Side*(Flying?12.f+48.f*FMath::Sin(Beat):-72.f)));
+        }
+        return;
+    }
     for(int32 I=0;I<EmergenceParts.Num();++I)
     {
         auto* Part=EmergenceParts[I].Get();const auto& Home=EmergenceHomes[I];

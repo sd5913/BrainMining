@@ -208,11 +208,7 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
         B.Ellipsoid(FVector(1,0,-12),FVector(32,28,34),6);
         B.Ellipsoid(FVector(-14,0,16),FVector(21,21,27),2);
         B.Ellipsoid(FVector(-19,-3,39),FVector(22,20,21),6);
-        if(!Flying)
-        {
-            B.Ellipsoid(FVector(5,-25,-6),FVector(25,7,22),0);
-            B.Ellipsoid(FVector(5,25,-6),FVector(25,7,22),0);
-        }
+        // Resident wings are separate shoulder-pivoted meshes, animated after release.
         B.Ellipsoid(FVector(-33,-18,43),FVector(6,3,6),4,8,4);
         B.Ellipsoid(FVector(-35,-20,43),FVector(3,2,4),1,8,4);
         B.Ellipsoid(FVector(-33,14,43),FVector(6,3,6),4,8,4);
@@ -408,7 +404,24 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
     if(ItemId==19)
         if(auto* Liquid=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionCocktailLiquid")))
             Model->SetMaterial(10,UMaterialInstanceDynamic::Create(Liquid,this));
+    if(ItemId==3 && !Flying)
+    {
+        for(int Side:{-1,1})
+        {
+            FCollectibleMesh Wing;
+            Wing.Ellipsoid(FVector(5,Side*18,0),FVector(23,23,4),0,12,5);
+            // Overlapping tapered flight feathers, swept back from the leading edge.
+            for(int Feather=0;Feather<6;++Feather)
+                Wing.Ellipsoid(FVector(-9+Feather*7,Side*(35-Feather*2),-1),FVector(5.5f,23-Feather*1.5f,2),Feather%2?6:0,8,4);
+            FMeshNormals::InitializeOverlayToPerTriangleNormals(Wing.Mesh.Attributes()->PrimaryNormals());
+            auto* Part=NewObject<UDynamicMeshComponent>(this);AddInstanceComponent(Part);Part->SetupAttachment(Model);
+            Part->SetMesh(MoveTemp(Wing.Mesh));Part->SetMaterial(0,Model->GetMaterial(0));Part->SetMaterial(6,Model->GetMaterial(6));
+            Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);Part->SetRelativeLocation(FVector(2,Side*20,4));
+            Part->RegisterComponent();EmergenceParts.Add(Part);EmergenceHomes.Add(Part->GetRelativeTransform());
+        }
+    }
     BuildEmergenceParts();
+    if(ItemId==3)AnimateEmergence(0);
 }
 
 void AMiningCollectible::SetHighlighted(bool Enabled)
@@ -417,6 +430,9 @@ void AMiningCollectible::SetHighlighted(bool Enabled)
     // Keep the old inverted hull disabled: it can cover surfaces or outline internal seams.
     Outline->SetVisibility(bEchoPresentation&&!bCollected);
     Model->SetRenderCustomDepth(Enabled&&!bCollected);
+    if(ItemId==3)for(auto Part:EmergenceParts)
+        if(auto* Wing=Cast<UPrimitiveComponent>(Part.Get()))
+        {Wing->SetCustomDepthStencilValue(Model->CustomDepthStencilValue);Wing->SetRenderCustomDepth(Enabled&&!bCollected);}
     if(auto* Toilet=Cast<AHeavenToilet>(PresentationActor))
         for(auto* Part:{Toilet->Body.Get(),Toilet->Lid.Get()})
         {Part->SetCustomDepthStencilValue(Model->CustomDepthStencilValue);Part->SetRenderCustomDepth(Enabled&&!bCollected);}

@@ -252,8 +252,6 @@ void AMiningCollectionField::TickAmbient(float Dt)
         }
         for(int i=0;i<Ant.Legs.Num();++i) if(Ant.Legs[i].IsValid()) Ant.Legs[i]->SetRelativeRotation(FRotator(0,FMath::Sin(AmbientTime*18+i*PI)*27,0));
     }
-    if(ResidentBird.IsValid()&&!ResidentBird->bCollected)
-        ResidentBird->Model->SetRelativeRotation(FRotator(0,0,FMath::Sin(AmbientTime*.7f)*5));
     if(FlockBursts==0&&ResidentBird.IsValid()&&ResidentBird->HostRock&&AmbientTime>=NextFlockCheck)
     {
         NextFlockCheck=AmbientTime+.3f;

@@ -243,6 +243,16 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     else if(Op==TEXT("interact"))Ok=AMiningStartRoom::Find(W)->Interact(PC);
     else if(Op==TEXT("mineral_fixture"))Ok=Wallet->AddMineral(FName(*C->GetStringField(TEXT("mineral"))),int32(C->GetNumberField(TEXT("amount"))));
     else if(Op==TEXT("upgrade"))Ok=Pawn->FindComponentByClass<UMiningProgressionComponent>()->Purchase(0,Wallet->GetUpgradeLevel(0)+1);
+    else if(Op==TEXT("trace"))
+    {
+        FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(PackagedQATrace),true,Pawn);
+        bool Capsule=false;C->TryGetBoolField(TEXT("capsule"),Capsule);
+        const bool HitSomething=Capsule
+            ? W->SweepSingleByChannel(Hit,ReadVec(*C,TEXT("from")),ReadVec(*C,TEXT("to")),FQuat::Identity,ECC_Pawn,FCollisionShape::MakeCapsule(34,88),Query)
+            : W->LineTraceSingleByChannel(Hit,ReadVec(*C,TEXT("from")),ReadVec(*C,TEXT("to")),ECC_Visibility,Query);
+        Result->SetBoolField(TEXT("hit"),HitSomething);
+        if(HitSomething){Result->SetStringField(TEXT("hit_actor"),Hit.GetActor()?Hit.GetActor()->GetName():TEXT(""));Result->SetArrayField(TEXT("hit_position"),Vec(Hit.ImpactPoint));Result->SetBoolField(TEXT("diggable"),Cast<ADiggableRock>(Hit.GetActor())!=nullptr);}
+    }
     else if(Op==TEXT("mine"))
     {
         auto* Rock=Cast<ADiggableRock>(Actor);Ok=Rock!=nullptr;
@@ -355,7 +365,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     TArray<TSharedPtr<FJsonValue>> DebugMaps;
     for(const auto& Map:UMiningExperienceSubsystem::DeveloperMapPaths())DebugMaps.Add(MakeShared<FJsonValueString>(Map));
     Result->SetArrayField(TEXT("gm_maps"),DebugMaps);
-    if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()){Result->SetNumberField(TEXT("drill_capacity"),Mining->MaxDrillEnergy);Result->SetNumberField(TEXT("drill_energy"),Mining->DrillEnergy);}
+    if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()){Result->SetNumberField(TEXT("drill_capacity"),Mining->MaxDrillEnergy);Result->SetNumberField(TEXT("drill_energy"),Mining->DrillEnergy);Result->SetNumberField(TEXT("drill_recovery_per_second"),Mining->DrillRecoveryRate*.6f);}
     if(auto* Museum=First<AWenSiMirrorPuzzle>(W))
     {Result->SetBoolField(TEXT("aim_reset"),Museum->bAimReset);Result->SetNumberField(TEXT("reset_hold"),Museum->ResetHold.Progress());Result->SetNumberField(TEXT("reset_count"),Museum->ResetCount);}
     if(auto* Toilet=First<AHeavenToilet>(W))Result->SetBoolField(TEXT("toilet_outline"),Toilet->Body->bRenderCustomDepth);
@@ -388,6 +398,13 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>())Result->SetBoolField(TEXT("mining_suspended"),Mining->IsInputSuspended());
     TArray<UStaticMeshComponent*> ToolParts;Pawn->GetComponents(ToolParts);
     for(auto* Part:ToolParts)if(Part->GetName()==TEXT("PickaxeModel"))Result->SetBoolField(TEXT("pickaxe_visible"),Part->IsVisible());
+    TArray<TSharedPtr<FJsonValue>> VisibleTools;
+    for(auto* Part:ToolParts)if(Part->IsVisible() && (Part->GetName().Contains(TEXT("Drill")) || Part->GetName()==TEXT("PickaxeModel") || Part->GetName()==TEXT("BombModel")))VisibleTools.Add(MakeShared<FJsonValueString>(Part->GetName()));
+    Result->SetArrayField(TEXT("visible_tools"),VisibleTools);
+    TArray<TSharedPtr<FJsonValue>> MirrorParts;
+    for(TActorIterator<AWenSiMirrorExhibit> It(W);It;++It)if(It->MirrorPresence)
+        for(auto Part:It->PresenceParts)MirrorParts.Add(MakeShared<FJsonValueString>(Part->GetName()));
+    Result->SetArrayField(TEXT("mirror_presence_parts"),MirrorParts);
     TArray<TSharedPtr<FJsonValue>> RunItems;for(int32 I=0;I<AMiningCollectible::ItemTypeCount;++I)if(Save->WasCollectedThisRun(I))RunItems.Add(MakeShared<FJsonValueNumber>(I));
     Result->SetArrayField(TEXT("run_items"),RunItems);
     Result->SetBoolField(TEXT("tutorial"),Save->TutorialActive);Result->SetNumberField(TEXT("completed"),Save->TutorialCompleted);

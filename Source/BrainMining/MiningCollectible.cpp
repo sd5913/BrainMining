@@ -107,7 +107,7 @@ AMiningCollectible::AMiningCollectible()
 
 FString AMiningCollectible::ItemName(int32 Id)
 {
-    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("罐子里的萤火虫"),TEXT("散落的彩带"),TEXT("发光的灯泡"),TEXT("指南针"),TEXT("石间山水"),TEXT("光之万花筒"),TEXT("碳烤牛肉串"),TEXT("水世界"),TEXT("沉甸甸的金币袋"),TEXT("一杯鸡尾酒"),TEXT("太极"),TEXT("晚高峰"),TEXT("舆论")};
+    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("罐子里的萤火虫"),TEXT("散落的彩带"),TEXT("发光的灯泡"),TEXT("指南针"),TEXT("石间山水"),TEXT("光之万花筒"),TEXT("碳烤牛肉串"),TEXT("水世界"),TEXT("沉甸甸的金币袋"),TEXT("一杯鸡尾酒"),TEXT("太极"),TEXT("晚高峰"),TEXT("满屏消息的手机")};
     return Id>=0&&Id<ItemTypeCount?Names[Id]:TEXT("未知藏品");
 }
 FString AMiningCollectible::Description(int32 Id)

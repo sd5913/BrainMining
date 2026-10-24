@@ -96,3 +96,9 @@ python -m unittest discover -s Scripts/tests -p test_pc_package_report.py
 ```
 
 测试涵盖共享压缩块去重、跨块分摊、损坏 TOC、重复清单、ZIP 回读与覆盖保护、动态资源缺失和调试符号拦截。实包体积与画面验证另行执行。
+
+## 2026-10-25 通路轮廓与藏品线索版
+
+重新执行完整 Build/Cook/Stage/Archive，交付 `Builds/PCSize-20261025-ContourClues/Optimized/BrainMining-Windows.zip`。ZIP 为 **1,105,552,619 字节**（约 1.11 GB），解压为 1,261,968,601 字节；新增 20 米通路外壳、土层和线索材质后仍保留 PCSize 优化配置。
+
+SHA-256：`3aa46e24b4f7ffc16a65e5283fbd8ba17e2e7c7984923b00398b856465b278a6`。ZIP 回读与 446 项资源检查通过，不含测试存档。成品包通过 62 项藏品/博物馆/边界/存档检查、13 项房间/结局入口检查。详见 `Docs/BranchCluesAndContourBoundary.md` 和 `Saved/Validation/PCSize/PCSize-20261025-ContourClues/Optimized/runtime-validation.json`。

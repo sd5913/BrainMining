@@ -46,6 +46,17 @@ void AMiningExternalRegion::OnConstruction(const FTransform& Transform)
 void AMiningExternalRegion::BeginPlay()
 {
 	Super::BeginPlay();ApplyHardnessSettings();
+	if (IsValid(GeneratedShell) && GeneratedShell->ActorHasTag(TEXT("BM_ContourBedrock20m")))
+	{
+		// The sculpted boundary must also block movement from its concave inner face.
+		// Only these static campaign shells use a synchronous, double-sided collision cook.
+		if (UDynamicMeshComponent* Shell = GeneratedShell->GetDynamicMeshComponent())
+		{
+			Shell->bUseAsyncCooking = false;
+			Shell->GetBodySetup()->bDoubleSidedGeometry = true;
+			Shell->UpdateCollision(false);
+		}
+	}
 }
 
 void AMiningExternalRegion::ApplyHardnessSettings()

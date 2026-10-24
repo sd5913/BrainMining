@@ -92,6 +92,7 @@ void AMiningCollectionField::SpawnAuthoredClues(const FMiningCollectionPlacement
             FCollectionClue C;C.Actor=Twig;C.Rock=Rock;C.Support=FVector(3,-45+I*22,-110);Clues.Add(C);
         }
     }
+    if(Id>=16 && Id<=22)SpawnBranchClues(P);
     for(int I=FirstActor;I<Spawned.Num();++I)
     {
         auto* A=Spawned[I].Get(); A->Tags.AddUnique(P.AreaTag);A->Tags.AddUnique(TEXT("CampaignExcavationClue"));

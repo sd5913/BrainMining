@@ -1,4 +1,6 @@
 #include "MiningToolEffectsComponent.h"
+#include "WenSi/WenSiMirrorPuzzle.h"
+#include "WenSi/WenSiPuzzle.h"
 #include "PopupClose/PopupCloseStage.h"
 #include "EndingEmergence.h"
 #include "Showcase/MiningExhibitHall.h"
@@ -82,8 +84,11 @@ void UMiningToolEffectsComponent::BeginPlay()
         for(int32 I=0;I<2;++I)
         {
             auto* Model=I?LeftDrillMesh.Get():DrillMesh.Get();auto* Motion=I?LeftDrillPivot.Get():DrillPivot.Get();
-            Motion->GetAttachParent()->SetRelativeLocationAndRotation(FVector(I?95:85,I?-28:28,3),FRotator(14,I?18:-18,0));
-            Model->SetRelativeTransform(FTransform(FRotator(-10,0,0),FVector(I?-31.280714:-21.432637,0,I?-14.638632:-16.375114),FVector(.72,I?-.72:.72,.72)));
+            // Keep the open rear of the gameplay models behind the camera frame.
+            // The ending has its own framing and is intentionally independent.
+            Motion->GetAttachParent()->SetRelativeLocationAndRotation(FVector(I?78:68,I?-34:34,0),FRotator(14,I?18:-18,0));
+            Model->SetRelativeTransform(FTransform(FRotator(-10,0,0),FVector(I?-31.280714:-21.432637,0,I?-14.638632:-16.375114),FVector(.86,I?-.86:.86,.86)));
+            Model->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::None);
         }
 	}
 	else
@@ -214,6 +219,8 @@ void UMiningToolEffectsComponent::UpdateToolMode(bool bDrillMode)
 
 bool UMiningToolEffectsComponent::CanShowEffects() const
 {
+    for(TActorIterator<AWenSiMirrorPuzzle> It(GetWorld());It;++It)if(It->bAreaActive)return false;
+    for(TActorIterator<AWenSiPuzzle> It(GetWorld());It;++It)if(It->bAreaActive)return false;
     if(auto* PC=GetWorld()->GetFirstPlayerController())
         if(auto* Ending=AEndingEmergence::FindForPlayer(PC);Ending && Ending->Shot<0)return false;
     for(TActorIterator<APopupCloseStage> It(GetWorld());It;++It)

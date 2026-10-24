@@ -42,9 +42,11 @@ void BranchCollectible(int Id)
         Cylinder({0,0,24},38,0.6f,8,48);
         for(int I=0;I<7;++I)
         {
-            FVector P(10+(I%2)*5,-22+I*7,-30);
-            Curve(P,P+FVector(0,8,13),P+FVector(0,-7,32),P+FVector(0,3,43),1.1f,2);
-            Ellipsoid(P+FVector(0,5,18),{1.5,7,3},2,8,4);
+            const float Angle=I*2.39996f, Height=20+(I*17)%26, Bend=FMath::Sin(I*1.7f)*8;
+            FVector P(11+FMath::Cos(Angle)*9,FMath::Sin(Angle)*24,-30);
+            Curve(P,P+FVector(-3,Bend,Height*.28f),P+FVector(5,-Bend,Height*.65f),P+FVector(-4,Bend*.5f,Height),.65f+(I%3)*.26f,2);
+            for(int J=0;J<2+I%3;++J)
+                Ellipsoid(P+FVector(-2,(J%2?1:-1)*(3+I%4),Height*(.25f+J*.15f)),{1.f,3.f+I%4,1.5f},2,8,4);
         }
         for(int I=0;I<15;++I)Ellipsoid({float((I%3)*14-14),float((I*13)%42-21),-29},{4,5,2},I%2?6:0,8,4);
     }

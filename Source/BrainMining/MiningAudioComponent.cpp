@@ -321,7 +321,10 @@ void UMiningAudioComponent::UpdateTools(float DeltaTime)
 	const bool bAllowed = CanPlay() && Mining.IsValid() && !Mining->IsInputSuspended() && !(Hall.IsValid() && Hall->IsInteractionOpen());
 	if (!bAllowed) { StopTools(); return; }
 	const auto* Bomb = GetOwner()->FindComponentByClass<UMiningBombToolComponent>();
-	const bool bDrill = IsMiningArea() && !Mining->IsEncounterBlocked() && Mining->bDrillMode && !(Bomb && Bomb->bEquipped);
+	// The TV passage belongs to Journey, not Mining. Keep its real motor while
+	// still suppressing gameplay tool loops in the museum and ending sequence.
+	const bool bToolArea = IsMiningArea() || (Hall.IsValid() && Hall->bReady && Hall->Areas.IsValidIndex(Hall->ActiveArea) && Hall->AreaKind(Hall->ActiveArea)==EMiningExperienceKind::Journey);
+	const bool bDrill = bToolArea && !Mining->IsEncounterBlocked() && Mining->bDrillMode && !(Bomb && Bomb->bEquipped);
 	const bool bContact = bDrill && Mining->IsMiningActive() && GetWorld()->GetTimeSeconds() < DrillContactUntil;
 	if (bDrill != bDrillRunning) Play(bDrill ? TEXT("S_DrillStart") : TEXT("S_DrillStop"), .4f);
 	SetToolLoop(TEXT("S_DrillIdle_Loop"), bDrill, bContact ? .12f : Mining->IsMiningActive() ? .3f : .12f, Mining->IsMiningActive() ? 1.12f : .9f);

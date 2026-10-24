@@ -43,7 +43,7 @@ void UMiningGUIHUDWidget::TickCollectionPickup(const FGeometry& Geometry,float D
         }
         PickupImage->SetBrushFromMaterial(PickupField->PickupMaterial);
         PickupImage->SetVisibility(ESlateVisibility::HitTestInvisible);PickupLabel->SetVisibility(ESlateVisibility::HitTestInvisible);
-        PickupLabel->SetText(FText::FromString((AMiningCollectible::IsMineralReward(ActivePickupId)?TEXT("灵感涌现 · "):TEXT("已收集 · "))+AMiningCollectible::ItemName(ActivePickupId)));
+        PickupLabel->SetText(FText::FromString(TEXT("已收集 · ")+AMiningCollectible::ItemName(ActivePickupId)));
     }
     if(!PickupField.IsValid())
     {ActivePickupId=INDEX_NONE;PickupImage->SetVisibility(ESlateVisibility::Collapsed);PickupLabel->SetVisibility(ESlateVisibility::Collapsed);return;}

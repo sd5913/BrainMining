@@ -97,7 +97,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
         };
         Health(false,R.RivalHP,110); Health(true,R.PlayerHP,755);
     }
-    if(R.Phase==ECardRoomPhase::Choosing || R.Phase==ECardRoomPhase::Victory)
+    if(R.Phase==ECardRoomPhase::Choosing)
     {
         const auto Confirm = ConfirmRect();
         const bool Reward = R.Phase == ECardRoomPhase::Victory;

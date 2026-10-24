@@ -1,6 +1,10 @@
 #include "MiningPackagedQA.h"
 #include "MiningExperienceSubsystem.h"
 #include "MiningComponent.h"
+#include "MiningAudioComponent.h"
+#include "Components/LightComponent.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
 #include "MiningBombToolComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/DynamicMeshComponent.h"
@@ -358,6 +362,14 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     else if(Op==TEXT("quit"))FPlatformMisc::RequestExit(false);
     else if(Op!=TEXT("state") && Op!=TEXT("actors") && Op!=TEXT("neurons") && Op!=TEXT("slate_ui"))Ok=false;
     Result->SetStringField(TEXT("id"),LastId);Result->SetBoolField(TEXT("ok"),Ok);
+    if(auto* Audio=Pawn->FindComponentByClass<UMiningAudioComponent>())Result->SetNumberField(TEXT("tool_audio_loops"),Audio->GetToolLoopCount());
+    TArray<TSharedPtr<FJsonValue>> LampState,MusicState;
+    TInlineComponentArray<ULightComponent*> Lamps(Pawn);
+    for(auto* Lamp:Lamps)
+    {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),Lamp->GetName());J->SetBoolField(TEXT("visible"),Lamp->IsVisible()&&!Lamp->bHiddenInGame);J->SetNumberField(TEXT("intensity"),Lamp->Intensity);LampState.Add(MakeShared<FJsonValueObject>(J));}
+    for(TObjectIterator<UAudioComponent> It;It;++It)if(It->GetWorld()==W && It->Sound && It->Sound->GetName().StartsWith(TEXT("M_")))
+    {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),It->Sound->GetName());J->SetBoolField(TEXT("playing"),It->IsPlaying());J->SetBoolField(TEXT("unpaused"),It->bIsUISound);MusicState.Add(MakeShared<FJsonValueObject>(J));}
+    Result->SetArrayField(TEXT("lamps"),LampState);Result->SetArrayField(TEXT("music"),MusicState);
     Result->SetNumberField(TEXT("autosaves"),Save->AutosavesCompleted);
     Result->SetBoolField(TEXT("save_in_flight"),Save->IsSaveInFlight());
     Result->SetNumberField(TEXT("snapshot_ms"),Save->LastSnapshotMilliseconds);

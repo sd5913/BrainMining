@@ -305,8 +305,9 @@ void ABrainMiningCharacter::ConfigureMiningLighting(float HeadlampBrightness, fl
 	MiningLight->SetUseInverseSquaredFalloff(false);
 	MiningLight->SetIntensityUnits(ELightUnits::Unitless);
 	MiningLight->SetLightFalloffExponent(2);
-	MiningLight->SetIntensity(FMath::Clamp(HeadlampBrightness, 0.f, 20.f));
-	MiningLight->SetRelativeLocation(FVector(-20, 0, 0));
+	MiningLight->SetIntensity(FMath::Clamp(HeadlampBrightness * 1.7f, 0.f, 20.f));
+	MiningLight->SetRelativeLocation(FVector(0, 0, 0));
+	MiningLight->SetHiddenInGame(false);
 	MiningLight->SetInnerConeAngle(12);
 	MiningLight->SetOuterConeAngle(46);
 	MiningLight->SetAttenuationRadius(1800);
@@ -317,7 +318,8 @@ void ABrainMiningCharacter::ConfigureMiningLighting(float HeadlampBrightness, fl
 	MiningFillLight->SetUseInverseSquaredFalloff(false);
 	MiningFillLight->SetIntensityUnits(ELightUnits::Unitless);
 	MiningFillLight->SetLightFalloffExponent(2);
-	MiningFillLight->SetIntensity(FMath::Clamp(FillBrightness, 0.f, 10.f));
+	MiningFillLight->SetIntensity(FMath::Clamp(FillBrightness * 1.7f, 0.f, 10.f));
+	MiningFillLight->SetHiddenInGame(false);
 	MiningFillLight->SetVisibility(true);
 }
 

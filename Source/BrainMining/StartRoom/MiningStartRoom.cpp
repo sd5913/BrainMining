@@ -58,6 +58,7 @@ void AMiningStartRoom::Tick(float DeltaSeconds)
     UpdateLookTargets(Cast<APlayerController>(Player->GetController()));
     if(bHeadlampUnlocked)return;
     const FTransform Frame=GetActorTransform();
+    if(Frame.InverseTransformPosition(Player->GetActorLocation()).X>650)bHeadlampUnlocked=true;
     for(TActorIterator<ADiggableRock> Rock(GetWorld());Rock;++Rock)
         if(Rock->ActorHasTag(TEXT("BM_StartRoom_ExitBlocker")) && Rock->SuccessfulCuts>0)
         {

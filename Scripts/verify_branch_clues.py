@@ -50,7 +50,8 @@ try:
   for depth in [0,90,180,260]:
    cmd('mine',actor=obj['host'],point=[front[i]-n[i]*depth for i in range(3)],radius=195);time.sleep(.3)
   time.sleep(.8);obj=item(Id);check(obj['released'],f'{Id} releases after soil removal')
-  check(len(cmd('actors',filter='BranchClue_'+str(Id))['actors'])<len(clues),f'{Id} clue disappears with excavated support')
+  check(len(cmd('actors',filter='BranchClue_'+str(Id))['actors'])<len(clues),f'{Id} surface clues give way with excavation')
+  if Id==16:check(bool(cmd('actors',filter='CollectionPersistentAroma')['actors']),'Food aroma survives removal of the surface soil')
   q=obj['position'];cmd('pose',eye=[q[i]+n[i]*155+(20 if i==2 else 0) for i in range(3)],target=q);time.sleep(.5);shot('released-'+str(Id))
   # The released collectible can still be falling while a screenshot is captured.
   # Re-aim at its current physical position; never move it or unlock it through GM.
@@ -60,6 +61,7 @@ try:
   else:raise AssertionError(f'{Id} cannot be collected by aiming')
   wait(lambda s:s['pickup_id']==-1 and s['collection_counts'][Id]==1)
   check(True,f'{Id} collected through normal aim/E interaction')
+  if Id==16:check(not cmd('actors',filter='CollectionPersistentAroma')['actors'],'Aroma stops after the actual food pickup')
  c.key('C');cmd('catalogue_rotate',item=22,yaw=0,pitch=0);time.sleep(.7);shot('phone-renamed');c.key('C')
  for spec in json.loads((root/'Config/ContourBoundaryChecks.json').read_text(encoding='utf8')):
   cmd('gm_jump',area=(spec['region']-1)*2);p=spec['point'];n=spec['normal']

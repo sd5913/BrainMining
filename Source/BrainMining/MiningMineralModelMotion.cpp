@@ -28,7 +28,7 @@ void AMiningCollectible::BuildEmergenceParts()
         }
         return;
     }
-    const int32 Count=ItemId==12?3:ItemId==13?25:ItemId==15?24:ItemId==16?6:ItemId==17?16:ItemId==18?5:ItemId==19?7:ItemId==21?48:ItemId==22?30:(ItemId==2||ItemId==8||ItemId==10)?8:0;
+    const int32 Count=ItemId==12?3:ItemId==13?25:ItemId==15?24:ItemId==16?6:ItemId==17?16:ItemId==18?5:ItemId==19?7:ItemId==21?108:ItemId==22?30:(ItemId==2||ItemId==8||ItemId==10)?8:0;
     if(!Count)return;
     // Reuse four materials; transform existing components during animation,
     // never rebuild dynamic meshes or allocate materials every frame.
@@ -73,7 +73,7 @@ void AMiningCollectible::BuildEmergenceParts()
         }
         else if(ItemId==21)
         {
-            // Sixteen low-poly passengers: head, coat and two joined legs.
+            // Thirty-six low-poly passengers: head, coat and two joined legs.
             P={-5,0,float(I%3==0?-4:I%3==1?-13:-24)};
             Scale=I%3==0?FVector(.06):I%3==1?FVector(.06,.08,.12):FVector(.045,.06,.10);
         }
@@ -112,7 +112,7 @@ void AMiningCollectible::AnimateEmergence(float Time)
     }
     if(ItemId==3)
     {
-        const bool Flying=bReleased || ActorHasTag(TEXT("CollectionPreview"));
+        const bool Flying=!ActorHasTag(TEXT("CollectionPreview"));
         const float Beat=Time*2*PI*2.6f;
         if(Flying)
         {
@@ -159,7 +159,7 @@ void AMiningCollectible::AnimateEmergence(float Time)
         }
         else if(ItemId==21)
         {
-            const int Person=I/3;const float T=FMath::Fmod(Time*.16f+Person/16.f,1.f);
+            const int Person=I/3;const float T=FMath::Fmod(Time*.16f+Person/36.f,1.f);
             const float Exit=FMath::SmoothStep(.08f,.8f,T);
             const FVector P(-4-Exit*80,((Person%5)-2)*4+Exit*((Person%7)-3)*12,Home.GetLocation().Z+FMath::Sin(Time*11+Person)*.7f);
             Part->SetRelativeLocation(P);Part->SetRelativeScale3D(Home.GetScale3D()*FMath::Min(FMath::SmoothStep(0.f,.08f,T),1-FMath::SmoothStep(.83f,1.f,T)));

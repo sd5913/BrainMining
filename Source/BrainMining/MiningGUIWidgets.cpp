@@ -606,7 +606,7 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
     MineralPanel->SetVisibility(!StartRoom||StartRoom->bPickaxeUnlocked?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
     const auto SetText = [](UTextBlock* Label, const FText& Text)
     { if (Label && !Label->GetText().EqualTo(Text)) Label->SetText(Text); };
-    for (int32 I = 0; I < 4; ++I) SetText(MineralCounts[I], FText::AsNumber(Wallet->GetMineralCount(Types[I])));
+    for (int32 I = 0; I < 4; ++I) SetText(MineralCounts[I], FText::AsNumber(Wallet->CollectedMineralTotals.FindRef(Types[I])));
     const int32 Level = FMath::Clamp(Progression->GetLevel(0), 0, 4);
     PickaxeUpgrade->SetUpgradeLevel(Level, true);
     SetText(PickaxeLevelLabel, FText::FromString(FString::Printf(TEXT("等级 %d"), Level)));
@@ -625,7 +625,7 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
             const int32 Owned = Wallet->GetMineralCount(Cost.Mineral);
             SetMineralIcon(Icon, Cost.Mineral);
             SetText(Label, FText::FromString(FMiningMineralCost::Name(Cost.Mineral)));
-            SetText(Count, FText::FromString(FString::Printf(TEXT("%d / %d"), Owned, Cost.Count)));
+            SetText(Count, FText::FromString(Owned>=Cost.Count?TEXT("✓"):FString::Printf(TEXT("还需%d"),Cost.Count-Owned)));
             Count->SetColorAndOpacity(Owned >= Cost.Count ? FLinearColor(.42f,.95f,.65f) : FLinearColor(.89f,.9f,.87f));
         }
         else

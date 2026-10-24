@@ -129,6 +129,8 @@ void AMiningCollectionField::MakeFeather(ADiggableRock* Rock,FVector Support,flo
 void AMiningCollectionField::TickClues(float Dt)
 {
     using namespace UE::Geometry;
+    for(auto& C:Clues)if(C.Actor.IsValid() && C.Actor->ActorHasTag(TEXT("CollectionPersistentAroma")))
+        for(AMiningCollectible* Item:Items)if(IsValid(Item) && Item->ItemId==16 && Item->bCollected){C.Actor->Destroy();break;}
     TSet<ADiggableRock*> Dirty;
     for(const auto& C:Clues) if(C.Actor.IsValid()&&C.Rock.IsValid()&&C.ObservedCuts!=C.Rock->SuccessfulCuts) Dirty.Add(C.Rock.Get());
     // One acceleration structure per edited rock, not one per feather every frame.
@@ -142,6 +144,7 @@ void AMiningCollectionField::TickClues(float Dt)
         {
             C.ObservedCuts=Rock->SuccessfulCuts;
             bool Supported=Covered[SupportIndex++];
+            if(C.Actor->ActorHasTag(TEXT("CollectionPersistentAroma")))continue;
             if(C.bFalling) continue;
             if(C.bLanded)
             {

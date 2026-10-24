@@ -22,6 +22,9 @@
 #include "Components/DynamicMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
+#include "UObject/UObjectIterator.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/PostProcessComponent.h"
 #include "EnhancedInputComponent.h"
@@ -134,7 +137,7 @@ bool AMiningCollectionField::InitializePlayer()
     for(int i=0;i<2;++i)
     {
         auto* Light=NewObject<UPointLightComponent>(this); AddInstanceComponent(Light); Light->RegisterComponent();
-        Light->SetWorldLocation(FVector(-160,i==0?-160:160,-9850)); Light->SetIntensity(i==0?1650:1100);
+        Light->SetWorldLocation(FVector(-160,i==0?160:-160,-9850)); Light->SetIntensity(i==0?5200:2600);
         Light->SetAttenuationRadius(700); Light->SetLightColor(i==0?FLinearColor(1,.84f,.65f):FLinearColor(.45f,.78f,1));
     }
     if(GEngine&&GEngine->GameViewport)
@@ -292,7 +295,7 @@ void AMiningCollectionField::Tick(float Dt)
             if(SelectedId==0 && PreviewToilet)
             {
                 const FQuat R=PreviewToilet->GetActorQuat();
-                PreviewToilet->SetActorLocation(FVector(0,0,-9990+FMath::Sin(PreviewAnimationTime)*2)-R.RotateVector(ToiletPreviewCenter*PreviewToilet->GetActorScale3D()));
+                PreviewToilet->SetActorLocation(FVector(0,0,-9990)-R.RotateVector(ToiletPreviewCenter*PreviewToilet->GetActorScale3D()));
             }
             Capture->CaptureScene();PreviewCaptureAge=0;
         }
@@ -407,7 +410,7 @@ TArray<int32> AMiningCollectionField::CatalogueIds() const
     {
         // Presentation order only: inventory, placement and save IDs stay stable.
         // Room rewards follow the passage that leads into their room.
-        const TArray<int32> JourneyOrder={12,13,16,2,1,17,4,5,14,15,18,19,3,9,6,7,11,20,0,8,21,10,22};
+        const TArray<int32> JourneyOrder={12,13,14,15,16,2,1,17,4,5,18,19,3,9,6,7,11,20,0,8,21,10,22};
         Result.Sort([&](int32 A,int32 B){return JourneyOrder.IndexOfByKey(A)<JourneyOrder.IndexOfByKey(B);});
     }
     return Result;
@@ -429,6 +432,11 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         Player->SetIgnoreLookInput(true); Player->SetIgnoreMoveInput(true);
         if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->ResetFlightInput(); Move->StopMovementImmediately(); }
         Player->GetPawn()->DisableInput(Player);
+        // Keep already-playing music at its current playback position while gameplay pauses.
+        CatalogueMusic.Reset();
+        for(TObjectIterator<UAudioComponent> It;It;++It)
+            if(It->GetWorld()==GetWorld() && It->Sound && !It->bIsUISound && It->Sound->GetName().StartsWith(TEXT("M_")))
+            { It->SetUISound(true); CatalogueMusic.Add(*It); }
         Player->SetPause(true);
         FInputModeUIOnly Mode;
         if(CatalogueWidget)
@@ -450,7 +458,10 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
     else
     {
         if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->StopInteraction(TEXT("EmptyCollection"));
-        Player->SetPause(false); Player->ResetIgnoreLookInput(); Player->ResetIgnoreMoveInput();
+        Player->SetPause(false);
+        for(auto& Music:CatalogueMusic)if(Music.IsValid())Music->SetUISound(false);
+        CatalogueMusic.Reset();
+        Player->ResetIgnoreLookInput(); Player->ResetIgnoreMoveInput();
         Player->GetPawn()->EnableInput(Player); Player->bShowMouseCursor=false; Player->SetInputMode(FInputModeGameOnly());
         if(CatalogueWidget)CatalogueWidget->SetVisibility(ESlateVisibility::Collapsed);
         if(View) View->SetVisibility(EVisibility::HitTestInvisible);

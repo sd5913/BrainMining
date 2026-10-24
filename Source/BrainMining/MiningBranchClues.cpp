@@ -32,12 +32,12 @@ void AMiningCollectionField::SpawnBranchClues(const FMiningCollectionPlacement& 
     if(auto* Flat=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_BranchClueFlat")))
         for(int I:{3,5}){auto* M=UMaterialInstanceDynamic::Create(Flat,this);M->SetVectorParameterValue(TEXT("Tint"),I==3?FLinearColor(.009f,.012f,.017f):FLinearColor(.21f,.018f,.035f));Materials[I]=M;}
     // Every anchor follows the actual wall, and disappears when its supporting soil is removed.
-    auto Anchor=[&](FVector Local)
+    auto Anchor=[&](FVector Local,bool Snap=true)
     {
         FHitResult Hit;
         const auto& Frame=P.ClueTransform;
         FVector Surface=Local;FQuat Rotation=FQuat::Identity;
-        if(P.HostRock->ActorLineTraceSingle(Hit,Frame.TransformPosition(Local-FVector(100,0,0)),Frame.TransformPosition(Local+FVector(160,0,0)),ECC_Visibility,FCollisionQueryParams(NAME_None,true)))
+        if(Snap && P.HostRock->ActorLineTraceSingle(Hit,Frame.TransformPosition(Local-FVector(100,0,0)),Frame.TransformPosition(Local+FVector(160,0,0)),ECC_Visibility,FCollisionQueryParams(NAME_None,true)))
         {
             Surface=Frame.InverseTransformPosition(Hit.ImpactPoint);
             Rotation=FRotationMatrix::MakeFromX(-Frame.InverseTransformVectorNoScale(Hit.ImpactNormal)).ToQuat();
@@ -63,14 +63,17 @@ void AMiningCollectionField::SpawnBranchClues(const FMiningCollectionPlacement& 
         auto* C=NewObject<UDynamicMeshComponent>(A);A->AddInstanceComponent(C);C->SetupAttachment(A->GetRootComponent());
         C->SetCollisionEnabled(ECollisionEnabled::NoCollision);C->SetCastShadow(false);C->SetMaterial(0,Material);C->SetMesh(MoveTemp(Mesh));C->RegisterComponent();return C;
     };
+    const FVector Buried=P.ClueTransform.InverseTransformPosition(P.Transform.GetLocation());
     if(P.ItemId==16)
     {
         auto* A=Anchor(FVector::ZeroVector);
         if(auto* Vent=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_BranchVent")))
         {
             auto* D=NewObject<UDecalComponent>(A);A->AddInstanceComponent(D);D->SetupAttachment(A->GetRootComponent());
-            D->SetDecalMaterial(Vent);D->DecalSize=FVector(25,16,12);D->SetRelativeLocation(FVector(8,0,0));D->SetFadeScreenSize(.0001f);D->RegisterComponent();
+            D->SetDecalMaterial(Vent);D->DecalSize=FVector(25,23,23);D->SetRelativeLocationAndRotation(FVector(8,0,0),FRotator(0,0,90));D->SetFadeScreenSize(.0001f);D->RegisterComponent();
         }
+        A=Anchor(FVector::ZeroVector,false);
+        A->Tags.Add(TEXT("CollectionPersistentAroma"));
         auto* Fade=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_BranchAroma"));
         if(Fade)
         {
@@ -78,8 +81,14 @@ void AMiningCollectionField::SpawnBranchClues(const FMiningCollectionPlacement& 
             FDynamicMesh3 Mesh;Mesh.EnableAttributes();auto* UV=Mesh.Attributes()->PrimaryUV();
             for(int J=0;J<=16;++J)for(int K=0;K<2;++K)
             {
-                float T=J/16.f;Mesh.AppendVertex(FVector3d(-12-T*100,(K-.5f)*100,3+T*155));
-                UV->AppendElement(FVector2f(K,T));
+                float T=J/16.f;
+                // The first half travels out of the meat's soil pocket; the second curls upwards.
+                const FVector Center=T<.55f ? FMath::Lerp(Buried,FVector(-8,0,8),T/.55f) : FVector(-8-(T-.55f)*170,0,8+(T-.55f)*440);
+                Mesh.AppendVertex(FVector3d(Center+FVector(0,(K-.5f)*(45+T*95),0)));
+                // Reserve most of the smoke fade for the visible plume, rather
+                // than spending it inside the still-opaque soil.
+                const float V=T<.55f?T/.55f*.2f:.2f+(T-.55f)/.45f*.8f;
+                UV->AppendElement(FVector2f(K,V));
             }
             for(int J=0;J<16;++J)for(FIndex3i V:{FIndex3i(J*2,J*2+2,J*2+1),FIndex3i(J*2+1,J*2+2,J*2+3)})
             {int T=Mesh.AppendTriangle(V);UV->SetTriangle(T,V);}
@@ -89,9 +98,10 @@ void AMiningCollectionField::SpawnBranchClues(const FMiningCollectionPlacement& 
     }
     else if(P.ItemId==17)
     {
-        for(int I=0;I<6;++I)
+        for(int I=0;I<15;++I)
         {
-            auto* A=Anchor(FVector(0,-82+I*32,-26+(I*37)%63));
+            const float Depth=I<5?0.f:(I-4)/11.f;
+            auto* A=Anchor(Buried*Depth+FVector(0,-75+(I*37)%151,-28+(I*23)%58),I<5);
             // A scallop shell narrows to a hinge, with a broad scalloped fan and radial ridges.
             FDynamicMesh3 Mesh;Mesh.EnableAttributes();constexpr int Segments=48,Rings=8;
             Mesh.AppendVertex(FVector3d(-2,0,-13));
@@ -111,23 +121,50 @@ void AMiningCollectionField::SpawnBranchClues(const FMiningCollectionPlacement& 
     }
     else if(P.ItemId==18)
     {
-        for(int I=0;I<9;++I)
+        for(int I=0;I<21;++I)
         {
-            auto* A=Anchor(FVector(0,-90+(I*47)%183,-35+(I*29)%76));
+            const float Depth=I<7?0.f:(I-6)/15.f;
+            auto* A=Anchor(Buried*Depth+FVector(0,-80+(I*47)%163,-30+(I*29)%66),I<7);
             Part(A,Cylinder,FVector(-1,0,0),FVector(12+(I%3)*2,12+(I%3)*2,2),2,FRotator(0,90,90));
             Part(A,Cube,FVector(-2.4f,0,0),FVector(.6f,3,5),0,FRotator(0,0,I*23));
         }
     }
     else if(P.ItemId==19)
     {
-        for(int I=0;I<4;++I)
+        // Thin citrus slices: distinct rind, pale pith and eight wedge-shaped segments.
+        for(int I=0;I<10;++I)
         {
-            auto* A=Anchor(FVector(0,-50+I*34,-20+I%2*37));
-            Part(A,Sphere,FVector(0,0,0),FVector(1.8f,22+I*7,12+I*4),5);
-            if(I<2)
+            const float Depth=I<3?0.f:(I-2)/8.f;
+            auto* A=Anchor(Buried*Depth+FVector(0,-48+(I*41)%97,-22+(I*29)%47),I<3);
+            const FRotator Face(0,90,90);
+            const bool Lime=I%3==1;
+            auto CitrusMaterial=[&](FLinearColor Tint)
+            {auto* M=UMaterialInstanceDynamic::Create(Base,A);M->SetVectorParameterValue(TEXT("Tint"),Tint);M->SetScalarParameterValue(TEXT("Metallic"),0.f);M->SetScalarParameterValue(TEXT("Roughness"),.72f);return M;};
+            auto* Rind=CitrusMaterial(Lime?FLinearColor(.26f,.46f,.025f):FLinearColor(.82f,.57f,.025f));
+            auto* Pith=CitrusMaterial(Lime?FLinearColor(.83f,.94f,.48f):FLinearColor(1.f,.88f,.44f));
+            auto* Flesh=CitrusMaterial(Lime?FLinearColor(.33f,.59f,.035f):FLinearColor(.97f,.64f,.06f));
+            Part(A,Cylinder,FVector(-1,0,0),FVector(29,29,4.5f),2,Face)->SetMaterial(0,Rind);
+            Part(A,Cylinder,FVector(-3.4f,0,0),FVector(25.5f,25.5f,1),0,Face)->SetMaterial(0,Pith);
+            FDynamicMesh3 Segments;Segments.EnableAttributes();
+            for(int J=0;J<8;++J)
             {
-                Part(A,Cylinder,FVector(-2,0,3),FVector(23,23,3),2,FRotator(0,90,90));
-                for(int J=0;J<6;++J){float Angle=J*PI/3;Line(A,FVector(-4,0,3),FVector(-4,9*FMath::Cos(Angle),3+9*FMath::Sin(Angle)),.8f,0);}
+                const float Angle=J*PI/4+I*.37f;
+                const int32 Tip=Segments.AppendVertex(FVector3d(-6.f,1.1f*FMath::Cos(Angle),1.1f*FMath::Sin(Angle)));
+                for(int K=0;K<=10;++K)
+                {
+                    const float A0=Angle+(K/10.f-.5f)*(PI/4-.075f);
+                    const float Radius=11.65f- .6f*FMath::Pow(FMath::Abs(K/5.f-1.f),8.f);
+                    const int32 V=Segments.AppendVertex(FVector3d(-6.f,Radius*FMath::Cos(A0),Radius*FMath::Sin(A0)));
+                    if(K>0)Segments.AppendTriangle(Tip,V,V-1);
+                }
+            }
+            Segments.ReverseOrientation();
+            Surface(A,MoveTemp(Segments),Flesh);
+            if(I%2==0)
+            {
+                Part(A,Sphere,FVector(-2,16,-10),FVector(8,9,9),5);
+                Line(A,FVector(-2,16,-6),FVector(-2,18,5),.8f,1);
+                Line(A,FVector(-2,18,5),FVector(-2,23,8),.7f,1);
             }
         }
     }

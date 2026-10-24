@@ -200,4 +200,24 @@ bool FCollectionEchoTest::RunTest(const FString& Parameters)
     }
     return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSubwayRevealTest,"BrainMining.Collection.SubwayRevealBeforePickup",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FSubwayRevealTest::RunTest(const FString&)
+{
+    UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    auto* Train=World->SpawnActor<AMiningCollectible>();Train->BuildModel(21);
+    Train->Exposure=.39f;Train->AnimateEmergence(.5f);
+    TestFalse(TEXT("No crowd below reveal threshold"),Train->EmergenceParts[0]->IsVisible());
+    Train->Exposure=.4f;Train->AnimateEmergence(1.f);Train->AnimateEmergence(1.6f);
+    TestTrue(TEXT("Doors slide at 40 percent exposure before release"),Train->EmergenceParts[108]->GetRelativeLocation().Y<-11.f);
+    TestFalse(TEXT("People wait until doors are open"),Train->EmergenceParts[0]->IsVisible());
+    Train->AnimateEmergence(2.4f);
+    TestTrue(TEXT("Crowd emerges while the train is still below pickup exposure"),Train->EmergenceParts[0]->IsVisible());
+    TestFalse(TEXT("Opening doors does not bypass 70 percent pickup gate"),Train->IsCollectible());
+    Train->bReleased=true;TestTrue(TEXT("Already-open released train can be collected"),Train->IsCollectible());
+    Train->bReleased=false;Train->Exposure=0;Train->BuildModel(21);Train->Exposure=1;Train->bReleased=true;Train->AnimateEmergence(4.f);
+    TestFalse(TEXT("A single large excavation cannot collect train before opening animation"),Train->IsCollectible());
+    Train->AnimateEmergence(5.4f);TestTrue(TEXT("Large excavation unlocks pickup after doors and crowd appear"),Train->IsCollectible());
+    return true;
+}
 #endif

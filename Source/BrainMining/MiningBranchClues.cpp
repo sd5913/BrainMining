@@ -1,4 +1,5 @@
 #include "MiningCollection.h"
+#include "MiningAromaComponent.h"
 #include "DiggableRock.h"
 #include "BrainMiningFonts.h"
 #include "Components/StaticMeshComponent.h"
@@ -74,34 +75,18 @@ void AMiningCollectionField::SpawnBranchClues(const FMiningCollectionPlacement& 
         }
         A=Anchor(FVector::ZeroVector,false);
         A->Tags.Add(TEXT("CollectionPersistentAroma"));
-        auto* Fade=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_BranchAroma"));
-        if(Fade)
-        {
-            // A continuous soft steam field fades out well before the mesh boundary.
-            FDynamicMesh3 Mesh;Mesh.EnableAttributes();auto* UV=Mesh.Attributes()->PrimaryUV();
-            for(int J=0;J<=16;++J)for(int K=0;K<2;++K)
-            {
-                float T=J/16.f;
-                // The first half travels out of the meat's soil pocket; the second curls upwards.
-                const FVector Center=T<.55f ? FMath::Lerp(Buried,FVector(-8,0,8),T/.55f) : FVector(-8-(T-.55f)*170,0,8+(T-.55f)*440);
-                Mesh.AppendVertex(FVector3d(Center+FVector(0,(K-.5f)*(45+T*95),0)));
-                // Reserve most of the smoke fade for the visible plume, rather
-                // than spending it inside the still-opaque soil.
-                const float V=T<.55f?T/.55f*.2f:.2f+(T-.55f)/.45f*.8f;
-                UV->AppendElement(FVector2f(K,V));
-            }
-            for(int J=0;J<16;++J)for(FIndex3i V:{FIndex3i(J*2,J*2+2,J*2+1),FIndex3i(J*2+1,J*2+2,J*2+3)})
-            {int T=Mesh.AppendTriangle(V);UV->SetTriangle(T,V);}
-            auto* M=UMaterialInstanceDynamic::Create(Fade,A);
-            Surface(A,MoveTemp(Mesh),M);
-        }
+        auto* Steam=NewObject<UMiningAromaComponent>(A);A->AddInstanceComponent(Steam);
+        Steam->SourceLocal=Buried;Steam->RegisterComponent();
     }
     else if(P.ItemId==17)
     {
-        for(int I=0;I<15;++I)
+        // Six staggered soil bands, with seven shells per band. Supports stay
+        // behind each fan so its full front can emerge before the support is cut.
+        for(int I=0;I<42;++I)
         {
-            const float Depth=I<5?0.f:(I-4)/11.f;
-            auto* A=Anchor(Buried*Depth+FVector(0,-75+(I*37)%151,-28+(I*23)%58),I<5);
+            const int Band=I/7;const float Depth=Band/6.f;
+            auto* A=Anchor(Buried*Depth+FVector(Band?((I%3)-1)*12:0,-85+(I*47)%171,-48+(I*31)%97),Band==0);
+            Clues.Last().Support+=FVector(Band?12:0,0,0);
             // A scallop shell narrows to a hinge, with a broad scalloped fan and radial ridges.
             FDynamicMesh3 Mesh;Mesh.EnableAttributes();constexpr int Segments=48,Rings=8;
             Mesh.AppendVertex(FVector3d(-2,0,-13));

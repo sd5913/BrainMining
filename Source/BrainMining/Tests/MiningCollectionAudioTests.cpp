@@ -89,6 +89,12 @@ bool FCollectionPickupAudioTest::RunTest(const FString&)
         TestFalse(TEXT("Even fully exposed collectibles require release before pickup"), Field->TryCollectTarget());
         TestEqual(TEXT("Failed pickup stays silent"), Audio->GetLastPlayedSound(), PreviousSound);
         Item->bReleased = true;
+        if(ItemId==21)
+        {
+            Item->AnimateEmergence(0);
+            TestFalse(TEXT("Train cannot be picked up before its doors open"),Field->TryCollectTarget());
+            Item->AnimateEmergence(1.4f);
+        }
         Field->bCatalogueOpen = true;
         TestFalse(TEXT("Catalogue cannot collect in the background"), Field->TryCollectTarget());
         Field->bCatalogueOpen = false;

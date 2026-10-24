@@ -33,7 +33,7 @@ def ray(ts,o,d):
   if t>=0:hits.append(t)
  return sorted(set(round(t,3) for t in hits))
 try:
- segment('/Game/Subtitles/DA_LeaveStartRoom',['哦！亮晶晶的地方说明一定有矿石 赶紧挖挖看'])
+ segment('/Game/Subtitles/DA_LeaveStartRoom',['亮晶晶的地方说明一定有矿石 赶紧挖挖看'])
  for Id,text in {12:'收集到了25个铜矿！灵感涌现！',13:'收集到了15个铁矿！灵感涌现！',14:'收集到了10个孔雀石！灵感涌现！',15:'收集到了5个钻石！灵感涌现！',22:'一句话很轻，无数句话堆在一起，却能改变世界，也能压垮一个人'}.items():segment(f'/Game/Subtitles/Collectibles/DA_CollectiblePickup_{Id:02}',[text])
  path='/Game/CollectionPrototype/Materials/M_CollectionSilhouette';backup(path);m=unreal.load_asset(path)
  changed=0

@@ -39,7 +39,7 @@ try:
  for Id in [12,13,14,15,3,0,8,17,19,21,22]:
   cmd('catalogue_owned_fixture',item=Id);cmd('catalogue_rotate',item=Id,yaw=0,pitch=0);time.sleep(.7);shot('preview-'+str(Id))
   if Id==3:
-   one=cmd('state')['catalogue_motion'];time.sleep(.4);two=cmd('state')['catalogue_motion'];check(one[1:]==two[1:],'Inspection pigeon wings remain still')
+   one=cmd('state')['catalogue_motion'];time.sleep(.4);two=cmd('state')['catalogue_motion'];check(one[1:]!=two[1:],'Inspection pigeon wings flap gently')
   if Id==14:r['catalogue_description']=cmd('state')['catalogue_description']
  c.key('C');s=cmd('state');check(not any(x['unpaused'] for x in s['music']),'Closing catalogue restores normal music pause policy')
  for area in [0,2,4]:

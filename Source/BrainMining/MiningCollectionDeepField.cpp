@@ -265,15 +265,8 @@ void AMiningCollectionField::TickAmbient(float Dt)
                 for(int i=0;i<8;++i)
                 {
                     auto* Bird=GetWorld()->SpawnActor<AMiningCollectible>(BirdPath[0],FRotator::ZeroRotator); Bird->Tags.Add(TEXT("CollectionFlyingBird")); Spawned.Add(Bird);
-                    Bird->BuildModel(3,true); Bird->SetActorScale3D(FVector(.25f)); Bird->SetActorEnableCollision(false);
+                    Bird->BuildModel(3); Bird->SetActorScale3D(FVector(.25f)); Bird->SetActorEnableCollision(false);
                     FCollectionBird Flight; Flight.Actor=Bird; Flight.Delay=i*.16f;
-                    for(int Side:{-1,1})
-                    {
-                        auto* Wing=NewObject<UStaticMeshComponent>(Bird); Bird->AddInstanceComponent(Wing); Wing->SetupAttachment(Bird->GetRootComponent());
-                        Wing->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube"))); Wing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-                        Wing->SetMaterial(0,Bird->Model->GetMaterial(6)); Wing->SetRelativeLocation(FVector(4,Side*32,-2)); Wing->SetRelativeScale3D(FVector(.42,.7,.045)); Wing->RegisterComponent();
-                        if(Side<0) Flight.LeftWing=Wing; else Flight.RightWing=Wing;
-                    }
                     Birds.Add(Flight);
                 }
                 Toast=TEXT("鸟群飞出了洞穴，巢里还留着一只歪头的小家伙"); ToastRemaining=6;
@@ -293,7 +286,8 @@ void AMiningCollectionField::TickAmbient(float Dt)
         const FVector Start=BirdPath[Segment-1],End=BirdPath[Segment],Direction=(End-Start).GetSafeNormal();
         B.Actor->SetActorLocation(Start+Direction*Distance+FVector(0,FMath::Sin(Age*3+i)*4,FMath::Sin(Age*5+i)*5));
         B.Actor->SetActorRotation((-Direction).Rotation());
-        const float Flap=FMath::Sin(Age*23)*55;
+        B.Actor->AnimateEmergence(Age);
+        const float Flap=FMath::Sin(Age*10.36f)*48;
         if(B.LeftWing.IsValid()) B.LeftWing->SetRelativeRotation(FRotator(0,0,Flap));
         if(B.RightWing.IsValid()) B.RightWing->SetRelativeRotation(FRotator(0,0,-Flap));
     }

@@ -38,6 +38,8 @@
 #include "CardRoomPlayer.h"
 #include "NiagaraComponent.h"
 #include "HeavenToilet.h"
+#include "HeavenToiletWater.h"
+#include "Engine/PostProcessVolume.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Subtitles/SubtitleSubsystem.h"
 #include "EngineUtils.h"
@@ -370,6 +372,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     for(TObjectIterator<UAudioComponent> It;It;++It)if(It->GetWorld()==W && It->Sound && It->Sound->GetName().StartsWith(TEXT("M_")))
     {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),It->Sound->GetName());J->SetBoolField(TEXT("playing"),It->IsPlaying());J->SetBoolField(TEXT("unpaused"),It->bIsUISound);MusicState.Add(MakeShared<FJsonValueObject>(J));}
     Result->SetArrayField(TEXT("lamps"),LampState);Result->SetArrayField(TEXT("music"),MusicState);
+    if(auto* Water=First<AHeavenToiletWater>(W))if(Water->InteriorExposure)Result->SetNumberField(TEXT("heaven_exposure_weight"),Water->InteriorExposure->BlendWeight);
     Result->SetNumberField(TEXT("autosaves"),Save->AutosavesCompleted);
     Result->SetBoolField(TEXT("save_in_flight"),Save->IsSaveInFlight());
     Result->SetNumberField(TEXT("snapshot_ms"),Save->LastSnapshotMilliseconds);
@@ -575,7 +578,15 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
                 TArray<TSharedPtr<FJsonValue>> Hosts;for(const auto& Host:Item->CoveringRocks)if(Host)Hosts.Add(MakeShared<FJsonValueString>(Host->GetPathName()));
                 A->SetArrayField(TEXT("hosts"),Hosts);
             }
-            if(auto* Item=Cast<AMiningCollectible>(*It)){A->SetNumberField(TEXT("item"),Item->ItemId);A->SetBoolField(TEXT("released"),Item->bReleased);A->SetBoolField(TEXT("collected"),Item->bCollected);A->SetStringField(TEXT("host"),Item->HostRock?Item->HostRock->GetName():TEXT(""));}
+            if(auto* Item=Cast<AMiningCollectible>(*It)){A->SetNumberField(TEXT("item"),Item->ItemId);
+                A->SetNumberField(TEXT("exposure"),Item->Exposure);A->SetBoolField(TEXT("pickup_ready"),Item->IsCollectible());
+                if(Item->ItemId==21)
+                {
+                    int Visible=0;for(int I=0;I<FMath::Min(108,Item->EmergenceParts.Num());++I)Visible+=Item->EmergenceParts[I]->IsVisible();
+                    A->SetNumberField(TEXT("crowd_parts"),Visible);
+                    if(Item->EmergenceParts.Num()>108)A->SetArrayField(TEXT("door"),Vec(Item->EmergenceParts[108]->GetRelativeLocation()));
+                }
+                A->SetBoolField(TEXT("released"),Item->bReleased);A->SetBoolField(TEXT("collected"),Item->bCollected);A->SetStringField(TEXT("host"),Item->HostRock?Item->HostRock->GetName():TEXT(""));}
             Actors.Add(MakeShared<FJsonValueObject>(A));
         }
         Result->SetArrayField(TEXT("actors"),Actors);

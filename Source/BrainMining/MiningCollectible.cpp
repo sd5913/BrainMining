@@ -157,7 +157,7 @@ FString AMiningCollectible::Clue(int32 Id)
 void AMiningCollectible::BuildModel(int32 Id,bool Flying)
 {
     for(auto Part:EmergenceParts)if(IsValid(Part))Part->DestroyComponent();
-    EmergenceParts.Reset();EmergenceHomes.Reset();
+    EmergenceParts.Reset();EmergenceHomes.Reset();EmergenceDoorStartTime=-1;bSubwayPickupReady=false;
     Model->SetRelativeLocationAndRotation(FVector::ZeroVector,FRotator::ZeroRotator);
     Outline->SetRelativeLocationAndRotation(FVector::ZeroVector,FRotator::ZeroRotator);
     ItemId=FMath::Clamp(Id,0,ItemTypeCount-1);
@@ -524,6 +524,11 @@ void AMiningCollectible::Release()
             for(int Sample=1;Sample<28;++Sample)Clear &= !Covered[Index*28+Sample];
             if(Clear){Position=Candidates[Index];break;}
         }
+    }
+    if(ItemId==3)
+    {
+        FVector Eye;FRotator View;
+        if(auto* PC=GetWorld()->GetFirstPlayerController()){PC->GetPlayerViewPoint(Eye,View);PopDirection=(Eye-Position).GetSafeNormal();SetActorRotation((-PopDirection).Rotation());}
     }
     SetActorLocation(Position);bReleased=true;
     if(!Clear || ItemId==4 || ItemId==9 || ActorHasTag(TEXT("BM_BombGateReward")) || ActorHasTag(TEXT("BM_ExcavationReward")))

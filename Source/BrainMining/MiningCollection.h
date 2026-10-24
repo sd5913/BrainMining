@@ -84,7 +84,7 @@ public:
     static int32 UnlockThreshold(int32 Id);
     static constexpr float PickupExposure = .70f;
     static bool IsPickupEligible(float Value) { return FMath::IsFinite(Value) && Value >= PickupExposure; }
-    bool IsCollectible() const { return bReleased && !bCollected; }
+    bool IsCollectible() const { return bReleased && !bCollected && (ItemId!=21 || bSubwayPickupReady); }
     UPROPERTY(VisibleAnywhere) TObjectPtr<UBoxComponent> Body;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UDynamicMeshComponent> Model;
     UPROPERTY() TObjectPtr<UDynamicMeshComponent> Outline;
@@ -110,6 +110,8 @@ public:
     UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> EmergenceParts;
     TArray<FTransform> EmergenceHomes;
     bool bEchoPresentation=false;
+    float EmergenceDoorStartTime=-1;
+    bool bSubwayPickupReady=false;
 };
 
 UCLASS()

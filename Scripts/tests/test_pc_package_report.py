@@ -64,13 +64,13 @@ class PackageReportTests(unittest.TestCase):
     def test_zip_roundtrip_and_existing_output_protection(self):
         archive = self.root / "Windows"
         archive.mkdir()
-        binary = archive / "BrainMining.exe"
+        binary = archive / "WOoOW.exe"
         binary.write_bytes(b"test payload" * 100)
         output = self.root / "game.zip"
         result = pc_report.create_verified_zip(archive, output, [binary])
         self.assertEqual(result[0]["bytes"], 1200)
         with zipfile.ZipFile(output) as package:
-            self.assertEqual(package.read("Windows/BrainMining.exe"), binary.read_bytes())
+            self.assertEqual(package.read("Windows/WOoOW.exe"), binary.read_bytes())
         with self.assertRaises(ValueError):
             pc_report.create_verified_zip(archive, output, [binary])
         with self.assertRaises(ValueError):
@@ -79,7 +79,10 @@ class PackageReportTests(unittest.TestCase):
     def make_package(self):
         archive = self.root / "Windows"
         archive.mkdir()
-        (archive / "BrainMining.exe").write_bytes(b"launcher")
+        (archive / "WOoOW.exe").write_bytes(b"launcher")
+        binary = archive / "BrainMining/Binaries/Win64/WOoOW-Win64-Shipping.exe"
+        binary.parent.mkdir(parents=True)
+        binary.write_bytes(b"game")
         write_toc(archive / "Game.utoc")
         (archive / "Game.ucas").write_bytes(bytes(16))
         report = self.root / "report"
@@ -99,7 +102,7 @@ class PackageReportTests(unittest.TestCase):
         self.assertEqual(result["gameplay_review"], "pending")
         self.assertEqual(result["unique_compressed_block_bytes"], 7)
         self.assertEqual(sum(result["folders"].values()), 7)
-        self.assertEqual(result["installed_bytes"], sum(path.stat().st_size for path in archive.iterdir()))
+        self.assertEqual(result["installed_bytes"], sum(path.stat().st_size for path in archive.rglob("*") if path.is_file()))
 
     def test_missing_dynamic_asset_blocks_delivery(self):
         archive, report = self.make_package()

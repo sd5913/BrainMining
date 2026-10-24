@@ -52,7 +52,7 @@ $argsUat = @(
     "$EngineRoot/Engine/Binaries/DotNET/AutomationTool/AutomationTool.dll",
     "-ScriptsForProject=$projectRoot/BrainMining.uproject", '-NoCompile', '-Utf8Output',
     'BuildCookRun', "-project=$projectRoot/BrainMining.uproject", '-NoP4', '-unattended',
-    '-target=BrainMining', '-platform=Win64', '-clientconfig=Shipping',
+    '-target=WOoOW', '-platform=Win64', '-clientconfig=Shipping',
     '-stage', '-pak', '-iostore', '-compressed',
     '-prereqs', '-nodebuginfo', '-archive', "-archivedirectory=$OutputDirectory",
     '-map=/Game/MainGame/Maps/Lvl_MainGame+/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo',
@@ -97,7 +97,7 @@ try {
     [Environment]::SetEnvironmentVariable('UE-LocalDataCachePath', $previousCache, 'Process')
     [Environment]::SetEnvironmentVariable('uebp_LogFolder', $previousLogs, 'Process')
 }
-if (-not (Test-Path "$OutputDirectory/Windows/BrainMining.exe")) { throw "Packaged launcher missing: $OutputDirectory" }
+if (-not (Test-Path "$OutputDirectory/Windows/WOoOW.exe")) { throw "Packaged launcher missing: $OutputDirectory" }
 # Verify the actual container, not just source dependencies: native string loads are
 # invisible to map reference gathering and can otherwise disappear in Shipping.
 $containerList = "$report/container-files.csv"
@@ -219,4 +219,4 @@ $stagedMovie = Join-Path $OutputDirectory "Windows/BrainMining/$movie"
 if (-not (Test-Path -LiteralPath $stagedMovie) -or (Get-FileHash -LiteralPath $stagedMovie).Hash -ne (Get-FileHash -LiteralPath (Join-Path $projectRoot $movie)).Hash) {
     throw 'The staged ending movie is missing or differs from the current silent source.'
 }
-Write-Host "MainGame Shipping package: $OutputDirectory/Windows/BrainMining.exe"
+Write-Host "MainGame Shipping package: $OutputDirectory/Windows/WOoOW.exe"

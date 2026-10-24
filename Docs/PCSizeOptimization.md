@@ -42,7 +42,7 @@ SHA-256：`a0ff44bcf951043d9736cf90ff6ac04ed5a7d86ca682be4850b10e8fd1326082`。
 pwsh -NoProfile -File Scripts/Package_PC_SizeOptimized.ps1
 ```
 
-默认顺序生成 Baseline 与 Optimized 两个 Shipping 包，每个包都重新构建和 Cook，独立使用 Cook、Stage、Archive、日志和验证目录。默认引擎为 `E:/UE5/UE_5.8`，可用 `-EngineRoot` 指定。
+默认只生成 Optimized Shipping 包；显式传入 `-Mode Both` 才进行双构建对比。每个包独立使用 Cook、Stage、Archive、日志和验证目录。默认引擎为 `E:/UE5/UE_5.8`，可用 `-EngineRoot` 指定。
 
 ```powershell
 pwsh -NoProfile -File Scripts/Package_PC_SizeOptimized.ps1 -PlanOnly
@@ -52,7 +52,7 @@ pwsh -NoProfile -File Scripts/Package_PC_SizeOptimized.ps1 -Mode Optimized
 
 `-PlanOnly` 只解析路径、检查原生材质入口并保存打包参数，不启动引擎，不表示 Cook 或打包成功。每次使用新的 RunName；失败产物不会自动删除。打包仍要求至少 6 GiB 可用物理内存、8 GiB 可用提交空间，且没有其他 Unreal 工作负载。不要关闭资源保护来强行启动。
 
-输出位于 `Builds/PCSize-时间戳/{Baseline,Optimized}`。每个目录包含 Windows 文件夹、完整 ZIP 及 SHA-256。报告位于 `Saved/Validation/PCSize/PCSize-时间戳`。
+日常交付仅输出 `Builds/PCSize-时间戳/挖哦1.4.zip`，压缩包内为 `Windows/WOoOW.exe`。不再套 Optimized 目录，也不在交付目录保留未压缩包。未压缩验证构建、Cook、Stage、SHA-256 和报告均在 `Saved/Validation/PCSize/PCSize-时间戳/Optimized`。显式双构建对比才分别使用 Baseline/Optimized 交付子目录。
 
 ## 优化内容
 

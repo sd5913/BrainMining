@@ -29,7 +29,7 @@ if (-not $PackagedRoot -and -not $EngineRoot) {
 }
 if ($PackagedRoot) {
     $executable = ''
-    foreach ($name in @('BrainMining.exe', 'BrainMining-Win64-Development.exe', 'BrainMining-Win64-Shipping.exe')) {
+    foreach ($name in @('WOoOW.exe', 'WOoOW-Win64-Development.exe', 'WOoOW-Win64-Shipping.exe', 'BrainMining.exe', 'BrainMining-Win64-Development.exe', 'BrainMining-Win64-Shipping.exe')) {
         $candidate = Join-Path $PackagedRoot "BrainMining\Binaries\Win64\$name"
         if (Test-Path -LiteralPath $candidate) { $executable = $candidate; break }
     }

@@ -27,3 +27,12 @@
 - 446 项必需资源检查通过，压缩包无 Saved、存档或 PDB 文件。
 - `Saved/Validation/Feedback7/Shipping/results.json`：20 项正式包运行时检查全部通过；已核对正式包的烟气和天堂房外侧照明截图。
 - SHA256：`b07a40a2dac3ffa435073a44c55b593d9ba1cee6e34aaf85ae37cbae21572814`。
+
+
+## 1.4 交付命名更新
+
+- 最终交付改为 `Builds/PCSize-20261025-WOoOW/挖哦1.4.zip`；交付目录只保留 ZIP。压缩包根目录为 Windows，其内启动器为 WOoOW.exe，实际程序为 WOoOW-Win64-Shipping.exe。产品名和运行窗口标题为 WOoOW。
+- ZIP 为 1,106,087,639 字节；87 个文件，446 项必需资源检查通过，无 Saved、存档或 PDB。未压缩构建仅在 Saved/Validation 内供验证使用。
+- `Saved/Validation/Feedback7/WOoOWShipping/results.json` 的 20 项正式包检查全部通过；仍不代表连续人工通关。
+- SHA256：`afefa770da7ff156b857695262683bc0fbe6ba8b164b6912c3e8a02e3048dddd`。
+- 日常打包默认 Optimized 配置，但不再增加 Optimized 交付文件夹。后续版本可用 `-PackageName` 指定 ZIP 文件名。

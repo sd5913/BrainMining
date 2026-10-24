@@ -38,7 +38,7 @@ function Get-MiningResourceSnapshot {
 }
 
 function Get-MiningUnrealWorkloads {
-    $existing = @(Get-Process -Name UnrealEditor,UnrealEditor-Cmd,ShaderCompileWorker,UnrealBuildTool,AutomationTool,BrainMining,BrainMining-Win64-Shipping,BrainMining-Win64-Development -ErrorAction SilentlyContinue)
+    $existing = @(Get-Process -Name UnrealEditor,UnrealEditor-Cmd,ShaderCompileWorker,UnrealBuildTool,AutomationTool,BrainMining,BrainMining-Win64-Shipping,BrainMining-Win64-Development,WOoOW,WOoOW-Win64-Shipping,WOoOW-Win64-Development -ErrorAction SilentlyContinue)
     $existing
     Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" | Where-Object {
         $_.CommandLine -match '(UnrealBuildTool|AutomationTool)\.dll'

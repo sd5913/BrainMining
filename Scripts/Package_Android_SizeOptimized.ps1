@@ -36,7 +36,7 @@ $arguments = @(
     (Join-Path $EngineRoot 'Engine/Binaries/DotNET/AutomationTool/AutomationTool.dll'),
     "-ScriptsForProject=$projectRoot/BrainMining.uproject", '-NoCompile', '-Utf8Output',
     'BuildCookRun', "-project=$projectRoot/BrainMining.uproject", '-noP4', '-unattended',
-    '-target=BrainMining', '-platform=Android', '-targetplatform=Android', '-clientconfig=Shipping',
+    '-target=WOoOW', '-platform=Android', '-targetplatform=Android', '-clientconfig=Shipping',
     '-skipbuild', '-cook', '-stage', '-package', '-pak', '-iostore', '-compressed', '-nodebuginfo', '-skipeditorcontent',
     '-map=/Game/MainGame/Maps/Lvl_MainGame+/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo',
     "-CookOutputDir=$runRoot/Cooked/Android", "-stagingdirectory=$stagingRoot",

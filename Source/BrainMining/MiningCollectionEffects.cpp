@@ -1,5 +1,6 @@
 #include "MiningCollectionEffects.h"
 #include "MiningCollection.h"
+#include "MiningRoomAudioSubsystem.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
@@ -64,6 +65,8 @@ void AMiningCollectionEffects::Tick(float Dt)
             if(FMath::Abs(P.X)<570 && P.Y>-200 && P.Y<1350 && FMath::Abs(P.Z)<800)
             {
                 bCurtainOpen=true;
+                if(!bStageActive && !CelebrationCue.IsNone())
+                    UMiningRoomAudioSubsystem::Emit(this,CelebrationCue,1.f,false);
                 bStageActive=true;
             }
         }

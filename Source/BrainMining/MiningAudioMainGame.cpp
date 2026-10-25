@@ -141,7 +141,9 @@ void UMiningAudioComponent::SetSoundscapeLayer(FName Name, float Target, float D
 	const float Gain = FMath::FInterpConstantTo(Layer->VolumeMultiplier, Target, DeltaTime, FadeSpeed);
 	Layer->SetVolumeMultiplier(Gain);
 	if (Target > 0 && !Layer->IsPlaying()) Layer->Play();
-	else if (Gain <= 0 && Layer->IsPlaying()) Layer->Stop();
+	// Keep the exploration loop's playback timeline alive underneath room music.
+	// Re-entering a mine only fades it back in, rather than restarting a stopped voice.
+	else if (Gain <= 0 && Layer->IsPlaying() && Name != TEXT("M_DreamyFlashback_Loop")) Layer->Stop();
 	if (bRoomMusic && Target <= 0 && Gain <= 0)
 	{
 		Layer->DestroyComponent();

@@ -269,6 +269,7 @@ public:
         E->StageCelebration->Tick(.1f);
         Test->TestTrue(TEXT("Approaching stage opens its curtain"),E->StageCelebration->bCurtainOpen);
         Test->TestTrue(TEXT("Confetti starts immediately with the curtain"),E->StageCelebration->bStageActive);
+        if(RoomAudio) Test->TestEqual(TEXT("Victory sound starts on the first confetti frame"),RoomAudio->EventCount(TEXT("S_TVEscapeVictory")),1);
         Test->TestTrue(TEXT("Collectible ribbon waits inside its cannon"),E->StageRibbon->IsHidden() && !E->StageRibbon->bReleased);
         Pawn->SetActorLocation(E->Exit+FVector(650,0,0));E->StageCelebration->Tick(.1f);
         Test->TestTrue(TEXT("Walking forward onto stage fires confetti"),E->StageCelebration->bStageActive);
@@ -276,6 +277,7 @@ public:
         Test->TestTrue(TEXT("Collectible ribbon launches visibly before becoming collectible"),!E->StageRibbon->IsHidden() && !E->StageRibbon->bReleased);
         E->StageCelebration->Tick(4.5f);E->Tick(.01f);
         Test->TestTrue(TEXT("Ribbon lands before enabling pickup"),E->StageRibbon->bReleased);
+        if(RoomAudio) Test->TestEqual(TEXT("Victory sound does not repeat while confetti runs"),RoomAudio->EventCount(TEXT("S_TVEscapeVictory")),1);
         Pawn->SetActorLocation(E->Exit);
         Test->TestTrue(TEXT("Stage has one collectible ribbon using shared item ID"),E->StageRibbon && E->StageRibbon->ItemId==11 && !E->StageRibbon->bCollected);
         Test->TestTrue(TEXT("Mining input is restored after the card/TV escape"),PC->EncounterPolicy && PC->EncounterPolicy->IsMiningAllowed() && !Miner->IsEncounterBlocked());

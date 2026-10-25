@@ -15,6 +15,7 @@ public:
     AMiningCollectionEffects();
     void Initialize(int32 EffectKind, AMiningCollectible* Item=nullptr, int32 ConfettiPerColor=64);
     virtual void Tick(float DeltaSeconds) override;
+    FName CelebrationCue=NAME_None;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bStageActive=false;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) bool bCurtainOpen=false;
     // TV theatre opens on approach, then fires only after walking onto the stage.

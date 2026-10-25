@@ -8,6 +8,10 @@
 #include "MiningExperienceSubsystem.h"
 #include "MiningComponent.h"
 #include "MiningAudioComponent.h"
+#include "MiningRoomAudioSubsystem.h"
+#include "MiningCollectionEffects.h"
+#include "AudioMixerBlueprintLibrary.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/LightComponent.h"
 #include "Components/AudioComponent.h"
 #include "Sound/SoundBase.h"
@@ -387,6 +391,8 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Result->SetStringField(TEXT("label"),SampleLabel);Result->SetArrayField(TEXT("frame_ms"),Samples);SampleLabel.Empty();FrameSamples.Reset();
         Result->SetNumberField(TEXT("max_camera_step_cm"),MaxCameraStep);
     }
+    else if(Op==TEXT("audio_capture_start"))UAudioMixerBlueprintLibrary::StartRecordingOutput(W,12.f);
+    else if(Op==TEXT("audio_capture_stop"))UAudioMixerBlueprintLibrary::StopRecordingOutput(W,EAudioRecordingExportType::WavFile,FPaths::MakeValidFileName(C->GetStringField(TEXT("name"))),Directory);
     else if(Op==TEXT("shot"))FScreenshotRequest::RequestScreenshot(Directory/(FPaths::MakeValidFileName(C->GetStringField(TEXT("name")))+TEXT(".png")),true,false);
     else if(Op==TEXT("quit"))FPlatformMisc::RequestExit(false);
     else if(Op!=TEXT("state") && Op!=TEXT("actors") && Op!=TEXT("neurons") && Op!=TEXT("slate_ui"))Ok=false;
@@ -397,8 +403,11 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     for(auto* Lamp:Lamps)
     {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),Lamp->GetName());J->SetBoolField(TEXT("visible"),Lamp->IsVisible()&&!Lamp->bHiddenInGame);J->SetNumberField(TEXT("intensity"),Lamp->Intensity);LampState.Add(MakeShared<FJsonValueObject>(J));}
     for(TObjectIterator<UAudioComponent> It;It;++It)if(It->GetWorld()==W && It->Sound && It->Sound->GetName().StartsWith(TEXT("M_")))
-    {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),It->Sound->GetName());J->SetBoolField(TEXT("playing"),It->IsPlaying());J->SetBoolField(TEXT("unpaused"),It->bIsUISound);MusicState.Add(MakeShared<FJsonValueObject>(J));}
+    {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),It->Sound->GetName());J->SetBoolField(TEXT("playing"),It->IsPlaying());J->SetBoolField(TEXT("unpaused"),It->bIsUISound);J->SetNumberField(TEXT("gain"),It->VolumeMultiplier);J->SetNumberField(TEXT("player_id"),It->GetUniqueID());MusicState.Add(MakeShared<FJsonValueObject>(J));}
     Result->SetArrayField(TEXT("lamps"),LampState);Result->SetArrayField(TEXT("music"),MusicState);
+    if(auto* RoomAudio=W->GetSubsystem<UMiningRoomAudioSubsystem>())Result->SetNumberField(TEXT("tv_victory_events"),RoomAudio->EventCount(TEXT("S_TVEscapeVictory")));
+    if(auto* Escape=First<AMiningRoomEscape>(W);Escape && Escape->StageCelebration)
+    {Result->SetBoolField(TEXT("confetti_active"),Escape->StageCelebration->bStageActive);Result->SetArrayField(TEXT("celebration_position"),Vec(Escape->StageCelebration->GetActorLocation()));}
     if(auto* Water=First<AHeavenToiletWater>(W))if(Water->InteriorExposure)Result->SetNumberField(TEXT("heaven_exposure_weight"),Water->InteriorExposure->BlendWeight);
     Result->SetNumberField(TEXT("autosaves"),Save->AutosavesCompleted);
     Result->SetBoolField(TEXT("save_in_flight"),Save->IsSaveInFlight());
@@ -606,7 +615,21 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
                 Value->SetStringField(TEXT("text"),Row->GetText().ToString());Value->SetBoolField(TEXT("visible"),Row->IsVisible());
                 Rows.Add(MakeShared<FJsonValueObject>(Value));
             }
-        Result->SetArrayField(TEXT("guide_rows"),Rows);break;
+        Result->SetArrayField(TEXT("guide_rows"),Rows);
+        TArray<TSharedPtr<FJsonValue>> Requirements;
+        for(int32 I=0;I<4;++I)
+        {
+            auto* Label=Cast<UTextBlock>(It->GetWidgetFromName(*FString::Printf(TEXT("PickaxeRequirementName%d"),I)));
+            auto* Count=Cast<UTextBlock>(It->GetWidgetFromName(*FString::Printf(TEXT("PickaxeRequirementCount%d"),I)));
+            if(!Label || !Count)continue;
+            auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),Label->GetText().ToString());J->SetStringField(TEXT("count"),Count->GetText().ToString());J->SetBoolField(TEXT("visible"),Label->IsVisible());
+            const FLinearColor Color=Label->GetColorAndOpacity().GetSpecifiedColor();J->SetArrayField(TEXT("color"),{MakeShared<FJsonValueNumber>(Color.R),MakeShared<FJsonValueNumber>(Color.G),MakeShared<FJsonValueNumber>(Color.B)});Requirements.Add(MakeShared<FJsonValueObject>(J));
+        }
+        Result->SetArrayField(TEXT("upgrade_requirements"),Requirements);
+        if(auto* Panel=It->GetWidgetFromName(TEXT("PickaxeSummaryPanel")))if(auto* Slot=Cast<UCanvasPanelSlot>(Panel->Slot))
+        {const FVector2D Size=Slot->GetSize();Result->SetArrayField(TEXT("upgrade_panel_size"),{MakeShared<FJsonValueNumber>(Size.X),MakeShared<FJsonValueNumber>(Size.Y)});}
+        if(auto* Hint=Cast<UTextBlock>(It->GetWidgetFromName(TEXT("PickaxeTabUpgrade"))))Result->SetStringField(TEXT("upgrade_hint"),Hint->GetText().ToString());
+        break;
     }
     if(Op==TEXT("actors"))
     {

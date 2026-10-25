@@ -33,6 +33,7 @@ void AMiningRoomEscape::BuildExitStage()
     };
     const FVector Deck(31900+SourceLevelOffset.X,ComputerEntry.Y,9900+SourceLevelOffset.Z);
     StageCelebration=GetWorld()->SpawnActor<AMiningCollectionEffects>(Deck-FVector(900,0,0),FRotator(0,-90,0));
+    StageCelebration->CelebrationCue=TEXT("S_TVEscapeVictory");
     StageCelebration->SetOwner(this);StageCelebration->SetActorScale3D(FVector(1.5));
     StageCelebration->bSeparateStageTriggers=true;StageCelebration->CurtainSlideDistance=530;StageCelebration->CelebrationForward=440;
     StageCelebration->Initialize(3,nullptr,128);StageCelebration->SetActorTickEnabled(false);

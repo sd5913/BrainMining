@@ -6,11 +6,15 @@ from packaged_qa_client import Client
 ap=argparse.ArgumentParser();ap.add_argument('output');ap.add_argument('--exe');a=ap.parse_args()
 root=Path(__file__).resolve().parents[1];out=Path(a.output).resolve();out.mkdir(parents=True,exist_ok=True)
 profile=out/'profile';assert not profile.exists()
+# Shipping ignores command-line INI overrides. Keep background audio enabled
+# only in this isolated test profile, without changing player audio settings.
+config=profile/'Saved/Config/Windows/Engine.ini';config.parent.mkdir(parents=True)
+config.write_text('[Audio]\nUnfocusedVolumeMultiplier=1.0\n',encoding='utf8')
 si=subprocess.STARTUPINFO();si.dwFlags|=subprocess.STARTF_USESHOWWINDOW;si.wShowWindow=0
 launch=[str(Path(a.exe).resolve())] if a.exe else ['C:/UE_5.8/Engine/Binaries/Win64/UnrealEditor.exe',str(root/'BrainMining.uproject'),
  '/Game/MainGame/Maps/Lvl_MainGame','-game','-NoLiveCoding','-EnablePlugins=GameFeatures',
  '-DisablePlugins=AllToolsets,ModelContextProtocol']
-p=subprocess.Popen(launch+['-windowed','-ResX=1280','-ResY=720','-MiningQA',
+p=subprocess.Popen(launch+['-RenderOffscreen','-windowed','-ResX=1280','-ResY=720','-MiningQA',
  '-ini:Engine:[Audio]:UnfocusedVolumeMultiplier=1','-UserDir='+str(profile),'-abslog='+str(out/'game.log')],startupinfo=si)
 c=Client(profile);r={'passed':False,'checks':[],'audio':{}}
 def cmd(op,**kw):

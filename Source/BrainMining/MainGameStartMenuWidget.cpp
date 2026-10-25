@@ -1,4 +1,5 @@
 #include "MainGameStartMenuWidget.h"
+#include "MiningUISounds.h"
 
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
@@ -54,6 +55,7 @@ void UMainGameStartMenuWidget::BuildWidgetTree()
 		Image->SetVisibility(ESlateVisibility::HitTestInvisible);
 		StartButton->AddChild(Image);
 	}
+	auto StartStyle=StartButton->GetStyle();MiningUISounds::Apply(StartStyle);StartButton->SetStyle(StartStyle);
 	StartButton->SetVisibility(ESlateVisibility::Visible);
 	Canvas->AddChild(StartButton);
 	StartButton->OnClicked.AddDynamic(this, &ThisClass::HandleStartClicked);
@@ -68,6 +70,7 @@ void UMainGameStartMenuWidget::BuildWidgetTree()
 	}
 	ExitButton->SetVisibility(ESlateVisibility::Visible);
 	Canvas->AddChild(ExitButton);
+	auto ExitStyle=ExitButton->GetStyle();MiningUISounds::Apply(ExitStyle);ExitButton->SetStyle(ExitStyle);
 	ExitButton->OnClicked.AddDynamic(this, &ThisClass::ExitGame);
 
 	TitleSize = FVector2D(560.0f, 365.0f);

@@ -399,6 +399,12 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Result->SetStringField(TEXT("label"),SampleLabel);Result->SetArrayField(TEXT("frame_ms"),Samples);SampleLabel.Empty();FrameSamples.Reset();
         Result->SetNumberField(TEXT("max_camera_step_cm"),MaxCameraStep);
     }
+    else if(Op==TEXT("audio_volume_fixture"))
+    {
+        if(auto* Settings=GetGameInstance()->GetSubsystem<UMiningAudioSettings>())
+            Settings->SetVolume(int32(C->GetNumberField(TEXT("channel"))),C->GetNumberField(TEXT("value")));
+        else Ok=false;
+    }
     else if(Op==TEXT("audio_capture_start"))UAudioMixerBlueprintLibrary::StartRecordingOutput(W,12.f);
     else if(Op==TEXT("audio_capture_stop"))UAudioMixerBlueprintLibrary::StopRecordingOutput(W,EAudioRecordingExportType::WavFile,FPaths::MakeValidFileName(C->GetStringField(TEXT("name"))),Directory);
     else if(Op==TEXT("shot"))FScreenshotRequest::RequestScreenshot(Directory/(FPaths::MakeValidFileName(C->GetStringField(TEXT("name")))+TEXT(".png")),true,false);
@@ -512,7 +518,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
             if(auto* T=Cast<UTextBlock>(Widget->GetWidgetFromName(WidgetName))){auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),WidgetName);J->SetStringField(TEXT("text"),T->GetText().ToString());Labels.Add(MakeShared<FJsonValueObject>(J));}
         for(const TCHAR* WidgetName:{TEXT("PreviousButton"),TEXT("NextButton"),TEXT("CloseButton"),TEXT("ItemButton0"),TEXT("ItemButton3"),TEXT("PageButton0"),TEXT("PageButton1"),TEXT("PageButton2"),TEXT("PageButton3"),TEXT("PageButton4"),TEXT("PageButton5")})
             if(auto* B=Cast<UButton>(Widget->GetWidgetFromName(WidgetName)))
-            {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),WidgetName);const auto G=B->GetCachedGeometry();J->SetArrayField(TEXT("position"),Vec(FVector(G.GetAbsolutePosition(),0)));J->SetArrayField(TEXT("size"),Vec(FVector(G.GetAbsoluteSize(),0)));J->SetBoolField(TEXT("hovered"),B->IsHovered());J->SetNumberField(TEXT("scale"),B->GetRenderTransform().Scale.X);Buttons.Add(MakeShared<FJsonValueObject>(J));}
+            {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),WidgetName);const auto G=B->GetCachedGeometry();J->SetArrayField(TEXT("position"),Vec(FVector(G.GetAbsolutePosition(),0)));J->SetArrayField(TEXT("size"),Vec(FVector(G.GetAbsoluteSize(),0)));J->SetStringField(TEXT("hover_sound"),GetNameSafe(B->GetStyle().HoveredSlateSound.GetResourceObject()));J->SetStringField(TEXT("click_sound"),GetNameSafe(B->GetStyle().ClickedSlateSound.GetResourceObject()));J->SetBoolField(TEXT("hovered"),B->IsHovered());J->SetNumberField(TEXT("scale"),B->GetRenderTransform().Scale.X);Buttons.Add(MakeShared<FJsonValueObject>(J));}
         Result->SetArrayField(TEXT("catalogue_labels"),Labels);Result->SetArrayField(TEXT("catalogue_buttons"),Buttons);
         if(Field->Preview)
         {

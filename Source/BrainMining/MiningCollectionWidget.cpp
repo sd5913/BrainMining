@@ -110,7 +110,7 @@ void UMiningCollectionWidget::NativeConstruct()
                 // A smaller glyph sits inside the original, generous hit area.
                 Style.SetNormalPadding(FMargin(7,8)).SetPressedPadding(FMargin(7,10,7,6));
             }
-            Style.SetDisabled(Style.Normal);B->SetStyle(Style);
+            Style.SetDisabled(Style.Normal);MiningUISounds::Apply(Style);B->SetStyle(Style);
         }
     // Enlarge only the empty gutters: cards start at x=51 and end at x=957.
     for(const TCHAR* Name:{TEXT("PreviousButton"),TEXT("NextButton")})
@@ -127,7 +127,7 @@ void UMiningCollectionWidget::NativeConstruct()
             Button->Configure(this,I);
             FButtonStyle PageStyle;FSlateBrush Empty;Empty.DrawAs=ESlateBrushDrawType::NoDrawType;
             PageStyle.SetNormal(Empty).SetHovered(Empty).SetPressed(Empty).SetDisabled(Empty);
-            PageStyle.SetNormalPadding(FMargin(4,12)).SetPressedPadding(FMargin(4,12));Button->SetStyle(PageStyle);
+            PageStyle.SetNormalPadding(FMargin(4,12)).SetPressedPadding(FMargin(4,12));MiningUISounds::Apply(PageStyle);Button->SetStyle(PageStyle);
             auto* Segment=WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(),Name);
             Segment->SetBrush(*FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")));
             Segment->SetVisibility(ESlateVisibility::HitTestInvisible);

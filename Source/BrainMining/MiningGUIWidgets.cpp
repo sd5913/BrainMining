@@ -1,4 +1,5 @@
 #include "MiningGUIWidgets.h"
+#include "MiningUISounds.h"
 #include "MiningSaveSubsystem.h"
 #include "MiningCollection.h"
 #include "Sound/SoundBase.h"
@@ -144,6 +145,7 @@ void UMiningGUIAbilityWidget::NativeTick(const FGeometry& Geometry, float DeltaT
 void UMiningGUIUpgradeWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	auto Style=CoinButton->GetStyle();MiningUISounds::Apply(Style,false);CoinButton->SetStyle(Style);
 	CoinButton->OnClicked.AddUniqueDynamic(this, &ThisClass::RequestUpgrade);
 	CoinButton->OnPressed.AddUniqueDynamic(this, &ThisClass::PressCoin);
 	CoinButton->OnReleased.AddUniqueDynamic(this, &ThisClass::ReleaseCoin);

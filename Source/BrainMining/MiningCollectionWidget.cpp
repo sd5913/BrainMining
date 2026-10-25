@@ -111,7 +111,10 @@ void UMiningCollectionWidget::NativeConstruct()
             auto* Outline=WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),OutlineName);
             Outline->SetVisibility(ESlateVisibility::Hidden);
             auto* S=Bar->AddChildToCanvas(Outline);S->SetPosition(FVector2D(FString(Name)==TEXT("PreviousButton")?0:963,20));S->SetSize(FVector2D(46,54));S->SetZOrder(5);
-            const TArray<FVector2D> Points={{1.5,1.5},{36,1.5},{44.5,10},{44.5,52.5},{10,52.5},{1.5,44},{1.5,1.5}};
+            // Follow the six edges of T_CollectionArrow, including its inward
+            // notch. The previous-page sprite uses the same horizontal mirror.
+            TArray<FVector2D> Points={{0,0},{23.4,0},{46,27},{23.4,54},{0,54},{22.6,27},{0,0}};
+            if(FString(Name)==TEXT("PreviousButton"))for(auto& Point:Points)Point.X=46.f-Point.X;
             for(int32 I=0;I<Points.Num()-1;++I)
             {
                 auto* Line=WidgetTree->ConstructWidget<UImage>();Line->SetBrush(*FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")));

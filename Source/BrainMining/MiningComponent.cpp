@@ -224,7 +224,7 @@ void UMiningComponent::UpdateDrillEnergy(float DeltaSeconds)
 		DrillEnergy = FMath::Max(0.f, DrillEnergy - FMath::Max(0.f, DrillConsumptionRate) * DeltaSeconds);
 		if (DrillEnergy <= UE_SMALL_NUMBER) SetDrillMode(false);
 	}
-	else DrillEnergy = FMath::Min(MaxDrillEnergy, DrillEnergy + FMath::Max(0.f, DrillRecoveryRate) * .6f * DeltaSeconds);
+	else DrillEnergy = FMath::Min(MaxDrillEnergy, DrillEnergy + FMath::Max(0.f, DrillRecoveryRate) * .3f * DeltaSeconds);
 }
 
 void UMiningComponent::RefreshTarget()

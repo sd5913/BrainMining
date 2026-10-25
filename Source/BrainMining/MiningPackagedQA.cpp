@@ -425,7 +425,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     TArray<TSharedPtr<FJsonValue>> DebugMaps;
     for(const auto& Map:UMiningExperienceSubsystem::DeveloperMapPaths())DebugMaps.Add(MakeShared<FJsonValueString>(Map));
     Result->SetArrayField(TEXT("gm_maps"),DebugMaps);
-    if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()){Result->SetNumberField(TEXT("drill_capacity"),Mining->MaxDrillEnergy);Result->SetNumberField(TEXT("drill_energy"),Mining->DrillEnergy);Result->SetNumberField(TEXT("drill_recovery_per_second"),Mining->DrillRecoveryRate*.6f);}
+    if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()){Result->SetNumberField(TEXT("drill_capacity"),Mining->MaxDrillEnergy);Result->SetNumberField(TEXT("drill_energy"),Mining->DrillEnergy);Result->SetNumberField(TEXT("drill_recovery_per_second"),Mining->DrillRecoveryRate*.3f);}
     if(auto* Museum=First<AWenSiMirrorPuzzle>(W))
     {Result->SetBoolField(TEXT("aim_reset"),Museum->bAimReset);Result->SetNumberField(TEXT("museum_aim_kind"),Museum->Aim.IsValid()?Museum->Aim->Kind:-1);Result->SetNumberField(TEXT("reset_hold"),Museum->ResetHold.Progress());Result->SetNumberField(TEXT("reset_count"),Museum->ResetCount);}
     if(auto* Toilet=First<AHeavenToilet>(W))Result->SetBoolField(TEXT("toilet_outline"),Toilet->Body->bRenderCustomDepth);

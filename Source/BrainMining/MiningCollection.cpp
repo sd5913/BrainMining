@@ -321,6 +321,16 @@ void AMiningCollectionField::Tick(float Dt)
         if(Item->LastObservedCuts==Item->HostRock->SuccessfulCuts) continue;
         Item->LastObservedCuts=Item->HostRock->SuccessfulCuts;
         Item->Exposure=Item->MeasureExposure();
+        // The beak points along local -X. Face the actual excavation opening on
+        // first reveal, including when the player approaches from the far side.
+        if(Item->ItemId==3 && Item->Exposure>.05f && !Item->ActorHasTag(TEXT("BM_BirdFacingOpening")))
+        {
+            FVector Eye;FRotator ViewRotation;Player->GetPlayerViewPoint(Eye,ViewRotation);
+            Item->SetActorRotation((Item->GetActorLocation()-Eye).Rotation());
+            Item->BuriedTransform=Item->GetActorTransform();
+            Item->Tags.Add(TEXT("BM_BirdFacingOpening"));
+            Item->Exposure=Item->MeasureExposure();
+        }
         // Exposure triggers release; only released items become interaction targets.
         if(Item->CanRelease(AMiningCollectible::PickupExposure))
         {

@@ -106,10 +106,15 @@ void AMiningCollectionField::SpawnBranchClues(const FMiningCollectionPlacement& 
     }
     else if(P.ItemId==18)
     {
-        for(int I=0;I<21;++I)
+        // Several staggered layers lead from the crust down to the buried bag.
+        // A shallow backing point keeps a coin visible on newly exposed soil,
+        // and removes it once that soil is actually excavated.
+        for(int I=0;I<42;++I)
         {
-            const float Depth=I<7?0.f:(I-6)/15.f;
-            auto* A=Anchor(Buried*Depth+FVector(0,-80+(I*47)%163,-30+(I*29)%66),I<7);
+            const int Band=I/7;
+            const float Depth=Band/6.f;
+            auto* A=Anchor(Buried*Depth+FVector(Band?((I%3)-1)*8:0,-84+(I*47)%169,-46+(I*29)%93),Band==0);
+            if(Band)Clues.Last().Support+=FVector(8,0,0);
             Part(A,Cylinder,FVector(-1,0,0),FVector(12+(I%3)*2,12+(I%3)*2,2),2,FRotator(0,90,90));
             Part(A,Cube,FVector(-2.4f,0,0),FVector(.6f,3,5),0,FRotator(0,0,I*23));
         }

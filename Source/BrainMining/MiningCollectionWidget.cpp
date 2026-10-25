@@ -208,11 +208,11 @@ void UMiningCollectionWidget::RefreshCollection()
             // label can reuse a collapsed width and stack a short name vertically.
             T->SetAutoWrapText(false);T->SetWrapTextAt(208.f);T->SetJustification(ETextJustify::Center);
             T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):TEXT("尚未发现")));
-            T->SetRenderTranslation(FVector2D(0,!Has&&AMiningCollectible::IsMineralReward(Item)?-14:0));
+            T->SetRenderTranslation(FVector2D(0,AMiningCollectible::IsMineralReward(Item)?-14:0));
         }
         if(auto* Condition=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemCondition%d"),I)))))
         {
-            const bool Show=!Has&&AMiningCollectible::IsMineralReward(Item);
+            const bool Show=AMiningCollectible::IsMineralReward(Item);
             Condition->SetText(FText::FromString(Show?FString::Printf(TEXT("收集%d个%s"),AMiningCollectible::UnlockThreshold(Item),*FMiningMineralCost::Name(MineralRewardType(Item))):FString()));
             Condition->SetColorAndOpacity(Id==Item?FLinearColor(.12f,.10f,.025f):FLinearColor(.62f,.62f,.58f));
         }

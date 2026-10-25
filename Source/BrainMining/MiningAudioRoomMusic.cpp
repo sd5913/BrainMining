@@ -8,7 +8,7 @@
 
 TArray<FName> UMiningAudioComponent::RoomMusicAssetNames()
 {
-	return {TEXT("M_Room_CardExplore_Loop"), TEXT("M_Room_Escape_Loop"), TEXT("M_Room_Museum_Loop")};
+	return {TEXT("M_Room_CardExplore_Loop"), TEXT("M_Room_Museum_Loop")};
 }
 
 FName UMiningAudioComponent::FindRoomMusic()
@@ -19,8 +19,8 @@ FName UMiningAudioComponent::FindRoomMusic()
 	if (Kind != EMiningExperienceKind::Journey) return NAME_None;
 	const auto* Escape = Hall->Journey.Get();
 	if (!Escape || !Escape->bAreaActive) return NAME_None;
-	if (Escape->Phase == EMiningEscapePhase::Warning || Escape->Phase == EMiningEscapePhase::Flooding)
-		return TEXT("M_Room_Escape_Loop");
+	if (Escape->Phase == EMiningEscapePhase::Warning || Escape->Phase == EMiningEscapePhase::Flooding || Escape->Phase == EMiningEscapePhase::Failed)
+		return TEXT("M_Room_CardExplore_Loop");
 	if (Escape->Phase != EMiningEscapePhase::Idle || !Escape->CardStage) return NAME_None;
 	if (!RoomMusicEcho.IsValid())
 		for (TActorIterator<AEchoPassageStage> Actor(GetWorld()); Actor; ++Actor)
@@ -37,6 +37,8 @@ FName UMiningAudioComponent::FindRoomMusic()
 	case ECardRoomPhase::Arrival:
 	case ECardRoomPhase::Choosing:
 	case ECardRoomPhase::Resolving:
+	case ECardRoomPhase::Victory:
+	case ECardRoomPhase::Collected:
 		return TEXT("M_Room_CardExplore_Loop");
 	default:
 		return NAME_None;

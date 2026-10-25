@@ -113,6 +113,15 @@ namespace WenSiMuseumMechanisms
    Part(TEXT("ContactTerminal"),FVector(1900,120+Side*23,84),FVector(24,3,35),Cube,Brass);
   }
   // Lightning mark on the visible front of the base, made from three simple strokes.
+  // The small sphere rests at Z=80 with radius 13.68. Its pedestal reaches the
+  // underside, while two brass contacts visibly connect that seat to the circuit.
+  Part(TEXT("BallContactPedestal"),FVector(1900,120,54),FVector(20,20,20),Cylinder,Blue);
+  Part(TEXT("BallContactSeat"),FVector(1900,120,65.15f),FVector(20,20,2.3f),Cylinder,Brass);
+  for(int Side:{-1,1})
+  {
+   auto Bridge=Part(TEXT("BallContactBridge"),FVector::ZeroVector,FVector::OneVector,Cylinder,Brass);
+   CylinderBetween(Bridge,FVector(1900,120+Side*23,75),FVector(1900,120+Side*9,69.7f),4.f);
+  }
   for(auto Segment:{TPair<FVector,FVector>(FVector(1809,124,28),FVector(1809,116,17)),
                     TPair<FVector,FVector>(FVector(1809,116,17),FVector(1809,125,17)),
                     TPair<FVector,FVector>(FVector(1809,125,17),FVector(1809,117,6))})

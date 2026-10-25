@@ -36,6 +36,7 @@
 #include "MiningCollection.h"
 #include "MiningRoomEscape.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "MiningAudioSettings.h"
 #include "WenSi/MouseMuseumPortal.h"
 #include "EndingEmergence.h"
 #include "GeneratedMiningRock.h"
@@ -302,6 +303,13 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     }
     else if(Op==TEXT("credits_fixture"))
     {if(auto* Ending=First<AEndingEmergence>(W))Ending->bComplete=true;else Ok=false;}
+    else if(Op==TEXT("museum_word_fixture"))
+    {
+        Ok=false;
+        for(TActorIterator<AWenSiMirrorExhibit> It(W);It;++It)
+            if(It->Kind==int32(C->GetNumberField(TEXT("kind"))))
+            {It->Word=EWenSiMirrorWord(FMath::Clamp(int32(C->GetNumberField(TEXT("word"))),0,6));It->Apply();Ok=true;break;}
+    }
     else if(Op==TEXT("walking_fixture")){Pawn->GetCharacterMovement()->SetMovementMode(MOVE_Walking);}
     else if(Op==TEXT("catalogue_rotate"))
     {if(auto* Field=First<AMiningCollectionField>(W)){Field->SelectItem(C->HasField(TEXT("item"))?int32(C->GetNumberField(TEXT("item"))):0);Field->RotatePreview(C->GetNumberField(TEXT("yaw")),C->GetNumberField(TEXT("pitch")));}else Ok=false;}
@@ -405,6 +413,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     for(TObjectIterator<UAudioComponent> It;It;++It)if(It->GetWorld()==W && It->Sound && It->Sound->GetName().StartsWith(TEXT("M_")))
     {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),It->Sound->GetName());J->SetBoolField(TEXT("playing"),It->IsPlaying());J->SetBoolField(TEXT("unpaused"),It->bIsUISound);J->SetNumberField(TEXT("gain"),It->VolumeMultiplier);J->SetNumberField(TEXT("player_id"),It->GetUniqueID());MusicState.Add(MakeShared<FJsonValueObject>(J));}
     Result->SetArrayField(TEXT("lamps"),LampState);Result->SetArrayField(TEXT("music"),MusicState);
+    if(auto* Settings=GetGameInstance()->GetSubsystem<UMiningAudioSettings>())Result->SetNumberField(TEXT("menu_music_gain"),Settings->GetMenuMusicGain());
     if(auto* RoomAudio=W->GetSubsystem<UMiningRoomAudioSubsystem>())Result->SetNumberField(TEXT("tv_victory_events"),RoomAudio->EventCount(TEXT("S_TVEscapeVictory")));
     if(auto* Escape=First<AMiningRoomEscape>(W);Escape && Escape->StageCelebration)
     {Result->SetBoolField(TEXT("confetti_active"),Escape->StageCelebration->bStageActive);Result->SetArrayField(TEXT("celebration_position"),Vec(Escape->StageCelebration->GetActorLocation()));}
@@ -418,7 +427,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     Result->SetArrayField(TEXT("gm_maps"),DebugMaps);
     if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()){Result->SetNumberField(TEXT("drill_capacity"),Mining->MaxDrillEnergy);Result->SetNumberField(TEXT("drill_energy"),Mining->DrillEnergy);Result->SetNumberField(TEXT("drill_recovery_per_second"),Mining->DrillRecoveryRate*.6f);}
     if(auto* Museum=First<AWenSiMirrorPuzzle>(W))
-    {Result->SetBoolField(TEXT("aim_reset"),Museum->bAimReset);Result->SetNumberField(TEXT("reset_hold"),Museum->ResetHold.Progress());Result->SetNumberField(TEXT("reset_count"),Museum->ResetCount);}
+    {Result->SetBoolField(TEXT("aim_reset"),Museum->bAimReset);Result->SetNumberField(TEXT("museum_aim_kind"),Museum->Aim.IsValid()?Museum->Aim->Kind:-1);Result->SetNumberField(TEXT("reset_hold"),Museum->ResetHold.Progress());Result->SetNumberField(TEXT("reset_count"),Museum->ResetCount);}
     if(auto* Toilet=First<AHeavenToilet>(W))Result->SetBoolField(TEXT("toilet_outline"),Toilet->Body->bRenderCustomDepth);
     Result->SetNumberField(TEXT("area"),Hall?Hall->ActiveArea:-1);Result->SetNumberField(TEXT("unlocked"),Hall?Hall->UnlockedArea:-1);
     Result->SetBoolField(TEXT("opening"),AMiningOpening::IsOpening(W));

@@ -432,11 +432,8 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         Player->SetIgnoreLookInput(true); Player->SetIgnoreMoveInput(true);
         if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->ResetFlightInput(); Move->StopMovementImmediately(); }
         Player->GetPawn()->DisableInput(Player);
-        // Keep already-playing music at its current playback position while gameplay pauses.
-        CatalogueMusic.Reset();
-        for(TObjectIterator<UAudioComponent> It;It;++It)
-            if(It->GetWorld()==GetWorld() && It->Sound && !It->bIsUISound && It->Sound->GetName().StartsWith(TEXT("M_")))
-            { It->SetUISound(true); CatalogueMusic.Add(*It); }
+        // Music is pause-independent from creation; opening/closing this view must
+        // not change active audio-thread pause flags or restart the playback voice.
         Player->SetPause(true);
         FInputModeUIOnly Mode;
         if(CatalogueWidget)
@@ -459,8 +456,6 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
     {
         if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->StopInteraction(TEXT("EmptyCollection"));
         Player->SetPause(false);
-        for(auto& Music:CatalogueMusic)if(Music.IsValid())Music->SetUISound(false);
-        CatalogueMusic.Reset();
         Player->ResetIgnoreLookInput(); Player->ResetIgnoreMoveInput();
         Player->GetPawn()->EnableInput(Player); Player->bShowMouseCursor=false; Player->SetInputMode(FInputModeGameOnly());
         if(CatalogueWidget)CatalogueWidget->SetVisibility(ESlateVisibility::Collapsed);

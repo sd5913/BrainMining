@@ -109,7 +109,6 @@ $requiredAssets = @(
     'Audio/Rooms/S_OfficeMouseClick.uasset',
     'Audio/Rooms/S_HeavenAngelChoir.uasset',
     'Audio/RoomMusic/M_Room_CardExplore_Loop.uasset',
-    'Audio/RoomMusic/M_Room_Escape_Loop.uasset',
     'Audio/RoomMusic/M_Room_Museum_Loop.uasset',
     'Audio/Pilot/M_DreamyFlashback_Loop.uasset',
     'Audio/Rooms/S_TVEscapeVictory.uasset',

@@ -18,7 +18,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRoomMusicAssetsTest, "BrainMining.RoomMusic.Im
 bool FRoomMusicAssetsTest::RunTest(const FString&)
 {
 	const auto Names = UMiningAudioComponent::RoomMusicAssetNames();
-	TestEqual(TEXT("Three selected tracks"), Names.Num(), 3);
+	TestEqual(TEXT("Two selected room tracks"), Names.Num(), 2);
 	auto* MusicClass = LoadObject<USoundClass>(nullptr, TEXT("/Game/Audio/Mix/SC_Music.SC_Music"));
 	if (!TestNotNull(TEXT("Music mix exists"), MusicClass)) return false;
 	for (const FName Name : Names)
@@ -116,17 +116,18 @@ bool FRoomMusicRoutingTest::RunTest(const FString&)
 	Advance();
 	TestTrue(TEXT("Next hand keeps the same player"), BattlePlayer == Audio->Soundscape.FindRef(TEXT("M_Room_CardExplore_Loop")).Get());
 	Hall->Journey->CardStage->Run.Phase = ECardRoomPhase::Victory;
-	CheckSelection(TEXT("Victory gives the reward cue space"), NAME_None);
+	CheckSelection(TEXT("Victory retains card-room music"), TEXT("M_Room_CardExplore_Loop"));
 	Hall->Journey->Phase = EMiningEscapePhase::Warning;
-	CheckSelection(TEXT("Escape warning starts Run Amok"), TEXT("M_Room_Escape_Loop"));
-	auto* EscapePlayer = Audio->Soundscape.FindRef(TEXT("M_Room_Escape_Loop")).Get();
+	CheckSelection(TEXT("Escape warning retains room music"), TEXT("M_Room_CardExplore_Loop"));
+	auto* EscapePlayer = Audio->Soundscape.FindRef(TEXT("M_Room_CardExplore_Loop")).Get();
+	TestTrue(TEXT("Battle into escape never recreates music"), EscapePlayer==BattlePlayer);
 	Hall->Journey->Phase = EMiningEscapePhase::Flooding;
-	CheckSelection(TEXT("Flood and television use the same track"), TEXT("M_Room_Escape_Loop"));
-	TestTrue(TEXT("Warning into flood preserves playback"), EscapePlayer == Audio->Soundscape.FindRef(TEXT("M_Room_Escape_Loop")).Get());
+	CheckSelection(TEXT("Flood and television use the same track"), TEXT("M_Room_CardExplore_Loop"));
+	TestTrue(TEXT("Warning into flood preserves playback"), EscapePlayer == Audio->Soundscape.FindRef(TEXT("M_Room_CardExplore_Loop")).Get());
 	Hall->Journey->Phase = EMiningEscapePhase::Failed;
-	CheckSelection(TEXT("Failure fades escape music"), NAME_None);
+	CheckSelection(TEXT("Failure retains room music"), TEXT("M_Room_CardExplore_Loop"));
 	Hall->Journey->Phase = EMiningEscapePhase::Flooding;
-	CheckSelection(TEXT("Retry restores escape music"), TEXT("M_Room_Escape_Loop"));
+	CheckSelection(TEXT("Retry retains room music"), TEXT("M_Room_CardExplore_Loop"));
 	Hall->Journey->Phase = EMiningEscapePhase::Escaped;
 	CheckSelection(TEXT("Success ends escape music"), NAME_None);
 	Hall->ActiveArea = 2;

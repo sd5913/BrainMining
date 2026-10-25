@@ -16,6 +16,7 @@
 #include "Showcase/MiningExhibitHall.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
@@ -92,6 +93,10 @@ AWenSiMirrorExhibit::AWenSiMirrorExhibit()
 {
  PrimaryActorTick.bCanEverTick=true;
  SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
+ TetherSelection=CreateDefaultSubobject<UBoxComponent>(TEXT("BalloonTetherSelection"));
+ TetherSelection->SetupAttachment(RootComponent);TetherSelection->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ TetherSelection->SetCollisionResponseToAllChannels(ECR_Ignore);TetherSelection->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);
+ TetherSelection->SetGenerateOverlapEvents(false);
  for(int32 I=0;I<12;++I)
  {
   auto Part=CreateDefaultSubobject<UStaticMeshComponent>(*FString::Printf(TEXT("Part%d"),I));
@@ -171,6 +176,7 @@ void AWenSiMirrorExhibit::Configure()
 }
 void AWenSiMirrorExhibit::Apply()
 {
+ TetherSelection->SetCollisionEnabled(Kind==3?ECollisionEnabled::QueryOnly:ECollisionEnabled::NoCollision);
  const float Scale=IsSelf(this)?1.f:WordScale(Word);
  SetActorScale3D(FVector(Scale));
  auto Parent=Surface(Kind==3?TEXT("MI_Burgundy"):Kind==8||Kind==1||Kind==7?TEXT("MI_Brass"):Kind==5?TEXT("MI_DeepBlue"):TEXT("MI_Limestone"));
@@ -324,6 +330,9 @@ void AWenSiMirrorExhibit::Tick(float Dt)
   const float Anchor=Rest.Z-301.f,Bottom=GetActorLocation().Z-55.f*GetActorScale3D().Z;
   Parts[2]->SetWorldLocation(FVector(Rest.X,Rest.Y,(Anchor+Bottom)*.5f));
   Parts[2]->SetWorldScale3D(FVector(.015f,.015f,FMath::Max(1.f,Bottom-Anchor)/100.f));
+  TetherSelection->SetWorldLocation(FVector(Rest.X,Rest.Y,(Anchor+Bottom)*.5f));
+  TetherSelection->SetWorldScale3D(FVector::OneVector);
+  TetherSelection->SetBoxExtent(FVector(10.f,10.f,FMath::Max(1.f,Bottom-Anchor)*.5f));
  }
  if(Kind==6 && Word==EWenSiMirrorWord::Heavy)Target=Rest.Z-WenSiMuseumMechanisms::BalanceTravel;
  if(Kind==6 && Word==EWenSiMirrorWord::Ordinary)Target=Rest.Z-WenSiMuseumMechanisms::BalanceTravel*WenSiMuseumMechanisms::InitialBalanceAlpha;

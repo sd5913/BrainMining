@@ -1,4 +1,5 @@
 #include "MiningAudioSettings.h"
+#include "MiningExperienceSubsystem.h"
 #include "Engine/World.h"
 #include "GameFramework/GameUserSettings.h"
 #include "Kismet/GameplayStatics.h"
@@ -74,18 +75,28 @@ void UMiningAudioSettings::Save() const { SaveVolumes(AudioSettingsFile()); }
 
 void UMiningAudioSettings::Apply()
 {
-    if (!GetWorld() || !Mix) return;
-    for (int32 Channel = 1; Channel < 5; ++Channel)
-        if (auto* SoundClass = GetClass(Channel))
-            UGameplayStatics::SetSoundMixClassOverride(this, Mix, SoundClass, Volumes[0] * Volumes[Channel], 1.f, .08f, false);
+    // Initialization may precede the world's audio device. Only mark an application
+    // successful after the playable world is ready; ESC must not be needed to apply it.
+    if (!GetWorld() || !GetWorld()->HasBegunPlay() || !GetWorld()->GetAudioDeviceRaw() || !Mix) return;
     if (AppliedWorld != GetWorld())
     {
         UGameplayStatics::PushSoundMixModifier(this, Mix);
         AppliedWorld = GetWorld();
     }
+    const auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();
+    bAppliedPauseDuck=UGameplayStatics::IsGamePaused(this) && Session && Session->IsMenuOpen();
+    for (int32 Channel = 1; Channel < 5; ++Channel)
+        if (auto* SoundClass = GetClass(Channel))
+            UGameplayStatics::SetSoundMixClassOverride(this, Mix, SoundClass,
+                Volumes[0] * Volumes[Channel] * (Channel==1 && bAppliedPauseDuck?.35f:1.f), 1.f, .25f, false);
 }
 
-void UMiningAudioSettings::Tick(float DeltaTime) { if (AppliedWorld != GetWorld()) Apply(); }
+void UMiningAudioSettings::Tick(float DeltaTime)
+{
+    const auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();
+    const bool Duck=GetWorld() && UGameplayStatics::IsGamePaused(this) && Session && Session->IsMenuOpen();
+    if (AppliedWorld != GetWorld() || Duck!=bAppliedPauseDuck) Apply();
+}
 
 void UMiningAudioSettings::Deinitialize()
 {

@@ -8,6 +8,7 @@
 #include "WenSiMirrorPuzzle.generated.h"
 
 class UStaticMeshComponent;
+class UBoxComponent;
 class UStaticMesh;
 class USceneCaptureComponent2D;
 class UTextureRenderTarget2D;
@@ -40,6 +41,7 @@ public:
  UPROPERTY(VisibleAnywhere, Category="WenSi|VFX") TObjectPtr<UNiagaraComponent> ConductiveFX;
  UFUNCTION(BlueprintCallable,CallInEditor,Category="WenSi|Art") void RefreshArtModel();
  UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Parts;
+ UPROPERTY() TObjectPtr<UBoxComponent> TetherSelection;
  UPROPERTY() TObjectPtr<USceneCaptureComponent2D> Capture;
  UPROPERTY() TObjectPtr<UTextureRenderTarget2D> MirrorTarget;
  UPROPERTY(Transient) TObjectPtr<AActor> MirrorPresence;

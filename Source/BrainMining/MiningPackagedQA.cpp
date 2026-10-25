@@ -1,4 +1,10 @@
 #include "MiningPackagedQA.h"
+#include "MiningMobileGraphicsSettings.h"
+#include "HAL/IConsoleManager.h"
+#include "DynamicRHI.h"
+#if BRAINMINING_WITH_ARM_ASR
+#include "ArmASR.h"
+#endif
 #include "MiningExperienceSubsystem.h"
 #include "MiningComponent.h"
 #include "MiningBombToolComponent.h"
@@ -92,6 +98,15 @@ void UMiningPackagedQA::Tick(float)
     const double Now=FPlatformTime::Seconds();
     if(!SampleLabel.IsEmpty() && LastFrame>0)FrameSamples.Add((Now-LastFrame)*1000.0);
     LastFrame=Now;
+    uint64 GPUCycles = 0;
+    for (auto Status = GPUFrameHistory.PopFrameCycles(GPUCycles); Status != FRHIGPUFrameTimeHistory::EResult::Empty; Status = GPUFrameHistory.PopFrameCycles(GPUCycles))
+    {
+        if (!SampleLabel.IsEmpty() && GPUCycles > 0)
+        {
+            GPUFrameSamples.Add(FPlatformTime::ToMilliseconds64(GPUCycles));
+            if (Status == FRHIGPUFrameTimeHistory::EResult::Disjoint) ++DisjointGPUSamples;
+        }
+    }
     if(!SampleLabel.IsEmpty())
         if(auto* Controller=GetWorld()?GetWorld()->GetFirstPlayerController():nullptr;Controller && Controller->PlayerCameraManager)
         {
@@ -337,9 +352,21 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         auto* Ore=Cast<AMiningTreasure>(Actor);Ok=Ore && !Ore->bCollected;
         if(Ok){Ore->CoveringRocks.Reset();Ore->Exposure=1;Ore->bReleased=true;Ore->SetDropActive(false);Ore->SetActorLocation(ReadVec(*C,TEXT("point")));Ore->SetActorHiddenInGame(false);Ore->SetActorEnableCollision(true);}
     }
-    else if(Op==TEXT("sample_start")){SampleLabel=C->GetStringField(TEXT("label"));FrameSamples.Reset();MaxCameraStep=0;bCameraSampleStarted=false;}
+    else if(Op==TEXT("mobile_graphics"))
+    {
+        auto* Graphics = GetGameInstance()->GetSubsystem<UMiningMobileGraphicsSettings>();
+        const double Requested = C->GetNumberField(TEXT("mode"));
+        Ok = Graphics && FMath::IsFinite(Requested) && Requested >= 0 && Requested <= 4 && FMath::FloorToDouble(Requested) == Requested;
+        if (Ok) Ok = Graphics->SetMode(EMiningMobileUpscaling(int32(Requested)));
+    }
+    else if(Op==TEXT("sample_start")){SampleLabel=C->GetStringField(TEXT("label"));FrameSamples.Reset();GPUFrameSamples.Reset();DisjointGPUSamples=0;MaxCameraStep=0;bCameraSampleStarted=false;}
     else if(Op==TEXT("sample_end"))
     {
+        TArray<TSharedPtr<FJsonValue>> GPUFrames;
+        for (double Sample : GPUFrameSamples) GPUFrames.Add(MakeShared<FJsonValueNumber>(Sample));
+        Result->SetArrayField(TEXT("gpu_frame_ms"), GPUFrames);
+        Result->SetNumberField(TEXT("gpu_disjoint_samples"), DisjointGPUSamples);
+        GPUFrameSamples.Reset();
         TArray<TSharedPtr<FJsonValue>> Samples;for(double Value:FrameSamples)Samples.Add(MakeShared<FJsonValueNumber>(Value));
         Result->SetStringField(TEXT("label"),SampleLabel);Result->SetArrayField(TEXT("frame_ms"),Samples);SampleLabel.Empty();FrameSamples.Reset();
         Result->SetNumberField(TEXT("max_camera_step_cm"),MaxCameraStep);
@@ -374,6 +401,27 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Result->SetBoolField(TEXT("game_show"),Viewport->EngineShowFlags.Game);
     }
     Result->SetStringField(TEXT("view_target"),GetNameSafe(PC->GetViewTarget()));
+    auto GraphicsInfo = MakeShared<FJsonObject>();
+    GraphicsInfo->SetStringField(TEXT("rhi"), GDynamicRHI ? GDynamicRHI->GetName() : TEXT("None"));
+    GraphicsInfo->SetBoolField(TEXT("native_fp16"), GRHIGlobals.SupportsNative16BitOps);
+    for (const TCHAR* VariableName : {TEXT("r.ScreenPercentage"), TEXT("r.AntiAliasingMethod"), TEXT("r.Mobile.AntiAliasing"), TEXT("r.TemporalAA.Upsampling"), TEXT("r.ArmASR.Enable"), TEXT("r.ArmASR.ShaderQuality")})
+        if (auto* Variable = IConsoleManager::Get().FindConsoleVariable(VariableName)) GraphicsInfo->SetNumberField(VariableName, Variable->GetFloat());
+    if (auto* Graphics = GetGameInstance()->GetSubsystem<UMiningMobileGraphicsSettings>())
+    {
+        GraphicsInfo->SetNumberField(TEXT("mode"), int32(Graphics->GetMode()));
+        GraphicsInfo->SetBoolField(TEXT("asr_supported"), Graphics->IsASRSupported());
+    }
+#if BRAINMINING_WITH_ARM_ASR
+    const auto ASRStats = FArmASRModule::GetFrameStats();
+    GraphicsInfo->SetStringField(TEXT("asr_support_details"), FArmASRModule::GetMobileSupportDetails());
+    GraphicsInfo->SetNumberField(TEXT("asr_frames"), double(ASRStats.Frames));
+    GraphicsInfo->SetNumberField(TEXT("asr_input_width"), ASRStats.InputSize.X);
+    GraphicsInfo->SetNumberField(TEXT("asr_input_height"), ASRStats.InputSize.Y);
+    GraphicsInfo->SetNumberField(TEXT("asr_output_width"), ASRStats.OutputSize.X);
+    GraphicsInfo->SetNumberField(TEXT("asr_output_height"), ASRStats.OutputSize.Y);
+    GraphicsInfo->SetBoolField(TEXT("asr_history_valid"), ASRStats.bHistoryValid);
+#endif
+    Result->SetObjectField(TEXT("graphics"), GraphicsInfo);
 
     Result->SetBoolField(TEXT("collection_choice"),First<AMiningOpening>(W) && First<AMiningOpening>(W)->IsChoosingCollection());
     Result->SetBoolField(TEXT("ui_hidden"),GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->bAllUIHidden);

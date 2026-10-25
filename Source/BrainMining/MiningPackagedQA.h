@@ -2,6 +2,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Tickable.h"
+#include "GPUProfiler.h"
 #include "MiningPackagedQA.generated.h"
 
 // Opt-in, local packaged regression harness. Never ticks in a normal launch.
@@ -20,6 +21,9 @@ private:
     FString Directory, LastId, SampleLabel;
     double LastFrame=0, NextPoll=0;
     TArray<double> FrameSamples;
+    TArray<double> GPUFrameSamples;
+    FRHIGPUFrameTimeHistory::FState GPUFrameHistory;
+    int32 DisjointGPUSamples = 0;
     FVector SampleCamera=FVector::ZeroVector;
     double MaxCameraStep=0;
     bool bCameraSampleStarted=false;

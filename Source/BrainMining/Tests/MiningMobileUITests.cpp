@@ -255,7 +255,18 @@ bool FMiningMobileLifecycleTest::RunTest(const FString&)
         return false;
     };
     TestTrue(TEXT("Pause shows its collection action"), HasTag(Menu->Menu.ToSharedRef(), TEXT("gem")));
+    TestTrue(TEXT("Mobile pause exposes GM tools"), HasTag(Menu->Menu.ToSharedRef(), TEXT("MobileGMTools")));
+    TestTrue(TEXT("GM tools replace the mobile pause menu"), Menu->OpenMobileDeveloperMenu());
+    TestTrue(TEXT("GM transition opens the developer panel"), Menu->bDeveloperMenu && !Menu->bPauseMenu);
+    TestTrue(TEXT("Developer actions are present after transition"), HasTag(Menu->Menu.ToSharedRef(), TEXT("GM_Scroll")));
+    TestTrue(TEXT("GM transition keeps gameplay input suspended"), Mining->IsInputSuspended() && Controller->IsMoveInputIgnored() && Controller->IsLookInputIgnored());
+    Menu->CloseMenu();
+    TestFalse(TEXT("Closing GM restores gameplay input"), Mining->IsInputSuspended() || Controller->IsMoveInputIgnored() || Controller->IsLookInputIgnored());
+    TestFalse(TEXT("Closing GM does not restart mining"), Mining->IsMiningActive());
+    TestFalse(TEXT("GM entry requires an open mobile pause menu"), Menu->OpenMobileDeveloperMenu());
+    TestTrue(TEXT("Mobile pause reopens after using GM"), Menu->ToggleMobileMenu());
     Menu->RequestQuitConfirmation();
+    TestFalse(TEXT("GM entry does not bypass quit confirmation"), Menu->OpenMobileDeveloperMenu());
     Menu->Menu->Tick(Geometry, 0, .016f);
     TestTrue(TEXT("External quit request shows the actual touch confirmation"), HasTag(Menu->Menu.ToSharedRef(), TEXT("check")));
     TestFalse(TEXT("Quit confirmation replaces pause actions"), HasTag(Menu->Menu.ToSharedRef(), TEXT("gem")));
@@ -290,6 +301,9 @@ bool FMiningMobileLifecycleTest::RunTest(const FString&)
     Controller->SetIgnoreLookInput(true);
     Controller->bShowMouseCursor = true;
     TestTrue(TEXT("Pause can overlay an existing modal room"), Menu->ToggleMobileMenu());
+    TestFalse(TEXT("GM entry respects the room's existing modal lock"), Menu->OpenMobileDeveloperMenu());
+    TestTrue(TEXT("Rejected GM entry keeps the mobile pause menu usable"), Menu->IsMenuOpen() && Menu->bPauseMenu);
+    TestTrue(TEXT("Rejected GM entry restores the pause actions"), HasTag(Menu->Menu.ToSharedRef(), TEXT("MobileGMTools")));
     Menu->CloseMenu();
     TestTrue(TEXT("Modal room retains its original input locks"), Controller->IsMoveInputIgnored() && Controller->IsLookInputIgnored() && Controller->bShowMouseCursor);
     Controller->ResetIgnoreInputFlags();

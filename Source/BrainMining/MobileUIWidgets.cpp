@@ -3,6 +3,7 @@
 #include "BrainMiningPlayerController.h"
 #include "MiningAudioComponent.h"
 #include "MiningAudioSettings.h"
+#include "MiningMobileGraphicsSettings.h"
 #include "MiningCharacterMovementComponent.h"
 #include "MiningComponent.h"
 #include "MiningExperienceSubsystem.h"
@@ -166,7 +167,17 @@ namespace
                         + SHorizontalBox::Slot().FillWidth(1).Padding(0, 0, 12, 0)[RowButton(TEXT("sound"), [this]() { ChangePage(EMobileMenuPage::Sound); })]
                         + SHorizontalBox::Slot().FillWidth(1).Padding(0, 0, 12, 0)[RowButton(TEXT("sliders"), [this]() { ChangePage(EMobileMenuPage::Controls); })]
                         + SHorizontalBox::Slot().FillWidth(1)[RowButton(TEXT("help"), [this]() { ChangePage(EMobileMenuPage::Help); })]];
-                Rows->AddSlot().AutoHeight()[RowButton(TEXT("door"), [this]() { ChangePage(EMobileMenuPage::Quit); })];
+                const auto MenuOwner = Owner;
+                Rows->AddSlot().AutoHeight()
+                    [SNew(SHorizontalBox)
+                        + SHorizontalBox::Slot().FillWidth(1).Padding(0, 0, 12, 0)
+                            [SNew(SBox).HeightOverride(96)
+                                [SNew(SButton).Tag(TEXT("MobileGMTools")).ButtonStyle(MobileButtonStyle())
+                                    .HAlign(HAlign_Center).VAlign(VAlign_Center).ButtonColorAndOpacity(Ink())
+                                    .OnClicked_Lambda([MenuOwner]() { if (MenuOwner.IsValid()) MenuOwner->OpenMobileDeveloperMenu(); return FReply::Handled(); })
+                                    [SNew(STextBlock).Text(FText::FromString(TEXT("GM 工具")))
+                                        .Font(BrainMiningFonts::Style("Bold", 26)).ColorAndOpacity(Cream())]]]
+                        + SHorizontalBox::Slot().FillWidth(1)[RowButton(TEXT("door"), [this]() { ChangePage(EMobileMenuPage::Quit); })]];
             }
             else if (Page == EMobileMenuPage::Quit)
             {
@@ -187,6 +198,44 @@ namespace
                 Rows->AddSlot().AutoHeight()[SNew(SBox).HeightOverride(80)
                     [SNew(SSlider).Value_Lambda([this]() { return Controller.IsValid() ? (Controller->MobileLookSensitivity - .03f) / .15f : .4f; })
                         .OnValueChanged_Lambda([this](float Value) { if (Controller.IsValid()) { Controller->MobileLookSensitivity = .03f + .15f * Value; bSettingsChanged = true; } })]];
+                auto* Graphics = Controller.IsValid() ? Controller->GetGameInstance()->GetSubsystem<UMiningMobileGraphicsSettings>() : nullptr;
+                if (Graphics)
+                {
+                    Rows->AddSlot().AutoHeight().Padding(0, 24, 0, 12)
+                        [SNew(STextBlock).Text(FText::FromString(TEXT("画面超分辨率"))).Font(BrainMiningFonts::Style("Bold", 24)).ColorAndOpacity(Ink())];
+                    const TCHAR* Labels[] = {TEXT("自动"), TEXT("关闭"), TEXT("画质"), TEXT("均衡"), TEXT("性能")};
+                    auto Choices = SNew(SHorizontalBox);
+                    const TWeakObjectPtr<UMiningMobileGraphicsSettings> WeakGraphics = Graphics;
+                    for (int32 Index = 0; Index < UE_ARRAY_COUNT(Labels); ++Index)
+                    {
+                        const auto Choice = EMiningMobileUpscaling(Index);
+                        Choices->AddSlot().FillWidth(1).Padding(3, 0)
+                            [SNew(SBox).HeightOverride(80)
+                                [SNew(SButton).Tag(FName(*FString::Printf(TEXT("MobileUpscale_%d"), Index))).ButtonStyle(MobileButtonStyle())
+                                    .HAlign(HAlign_Center).VAlign(VAlign_Center)
+                                    .IsEnabled(Choice == EMiningMobileUpscaling::Off || Choice == EMiningMobileUpscaling::Auto || Graphics->IsASRSupported())
+                                    .ButtonColorAndOpacity_Lambda([WeakGraphics, Choice]() { return WeakGraphics.IsValid() && WeakGraphics->GetMode() == Choice ? Gold() : Ink(); })
+                                    .OnClicked_Lambda([WeakGraphics, Choice]() { if (WeakGraphics.IsValid()) WeakGraphics->SetMode(Choice); return FReply::Handled(); })
+                                    [SNew(STextBlock).Text(FText::FromString(Labels[Index])).Font(BrainMiningFonts::Style("Bold", 18))
+                                        .ColorAndOpacity_Lambda([WeakGraphics, Choice]() { return WeakGraphics.IsValid() && WeakGraphics->GetMode() == Choice ? Ink() : Cream(); })]]];
+                    }
+                    Rows->AddSlot().AutoHeight()[Choices];
+                    Rows->AddSlot().AutoHeight().Padding(0, 12, 0, 0)
+                        [SNew(STextBlock).Text_Lambda([WeakGraphics]()
+                        {
+                            if (!WeakGraphics.IsValid()) return FText::GetEmpty();
+                            if (!WeakGraphics->IsASRSupported()) return FText::FromString(TEXT("当前设备暂不支持超分辨率，自动保留原画质。"));
+                            switch (WeakGraphics->GetMode())
+                            {
+                            case EMiningMobileUpscaling::Off: return FText::FromString(TEXT("已关闭超分辨率，使用原有画面设置。"));
+                            case EMiningMobileUpscaling::Quality: return FText::FromString(TEXT("优先保留画面细节，同时减轻渲染负担。"));
+                            case EMiningMobileUpscaling::Balanced: return FText::FromString(TEXT("进一步减轻渲染负担，画面细节略有降低。"));
+                            case EMiningMobileUpscaling::Performance: return FText::FromString(TEXT("优先减轻渲染负担，画面会更柔和。"));
+                            default: return FText::FromString(TEXT("当前自动使用画质模式。设置立即生效并保存。"));
+                            }
+                        })
+                            .AutoWrapText(true).Font(BrainMiningFonts::Style("Regular", 18)).ColorAndOpacity(Ink())];
+                }
             }
             else
             {
@@ -323,6 +372,16 @@ TSharedRef<SWidget> MiningMobileUI::MakeToolbar(ABrainMiningPlayerController* Co
                     + SHorizontalBox::Slot().AutoWidth()[SNew(SBox).WidthOverride(100).HeightOverride(96)
                         [IconButton(TEXT("pause"), [Player]() { if (Player.IsValid()) Player->HandleMobilePause(); }, true)]]]]]];
     return Toolbar;
+}
+
+bool UMiningExperienceSubsystem::OpenMobileDeveloperMenu()
+{
+    auto* Player = MenuController.IsValid() ? Cast<ABrainMiningPlayerController>(MenuController.Get()) : nullptr;
+    if (!Menu || !bPauseMenu || bQuitConfirmation || !Player || !Player->IsUsingTouchControls()) return false;
+    CloseMenu();
+    if (ToggleDeveloperMenu()) return true;
+    ToggleMobileMenu();
+    return false;
 }
 
 bool UMiningExperienceSubsystem::ToggleMobileMenu(bool bUpgrade)

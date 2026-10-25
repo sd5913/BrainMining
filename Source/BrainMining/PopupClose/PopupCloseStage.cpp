@@ -1,5 +1,6 @@
 #include "PopupClose/PopupCloseStage.h"
 #include "MiningHapticsSubsystem.h"
+#include "MiningMobileGraphicsSettings.h"
 #include "Subtitles/SubtitleLibrary.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "HAL/IConsoleManager.h"
@@ -217,6 +218,12 @@ void APopupCloseStage::ConfigureArtRendering(bool bActive)
  // The mining project deliberately disables AA; textured office furniture benefits from temporal AA.
  // Restore both the previous value and its existing priority when leaving this art room.
  if(!GetWorld() || !GetWorld()->IsGameWorld())return;
+ auto* Instance=GetGameInstance();
+ if(auto* Graphics=Instance?Instance->GetSubsystem<UMiningMobileGraphicsSettings>():nullptr)
+ {
+  Graphics->SetOfficeAntiAliasing(bActive && bInteriorLighting);
+  return;
+ }
  auto AA=IConsoleManager::Get().FindConsoleVariable(TEXT("r.AntiAliasingMethod"));
  if(!AA)return;
  if(bActive && bInteriorLighting)

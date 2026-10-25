@@ -33,6 +33,7 @@ public:
     UFUNCTION(BlueprintCallable) bool DeveloperUnlockMineral(int32 ItemId);
     UFUNCTION(BlueprintCallable) bool TogglePauseMenu(bool bFromCredits=false);
     bool ToggleMobileMenu(bool bUpgrade = false);
+    bool OpenMobileDeveloperMenu();
     UFUNCTION(BlueprintCallable) bool JumpToCollectible(int32 ItemId);
     UFUNCTION(BlueprintCallable) void OpenPauseCollection();
     UFUNCTION(BlueprintCallable) void RequestQuitConfirmation();

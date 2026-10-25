@@ -22,6 +22,11 @@
 	],
 	"Plugins": [
 		{
+			"Name": "ArmASR",
+			"Enabled": true,
+			"PlatformAllowList": ["Win64", "Android"]
+		},
+		{
 			"Name": "GeometryProcessing",
 			"Enabled": true
 		},

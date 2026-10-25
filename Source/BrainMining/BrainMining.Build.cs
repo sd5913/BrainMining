@@ -27,7 +27,10 @@ public class BrainMining : ModuleRules
 		});
 
 		PublicDependencyModuleNames.AddRange(new string[] { "GeometryCore", "GeometryFramework", "DynamicMesh" });
-		PrivateDependencyModuleNames.AddRange(new[] { "RenderCore", "MoviePlayer" });
+		PrivateDependencyModuleNames.AddRange(new[] { "RenderCore", "RHI", "MoviePlayer" });
+		bool WithMobileASR = Target.Platform == UnrealTargetPlatform.Android || Target.Platform == UnrealTargetPlatform.Win64;
+		PublicDefinitions.Add("BRAINMINING_WITH_ARM_ASR=" + (WithMobileASR ? "1" : "0"));
+		if (WithMobileASR) PrivateDependencyModuleNames.Add("ArmASR");
         PrivateDependencyModuleNames.Add("Json");
         PrivateDependencyModuleNames.Add("ApplicationCore");
         RuntimeDependencies.Add("$(ProjectDir)/Content/UI/Gamepad/*.svg", StagedFileType.NonUFS);

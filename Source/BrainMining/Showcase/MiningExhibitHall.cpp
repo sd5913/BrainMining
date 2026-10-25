@@ -546,15 +546,17 @@ void AMiningExhibitHall::Tick(float DeltaSeconds)
             if(AreaKind(Next)==EMiningExperienceKind::Mining)
             { LastJourneyPrewarm=GetWorld()->GetTimeSeconds(); AGeneratedMiningRock::PrewarmTerrainAt(GetWorld(),Areas[Next].Entry.GetLocation(),5000.f); break; }
     TickMuseumSkipChord(DeltaSeconds);
+    const auto* OpeningRoom=ActiveArea==0?AMiningStartRoom::Find(GetWorld()):nullptr;
     // Encounter policies may restore an already-hidden lamp after the handoff.
-    // Repair it only in the third mine, without changing authored room lighting.
+    // Every mining passage needs a lamp; preserve the bedroom equipment reveal.
     if(bContinuousCampaign && Areas.IsValidIndex(ActiveArea) &&
-       Areas[ActiveArea].Tag==TEXT("BM_Campaign_MainGame03") && Controller.IsValid() && !IsInteractionOpen())
+       AreaKind(ActiveArea)==EMiningExperienceKind::Mining && Controller.IsValid() && !IsInteractionOpen() &&
+       (!OpeningRoom || OpeningRoom->bHeadlampUnlocked))
         if(auto* Pawn=Cast<ABrainMiningCharacter>(Controller->GetPawn()))
         {
             TArray<ULightComponent*> Lights;Pawn->GetComponents(Lights);
             for(auto* Light:Lights)if((Light->GetFName()==TEXT("MiningLight") || Light->GetFName()==TEXT("MiningFillLight")) &&
-                (!Light->IsVisible() || Light->Intensity<=0))
+                (!Light->IsVisible() || Light->bHiddenInGame || Light->Intensity<=0))
             {Pawn->ConfigureMiningLighting(1.4f,.22f);break;}
         }
     auto* GUI=Controller.IsValid()?Controller->MiningGUI.Get():nullptr;

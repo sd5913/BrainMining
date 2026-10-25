@@ -3,6 +3,10 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/RectLightComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "EngineUtils.h"
+#include "Engine/StaticMesh.h"
+#include "HAL/IConsoleManager.h"
+#include "RenderUtils.h"
 #include "UObject/ConstructorHelpers.h"
 
 APopupCloseOffice::APopupCloseOffice()
@@ -11,6 +15,8 @@ APopupCloseOffice::APopupCloseOffice()
  static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
  static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
  static ConstructorHelpers::FObjectFinder<UStaticMesh> Sphere(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+ static ConstructorHelpers::FObjectFinder<UMaterialInterface> NoGI(TEXT("/Game/PopupClose/OfficeArt/Architecture/MI_OfficeCeilingNoGI.MI_OfficeCeilingNoGI"));
+ CeilingWithoutGI=NoGI.Object;
  for(int32 I=0;I<15;++I)
  {
   auto Group=CreateDefaultSubobject<UInstancedStaticMeshComponent>(*FString::Printf(TEXT("OfficeGroup%d"),I));
@@ -35,6 +41,31 @@ void APopupCloseOffice::OnConstruction(const FTransform& Transform)
 void APopupCloseOffice::BeginPlay()
 {
  Super::BeginPlay();BuildOffice();
+ const auto* Lumen=IConsoleManager::Get().FindConsoleVariable(TEXT("r.Lumen.DiffuseIndirect.Allow"));
+ const auto* GI=IConsoleManager::Get().FindConsoleVariable(TEXT("r.DynamicGlobalIlluminationMethod"));
+ const auto* HardwareLumen=IConsoleManager::Get().FindConsoleVariable(TEXT("r.Lumen.HardwareRayTracing"));
+ const auto* SoftwareLumen=IConsoleManager::Get().FindConsoleVariable(TEXT("r.Lumen.TraceMeshSDFs"));
+ // This project's GI relies on hardware tracing; unsupported DX12 adapters
+ // also need the fallback when mesh distance-field tracing is disabled.
+ const bool bNoTracing=HardwareLumen && HardwareLumen->GetInt()!=0 && !IsRayTracingEnabled() && SoftwareLumen && SoftwareLumen->GetInt()==0;
+ const bool bMissingIndirect=GetWorld()->GetFeatureLevel()<ERHIFeatureLevel::SM6 || (Lumen && Lumen->GetInt()==0) || (GI && GI->GetInt()!=1) || bNoTracing;
+ int32 CompatibleTiles=0;
+ if(bUseImportedArchitecture && bMissingIndirect && CeilingWithoutGI)
+ {
+  // Only the authored office tiles in this streamed level receive the fallback.
+  // Neither the imported source asset nor any tunnel/other-room material changes.
+  for(TActorIterator<AActor> It(GetWorld());It;++It)
+  {
+   if(It->GetLevel()!=GetLevel() || !It->ActorHasTag(TEXT("OfficeAssetClose1")))continue;
+   TInlineComponentArray<UStaticMeshComponent*> Meshes(*It);
+   for(auto* Mesh:Meshes)
+    if(Mesh->GetStaticMesh() && Mesh->GetStaticMesh()->GetFName()==TEXT("SM_Ceiling_300a"))
+    {
+     Mesh->SetMaterial(0,CeilingWithoutGI);++CompatibleTiles;
+    }
+  }
+ }
+ if(bUseImportedArchitecture)UE_LOG(LogTemp,Display,TEXT("Office ceiling lighting: fallback_tiles=%d feature_level=%d ray_tracing=%d missing_indirect=%d"),CompatibleTiles,int32(GetWorld()->GetFeatureLevel()),IsRayTracingEnabled()?1:0,bMissingIndirect?1:0);
 }
 
 void APopupCloseOffice::BuildOffice()

@@ -28,7 +28,7 @@ void AMiningCollectible::BuildEmergenceParts()
         }
         return;
     }
-    const int32 Count=ItemId==12?3:ItemId==13?25:ItemId==15?24:ItemId==16?6:ItemId==17?16:ItemId==18?5:ItemId==19?7:ItemId==21?48:ItemId==22?30:(ItemId==2||ItemId==8||ItemId==10)?8:0;
+    const int32 Count=ItemId==12?3:ItemId==13?25:ItemId==15?24:ItemId==16?6:ItemId==17?16:ItemId==18?5:ItemId==19?7:ItemId==21?116:ItemId==22?30:ItemId==2?24:(ItemId==8||ItemId==10)?8:0;
     if(!Count)return;
     // Reuse four materials; transform existing components during animation,
     // never rebuild dynamic meshes or allocate materials every frame.
@@ -38,7 +38,7 @@ void AMiningCollectible::BuildEmergenceParts()
     {
         auto* M=UMaterialInstanceDynamic::Create(Base,this);
         M->SetVectorParameterValue(TEXT("Tint"),ItemId==10?FLinearColor(.3f,1,.06f):ItemId==16?FLinearColor(.62,.57,.48):ItemId==18?FLinearColor(1,.64,.11):ItemId==21?(I==0?FLinearColor(.68,.45,.3):Colors[I]):ItemId==22?(I==0?FLinearColor(.82,.91,.95):Colors[I]):ItemId==13?FLinearColor(.62,.70,.76):ItemId==12?FLinearColor(1,.69,.15):Colors[I]);
-        M->SetScalarParameterValue(TEXT("Glow"),ItemId==10?2.5f:ItemId==13?.45f:ItemId==12?1.3f:.45f);M->SetScalarParameterValue(TEXT("Metallic"),.7f);M->SetScalarParameterValue(TEXT("Roughness"),.25f);Mats.Add(M);
+        M->SetScalarParameterValue(TEXT("Glow"),ItemId==10?2.5f:ItemId==2?1.8f:ItemId==13?.45f:ItemId==12?1.3f:.45f);M->SetScalarParameterValue(TEXT("Metallic"),.7f);M->SetScalarParameterValue(TEXT("Roughness"),.25f);Mats.Add(M);
     }
     for(int32 I=0;I<Count;++I)
     {
@@ -56,7 +56,7 @@ void AMiningCollectible::BuildEmergenceParts()
         else
         {
             auto* Solid=NewObject<UStaticMeshComponent>(this);Part=Solid;
-            Solid->SetStaticMesh((ItemId==12||ItemId==2||ItemId==8||ItemId==10||ItemId==16||ItemId==17||ItemId==18||ItemId==19||(ItemId==21 && I%3==0))?Sphere:Cube);Solid->SetMaterial(0,Mats[ItemId==21?(I%3==0?0:1+(I/3)%3):ItemId==22?(I%6==0?1+(I/6)%3:0):I%4]);Solid->SetCollisionEnabled(ECollisionEnabled::NoCollision);Solid->SetCastShadow(false);
+            Solid->SetStaticMesh((ItemId==12||ItemId==2||ItemId==8||ItemId==10||ItemId==16||ItemId==17||ItemId==18||ItemId==19||(ItemId==21 && I<108 && I%3==0))?Sphere:Cube);Solid->SetMaterial(0,Mats[ItemId==21?(I>=108?(I%4==1?0:2):(I%3==0?0:1+(I/3)%3)):ItemId==22?(I%6==0?1+(I/6)%3:0):I%4]);Solid->SetCollisionEnabled(ECollisionEnabled::NoCollision);Solid->SetCastShadow(false);
         }
         AddInstanceComponent(Part);Part->SetupAttachment(Model);
         FVector P,Scale;FRotator R=FRotator::ZeroRotator;
@@ -73,9 +73,18 @@ void AMiningCollectible::BuildEmergenceParts()
         }
         else if(ItemId==21)
         {
-            // Sixteen low-poly passengers: head, coat and two joined legs.
-            P={-5,0,float(I%3==0?-4:I%3==1?-13:-24)};
-            Scale=I%3==0?FVector(.06):I%3==1?FVector(.06,.08,.12):FVector(.045,.06,.10);
+            if(I<108)
+            {
+                P={-5,0,float(I%3==0?-4:I%3==1?-13:-24)};
+                Scale=I%3==0?FVector(.06):I%3==1?FVector(.06,.08,.12):FVector(.045,.06,.10);
+            }
+            else
+            {
+                const float Side=I<112?-1.f:1.f;const int Detail=(I-108)%4;
+                P={-30.f,Side*11.f,Detail==1?8.f:Detail==2?-11.f:Detail==3?-3.f:-4.f};
+                if(Detail==1)P.X=-31.2f;else if(Detail>=2)P.X=-31.5f;
+                Scale=Detail==0?FVector(.035,.22,.56):Detail==1?FVector(.008,.17,.23):Detail==2?FVector(.008,.22,.035):FVector(.012,.012,.08);
+            }
         }
         else if(ItemId==22)
         {
@@ -87,7 +96,7 @@ void AMiningCollectible::BuildEmergenceParts()
         else if(ItemId==18){P={0,0,40};Scale={.075,.075,.017};}
         else if(ItemId==16){P={-8.f,float(I*8-20),20};Scale={.018,.025,.055};}
         else if(ItemId==19){P={0,0,22};Scale=FVector(.018);}
-        else if(ItemId==2||ItemId==8||ItemId==10){P={0,0,0};Scale=FVector(.018);}
+        else if(ItemId==2||ItemId==8||ItemId==10){P={0,0,0};Scale=FVector(ItemId==2?.045f:.018f);}
         else
         {
             const float A=(I%6)*PI/3,Radius=13+(I/6)*7;
@@ -110,6 +119,29 @@ void AMiningCollectible::AnimateEmergence(float Time)
         Model->SetRelativeRotation(FRotator(FMath::Sin(Time*.7f)*1.2f,0,FMath::Sin(Time*.9f+ItemId)*1.6f));
         Outline->SetRelativeLocationAndRotation(Model->GetRelativeLocation(),Model->GetRelativeRotation());
     }
+    if(ItemId==3)
+    {
+        const bool Flying=true;
+        const float Beat=Time*2*PI*1.65f;
+        if(Flying)
+        {
+            Model->SetRelativeLocation(FVector(0,0,3.5f*FMath::Sin(Beat-.6f)+1.5f*FMath::Sin(Time*1.4f)));
+            Model->SetRelativeRotation(FRotator(3+2*FMath::Sin(Beat-.4f),0,1.5f*FMath::Sin(Time*1.7f)));
+            Outline->SetRelativeLocationAndRotation(Model->GetRelativeLocation(),Model->GetRelativeRotation());
+        }
+        for(int I=0;I<EmergenceParts.Num();++I)
+        {
+            // Both shoulders stay attached; mirrored rolls lift and lower the feathers together.
+            const float Side=I==0?-1.f:1.f;
+            EmergenceParts[I]->SetRelativeRotation(FRotator(0,0,Side*(Flying?12.f+48.f*FMath::Sin(Beat):-72.f)));
+        }
+        return;
+    }
+    const bool Preview=ActorHasTag(TEXT("CollectionPreview"));
+    // Reveal the train at 40%, independently of its 70% pickup/release gate.
+    if(ItemId==21 && (Exposure>=.40f || bReleased) && EmergenceDoorStartTime<0)EmergenceDoorStartTime=Time;
+    const float DoorAge=Preview?10.f:EmergenceDoorStartTime<0?-1.f:Time-EmergenceDoorStartTime;
+    if(ItemId==21)bSubwayPickupReady=DoorAge>=1.35f;
     for(int32 I=0;I<EmergenceParts.Num();++I)
     {
         auto* Part=EmergenceParts[I].Get();const auto& Home=EmergenceHomes[I];
@@ -141,10 +173,19 @@ void AMiningCollectible::AnimateEmergence(float Time)
         }
         else if(ItemId==21)
         {
-            const int Person=I/3;const float T=FMath::Fmod(Time*.16f+Person/16.f,1.f);
+            if(I>=108)
+            {
+                const float Open=FMath::SmoothStep(.1f,1.2f,DoorAge);
+                Part->SetRelativeLocation(Home.GetLocation()+FVector(0,(I<112?-1:1)*23.f*Open,0));
+                continue;
+            }
+            const bool CrowdVisible=DoorAge>=1.2f;
+            Part->SetVisibility(CrowdVisible);if(!CrowdVisible)continue;
+            const float CrowdAge=Preview?Time:DoorAge-1.2f;
+            const int Person=I/3;const float T=FMath::Fmod(CrowdAge*.16f+Person/36.f,1.f);
             const float Exit=FMath::SmoothStep(.08f,.8f,T);
             const FVector P(-4-Exit*80,((Person%5)-2)*4+Exit*((Person%7)-3)*12,Home.GetLocation().Z+FMath::Sin(Time*11+Person)*.7f);
-            Part->SetRelativeLocation(P);Part->SetRelativeScale3D(Home.GetScale3D()*FMath::Min(FMath::SmoothStep(0.f,.08f,T),1-FMath::SmoothStep(.83f,1.f,T)));
+            Part->SetRelativeLocation(P);Part->SetRelativeScale3D(Home.GetScale3D()*(Preview?1.f:FMath::SmoothStep(0.f,.35f,CrowdAge))*FMath::Min(FMath::SmoothStep(0.f,.08f,T),1-FMath::SmoothStep(.83f,1.f,T)));
         }
         else if(ItemId==22)
         {
@@ -162,7 +203,12 @@ void AMiningCollectible::AnimateEmergence(float Time)
         {
             const float T=FMath::Fmod(Time*.25f+I*.163f,1.f),A=Time+I*2.4f;
             const float Z=ItemId==16?20:ItemId==19?23:ItemId==8?48:0;
-            Part->SetRelativeLocation(FVector(FMath::Sin(A)*(4+T*8),FMath::Cos(A)*(5+T*12),Z+T*(ItemId==16?42:20)));
+            if(ItemId==2)
+            {
+                // Bubbles rise from each of the four test-tube mouths.
+                Part->SetRelativeLocation(FVector(-4+FMath::Sin(A)*7,-30+(I%4)*20+FMath::Cos(A)*4,20+T*65));
+            }
+            else Part->SetRelativeLocation(FVector(FMath::Sin(A)*(4+T*8),FMath::Cos(A)*(5+T*12),Z+T*(ItemId==16?42:20)));
             Part->SetRelativeScale3D(Home.GetScale3D()*FMath::Sin(T*PI)*(1+T));
         }
         else if(ItemId==10)

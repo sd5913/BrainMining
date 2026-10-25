@@ -47,6 +47,27 @@ bool FCollectionExposureTest::RunTest(const FString& Parameters)
     Bird->Release();TestFalse(TEXT("Direct release cannot bypass intact soil gate"),Bird->bReleased);
     Rock->SuccessfulCuts=1;
     TestTrue(TEXT("One successful cut enables normal exposure release"),Bird->CanRelease(.7f));
+    Bird->Release();
+    const FTransform BirdPose=Bird->GetActorTransform();
+    TestEqual(TEXT("Resident pigeon has two separate feathered wings"),Bird->EmergenceParts.Num(),2);
+    if(Bird->EmergenceParts.Num()==2)
+    {
+        Bird->AnimateEmergence(.08f);
+        const FRotator Up=Bird->EmergenceParts[0]->GetRelativeRotation();
+        const FVector Shoulder=Bird->EmergenceParts[0]->GetRelativeLocation();
+        Bird->AnimateEmergence(.27f);
+        TestFalse(TEXT("Released pigeon beats its wings"),Up.Equals(Bird->EmergenceParts[0]->GetRelativeRotation()));
+        TestTrue(TEXT("Wing shoulder stays attached during flapping"),Shoulder.Equals(Bird->EmergenceParts[0]->GetRelativeLocation()));
+        TestTrue(TEXT("Left and right wing beats are mirrored"),FMath::IsNearlyZero(Bird->EmergenceParts[0]->GetRelativeRotation().Roll+Bird->EmergenceParts[1]->GetRelativeRotation().Roll));
+        Bird->SetHighlighted(true);
+        for(auto Part:Bird->EmergenceParts)
+        {
+            auto* Wing=Cast<UDynamicMeshComponent>(Part.Get());
+            TestTrue(TEXT("Hover outline includes moving feathers"),Wing && Wing->bRenderCustomDepth);
+            TestTrue(TEXT("Wing visuals never block interaction"),Wing && Wing->GetCollisionEnabled()==ECollisionEnabled::NoCollision);
+        }
+    }
+    TestTrue(TEXT("Hovering keeps the saved pickup transform stable"),BirdPose.Equals(Bird->GetActorTransform()));
     Bird->Destroy();Rock->SuccessfulCuts=0;
     for(int Id=0;Id<4;++Id)
     {
@@ -119,6 +140,13 @@ bool FCollectionExpansionTest::RunTest(const FString& Parameters)
     FMiningCollectionPlacement Placement; Placement.ItemId=11; Field->AuthoredPlacements.Add(Placement); Field->AuthoredPlacements.Add(Placement);
     TestEqual(TEXT("Authored catalogue deduplicates types"),Field->CatalogueIds().Num(),1);
     TestEqual(TEXT("Authored catalogue supports nonzero IDs"),Field->CatalogueIds()[0],11);
+    auto* Campaign=World->SpawnActor<AMiningCollectionField>();Campaign->bCatalogueOnly=true;
+    const auto Order=Campaign->CatalogueIds();TSet<int32> UniqueIds;for(int Id:Order)UniqueIds.Add(Id);
+    TestEqual(TEXT("Campaign order keeps all stable inventory IDs"),UniqueIds.Num(),AMiningCollectible::ItemTypeCount);
+    TestTrue(TEXT("Copper and iron rewards lead the catalogue"),Order[0]==12 && Order[1]==13);
+    TestTrue(TEXT("All four mineral rewards are first"),Order[2]==14 && Order[3]==15);
+    TestEqual(TEXT("Diamond follows malachite"),Order.IndexOfByKey(15),Order.IndexOfByKey(14)+1);
+    for(int Id:{3,9,6,7,11,18,19})TestTrue(TEXT("Second passage and its rooms follow diamond and precede the third passage"),Order.IndexOfByKey(Id)>Order.IndexOfByKey(15) && Order.IndexOfByKey(Id)<Order.IndexOfByKey(20));
 
     auto* Soil=World->SpawnActor<ADiggableRock>(FVector(0,0,130),FRotator::ZeroRotator);
     Soil->RockSize=FVector(600,600,260); Soil->ResetRock();
@@ -170,6 +198,26 @@ bool FCollectionEchoTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Pickup highlighting preserves echo-controlled contours"),Item->Outline->IsVisible());
         TestFalse(TEXT("Pickup highlighting never creates permanent visibility in dark maze"),Item->Model->bRenderCustomDepth);
     }
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSubwayRevealTest,"BrainMining.Collection.SubwayRevealBeforePickup",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FSubwayRevealTest::RunTest(const FString&)
+{
+    UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+    ON_SCOPE_EXIT { World->DestroyWorld(false); };
+    auto* Train=World->SpawnActor<AMiningCollectible>();Train->BuildModel(21);
+    Train->Exposure=.39f;Train->AnimateEmergence(.5f);
+    TestFalse(TEXT("No crowd below reveal threshold"),Train->EmergenceParts[0]->IsVisible());
+    Train->Exposure=.4f;Train->AnimateEmergence(1.f);Train->AnimateEmergence(1.6f);
+    TestTrue(TEXT("Doors slide at 40 percent exposure before release"),Train->EmergenceParts[108]->GetRelativeLocation().Y<-11.f);
+    TestFalse(TEXT("People wait until doors are open"),Train->EmergenceParts[0]->IsVisible());
+    Train->AnimateEmergence(2.4f);
+    TestTrue(TEXT("Crowd emerges while the train is still below pickup exposure"),Train->EmergenceParts[0]->IsVisible());
+    TestFalse(TEXT("Opening doors does not bypass 70 percent pickup gate"),Train->IsCollectible());
+    Train->bReleased=true;TestTrue(TEXT("Already-open released train can be collected"),Train->IsCollectible());
+    Train->bReleased=false;Train->Exposure=0;Train->BuildModel(21);Train->Exposure=1;Train->bReleased=true;Train->AnimateEmergence(4.f);
+    TestFalse(TEXT("A single large excavation cannot collect train before opening animation"),Train->IsCollectible());
+    Train->AnimateEmergence(5.4f);TestTrue(TEXT("Large excavation unlocks pickup after doors and crowd appear"),Train->IsCollectible());
     return true;
 }
 #endif

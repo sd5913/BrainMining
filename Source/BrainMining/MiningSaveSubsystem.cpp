@@ -27,6 +27,7 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "CardRoomStage.h"
+#include "EchoPassageStage.h"
 #include "Async/Async.h"
 #include "SaveGameSystem.h"
 #include "PlatformFeatures.h"
@@ -455,13 +456,11 @@ void UMiningSaveSubsystem::UpdateTutorial()
     if(Kind==EMiningExperienceKind::Office)PrototypesFound=FMath::Max(PrototypesFound,1);
     if(Kind==EMiningExperienceKind::Journey)
     {
-        PrototypesFound=FMath::Max(PrototypesFound,2);
-        // Match the authored card-room entrance volume, not sitting/finishing the duel.
-        for(TActorIterator<ACardRoomStage> It(GetWorld());It;++It)
+        for(TActorIterator<AEchoPassageStage> It(GetWorld());It;++It)
         {
-            const FVector Local=It->GetActorTransform().InverseTransformPosition(Position)-FVector(-75,0,115);
-            if(FMath::Abs(Local.X)<850 && FMath::Abs(Local.Y)<900 && FMath::Abs(Local.Z)<500)
-                PrototypesFound=FMath::Max(PrototypesFound,3);
+            // Same landing and room-entry latches used by the narration and exit chime.
+            if(It->bLanded)PrototypesFound=FMath::Max(PrototypesFound,2);
+            if(It->bCompleted)PrototypesFound=FMath::Max(PrototypesFound,3);
         }
     }
     if(Kind==EMiningExperienceKind::Museum)PrototypesFound=4;

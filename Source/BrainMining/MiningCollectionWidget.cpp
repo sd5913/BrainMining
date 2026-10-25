@@ -15,6 +15,36 @@
 #include "Engine/Texture2D.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Rendering/DrawElements.h"
+#include "Engine/DataTable.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Fonts/FontMeasure.h"
+
+namespace
+{
+FString FittedQuoteStyle(const FString& Quote, const URichTextBlock* Text)
+{
+    const UDataTable* Styles=Text->GetTextStyleSet();
+    const auto* Row=Styles?Styles->FindRow<FRichTextStyleRow>(TEXT("Quote"),TEXT("Collection quote"),false):nullptr;
+    if(!Row || !FSlateApplication::IsInitialized())return TEXT("Quote");
+    const auto Measure=FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
+    const float Width=Text->GetWrapTextAt()>0?Text->GetWrapTextAt():286.f;
+    const int32 Base=Row->TextStyle.Font.Size, Minimum=FMath::CeilToInt(Base*.82f);
+    for(int32 Size=Base;Size>=Minimum;--Size)
+    {
+        auto Font=Row->TextStyle.Font;Font.Size=Size;
+        int32 LineStart=0,Lines=1;
+        for(int32 I=1;I<=Quote.Len();++I)
+            if(Measure->Measure(FStringView(Quote).Mid(LineStart,I-LineStart),Font).X>Width-3.f)
+            {LineStart=I-1;++Lines;}
+        const float LastWidth=Measure->Measure(FStringView(Quote).Mid(LineStart),Font).X;
+        // Keep the authored alignment and body size. Only shrink a quote when
+        // its final line would otherwise contain a few isolated characters.
+        if(Lines==1 || LastWidth>=Measure->Measure(FStringView(TEXT("山在心里")),Font).X)
+            return Size==Base?TEXT("Quote"):FString::Printf(TEXT("QuoteFit%d"),Size);
+    }
+    return TEXT("Quote"); // Long quotations remain readable and wrap normally.
+}
+}
 
 void UMiningCollectionWidget::NativeConstruct()
 {
@@ -70,6 +100,22 @@ void UMiningCollectionWidget::NativeConstruct()
                 Condition->SetVisibility(ESlateVisibility::HitTestInvisible);
                 auto* ConditionSlot=Canvas->AddChildToCanvas(Condition);ConditionSlot->SetPosition(FVector2D(7,61));ConditionSlot->SetSize(FVector2D(208,28));
             }
+    if(auto* Description=Cast<URichTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))
+    {
+        Description->SetJustification(ETextJustify::Left);
+        if(auto* Styles=Description->GetTextStyleSet())
+            if(const auto* Quote=Styles->FindRow<FRichTextStyleRow>(TEXT("Quote"),TEXT("Collection quote"),false))
+            {
+                const FRichTextStyleRow Original=*Quote;
+                auto* LocalStyles=DuplicateObject<UDataTable>(Styles,Description);
+                for(int32 Size=Original.TextStyle.Font.Size-1;Size>=FMath::CeilToInt(Original.TextStyle.Font.Size*.82f);--Size)
+                {
+                    auto Row=Original;Row.TextStyle.Font.Size=Size;
+                    LocalStyles->AddRow(FName(*FString::Printf(TEXT("QuoteFit%d"),Size)),Row);
+                }
+                Description->SetTextStyleSet(LocalStyles);
+            }
+    }
     RefreshCollection();
 }
 void UMiningCollectionWidget::SetCollection(AMiningCollectionField* Field){Collection=Field;CurrentPage=Collection?FMath::Max(0,Collection->CatalogueIds().IndexOfByKey(Collection->SelectedId))/4:0;RefreshCollection();}
@@ -134,7 +180,7 @@ void UMiningCollectionWidget::RefreshCollection()
         {return Value.Replace(TEXT("&"),TEXT("&amp;")).Replace(TEXT("<"),TEXT("&lt;")).Replace(TEXT(">"),TEXT("&gt;"));};
         FString Body,Quote;
         const FString Markup=Owned && Description.Split(TEXT("\n\n"),&Body,&Quote)
-            ?Escape(Body)+TEXT("\n\n<Quote>")+Escape(Quote)+TEXT("</>"):Escape(Description);
+            ?Escape(Body)+TEXT("\n\n<")+FittedQuoteStyle(Quote,T)+TEXT(">")+Escape(Quote)+TEXT("</>"):Escape(Description);
         if(!T->GetText().EqualTo(FText::FromString(Markup)))
         {
             T->SetText(FText::FromString(Markup));

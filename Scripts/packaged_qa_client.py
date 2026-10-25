@@ -20,8 +20,18 @@ class Client:
         request = dict(id=uuid.uuid4().hex, op=op, **fields)
         temporary = self.directory / 'command.tmp'
         temporary.write_text(json.dumps(request, ensure_ascii=False), encoding='utf-8')
-        temporary.replace(self.directory / 'command.json')
         deadline = time.monotonic() + timeout
+        # Windows may briefly lock command.json while the game polls it.
+        # Keep the same request/id and retry the atomic publication only.
+        publish_deadline = min(deadline, time.monotonic() + 3)
+        while True:
+            try:
+                temporary.replace(self.directory / 'command.json')
+                break
+            except PermissionError:
+                if time.monotonic() >= publish_deadline:
+                    raise
+                time.sleep(.02)
         while time.monotonic() < deadline:
             try:
                 result = json.loads((self.directory / 'response.json').read_text(encoding='utf-8-sig'))

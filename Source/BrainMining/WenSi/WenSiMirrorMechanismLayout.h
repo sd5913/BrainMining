@@ -102,8 +102,24 @@ namespace WenSiMuseumMechanisms
    }
   };
   Cable(TEXT("BalanceSignalWire"),{FVector(1500,-453,6),FVector(1500,-535,6),FVector(2120,-535,6),FVector(2155,-395,6),FVector(2155,-395,145),FVector(2180,-395,145)},Dark,TEXT("WenSiBalanceCable"));
-  Cable(TEXT("CircuitOutputWire"),{FVector(1900,148,80),FVector(2020,148,80),FVector(2020,-305,6),FVector(2140,-305,6),FVector(2140,-305,145),FVector(2180,-305,145)},Red,TEXT("WenSiPowerCable"));
-  Cable(TEXT("PlugSupplyWire"),{FVector(1880,576,130),FVector(1880,545,110),FVector(1880,520,6),FVector(1810,520,6),FVector(1810,92,6),FVector(1900,92,80)},Red,TEXT("WenSiPlugSupplyCable"));
+  Cable(TEXT("CircuitOutputWire"),{FVector(1900,153,73),FVector(1900,174,73),FVector(2030,174,73),FVector(2030,174,6),FVector(2030,-305,6),FVector(2140,-305,6),FVector(2140,-305,145),FVector(2180,-305,145)},Red,TEXT("WenSiPowerCable"));
+  Cable(TEXT("PlugSupplyWire"),{FVector(1880,576,130),FVector(1880,545,110),FVector(1880,520,6),FVector(1810,520,6),FVector(1810,65,6),FVector(1900,65,6),FVector(1900,65,73),FVector(1900,87,73)},Red,TEXT("WenSiPlugSupplyCable"));
+  // A contrasting aperture rim and exposed terminals communicate the electrical mechanism.
+  for(int Side:{-1,1})
+  {
+   Part(TEXT("HopperApertureRimX"),FVector(1900+Side*18,120,182),FVector(4,40,3),Cube,Dark);
+   Part(TEXT("HopperApertureRimY"),FVector(1900,120+Side*18,182),FVector(32,4,3),Cube,Dark);
+   Part(TEXT("ContactInsulator"),FVector(1900,120+Side*28,54),FVector(26,14,18),Cube,Blue);
+   Part(TEXT("ContactTerminal"),FVector(1900,120+Side*23,84),FVector(24,3,35),Cube,Brass);
+  }
+  // Lightning mark on the visible front of the base, made from three simple strokes.
+  for(auto Segment:{TPair<FVector,FVector>(FVector(1809,124,28),FVector(1809,116,17)),
+                    TPair<FVector,FVector>(FVector(1809,116,17),FVector(1809,125,17)),
+                    TPair<FVector,FVector>(FVector(1809,125,17),FVector(1809,117,6))})
+  {
+   auto Mark=Part(TEXT("CircuitLightning"),FVector::ZeroVector,FVector::OneVector,Cylinder,Brass);
+   CylinderBetween(Mark,Segment.Key,Segment.Value,2.f);
+  }
   for(TActorIterator<AWenSiMirrorExhibit> It(World);It;++It)if(It->Kind==6)It->SetActorLocation(FVector(1500,-430,BlockRestZ));
  }
 #endif

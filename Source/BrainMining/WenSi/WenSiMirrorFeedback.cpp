@@ -17,8 +17,6 @@ void AWenSiMirrorExhibit::BuildMirrorPresence()
  auto Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WenSi/Mirror/Materials/M_MirrorMiner.M_MirrorMiner"));
  if(!Material)Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WenSi/Museum/Materials/MI_Limestone.MI_Limestone"));
  auto Cylinder=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
- auto Cone=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cone.Cone"));
- const FLinearColor Steel(.39f,.48f,.52f),Wood(.30f,.15f,.055f);
  auto Shape=[&](const TCHAR* Name,UStaticMesh* Mesh,FVector Position,FVector Size,FLinearColor Tint,FRotator Rotation=FRotator::ZeroRotator)
  {
   auto Part=NewObject<UStaticMeshComponent>(MirrorPresence,FName(Name));Part->SetupAttachment(Root);
@@ -34,15 +32,17 @@ void AWenSiMirrorExhibit::BuildMirrorPresence()
   auto Part=Shape(Name,Sphere,Position,Size,FLinearColor(1.f,.88f,.64f));
   if(Glow){auto Paint=UMaterialInstanceDynamic::Create(Glow,this);Paint->SetScalarParameterValue(TEXT("Strength"),Strength);Paint->SetScalarParameterValue(TEXT("SoftOpacity"),Opacity);Part->SetMaterial(0,Paint);}
  };
- // A soft, anonymous egg of light carries the tool. The outer shell feathers
+ // A soft, anonymous egg of light wears a simple miner's lamp helmet. The outer shell feathers
  // into the reflection; there are no facial features, clothes or limbs.
  Egg(TEXT("MirrorEggCore"),FVector(0,0,-2),FVector(104,108,120),6.f,.8f);
  Egg(TEXT("MirrorEggHalo"),FVector(0,0,-2),FVector(124,128,140),2.f,.22f);
- Egg(TEXT("MirrorEggGrip"),FVector(20,66,-12),FVector(18),4.f,.7f);
- Shape(TEXT("MinerPickaxeHandle"),Cylinder,FVector(23,69,4),FVector(5,5,94),Wood);
- Shape(TEXT("MinerPickaxeHead"),Cube,FVector(23,69,49),FVector(10,43,10),Steel);
- Shape(TEXT("MinerPickaxeTipLeft"),Cone,FVector(23,40,45),FVector(11,11,26),Steel,FRotator(0,0,110));
- Shape(TEXT("MinerPickaxeTipRight"),Cone,FVector(23,98,45),FVector(11,11,26),Steel,FRotator(0,0,-110));
+ const FLinearColor PaleYellow(1.f,.76f,.16f),Band(.55f,.43f,.20f);
+ Shape(TEXT("MinerHelmetDome"),Sphere,FVector(0,0,52),FVector(99,106,40),PaleYellow);
+ Shape(TEXT("MinerHelmetBrim"),Cylinder,FVector(5,0,41),FVector(112,120,5),PaleYellow);
+ Shape(TEXT("MinerLampHousing"),Cylinder,FVector(50,0,55),FVector(25,25,10),Band,FRotator(90,0,0));
+ auto* Lens=Shape(TEXT("MinerLampLens"),Sphere,FVector(56,0,55),FVector(5,18,18),FLinearColor(1,.94f,.7f));
+ if(auto* Lamp=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WenSi/Mirror/Materials/M_ConductiveArc")))
+ {auto* Paint=UMaterialInstanceDynamic::Create(Lamp,this);Paint->SetVectorParameterValue(TEXT("Tint"),FLinearColor(4.f,3.6f,2.6f));Lens->SetMaterial(0,Paint);}
 
 }
 

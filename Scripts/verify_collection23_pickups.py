@@ -25,8 +25,7 @@ def item(Id):return next(x for x in cmd('actors',filter='MiningCollectible')['ac
 try:
  launch();wait(lambda s:s['opening'] and s['menu_buttons']);cmd('start');wait(lambda s:not s['opening']);cmd('gm_jump',area=0);time.sleep(1)
  cmd('pose',eye=[-30685,0,12125],target=[-30150,0,12150]);time.sleep(.7);shot('entrance-before-mining')
- authored=json.loads((root/'Saved/Validation/Collection23/authoring.json').read_text(encoding='utf8'))['placements'];taiji=json.loads((root/'Saved/Validation/Collection23/refinement.json').read_text(encoding='utf8'))['taiji']
- next(x for x in authored if x['id']==20).update(taiji)
+ authored=json.loads((root/'Config/BranchCollectiblePlacements.json').read_text(encoding='utf8'))
  bird=next(x for x in json.loads((root/'Saved/Validation/EmptyDeadEnds/saved-map.json').read_text(encoding='utf8'))['collectibles'] if x['id']==3)
  n=[bird['clue'][j]-bird['position'][j] for j in range(3)];d=math.sqrt(sum(v*v for v in n));bird.update(region=2,normal=[v/d for v in n]);authored.append(bird)
  for spec in authored:

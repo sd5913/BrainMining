@@ -1,4 +1,7 @@
 #include "HeavenToiletWater.h"
+#include "Engine/PostProcessVolume.h"
+#include "EngineUtils.h"
+#include "GameFramework/PlayerController.h"
 #include "MiningRoomAudioSubsystem.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
@@ -95,6 +98,8 @@ void AHeavenToiletWater::RebuildWater()
 void AHeavenToiletWater::BeginPlay()
 {
     Super::BeginPlay(); RebuildWater();
+    for(TActorIterator<APostProcessVolume> V(GetWorld());V;++V)
+        if(V->ActorHasTag(TEXT("BM_HeavenInteriorExposure"))) {InteriorExposure=*V;break;}
     // Entry detection must observe departures, including GM jumps to another
     // region, so returning to the room can play its one-shot cue again.
     Tags.AddUnique(TEXT("BM_PlayerEffect"));
@@ -196,6 +201,20 @@ void AHeavenToiletWater::Tick(float DeltaSeconds)
         const bool Inside=FVector::DistSquared2D(P,Center)<FMath::Square(EntryRadius) && P.Z>Center.Z-100 && P.Z<Center.Z+1800;
         if(Inside && !bPlayerInHeaven)UMiningRoomAudioSubsystem::Emit(this,TEXT("S_HeavenAngelChoir"),.45f,false,0.f);
         bPlayerInHeaven=Inside;
+    }
+    if(InteriorExposure)
+    {
+        FVector Eye;FRotator View;
+        if(auto* PC=GetWorld()->GetFirstPlayerController())
+        {
+            PC->GetPlayerViewPoint(Eye,View);
+            const FVector P=Eye-GetActorLocation();
+            // The sky room is circular. Its old rectangular exposure brush
+            // extended into diggable earth at the corners, crushing both the
+            // headlamp and emissive pickaxe. Blend only INSIDE the actual sky.
+            InteriorExposure->BlendWeight=(1-FMath::SmoothStep(Radius-200,Radius-30,float(P.Size2D())))
+                *FMath::SmoothStep(-20.f,60.f,float(P.Z))*(1-FMath::SmoothStep(4100.f,4300.f,float(P.Z)));
+        }
     }
     CheckTime+=DeltaSeconds;
     if(CheckTime>=.25f)

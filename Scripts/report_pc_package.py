@@ -115,8 +115,12 @@ def create_verified_zip(archive, output, files):
 
 
 def build_report(archive, report, output, baseline=None):
-    if not (archive / "BrainMining.exe").is_file():
+    if not (archive / "WOoOW.exe").is_file():
         raise ValueError("Windows launcher missing")
+    if not (archive / "BrainMining/Binaries/Win64/WOoOW-Win64-Shipping.exe").is_file():
+        raise ValueError("WOoOW Shipping executable missing")
+    if list(archive.rglob("BrainMining*.exe")):
+        raise ValueError("Obsolete game executable included in distribution")
     request = json.loads((report / "request.json").read_text(encoding="utf-8-sig"))
     if request.get("plan_only"):
         raise ValueError("A packaging plan is not a completed build")
@@ -182,7 +186,7 @@ def build_report(archive, report, output, baseline=None):
             "removed_assets": sorted(set(previous["assets"]) - set(result["assets"])),
         }
     (report / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-    output.with_suffix(".zip.sha256.txt").write_text(f"{result['zip_sha256']}  {output.name}\n", encoding="utf-8")
+    (report / "package.sha256.txt").write_text(f"{result['zip_sha256']}  {output.name}\n", encoding="utf-8")
     with (report / "asset-sizes.csv").open("w", encoding="utf-8-sig", newline="") as stream:
         writer = csv.writer(stream)
         writer.writerow(["asset", "attributed_compressed_bytes"])

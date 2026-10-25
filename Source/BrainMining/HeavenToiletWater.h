@@ -5,6 +5,7 @@
 #include "HeavenToiletWater.generated.h"
 
 class ADiggableRock;
+class APostProcessVolume;
 class UDynamicMeshComponent;
 class UMaterialInterface;
 class UMaterialInstanceDynamic;
@@ -22,6 +23,7 @@ public:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
 
+    UPROPERTY(Transient) TObjectPtr<APostProcessVolume> InteriorExposure;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<UDynamicMeshComponent> Basin;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<UDynamicMeshComponent> Spill;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Water") TObjectPtr<UNiagaraComponent> OutletSpray;

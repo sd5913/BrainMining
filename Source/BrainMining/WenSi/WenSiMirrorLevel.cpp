@@ -146,7 +146,9 @@ static void UpgradeBalanceMechanisms()
 {
  if(!GEditor || GEditor->PlayWorld)return;
  UWorld* World=GEditor->GetEditorWorldContext().World();
- if(!World || World->GetOutermost()->GetName()!=TEXT("/Game/WenSi/Maps/Lvl_WenSi_MirrorMuseum"))return;
+ if(!World)return;
+ const FString Map=World->GetOutermost()->GetName();
+ if(Map!=TEXT("/Game/WenSi/Maps/Lvl_WenSi_MirrorMuseum") && Map!=TEXT("/Game/WenSi/Maps/Lvl_WenSi_MirrorMuseum1"))return;
  TArray<AActor*> Retired;
  for(TActorIterator<AActor> It(World);It;++It)
  {
@@ -155,7 +157,7 @@ static void UpgradeBalanceMechanisms()
  }
  for(auto Actor:Retired)World->EditorDestroyActor(Actor,true);
  WenSiMuseumMechanisms::Build(World);
- const bool Saved=UEditorLoadingAndSavingUtils::SaveMap(World,TEXT("/Game/WenSi/Maps/Lvl_WenSi_MirrorMuseum"));
+ const bool Saved=UEditorLoadingAndSavingUtils::SaveMap(World,Map);
  UE_LOG(LogTemp,Display,TEXT("WenSi balance upgrade: retired=%d balance=1 cylindrical_cables=3 wall_plug=1 red_button=1 saved=%d"),Retired.Num(),Saved);
 }
 static FAutoConsoleCommand UpgradeBalanceMuseum(TEXT("WenSi.UpgradeBalance"),TEXT("Build the balance with a raised red button, low ring and wall-plug wiring"),FConsoleCommandDelegate::CreateStatic(&UpgradeBalanceMechanisms));

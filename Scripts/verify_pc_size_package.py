@@ -97,7 +97,14 @@ def verify(executable, output):
         check(state["menu_open"], "pause menu opens in packaged game")
         capture("07-pause")
         command("pause")
-        command("gm_map", index=5)
+        state = wait_state(lambda state: not state["menu_open"])
+        # The developer list changes when standalone test maps are removed.
+        # Resolve the intended map instead of relying on an obsolete list index.
+        ending_map = "/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo"
+        maps = state["gm_maps"]
+        if ending_map not in maps:
+            raise AssertionError("Ending map is absent from the developer map list")
+        command("gm_map", index=maps.index(ending_map))
         state = wait_state(lambda state: state.get("ending_gate") == 0)
         states["ending"] = state
         state = command("neurons")

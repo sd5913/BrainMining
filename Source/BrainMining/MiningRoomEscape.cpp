@@ -249,7 +249,7 @@ void AMiningRoomEscape::Tick(float DeltaSeconds)
             UMiningRoomAudioSubsystem::Loop(this,TEXT("S_Water_Loop"),.25f+.2f*WaterProgress);
             if(SecondsLeft()>0 && SecondsLeft()<=15)UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Warning"),.5f,false,1.5f);
         }
-        else UMiningRoomAudioSubsystem::Loop(this,TEXT("A_TV_Loop"),.18f);
+        // The TV tunnel uses the actual equipped drill loops, not a permanent motor bed.
         TickFloatingProps(DeltaSeconds);
         Elapsed+=DeltaSeconds;
         const FVector P=Player->GetPawn()->GetActorLocation();

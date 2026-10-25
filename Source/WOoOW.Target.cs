@@ -3,9 +3,9 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class BrainMiningTarget : TargetRules
+public class WOoOWTarget : TargetRules
 {
-	public BrainMiningTarget(TargetInfo Target) : base(Target)
+	public WOoOWTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V7;

@@ -11,6 +11,9 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "NiagaraSystem.h"
+#include "WenSi/WenSiMirrorPuzzle.h"
+#include "WenSi/WenSiPuzzle.h"
+#include "EngineUtils.h"
 
 UMiningBombToolComponent::UMiningBombToolComponent()
 {
@@ -35,6 +38,8 @@ void UMiningBombToolComponent::BeginPlay()
 
 bool UMiningBombToolComponent::CanUse() const
 {
+    for(TActorIterator<AWenSiMirrorPuzzle> It(GetWorld());It;++It)if(It->bAreaActive)return false;
+    for(TActorIterator<AWenSiPuzzle> It(GetWorld());It;++It)if(It->bAreaActive)return false;
 	const auto* Pawn = Cast<APawn>(GetOwner());
 	const auto* PC = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
 	const auto* Mining = GetOwner()->FindComponentByClass<UMiningComponent>();

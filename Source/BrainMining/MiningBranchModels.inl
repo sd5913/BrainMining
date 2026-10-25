@@ -10,26 +10,45 @@ void BranchCollectible(int Id)
             for(int J=0;J<4;++J)
             {
                 FVector P(-10+J*7,S*20,-23+J*18);
-                Ellipsoid(P,{10,8,9},J%2?5:7,8,4);
-                for(int K=-1;K<=1;++K)Rod(P+FVector(-8,K*3,-4),P+FVector(-8,K*3,4),.65f,1);
+                // Irregular flattened cuts of beef, with pale fat seams and char.
+                const int First=Mesh.MaxVertexID();
+                Box(P,{5.5f,float(8+(J%2)*2),float(6+(J%3))},J%2?5:7);
+                const FQuat Twist(FVector::ForwardVector,(S*11+J*17)*PI/180.f);
+                for(int V=First;V<Mesh.MaxVertexID();++V)
+                {
+                    FVector Q=FVector(Mesh.GetVertex(V))-P;
+                    Q.Y+=(V%3-1)*1.3f;Q.Z+=(V%2?1:-1)*1.1f;
+                    Mesh.SetVertex(V,P+Twist.RotateVector(Q));
+                }
+                Rod(P+FVector(-6,-7,-3),P+FVector(-6,5,-1),.65f,0);
+                for(int K=-1;K<=1;++K)Rod(P+FVector(-6,K*3,-4),P+FVector(-6,K*3,4),.8f,1);
             }
         }
     }
     else if(Id==17)
     {
-        Box({0,0,-42},{31,43,5},5);Box({0,0,-34},{29,40,3},4);
-        // Clear front/back panes, dark corners and open top.
-        for(int X:{-1,1})Box({float(X*31),0,0},{.6,43,36},8);
-        for(int Y:{-1,1})Box({0,float(Y*43),0},{31,.6,36},8);
-        for(int X:{-1,1})for(int Y:{-1,1})Box({float(X*31),float(Y*43),0},{1.2,1.2,39},1);
-        for(int Y:{-1,1})Box({0,float(Y*43),39},{32,1.2,1.2},1);
+        // Open spherical glass bowl; a curved silhouette instead of rectangular panes.
+        constexpr int Sides=48,Rings=24;
+        int V[Rings+1][Sides];
+        for(int R=0;R<=Rings;++R)for(int S=0;S<Sides;++S)
+        {
+            const float T=FMath::Lerp(.80f,2.78f,float(R)/Rings),A=S*2*PI/Sides;
+            V[R][S]=Mesh.AppendVertex(FVector(46*FMath::Sin(T)*FMath::Cos(A),46*FMath::Sin(T)*FMath::Sin(A),46*FMath::Cos(T)));
+        }
+        for(int R=0;R<Rings;++R)for(int S=0;S<Sides;++S)
+        {int N=(S+1)%Sides;Tri(V[R][S],V[R+1][S],V[R+1][N],8);Tri(V[R][S],V[R+1][N],V[R][N],8);}
+        Ring({0,0,32},{33,33,0},1.5f,8);Cylinder({0,0,-44},17,3,8,32);
+        Cylinder({0,0,-32},30,3,4,32);
+        Cylinder({0,0,24},38,0.6f,8,48);
         for(int I=0;I<7;++I)
         {
-            FVector P(12+(I%2)*7,-32+I*10,-31);
-            Curve(P,P+FVector(0,8,13),P+FVector(0,-7,32),P+FVector(0,3,43),1.1f,2);
-            Ellipsoid(P+FVector(0,5,18),{1.5,7,3},2,8,4);
+            const float Angle=I*2.39996f, Height=20+(I*17)%26, Bend=FMath::Sin(I*1.7f)*8;
+            FVector P(11+FMath::Cos(Angle)*9,FMath::Sin(Angle)*24,-30);
+            Curve(P,P+FVector(-3,Bend,Height*.28f),P+FVector(5,-Bend,Height*.65f),P+FVector(-4,Bend*.5f,Height),.65f+(I%3)*.26f,2);
+            for(int J=0;J<2+I%3;++J)
+                Ellipsoid(P+FVector(-2,(J%2?1:-1)*(3+I%4),Height*(.25f+J*.15f)),{1.f,3.f+I%4,1.5f},2,8,4);
         }
-        for(int I=0;I<15;++I)Ellipsoid({float((I%3)*18-18),float((I*17)%74-37),-29},{4,5,2},I%2?6:0,8,4);
+        for(int I=0;I<15;++I)Ellipsoid({float((I%3)*14-14),float((I*13)%42-21),-29},{4,5,2},I%2?6:0,8,4);
     }
     else if(Id==18)
     {

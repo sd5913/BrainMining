@@ -1,3 +1,4 @@
+#include "MiningLoadingScreen.h"
 #include "MiningExperienceSubsystem.h"
 #include "MiningSaveSubsystem.h"
 #include "Subtitles/SubtitleSubsystem.h"
@@ -207,6 +208,7 @@ bool UMiningExperienceSubsystem::JumpToCollectible(int32 Id)
 
 void UMiningExperienceSubsystem::ReturnToMainMenu()
 {
+    FMiningLoadingScreen Saving(TEXT("保存中"));
     auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();
     if(GetWorld()->GetMapName().EndsWith(TEXT("Lvl_MainGame")) && !Saves->SaveProgress())
     {
@@ -215,5 +217,6 @@ void UMiningExperienceSubsystem::ReturnToMainMenu()
         return;
     }
     CloseMenu();bAllUIHidden=false;Saves->EndSession();
+    Saving.ContinueThroughLevelTravel();
     UGameplayStatics::OpenLevel(this,TEXT("/Game/MainGame/Maps/Lvl_MainGame"));
 }

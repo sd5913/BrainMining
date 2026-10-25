@@ -42,7 +42,7 @@ SHA-256：`a0ff44bcf951043d9736cf90ff6ac04ed5a7d86ca682be4850b10e8fd1326082`。
 pwsh -NoProfile -File Scripts/Package_PC_SizeOptimized.ps1
 ```
 
-默认顺序生成 Baseline 与 Optimized 两个 Shipping 包，每个包都重新构建和 Cook，独立使用 Cook、Stage、Archive、日志和验证目录。默认引擎为 `E:/UE5/UE_5.8`，可用 `-EngineRoot` 指定。
+默认只生成 Optimized Shipping 包；显式传入 `-Mode Both` 才进行双构建对比。每个包独立使用 Cook、Stage、Archive、日志和验证目录。默认引擎为 `E:/UE5/UE_5.8`，可用 `-EngineRoot` 指定。
 
 ```powershell
 pwsh -NoProfile -File Scripts/Package_PC_SizeOptimized.ps1 -PlanOnly
@@ -52,7 +52,7 @@ pwsh -NoProfile -File Scripts/Package_PC_SizeOptimized.ps1 -Mode Optimized
 
 `-PlanOnly` 只解析路径、检查原生材质入口并保存打包参数，不启动引擎，不表示 Cook 或打包成功。每次使用新的 RunName；失败产物不会自动删除。打包仍要求至少 6 GiB 可用物理内存、8 GiB 可用提交空间，且没有其他 Unreal 工作负载。不要关闭资源保护来强行启动。
 
-输出位于 `Builds/PCSize-时间戳/{Baseline,Optimized}`。每个目录包含 Windows 文件夹、完整 ZIP 及 SHA-256。报告位于 `Saved/Validation/PCSize/PCSize-时间戳`。
+日常交付仅输出 `Builds/PCSize-时间戳/挖哦1.4.zip`，压缩包内为 `Windows/WOoOW.exe`。不再套 Optimized 目录，也不在交付目录保留未压缩包。未压缩验证构建、Cook、Stage、SHA-256 和报告均在 `Saved/Validation/PCSize/PCSize-时间戳/Optimized`。显式双构建对比才分别使用 Baseline/Optimized 交付子目录。
 
 ## 优化内容
 
@@ -75,10 +75,30 @@ pwsh -NoProfile -File Scripts/Package_PC_SizeOptimized.ps1 -Mode Optimized
 
 发布前使用相同画质、分辨率与相机位置比较：主菜单和中文、近景收集物、办公室、卡牌房、镜子房、矿物发光、镐子/炸弹/钻机、博物馆及完整结局。优先回调具体资产的分辨率/RDO，不一次性关闭渲染功能。
 
-## 轻量测试
+## 2026-10-24 最新藏品与肉鸽版
+
+当前普通版 ZIP 为 1,904,661,599 字节。应用 PCSize 后，包含肉鸽扇翅更新的最终 ZIP 为 **1,097,293,012 字节**，减少 **42.39%**；解压后为 1,253,703,137 字节。
+
+交付文件：`Builds/PCSize-20261024-PigeonFinal/Optimized/BrainMining-Windows.zip`。
+
+SHA-256：`a3f56b064f89c53bddd425f6e2bed40056c6ed6e8f3e95cada62560f7ae496ef`。
+
+本次先基于 `3cd9427` 完成独立 PCSize Cook 和发布验证，再编译肉鸽羽翼、悬停和拾取描边的原生代码修改。由于重新 Stage 时临时 Zen oplog 已不可用，最终分发沿用已验证的优化资源并替换新编译的 Shipping 主程序；逐文件散列确认只有该主程序变化，所有资源容器、Shader、DLL 均与本次 PCSize Cook 的成品一致。最终 ZIP 回读和 442 项必需资源检查通过。
+
+可追溯报告：`Saved/Validation/PCSize/PCSize-20261024-Collection24`（Cook、DX11 电脑房、目录和旧存档兼容检查）以及 `Saved/Validation/PCSize/PCSize-20261024-PigeonFinal`（最终包、肉鸽和流程回归）。这是检查点与拾取/存档路径的验证，不代表连续完整通关或跨显卡测试。
+
+实际 Cook 数据示例：出口标牌、窗户颜色纹理各从约 10.67 MiB 降至 2.67 MiB；标题 UI 仍为 2,458,115 字节。未改变默认项目配置，后续出小包仍需显式启用 PCSize。
+
+## 报告脚本测试
 
 ```powershell
 python -m unittest discover -s Scripts/tests -p test_pc_package_report.py
 ```
 
 测试涵盖共享压缩块去重、跨块分摊、损坏 TOC、重复清单、ZIP 回读与覆盖保护、动态资源缺失和调试符号拦截。实包体积与画面验证另行执行。
+
+## 2026-10-25 通路轮廓与藏品线索版
+
+重新执行完整 Build/Cook/Stage/Archive，交付 `Builds/PCSize-20261025-ContourClues/Optimized/BrainMining-Windows.zip`。ZIP 为 **1,105,552,619 字节**（约 1.11 GB），解压为 1,261,968,601 字节；新增 20 米通路外壳、土层和线索材质后仍保留 PCSize 优化配置。
+
+SHA-256：`3aa46e24b4f7ffc16a65e5283fbd8ba17e2e7c7984923b00398b856465b278a6`。ZIP 回读与 446 项资源检查通过，不含测试存档。成品包通过 62 项藏品/博物馆/边界/存档检查、13 项房间/结局入口检查。详见 `Docs/BranchCluesAndContourBoundary.md` 和 `Saved/Validation/PCSize/PCSize-20261025-ContourClues/Optimized/runtime-validation.json`。

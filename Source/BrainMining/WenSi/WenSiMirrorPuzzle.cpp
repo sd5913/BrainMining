@@ -266,7 +266,7 @@ void AWenSiMirrorExhibit::UpdateMirror()
   MirrorPresence->SetActorRotation(FRotator(0,Rot.Yaw,0));
   MirrorPresence->SetActorScale3D(PC->GetPawn()->GetActorScale3D());
   // Keep the light full and round, with a small, slow squash-and-stretch.
-  // Animate the two soft shells only; the held pickaxe stays steady.
+  // Animate the two soft shells only; the helmet stays steady.
   const float Breath=FMath::Sin(GetWorld()->GetTimeSeconds()*2.4f);
   const FVector Squash(1.f+Breath*.025f,1.f+Breath*.025f,1.f-Breath*.04f);
   const FVector ShellSizes[]={FVector(1.04f,1.08f,1.20f),FVector(1.24f,1.28f,1.40f)};

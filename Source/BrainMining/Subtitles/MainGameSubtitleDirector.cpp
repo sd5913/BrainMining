@@ -48,7 +48,7 @@ void AMainGameSubtitleDirector::Tick(float Dt)
         if(It->bLanded) PlayOnce(TEXT("盲人敲地玩法"));
     for(TActorIterator<ACardRoomStage> It(GetWorld()); It; ++It)
     {
-        if(It->Run.Round == 1 && It->Run.Phase == ECardRoomPhase::Choosing)PlayOnce(TEXT("卡牌玩法1"));
+        if(It->Run.Round == 2 && It->Run.Phase == ECardRoomPhase::Resolving && It->Run.PhaseTime>=1.2f)PlayOnce(TEXT("卡牌玩法1"));
         if(It->Run.Phase == ECardRoomPhase::Collected)PlayOnce(TEXT("卡牌玩法2"));
     }
     for(TActorIterator<AMiningRoomEscape> It(GetWorld()); It; ++It)

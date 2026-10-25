@@ -7,10 +7,10 @@
 保存地图和资源，关闭游戏与 Unreal 编辑器，然后在项目根目录运行：
 
 ```powershell
-./Scripts/package_main_game.ps1
+./Scripts/Package_PC_SizeOptimized.ps1 -EngineRoot C:/UE_5.8
 ```
 
-默认输出到 `Builds/MainGame-Windows-时间戳/Windows`。脚本优先使用 `UE_ENGINE_ROOT`，然后检查本机常用的 UE 5.8 安装路径；也可通过 `-EngineRoot` 指定引擎位置，通过 `-OutputDirectory` 指定输出目录。`-SkipBuild` 和 `-SkipCook` 仅用于已确认程序、配置和资源没有改变的续跑，正常发布不要使用。
+默认交付为 `Builds/PCSize-时间戳/挖哦1.4.zip`；解压得到 Windows 文件夹，启动 `WOoOW.exe`。未压缩验证构建保留在 Saved/Validation 内。底层 `package_main_game.ps1` 仅用于生成内部未压缩构建。脚本优先使用 `UE_ENGINE_ROOT`，然后检查本机常用的 UE 5.8 安装路径；也可通过 `-EngineRoot` 指定引擎位置，通过 `-OutputDirectory` 指定输出目录。`-SkipBuild` 和 `-SkipCook` 仅用于已确认程序、配置和资源没有改变的续跑，正常发布不要使用。
 
 每次打包使用独立的时间戳目录，不覆盖先前交付。
 
@@ -29,7 +29,7 @@
 
 ## 交付与运行
 
-分发整个 `Windows` 目录（或它的完整压缩包），用户解压后启动根目录的 `BrainMining.exe`。不能只发送 EXE，也不要移动或删除旁边的 `BrainMining`、`Engine`、`.pak`、`.utoc`、`.ucas` 文件。
+分发整个 `Windows` 目录（或它的完整压缩包），用户解压后启动根目录的 `WOoOW.exe`。不能只发送 EXE，也不要移动或删除旁边的 `BrainMining`、`Engine`、`.pak`、`.utoc`、`.ucas` 文件。
 
 目标设备使用 Windows 64 位与支持项目 DX12/SM6 渲染设置的显卡，建议更新显卡驱动。运行库安装程序会随包提供；目标电脑缺少 Microsoft Visual C++ 运行库时安装随包的 x64 运行库。接收者不需要安装 Unreal 编辑器。
 

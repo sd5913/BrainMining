@@ -29,5 +29,5 @@ int32 SMiningEscapeView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSla
     }
     if (!UMiningInteractionHUDWidget::IsActiveFor(E->GetWorld()->GetFirstPlayerController())) Box(797,447,6,6,White);
     auto* PC=E->GetWorld()->GetFirstPlayerController();if(!PC)return L;
-    return MiningWaypoint::Paint(G,Out,L,PC,E->GuideTarget(),FString::Printf(TEXT("%.1f 米"),FMath::Max(0.f,E->ExitDistance())));
+    return MiningWaypoint::Paint(G,Out,L,PC,E->GuideTarget(),(E->bEnteredComputer ? FString::Printf(TEXT("%.1f 米"),FMath::Max(0.f,E->ExitDistance())) : FString(TEXT("想办法进入电视"))));
 }

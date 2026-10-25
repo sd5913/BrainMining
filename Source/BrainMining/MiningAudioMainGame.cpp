@@ -142,7 +142,13 @@ void UMiningAudioComponent::SetSoundscapeLayer(FName Name, float Target, float D
 	const float FadeSpeed = bRoomMusic ? .09f : Name.ToString().StartsWith(TEXT("M_")) ? .28f : .045f;
 	const float Gain = FMath::FInterpConstantTo(Layer->VolumeMultiplier, Target, DeltaTime, FadeSpeed);
 	Layer->SetVolumeMultiplier(Gain);
-	if (Target > 0 && !Layer->IsPlaying()) Layer->Play();
+	if (Target > 0 && !Layer->IsPlaying())
+	{
+		// Fade the first exploration voice on the audio thread, so loading frames
+		// cannot skip the title screen's fade. Room returns keep the same voice.
+		if (Name == TEXT("M_DreamyFlashback_Loop")) Layer->FadeIn(2.5f, 1.f);
+		else Layer->Play();
+	}
 	// Keep the exploration loop's playback timeline alive underneath room music.
 	// Re-entering a mine only fades it back in, rather than restarting a stopped voice.
 	else if (Gain <= 0 && Layer->IsPlaying() && Name != TEXT("M_DreamyFlashback_Loop")) Layer->Stop();

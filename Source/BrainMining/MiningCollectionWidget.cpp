@@ -18,6 +18,7 @@
 #include "Engine/DataTable.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Fonts/FontMeasure.h"
+#include "Styling/CoreStyle.h"
 
 namespace
 {
@@ -89,6 +90,37 @@ void UMiningCollectionWidget::NativeConstruct()
     for(const TCHAR* Name:{TEXT("PreviousButton"),TEXT("NextButton")})
         if(auto* B=GetWidgetFromName(Name))if(auto* ButtonSlot=Cast<UCanvasPanelSlot>(B->Slot))
         {ButtonSlot->SetPosition(FVector2D(B->GetFName()==TEXT("PreviousButton")?0:963,20));ButtonSlot->SetSize(FVector2D(46,54));}
+    if(auto* Bar=Cast<UCanvasPanel>(GetWidgetFromName(TEXT("CollectionBar"))))
+    {
+        const int32 Pages=FMath::DivideAndRoundUp(AMiningCollectible::ItemTypeCount,4);
+        for(int32 I=0;I<Pages;++I)
+        {
+            const FName Name(*FString::Printf(TEXT("PageIndicator%d"),I));
+            if(GetWidgetFromName(Name))continue;
+            auto* Segment=WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(),Name);
+            Segment->SetBrush(*FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")));
+            Segment->SetVisibility(ESlateVisibility::HitTestInvisible);
+            auto* S=Bar->AddChildToCanvas(Segment);
+            S->SetPosition(FVector2D((1010.f-(Pages*24.f+(Pages-1)*8.f))*.5f+I*32.f,116));
+            S->SetSize(FVector2D(24,7));
+        }
+        for(const TCHAR* Name:{TEXT("PreviousButton"),TEXT("NextButton")})
+        {
+            const FName OutlineName(*(FString(Name)+TEXT("Outline")));
+            if(GetWidgetFromName(OutlineName))continue;
+            auto* Outline=WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),OutlineName);
+            Outline->SetVisibility(ESlateVisibility::Hidden);
+            auto* S=Bar->AddChildToCanvas(Outline);S->SetPosition(FVector2D(FString(Name)==TEXT("PreviousButton")?0:963,20));S->SetSize(FVector2D(46,54));S->SetZOrder(5);
+            const TArray<FVector2D> Points={{1.5,1.5},{36,1.5},{44.5,10},{44.5,52.5},{10,52.5},{1.5,44},{1.5,1.5}};
+            for(int32 I=0;I<Points.Num()-1;++I)
+            {
+                auto* Line=WidgetTree->ConstructWidget<UImage>();Line->SetBrush(*FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")));
+                Line->SetVisibility(ESlateVisibility::HitTestInvisible);Line->SetRenderTransformPivot(FVector2D(0,.5));
+                const FVector2D D=Points[I+1]-Points[I];Line->SetRenderTransformAngle(FMath::RadiansToDegrees(FMath::Atan2(D.Y,D.X)));
+                auto* L=Outline->AddChildToCanvas(Line);L->SetPosition(Points[I]-FVector2D(0,1.25));L->SetSize(FVector2D(D.Size(),2.5));
+            }
+        }
+    }
     for(int32 I=0;I<4;++I)
         if(auto* Label=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))
             if(auto* Canvas=Cast<UCanvasPanel>(Label->GetParent()))
@@ -150,6 +182,10 @@ void UMiningCollectionWidget::NativeTick(const FGeometry& G,float Dt)
     Super::NativeTick(G,Dt);
     if(auto* Back=Cast<UButton>(GetWidgetFromName(TEXT("CloseButton"))))
         Back->SetRenderScale(FVector2D(Back->IsPressed()?.96f:Back->IsHovered()||Back->HasKeyboardFocus()?1.16f:1.f));
+    for(const TCHAR* Name:{TEXT("PreviousButton"),TEXT("NextButton")})
+        if(auto* B=Cast<UButton>(GetWidgetFromName(Name)))
+            if(auto* Outline=GetWidgetFromName(FName(*(FString(Name)+TEXT("Outline")))))
+                Outline->SetVisibility(B->IsVisible() && (B->IsHovered() || B->HasKeyboardFocus())?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
     if(!bRevealing)return;
     RevealElapsed+=Dt;
     const float T=FMath::Clamp(RevealElapsed/FMath::Max(.05f,PanelSlideDuration),0.f,1.f);
@@ -191,6 +227,9 @@ void UMiningCollectionWidget::RefreshCollection()
     if(auto* W=GetWidgetFromName(TEXT("PreviewHelp")))W->SetVisibility(ESlateVisibility::Collapsed);
     const auto Ids=Collection->CatalogueIds();
     const int32 Page=CurrentPage;
+    for(int32 I=0;I<FMath::DivideAndRoundUp(AMiningCollectible::ItemTypeCount,4);++I)
+        if(auto* Segment=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("PageIndicator%d"),I)))))
+            Segment->SetColorAndOpacity(I==Page?MiningMenuStyle::Gold:FLinearColor(.18f,.14f,.035f,.85f));
     if(auto* W=GetWidgetFromName(TEXT("PreviousButton")))W->SetVisibility(Page>0?ESlateVisibility::Visible:ESlateVisibility::Hidden);
     if(auto* W=GetWidgetFromName(TEXT("NextButton")))W->SetVisibility((Page+1)*4<Ids.Num()?ESlateVisibility::Visible:ESlateVisibility::Hidden);
     for(int32 I=0;I<4;++I)
@@ -213,7 +252,7 @@ void UMiningCollectionWidget::RefreshCollection()
         if(auto* Condition=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemCondition%d"),I)))))
         {
             const bool Show=AMiningCollectible::IsMineralReward(Item);
-            Condition->SetText(FText::FromString(Show?FString::Printf(TEXT("收集%d个%s"),AMiningCollectible::UnlockThreshold(Item),*FMiningMineralCost::Name(MineralRewardType(Item))):FString()));
+            Condition->SetText(FText::FromString(Show?FString::Printf(TEXT("%s收集%d个%s"),Has?TEXT("已"):TEXT(""),AMiningCollectible::UnlockThreshold(Item),*FMiningMineralCost::Name(MineralRewardType(Item))):FString()));
             Condition->SetColorAndOpacity(Id==Item?FLinearColor(.12f,.10f,.025f):FLinearColor(.62f,.62f,.58f));
         }
         if(auto* W=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I)))))

@@ -411,7 +411,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     for(auto* Lamp:Lamps)
     {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),Lamp->GetName());J->SetBoolField(TEXT("visible"),Lamp->IsVisible()&&!Lamp->bHiddenInGame);J->SetNumberField(TEXT("intensity"),Lamp->Intensity);LampState.Add(MakeShared<FJsonValueObject>(J));}
     for(TObjectIterator<UAudioComponent> It;It;++It)if(It->GetWorld()==W && It->Sound && It->Sound->GetName().StartsWith(TEXT("M_")))
-    {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),It->Sound->GetName());J->SetBoolField(TEXT("playing"),It->IsPlaying());J->SetBoolField(TEXT("unpaused"),It->bIsUISound);J->SetNumberField(TEXT("gain"),It->VolumeMultiplier);J->SetNumberField(TEXT("player_id"),It->GetUniqueID());MusicState.Add(MakeShared<FJsonValueObject>(J));}
+    {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),It->Sound->GetName());J->SetBoolField(TEXT("playing"),It->IsPlaying());J->SetBoolField(TEXT("unpaused"),It->bIsUISound);J->SetBoolField(TEXT("fading_in"),It->GetPlayState()==EAudioComponentPlayState::FadingIn);J->SetNumberField(TEXT("gain"),It->VolumeMultiplier);J->SetNumberField(TEXT("player_id"),It->GetUniqueID());MusicState.Add(MakeShared<FJsonValueObject>(J));}
     Result->SetArrayField(TEXT("lamps"),LampState);Result->SetArrayField(TEXT("music"),MusicState);
     if(auto* Settings=GetGameInstance()->GetSubsystem<UMiningAudioSettings>())Result->SetNumberField(TEXT("menu_music_gain"),Settings->GetMenuMusicGain());
     if(auto* RoomAudio=W->GetSubsystem<UMiningRoomAudioSubsystem>())Result->SetNumberField(TEXT("tv_victory_events"),RoomAudio->EventCount(TEXT("S_TVEscapeVictory")));

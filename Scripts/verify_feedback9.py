@@ -21,7 +21,7 @@ try:
  c.key('C');time.sleep(.5)
  for i in [12,13,14,15]:cmd('catalogue_owned_fixture',item=i)
  cmd('catalogue_rotate',item=12,yaw=0,pitch=0);time.sleep(.4);s=cmd('state');labels={x['name']:x['text'] for x in s['catalogue_labels']}
- for n,text in enumerate(['收集25个铜矿','收集15个铁矿','收集10个孔雀石','收集5个钻石']):check(labels.get('ItemCondition'+str(n))==text,'Owned mineral reward retains '+text)
+ for n,text in enumerate(['已收集25个铜矿','已收集15个铁矿','已收集10个孔雀石','已收集5个钻石']):check(labels.get('ItemCondition'+str(n))==text,'Owned mineral reward retains '+text)
  shot('mineral-conditions');cmd('catalogue_button',name='CloseButton')
  shot('copper-same-view',[-27930,800,10700],[-27072,928,10688])
  pos=assets['copper']['after'];shot('copper-close',[-27230,860,10340],pos)

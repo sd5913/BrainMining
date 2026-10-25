@@ -7,6 +7,7 @@
 
 class ACharacter;
 class AMiningExhibitHall;
+class AEchoPassageStage;
 class UAudioComponent;
 class UMiningComponent;
 class UMiningWalletSubsystem;
@@ -35,6 +36,7 @@ public:
 	int32 GetToolLoopCount() const { return ToolLoops.Num(); }
 	static TArray<FName> AssetNames();
 	static TArray<FName> MainGameAssetNames();
+	static TArray<FName> RoomMusicAssetNames();
 	static bool IsMainGameWorld(const UWorld* World);
 	static EMiningAudioSurface ResolveSurface(const FHitResult& Hit);
 	int32 GetAudioRegion() const { return AudioRegion; }
@@ -45,6 +47,7 @@ public:
 	int32 GetContactCount() const { return ContactCount; }
 
 private:
+	friend class FRoomMusicRoutingTest;
 	UFUNCTION() void OnSwing(float Interval);
 	UFUNCTION() void OnDrillContact(const FHitResult& Hit);
 	UFUNCTION() void OnBlockedContact(const FHitResult& Hit);
@@ -61,6 +64,8 @@ private:
 	void UpdateTools(float DeltaTime);
 	void SetToolLoop(FName Name, bool bActive, float Gain, float Pitch = 1.f);
 	void UpdateMainGameSoundscape(float DeltaTime);
+	void UpdateRoomMusic(float DeltaTime, float Gain);
+	FName FindRoomMusic();
 	void SetSoundscapeLayer(FName Name, float Target, float DeltaTime);
 	void StopSoundscape();
 	int32 FindAudioRegion() const;
@@ -75,6 +80,7 @@ private:
 	TWeakObjectPtr<UMiningComponent> Mining;
 	TWeakObjectPtr<UMiningWalletSubsystem> Wallet;
 	TWeakObjectPtr<AMiningExhibitHall> Hall;
+	TWeakObjectPtr<AEchoPassageStage> RoomMusicEcho;
 	TMap<FString, int32> PreviousVariants;
 	FVector PreviousLocation = FVector::ZeroVector;
 	float StepDistance = 0;

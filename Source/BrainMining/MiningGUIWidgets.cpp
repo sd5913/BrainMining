@@ -755,7 +755,9 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         Row->SetVisibility(Hidden?ESlateVisibility::Collapsed:ESlateVisibility::HitTestInvisible);
         if(Hidden)continue;
         const bool Checked=I<4?Done:Saves->PrototypesFound>=DisplayedPrototype;
-        Row->SetText(FText::FromString(FString(Checked?TEXT("✓  "):TEXT("·  "))+(I<4?Basic[I]:Prototype[DisplayedPrototype-1])));
+        // Keep undiscovered prototypes a surprise; reveal their names only on completion.
+        const TCHAR* Objective=I<4?Basic[I]:(Checked?Prototype[DisplayedPrototype-1]:TEXT("继续前进探索"));
+        Row->SetText(FText::FromString(FString(Checked?TEXT("✓  "):TEXT("·  "))+Objective));
         Row->SetColorAndOpacity(Checked?FLinearColor(.42f,.95f,.66f):FLinearColor(.94f,.95f,.92f));
         Row->SetRenderOpacity(Checked?FMath::Clamp((1.4f-TutorialDoneAge[I])/.4f,0.f,1.f):1.f);
         CastChecked<UCanvasPanelSlot>(Row->Slot)->SetPosition(FVector2D(16,14+VisibleRows*31));++VisibleRows;

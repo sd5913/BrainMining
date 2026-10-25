@@ -91,7 +91,7 @@ try:
  cmd('toggle_ui');check(state()['ui_hidden'],'all UI GM switch enables');cmd('shot',name='all-ui-hidden');cmd('toggle_ui');check(not state()['ui_hidden'],'all UI GM switch restores');cmd('shot',name='all-ui-restored')
  pickup_bird()
  cmd('area_fixture',area=3);time.sleep(4)
- check('·  发现第3个灵感原型' in rows(state()),'third prototype objective uses the numeral 3')
+ check('·  继续前进探索' in rows(state()),'pending prototype objective keeps its identity hidden')
  stage=actors('CardRoomStage')[0];q=stage['position'];cmd('pose',eye=[q[0]-75,q[1],q[2]+115],target=q)
  toast=wait(lambda s:s.get('task_toast_visible') and '发现第3个灵感原型' in s.get('task_toast',''),20)
  check(toast['task_toast'].startswith('✓'),'completed prototype also shows the upper-center checkmark notice');cmd('shot',name='prototype-task-toast')

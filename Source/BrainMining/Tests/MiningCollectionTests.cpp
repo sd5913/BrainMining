@@ -47,7 +47,9 @@ bool FCollectionExposureTest::RunTest(const FString& Parameters)
     Bird->Release();TestFalse(TEXT("Direct release cannot bypass intact soil gate"),Bird->bReleased);
     Rock->SuccessfulCuts=1;
     TestTrue(TEXT("One successful cut enables normal exposure release"),Bird->CanRelease(.7f));
+    const FVector NestPosition=Bird->GetActorLocation();
     Bird->Release();
+    TestTrue(TEXT("Revealed resident bird stays in its soil nest instead of popping outside"),Bird->GetActorLocation().Equals(NestPosition,.01f));
     const FTransform BirdPose=Bird->GetActorTransform();
     TestEqual(TEXT("Resident pigeon has two separate feathered wings"),Bird->EmergenceParts.Num(),2);
     if(Bird->EmergenceParts.Num()==2)

@@ -120,6 +120,21 @@ FString AWenSiMirrorExhibit::Adjective() const{return WordText(Word);}
 void AWenSiMirrorExhibit::RefreshArtModel(){Configure();}
 void AWenSiMirrorExhibit::Configure()
 {
+ // Saved maps retain their original twelve-element component array.
+ // Extend only this cover, including when loading those existing map instances.
+ while(Kind==7 && Parts.Num()<23)
+ {
+  const FName Name(*FString::Printf(TEXT("Part%d"),Parts.Num()));
+  auto* Part=FindObjectFast<UStaticMeshComponent>(this,Name);
+  if(!Part)
+  {
+   Part=NewObject<UStaticMeshComponent>(this,Name);AddInstanceComponent(Part);
+   Part->SetupAttachment(RootComponent);Part->SetMobility(EComponentMobility::Movable);
+   Part->RegisterComponent();
+  }
+  Parts.Add(Part);
+ }
+
  auto Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
  auto Sphere=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Sphere.Sphere"));
  auto Cylinder=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
@@ -155,8 +170,19 @@ void AWenSiMirrorExhibit::Configure()
   Shape(0,FVector::ZeroVector,FVector(18,220,236));Shape(1,FVector(0,-114,0),FVector(30,12,240));Shape(2,FVector(0,114,0),FVector(30,12,240));break;
  case 6: Shape(0,FVector::ZeroVector,FVector(85,85,80));break;
  case 7:
-  Shape(0,FVector(0,0,130),FVector(200,200,10));Shape(1,FVector(94,0,0),FVector(12,200,260));
-  Shape(2,FVector(0,-94,0),FVector(200,12,260));Shape(3,FVector(0,94,0),FVector(200,12,260));
+  Shape(0,FVector(0,0,130),FVector(200,200,10));
+  // Three additional glazed windows; solid lower panels retain the single original entrance.
+  for(int Side=0;Side<3;++Side)
+  {
+   const FRotator Turn(0,Side==0?0.f:Side==1?-90.f:90.f,0);
+   auto Wall=[&](int Index,FVector P,FVector Size)
+   {Shape(Index,Turn.RotateVector(P),Side==0?Size:FVector(Size.Y,Size.X,Size.Z));};
+   Wall(1+Side,FVector(94,0,7.5),FVector(3,70,65));
+   Wall(11+Side*4,FVector(94,-67.5,0),FVector(12,65,260));
+   Wall(12+Side*4,FVector(94,67.5,0),FVector(12,65,260));
+   Wall(13+Side*4,FVector(94,0,-77.5),FVector(12,70,105));
+   Wall(14+Side*4,FVector(94,0,85),FVector(12,70,90));
+  }
   Shape(4,FVector(-94,-67.5,0),FVector(12,65,260));Shape(5,FVector(-94,67.5,0),FVector(12,65,260));
   Shape(6,FVector(-94,0,-32.5),FVector(12,70,15));
   Shape(7,FVector(-94,0,85),FVector(12,70,90));
@@ -191,7 +217,7 @@ void AWenSiMirrorExhibit::Apply()
   if(Kind==4 && Word!=EWenSiMirrorWord::Heavy){Part->SetCollisionResponseToAllChannels(ECR_Ignore);Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);}
   UMaterialInterface* Use=(Word==EWenSiMirrorWord::Passable && !IsSelf(this))||Kind==4?Ghost:Parent;
   // A clear pane exposes the prize visually while retaining the puzzle's thinking/collision barrier.
-  if(Kind==7 && I==8 && Word!=EWenSiMirrorWord::Passable && Glass)Use=Glass;
+  if(Kind==7 && (I==8 || (I>=1 && I<=3)) && Word!=EWenSiMirrorWord::Passable && Glass)Use=Glass;
   if(Use)
   {
    auto Mat=UMaterialInstanceDynamic::Create(Use,this);Mat->SetVectorParameterValue(TEXT("Color"),FLinearColor(.68f,.72f,.78f,.2f));Mat->SetScalarParameterValue(TEXT("Opacity"),Kind==4?.18f:.15f);Part->SetMaterial(0,Mat);

@@ -27,7 +27,7 @@ public:
  static constexpr float CanvasWidth=126.f;
  static constexpr float CanvasHeight=168.f;
  // A small red textile motif; aim tolerance extends just beyond its white outline.
- static constexpr float CellRadius=4.3f;
+ static constexpr float CellRadius=8.f;
  static constexpr float CellU=.6374f;
  static constexpr float CellV=.5656f;
 protected:

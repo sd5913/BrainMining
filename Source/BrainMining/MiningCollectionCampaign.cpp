@@ -79,9 +79,21 @@ void AMiningCollectionField::SpawnAuthoredClues(const FMiningCollectionPlacement
         for(int I=0;I<7;++I)
         {
             FVector Surface(1,-90+I*30,-30+(I%3)*22);FHitResult Hit;
-            if(Rock->ActorLineTraceSingle(Hit,T.TransformPosition(Surface-FVector(50,0,0)),T.TransformPosition(Surface+FVector(70,0,0)),ECC_Visibility,FCollisionQueryParams(NAME_None,true)))
-                Surface=T.InverseTransformPosition(Hit.ImpactPoint)+FVector(1.8,0,0);
+            const bool bHit=Rock->ActorLineTraceSingle(Hit,T.TransformPosition(Surface-FVector(180,0,0)),T.TransformPosition(Surface+FVector(240,0,0)),ECC_Visibility,FCollisionQueryParams(NAME_None,true));
+            FVector Outward(-1,0,0),Face=Surface;
+            if(bHit)
+            {
+                Face=T.InverseTransformPosition(Hit.ImpactPoint);
+                Outward=T.InverseTransformVectorNoScale(Hit.ImpactNormal).GetSafeNormal();
+                Surface=Face-Outward*1.2f; // support inside soil, visible feather just outside
+            }
             MakeFeather(Rock,Surface,-35+(I*23)%76);
+            if(bHit)
+            {
+                auto* Feather=Spawned.Last().Get();
+                Feather->SetActorLocation(Face+Outward*2.f);
+                Feather->SetActorRotation(FRotationMatrix::MakeFromX(-Outward).ToQuat()*FRotator(0,0,-35+(I*23)%76).Quaternion());
+            }
         }
         const FVector End=T.InverseTransformPosition(P.Transform.GetLocation());
         for(int I=1;I<15;++I) MakeFeather(Rock,FMath::Lerp(FVector(3,0,0),End,float(I)/15)+FVector(0,FMath::Sin(I*2.4f)*48,-35+(I%3)*12),I%2?22:-18);

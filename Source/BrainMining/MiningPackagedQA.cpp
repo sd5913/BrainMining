@@ -22,6 +22,7 @@
 #include "MiningSaveSubsystem.h"
 #include "MiningGUIWidgets.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Engine/StaticMesh.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
@@ -309,6 +310,12 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         for(TActorIterator<AWenSiMirrorExhibit> It(W);It;++It)
             if(It->Kind==int32(C->GetNumberField(TEXT("kind"))))
             {It->Word=EWenSiMirrorWord(FMath::Clamp(int32(C->GetNumberField(TEXT("word"))),0,6));It->Apply();Ok=true;break;}
+    }
+    else if(Op==TEXT("mouse_gallery_fixture"))
+    {
+        if(auto* Museum=First<AWenSiMirrorPuzzle>(W))
+        {Museum->bRewardUnlocked=true;Museum->SetPlayerWord(EWenSiMirrorWord::Small);}
+        else Ok=false;
     }
     else if(Op==TEXT("walking_fixture")){Pawn->GetCharacterMovement()->SetMovementMode(MOVE_Walking);}
     else if(Op==TEXT("catalogue_rotate"))
@@ -673,6 +680,28 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
                     if(Item->EmergenceParts.Num()>108)A->SetArrayField(TEXT("door"),Vec(Item->EmergenceParts[108]->GetRelativeLocation()));
                 }
                 A->SetBoolField(TEXT("released"),Item->bReleased);A->SetBoolField(TEXT("collected"),Item->bCollected);A->SetStringField(TEXT("host"),Item->HostRock?Item->HostRock->GetName():TEXT(""));}
+            if(auto* Water=Cast<AHeavenToiletWater>(*It))
+            {A->SetBoolField(TEXT("inside"),Water->bPlayerInHeaven);A->SetBoolField(TEXT("choir_playing"),Water->EntranceChoir&&Water->EntranceChoir->IsPlaying());}
+            if(auto* Portal=Cast<AMouseMuseumPortal>(*It))
+            {A->SetArrayField(TEXT("cell"),Vec(Portal->CellCenter()));A->SetNumberField(TEXT("cell_radius"),Portal->CellRadius);A->SetBoolField(TEXT("focused"),Portal->IsFocused());}
+            bool IncludeParts=false;C->TryGetBoolField(TEXT("parts"),IncludeParts);
+            if(IncludeParts)
+            {
+                TArray<TSharedPtr<FJsonValue>> Parts;
+                TInlineComponentArray<UStaticMeshComponent*> Meshes(*It);
+                for(auto* Mesh:Meshes)
+                {
+                    auto P=MakeShared<FJsonObject>();P->SetStringField(TEXT("name"),Mesh->GetName());
+                    P->SetBoolField(TEXT("visible"),Mesh->IsVisible()&&!Mesh->bHiddenInGame);
+                    P->SetArrayField(TEXT("position"),Vec(Mesh->GetComponentLocation()));
+                    P->SetArrayField(TEXT("relative"),Vec(Mesh->GetRelativeLocation()));
+                    P->SetStringField(TEXT("mesh"),Mesh->GetStaticMesh()?Mesh->GetStaticMesh()->GetPathName():TEXT(""));
+                    if(auto* Mat=Mesh->GetMaterial(0))
+                    {P->SetStringField(TEXT("material"),Mat->GetName());float Highlight=0;if(Mat->GetScalarParameterValue(FMaterialParameterInfo(TEXT("Highlight")),Highlight))P->SetNumberField(TEXT("highlight"),Highlight);}
+                    Parts.Add(MakeShared<FJsonValueObject>(P));
+                }
+                A->SetArrayField(TEXT("parts"),Parts);
+            }
             Actors.Add(MakeShared<FJsonValueObject>(A));
         }
         Result->SetArrayField(TEXT("actors"),Actors);

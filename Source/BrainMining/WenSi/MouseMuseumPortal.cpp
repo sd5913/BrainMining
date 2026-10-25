@@ -111,7 +111,11 @@ void AMouseMuseumPortal::RefreshFocus()
   }
  }
  if(!bInsideGallery)GalleryEnteredAt=-1;
- if(Painting)Painting->SetScalarParameterValue(TEXT("Highlight"),bFocused?1.f:0.f);
+ if(Painting)
+ {
+  const float Pulse=.38f+.22f*FMath::Sin(GetWorld()->GetTimeSeconds()*2.4f);
+  Painting->SetScalarParameterValue(TEXT("Highlight"),bFocused?1.f:Pulse);
+ }
 }
 
 bool AMouseMuseumPortal::TryEnter()

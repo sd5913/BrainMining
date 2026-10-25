@@ -394,7 +394,7 @@ void UMiningSaveSubsystem::Tick(float Dt)
 
 void UMiningSaveSubsystem::RecordCollectible(int32 Id)
 {
-    if(!(TutorialCompleted&8) && TutorialActive && TutorialSoilPassed)CompletionNotices.Add(TEXT("找到1个灵感藏品"));
+    // Preserve the legacy save bit without presenting the retired collectible objective.
     RunCollectedItems.Add(Id);TutorialCompleted|=8;
 }
 void UMiningSaveSubsystem::RecordMineral(EMiningMineral Mineral)

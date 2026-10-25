@@ -44,10 +44,12 @@ public:
 private:
  void ApplyLidPose();
  void LaunchDuck();
+ void StartDuckBurst();
  void ResetDuck();
  UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> DuckPool;
- struct FDuckMotion { FVector Velocity=FVector::ZeroVector; float Age=0; bool Flying=false; };
+ struct FDuckMotion { FVector Velocity=FVector::ZeroVector; FRotator Spin=FRotator::ZeroRotator; float Age=0; bool Flying=false; };
  TArray<FDuckMotion> DuckMotion;
- float BurstAge=0.f;
+ float BurstAge=0.f,NextDuckDelay=0.f;
+ int32 PendingDucks=0;
  int32 NextDuck=0;
 };

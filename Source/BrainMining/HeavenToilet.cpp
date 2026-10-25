@@ -47,7 +47,7 @@ void AHeavenToilet::BeginPlay()
  Super::BeginPlay();LidOpenAmount=bContinuousSpray?1.f:0.f;bPlayerNearby=bWaterRunning=false;
  if(SprayDuck&&!SprayDuck->GetStaticMesh()) SprayDuck->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/MainGame/Meshes/SM_HeavenRubberDuck.SM_HeavenRubberDuck")));
  DuckPool.Add(SprayDuck);
- for(int32 I=1;I<8;++I)
+ for(int32 I=1;I<64;++I)
  {
   auto* Duck=NewObject<UStaticMeshComponent>(this);AddInstanceComponent(Duck);Duck->SetupAttachment(Body);
   Duck->SetStaticMesh(SprayDuck->GetStaticMesh());Duck->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -55,26 +55,31 @@ void AHeavenToilet::BeginPlay()
  }
  DuckMotion.SetNum(DuckPool.Num());
  WaterJet->DeactivateImmediate();OpeningSplash->DeactivateImmediate();ResetDuck();ApplyLidPose();
- if(bContinuousSpray){WaterJet->Activate(true);OpeningSplash->Activate(true);bWaterRunning=true;LaunchDuck();}
+ if(bContinuousSpray){WaterJet->Activate(true);OpeningSplash->Activate(true);bWaterRunning=true;StartDuckBurst();}
 }
 void AHeavenToilet::ResetDuck()
 {
  for(int32 I=0;I<DuckPool.Num();++I){DuckPool[I]->SetVisibility(false);DuckMotion[I]=FDuckMotion();}
- BurstAge=0.f;NextDuck=0;
+ BurstAge=0.f;NextDuck=0;PendingDucks=0;NextDuckDelay=0;
+}
+void AHeavenToilet::StartDuckBurst()
+{
+ PendingDucks=FMath::RandRange(5,7);NextDuckDelay=0;
 }
 void AHeavenToilet::LaunchDuck()
 {
  if(!SprayDuck||!SprayDuck->GetStaticMesh()||!WaterOutlet)return;
  if(DuckPool.IsEmpty())return;
  auto* Duck=DuckPool[NextDuck].Get();auto& Motion=DuckMotion[NextDuck];
- Duck->SetRelativeScale3D(FVector(DuckScale));
- Duck->SetWorldLocation(WaterOutlet->GetComponentLocation());
+ Duck->SetRelativeScale3D(FVector(DuckScale*FMath::FRandRange(.88f,1.10f)));
+ Duck->SetWorldLocation(WaterOutlet->GetComponentLocation()+FVector(FMath::FRandRange(-14.f,14.f),FMath::FRandRange(-14.f,14.f),FMath::FRandRange(0.f,10.f)));
  // Scatter each burst around the basin, with different ranges and flight arcs.
  const float Azimuth=FMath::FRandRange(-PI,PI);
  const FVector Direction(FMath::Cos(Azimuth),FMath::Sin(Azimuth),0);
  Duck->SetWorldRotation(FRotator(0,FMath::RadiansToDegrees(Azimuth),0));Duck->SetVisibility(true);
  Motion.Velocity=Direction*DuckForwardSpeed*FMath::FRandRange(.75f,1.25f)
      +FVector::UpVector*DuckUpSpeed*FMath::FRandRange(.85f,1.3f);
+ Motion.Spin=FRotator(FMath::FRandRange(-100.f,100.f),FMath::FRandRange(-130.f,130.f),FMath::FRandRange(-65.f,65.f));
  Motion.Age=0;Motion.Flying=true;NextDuck=(NextDuck+1)%DuckPool.Num();
 }
 void AHeavenToilet::Tick(float DeltaSeconds)
@@ -89,18 +94,21 @@ void AHeavenToilet::Tick(float DeltaSeconds)
  const bool bStartWater=Open && LidOpenAmount>=.85f;
  if(bStartWater && !bWaterRunning)
  {
-  WaterJet->Activate(true);OpeningSplash->Activate(true);bWaterRunning=true;LaunchDuck();
+  WaterJet->Activate(true);OpeningSplash->Activate(true);bWaterRunning=true;StartDuckBurst();
  }
  else if(!Open && bWaterRunning)
  {
   // Finish the original droplets naturally instead of cutting the whole effect.
-  WaterJet->Deactivate();OpeningSplash->Deactivate();bWaterRunning=false;
+  WaterJet->Deactivate();OpeningSplash->Deactivate();bWaterRunning=false;PendingDucks=0;
  }
  if(bWaterRunning)
  {
   BurstAge+=DeltaSeconds;
   if(BurstAge>=FMath::Max(1.f,DuckBurstInterval))
-  {BurstAge=0;OpeningSplash->Activate(true);LaunchDuck();}
+  {BurstAge=0;OpeningSplash->Activate(true);StartDuckBurst();}
+  NextDuckDelay-=DeltaSeconds;
+  while(PendingDucks>0 && NextDuckDelay<=0)
+  {LaunchDuck();--PendingDucks;NextDuckDelay+=FMath::FRandRange(.035f,.085f);}
  }
  for(int32 I=0;I<DuckPool.Num();++I)
  {
@@ -128,6 +136,6 @@ void AHeavenToilet::Tick(float DeltaSeconds)
    }
    else Motion.Velocity=Motion.Velocity.MirrorByVector(Hit.ImpactNormal)*.35f;
   }
-  else {Duck->SetWorldLocation(To);Duck->AddLocalRotation(FRotator(80*DeltaSeconds,120*DeltaSeconds,35*DeltaSeconds));}
+  else {Duck->SetWorldLocation(To);Duck->AddLocalRotation(Motion.Spin*DeltaSeconds);}
  }
 }

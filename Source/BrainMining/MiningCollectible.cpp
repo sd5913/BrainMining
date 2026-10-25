@@ -491,6 +491,14 @@ void AMiningCollectible::Release()
     if(bReleased||bCollected) return;
     Exposure=MeasureExposure();
     if(!CanRelease(PickupExposure))return;
+    // The resident bird stays in its excavated nest; only the separate flock flies out.
+    if(ItemId==3)
+    {
+        FVector Eye;FRotator View;
+        if(auto* PC=GetWorld()->GetFirstPlayerController())
+        {PC->GetPlayerViewPoint(Eye,View);SetActorRotation((GetActorLocation()-Eye).Rotation());}
+        bReleased=true;Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);return;
+    }
     if(ItemId==9)Body->SetBoxExtent(FVector(48,48,125));
     // Pop towards the excavated air at 70%, instead of waiting for every corner
     // of the collision box to be dug free. Chaos is enabled only in a clear box.
@@ -524,11 +532,6 @@ void AMiningCollectible::Release()
             for(int Sample=1;Sample<28;++Sample)Clear &= !Covered[Index*28+Sample];
             if(Clear){Position=Candidates[Index];break;}
         }
-    }
-    if(ItemId==3)
-    {
-        FVector Eye;FRotator View;
-        if(auto* PC=GetWorld()->GetFirstPlayerController()){PC->GetPlayerViewPoint(Eye,View);PopDirection=(Eye-Position).GetSafeNormal();SetActorRotation((-PopDirection).Rotation());}
     }
     SetActorLocation(Position);bReleased=true;
     if(!Clear || ItemId==4 || ItemId==9 || ActorHasTag(TEXT("BM_BombGateReward")) || ActorHasTag(TEXT("BM_ExcavationReward")))

@@ -136,11 +136,17 @@ void UMiningAudioComponent::SetSoundscapeLayer(FName Name, float Target, float D
 	}
 	if (!Existing) return;
 	auto* Layer = Existing->Get();
-	const float FadeSpeed = Name.ToString().StartsWith(TEXT("M_")) ? .28f : .045f;
+	const bool bRoomMusic = Name.ToString().StartsWith(TEXT("M_Room_"));
+	const float FadeSpeed = bRoomMusic ? .09f : Name.ToString().StartsWith(TEXT("M_")) ? .28f : .045f;
 	const float Gain = FMath::FInterpConstantTo(Layer->VolumeMultiplier, Target, DeltaTime, FadeSpeed);
 	Layer->SetVolumeMultiplier(Gain);
 	if (Target > 0 && !Layer->IsPlaying()) Layer->Play();
 	else if (Gain <= 0 && Layer->IsPlaying()) Layer->Stop();
+	if (bRoomMusic && Target <= 0 && Gain <= 0)
+	{
+		Layer->DestroyComponent();
+		Soundscape.Remove(Name);
+	}
 }
 
 void UMiningAudioComponent::UpdateMainGameSoundscape(float DeltaTime)
@@ -154,6 +160,7 @@ void UMiningAudioComponent::UpdateMainGameSoundscape(float DeltaTime)
 	const float Trim = MainGameMusicVolume ? FMath::Clamp(MainGameMusicVolume->GetFloat(), 0.f, 1.f) : .12f;
 	const bool bBusy = bJetRunning || (bDrillRunning && Mining.IsValid() && Mining->IsMiningActive());
 	const float MusicTarget = Trim * (bBusy ? .65f : 1.f);
+	UpdateRoomMusic(DeltaTime, MusicTarget);
 	const bool bMine = AudioRegion >= 1 && AudioRegion <= 4;
 	const float Bed = bBusy ? .55f : 1.f;
 	SetSoundscapeLayer(TEXT("M_DreamyFlashback_Loop"), AudioRegion == 0 ? MusicTarget * .6f : bMine ? MusicTarget : 0.f, DeltaTime);

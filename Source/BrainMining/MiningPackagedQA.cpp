@@ -510,7 +510,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         TArray<TSharedPtr<FJsonValue>> Labels,Buttons;
         for(const TCHAR* WidgetName:{TEXT("ItemName"),TEXT("ItemLabel0"),TEXT("ItemLabel1"),TEXT("ItemLabel2"),TEXT("ItemLabel3"),TEXT("ItemCondition0"),TEXT("ItemCondition1"),TEXT("ItemCondition2"),TEXT("ItemCondition3")})
             if(auto* T=Cast<UTextBlock>(Widget->GetWidgetFromName(WidgetName))){auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),WidgetName);J->SetStringField(TEXT("text"),T->GetText().ToString());Labels.Add(MakeShared<FJsonValueObject>(J));}
-        for(const TCHAR* WidgetName:{TEXT("PreviousButton"),TEXT("NextButton"),TEXT("CloseButton"),TEXT("ItemButton0"),TEXT("ItemButton3")})
+        for(const TCHAR* WidgetName:{TEXT("PreviousButton"),TEXT("NextButton"),TEXT("CloseButton"),TEXT("ItemButton0"),TEXT("ItemButton3"),TEXT("PageButton0"),TEXT("PageButton1"),TEXT("PageButton2"),TEXT("PageButton3"),TEXT("PageButton4"),TEXT("PageButton5")})
             if(auto* B=Cast<UButton>(Widget->GetWidgetFromName(WidgetName)))
             {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),WidgetName);const auto G=B->GetCachedGeometry();J->SetArrayField(TEXT("position"),Vec(FVector(G.GetAbsolutePosition(),0)));J->SetArrayField(TEXT("size"),Vec(FVector(G.GetAbsoluteSize(),0)));J->SetBoolField(TEXT("hovered"),B->IsHovered());J->SetNumberField(TEXT("scale"),B->GetRenderTransform().Scale.X);Buttons.Add(MakeShared<FJsonValueObject>(J));}
         Result->SetArrayField(TEXT("catalogue_labels"),Labels);Result->SetArrayField(TEXT("catalogue_buttons"),Buttons);

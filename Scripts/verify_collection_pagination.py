@@ -47,6 +47,14 @@ try:
  cmd('catalogue_hover',name='PreviousButton',hover=False)
  for _ in range(5):cmd('catalogue_button',name='PreviousButton')
  check(cmd('state')['selected_item']==12,'Returning to first page selects first mineral collectible')
+ cmd('catalogue_hover',name='PageButton4',hover=True);shot('page-indicator-hover')
+ check(next(b for b in cmd('state')['catalogue_buttons'] if b['name']=='PageButton4')['hovered'],'Page indicator accepts hover')
+ cmd('catalogue_hover',name='PageButton4',hover=False)
+ expected=[12]+selections
+ for page in [1,4,2,0]:
+  cmd('catalogue_button',name='PageButton'+str(page));time.sleep(.2)
+  check(cmd('state')['selected_item']==expected[page],'Page indicator jumps directly to page '+str(page+1))
+  shot('page-indicator-jump-'+str(page+1))
  cmd('catalogue_button',name='CloseButton');cmd('pause');time.sleep(.6);s=cmd('state')
  check(music(s)['player_id']==first and abs(s['menu_music_gain']-.35)<.001,'ESC retains music and ducks volume')
  cmd('pause');time.sleep(.6);s=cmd('state')

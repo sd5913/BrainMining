@@ -1,9 +1,23 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/Button.h"
 #include "MiningCollectionWidget.generated.h"
 
 class AMiningCollectionField;
+class UMiningCollectionWidget;
+
+UCLASS()
+class BRAINMINING_API UMiningCollectionPageButton : public UButton
+{
+    GENERATED_BODY()
+public:
+    void Configure(UMiningCollectionWidget* InOwner,int32 InPage);
+private:
+    UPROPERTY(Transient) TWeakObjectPtr<UMiningCollectionWidget> CollectionWidget;
+    int32 Page=0;
+    UFUNCTION() void SelectPage();
+};
 
 /** Layout lives in WBP_CollectionInspect. Native code only supplies data and input. */
 UCLASS()
@@ -15,6 +29,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Collection") void RefreshCollection();
     UFUNCTION(BlueprintCallable, Category="Collection") void SelectCollectionItem(int32 Id);
     UFUNCTION(BlueprintCallable, Category="Collection") void TurnCollectionPage(int32 Direction);
+    UFUNCTION(BlueprintCallable, Category="Collection") void SelectCollectionPage(int32 Page);
     UFUNCTION(BlueprintCallable, Category="Collection") void CloseCollection();
     UFUNCTION(BlueprintCallable, Category="Collection") void RevealCollection();
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|Animation", meta=(ClampMin="0.05")) float PanelSlideDuration=.38f;

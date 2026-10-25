@@ -3,7 +3,7 @@ import argparse, json, math, subprocess, time, traceback
 from pathlib import Path
 from packaged_qa_client import Client
 
-ap=argparse.ArgumentParser();ap.add_argument('output');ap.add_argument('--exe');a=ap.parse_args()
+ap=argparse.ArgumentParser();ap.add_argument('output');ap.add_argument('--exe');ap.add_argument('--ending',action='store_true');a=ap.parse_args()
 root=Path(__file__).resolve().parents[1];out=Path(a.output).resolve();out.mkdir(parents=True)
 profile=out/'profile';profile.mkdir()
 config=profile/'Saved/Config/Windows';config.mkdir(parents=True)
@@ -91,6 +91,15 @@ try:
     def highlight():return next(p['highlight'] for p in actors('MouseMuseumPortal',True)[0]['parts'] if 'highlight' in p)
     h1=highlight();time.sleep(.65);h2=highlight()
     check(abs(h1-h2)>.03,'Painting circle pulses without being aimed at');shot('painting-circle')
+    if a.ending:
+        cmd('aim',target=cell);time.sleep(.2)
+        check(actors('MouseMuseumPortal')[0]['focused'],'Actual painting remains focused before entering')
+        c.key('E');deadline=time.monotonic()+120
+        while time.monotonic()<deadline:
+            state=cmd('state')
+            if 'EndingEmergence' in state.get('map',''):break
+            time.sleep(.3)
+        check('EndingEmergence' in state.get('map',''),'Painting interaction still travels to the ending')
     r['passed']=True
 except:
     r['error']=traceback.format_exc();print(r['error'],flush=True)

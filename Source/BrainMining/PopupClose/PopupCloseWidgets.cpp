@@ -212,8 +212,11 @@ void UPopupCloseDesktopWidget::SpawnPopup()
  Window->SetVisibility(TAttribute<EVisibility>::CreateLambda([WeakThis,Id]
  {
   if(auto Self=WeakThis.Get())
-   if(Self->IntroductionPriority<=2 && Id>Self->IntroductionPriority)
-    return EVisibility::Hidden;
+  {
+   // Keep the theme hidden until acknowledgement or the long-idle fallback.
+   if(Id==2 && Self->IntroductionPriority==1)return EVisibility::Hidden;
+   if(Self->IntroductionPriority<=2 && Id>Self->IntroductionPriority && !Self->bIntroductionFallback)return EVisibility::Hidden;
+  }
   return EVisibility::Visible;
  }));
 	Canvas->AddSlot()
@@ -284,7 +287,7 @@ bool UPopupCloseDesktopWidget::ClosePopup(int32 Id)
 
 	Canvas->RemoveSlot(Windows[Index].Root.ToSharedRef());
 	Windows.RemoveAt(Index);
- if(Id==IntroductionPriority){++IntroductionPriority;IntroductionAge=0.f;}
+ if(Id==IntroductionPriority){++IntroductionPriority;IntroductionAge=0.f;bIntroductionFallback=false;}
  return true;
 }
 
@@ -296,23 +299,28 @@ void UPopupCloseDesktopWidget::ClearOldestPopup()
 void UPopupCloseDesktopWidget::ClearPopups()
 {
  while(Windows.Num())ClearOldestPopup();
- ManuallyClosedCount=0;NextId=1;IntroductionPriority=1;IntroductionAge=0.f;WorkElapsed=-1.f;bReconnectShown=false;
+ ManuallyClosedCount=0;NextId=1;IntroductionPriority=1;IntroductionAge=0.f;bIntroductionFallback=false;WorkElapsed=-1.f;bReconnectShown=false;
 }
 
 void UPopupCloseDesktopWidget::AdvanceIntroduction(float DeltaSeconds)
 {
- // Release visual priority without auto-replying, awarding coins or losing backlog.
- // Each page receives its own reading interval, including after an early click.
+ // Protect the normal announcement -> manual theme flow throughout the slow phase.
+ // A long-idle announcement reveals the theme first, before releasing later work.
  if(IntroductionPriority>2 || Windows.IsEmpty())return;
  if(!Windows.ContainsByPredicate([this](const FWindow& W){return W.Id==IntroductionPriority;}))return;
  IntroductionAge+=FMath::Max(0.f,DeltaSeconds);
- if(IntroductionAge>=8.f){++IntroductionPriority;IntroductionAge=0.f;}
+ if(IntroductionPriority==1 && IntroductionAge>=45.f)
+ {IntroductionPriority=2;IntroductionAge=0.f;}
+ else if(IntroductionPriority==2 && (IntroductionAge>=20.f || (WorkElapsed>=55.f && IntroductionAge>=5.f)))bIntroductionFallback=true;
 }
 
 int32 UPopupCloseDesktopWidget::FrontWindowIndex() const
 {
- const int32 Introduction=Windows.IndexOfByPredicate([this](const FWindow& Window){return IntroductionPriority<=2 && Window.Id==IntroductionPriority;});
- return Introduction!=INDEX_NONE?Introduction:Windows.Num()-1;
+ const int32 Introduction=Windows.IndexOfByPredicate([this](const FWindow& Window){return !bIntroductionFallback && IntroductionPriority<=2 && Window.Id==IntroductionPriority;});
+ if(Introduction!=INDEX_NONE)return Introduction;
+ const bool bAnnouncementOpen=IntroductionPriority==1;
+ for(int32 I=Windows.Num()-1;I>=0;--I)if(Windows[I].Id!=2 || !bAnnouncementOpen)return I;
+ return INDEX_NONE;
 }
 
 int32 UPopupCloseDesktopWidget::GetFrontPopupPhase() const

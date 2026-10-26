@@ -73,6 +73,7 @@ private:
 	bool bRepliesEnabled = true;
 	int32 IntroductionPriority=1;
 	float IntroductionAge=0.f;
+	bool bIntroductionFallback=false;
 	float WorkElapsed=-1.f;
 	bool bReconnectShown=false;
 };

@@ -115,6 +115,7 @@ FPopupOfficeFlood::~FPopupOfficeFlood()
 }
 void FPopupOfficeFlood::Warm(float Dt)
 {
+ for(auto& Slot:Slots)if(auto Actor=Slot.Actor.Get())Actor->IsReadyForLaunch();
  if(Slots.Num()>=WindowBudget+PaperBudget)return;
  WarmDebt=FMath::Min(WarmDebt+Dt,.06f);
  int32 Added=0;
@@ -204,7 +205,7 @@ void FPopupOfficeFlood::Emit(int32 SourceIndex,bool bPhysical)
  {
   const int32 Candidate=Start+Cursor++%Count;
   // Early bodies remain exactly where Chaos leaves them, including after 5 s.
-  if(!Slots[Candidate].bActive){Selected=Candidate;break;}
+  if(!Slots[Candidate].bActive && Slots[Candidate].Actor.IsValid() && Slots[Candidate].Actor->IsReadyForLaunch()){Selected=Candidate;break;}
  }
  // Never recycle a persistent physical body or interrupt a visible flight.
  if(Selected==INDEX_NONE)return;

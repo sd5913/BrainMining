@@ -23,6 +23,7 @@ class UWidgetComponent;
 class UWidgetInteractionComponent;
 class APopupCloseFlyingWindow;
 class APopupOfficeDevice;
+class UMiningComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPopupOfficeExitEvent);
 
@@ -79,6 +80,7 @@ public:
 
 private:
  bool bBurstAwaitingCamera=false;
+ TWeakObjectPtr<UMiningComponent> ScreenMining;
  friend class FPopupOfficeExit;
  UFUNCTION() void OnPlayerBombExploded(FVector Location);
 

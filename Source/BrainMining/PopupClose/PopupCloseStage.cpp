@@ -13,7 +13,7 @@
 #include "PopupClose/PopupCloseOffice.h"
 #include "PopupClose/PopupCloseWidgets.h"
 #include "MiningWalletSubsystem.h"
-#include "MiningSaveSubsystem.h"
+#include "MiningComponent.h"
 #include "MiningGUIWidgets.h"
 #include "BrainMiningPlayerController.h"
 #include "Engine/GameInstance.h"
@@ -53,7 +53,7 @@
 DEFINE_LOG_CATEGORY_STATIC(LogPopupClose,Log,All);
 namespace
 {
- constexpr float ScreenEnterSeconds=.25f;
+ constexpr float ScreenEnterSeconds=.55f;
  constexpr float ScreenExitSeconds=.8f;
  constexpr float PanicSeconds=45.f;
  constexpr float WorkSeconds=65.f;
@@ -209,6 +209,9 @@ APopupCloseStage::~APopupCloseStage()=default;
 void APopupCloseStage::BeginPlay()
 {
  Super::BeginPlay();ConfigureOffice();ApplyColors();GatherDevices();
+ // Resolve first-use cues before any camera blend, including a direct E interaction.
+ if(auto* Audio=GetWorld()->GetSubsystem<UMiningRoomAudioSubsystem>())
+  for(const TCHAR* Cue:{TEXT("S_Open"),TEXT("S_Close"),TEXT("S_OfficeMouseClick"),TEXT("S_OfficeNotify")})Audio->Resolve(Cue);
  Flood=MakeUnique<FPopupOfficeFlood>(*this);
  Exit=MakeUnique<FPopupOfficeExit>(*this);
  if (bAreaManaged) SetAreaActive(false);
@@ -362,7 +365,6 @@ void APopupCloseStage::StartOfficeRound()
  if(Phase!=EPhase::Idle)return;
  Phase=EPhase::Running;RoundTime=0;SlowPhaseScheduledIssues=0;
  USubtitleLibrary::PlayMainGameSubtitle(this,TEXT("电脑弹窗玩法1"));
- if(auto GI=GetGameInstance())if(auto Saves=GI->GetSubsystem<UMiningSaveSubsystem>())Saves->RecordOfficePrototype();
  // Both computers begin with the announcement and the larger theme webpage.
  // Ordinary issues continue to accumulate behind these two opening pages.
  for(auto Device:Devices)if(Device && !Device->IsPrinter())
@@ -387,7 +389,10 @@ void APopupCloseStage::BeginScreenSession(APlayerController* PC,APopupOfficeDevi
 {
  if(!PC || !PC->GetPawn() || !Device || Device->IsPrinter() || Device->IsLocked() || View!=EView::Free)return;
  ActiveComputer=Device;LockedController=PC;LockedPawn=PC->GetPawn();View=EView::Entering;ViewTime=0;
- if(auto* Audio=GetWorld()->GetSubsystem<UMiningRoomAudioSubsystem>())Audio->Resolve(TEXT("S_OfficeMouseClick"));
+ for(auto OfficeDevice:Devices)if(OfficeDevice)OfficeDevice->SetComputerView(true);
+ // Desktop clicks must never reach the pickaxe swing/contact audio path.
+ ScreenMining=PC->GetPawn()->FindComponentByClass<UMiningComponent>();
+ if(ScreenMining.IsValid())ScreenMining->PushEncounterBlock();
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Open"),.25f);
  if(auto Character=Cast<ACharacter>(PC->GetPawn()))
  {
@@ -414,6 +419,9 @@ void APopupCloseStage::ExitScreen()
 }
 void APopupCloseStage::RestorePlayerControl()
 {
+ for(auto Device:Devices)if(Device)Device->SetComputerView(false);
+ if(ScreenMining.IsValid())ScreenMining->PopEncounterBlock();
+ ScreenMining.Reset();
  ConfigureScreenCursor(false);
  if(bMoveSuppressed)
  {
@@ -493,7 +501,7 @@ void APopupCloseStage::Tick(float Dt)
    const FText Coins=FText::AsNumber(Wallet->Balance);
    if(!Controller->MiningGUI->CoinText->GetText().EqualTo(Coins))Controller->MiningGUI->SetCoinDisplay(Coins);
   }
- if(Flood && (Phase==EPhase::Idle || Phase==EPhase::Running))Flood->Warm(Dt);
+ if(Flood && (Phase==EPhase::Idle || Phase==EPhase::Running) && View!=EView::Entering && View!=EView::Exiting)Flood->Warm(Dt);
  if(Phase==EPhase::Running)TickIssues(Dt);
  if(Phase==EPhase::Spraying || Phase==EPhase::Complete)
  {
@@ -549,7 +557,7 @@ void APopupCloseStage::TickIssues(float Dt)
  for(auto Device:Devices)
  {
   bAccountingValid &= Device->AccountingValid();
-  bWarningsValid &= Device->WarningVisible()==(Device->Pending()>0);
+  bWarningsValid &= Device->WarningVisible()==(Device->Pending()>0 && View==EView::Free);
  }
  if(RoundTime>=WorkSeconds)BeginBurst();
 }

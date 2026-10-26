@@ -78,7 +78,6 @@ public:
     UPROPERTY(BlueprintReadOnly) int32 TutorialCompleted=0;
     UPROPERTY(BlueprintReadOnly) int32 PrototypesFound=0;
     void RecordMineral(EMiningMineral Mineral);
-    void RecordOfficePrototype();
 private:
     void UpdateTutorial();
     bool bSessionStarted=false;

@@ -5,8 +5,13 @@
 #include "PopupClose/PopupOfficeDevice.h"
 #include "PopupClose/PopupCloseWidgets.h"
 #include "PopupClose/PopupCloseContent.h"
+#include "PopupClose/PopupCloseFlyingWindow.h"
 #include "Components/WidgetComponent.h"
 #include "Components/WidgetInteractionComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInterface.h"
+#include "MaterialShared.h"
+#include "SceneInterface.h"
 #include "InputCoreTypes.h"
 #include "Tests/AutomationEditorCommon.h"
 #include "ImageUtils.h"
@@ -36,23 +41,31 @@ namespace PopupOfficeArtTests
     Device=World->SpawnActor<APopupOfficeDevice>(FVector(0,1000,0),FRotator::ZeroRotator,Params);
     if(!Device.IsValid()){Test->AddError(TEXT("Could not spawn isolated live desktop"));return true;}
     Device->GetSurface()->SetTickWhenOffscreen(true);Device->SetScreenInteractive(true);
+    for(int32 I=0;I<PopupCloseContent::ArtCount;++I)
+    {
+     auto Slab=World->SpawnActor<APopupCloseFlyingWindow>(FVector(0,0,-5000-I*100),FRotator::ZeroRotator,Params);
+     Slab->PrepareForPool(I);Slabs.Add(Slab);
+    }
     Deadline=FPlatformTime::Seconds()+.35;return false;
    }
+   for(auto Slab:Slabs)if(Slab.IsValid())Slab->IsReadyForLaunch();
    if(FPlatformTime::Seconds()<Deadline)return false;
    auto Desktop=Device->GetDesktop();
    if(EdgePhase==1)
    {
-    Desktop->AdvanceIntroduction(8.1f);
-    Test->TestEqual(TEXT("Unattended announcement yields to theme"),Desktop->GetFrontPopupBody(),FString(TEXT("【涌现】")));
-    Desktop->AdvanceIntroduction(8.1f);
-    Test->TestEqual(TEXT("Unattended theme releases later work"),Desktop->GetFrontPopupTitle(),FString(TEXT("组队群 · 2条新消息")));
+    Desktop->AdvanceIntroduction(30.f);
+    Test->TestEqual(TEXT("Slow opening never opens the theme without a click"),Desktop->GetFrontPopupBody(),FString(TEXT("21天gamejam游戏创作主题公布！")));
+    Desktop->AdvanceIntroduction(15.1f);
+    Test->TestEqual(TEXT("Long-idle fallback opens the theme first"),Desktop->GetFrontPopupBody(),FString(TEXT("【涌现】")));
+    Desktop->AdvanceIntroduction(20.1f);
+    Test->TestEqual(TEXT("Later work cannot remain blocked forever"),Desktop->GetFrontPopupTitle(),FString(TEXT("组队群 · 2条新消息")));
     Test->TestTrue(TEXT("Timeout never rewards or deletes unresolved work"),Device->AccountingValid() && Device->Handled()==0 && Device->Pending()==3);
     EdgePhase=2;Deadline=FPlatformTime::Seconds()+.3;return false;
    }
    if(EdgePhase==2)
    {
     Test->TestTrue(TEXT("Visible top window remains clickable after timeouts"),Device->ClickReplyForValidation());
-    Test->TestEqual(TEXT("Old theme remains available under later work"),Desktop->GetFrontPopupBody(),FString(TEXT("【涌现】")));
+    Test->TestEqual(TEXT("Fallback theme remains readable below later work"),Desktop->GetFrontPopupBody(),FString(TEXT("【涌现】")));
     for(float Seconds:{0.f,25.f,36.f,45.f,60.f})
     {
      Desktop->SetWorkElapsed(Seconds);Device->AddProblem();
@@ -68,8 +81,14 @@ namespace PopupOfficeArtTests
     Test->TestTrue(TEXT("Early acknowledgement advances the announcement"),Device->ClickReplyForValidation());
     Desktop->AdvanceIntroduction(7.f);
     Test->TestEqual(TEXT("Theme receives its own reading interval after a click"),Desktop->GetFrontPopupBody(),FString(TEXT("【涌现】")));
-    Desktop->AdvanceIntroduction(1.1f);
+    Desktop->AdvanceIntroduction(13.1f);
     Test->TestTrue(TEXT("Theme cannot block the desktop forever after an early click"),Desktop->GetFrontPopupPhase()==0);
+    for(auto Slab:Slabs)if(Slab.IsValid())
+    {
+     auto Mesh=Slab->FindComponentByClass<UStaticMeshComponent>();auto Material=Mesh->GetMaterial(0);
+     auto Resource=Material->GetMaterialResource(Slab->GetWorld()->Scene->GetShaderPlatform());
+     Test->TestTrue(FString::Printf(TEXT("Physical popup %s ready (resource=%d, complete=%d, pso=%d)"),*Material->GetName(),Resource!=nullptr,Resource && Resource->IsGameThreadShaderMapComplete(),Mesh->IsPSOPrecaching()),Slab->IsReadyForLaunch());Slab->Destroy();
+    }
     Device->Destroy();return true;
    }
    if(!bSpawned)
@@ -105,6 +124,7 @@ namespace PopupOfficeArtTests
  private:
   FAutomationTestBase* Test;
   TWeakObjectPtr<APopupOfficeDevice> Device;
+  TArray<TWeakObjectPtr<APopupCloseFlyingWindow>> Slabs;
   double Deadline=0;
   int32 Skin=0,EdgePhase=0;
   bool bSpawned=false;

@@ -52,6 +52,7 @@ public:
  void RefreshWarning();
  void Lock();
  void HideWarning();
+ void SetComputerView(bool bEnabled);
  void WarmPool(float Dt);
  void Emit();
  void CleanupOnePopup();
@@ -84,4 +85,5 @@ private:
  int32 ProblemsCreated=0;
  int32 PapersHandled=0;
  bool bLocked=false;
+ bool bComputerView=false;
 };

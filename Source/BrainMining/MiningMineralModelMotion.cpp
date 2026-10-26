@@ -94,7 +94,7 @@ void AMiningCollectible::BuildEmergenceParts()
             else{P.Y=-4+(J==5?7:0);P.Z=7-J*2.6;Scale={.01,J==5?.15:.30,.012};}
         }
         else if(ItemId==18){P={0,0,40};Scale={.075,.075,.017};}
-        else if(ItemId==16){P={-8.f,float(I*8-20),20};Scale={.018,.025,.055};}
+        else if(ItemId==16){R=FRotator(70,0,0);P=R.RotateVector(FVector(-8.f,float(I*8-20),10));Scale={.018,.025,.055};}
         else if(ItemId==19){P={0,0,22};Scale=FVector(.018);}
         else if(ItemId==2||ItemId==8||ItemId==10){P={0,0,0};Scale=FVector(ItemId==2?.045f:.018f);}
         else
@@ -202,13 +202,15 @@ void AMiningCollectible::AnimateEmergence(float Time)
         else if(ItemId==16||ItemId==19||ItemId==2||ItemId==8)
         {
             const float T=FMath::Fmod(Time*.25f+I*.163f,1.f),A=Time+I*2.4f;
-            const float Z=ItemId==16?20:ItemId==19?23:ItemId==8?48:0;
+            const float Z=ItemId==16?10:ItemId==19?23:ItemId==8?48:0;
             if(ItemId==2)
             {
                 // Bubbles rise from each of the four test-tube mouths.
                 Part->SetRelativeLocation(FVector(-4+FMath::Sin(A)*7,-30+(I%4)*20+FMath::Cos(A)*4,20+T*65));
             }
-            else Part->SetRelativeLocation(FVector(FMath::Sin(A)*(4+T*8),FMath::Cos(A)*(5+T*12),Z+T*(ItemId==16?42:20)));
+            // Model steam leaves the serving face along the plate normal, including in catalogue rotation.
+            else if(ItemId==16)Part->SetRelativeLocation(FRotator(70,0,0).RotateVector(FVector(FMath::Sin(A)*4,FMath::Cos(A)*12,Z+T*42)));
+            else Part->SetRelativeLocation(FVector(FMath::Sin(A)*(4+T*8),FMath::Cos(A)*(5+T*12),Z+T*20));
             Part->SetRelativeScale3D(Home.GetScale3D()*FMath::Sin(T*PI)*(1+T));
         }
         else if(ItemId==10)

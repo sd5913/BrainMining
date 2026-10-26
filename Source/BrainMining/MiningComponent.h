@@ -97,6 +97,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") bool bUseDrillEnergy = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float MaxDrillEnergy = 36;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float DrillRecoveryRate = 10;
+	float GetEffectiveDrillRecoveryRate() const { return FMath::Max(0.f, DrillRecoveryRate) * .15f; }
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float DrillConsumptionRate = 10;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Drill") float DrillEnergy = 36;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Drill") bool bInfiniteDrillEnergy = false;

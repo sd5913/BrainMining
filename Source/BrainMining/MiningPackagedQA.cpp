@@ -241,6 +241,8 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     else if(Op==TEXT("gm_menu"))Ok=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->ToggleDeveloperMenu();
     else if(Op==TEXT("gm_jump"))
     {auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->JumpToDeveloperArea(int32(C->GetNumberField(TEXT("area"))));}
+    else if(Op==TEXT("gm_collectible"))
+    {auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->JumpToCollectible(int32(C->GetNumberField(TEXT("item"))));}
     else if(Op==TEXT("gm_map")){auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->OpenDeveloperExperience(int32(C->GetNumberField(TEXT("index"))));}
     else if(Op==TEXT("throw_bomb")){auto* Bomb=Pawn->FindComponentByClass<UMiningBombToolComponent>();Ok=Bomb && Bomb->ThrowBomb();}
     else if(Op==TEXT("save"))Ok=Save->SaveProgress();
@@ -438,7 +440,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     TArray<TSharedPtr<FJsonValue>> DebugMaps;
     for(const auto& Map:UMiningExperienceSubsystem::DeveloperMapPaths())DebugMaps.Add(MakeShared<FJsonValueString>(Map));
     Result->SetArrayField(TEXT("gm_maps"),DebugMaps);
-    if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()){Result->SetNumberField(TEXT("drill_capacity"),Mining->MaxDrillEnergy);Result->SetNumberField(TEXT("drill_energy"),Mining->DrillEnergy);Result->SetNumberField(TEXT("drill_recovery_per_second"),Mining->DrillRecoveryRate*.3f);}
+    if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()){Result->SetNumberField(TEXT("drill_capacity"),Mining->MaxDrillEnergy);Result->SetNumberField(TEXT("drill_energy"),Mining->DrillEnergy);Result->SetNumberField(TEXT("drill_recovery_per_second"),Mining->GetEffectiveDrillRecoveryRate());}
     if(auto* Museum=First<AWenSiMirrorPuzzle>(W))
     {Result->SetBoolField(TEXT("aim_reset"),Museum->bAimReset);Result->SetNumberField(TEXT("museum_aim_kind"),Museum->Aim.IsValid()?Museum->Aim->Kind:-1);Result->SetNumberField(TEXT("reset_hold"),Museum->ResetHold.Progress());Result->SetNumberField(TEXT("reset_count"),Museum->ResetCount);}
     if(auto* Toilet=First<AHeavenToilet>(W))Result->SetBoolField(TEXT("toilet_outline"),Toilet->Body->bRenderCustomDepth);
@@ -664,6 +666,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
             A->SetArrayField(TEXT("extent"),Vec(It->GetComponentsBoundingBox(true).GetExtent()));A->SetArrayField(TEXT("forward"),Vec(It->GetActorForwardVector()));
             if(auto* Exhibit=Cast<AWenSiMirrorExhibit>(*It)){A->SetNumberField(TEXT("kind"),Exhibit->Kind);A->SetNumberField(TEXT("word"),int32(Exhibit->Word));}
             A->SetBoolField(TEXT("hidden"),It->IsHidden());A->SetBoolField(TEXT("ticking"),It->IsActorTickEnabled());
+            TArray<TSharedPtr<FJsonValue>> Tags;for(FName Tag:It->Tags)Tags.Add(MakeShared<FJsonValueString>(Tag.ToString()));A->SetArrayField(TEXT("tags"),Tags);
             if(auto* Rock=Cast<AGeneratedMiningRock>(*It))
             {
                 int32 NearMissing=0,NearSolid=0,HiddenReady=0;

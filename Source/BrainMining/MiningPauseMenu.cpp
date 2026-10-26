@@ -201,7 +201,9 @@ bool UMiningExperienceSubsystem::JumpToCollectible(int32 Id)
     }
     Facing=(Look-Destination).Rotation();
     if(auto* Movement=PC->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())Movement->StopMovementImmediately();
-    PC->GetPawn()->SetActorLocation(Destination,false,nullptr,ETeleportType::TeleportPhysics);PC->SetControlRotation(Facing);
+    PC->GetPawn()->SetActorLocation(Destination,false,nullptr,ETeleportType::TeleportPhysics);
+    if(Id==3)Facing=(Look-PC->GetPawn()->GetPawnViewLocation()).Rotation();
+    PC->SetControlRotation(Facing);
     if(Id==11)for(TActorIterator<AMiningRoomEscape> Room(GetWorld());Room;++Room)if(Room->StageRibbon)Room->Phase=EMiningEscapePhase::Escaped;
     CloseMenu();return true;
 }

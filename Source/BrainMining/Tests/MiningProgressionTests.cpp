@@ -48,10 +48,10 @@ bool FMiningProgressionRulesTest::RunTest(const FString& Parameters)
         TestFalse(TEXT("Empty energy stows the drill"), Mining->bDrillMode);
         Mining->DrillRecoveryRate = 15; Mining->MaxDrillEnergy = 150;
         Mining->UpdateDrillEnergy(5);
-        TestEqual(TEXT("Stored drill recovers at thirty percent of the configured rate"), Mining->DrillEnergy, 22.5f);
+        TestEqual(TEXT("Stored drill recovers at fifteen percent of the configured rate"), Mining->DrillEnergy, 11.25f);
         Mining->bDrillMode = true;
         Mining->UpdateDrillEnergy(1);
-        TestEqual(TEXT("Equipped idle drill uses the same reduced recovery"), Mining->DrillEnergy, 27.f);
+        TestEqual(TEXT("Equipped idle drill uses the same reduced recovery"), Mining->DrillEnergy, 13.5f);
         ResourceWorld->TimeSeconds += 100;
         Mining->TickComponent(0, LEVELTICK_All, nullptr);
         TestTrue(TEXT("Idle drill has no timed expiry"), Mining->bDrillMode);

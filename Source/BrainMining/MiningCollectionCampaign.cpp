@@ -15,6 +15,9 @@
 #include "Components/BoxComponent.h"
 #include "EchoPassageStage.h"
 #include "EngineUtils.h"
+#include "DynamicMesh/DynamicMesh3.h"
+#include "DynamicMesh/DynamicMeshAABBTree3.h"
+#include "UDynamicMesh.h"
 
 void AMiningCollectionField::SpawnAuthoredClues(const FMiningCollectionPlacement& P)
 {
@@ -76,24 +79,46 @@ void AMiningCollectionField::SpawnAuthoredClues(const FMiningCollectionPlacement
     }
     else if(Id==3)
     {
+        // Query the actual terrain, including deferred chunks whose physics mesh
+        // is not cooked yet. A missed startup collision trace used to leave the
+        // feathers buried or unsupported, so they fell and faded before arrival.
+        UE::Geometry::FDynamicMesh3 Soil;
+        if(auto* Generated=Cast<AGeneratedMiningRock>(Rock))Generated->CopyMiningMesh(Soil);
+        else Soil=Rock->RockMesh->GetDynamicMesh()->GetMeshRef();
+        UE::Geometry::FDynamicMeshAABBTree3 Tree(&Soil,true);
+        const FTransform RockFrame=Rock->GetActorTransform();
+        auto SurfaceHit=[&](FVector Start,FVector End,FVector& Face,FVector& Outward)
+        {
+            const FVector A=RockFrame.InverseTransformPosition(T.TransformPosition(Start));
+            const FVector B=RockFrame.InverseTransformPosition(T.TransformPosition(End));
+            const FVector Direction=(B-A).GetSafeNormal();
+            double Distance=0;int32 Triangle=INDEX_NONE;
+            if(!Tree.FindNearestHitTriangle(FRay3d(A,Direction),Distance,Triangle) || Distance>(B-A).Size())return false;
+            Face=T.InverseTransformPosition(RockFrame.TransformPosition(A+Direction*Distance));
+            Outward=T.InverseTransformVectorNoScale(RockFrame.TransformVectorNoScale(FVector(Soil.GetTriNormal(Triangle)))).GetSafeNormal();
+            if(FVector::DotProduct(Outward,End-Start)>0)Outward=-Outward;
+            return true;
+        };
         for(int I=0;I<7;++I)
         {
-            FVector Surface(1,-90+I*30,-30+(I%3)*22);FHitResult Hit;
-            const bool bHit=Rock->ActorLineTraceSingle(Hit,T.TransformPosition(Surface-FVector(180,0,0)),T.TransformPosition(Surface+FVector(240,0,0)),ECC_Visibility,FCollisionQueryParams(NAME_None,true));
-            FVector Outward(-1,0,0),Face=Surface;
-            if(bHit)
+            const FVector Sample(1,-90+I*30,-30+(I%3)*22);
+            FVector Outward,Face;
+            if(!SurfaceHit(Sample-FVector(300,0,0),Sample+FVector(300,0,0),Face,Outward))continue;
+            const FQuat Rotation=FRotationMatrix::MakeFromX(-Outward).ToQuat()*FRotator(0,0,-35+(I*23)%76).Quaternion();
+            // Clear the entire feather silhouette on a faceted/curved wall,
+            // rather than lifting only its center off the triangle it hit.
+            float Clearance=4.f;
+            for(FVector Tip:{FVector(0,0,32),FVector(0,0,-34),FVector(0,-10,7),FVector(0,10,7)})
             {
-                Face=T.InverseTransformPosition(Hit.ImpactPoint);
-                Outward=T.InverseTransformVectorNoScale(Hit.ImpactNormal).GetSafeNormal();
-                Surface=Face-Outward*1.2f; // support inside soil, visible feather just outside
+                const FVector Edge=Face+Rotation.RotateVector(Tip);FVector EdgeFace,EdgeNormal;
+                if(SurfaceHit(Edge+Outward*100,Edge-Outward*100,EdgeFace,EdgeNormal))
+                    Clearance=FMath::Max(Clearance,float(FVector::DotProduct(EdgeFace-Face,Outward))+4.f);
             }
-            MakeFeather(Rock,Surface,-35+(I*23)%76);
-            if(bHit)
-            {
-                auto* Feather=Spawned.Last().Get();
-                Feather->SetActorLocation(Face+Outward*2.f);
-                Feather->SetActorRotation(FRotationMatrix::MakeFromX(-Outward).ToQuat()*FRotator(0,0,-35+(I*23)%76).Quaternion());
-            }
+            MakeFeather(Rock,Face-Outward*8.f,-35+(I*23)%76);
+            auto* Feather=Spawned.Last().Get();
+            Feather->Tags.Add(TEXT("CollectionExteriorFeather"));
+            Feather->SetActorLocation(Face+Outward*Clearance);
+            Feather->SetActorRotation(Rotation);
         }
         const FVector End=T.InverseTransformPosition(P.Transform.GetLocation());
         for(int I=1;I<15;++I) MakeFeather(Rock,FMath::Lerp(FVector(3,0,0),End,float(I)/15)+FVector(0,FMath::Sin(I*2.4f)*48,-35+(I%3)*12),I%2?22:-18);

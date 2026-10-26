@@ -27,6 +27,8 @@ try:
     check(cmd('state')['prototypes']==0,'No first prototype awarded at new-game start')
     cmd('area_fixture',area=1);time.sleep(2)
     s=cmd('state');check(s['prototypes']==0 and 'phase=0' in s['office'],'Office entrance does not award the prototype')
+    # The traversal fixture also starts the skipped mining tutorial narration.
+    wait(lambda s:not s['subtitle'],30)
     devices=cmd('actors',filter='PopupOfficeDevice')['actors']
     d=devices[0];p=d['position'];f=d['forward']
     cmd('pose',eye=[p[0]-190*f[0],p[1]-190*f[1],p[2]+170],target=[p[0],p[1],p[2]+124])
@@ -53,8 +55,11 @@ try:
 except Exception:
     report.update(passed=False,error=traceback.format_exc());print(report['error'],flush=True)
 finally:
-    (out/'runtime.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
     if proc and proc.poll() is None:
         try:cmd('quit');proc.wait(timeout=45)
-        except Exception:proc.terminate()
+        except Exception:proc.terminate();proc.wait(timeout=15)
+    report['exit_code']=proc.returncode if proc else None
+    if report.get('passed') and report['exit_code']!=0:
+        report.update(passed=False,error='Shipping did not exit cleanly: '+str(report['exit_code']))
+    (out/'runtime.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
 if not report['passed']:raise SystemExit(1)

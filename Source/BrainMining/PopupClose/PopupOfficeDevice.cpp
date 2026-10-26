@@ -170,6 +170,7 @@ void APopupOfficeDevice::BeginPlay()
 void APopupOfficeDevice::Tick(float DeltaSeconds)
 {
  Super::Tick(DeltaSeconds);
+ if(Desktop)Desktop->AdvanceIntroduction(DeltaSeconds);
  // Projected screens need offscreen ticks, but only the focused desktop needs full refresh.
  const auto* Viewer=GetWorld()->GetFirstPlayerController();
  const bool Focused=Viewer && Viewer->GetViewTarget()==this;

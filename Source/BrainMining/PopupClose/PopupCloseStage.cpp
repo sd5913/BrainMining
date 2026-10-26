@@ -13,6 +13,7 @@
 #include "PopupClose/PopupCloseOffice.h"
 #include "PopupClose/PopupCloseWidgets.h"
 #include "MiningWalletSubsystem.h"
+#include "MiningSaveSubsystem.h"
 #include "MiningGUIWidgets.h"
 #include "BrainMiningPlayerController.h"
 #include "Engine/GameInstance.h"
@@ -270,6 +271,7 @@ void APopupCloseStage::ResetCompletedSessions()
  Phase = EPhase::Idle;
  UMiningRoomAudioSubsystem::StopSource(this);
  RoundTime = ViewTime = SprayTime = SprayDebt = SlowPhaseScheduledIssues = FirstBurstPeakFrame = 0;
+ bBurstAwaitingCamera=false;
  LastTickTime = 0;
  bPanic = bForcedExit = false;
  bAccountingValid = bWarningsValid = bIndependentTimersValid = true;
@@ -360,6 +362,11 @@ void APopupCloseStage::StartOfficeRound()
  if(Phase!=EPhase::Idle)return;
  Phase=EPhase::Running;RoundTime=0;SlowPhaseScheduledIssues=0;
  USubtitleLibrary::PlayMainGameSubtitle(this,TEXT("电脑弹窗玩法1"));
+ if(auto GI=GetGameInstance())if(auto Saves=GI->GetSubsystem<UMiningSaveSubsystem>())Saves->RecordOfficePrototype();
+ // Both computers begin with the announcement and the larger theme webpage.
+ // Ordinary issues continue to accumulate behind these two opening pages.
+ for(auto Device:Devices)if(Device && !Device->IsPrinter())
+ {Device->AddProblem();Device->AddProblem();}
  // Randomize the initial order, with separated time slots instead of four immediate problems.
  int32 Order[]={0,1,2,3};
  for(int32 I=3;I>0;--I)Swap(Order[I],Order[FMath::RandRange(0,I)]);
@@ -524,6 +531,7 @@ void APopupCloseStage::TickIssues(float Dt)
  {
   // Advancing normalized countdowns makes the tempo change smoothly, including at 45 seconds.
   // Each device samples its own next gap; there is no common timer or synchronized phase reset.
+  if(auto DeviceDesktop=Devices[I]->GetDesktop())DeviceDesktop->SetWorkElapsed(RoundTime);
   IssueCountdown[I]-=Dt/IssueInterval(RoundTime,I);
   int32 Added=0;
   while(IssueCountdown[I]<=0.f && Added++<3)
@@ -557,11 +565,19 @@ void APopupCloseStage::BeginBurst()
  for(auto Device:Devices)if(auto UI=Device->GetDesktop())UI->SetRepliesEnabled(false);
  for(auto Device:Devices)Device->Lock();
  ExitScreen();
- if(Flood)Flood->Start();
- UE_LOG(LogPopupClose,Display,TEXT("Four-device eruption started immediately at %.2f s; force_exit=%d"),RoundTime,bForcedExit);
+ bBurstAwaitingCamera=true;
+ UE_LOG(LogPopupClose,Display,TEXT("Four-device eruption queued after camera exit at %.2f s; force_exit=%d"),RoundTime,bForcedExit);
 }
 void APopupCloseStage::TickSpray(float Dt)
 {
+ // The emission origin is beside the close-up camera. Let the existing exit
+ // blend finish before launching slabs through that viewpoint.
+ if(bBurstAwaitingCamera)
+ {
+  if(View!=EView::Free)return;
+  bBurstAwaitingCamera=false;
+  if(Flood)Flood->Start();
+ }
  SprayTime+=Dt;if(Flood)Flood->Tick(Dt);
  if(Exit && !Exit->HasOfferedBomb() && SprayTime>=15.f)
  {

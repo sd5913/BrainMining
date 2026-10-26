@@ -78,6 +78,7 @@ public:
 #endif
 
 private:
+ bool bBurstAwaitingCamera=false;
  friend class FPopupOfficeExit;
  UFUNCTION() void OnPlayerBombExploded(FVector Location);
 

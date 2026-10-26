@@ -46,6 +46,8 @@
 #include "StartRoom/MiningOpening.h"
 #include "StartRoom/MiningStartRoom.h"
 #include "PopupClose/PopupCloseStage.h"
+#include "PopupClose/PopupOfficeDevice.h"
+#include "PopupClose/PopupCloseWidgets.h"
 #include "CardRoomStage.h"
 #include "CardRoomPlayer.h"
 #include "NiagaraComponent.h"
@@ -616,6 +618,16 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     }
     Result->SetArrayField(TEXT("menu_buttons"),MenuButtons);
     if(auto* Office=First<APopupCloseStage>(W)){Result->SetStringField(TEXT("office"),Office->GetSessionStatus());Result->SetStringField(TEXT("office_exit"),Office->GetExitStatus());}
+    TArray<TSharedPtr<FJsonValue>> Desktops;
+    for(TActorIterator<APopupOfficeDevice> It(W);It;++It)if(auto* Desktop=It->GetDesktop())
+    {
+        auto Item=MakeShared<FJsonObject>();Item->SetNumberField(TEXT("device"),It->DeviceIndex);
+        Item->SetStringField(TEXT("title"),Desktop->GetFrontPopupTitle());Item->SetStringField(TEXT("body"),Desktop->GetFrontPopupBody());
+        Item->SetNumberField(TEXT("phase"),Desktop->GetFrontPopupPhase());
+        Item->SetNumberField(TEXT("pending"),It->Pending());Item->SetNumberField(TEXT("handled"),It->Handled());
+        Item->SetBoolField(TEXT("accounting_valid"),It->AccountingValid());Desktops.Add(MakeShared<FJsonValueObject>(Item));
+    }
+    Result->SetArrayField(TEXT("office_desktops"),Desktops);
     if(auto* Cards=First<ACardRoomStage>(W))
     {
         Result->SetNumberField(TEXT("card_phase"),int32(Cards->Run.Phase));Result->SetNumberField(TEXT("card_round"),Cards->Run.Round);

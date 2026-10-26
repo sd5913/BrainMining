@@ -76,6 +76,10 @@ void APopupCloseFlyingWindow::PrepareForPool(int32 Variant,bool bPaper,float Siz
   auto Material=UMaterialInstanceDynamic::Create(Parent,this);Material->SetVectorParameterValue(TEXT("Color"),Colors[I++]);Mesh->SetMaterial(0,Material);
  }
  if(Artwork)Body->SetMaterial(0,Artwork);
+ // Pool actors live far below the room. Keep their small printed textures ready
+ // instead of letting the first visible slab request its readable mips.
+ Body->SetTextureForceResidentFlag(true);
+ Body->PrestreamTextures(120.f,false);
  // Allocate Chaos bodies ahead of the eruption, while the window is hidden and sleeping.
  Collision->SetSimulatePhysics(true);Collision->SetMassOverrideInKg(NAME_None,bPaper?.02f:.35f,true);
  Collision->PutAllRigidBodiesToSleep();
@@ -99,7 +103,6 @@ void APopupCloseFlyingWindow::RetireToPool()
 
 void APopupCloseFlyingWindow::Launch(const FLinearColor& Color,const FVector& Velocity)
 {
- SetActorHiddenInGame(false);
  // Windows collide with the room, but not each other or the player: avoid quadratic pile collisions.
  auto Collision=CastChecked<UBoxComponent>(GetRootComponent());
  Collision->SetSimulatePhysics(true);
@@ -107,6 +110,7 @@ void APopupCloseFlyingWindow::Launch(const FLinearColor& Color,const FVector& Ve
  Collision->SetEnableGravity(true);Collision->WakeAllRigidBodies();
  Collision->SetPhysicsLinearVelocity(Velocity);
  Collision->SetPhysicsAngularVelocityInDegrees(FVector(FMath::FRandRange(-80.f,80.f),FMath::FRandRange(-40.f,40.f),FMath::FRandRange(-120.f,120.f)));
+ SetActorHiddenInGame(false);
 }
 
 void APopupCloseFlyingWindow::LaunchGenerated()

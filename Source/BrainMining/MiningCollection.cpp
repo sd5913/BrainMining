@@ -459,12 +459,9 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         if(SelectedId==INDEX_NONE){const auto Ids=CatalogueIds();if(!Ids.IsEmpty())SelectedId=Ids[0];}
         SelectItem(SelectedId);
         if(CatalogueWidget)CatalogueWidget->RevealCollection();
-        if(UniqueCount()==0)if(auto* Subtitles=USubtitleSubsystem::Get(this))
-            Subtitles->PlayInteractionLines(TEXT("EmptyCollection"),{FText::FromString(TEXT("挖掘就能找到灵感啦~"))});
     }
     else
     {
-        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->StopInteraction(TEXT("EmptyCollection"));
         Player->SetPause(false);
         Player->ResetIgnoreLookInput(); Player->ResetIgnoreMoveInput();
         Player->GetPawn()->EnableInput(Player); Player->bShowMouseCursor=false; Player->SetInputMode(FInputModeGameOnly());
@@ -477,8 +474,6 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
 void AMiningCollectionField::SelectItem(int32 Id)
 {
     SelectedId=Id;PreviewAnimationTime=0;
-    if(bCatalogueOpen && AMiningCollectible::IsMineralReward(Id))
-        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->StopInteraction(TEXT("EmptyCollection"));
     if(!Preview) return;
     const bool Owned=Inventory.IsValidIndex(Id)&&Inventory[Id]>0;
     Preview->SetActorHiddenInGame(!Owned || (PreviewToilet && Id==0));

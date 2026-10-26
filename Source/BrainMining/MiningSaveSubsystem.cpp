@@ -412,6 +412,13 @@ void UMiningSaveSubsystem::RecordMineral(EMiningMineral Mineral)
     if(Mineral==EMiningMineral::Iron)TutorialCompleted|=2;
 }
 
+void UMiningSaveSubsystem::RecordOfficePrototype()
+{
+    if(bRestoring || PrototypesFound>=1)return;
+    PrototypesFound=1;
+    CompletionNotices.Add(TEXT("发现1个灵感原型"));
+}
+
 void UMiningSaveSubsystem::UpdateTutorial()
 {
     const int32 Before=TutorialCompleted,BeforePrototypes=PrototypesFound;
@@ -451,7 +458,7 @@ void UMiningSaveSubsystem::UpdateTutorial()
     if(Wallet->GetUpgradeLevel(0)>=2)TutorialCompleted|=16;
     if(!RunCollectedItems.IsEmpty())TutorialCompleted|=8;
     const auto Kind=Hall->AreaKind(Hall->ActiveArea);
-    if(Kind==EMiningExperienceKind::Office)PrototypesFound=FMath::Max(PrototypesFound,1);
+    // The first prototype is recorded by StartOfficeRound alongside its narration.
     if(Kind==EMiningExperienceKind::Journey)
     {
         for(TActorIterator<AEchoPassageStage> It(GetWorld());It;++It)

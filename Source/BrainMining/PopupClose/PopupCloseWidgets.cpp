@@ -101,13 +101,6 @@ TSharedRef<SWidget> UPopupCloseDesktopWidget::RebuildWidget()
 			Canvas.ToSharedRef()
 		]
 		+ SOverlay::Slot()
-		.HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(32.f)
-		[
-			SNew(STextBlock).Visibility(EVisibility::HitTestInvisible)
-			.Text(FText::FromString(TEXT("工作台")))
-			.Font(BrainMiningFonts::Title(32.f)).ColorAndOpacity(FLinearColor(.6f,.76f,.88f))
-		]
-		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Bottom)
 		.Padding(FMargin(0.f, 0.f, 0.f, 28.f))
@@ -128,15 +121,19 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 	}
 
 	const FVector2D ViewportSize(PopupCloseContent::DesktopWidth,PopupCloseContent::DesktopHeight);
-	const auto& Copy = PopupCloseContent::Get(NextId-1);
- const int32 Variant=(NextId-1)%PopupCloseContent::ArtCount;
+	int32 ContentIndex=NextId<=2 || WorkElapsed<0.f?NextId-1:PopupCloseContent::ForProgress(WorkElapsed,NextId-3);
+ if(NextId>2 && WorkElapsed>=32.f && !bReconnectShown){ContentIndex=14;bReconnectShown=true;}
+	const auto& Copy = PopupCloseContent::Get(ContentIndex);
+ const bool bIntroduction=PopupCloseContent::IsIntroduction(NextId-1);
+ const bool bThemePage=NextId==2;
+ const int32 Variant=PopupCloseContent::ArtVariant(ContentIndex);
  const bool bHasArt=ArtTextures.IsValidIndex(Variant) && ArtTextures[Variant]!=nullptr;
  const auto& Skin=PopupCloseContent::GetArt(Variant);
- const FVector2D Size=bHasArt?Skin.Size:Copy.Size;
+ const FVector2D Size=bHasArt && !bIntroduction?Skin.Size:Copy.Size;
 	const float Width = Size.X;
 	const float Height = Size.Y;
-	const float X = FMath::FRandRange(24.f, FMath::Max(24.f, ViewportSize.X - Width - 24.f));
-	const float Y = FMath::FRandRange(24.f, FMath::Max(24.f, ViewportSize.Y - Height - 80.f));
+	const float X = bIntroduction?(ViewportSize.X-Width)*.5f:FMath::FRandRange(24.f, FMath::Max(24.f, ViewportSize.X - Width - 24.f));
+	const float Y = bIntroduction?(ViewportSize.Y-Height)*.5f:FMath::FRandRange(24.f, FMath::Max(24.f, ViewportSize.Y - Height - 80.f));
 	const int32 Id = NextId++;
 
 	TWeakObjectPtr<UPopupCloseDesktopWidget> WeakThis(this);
@@ -169,19 +166,28 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 			]
 			+ SVerticalBox::Slot()
 			.FillHeight(1.f)
+			.VAlign(bIntroduction?VAlign_Center:VAlign_Top)
 			.Padding(FMargin(12.f, 10.f))
 			[
+				SNew(SVerticalBox)
+				+SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,0,0,bThemePage?28.f:0.f)
+				[SNew(STextBlock).Visibility(bThemePage?EVisibility::HitTestInvisible:EVisibility::Collapsed)
+				 .Text(FText::FromString(TEXT("本届创作主题"))).Font(PopupFont(24.f)).ColorAndOpacity(FLinearColor(.25f,.32f,.4f))]
+				+SVerticalBox::Slot().AutoHeight()
+				[
 				SNew(STextBlock)
 				.Text(FText::FromString(Copy.Body))
-				.Font(PopupFont(20.f))
+				.Font(bThemePage?BrainMiningFonts::Title(80.f):PopupFont(bIntroduction?28.f:20.f))
+				.Justification(bIntroduction?ETextJustify::Center:ETextJustify::Left)
 				.AutoWrapText(true)
 				.ColorAndOpacity(FLinearColor(0.1f, 0.1f, 0.12f))
+				]
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(12.f,4.f,12.f,8.f)
 			[
-				SNew(SBox).WidthOverride(110.f).HeightOverride(40.f)
+				SNew(SBox).WidthOverride(160.f).HeightOverride(48.f)
 				[
-					SNew(SButton).ButtonColorAndOpacity(FLinearColor(.15f,.42f,.72f))
+					SNew(SButton).ContentPadding(FMargin(8.f,2.f)).ButtonColorAndOpacity(FLinearColor(.15f,.42f,.72f))
 					.IsEnabled_Lambda([WeakThis] { return WeakThis.IsValid() && WeakThis->bRepliesEnabled; })
 					.OnClicked_Lambda([WeakThis,Id]()
 					{
@@ -193,14 +199,23 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 						return FReply::Handled();
 					})
 					[
-						SNew(STextBlock).Text(FText::FromString(TEXT("回复"))).Font(PopupFont(22.f))
+						SNew(STextBlock).Text(FText::FromString(bThemePage?TEXT("开始创作"):bIntroduction?TEXT("查看主题"):TEXT("回复"))).Font(PopupFont(22.f))
 						.ColorAndOpacity(FLinearColor::White).Justification(ETextJustify::Center)
 					]
 				]
 			]
 		];
 
- if(bHasArt)Window=MakeArtPopup(Id,Variant);
+ if(bHasArt)Window=MakeArtPopup(Id,Variant,Size,ContentIndex);
+ // Keep both opening pages readable even when the room timer has already
+ // accumulated more work. Hidden problems retain their normal accounting.
+ Window->SetVisibility(TAttribute<EVisibility>::CreateLambda([WeakThis,Id]
+ {
+  if(auto Self=WeakThis.Get())
+   if(Self->IntroductionPriority<=2 && Id>Self->IntroductionPriority)
+    return EVisibility::Hidden;
+  return EVisibility::Visible;
+ }));
 	Canvas->AddSlot()
 		.Offset(FMargin(X, Y, Width, Height))
 		.Anchors(FAnchors(0.f, 0.f))
@@ -212,31 +227,35 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 		];
 
  const FVector4 Rect=Skin.CloseRect;
- const FVector2D ClosePoint=bHasArt?FVector2D((Rect.X+Rect.Z*.5f)*Width,(Rect.Y+Rect.W*.5f)*Height):FVector2D(Width-67.f,Height-28.f);
-	Windows.Add({ Id, Window, FVector2D(X,Y), Size, ClosePoint });
+ const FVector2D ClosePoint=bHasArt?FVector2D((Rect.X+Rect.Z*.5f)*Width,(Rect.Y+Rect.W*.5f)*Height):FVector2D(Width-92.f,Height-32.f);
+	Windows.Add({ Id, ContentIndex, Window, FVector2D(X,Y), Size, ClosePoint });
 }
 
-TSharedRef<SWidget> UPopupCloseDesktopWidget::MakeArtPopup(int32 Id,int32 Variant)
+TSharedRef<SWidget> UPopupCloseDesktopWidget::MakeArtPopup(int32 Id,int32 Variant,FVector2D Size,int32 ContentIndex)
 {
- const auto& Skin=PopupCloseContent::GetArt(Variant);const auto& Copy=PopupCloseContent::Get(Id-1);
- auto Panel=SNew(SConstraintCanvas);const float W=Skin.Size.X,H=Skin.Size.Y;
+ const auto& Skin=PopupCloseContent::GetArt(Variant);const auto& Copy=PopupCloseContent::Get(ContentIndex);
+ const bool bIntroduction=PopupCloseContent::IsIntroduction(Id-1),bThemePage=Id==2;
+ auto Panel=SNew(SConstraintCanvas);const float W=Size.X,H=Size.Y;
  Panel->AddSlot().Offset(FMargin(0,0,W,H)).Alignment(FVector2D(0,0)).ZOrder(0)
  [SNew(SBorder).Padding(0).BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
   [SNew(SImage).Image(ArtBrushes[Variant].Get()).Visibility(EVisibility::HitTestInvisible)]];
  if(Skin.bUseWorkText)
  {
   int32 LineBreaks=0;for(const TCHAR* P=Copy.Body;*P;++P)if(*P=='\n')++LineBreaks;
-  const int32 BodyFont=Variant==2?(LineBreaks>2?11:15):16;
+  const int32 BodyFont=bThemePage?80:bIntroduction?26:Variant==2?(LineBreaks>2?11:15):16;
   const FVector4 R=Skin.TextRect;
   Panel->AddSlot().Offset(FMargin(R.X*W,R.Y*H,R.Z*W,R.W*H)).Alignment(FVector2D(0,0)).ZOrder(1)
   [SNew(SVerticalBox).Visibility(EVisibility::HitTestInvisible)
    +SVerticalBox::Slot().AutoHeight().Padding(0,0,0,5)
-    [SNew(STextBlock).Text(FText::FromString(Copy.Title)).Font(BrainMiningFonts::Title(Variant==2?(LineBreaks>2?13:16):18)).ColorAndOpacity(FLinearColor(.035f,.035f,.04f))]
-   +SVerticalBox::Slot().FillHeight(1)
-    [SNew(STextBlock).Text(FText::FromString(Copy.Body)).Font(PopupFont(BodyFont)).AutoWrapText(true).ColorAndOpacity(FLinearColor(.035f,.035f,.04f))]];
+    [SNew(STextBlock).Text(FText::FromString(Copy.Title)).Font(BrainMiningFonts::Title(bIntroduction?24:Variant==2?(LineBreaks>2?13:16):18)).ColorAndOpacity(FLinearColor(.035f,.035f,.04f))]
+   +SVerticalBox::Slot().FillHeight(1).VAlign(bIntroduction?VAlign_Center:VAlign_Top)
+    [SNew(STextBlock).Text(FText::FromString(Copy.Body)).Font(bThemePage?BrainMiningFonts::Title(BodyFont):PopupFont(BodyFont))
+     .Justification(bIntroduction?ETextJustify::Center:ETextJustify::Left).AutoWrapText(true).ColorAndOpacity(FLinearColor(.035f,.035f,.04f))]];
  }
  static const FButtonStyle HitStyle=FButtonStyle().SetNormal(FSlateNoResource()).SetHovered(FSlateNoResource()).SetPressed(FSlateNoResource()).SetDisabled(FSlateNoResource()).SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));
- const FVector4 R=Skin.CloseRect;TWeakObjectPtr<UPopupCloseDesktopWidget> WeakThis(this);
+ TWeakObjectPtr<UPopupCloseDesktopWidget> WeakThis(this);
+ const auto AddCloseHit=[&](FVector4 R)
+ {
  Panel->AddSlot().Offset(FMargin(R.X*W,R.Y*H,R.Z*W,R.W*H)).Alignment(FVector2D(0,0)).ZOrder(2)
  [SNew(SButton).ButtonStyle(&HitStyle).ContentPadding(0).IsEnabled_Lambda([WeakThis]{return WeakThis.IsValid() && WeakThis->bRepliesEnabled;})
   .OnClicked_Lambda([WeakThis,Id]
@@ -245,6 +264,13 @@ TSharedRef<SWidget> UPopupCloseDesktopWidget::MakeArtPopup(int32 Id,int32 Varian
    {++Self->ManuallyClosedCount;if(Self->OnReply)Self->OnReply();}
    return FReply::Handled();
   })];
+ };
+ AddCloseHit(Skin.CloseRect);
+ if(bIntroduction)
+ {
+  AddCloseHit(FVector4(.516,.725,.303,.15)); // Existing Cancel button.
+  AddCloseHit(FVector4(.88,.04,.076,.12)); // Existing title-bar X.
+ }
  return Panel;
 }
 
@@ -258,6 +284,7 @@ bool UPopupCloseDesktopWidget::ClosePopup(int32 Id)
 
 	Canvas->RemoveSlot(Windows[Index].Root.ToSharedRef());
 	Windows.RemoveAt(Index);
+ if(Id==IntroductionPriority){++IntroductionPriority;IntroductionAge=0.f;}
  return true;
 }
 
@@ -269,13 +296,47 @@ void UPopupCloseDesktopWidget::ClearOldestPopup()
 void UPopupCloseDesktopWidget::ClearPopups()
 {
  while(Windows.Num())ClearOldestPopup();
- ManuallyClosedCount=0;
+ ManuallyClosedCount=0;NextId=1;IntroductionPriority=1;IntroductionAge=0.f;WorkElapsed=-1.f;bReconnectShown=false;
+}
+
+void UPopupCloseDesktopWidget::AdvanceIntroduction(float DeltaSeconds)
+{
+ // Release visual priority without auto-replying, awarding coins or losing backlog.
+ // Each page receives its own reading interval, including after an early click.
+ if(IntroductionPriority>2 || Windows.IsEmpty())return;
+ if(!Windows.ContainsByPredicate([this](const FWindow& W){return W.Id==IntroductionPriority;}))return;
+ IntroductionAge+=FMath::Max(0.f,DeltaSeconds);
+ if(IntroductionAge>=8.f){++IntroductionPriority;IntroductionAge=0.f;}
+}
+
+int32 UPopupCloseDesktopWidget::FrontWindowIndex() const
+{
+ const int32 Introduction=Windows.IndexOfByPredicate([this](const FWindow& Window){return IntroductionPriority<=2 && Window.Id==IntroductionPriority;});
+ return Introduction!=INDEX_NONE?Introduction:Windows.Num()-1;
+}
+
+int32 UPopupCloseDesktopWidget::GetFrontPopupPhase() const
+{
+ const int32 Index=FrontWindowIndex();
+ return Windows.IsValidIndex(Index)?PopupCloseContent::PhaseForContent(Windows[Index].ContentIndex):-1;
+}
+
+FString UPopupCloseDesktopWidget::GetFrontPopupTitle() const
+{
+ const int32 Index=FrontWindowIndex();
+ return Windows.IsValidIndex(Index)?PopupCloseContent::Get(Windows[Index].ContentIndex).Title:FString();
+}
+
+FString UPopupCloseDesktopWidget::GetFrontPopupBody() const
+{
+ const int32 Index=FrontWindowIndex();
+ return Windows.IsValidIndex(Index)?PopupCloseContent::Get(Windows[Index].ContentIndex).Body:FString();
 }
 
 FVector2D UPopupCloseDesktopWidget::GetLatestClosePoint() const
 {
  if(!Windows.Num())return FVector2D::ZeroVector;
- const auto& Window=Windows.Last();
+ const auto& Window=Windows[FrontWindowIndex()];
  return Window.Position+Window.ClosePoint;
 }
 

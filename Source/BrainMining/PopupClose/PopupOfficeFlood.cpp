@@ -10,6 +10,8 @@
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "MaterialShared.h"
+#include "SceneInterface.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogOfficeFlood,Log,All);
 namespace
@@ -328,6 +330,15 @@ FString FPopupOfficeFlood::Describe() const
  int32 Active=0,Total=0;for(const auto& Slot:Slots)Active+=Slot.bActive?1:0;for(const auto& Source:Sources)Total+=Source.Count;
  FString Text=FString::Printf(TEXT("Flood time=%.2f sources=%d coverage=%.1f%% ground_windows=%d/%d ground_papers=%d/432 airborne=%d pool=%d/240 total_emitted=%d recycled=%d paper_below_floor=%d max_frame=%.2fms"),
  Time,bAllSources?Sources.Num():4,100.f*FloorWindows/Cells.Num(),FloorWindows,Cells.Num(),FloorPapers,Active,Slots.Num(),Total,Recycled,BelowFloorPapers,PeakFrame*1000.f);
+ int32 Missing=0,Compiling=0,PSOs=0,Ready=0;
+ for(const auto& Slot:Slots)if(auto Actor=Slot.Actor.Get())
+ {
+  auto Mesh=Actor->FindComponentByClass<UStaticMeshComponent>();auto Material=Mesh->GetMaterial(0);
+  auto Resource=Material && Owner.GetWorld()->Scene?Material->GetMaterialResource(Owner.GetWorld()->Scene->GetShaderPlatform()):nullptr;
+  Missing+=Resource?0:1;Compiling+=Resource && !Resource->IsGameThreadShaderMapComplete()?1:0;
+  PSOs+=Mesh->IsPSOPrecaching()?1:0;Ready+=Actor->IsReadyForLaunch()?1:0;
+ }
+ Text+=FString::Printf(TEXT("\nVisual readiness: ready=%d missing=%d compiling=%d pso=%d"),Ready,Missing,Compiling,PSOs);
  for(int32 I=0;I<Sources.Num();++I)Text+=FString::Printf(TEXT("\nSource%d emitted=%d"),I,Sources[I].Count);
  Text+=FString::Printf(TEXT("\nCurrent emission rate=%.2f/s"),bStarted?4.f*EmissionRate(Time,false)+(bAllSources?(Sources.Num()-4)*EmissionRate(Time,true):0.f):0.f);
  int32 VisibleWindows=0;float HighestCenter=0.f;

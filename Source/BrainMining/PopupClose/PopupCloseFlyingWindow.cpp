@@ -106,7 +106,9 @@ bool APopupCloseFlyingWindow::IsReadyForLaunch()
 #endif
   return false;
  }
- if(Body->IsPSOPrecaching())return false;
+ // Hidden components never receive the visible-draw priority boost. Promote
+ // their queued pipeline work during warmup so cooked builds can finish it too.
+ if(Body->CheckPSOPrecachingAndBoostPriority(EPSOPrecachePriority::Highest))return false;
  if(!bVisualFenceStarted)
  {
   // Spawn registers the cube with its default material before PrepareForPool.

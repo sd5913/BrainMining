@@ -663,6 +663,23 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
             A->SetArrayField(TEXT("position"),Vec(It->GetActorLocation()));A->SetArrayField(TEXT("center"),Vec(It->GetComponentsBoundingBox(true).GetCenter()));
             A->SetArrayField(TEXT("extent"),Vec(It->GetComponentsBoundingBox(true).GetExtent()));A->SetArrayField(TEXT("forward"),Vec(It->GetActorForwardVector()));
             if(auto* Exhibit=Cast<AWenSiMirrorExhibit>(*It)){A->SetNumberField(TEXT("kind"),Exhibit->Kind);A->SetNumberField(TEXT("word"),int32(Exhibit->Word));}
+            A->SetBoolField(TEXT("hidden"),It->IsHidden());A->SetBoolField(TEXT("ticking"),It->IsActorTickEnabled());
+            if(auto* Rock=Cast<AGeneratedMiningRock>(*It))
+            {
+                int32 NearMissing=0,NearSolid=0,HiddenReady=0;
+                const FVector Local=Rock->GetActorTransform().InverseTransformPosition(Pawn->GetPawnViewLocation());
+                const double Radius=2800.f/FMath::Max(.001,Rock->GetActorScale3D().GetAbsMin());
+                for(const auto& Chunk:Rock->Chunks)
+                {
+                    if(!Chunk.Bounds.IsValid || Chunk.Bounds.ComputeSquaredDistanceToPoint(Local)>Radius*Radius)continue;
+                    auto* Query=Rock->GetChunkQueryMesh(Chunk);if(!Query || Query->GetMeshRef().TriangleCount()==0)continue;
+                    ++NearSolid;
+                    if(!Chunk.Mesh || !Chunk.Mesh->IsRegistered() || !Chunk.Mesh->IsVisible() || Chunk.bRuntimeDeferred || Rock->IsHidden())++NearMissing;
+                    if(Chunk.Mesh && Chunk.Mesh->IsRegistered() && !Chunk.bRuntimeDeferred && !Chunk.Mesh->IsVisible())++HiddenReady;
+                }
+                A->SetNumberField(TEXT("near_solid_chunks"),NearSolid);A->SetNumberField(TEXT("near_missing_chunks"),NearMissing);
+                A->SetNumberField(TEXT("near_hidden_ready_chunks"),HiddenReady);A->SetNumberField(TEXT("deferred_chunks"),Rock->DeferredRuntimeChunks);
+            }
             if(auto* Rock=Cast<ADiggableRock>(*It)){A->SetBoolField(TEXT("collision"),Rock->GetActorEnableCollision());A->SetNumberField(TEXT("cuts"),Rock->SuccessfulCuts);A->SetNumberField(TEXT("triangles"),Rock->TriangleCount);A->SetArrayField(TEXT("rock_size"),Vec(Rock->RockSize));}
             if(auto* Item=Cast<AMiningTreasure>(*It))
             {

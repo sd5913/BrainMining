@@ -206,6 +206,10 @@ void AWenSiMirrorExhibit::Apply()
  const float Scale=IsSelf(this)?1.f:WordScale(Word);
  SetActorScale3D(FVector(Scale));
  auto Parent=Surface(Kind==3?TEXT("MI_Burgundy"):Kind==8||Kind==1||Kind==7?TEXT("MI_Brass"):Kind==5?TEXT("MI_DeepBlue"):TEXT("MI_Limestone"));
+ if(Kind==1 || Kind==7 || Kind==8)
+  if(auto Metal=Surface(TEXT("MI_MuseumMetal032")))Parent=Metal;
+ if(Kind==9)
+  if(auto Porcelain=Surface(TEXT("MI_MuseumPorcelain")))Parent=Porcelain;
  auto Glass=Surface(TEXT("M_DisplayGlass"));auto Rim=Surface(TEXT("M_InteractiveRim"));
  auto Ghost=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/EngineDebugMaterials/M_SimpleTranslucent.M_SimpleTranslucent"));
  for(int32 I=0;I<Parts.Num();++I)
@@ -241,15 +245,50 @@ void AWenSiMirrorExhibit::Apply()
    if(!FMath::IsNearlyZero(Delta,.01f)) AddActorWorldOffset(FVector(0,0,Delta),false,nullptr,ETeleportType::TeleportPhysics);
   }
  }
- WenSiExhibitArt::Apply(ArtVisual,Parts,ArtModel,ArtRotation,bUniformArtScale,Word==EWenSiMirrorWord::Passable,Ghost,Rim);
+ // Fit the balloon body to its body proxy only. The tether keeps its own
+ // independently stretching geometry and selection/collision rules.
+ if(Kind==3 && ArtModel)
+ {
+  TArray<TObjectPtr<UStaticMeshComponent>> BodyParts{Parts[0]};
+  WenSiExhibitArt::Apply(ArtVisual,BodyParts,ArtModel,ArtRotation,bUniformArtScale,Word==EWenSiMirrorWord::Passable,Ghost,Rim);
+  Parts[1]->SetRenderInMainPass(false);Parts[1]->SetRenderInDepthPass(false);Parts[1]->SetCastShadow(false);Parts[1]->SetVisibleInRayTracing(false);
+  Parts[2]->SetRenderInMainPass(true);Parts[2]->SetRenderInDepthPass(true);Parts[2]->SetCastShadow(true);Parts[2]->SetVisibleInRayTracing(true);
+ }
+ else WenSiExhibitArt::Apply(ArtVisual,Parts,ArtModel,ArtRotation,bUniformArtScale,Word==EWenSiMirrorWord::Passable,Ghost,Rim);
+ // A screen's nearly planar leaves turn the old shell outline into a solid
+ // white surface. Keep the authored finish readable; the E prompt still aims
+ // at the original thinking proxy, including after a passable-word exchange.
+ if(Kind==5 && ArtModel)ArtVisual->SetOverlayMaterial(nullptr);
  if(Kind==7 && Word!=EWenSiMirrorWord::Passable && Parent)
   for(int32 I=0;I<ArtVisual->GetNumMaterials();++I)ArtVisual->SetMaterial(I,Parent);
- if(Kind==3 || Kind==7)
+ if((Kind==3 && !ArtModel) || Kind==7)
  {
   // The window and balloon tether are represented by the separate proxy parts.
   // The tether stretches independently; a fixed authored string cannot follow the ceiling balloon.
   ArtVisual->SetVisibility(false);
   for(auto Part:Parts)if(Part->GetStaticMesh()){Part->SetRenderInMainPass(true);Part->SetRenderInDepthPass(true);Part->SetCastShadow(true);if(Kind==7 && Rim && !Part->GetOverlayMaterial())Part->SetOverlayMaterial(UMaterialInstanceDynamic::Create(Rim,this));}
+ }
+ if(Kind==4)
+ {
+  auto Smoke=FindObjectFast<UNiagaraComponent>(this,TEXT("MuseumSmoke"));
+  if(!Smoke)
+   if(auto System=LoadObject<UNiagaraSystem>(nullptr,TEXT("/Game/WenSi/Museum/Refresh/VFX/NS_MuseumSmoke.NS_MuseumSmoke")))
+   {
+    Smoke=NewObject<UNiagaraComponent>(this,TEXT("MuseumSmoke"));AddInstanceComponent(Smoke);
+    Smoke->SetupAttachment(RootComponent);Smoke->SetAutoActivate(false);Smoke->SetAsset(System);Smoke->RegisterComponent();
+   }
+  if(Smoke && Smoke->GetAsset())
+  {
+   // Keep the original seven parts as thinking/collision proxies. Only the
+   // Niagara plume renders; assigning Heavy still makes the same barrier.
+   for(auto Part:Parts)if(Part->GetStaticMesh())
+   {Part->SetRenderInMainPass(false);Part->SetRenderInDepthPass(false);Part->SetCastShadow(false);Part->SetVisibleInRayTracing(false);Part->SetOverlayMaterial(nullptr);}
+   ArtVisual->SetVisibility(false);Smoke->SetRelativeLocation(FVector(0,0,-12));
+   Smoke->SetVariableFloat(TEXT("SpawnRate"),20.f);
+   Smoke->SetVariableFloat(TEXT("Sprite Size"),42.f);
+   Smoke->SetVariableLinearColor(TEXT("Smoke Color"),FLinearColor(.48f,.52f,.56f,Word==EWenSiMirrorWord::Passable?.35f:.8f));
+   Smoke->SetVisibility(true);Smoke->Activate(true);
+  }
  }
  if(ConductiveFX)
  {

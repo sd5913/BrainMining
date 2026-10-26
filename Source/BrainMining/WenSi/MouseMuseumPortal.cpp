@@ -43,17 +43,20 @@ void AMouseMuseumPortal::Initialize(AWenSiMirrorPuzzle* OwnerPuzzle)
  auto Plane=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Plane.Plane"));
  auto Mat=[](const TCHAR* Name){return LoadObject<UMaterialInterface>(nullptr,*(FString(TEXT("/Game/WenSi/Museum/Materials/"))+Name));};
  auto Gold=Mat(TEXT("MI_Brass"));auto Dark=Mat(TEXT("MI_DeepBlue"));auto Cream=Mat(TEXT("MI_Limestone"));
+ // The miniature endpoint gallery uses the same finish as the surrounding museum.
+ auto Wall=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Museum/Materials/MI_Stucco01.MI_Stucco01"));
+ if(!Wall)Wall=Cream;
  auto Shape=[&](const TCHAR* Name,FVector P,FVector Size,UStaticMesh* Mesh,UMaterialInterface* M)
  {
   auto C=NewObject<UStaticMeshComponent>(this,FName(Name));AddInstanceComponent(C);C->SetupAttachment(RootComponent);
   C->SetMobility(EComponentMobility::Movable);C->SetStaticMesh(Mesh);C->SetRelativeLocation(P);C->SetRelativeScale3D(Size/100);C->SetMaterial(0,M);
   C->SetCollisionEnabled(ECollisionEnabled::NoCollision);C->RegisterComponent();return C;
  };
- Shape(TEXT("GalleryBack"),FVector(2434,-350,100),FVector(2,258,200),Cube,Dark);
+ Shape(TEXT("GalleryBack"),FVector(2434,-350,100),FVector(2,258,200),Cube,Wall);
  auto Ceiling=Shape(TEXT("GalleryCeiling"),FVector(2320,-350,204),FVector(240,258,6),Cube,Dark);
  Ceiling->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);Ceiling->SetCollisionResponseToAllChannels(ECR_Block);
- Shape(TEXT("GalleryLeftWall"),FVector(2320,-477,100),FVector(240,4,200),Cube,Dark);
- Shape(TEXT("GalleryRightWall"),FVector(2320,-223,100),FVector(240,4,200),Cube,Dark);
+ Shape(TEXT("GalleryLeftWall"),FVector(2320,-477,100),FVector(240,4,200),Cube,Wall);
+ Shape(TEXT("GalleryRightWall"),FVector(2320,-223,100),FVector(240,4,200),Cube,Wall);
  Shape(TEXT("GalleryCarpet"),FVector(2320,-350,1),FVector(236,210,1),Cube,Mat(TEXT("MI_Burgundy")));
  for(int I=0;I<2;++I)
  {

@@ -1,0 +1,98 @@
+[
+  {
+    "asset": "concrete_cat_statue",
+    "kind": "model",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/fbx/2k/concrete_cat_statue/concrete_cat_statue_2k.fbx",
+    "path": "SourceAssets\\MuseumRefresh\\concrete_cat_statue\\concrete_cat_statue_2k.fbx",
+    "bytes": 435948,
+    "md5": "da49faec5476b0b1bc05559dd7231738"
+  },
+  {
+    "asset": "concrete_cat_statue",
+    "kind": "basecolor",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/concrete_cat_statue/concrete_cat_statue_diff_2k.jpg",
+    "path": "SourceAssets\\MuseumRefresh\\concrete_cat_statue\\concrete_cat_statue_diff_2k.jpg",
+    "bytes": 3368899,
+    "md5": "16846cacdb16861466ebe0349c821a27"
+  },
+  {
+    "asset": "concrete_cat_statue",
+    "kind": "normal",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/png/2k/concrete_cat_statue/concrete_cat_statue_nor_dx_2k.png",
+    "path": "SourceAssets\\MuseumRefresh\\concrete_cat_statue\\concrete_cat_statue_nor_dx_2k.png",
+    "bytes": 18243817,
+    "md5": "c39892322f08699088d3e7fe08164438"
+  },
+  {
+    "asset": "concrete_cat_statue",
+    "kind": "roughness",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/png/2k/concrete_cat_statue/concrete_cat_statue_rough_2k.png",
+    "path": "SourceAssets\\MuseumRefresh\\concrete_cat_statue\\concrete_cat_statue_rough_2k.png",
+    "bytes": 6034617,
+    "md5": "ce8b895be295d4b08f8c880bc854e641"
+  },
+  {
+    "asset": "horse_statue_01",
+    "kind": "model",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/fbx/2k/horse_statue_01/horse_statue_01_2k.fbx",
+    "path": "SourceAssets\\MuseumRefresh\\horse_statue_01\\horse_statue_01_2k.fbx",
+    "bytes": 725788,
+    "md5": "a64af3e52f0a4290c92681c95cb5f478"
+  },
+  {
+    "asset": "horse_statue_01",
+    "kind": "basecolor",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/horse_statue_01/horse_statue_01_diff_2k.jpg",
+    "path": "SourceAssets\\MuseumRefresh\\horse_statue_01\\horse_statue_01_diff_2k.jpg",
+    "bytes": 511552,
+    "md5": "048ad879841e6b0b8710e1d477b229c1"
+  },
+  {
+    "asset": "horse_statue_01",
+    "kind": "normal",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/png/2k/horse_statue_01/horse_statue_01_nor_dx_2k.png",
+    "path": "SourceAssets\\MuseumRefresh\\horse_statue_01\\horse_statue_01_nor_dx_2k.png",
+    "bytes": 16429452,
+    "md5": "703ed4e70c6c30027d97f0794e387f97"
+  },
+  {
+    "asset": "horse_statue_01",
+    "kind": "roughness",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/png/2k/horse_statue_01/horse_statue_01_rough_2k.png",
+    "path": "SourceAssets\\MuseumRefresh\\horse_statue_01\\horse_statue_01_rough_2k.png",
+    "bytes": 5499523,
+    "md5": "5442dc7b411c651ddbf8892fd0ca79e1"
+  },
+  {
+    "asset": "rock_09",
+    "kind": "model",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/fbx/2k/rock_09/rock_09_2k.fbx",
+    "path": "SourceAssets\\MuseumRefresh\\rock_09\\rock_09_2k.fbx",
+    "bytes": 890732,
+    "md5": "f779090f18fee85e2a1af805fc037776"
+  },
+  {
+    "asset": "rock_09",
+    "kind": "basecolor",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/rock_09/rock_09_diff_2k.jpg",
+    "path": "SourceAssets\\MuseumRefresh\\rock_09\\rock_09_diff_2k.jpg",
+    "bytes": 2102702,
+    "md5": "7e40809bf4257cc23795d18b349fbfe9"
+  },
+  {
+    "asset": "rock_09",
+    "kind": "normal",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/png/2k/rock_09/rock_09_nor_dx_2k.png",
+    "path": "SourceAssets\\MuseumRefresh\\rock_09\\rock_09_nor_dx_2k.png",
+    "bytes": 14172821,
+    "md5": "b7956cb54cf3a68a0e22e008a3fa8db1"
+  },
+  {
+    "asset": "rock_09",
+    "kind": "roughness",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Models/png/2k/rock_09/rock_09_rough_2k.png",
+    "path": "SourceAssets\\MuseumRefresh\\rock_09\\rock_09_rough_2k.png",
+    "bytes": 6729610,
+    "md5": "18e54ed2c299b7bcaf4ea4bf58316e82"
+  }
+]

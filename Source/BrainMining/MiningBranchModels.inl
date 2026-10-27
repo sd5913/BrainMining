@@ -3,27 +3,37 @@ void BranchCollectible(int Id)
 {
     if(Id==16)
     {
-        Ellipsoid({0,0,-43},{31,43,4},0,32,8);
+        // Three skewers rest across a shallow oval plate, rather than piercing it.
+        Ellipsoid({0,0,-7},{53,37,4},0,32,8);
         for(int S=-1;S<=1;++S)
         {
-            Rod({-18,float(S*20),-42},{18,float(S*20),49},1.4f,5);
+            const int SkewerFirst=Mesh.MaxVertexID();
+            const float Y=S<0?-19.f:S>0?18.f:0.f;
+            Rod({-48,Y,3},{46,Y,3},1.4f,5);
             for(int J=0;J<4;++J)
             {
-                FVector P(-10+J*7,S*20,-23+J*18);
-                // Irregular flattened cuts of beef, with pale fat seams and char.
+                FVector P(-25+J*16+(J%2?1.5f:-.8f),Y,3);
                 const int First=Mesh.MaxVertexID();
-                Box(P,{5.5f,float(8+(J%2)*2),float(6+(J%3))},J%2?5:7);
-                const FQuat Twist(FVector::ForwardVector,(S*11+J*17)*PI/180.f);
+                Box(P,{6.f+(J%3)*.5f,7.f+((J+S+3)%3)*.5f,6.f},J%2?5:7);
+                const FQuat Twist(FVector::UpVector,(S*5+J*7)*PI/180.f);
                 for(int V=First;V<Mesh.MaxVertexID();++V)
                 {
                     FVector Q=FVector(Mesh.GetVertex(V))-P;
-                    Q.Y+=(V%3-1)*1.3f;Q.Z+=(V%2?1:-1)*1.1f;
+                    Q.Y+=(V%3-1)*.8f;
                     Mesh.SetVertex(V,P+Twist.RotateVector(Q));
                 }
-                Rod(P+FVector(-6,-7,-3),P+FVector(-6,5,-1),.65f,0);
-                for(int K=-1;K<=1;++K)Rod(P+FVector(-6,K*3,-4),P+FVector(-6,K*3,4),.8f,1);
+                Rod(P+FVector(-5,-6,6),P+FVector(4,5,6),.65f,0);
+                for(int K=-1;K<=1;++K)Rod(P+FVector(K*3,-5,6.2f),P+FVector(K*3,5,6.2f),.6f,1);
             }
+            // Small, deterministic offsets keep the serving casual without tilting into the plate.
+            const FQuat Scatter(FVector::UpVector,(S<0?-7.f:S>0?9.f:2.f)*PI/180.f);
+            const FVector Pivot(0,Y,3),Offset(S<0?-4.f:S>0?3.f:0.f,0,0);
+            for(int V=SkewerFirst;V<Mesh.MaxVertexID();++V)
+                Mesh.SetVertex(V,Pivot+Offset+Scatter.RotateVector(FVector(Mesh.GetVertex(V))-Pivot));
         }
+        // Present the serving face along local -X, like the other collectibles.
+        const FQuat ServingView=FRotator(70,0,0).Quaternion();
+        for(int V:Mesh.VertexIndicesItr())Mesh.SetVertex(V,ServingView.RotateVector(FVector(Mesh.GetVertex(V))));
     }
     else if(Id==17)
     {

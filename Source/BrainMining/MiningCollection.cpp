@@ -323,7 +323,7 @@ void AMiningCollectionField::Tick(float Dt)
         Item->Exposure=Item->MeasureExposure();
         // The beak points along local -X. Face the actual excavation opening on
         // first reveal, including when the player approaches from the far side.
-        if(Item->ItemId==3 && Item->Exposure>.05f && !Item->ActorHasTag(TEXT("BM_BirdFacingOpening")))
+        if((Item->ItemId==3 || Item->ItemId==16) && Item->Exposure>.05f && !Item->ActorHasTag(TEXT("BM_BirdFacingOpening")))
         {
             FVector Eye;FRotator ViewRotation;Player->GetPlayerViewPoint(Eye,ViewRotation);
             Item->SetActorRotation((Item->GetActorLocation()-Eye).Rotation());
@@ -459,12 +459,9 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         if(SelectedId==INDEX_NONE){const auto Ids=CatalogueIds();if(!Ids.IsEmpty())SelectedId=Ids[0];}
         SelectItem(SelectedId);
         if(CatalogueWidget)CatalogueWidget->RevealCollection();
-        if(UniqueCount()==0)if(auto* Subtitles=USubtitleSubsystem::Get(this))
-            Subtitles->PlayInteractionLines(TEXT("EmptyCollection"),{FText::FromString(TEXT("挖掘就能找到灵感啦~"))});
     }
     else
     {
-        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->StopInteraction(TEXT("EmptyCollection"));
         Player->SetPause(false);
         Player->ResetIgnoreLookInput(); Player->ResetIgnoreMoveInput();
         Player->GetPawn()->EnableInput(Player); Player->bShowMouseCursor=false; Player->SetInputMode(FInputModeGameOnly());
@@ -477,8 +474,6 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
 void AMiningCollectionField::SelectItem(int32 Id)
 {
     SelectedId=Id;PreviewAnimationTime=0;
-    if(bCatalogueOpen && AMiningCollectible::IsMineralReward(Id))
-        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->StopInteraction(TEXT("EmptyCollection"));
     if(!Preview) return;
     const bool Owned=Inventory.IsValidIndex(Id)&&Inventory[Id]>0;
     Preview->SetActorHiddenInGame(!Owned || (PreviewToilet && Id==0));
@@ -487,7 +482,7 @@ void AMiningCollectionField::SelectItem(int32 Id)
     ResetPreview();
     if(CatalogueWidget)CatalogueWidget->RefreshCollection();
 }
-void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=SelectedId==9?1300:(SelectedId==0?480:330); RotatePreview(0,0); }
+void AMiningCollectionField::ResetPreview() { PreviewYaw=SelectedId==16?0:-30; PreviewPitch=SelectedId==16?0:-8; PreviewDistance=SelectedId==9?1300:(SelectedId==0?480:330); RotatePreview(0,0); }
 void AMiningCollectionField::RotatePreview(float Yaw,float Pitch)
 {
     if(!Preview) return;

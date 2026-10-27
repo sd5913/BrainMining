@@ -13,6 +13,7 @@
 #include "PopupClose/PopupCloseOffice.h"
 #include "PopupClose/PopupCloseWidgets.h"
 #include "MiningWalletSubsystem.h"
+#include "MiningComponent.h"
 #include "MiningGUIWidgets.h"
 #include "BrainMiningPlayerController.h"
 #include "Engine/GameInstance.h"
@@ -52,7 +53,7 @@
 DEFINE_LOG_CATEGORY_STATIC(LogPopupClose,Log,All);
 namespace
 {
- constexpr float ScreenEnterSeconds=.25f;
+ constexpr float ScreenEnterSeconds=.55f;
  constexpr float ScreenExitSeconds=.8f;
  constexpr float PanicSeconds=45.f;
  constexpr float WorkSeconds=65.f;
@@ -208,6 +209,9 @@ APopupCloseStage::~APopupCloseStage()=default;
 void APopupCloseStage::BeginPlay()
 {
  Super::BeginPlay();ConfigureOffice();ApplyColors();GatherDevices();
+ // Resolve first-use cues before any camera blend, including a direct E interaction.
+ if(auto* Audio=GetWorld()->GetSubsystem<UMiningRoomAudioSubsystem>())
+  for(const TCHAR* Cue:{TEXT("S_Open"),TEXT("S_Close"),TEXT("S_OfficeMouseClick"),TEXT("S_OfficeNotify")})Audio->Resolve(Cue);
  Flood=MakeUnique<FPopupOfficeFlood>(*this);
  Exit=MakeUnique<FPopupOfficeExit>(*this);
  if (bAreaManaged) SetAreaActive(false);
@@ -270,6 +274,7 @@ void APopupCloseStage::ResetCompletedSessions()
  Phase = EPhase::Idle;
  UMiningRoomAudioSubsystem::StopSource(this);
  RoundTime = ViewTime = SprayTime = SprayDebt = SlowPhaseScheduledIssues = FirstBurstPeakFrame = 0;
+ bBurstAwaitingCamera=false;
  LastTickTime = 0;
  bPanic = bForcedExit = false;
  bAccountingValid = bWarningsValid = bIndependentTimersValid = true;
@@ -360,6 +365,10 @@ void APopupCloseStage::StartOfficeRound()
  if(Phase!=EPhase::Idle)return;
  Phase=EPhase::Running;RoundTime=0;SlowPhaseScheduledIssues=0;
  USubtitleLibrary::PlayMainGameSubtitle(this,TEXT("电脑弹窗玩法1"));
+ // Both computers begin with the announcement and the larger theme webpage.
+ // Ordinary issues continue to accumulate behind these two opening pages.
+ for(auto Device:Devices)if(Device && !Device->IsPrinter())
+ {Device->AddProblem();Device->AddProblem();}
  // Randomize the initial order, with separated time slots instead of four immediate problems.
  int32 Order[]={0,1,2,3};
  for(int32 I=3;I>0;--I)Swap(Order[I],Order[FMath::RandRange(0,I)]);
@@ -380,7 +389,10 @@ void APopupCloseStage::BeginScreenSession(APlayerController* PC,APopupOfficeDevi
 {
  if(!PC || !PC->GetPawn() || !Device || Device->IsPrinter() || Device->IsLocked() || View!=EView::Free)return;
  ActiveComputer=Device;LockedController=PC;LockedPawn=PC->GetPawn();View=EView::Entering;ViewTime=0;
- if(auto* Audio=GetWorld()->GetSubsystem<UMiningRoomAudioSubsystem>())Audio->Resolve(TEXT("S_OfficeMouseClick"));
+ for(auto OfficeDevice:Devices)if(OfficeDevice)OfficeDevice->SetComputerView(true);
+ // Desktop clicks must never reach the pickaxe swing/contact audio path.
+ ScreenMining=PC->GetPawn()->FindComponentByClass<UMiningComponent>();
+ if(ScreenMining.IsValid())ScreenMining->PushEncounterBlock();
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Open"),.25f);
  if(auto Character=Cast<ACharacter>(PC->GetPawn()))
  {
@@ -407,6 +419,9 @@ void APopupCloseStage::ExitScreen()
 }
 void APopupCloseStage::RestorePlayerControl()
 {
+ for(auto Device:Devices)if(Device)Device->SetComputerView(false);
+ if(ScreenMining.IsValid())ScreenMining->PopEncounterBlock();
+ ScreenMining.Reset();
  ConfigureScreenCursor(false);
  if(bMoveSuppressed)
  {
@@ -486,7 +501,7 @@ void APopupCloseStage::Tick(float Dt)
    const FText Coins=FText::AsNumber(Wallet->Balance);
    if(!Controller->MiningGUI->CoinText->GetText().EqualTo(Coins))Controller->MiningGUI->SetCoinDisplay(Coins);
   }
- if(Flood && (Phase==EPhase::Idle || Phase==EPhase::Running))Flood->Warm(Dt);
+ if(Flood && (Phase==EPhase::Idle || Phase==EPhase::Running) && View!=EView::Entering && View!=EView::Exiting)Flood->Warm(Dt);
  if(Phase==EPhase::Running)TickIssues(Dt);
  if(Phase==EPhase::Spraying || Phase==EPhase::Complete)
  {
@@ -524,6 +539,7 @@ void APopupCloseStage::TickIssues(float Dt)
  {
   // Advancing normalized countdowns makes the tempo change smoothly, including at 45 seconds.
   // Each device samples its own next gap; there is no common timer or synchronized phase reset.
+  if(auto DeviceDesktop=Devices[I]->GetDesktop())DeviceDesktop->SetWorkElapsed(RoundTime);
   IssueCountdown[I]-=Dt/IssueInterval(RoundTime,I);
   int32 Added=0;
   while(IssueCountdown[I]<=0.f && Added++<3)
@@ -541,7 +557,7 @@ void APopupCloseStage::TickIssues(float Dt)
  for(auto Device:Devices)
  {
   bAccountingValid &= Device->AccountingValid();
-  bWarningsValid &= Device->WarningVisible()==(Device->Pending()>0);
+  bWarningsValid &= Device->WarningVisible()==(Device->Pending()>0 && View==EView::Free);
  }
  if(RoundTime>=WorkSeconds)BeginBurst();
 }
@@ -557,11 +573,19 @@ void APopupCloseStage::BeginBurst()
  for(auto Device:Devices)if(auto UI=Device->GetDesktop())UI->SetRepliesEnabled(false);
  for(auto Device:Devices)Device->Lock();
  ExitScreen();
- if(Flood)Flood->Start();
- UE_LOG(LogPopupClose,Display,TEXT("Four-device eruption started immediately at %.2f s; force_exit=%d"),RoundTime,bForcedExit);
+ bBurstAwaitingCamera=true;
+ UE_LOG(LogPopupClose,Display,TEXT("Four-device eruption queued after camera exit at %.2f s; force_exit=%d"),RoundTime,bForcedExit);
 }
 void APopupCloseStage::TickSpray(float Dt)
 {
+ // The emission origin is beside the close-up camera. Let the existing exit
+ // blend finish before launching slabs through that viewpoint.
+ if(bBurstAwaitingCamera)
+ {
+  if(View!=EView::Free)return;
+  bBurstAwaitingCamera=false;
+  if(Flood)Flood->Start();
+ }
  SprayTime+=Dt;if(Flood)Flood->Tick(Dt);
  if(Exit && !Exit->HasOfferedBomb() && SprayTime>=15.f)
  {

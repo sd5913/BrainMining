@@ -170,6 +170,7 @@ void APopupOfficeDevice::BeginPlay()
 void APopupOfficeDevice::Tick(float DeltaSeconds)
 {
  Super::Tick(DeltaSeconds);
+ if(Desktop)Desktop->AdvanceIntroduction(DeltaSeconds);
  // Projected screens need offscreen ticks, but only the focused desktop needs full refresh.
  const auto* Viewer=GetWorld()->GetFirstPlayerController();
  const bool Focused=Viewer && Viewer->GetViewTarget()==this;
@@ -234,7 +235,11 @@ bool APopupOfficeDevice::ProcessPaper()
 void APopupOfficeDevice::RefreshWarning()
 {
  if(WarningUI)WarningUI->PendingCount=Pending();
- Warning->SetVisibility(Pending()>0);
+ Warning->SetVisibility(Pending()>0 && !bComputerView);
+}
+void APopupOfficeDevice::SetComputerView(bool bEnabled)
+{
+ bComputerView=bEnabled;RefreshWarning();
 }
 void APopupOfficeDevice::Lock()
 {
@@ -305,6 +310,7 @@ void APopupOfficeDevice::FitCamera()
 }
 void APopupOfficeDevice::WarmPool(float Dt)
 {
+ for(auto Item:Pool)if(IsValid(Item))Item->IsReadyForLaunch();
  if(bLocked || Pool.Num()>=102)return;
  WarmDebt+=Dt;if(WarmDebt<.06f)return;WarmDebt=0;
  FActorSpawnParameters Params;Params.Owner=this;Params.SpawnCollisionHandlingOverride=ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -314,6 +320,7 @@ void APopupOfficeDevice::WarmPool(float Dt)
 void APopupOfficeDevice::Emit()
 {
  if(PoolCursor>=Pool.Num())return;
+ if(!Pool[PoolCursor]->IsReadyForLaunch())return;
  auto Item=Pool[PoolCursor++];const FVector Out=IsPrinter()?GetActorTransform().TransformVectorNoScale(PaperOutputDirection).GetSafeNormal():-GetActorForwardVector();
  const FVector Origin=GetActorTransform().TransformPosition(IsPrinter()?PaperOutputPosition+PaperOutputDirection.GetSafeNormal()*16+FVector(0,0,6):Surface->GetRelativeLocation()+FVector(-15.5f,0,0))+GetActorRightVector()*FMath::FRandRange(-20.f,20.f);
  Item->SetActorLocationAndRotation(Origin,FRotator(FMath::FRandRange(-25.f,25.f),GetActorRotation().Yaw+FMath::FRandRange(-30.f,30.f),FMath::FRandRange(-25.f,25.f)),false,nullptr,ETeleportType::TeleportPhysics);

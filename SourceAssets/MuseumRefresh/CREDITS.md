@@ -21,6 +21,8 @@ own triangle collision so the removed empty plinth leaves no invisible box.
 
 ## Museum follow-up
 
+- **Current screen: Chinese Screen Panels** — Kirill Sannikov, [Poly Haven](https://polyhaven.com/a/chinese_screen_panels), CC0. Antique painted wood panels replace the earlier stylized screen. Uses 2K diffuse, DirectX normal and ARM maps; source URLs and published MD5 hashes are recorded in `chinese_screen_panels/downloads.json`. Original corridor thinking/collision envelope is retained.
+
 - **Bronze Shark Statue** — Tina, [Poly Haven](https://polyhaven.com/a/bronze_shark_statue), CC0. Full scanned statue with its own base replaces the empty first-room plinth. 2K diffuse, DirectX normal and packed ARM maps.
 - **Folding Screen (Imperial China Palace and Garden)** — 3D Assets, [asset page](https://3dassets.dev/assets/imperial-china-palace-and-garden-folding-screen-5a8651b3), CC0 1.0. Contributor reports AI-assisted authorship. Imported as a static four-panel screen; recolored using project material instances, fitted to the original screen selection/collision proxy.
 - **Hanging balance scale, 1.0 m (Blacksmith Forge and Armoury)** — 3D Assets, [asset page](https://3dassets.dev/assets/blacksmith-forge-and-armoury-blacksmith-forge-and-armo-c279a8b3), CC0 1.0. Contributor reports AI-assisted authorship. Beam, hinge and pan meshes extracted and adapted to the existing balance. Original scale column, suspension and counterweight remain; the imported beam and pans attach to the original gameplay-driven actors. The original rigid tilt clip is not used because it rocks the pans with the beam rather than keeping them level.

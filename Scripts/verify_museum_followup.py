@@ -22,7 +22,7 @@ def run():
  check(len(ex)==12,'Twelve original gameplay exhibits retained')
  actors=allof(unreal.Actor);new=[a for a in actors if tag(a,'MuseumRefreshFollowup')]
  check(len(new)==11,'Six plinth visuals, four balance visuals and shark loaded from saved sublevel')
- for k,n in [(5,'SM_FoldingScreen'),(8,'SM_ConductiveBlock')]:
+ for k,n in [(5,'SM_AntiqueScreen'),(8,'SM_ConductiveBlock')]:
   c=ex[k].get_editor_property('art_visual');check(c.static_mesh.get_name()==n and c.is_visible(),'Replacement rendered: '+n)
   check(c.get_collision_enabled()==unreal.CollisionEnabled.NO_COLLISION,'Original thinking/collision proxy retained: '+n)
   if k==5:

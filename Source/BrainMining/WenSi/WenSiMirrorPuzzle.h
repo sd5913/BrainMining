@@ -52,6 +52,8 @@ public:
  void Highlight(bool bAimed);
  FString Noun() const;
  FString Adjective() const;
+ float SizeSupportOffset() const;
+ FVector ResizedLocation(EWenSiMirrorWord NewWord) const;
  FVector Rest;
  bool bBallLanded=false;
  bool bThinkingEnabled=true;

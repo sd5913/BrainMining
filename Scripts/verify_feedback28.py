@@ -35,13 +35,28 @@ try:
   check(s['interaction_action']=='思考','E interaction prompt is visible: '+label)
   actors=cmd('actors',filter='WenSiMirrorExhibit',parts=True)['actors']
   outlines=[(a['kind'],part['name']) for a in actors for part in a['parts'] if part['outline'] and part['visible']]
-  check(outlines==[(0,'ArtVisual')],'Stone outline is isolated from overlapping exhibits: '+label)
+  check((0,'ArtVisual') in outlines and len(outlines)>3,'Focused stone and other idle exhibits retain their outlines: '+label)
   cmd('shot',name='stone-'+label)
+  cmd('aim',target=[p[0],p[1]+190,p[2]+190]);time.sleep(.4)
+  away=cmd('actors',filter='WenSiMirrorExhibit',parts=True)['actors']
+  away_outlines=[(a['kind'],part['name']) for a in away for part in a['parts'] if part['outline'] and part['visible']]
+  check(outlines==away_outlines,'Looking away does not remove or restore unrelated outlines: '+label)
+  cmd('shot',name='stone-idle-'+label)
+  cmd('aim',target=stone['center']);time.sleep(.3)
  c.key('E');time.sleep(.3);c.key('Q');time.sleep(.3)
  check(cmd('state')['interaction_action']=='思考','Closing thoughts restores the E prompt')
  bases=cmd('actors',filter='MuseumGoldContactBase',parts=True)['actors'];check(len(bases)==2 and all('MI_MuseumRoughGold' in a['parts'][0]['material'] for a in bases),'Both terminal bases use the gold material')
  origin=cmd('actors',filter='WenSiMirrorPuzzle')['actors'][0]['position']
  cmd('pose',eye=[origin[0]+1720,origin[1]+120,origin[2]+105],target=[origin[0]+1900,origin[1]+120,origin[2]+55]);time.sleep(1);cmd('shot',name='gold-contact-bases')
+ cmd('mouse_gallery_fixture');portal=cmd('actors',filter='MouseMuseumPortal',parts=True)['actors'][0];cell=portal['cell']
+ cmd('pose',eye=[cell[0]-90,cell[1],cell[2]],target=[cell[0],cell[1]-30,cell[2]]);time.sleep(.5)
+ for k in range(2):
+  portal=cmd('actors',filter='MouseMuseumPortal',parts=True)['actors'][0]
+  check(not portal['focused'] and all(part.get('highlight',0)==0 for part in portal['parts']),'Painting has no idle white highlight '+str(k))
+  cmd('shot',name='painting-idle-'+str(k));time.sleep(1)
+ cmd('aim',target=cell);time.sleep(.4)
+ check(cmd('actors',filter='MouseMuseumPortal')['actors'][0]['focused'],'Animated circle remains selectable')
+ cmd('shot',name='painting-focused')
  cmd('area_fixture',area=1);time.sleep(3)
  stage=cmd('actors',filter='PopupCloseStage',parts=True)['actors'][0]
  door=next(p for p in stage['parts'] if p['name']=='OfficeBlastDoor');check(door['visible'],'First office blast door is visible before collecting the bomb')

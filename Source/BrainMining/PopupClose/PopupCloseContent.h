@@ -71,6 +71,9 @@ namespace PopupCloseContent
   const int32 Start=Seconds<30.f?2:Seconds<48.f?12:Seconds<60.f?22:28;
   const int32 Length=Seconds<30.f?10:Seconds<48.f?10:Seconds<60.f?6:7;
   const int32 Candidate=Start+FMath::Max(0,Ordinal)%Length;
+  // The initial design document appears once in the sparse opening; later
+  // planning traffic uses meetings and revisions instead of repeating it.
+  if(Candidate==5)return 9;
   // Asset completion belongs to late production, after planning and setup.
   if(Candidate==ReconnectIndex)return 13; // the widget schedules this interruption once
   return Candidate==20 && Seconds<40.f?14:Candidate;

@@ -21,6 +21,7 @@ public:
  bool Advance(float Dt);
  void Cancel();
  bool IsFocused() const { return bFocused; }
+ bool IsInsideGallery() const { return bInsideGallery; }
  bool IsEntering() const { return EntryAge>=0; }
  bool HasShownGalleryHint() const { return bGalleryHintShown; }
  FVector CellCenter() const;
@@ -44,5 +45,5 @@ private:
  float EntryFOV=90,EntryAge=-1;
  double GalleryEnteredAt=-1;
  bool bGalleryHintShown=false;
- bool bFocused=false,bTravelRequested=false,bInputLocked=false;
+ bool bFocused=false,bTravelRequested=false,bInputLocked=false,bInsideGallery=false;
 };

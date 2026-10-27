@@ -90,7 +90,7 @@ try:
     cmd('aim',target=plus(cell,[0,-30,0]));time.sleep(.2)
     def highlight():return next(p['highlight'] for p in actors('MouseMuseumPortal',True)[0]['parts'] if 'highlight' in p)
     h1=highlight();time.sleep(.65);h2=highlight()
-    check(abs(h1-h2)>.03,'Painting circle pulses without being aimed at');shot('painting-circle')
+    check(h1==0 and h2==0,'Painting discovery uses moving paint, with no idle white outline');shot('painting-circle')
     if a.ending:
         cmd('aim',target=cell);time.sleep(.2)
         check(actors('MouseMuseumPortal')[0]['focused'],'Actual painting remains focused before entering')

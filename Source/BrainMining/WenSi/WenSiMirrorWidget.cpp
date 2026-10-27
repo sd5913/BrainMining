@@ -216,7 +216,7 @@ void UWenSiMirrorWidget::Refresh()
  }
  FString Message;
  if(Puzzle->MousePortal && Puzzle->MousePortal->IsEntering()) Message=TEXT("");
- else if(Puzzle->MousePortal && Puzzle->MousePortal->IsFocused()) Message=FString();
+ else if(Puzzle->MousePortal && Puzzle->MousePortal->IsInsideGallery()) Message=FString();
  else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=MiningText::Get(TEXT("WenSi.Hint.Reset")).ToString();
  else if (!Puzzle->bComplete)
  {

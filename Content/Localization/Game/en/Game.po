@@ -554,8 +554,8 @@ msgid "检测到较新的云端版本。\n是否加载其他成员的修改？"
 msgstr "A newer cloud version is available.\nLoad your teammates’ changes?"
 
 msgctxt "BrainMining.Game,Office.Popup.05.Title"
-msgid "企划草案.docx"
-msgstr "Design draft.docx"
+msgid "策划案1.0"
+msgstr "Game design 1.0"
 
 msgctxt "BrainMining.Game,Office.Popup.06.Body"
 msgid "先做一个能玩的版本吧。\n剩下几个点子放备选。"

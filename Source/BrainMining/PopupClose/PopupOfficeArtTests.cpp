@@ -202,6 +202,10 @@ bool FOfficePopupArtInputTest::RunTest(const FString& Parameters)
  for(int32 I=0;I<PopupCloseContent::Count;++I)SkinMask|=1<<PopupCloseContent::ArtVariant(I);
  TestEqual(TEXT("All six supplied popup forms are reachable"),SkinMask,63);
  TestEqual(TEXT("Slow opening preserves the planning revision before production"),PopupCloseContent::ForProgress(39.f,3),5);
+ TestEqual(TEXT("Initial design document uses version 1.0"),PopupCloseContent::Get(5).Title.ToString(),FString(TEXT("策划案1.0")));
+ for(int32 I=4;I<150;++I)
+  for(float Seconds:{5.f,20.f,35.f,50.f,70.f})
+   TestTrue(TEXT("The initial design document is not repeated in later traffic"),PopupCloseContent::ForProgress(Seconds,I)!=5);
  for(int32 I=0;I<100;++I)
   TestTrue(TEXT("Asset completion cannot appear during planning or early production"),PopupCloseContent::ForProgress(35.f,I)!=20 && PopupCloseContent::ForProgress(12.f,I)!=20);
  ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));

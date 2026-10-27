@@ -323,11 +323,10 @@ void APopupOfficeDevice::BeginCameraTransition(APlayerController* PC,float Durat
  // Decorative chair meshes may have no visibility collision. Take the raised
  // approach for normal travel even when the collision trace reports clear.
  bRaisedCameraPath=bBlocked || FVector::Dist2D(CameraFrom.Location,CameraTo.Location)>30.f;
- CameraClearanceZ=FMath::Max(CameraFrom.Location.Z,CameraTo.Location.Z)+24.f;
+ CameraClearanceZ=12.f;
  if(bBlocked && Hit.GetComponent())
-  CameraClearanceZ=FMath::Max(CameraClearanceZ,float(Hit.GetComponent()->Bounds.GetBox().Max.Z)+20.f);
- // Travel horizontally above the chair back before descending at the screen.
- // The reverse trip uses the same clearance rule when the player exits early.
+  CameraClearanceZ=FMath::Clamp(float(Hit.GetComponent()->Bounds.GetBox().Max.Z)+10.f-float(FMath::Lerp(CameraFrom.Location.Z,CameraTo.Location.Z,.5)),12.f,28.f);
+ // A small continuous bow clears chair backs without a separate lift phase.
  bCameraTransition=true;
 }
 void APopupOfficeDevice::CalcCamera(float DeltaTime,FMinimalViewInfo& OutResult)
@@ -340,17 +339,8 @@ void APopupOfficeDevice::CalcCamera(float DeltaTime,FMinimalViewInfo& OutResult)
  OutResult.Rotation=FQuat::Slerp(CameraFrom.Rotation.Quaternion(),CameraTo.Rotation.Quaternion(),Alpha).Rotator();
  if(bRaisedCameraPath)
  {
-  const FVector UpFrom(CameraFrom.Location.X,CameraFrom.Location.Y,CameraClearanceZ);
-  const FVector UpTo(CameraTo.Location.X,CameraTo.Location.Y,CameraClearanceZ);
-  OutResult.Location=T<.2f?FMath::Lerp(CameraFrom.Location,UpFrom,Ease(T/.2f)):
-   T<.8f?FMath::Lerp(UpFrom,UpTo,Ease((T-.2f)/.6f)):
-   FMath::Lerp(UpTo,CameraTo.Location,Ease((T-.8f)/.2f));
-  // Keep looking toward the display while lifting over the chair, instead
-  // of interpolating toward a horizontal gaze above the monitor.
-  const FVector Screen=Surface->GetComponentLocation();
-  const FVector FromFocus=CameraFrom.Location+CameraFrom.Rotation.Vector()*FMath::Max(40.,FVector::Dist(CameraFrom.Location,Screen));
-  const FVector ToFocus=CameraTo.Location+CameraTo.Rotation.Vector()*FMath::Max(40.,FVector::Dist(CameraTo.Location,Screen));
-  OutResult.Rotation=(FMath::Lerp(FromFocus,ToFocus,Alpha)-OutResult.Location).Rotation();
+  OutResult.Location=FMath::Lerp(CameraFrom.Location,CameraTo.Location,Alpha);
+  OutResult.Location.Z+=CameraClearanceZ*4.f*Alpha*(1.f-Alpha);
  }
 }
 

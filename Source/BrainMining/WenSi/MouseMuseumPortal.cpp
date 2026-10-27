@@ -93,7 +93,7 @@ void AMouseMuseumPortal::Initialize(AWenSiMirrorPuzzle* OwnerPuzzle)
 void AMouseMuseumPortal::RefreshFocus()
 {
  bFocused=false;
- bool bInsideGallery=false;
+ bInsideGallery=false;
  auto PC=GetWorld()->GetFirstPlayerController();auto Pawn=PC?PC->GetPawn():nullptr;
  if(Puzzle && Pawn && Painting && Puzzle->bAreaActive && Puzzle->bRewardUnlocked && !Puzzle->bEditing && !Puzzle->bComplete && !Puzzle->IsSwapping() && !IsEntering() && Puzzle->GetPlayerWord()==EWenSiMirrorWord::Small)
  {
@@ -119,8 +119,7 @@ void AMouseMuseumPortal::RefreshFocus()
  if(!bInsideGallery)GalleryEnteredAt=-1;
  if(Painting)
  {
-  const float Pulse=.38f+.22f*FMath::Sin(GetWorld()->GetTimeSeconds()*2.4f);
-  Painting->SetScalarParameterValue(TEXT("Highlight"),bFocused?1.f:Pulse);
+  Painting->SetScalarParameterValue(TEXT("Highlight"),bFocused?1.f:0.f);
  }
 }
 

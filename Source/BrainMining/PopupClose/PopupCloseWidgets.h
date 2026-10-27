@@ -30,6 +30,7 @@ class BRAINMINING_API UPopupCloseDesktopWidget : public UUserWidget
 
 public:
 	void SpawnPopup();
+	int32 GetFrontUnreadCount() const;
 	int32 GetOpenCount() const { return Windows.Num(); }
 	int32 GetManuallyClosedCount() const { return ManuallyClosedCount; }
 	void ClearOldestPopup();
@@ -49,7 +50,7 @@ protected:
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 private:
-	bool ClosePopup(int32 Id);
+	bool ClosePopup(int32 Id, bool bAcknowledge=false);
 	int32 FrontWindowIndex() const;
  TSharedRef<SWidget> MakeArtPopup(int32 Id,int32 Variant,FVector2D Size,int32 ContentIndex);
  UPROPERTY(Transient) TArray<TObjectPtr<UTexture2D>> ArtTextures;
@@ -65,6 +66,7 @@ private:
 		FVector2D Position;
 		FVector2D Size;
   FVector2D ClosePoint;
+  int32 UnreadMessages=0;
 	};
 
 	TArray<FWindow> Windows;

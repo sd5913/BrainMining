@@ -343,21 +343,21 @@ void AWenSiMirrorExhibit::Apply()
  ConductiveClock=0;
  Highlight(false);
 }
-void AWenSiMirrorExhibit::Highlight(bool bAimed)
+void AWenSiMirrorExhibit::Highlight(bool bAimed,bool bShowOutline)
 {
- WenSiExhibitArt::Highlight(ArtVisual,bThinkingEnabled ? (bAimed ? 2.2f:.8f):0.f,bAimed ? 4.0f:1.8f,FLinearColor(1.f,.89f,.7f));
+ WenSiExhibitArt::Highlight(ArtVisual,bThinkingEnabled && bShowOutline ? (bAimed ? 2.2f:.8f):0.f,bAimed ? 4.0f:1.8f,FLinearColor(1.f,.89f,.7f));
  // All exhibits use the same visible silhouette. Hidden art/collision proxies
  // must not contribute depth, otherwise they outline their old blockout shapes.
  for(auto Part:Parts)
  {
   Part->SetOverlayMaterial(nullptr);
   Part->SetCustomDepthStencilValue(1);
-  Part->SetRenderCustomDepth(bThinkingEnabled && Part->GetStaticMesh() && Part->IsVisible() && Part->bRenderInMainPass);
+  Part->SetRenderCustomDepth(bThinkingEnabled && bShowOutline && Part->GetStaticMesh() && Part->IsVisible() && Part->bRenderInMainPass);
  }
  if(auto Smoke=FindObjectFast<UNiagaraComponent>(this,TEXT("MuseumSmoke")))
  {
   Smoke->SetCustomDepthStencilValue(1);
-  Smoke->SetRenderCustomDepth(bThinkingEnabled && Smoke->IsVisible());
+  Smoke->SetRenderCustomDepth(bThinkingEnabled && bShowOutline && Smoke->IsVisible());
  }
 }
 void AWenSiMirrorExhibit::BeginPlay()
@@ -818,7 +818,11 @@ void AWenSiMirrorPuzzle::Tick(float Dt)
  if(ResetHold.Update(bAimReset && !bEditing,PC->IsInputKeyDown(EKeys::E) || UMiningGamepadSubsystem::ReadResetInteractionHeld(PC),Dt))ResetPuzzle();
  if(PC->WasInputKeyJustPressed(EKeys::R))SwapThoughts();
  if(PC->GetPawn() && PC->GetPawn()->GetActorLocation().X>RoomPoint(FVector(1000,0,0)).X)bSecondRoom=true;
- for(auto Exhibit:Exhibits)Exhibit->Highlight(Exhibit==Aim.Get());if(UI)UI->Refresh();
+ // A focused exhibit owns the depth mask. Otherwise overlapping silhouettes
+ // merge (the stone disappears into its surrounding cover).
+ for(auto Exhibit:Exhibits)
+  Exhibit->Highlight(Exhibit==Aim.Get(),!Aim.IsValid() || Exhibit==Aim.Get());
+ if(UI)UI->Refresh();
 }
 void AWenSiMirrorPuzzle::ResetPuzzle()
 {

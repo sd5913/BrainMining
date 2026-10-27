@@ -2,6 +2,7 @@
 #include "MobileRuntimeSettings.h"
 #include "CardRoomStage.h"
 #include "DiggableRock.h"
+#include "GeneratedMiningRock.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Components/PointLightComponent.h"
@@ -263,6 +264,69 @@ void AMiningRoomEscape::BuildStudyLayout()
     {
         Shape(Deck+FVector(0,Side*950,260),FVector(1800,60,400),Wood);
         Shape(Deck+FVector(0,Side*950,470),FVector(1800,65,25),Amber,false);
+    }
+    // A red mineable facing over permanent bedrock, including below the deck.
+    // The two closed solids overlap by 20 cm. Mining away the facing can never
+    // remove the backing; both ends overlap the existing tunnel / cave collar.
+    for(bool bBacking:{false,true})
+    {
+        using namespace UE::Geometry;
+        FDynamicMesh3 Mesh(true,false,false,false);
+        auto Ring=[&](FVector Center,float HalfWidth,float HalfHeight,FRotator Frame=FRotator::ZeroRotator)
+        {
+            for(const FVector2D Corner:{FVector2D(-1,-1),FVector2D(1,-1),FVector2D(1,1),FVector2D(-1,1)})
+                Mesh.AppendVertex(FVector3d(GetActorTransform().InverseTransformPosition(
+                    Center+Frame.RotateVector(FVector(0,Corner.X*HalfWidth,Corner.Y*HalfHeight)))));
+        };
+        auto StagePoint=[&](float X,float Z){return FVector(X+SourceLevelOffset.X,ComputerEntry.Y,Z+SourceLevelOffset.Z);};
+        // Keep the narrow first section aligned with the tilted TV tunnel.
+        // Widen before the curtains: their fully open leaves reach Y +/-1430.
+        const float Back=bBacking?180.f:0.f,Start=bBacking?6880.f:6900.f;
+        // The authored cave collar begins at X=32650. Put the red face in
+        // front of it as well, so its exposed grey upper edge is covered.
+        const float RearFace=bBacking?33030.f:32630.f;
+        Ring(TunnelPoint(FVector(Start,0,0)),W,H,Rotation);
+        Ring(TunnelPoint(FVector(7100,0,0)),W+Back,H+Back,Rotation);
+        Ring(StagePoint(30800,10625),1700+Back,1125+Back);
+        Ring(StagePoint(RearFace,10625),1700+Back,1125+Back);
+        Ring(StagePoint(RearFace,10075),245,175); // Preserve the 490 x 350 doorway.
+        Ring(StagePoint(33050+Back,10075),245,175);
+        Ring(StagePoint(33050+Back,10625),1900+Back,1325+Back);
+        Ring(StagePoint(30800,10625),1900+Back,1325+Back);
+        Ring(TunnelPoint(FVector(7100,0,0)),W+200+Back,H+200+Back,Rotation);
+        Ring(TunnelPoint(FVector(Start,0,0)),W+200,H+200,Rotation);
+        constexpr int32 Rings=10,Sides=4;
+        for(int32 R=0;R<Rings;++R)for(int32 S=0;S<Sides;++S)
+        {
+            const int32 A=R*Sides+S,B=R*Sides+(S+1)%Sides;
+            const int32 C=((R+1)%Rings)*Sides+S,D=((R+1)%Rings)*Sides+(S+1)%Sides;
+            // GeometryCore uses clockwise winding; normals face out of the
+            // solid, so the inner surfaces face the player and cut correctly.
+            Mesh.AppendTriangle(A,B,C);Mesh.AppendTriangle(B,D,C);
+        }
+        FMeshNormals::QuickComputeVertexNormals(Mesh);Mesh.EnableAttributes();
+        FMeshNormals::InitializeOverlayToPerVertexNormals(Mesh.Attributes()->PrimaryNormals());
+        if(!bBacking)
+        {
+            auto* Facing=GetWorld()->SpawnActorDeferred<AGeneratedMiningRock>(AGeneratedMiningRock::StaticClass(),
+                GetActorTransform(),this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+            Facing->RockMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/RoutesV5/M_DarkRed.M_DarkRed"));
+            Facing->RockSize=FVector(Mesh.GetBounds().Extents()*2);
+            Facing->Tags.Add(TEXT("EscapeStageRedFacing"));
+            Facing->SetGeneratedMesh(MoveTemp(Mesh));Facing->FinishSpawning(GetActorTransform());
+            GeneratedActors.Add(Facing);
+            continue;
+        }
+        auto* Bedrock=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/M_BedrockDark.M_BedrockDark"));
+        auto* Shell=NewObject<UDynamicMeshComponent>(this,TEXT("EscapeStageBedrock"));
+        AddInstanceComponent(Shell);Shell->SetupAttachment(RootComponent);
+        Shell->ComponentTags.Add(TEXT("EscapeStageBedrock"));
+        Shell->SetMaterial(0,Bedrock?Bedrock:Interior);
+        Shell->SetCollisionProfileName(TEXT("BlockAll"));
+        Shell->SetComplexAsSimpleCollisionEnabled(true,false);
+        Shell->SetDeferredCollisionUpdatesEnabled(true,false);Shell->bUseAsyncCooking=false;
+        Shell->SetGenerateOverlapEvents(false);Shell->SetCanEverAffectNavigation(false);
+        Shell->SetMesh(MoveTemp(Mesh));Shell->RegisterComponent();Shell->UpdateCollision(false);
     }
     BuildExitStage();
     Light(Deck+FVector(0,0,650),8000,2200);

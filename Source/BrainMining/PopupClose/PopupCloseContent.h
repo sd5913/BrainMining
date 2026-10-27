@@ -22,7 +22,7 @@ namespace PopupCloseContent
   };
   if(Index>=0 && Index<2)return Introduction[Index];
   static const FWorkPopup Copies[] = {
-   {TEXT("组队群 · 2条新消息"),TEXT("题目出来了。\n「涌现」……你们有什么想法？"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),4},
+   {TEXT("组队群 · 新消息"),TEXT("题目出来了。\n「涌现」……你们有什么想法？"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),4},
    {TEXT("Git · 新建仓库"),TEXT("仓库 gamejam-21 已建立。\n邀请已发送给另外3位成员。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
    {TEXT("会议提醒"),TEXT("主题讨论会将在5分钟后开始。\n3位成员已加入。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
    {TEXT("企划草案.docx"),TEXT("检测到较新的云端版本。\n是否加载其他成员的修改？"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
@@ -105,6 +105,12 @@ namespace PopupCloseContent
    {TEXT("Loading"),FVector2D(440,274),FVector4(.54,.745,.305,.125),FVector4(0,0,0,0),false}
   };
   return Skins[(Index%ArtCount+ArtCount)%ArtCount];
+ }
+ // One warning per twelve emitted windows, previously two per twelve.
+ inline int32 FloodArtVariant(int32 Ordinal)
+ {
+  static constexpr int32 Sequence[]={0,1,2,3,4,5,0,1,4,3,4,5};
+  return Sequence[FMath::Max(0,Ordinal)%UE_ARRAY_COUNT(Sequence)];
  }
  constexpr int32 DesktopWidth=1280;
  constexpr int32 DesktopHeight=800;

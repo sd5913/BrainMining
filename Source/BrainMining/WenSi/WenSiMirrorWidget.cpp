@@ -1,4 +1,5 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "MiningInteractionHUDWidget.h"
 #include "BrainMiningFonts.h"
 #include "WenSi/MouseMuseumPortal.h"
 #include "WenSi/WenSiThoughtBubble.h"
@@ -219,6 +220,11 @@ void UWenSiMirrorWidget::Refresh()
  else if (!Puzzle->bComplete)
  {
   Message=TEXT("R-交换词组    Q-关闭思考");
+  // Standalone museum previews do not have the campaign interaction HUD.
+  if(!UMiningInteractionHUDWidget::IsActiveFor(GetOwningPlayer()) && Puzzle->Aim.IsValid()
+     && Puzzle->Thoughts[0]!=Puzzle->Aim && Puzzle->Thoughts[1]!=Puzzle->Aim
+     && (!Puzzle->Thoughts[0].IsValid() || !Puzzle->Thoughts[1].IsValid()))
+   Message=TEXT("E-思考    ")+Message;
  }
  Hint->SetText(FText::FromString(Message));
 }

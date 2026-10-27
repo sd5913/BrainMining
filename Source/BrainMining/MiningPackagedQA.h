@@ -26,6 +26,8 @@ private:
     int32 DisjointGPUSamples = 0;
     FVector SampleCamera=FVector::ZeroVector;
     double MaxCameraStep=0;
+    TArray<FVector> CameraPositions;
+    int32 CameraObstructionSamples=0;
     bool bCameraSampleStarted=false;
     void Execute(const TSharedPtr<class FJsonObject>& Command);
 };

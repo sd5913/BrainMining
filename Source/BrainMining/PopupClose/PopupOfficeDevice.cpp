@@ -7,6 +7,8 @@
 #include "MiningWalletSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Components/PrimitiveComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -78,6 +80,7 @@ void APopupOfficeDevice::EndPlay(const EEndPlayReason::Type Reason)
 }
 void APopupOfficeDevice::ResetSession()
 {
+ EndCameraTransition();
  SetScreenInteractive(false);
  if (Desktop)
  {
@@ -308,6 +311,49 @@ void APopupOfficeDevice::FitCamera()
  const float ViewWidth=FMath::Max(ScreenWidth/.66f,ScreenHeight*Aspect/.78f);
  Camera->SetFieldOfView(FMath::RadiansToDegrees(2.f*FMath::Atan(ViewWidth/(2.f*Distance))));
 }
+void APopupOfficeDevice::BeginCameraTransition(APlayerController* PC,float Duration,bool bEntering)
+{
+ if(!PC || !PC->PlayerCameraManager || !PC->GetPawn())return;
+ CameraFrom=PC->PlayerCameraManager->GetCameraCacheView();
+ if(bEntering)Camera->GetCameraView(0.f,CameraTo);else PC->GetPawn()->CalcCamera(0.f,CameraTo);
+ CameraTransitionStart=GetWorld()->GetTimeSeconds();CameraTransitionDuration=FMath::Max(.01f,Duration);
+ FCollisionQueryParams Query(SCENE_QUERY_STAT(OfficeCameraRoute),true,PC->GetPawn());Query.AddIgnoredActor(this);
+ FHitResult Hit;
+ const bool bBlocked=GetWorld()->SweepSingleByChannel(Hit,CameraFrom.Location,CameraTo.Location,FQuat::Identity,ECC_Visibility,FCollisionShape::MakeSphere(10.f),Query);
+ // Decorative chair meshes may have no visibility collision. Take the raised
+ // approach for normal travel even when the collision trace reports clear.
+ bRaisedCameraPath=bBlocked || FVector::Dist2D(CameraFrom.Location,CameraTo.Location)>30.f;
+ CameraClearanceZ=FMath::Max(CameraFrom.Location.Z,CameraTo.Location.Z)+24.f;
+ if(bBlocked && Hit.GetComponent())
+  CameraClearanceZ=FMath::Max(CameraClearanceZ,float(Hit.GetComponent()->Bounds.GetBox().Max.Z)+20.f);
+ // Travel horizontally above the chair back before descending at the screen.
+ // The reverse trip uses the same clearance rule when the player exits early.
+ bCameraTransition=true;
+}
+void APopupOfficeDevice::CalcCamera(float DeltaTime,FMinimalViewInfo& OutResult)
+{
+ if(!bCameraTransition){Super::CalcCamera(DeltaTime,OutResult);return;}
+ const float T=FMath::Clamp(float(GetWorld()->GetTimeSeconds()-CameraTransitionStart)/CameraTransitionDuration,0.f,1.f);
+ const auto Ease=[](float V){return FMath::SmoothStep(0.f,1.f,V);};
+ const float Alpha=Ease(T);
+ OutResult=CameraFrom;OutResult.BlendViewInfo(CameraTo,Alpha);
+ OutResult.Rotation=FQuat::Slerp(CameraFrom.Rotation.Quaternion(),CameraTo.Rotation.Quaternion(),Alpha).Rotator();
+ if(bRaisedCameraPath)
+ {
+  const FVector UpFrom(CameraFrom.Location.X,CameraFrom.Location.Y,CameraClearanceZ);
+  const FVector UpTo(CameraTo.Location.X,CameraTo.Location.Y,CameraClearanceZ);
+  OutResult.Location=T<.2f?FMath::Lerp(CameraFrom.Location,UpFrom,Ease(T/.2f)):
+   T<.8f?FMath::Lerp(UpFrom,UpTo,Ease((T-.2f)/.6f)):
+   FMath::Lerp(UpTo,CameraTo.Location,Ease((T-.8f)/.2f));
+  // Keep looking toward the display while lifting over the chair, instead
+  // of interpolating toward a horizontal gaze above the monitor.
+  const FVector Screen=Surface->GetComponentLocation();
+  const FVector FromFocus=CameraFrom.Location+CameraFrom.Rotation.Vector()*FMath::Max(40.,FVector::Dist(CameraFrom.Location,Screen));
+  const FVector ToFocus=CameraTo.Location+CameraTo.Rotation.Vector()*FMath::Max(40.,FVector::Dist(CameraTo.Location,Screen));
+  OutResult.Rotation=(FMath::Lerp(FromFocus,ToFocus,Alpha)-OutResult.Location).Rotation();
+ }
+}
+
 void APopupOfficeDevice::WarmPool(float Dt)
 {
  for(auto Item:Pool)if(IsValid(Item))Item->IsReadyForLaunch();
@@ -315,7 +361,7 @@ void APopupOfficeDevice::WarmPool(float Dt)
  WarmDebt+=Dt;if(WarmDebt<.06f)return;WarmDebt=0;
  FActorSpawnParameters Params;Params.Owner=this;Params.SpawnCollisionHandlingOverride=ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
  auto Item=GetWorld()->SpawnActor<APopupCloseFlyingWindow>(FVector(DeviceIndex*100,0,-10000-Pool.Num()*80),FRotator::ZeroRotator,Params);
- if(Item){Item->PrepareForPool(Pool.Num(),IsPrinter());Pool.Add(Item);}
+ if(Item){Item->PrepareForPool(PopupCloseContent::FloodArtVariant(Pool.Num()),IsPrinter());Pool.Add(Item);}
 }
 void APopupOfficeDevice::Emit()
 {
@@ -349,12 +395,12 @@ bool APopupOfficeDevice::ClickReplyForMobile()
   }
   if(!TraceDesktopGlass(Origin,(ArtShell->GetComponentTransform().TransformPosition(TargetLocal)-Origin).GetSafeNormal(),Hit))return false;
  }
- const int32 Before=Pending();Pointer->InteractionSource=EWidgetInteractionSource::Custom;
+ const int32 Before=Pending(),UnreadBefore=Desktop->GetFrontUnreadCount();Pointer->InteractionSource=EWidgetInteractionSource::Custom;
  Pointer->SetCustomHitResult(Hit);Pointer->TickComponent(0,LEVELTICK_All,nullptr);
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_OfficeMouseClick"),.65f,false,0.f);
  Pointer->PressPointerKey(EKeys::LeftMouseButton);Pointer->ReleasePointerKey(EKeys::LeftMouseButton);
  Pointer->InteractionSource=EWidgetInteractionSource::Mouse;
- return Pending()==Before-1;
+ return Pending()==Before-1 || (UnreadBefore>0 && Desktop->GetFrontUnreadCount()==0);
 }
 bool APopupOfficeDevice::ClickReplyForValidation()
 {

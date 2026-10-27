@@ -400,7 +400,7 @@ void APopupCloseStage::BeginScreenSession(APlayerController* PC,APopupOfficeDevi
   Character->GetCharacterMovement()->StopMovementImmediately();Character->GetCharacterMovement()->DisableMovement();
  }
  PC->SetIgnoreMoveInput(true);bMoveSuppressed=true;PC->SetIgnoreLookInput(true);bLookSuppressed=true;
- Device->FitCamera();PC->SetViewTargetWithBlend(Device,ScreenEnterSeconds,EViewTargetBlendFunction::VTBlend_EaseInOut,2.f,true);
+ Device->FitCamera();Device->BeginCameraTransition(PC,ScreenEnterSeconds,true);PC->SetViewTarget(Device);
  UE_LOG(LogPopupClose,Display,TEXT("Enter computer %d; pending=%d"),Device->DeviceIndex,Device->Pending());
 }
 void APopupCloseStage::ExitScreen()
@@ -413,7 +413,7 @@ void APopupCloseStage::ExitScreen()
  if(auto PC=LockedController.Get())
  {
   PC->SetShowMouseCursor(false);PC->SetInputMode(FInputModeGameOnly());
-  if(auto Pawn=LockedPawn.Get())PC->SetViewTargetWithBlend(Pawn,ScreenExitSeconds,EViewTargetBlendFunction::VTBlend_EaseInOut,2.f,true);
+  if(ActiveComputer){ActiveComputer->BeginCameraTransition(PC,ScreenExitSeconds,false);PC->SetViewTarget(ActiveComputer);}
  }
  UE_LOG(LogPopupClose,Display,TEXT("Exit computer; pending messages preserved"));
 }
@@ -454,7 +454,7 @@ void APopupCloseStage::TickView(float Dt)
  {
   UE_LOG(LogPopupClose,Display,TEXT("Computer view ready after %.3f s"),ViewTime);
   View=EView::InScreen;ViewTime=0;
-  ActiveComputer->SetScreenInteractive(true);
+  ActiveComputer->EndCameraTransition();ActiveComputer->SetScreenInteractive(true);
   ConfigureScreenCursor(true);
   if(PC){FInputModeGameOnly Mode;Mode.SetConsumeCaptureMouseDown(false);PC->SetInputMode(Mode);PC->SetShowMouseCursor(true);}
  }
@@ -464,6 +464,8 @@ void APopupCloseStage::TickView(float Dt)
  }
  else if(View==EView::Exiting && ViewTime>=ScreenExitSeconds)
  {
+  if(PC)if(auto Pawn=LockedPawn.Get())PC->SetViewTarget(Pawn);
+  if(ActiveComputer)ActiveComputer->EndCameraTransition();
   RestorePlayerControl();View=EView::Free;ActiveComputer=nullptr;
  }
 }

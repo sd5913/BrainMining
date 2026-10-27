@@ -22,6 +22,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MiningSaveSubsystem.h"
 #include "MiningGUIWidgets.h"
+#include "MiningInteractionHUDWidget.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/StaticMesh.h"
 #include "Components/SceneCaptureComponent2D.h"
@@ -131,7 +132,11 @@ void UMiningPackagedQA::Tick(float)
         {
             const FVector Camera=Controller->PlayerCameraManager->GetCameraLocation();
             if(bCameraSampleStarted)MaxCameraStep=FMath::Max(MaxCameraStep,FVector::Dist(Camera,SampleCamera));
-            SampleCamera=Camera;bCameraSampleStarted=true;
+            FCollisionQueryParams Query(SCENE_QUERY_STAT(QACameraClearance),true,Controller->GetPawn());
+            Query.AddIgnoredActor(Controller->GetViewTarget());
+            FHitResult Hit;
+            if(GetWorld()->SweepSingleByChannel(Hit,bCameraSampleStarted?SampleCamera:Camera,Camera,FQuat::Identity,ECC_Visibility,FCollisionShape::MakeSphere(4.f),Query))++CameraObstructionSamples;
+            CameraPositions.Add(Camera);SampleCamera=Camera;bCameraSampleStarted=true;
         }
     if(Now<NextPoll)return;NextPoll=Now+.1;
     auto* Hall=AMiningExhibitHall::Find(GetWorld());
@@ -430,7 +435,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Ok = Graphics && FMath::IsFinite(Requested) && Requested >= 0 && Requested <= 4 && FMath::FloorToDouble(Requested) == Requested;
         if (Ok) Ok = Graphics->SetMode(EMiningMobileUpscaling(int32(Requested)));
     }
-    else if(Op==TEXT("sample_start")){SampleLabel=C->GetStringField(TEXT("label"));FrameSamples.Reset();GPUFrameSamples.Reset();DisjointGPUSamples=0;MaxCameraStep=0;bCameraSampleStarted=false;}
+    else if(Op==TEXT("sample_start")){SampleLabel=C->GetStringField(TEXT("label"));FrameSamples.Reset();GPUFrameSamples.Reset();DisjointGPUSamples=0;MaxCameraStep=0;bCameraSampleStarted=false;CameraPositions.Reset();CameraObstructionSamples=0;}
     else if(Op==TEXT("sample_end"))
     {
         TArray<TSharedPtr<FJsonValue>> GPUFrames;
@@ -441,6 +446,9 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         TArray<TSharedPtr<FJsonValue>> Samples;for(double Value:FrameSamples)Samples.Add(MakeShared<FJsonValueNumber>(Value));
         Result->SetStringField(TEXT("label"),SampleLabel);Result->SetArrayField(TEXT("frame_ms"),Samples);SampleLabel.Empty();FrameSamples.Reset();
         Result->SetNumberField(TEXT("max_camera_step_cm"),MaxCameraStep);
+        Result->SetNumberField(TEXT("camera_obstruction_samples"),CameraObstructionSamples);
+        TArray<TSharedPtr<FJsonValue>> Path;for(const FVector& Position:CameraPositions)Path.Add(MakeShared<FJsonValueArray>(Vec(Position)));
+        Result->SetArrayField(TEXT("camera_path"),Path);
     }
     else if(Op==TEXT("audio_volume_fixture"))
     {
@@ -532,6 +540,8 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Result->SetBoolField(TEXT("game_show"),Viewport->EngineShowFlags.Game);
     }
     Result->SetStringField(TEXT("view_target"),GetNameSafe(PC->GetViewTarget()));
+    if(auto* Controller=Cast<ABrainMiningPlayerController>(PC);Controller && Controller->InteractionHUD)
+        Result->SetStringField(TEXT("interaction_action"),Controller->InteractionHUD->InteractionAction);
     auto GraphicsInfo = MakeShared<FJsonObject>();
     GraphicsInfo->SetStringField(TEXT("rhi"), GDynamicRHI ? GDynamicRHI->GetName() : TEXT("None"));
     GraphicsInfo->SetBoolField(TEXT("native_fp16"), GRHIGlobals.SupportsNative16BitOps);
@@ -695,7 +705,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     {
         auto Item=MakeShared<FJsonObject>();Item->SetNumberField(TEXT("device"),It->DeviceIndex);
         Item->SetStringField(TEXT("title"),Desktop->GetFrontPopupTitle());Item->SetStringField(TEXT("body"),Desktop->GetFrontPopupBody());
-        Item->SetNumberField(TEXT("phase"),Desktop->GetFrontPopupPhase());
+        Item->SetNumberField(TEXT("phase"),Desktop->GetFrontPopupPhase());Item->SetNumberField(TEXT("unread"),Desktop->GetFrontUnreadCount());
         Item->SetNumberField(TEXT("pending"),It->Pending());Item->SetNumberField(TEXT("handled"),It->Handled());
         Item->SetBoolField(TEXT("accounting_valid"),It->AccountingValid());Desktops.Add(MakeShared<FJsonValueObject>(Item));
     }
@@ -796,7 +806,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
                 for(auto* Mesh:Meshes)
                 {
                     auto P=MakeShared<FJsonObject>();P->SetStringField(TEXT("name"),Mesh->GetName());
-                    P->SetBoolField(TEXT("visible"),Mesh->IsVisible()&&!Mesh->bHiddenInGame);
+                    P->SetBoolField(TEXT("visible"),Mesh->IsVisible()&&!Mesh->bHiddenInGame);P->SetBoolField(TEXT("outline"),Mesh->bRenderCustomDepth);
                     P->SetArrayField(TEXT("position"),Vec(Mesh->GetComponentLocation()));
                     P->SetArrayField(TEXT("relative"),Vec(Mesh->GetRelativeLocation()));
                     P->SetStringField(TEXT("mesh"),Mesh->GetStaticMesh()?Mesh->GetStaticMesh()->GetPathName():TEXT(""));

@@ -9,6 +9,8 @@
 #include "MiningGUIWidgets.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/DecalComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "Components/SphereComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Editor.h"
@@ -58,6 +60,7 @@ public:
   auto Body=[&](){return Tool->LastThrownBomb.IsValid()?Tool->LastThrownBomb->Collision.Get():nullptr;};
   auto FindMesh=[&](const TCHAR* Name)->UStaticMeshComponent*{TArray<UStaticMeshComponent*> Meshes;Stage->GetComponents(Meshes);for(auto Mesh:Meshes)if(Mesh->GetName()==Name)return Mesh;return nullptr;};
   auto PickupBody=[&](){auto Mesh=FindMesh(TEXT("OfficeBombSkillPickup"));return Mesh?Cast<USphereComponent>(Mesh->GetAttachParent()):nullptr;};
+  auto BombMark=[&]()->UDecalComponent*{TArray<UDecalComponent*> Marks;Stage->GetComponents(Marks);for(auto* Mark:Marks)if(Mark->GetName()==TEXT("OfficeExitBombStencil"))return Mark;return nullptr;};
   auto Airborne=[&](){int32 Count=0;for(TActorIterator<APopupCloseFlyingWindow> It(W);It;++It)if(It->GetOwner()==Stage && !It->IsHidden())++Count;return Count;};
   auto GroundCount=[&]()
   {
@@ -74,6 +77,8 @@ public:
     Test->TestTrue(TEXT("Collectible C4 is readable and centered on its physical body"),Pickup && Pickup->GetStaticMesh() && Pickup->GetRelativeScale3D().Equals(FVector(2.2f),.001) &&
      (Pickup->GetRelativeLocation()+Pickup->GetStaticMesh()->GetBounds().Origin*2.2f).IsNearlyZero(.01));
     Test->TestTrue(TEXT("First exit door is visible before the bomb is collected"),FindMesh(TEXT("OfficeBlastDoor"))->IsVisible() && !FindMesh(TEXT("OfficeBlastDoor"))->bHiddenInGame);
+    const auto* Mark=BombMark();
+    Test->TestTrue(TEXT("First exit door has the shared bomb stencil before pickup"),Mark && Mark->IsVisible() && Mark->GetAttachParent()==FindMesh(TEXT("OfficeBlastDoor")) && Mark->GetDecalMaterial() && Mark->GetDecalMaterial()->GetName()==TEXT("M_BombWallIcon"));
     Test->TestTrue(TEXT("Finale has a separate low-detail C4 asset"),Pickup && Bombs && Bombs->GetStaticMesh() && Bombs->GetStaticMesh()->GetName()==TEXT("SM_OfficeFinaleC4") && Bombs->GetStaticMesh()!=Pickup->GetStaticMesh());
     Test->TestTrue(TEXT("C4 crowd forces its reduced LOD"),Bombs && Bombs->GetForcedLodModel()==2);
     Test->TestTrue(TEXT("C4 crowd is bounded to 256 prewarmed instances"),Bombs && Bombs->GetInstanceCount()==256);
@@ -162,6 +167,7 @@ public:
    if(!Test->TestEqual(TEXT("Nearby player bomb opens the completion gate"),Stage->GetCompletedSessions(),1))return true;
    Test->TestFalse(TEXT("Breaking the door alone does not evacuate or destroy the room"),Stage->IsOfficeEscaped());
    Test->TestFalse(TEXT("Door model no longer blocks"),FindMesh(TEXT("OfficeBlastDoor"))->IsVisible());
+   Test->TestTrue(TEXT("Bomb stencil disappears with the destroyed door"),BombMark() && !BombMark()->IsVisible());
    Position(FVector(930,0,98));break;
   case 11:
    {FHitResult Hit;Pawn->SetActorLocation(Stage->GetActorTransform().TransformPosition(FVector(1135,0,98)),true,&Hit);
@@ -205,6 +211,7 @@ public:
    Test->TestFalse(TEXT("Reset clears permanent rubble"),Stage->IsOfficeDestroyed());
    Test->TestTrue(TEXT("Reset retains acquired skill ownership"),Tool->IsSkillUnlocked());
    Test->TestTrue(TEXT("Door collision is restored on reset"),FindMesh(TEXT("OfficeBlastDoor"))->GetCollisionEnabled()!=ECollisionEnabled::NoCollision);
+   Test->TestTrue(TEXT("Door reset restores its bomb stencil"),BombMark() && BombMark()->IsVisible());
    Test->TestTrue(TEXT("Reset leaves no hidden active pickup rigid body"),PickupBody() && !PickupBody()->IsSimulatingPhysics() && PickupBody()->GetCollisionEnabled()==ECollisionEnabled::NoCollision);
    return true;
   }

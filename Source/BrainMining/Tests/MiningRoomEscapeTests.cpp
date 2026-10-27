@@ -18,7 +18,9 @@
 #include "Materials/MaterialInterface.h"
 #include "EchoPassagePlayer.h"
 #include "DiggableRock.h"
+#include "GeneratedMiningRock.h"
 #include "Components/DynamicMeshComponent.h"
+#include "MeshQueries.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
 #include "Misc/AutomationTest.h"
@@ -32,6 +34,110 @@
 
 namespace
 {
+void CheckStageEnclosure(FAutomationTestBase* Test,AMiningRoomEscape* E)
+{
+    UDynamicMeshComponent* Shell=nullptr;
+    TArray<UDynamicMeshComponent*> Meshes;E->GetComponents(Meshes);
+    for(auto* Mesh:Meshes)if(Mesh->ComponentHasTag(TEXT("EscapeStageBedrock")))Shell=Mesh;
+    if(!Test->TestNotNull(TEXT("Ramp and stage have permanent bedrock"),Shell))return;
+    Shell->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh)
+    {
+        Test->TestTrue(TEXT("Stage shell is a closed solid without edge cracks"),Mesh.IsClosed());
+        Test->TestTrue(TEXT("Stage shell topology is valid"),Mesh.CheckValidity());
+        Test->TestTrue(TEXT("Bedrock winding encloses positive solid volume"),UE::Geometry::TMeshQueries<UE::Geometry::FDynamicMesh3>::GetVolumeArea(Mesh).X>0);
+    });
+    Test->TestEqual(TEXT("Stage shell blocks flying player capsules"),Shell->GetCollisionResponseToChannel(ECC_Pawn),ECR_Block);
+    Test->TestFalse(TEXT("Stage shell is not a mineable actor"),Shell->GetOwner()->IsA<ADiggableRock>());
+    const FCollisionShape Capsule=FCollisionShape::MakeCapsule(42,96);
+    auto Point=[&](float X,float Y,float Z){return FVector(X+E->SourceLevelOffset.X,E->ComputerEntry.Y+Y,Z+E->SourceLevelOffset.Z);};
+    int32 Blocked=0,Probes=0;
+    for(float X:{30400.f,31500.f,32500.f})
+        for(int32 Angle=0;Angle<360;Angle+=30)
+            for(float Along:{-.25f,0.f,.25f})
+            {
+                const float R=FMath::DegreesToRadians(float(Angle));
+                const FVector From=Point(X,0,10400),To=From+FVector(Along,FMath::Cos(R),FMath::Sin(R))*6000;
+                FHitResult Hit;++Probes;
+                if(Shell->SweepComponent(Hit,From,To,FQuat::Identity,Capsule,true))++Blocked;
+            }
+    Test->TestEqual(TEXT("Ramp/stage side, roof, floor and diagonal escape sweeps all blocked"),Blocked,Probes);
+    // The shell itself must leave a full player capsule clear along both joins.
+    const FRotator Frame=(E->TunnelEnd-E->ComputerEntry).Rotation();
+    auto TunnelPoint=[&](float Along){return E->ComputerEntry+Frame.RotateVector(FVector(Along,0,-E->TunnelHalfHeight+110));};
+    const TArray<FVector> Route={TunnelPoint(6850),TunnelPoint(7100),Point(30600,0,10000),
+        Point(31100,0,10000),Point(32600,0,10000),Point(33200,0,10000)};
+    for(int32 I=1;I<Route.Num();++I)
+    {
+        FHitResult Hit;
+        Test->TestFalse(*FString::Printf(TEXT("Bedrock leaves walking route segment %d open"),I),
+            Shell->SweepComponent(Hit,Route[I-1],Route[I],FQuat::Identity,Capsule,true));
+    }
+    // Above / beside the stage doorway must not provide a way around its collar.
+    for(const FVector P:{Point(32500,0,11000),Point(32500,-1200,10300),Point(32500,1200,10300)})
+    {
+        FHitResult Hit;
+        Test->TestTrue(TEXT("Stage rear wall seals the space outside the third-passage doorway"),
+            Shell->SweepComponent(Hit,P,P+FVector(3000,0,0),FQuat::Identity,Capsule,true));
+    }
+    AGeneratedMiningRock* Facing=nullptr;
+    for(TActorIterator<AGeneratedMiningRock> It(E->GetWorld());It;++It)
+        if(It->GetOwner()==E && It->ActorHasTag(TEXT("EscapeStageRedFacing")))Facing=*It;
+    if(!Test->TestNotNull(TEXT("Visible stage enclosure uses real mineable red rock"),Facing))return;
+    Test->TestEqual(TEXT("Facing reuses the third passage red-rock material"),Facing->RockMaterial->GetName(),FString(TEXT("M_DarkRed")));
+    Facing->RockMesh->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh)
+    {
+        Test->TestTrue(TEXT("Mineable facing is a closed solid"),Mesh.IsClosed());
+        Test->TestTrue(TEXT("Red facing winding encloses positive solid volume"),UE::Geometry::TMeshQueries<UE::Geometry::FDynamicMesh3>::GetVolumeArea(Mesh).X>0);
+    });
+    for(int32 I=1;I<Route.Num();++I)
+    {
+        FHitResult Hit;
+        Test->TestFalse(TEXT("Red facing leaves the full walking route open"),
+            Facing->RockMesh->SweepComponent(Hit,Route[I-1],Route[I],FQuat::Identity,Capsule,true));
+    }
+}
+
+class FStageFacingCutChecks : public IAutomationLatentCommand
+{
+    FAutomationTestBase* Test;
+    TWeakObjectPtr<AGeneratedMiningRock> Facing;
+    TWeakObjectPtr<UDynamicMeshComponent> Backing;
+    FVector From,To;
+    double Started=0;
+public:
+    explicit FStageFacingCutChecks(FAutomationTestBase* T):Test(T){}
+    bool Update() override
+    {
+        if(!Started)
+        {
+            UWorld* World=GEditor?GEditor->PlayWorld:nullptr;if(!World)return true;
+            for(TActorIterator<AGeneratedMiningRock> It(World);It;++It)
+                if(It->ActorHasTag(TEXT("EscapeStageRedFacing")))Facing=*It;
+            if(!Test->TestNotNull(TEXT("Mineable stage facing survives the completed journey"),Facing.Get()))return true;
+            auto* E=Cast<AMiningRoomEscape>(Facing->GetOwner());
+            TArray<UDynamicMeshComponent*> Meshes;E->GetComponents(Meshes);
+            for(auto* M:Meshes)if(M->ComponentHasTag(TEXT("EscapeStageBedrock")))Backing=M;
+            From=FVector(31500+E->SourceLevelOffset.X,E->ComputerEntry.Y,10500+E->SourceLevelOffset.Z);
+            To=From-FVector(0,2500,0);
+            FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(StageFacing),true);
+            Test->TestTrue(TEXT("Red facing is present before digging"),Facing->RockMesh->LineTraceComponent(Hit,From,To,Query));
+            Test->TestTrue(TEXT("Red facing accepts excavation through its full thickness"),Facing->MineSphere(From-FVector(0,1800,0),450));
+            Started=FPlatformTime::Seconds();return false;
+        }
+        if(Facing->IsTerrainCutPending())
+        {
+            if(FPlatformTime::Seconds()-Started<20)return false;
+            Test->AddError(TEXT("Stage facing excavation did not finish"));return true;
+        }
+        FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(StageFacing),true);
+        Test->TestTrue(TEXT("Red facing excavation committed"),Facing->SuccessfulCuts>0);
+        Test->TestFalse(TEXT("Digging opens a real hole through red rock"),Facing->RockMesh->LineTraceComponent(Hit,From,To,Query));
+        Test->TestTrue(TEXT("Permanent backing still blocks flight after the red surface is removed"),
+            Backing.IsValid() && Backing->SweepComponent(Hit,From,To,FQuat::Identity,FCollisionShape::MakeCapsule(42,96),true));
+        Facing->ResetRock();return true;
+    }
+};
+
 class FEscapeChecks : public IAutomationLatentCommand
 {
     FAutomationTestBase* Test;
@@ -277,6 +383,7 @@ public:
         Test->TestTrue(TEXT("Collectible ribbon launches visibly before becoming collectible"),!E->StageRibbon->IsHidden() && !E->StageRibbon->bReleased);
         E->StageCelebration->Tick(4.5f);E->Tick(.01f);
         Test->TestTrue(TEXT("Ribbon lands before enabling pickup"),E->StageRibbon->bReleased);
+        CheckStageEnclosure(Test,E);
         if(RoomAudio) Test->TestEqual(TEXT("Victory sound does not repeat while confetti runs"),RoomAudio->EventCount(TEXT("S_TVEscapeVictory")),1);
         Pawn->SetActorLocation(E->Exit);
         Test->TestTrue(TEXT("Stage has one collectible ribbon using shared item ID"),E->StageRibbon && E->StageRibbon->ItemId==11 && !E->StageRibbon->bCollected);
@@ -300,6 +407,7 @@ bool FCardEscapeTest::RunTest(const FString&)
     AutomationOpenMap(TEXT("/Game/Passages/Echo/Maps/Lvl_EchoMazeToCards_P1"));
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FStageFacingCutChecks>(this));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FP2CardEscapeTest,"BrainMining.Encounters.PIE.P2CardEscapeCheckpoints",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -318,6 +426,7 @@ bool FP2CardEscapeTest::RunTest(const FString&)
     TestTrue(TEXT("P2 restores the P1 television and green diggable screen"),!Placed->AuthoredTelevisionScreen && PreviewParts>0);
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FStageFacingCutChecks>(this));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FExhibitCardEscapeTest,"BrainMining.SixAreas.FullCardAndTelevisionEscape",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -326,6 +435,7 @@ bool FExhibitCardEscapeTest::RunTest(const FString&)
     AutomationOpenMap(TEXT("/Game/Showcase/Maps/Lvl_MainExperiences"));
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FStageFacingCutChecks>(this));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCampaignCardEscapeTest,"BrainMining.Campaign.FullCardAndTelevisionEscape",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -334,6 +444,7 @@ bool FCampaignCardEscapeTest::RunTest(const FString&)
     AutomationOpenMap(TEXT("/Game/Campaign/Maps/Lvl_FullJourney"));
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FStageFacingCutChecks>(this));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMainGameCardEscapeTest,"BrainMining.MainGame.FullCardAndTelevisionEscape",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
@@ -350,6 +461,7 @@ bool FMainGameCardEscapeTest::RunTest(const FString&)
     TestEqual(TEXT("MainGame has one P2 card encounter"),RobotStages,1);
     ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
     FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FEscapeChecks>(this,true));
+    FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FStageFacingCutChecks>(this));
     ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;
 }
 #endif

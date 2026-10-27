@@ -1,6 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Camera/CameraTypes.h"
 #include "PopupOfficeDevice.generated.h"
 class UBoxComponent;
 class UCameraComponent;
@@ -60,6 +61,9 @@ public:
  void TickScreen(float Dt,APlayerController* PC);
  void HandleGamepadPointer(bool bPressed);
  void FitCamera();
+ void BeginCameraTransition(APlayerController* PC,float Duration,bool bEntering);
+ void EndCameraTransition(){bCameraTransition=false;}
+ virtual void CalcCamera(float DeltaTime,FMinimalViewInfo& OutResult) override;
  bool ClickReplyForValidation();
 	bool ClickReplyForMobile();
  UPopupCloseDesktopWidget* GetDesktop() const { return Desktop; }
@@ -86,4 +90,8 @@ private:
  int32 PapersHandled=0;
  bool bLocked=false;
  bool bComputerView=false;
+ bool bCameraTransition=false,bRaisedCameraPath=false;
+ double CameraTransitionStart=0;
+ float CameraTransitionDuration=1.f,CameraClearanceZ=0.f;
+ FMinimalViewInfo CameraFrom,CameraTo;
 };

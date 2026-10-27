@@ -23,8 +23,9 @@ try:
   config=profile/'Saved/Config'/platform/'GameUserSettings.ini';config.parent.mkdir(parents=True,exist_ok=True)
   config.write_text('[BrainMining.Localization]\nLanguagePreference=zh-Hans\n',encoding='utf8')
  launch=[args.exe] if args.exe else ['C:/UE_5.8/Engine/Binaries/Win64/UnrealEditor.exe',str(root/'BrainMining.uproject'),'/Game/MainGame/Maps/Lvl_MainGame','-game']
- proc=subprocess.Popen(launch+['-windowed','-ResX=1280','-ResY=800','-RenderOffscreen','-NoSplash','-nosound','-EnablePlugins=GameFeatures','-DisablePlugins=AllToolsets,ModelContextProtocol','-MiningQA','-UserDir='+str(profile)])
- c=Client(profile);wait(lambda s:s['menu_buttons']);cmd('start');wait(lambda s:not s['opening']);time.sleep(2)
+ editor_flags=[] if args.exe else ['-EnablePlugins=GameFeatures','-DisablePlugins=AllToolsets,ModelContextProtocol']
+ proc=subprocess.Popen(launch+editor_flags+['-windowed','-ResX=1280','-ResY=800','-RenderOffscreen','-NoSplash','-nosound','-MiningQA','-UserDir='+str(profile)])
+ c=Client(profile);c.command('state',timeout=180);wait(lambda s:s['menu_buttons']);cmd('start');wait(lambda s:not s['opening']);time.sleep(2)
  cmd('area_fixture',area=5);time.sleep(3)
  exhibits=cmd('actors',filter='WenSiMirrorExhibit',parts=True)['actors'];stone=next(a for a in exhibits if a['kind']==0);p=stone['position']
  for word,label in [(1,'solid-cover'),(3,'passable-cover')]:

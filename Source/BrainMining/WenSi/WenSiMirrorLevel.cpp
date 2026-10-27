@@ -116,7 +116,6 @@ void AWenSiMirrorPuzzle::CreateMirrorLevel()
  auto Shutter=Block(TEXT("RewardShutter"),FVector(2190,-350,32),FVector(12,40,64),Brass);Shutter->Tags.Add(TEXT("MirrorRewardShutter"));
  auto Prize=Block(TEXT("RewardCrystal"),FVector(2300,-350,32),FVector(30,30,40),Brass,false,Sphere);Prize->Tags.Add(TEXT("MirrorReward"));
  Prize->GetStaticMeshComponent()->SetOverlayMaterial(Material(TEXT("M_InteractiveRim")));
- Block(TEXT("RewardPlinth"),FVector(2300,-350,8),FVector(60,60,16),Blue);
  for(FVector P:{FVector(-720,300,0),FVector(1060,150,0)})
  {auto Reset=World->SpawnActor<AWenSiResetButton>(P,FRotator::ZeroRotator,Params);Reset->Configure();Reset->SetActorLabel(TEXT("重置按钮"));Reset->SetFolderPath(TEXT("MuseumMirror/Controls"));}
  // Benches and noninteractive exhibits enrich the room without adding written hints.

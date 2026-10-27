@@ -561,10 +561,15 @@ FString ABrainMiningPlayerController::GetMobileActionLabel() const
 
 bool ABrainMiningPlayerController::InputKey(const FInputKeyEventArgs& Params)
 {
-    if(Params.Key==EKeys::F10 && (IsInputKeyDown(EKeys::LeftControl) || IsInputKeyDown(EKeys::RightControl) ||
+    if((Params.Key==EKeys::F10 || Params.Key==EKeys::F9) && (IsInputKeyDown(EKeys::LeftControl) || IsInputKeyDown(EKeys::RightControl) ||
        (FSlateApplication::IsInitialized() && FSlateApplication::Get().GetModifierKeys().IsControlDown())))
     {
-        if(Params.Event==IE_Pressed)GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->ToggleDeveloperMenu();
+        if(Params.Event==IE_Pressed)
+        {
+            auto* Experience=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();
+            if(Params.Key==EKeys::F9){if(Experience->IsMenuOpen())Experience->CloseMenu();Experience->ToggleAllUI();}
+            else Experience->ToggleDeveloperMenu();
+        }
         return true;
     }
     if(Params.Event==IE_Pressed && EndingCreditsInput::Handle(this,Params.Key))return true;

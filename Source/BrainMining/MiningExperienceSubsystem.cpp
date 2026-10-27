@@ -68,12 +68,15 @@ namespace MiningExperiences
         {
             auto* Owner = Subsystem.Get();
             if (!Owner || Event.IsRepeat()) return false;
-            if (Event.GetKey() == EKeys::F10 && Event.IsControlDown())
+            if ((Event.GetKey() == EKeys::F10 || Event.GetKey() == EKeys::F9) && Event.IsControlDown())
             {
                 auto* Viewport = Owner->GetWorld() ? Owner->GetWorld()->GetGameViewport() : nullptr;
                 const auto ViewportWidget = Viewport ? Viewport->GetGameViewportWidget() : nullptr;
                 if (ViewportWidget && (ViewportWidget->HasKeyboardFocus() || ViewportWidget->HasFocusedDescendants() || Owner->IsMenuOpen()))
+                {
+                    if(Event.GetKey()==EKeys::F9){if(Owner->IsMenuOpen())Owner->CloseMenu();Owner->ToggleAllUI();return true;}
                     return Owner->ToggleDeveloperMenu();
+                }
                 return false;
             }
             if(Event.GetKey()==EKeys::C || Event.GetKey()==EKeys::Escape)

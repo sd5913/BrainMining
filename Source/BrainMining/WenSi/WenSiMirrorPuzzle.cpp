@@ -333,7 +333,9 @@ void AWenSiMirrorExhibit::Apply()
    Smoke->SetVariableFloat(TEXT("SpawnRate"),20.f);
    Smoke->SetVariableFloat(TEXT("Sprite Size"),42.f);
    Smoke->SetVariableLinearColor(TEXT("Smoke Color"),FLinearColor(.48f,.52f,.56f,Word==EWenSiMirrorWord::Passable?.35f:.8f));
-   Smoke->SetVisibility(true);Smoke->Activate(true);
+   Smoke->SetVisibility(true);Smoke->Activate(false);
+   // The Niagara asset prewarms five seconds before its first visible frame.
+   // Word changes retain the live plume instead of restarting low particles.
   }
  }
  if(ConductiveFX)

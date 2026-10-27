@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MiningLocalizationSubsystem.h"
 #include "Layout/ArrangedChildren.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/SBoxPanel.h"
@@ -56,9 +57,18 @@ namespace WenSiThoughtBubble
 
  inline void AddText(const TSharedPtr<SHorizontalBox>& Row,const FString& Text,const FSlateFontInfo& Font)
  {
-  for (TCHAR Character:Text)
-   Row->AddSlot().AutoWidth().VAlign(VAlign_Center)
-    [SNew(STextBlock).Text(FText::FromString(FString::Chr(Character))).Font(Font).ColorAndOpacity(FLinearColor(.035,.035,.04))];
+  if(!Text.IsEmpty())Row->AddSlot().AutoWidth().VAlign(VAlign_Center)
+    [SNew(STextBlock).Text(FText::FromString(Text)).Font(Font).ColorAndOpacity(FLinearColor(.035,.035,.04))];
+ }
+
+ inline void AddStatement(const TSharedPtr<SHorizontalBox>& Row,const FString& Noun,const TSharedRef<SWidget>& Property,const FSlateFontInfo& Font)
+ {
+  const FString Statement=MiningText::Get(TEXT("WenSi.Statement")).ToString().Replace(TEXT("{Noun}"),*Noun);
+  FString Before,After;
+  Statement.Split(TEXT("{Property}"),&Before,&After);
+  AddText(Row,Before,Font);
+  Row->AddSlot().AutoWidth().VAlign(VAlign_Center)[Property];
+  AddText(Row,After,Font);
  }
 
  inline TSharedRef<SWidget> MakeCard(int32 Side,const FSlateBrush* Brush,TSharedPtr<SHorizontalBox>& Row,FOnClicked Close)

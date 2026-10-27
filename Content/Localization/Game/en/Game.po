@@ -1,0 +1,1815 @@
+msgid ""
+msgstr "Language: en\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+
+msgctxt "BrainMining.Game,Achievement.Campaign.Description"
+msgid "完成游戏。"
+msgstr "Complete the game."
+
+msgctxt "BrainMining.Game,Achievement.Campaign.Name"
+msgid "挖哦！"
+msgstr "WOoOW!"
+
+msgctxt "BrainMining.Game,Achievement.CardRoom.Description"
+msgid "赢得卡牌房挑战。"
+msgstr "Win the card room challenge."
+
+msgctxt "BrainMining.Game,Achievement.CardRoom.Name"
+msgid "组合的力量"
+msgstr "More Than the Sum"
+
+msgctxt "BrainMining.Game,Achievement.Collection5.Description"
+msgid "获得五种不同藏品。"
+msgstr "Find five different collectibles."
+
+msgctxt "BrainMining.Game,Achievement.Collection5.Name"
+msgid "灵感正在聚集"
+msgstr "Ideas Are Gathering"
+
+msgctxt "BrainMining.Game,Achievement.CollectionComplete.Description"
+msgid "收齐首发版本的全部藏品。"
+msgstr "Find every collectible in the original collection."
+
+msgctxt "BrainMining.Game,Achievement.CollectionComplete.Name"
+msgid "灵感收藏家"
+msgstr "Collector of Ideas"
+
+msgctxt "BrainMining.Game,Achievement.FirstCollection.Description"
+msgid "获得第一件藏品。"
+msgstr "Find your first collectible."
+
+msgctxt "BrainMining.Game,Achievement.FirstCollection.Name"
+msgid "第一件灵感"
+msgstr "A Spark of Inspiration"
+
+msgctxt "BrainMining.Game,Achievement.Museum.Description"
+msgid "完成博物馆并进入结局。"
+msgstr "Finish the museum and enter the finale."
+
+msgctxt "BrainMining.Game,Achievement.Museum.Name"
+msgid "换个想法"
+msgstr "A Change of Mind"
+
+msgctxt "BrainMining.Game,Achievement.PickaxeMax.Description"
+msgid "将矿镐升级至最高等级。"
+msgstr "Fully upgrade your pickaxe."
+
+msgctxt "BrainMining.Game,Achievement.PickaxeMax.Name"
+msgid "挖到底"
+msgstr "Dig Deep"
+
+msgctxt "BrainMining.Game,Achievement.PickaxeUpgrade.Description"
+msgid "首次升级矿镐。"
+msgstr "Upgrade your pickaxe for the first time."
+
+msgctxt "BrainMining.Game,Achievement.PickaxeUpgrade.Name"
+msgid "再锋利一点"
+msgstr "A Sharper Idea"
+
+msgctxt "BrainMining.Game,Card.Eyebrows"
+msgid "*啊啊啊！我的眉毛！*"
+msgstr "*Aaaah! My eyebrows!*"
+
+msgctxt "BrainMining.Game,Card.Fire"
+msgid "火"
+msgstr "Fire"
+
+msgctxt "BrainMining.Game,Card.Laser"
+msgid "激光"
+msgstr "Laser"
+
+msgctxt "BrainMining.Game,Card.LaserCompact"
+msgid "激\n光"
+msgstr "Laser"
+
+msgctxt "BrainMining.Game,Card.Matched"
+msgid "*匹配成功！*"
+msgstr "*Opponent found!*"
+
+msgctxt "BrainMining.Game,Card.Matching"
+msgid "*正在匹配中*"
+msgstr "*Finding an opponent*"
+
+msgctxt "BrainMining.Game,Card.Poison"
+msgid "毒"
+msgstr "Poison"
+
+msgctxt "BrainMining.Game,Card.Return"
+msgid "*我一定会回来的！——*"
+msgstr "*I’ll be baaaack!*"
+
+msgctxt "BrainMining.Game,Card.Stink"
+msgid "*呕——好臭臭*"
+msgstr "*Ugh—that stinks!*"
+
+msgctxt "BrainMining.Game,Collection.00.Clue"
+msgid "滴水的管道"
+msgstr "A dripping pipe"
+
+msgctxt "BrainMining.Game,Collection.00.Description"
+msgid "这也许是一场令人措手不及的涌现。"
+msgstr "This might be a rather unexpected case of emergence."
+
+msgctxt "BrainMining.Game,Collection.00.Name"
+msgid "来自天堂的马桶"
+msgstr "The Heavenly Toilet"
+
+msgctxt "BrainMining.Game,Collection.00.Quote"
+msgid "不觉得这很神圣吗？"
+msgstr "Doesn’t this feel sacred?"
+
+msgctxt "BrainMining.Game,Collection.01.Clue"
+msgid "沿土层爬向蚁穴的蚂蚁"
+msgstr "Ants climbing through the earth toward their nest"
+
+msgctxt "BrainMining.Game,Collection.01.Description"
+msgid "每只蚂蚁只顾着挖掘、搬运，再循着同伴留下的气味前进。没有谁拿着整个巢穴的设计图，复杂的通路却在无数次微小的行动中逐渐成形。也许，宏大的结构就藏在这些简单规则里。"
+msgstr "Each ant digs, carries, and follows the scent left by its companions. No ant holds a blueprint of the whole colony, yet countless small actions gradually form an intricate network of tunnels. Perhaps grand structures are hidden in simple rules."
+
+msgctxt "BrainMining.Game,Collection.01.Name"
+msgid "电脑里的蚂蚁窝"
+msgstr "An Anthill in a Computer"
+
+msgctxt "BrainMining.Game,Collection.01.Quote"
+msgid "一台正在运行一个游戏的电脑……这是什么游戏？"
+msgstr "A computer running a game... What game is this?"
+
+msgctxt "BrainMining.Game,Collection.02.Clue"
+msgid "彩色液滴"
+msgstr "Colorful droplets"
+
+msgctxt "BrainMining.Game,Collection.02.Description"
+msgid "单独看，每一种试剂都有自己的性质。混合之后，分子之间的相互作用却可能带来新的颜色、气味，甚至一种全新的物质。把简单的东西放在一起，有时会得到超出直觉的结果——试管里似乎藏着更多可能。"
+msgstr "Each reagent has its own properties. Mix them, and interactions between molecules may produce new colors, smells, or even a new substance. Simple ingredients can lead to surprising results. There may be more possibilities hiding in these test tubes."
+
+msgctxt "BrainMining.Game,Collection.02.Name"
+msgid "化学试剂"
+msgstr "Chemical Reagents"
+
+msgctxt "BrainMining.Game,Collection.02.Quote"
+msgid "加点这个……再加点那个……"
+msgstr "A little of this... and a little of that..."
+
+msgctxt "BrainMining.Game,Collection.03.Clue"
+msgid "高处的鸟巢"
+msgstr "A bird’s nest high above"
+
+msgctxt "BrainMining.Game,Collection.03.Description"
+msgid "一件道具增加弹射，另一件让命中产生爆炸，再来一件，让爆炸也能触发弹射。原本普通的效果开始相互放大，最后形成连设计者都未必预料到的打法。许多肉鸽游戏（roguelike）都会做这种设计。"
+msgstr "One item adds ricochets. Another makes each hit explode. Add one more, and explosions trigger ricochets too. Ordinary effects begin amplifying one another, creating strategies even their designers may not have anticipated. Many roguelike games work this way."
+
+msgctxt "BrainMining.Game,Collection.03.Name"
+msgid "肉鸽"
+msgstr "Rogue Pigeon"
+
+msgctxt "BrainMining.Game,Collection.03.Quote"
+msgid "好肥的鸟！"
+msgstr "What a plump bird!"
+
+msgctxt "BrainMining.Game,Collection.04.Clue"
+msgid "土里错落埋藏的数字 1"
+msgstr "The number 1, scattered through the soil"
+
+msgctxt "BrainMining.Game,Collection.04.Description"
+msgid "把两个东西放在一起，它们之间便多了一种关系；当关系足够丰富，整体就可能表现出单个部分所没有的能力。"
+msgstr "Put two things together and a relationship forms between them. With enough relationships, the whole may develop abilities that none of its parts possess alone."
+
+msgctxt "BrainMining.Game,Collection.04.Name"
+msgid "奇怪的计算器"
+msgstr "A Strange Calculator"
+
+msgctxt "BrainMining.Game,Collection.04.Quote"
+msgid "这个年代计算器也有自我意识了吗？"
+msgstr "Even calculators are self-aware these days?"
+
+msgctxt "BrainMining.Game,Collection.05.Description"
+msgid "把磁带扯出来……大概只会让桌上涌现一团乱麻。"
+msgstr "Pull the tape out... and all that will emerge is probably a tangled mess on the desk."
+
+msgctxt "BrainMining.Game,Collection.05.Name"
+msgid "损坏的磁带"
+msgstr "A Damaged Cassette"
+
+msgctxt "BrainMining.Game,Collection.05.Quote"
+msgid "小时候最喜欢的一集。"
+msgstr "My favorite episode as a kid."
+
+msgctxt "BrainMining.Game,Collection.06.Description"
+msgid "音符之间有了先后、间隔与重复，旋律和情绪便逐渐浮现。同样几个音，换一种关系，就能涌现出完全不同的世界。"
+msgstr "Arrange notes in a sequence, give them pauses and repetition, and melody and emotion begin to emerge. The same few notes can create completely different worlds through different relationships."
+
+msgctxt "BrainMining.Game,Collection.06.Name"
+msgid "音符"
+msgstr "Musical Notes"
+
+msgctxt "BrainMining.Game,Collection.06.Quote"
+msgid "长得很像蝌蚪，它会变成青蛙吗？"
+msgstr "It looks like a tadpole. Will it become a frog?"
+
+msgctxt "BrainMining.Game,Collection.07.Description"
+msgid "相片只留住了一个瞬间，却能牵出当时的声音、气味，以及早已忘记的人。一个细节唤醒另一个细节，零散的记忆彼此连接，往事便重新变得鲜活。"
+msgstr "A photograph preserves only an instant, yet it can bring back sounds, smells, and people long forgotten. One detail awakens another. Scattered memories connect, and the past comes alive again."
+
+msgctxt "BrainMining.Game,Collection.07.Name"
+msgid "老旧的相片"
+msgstr "An Old Photograph"
+
+msgctxt "BrainMining.Game,Collection.07.Quote"
+msgid "记忆是很宝贵的。"
+msgstr "Memories are precious."
+
+msgctxt "BrainMining.Game,Collection.08.Clue"
+msgid "连通地下空腔、持续向上冒泡的孔洞"
+msgstr "A bubbling opening into an underground hollow"
+
+msgctxt "BrainMining.Game,Collection.08.Description"
+msgid "无数气泡迅速生长，推动液体一起冲出瓶口，涌现出一次剧烈的喷发。"
+msgstr "Countless bubbles expand rapidly, pushing the liquid out of the bottle in a spectacular eruption."
+
+msgctxt "BrainMining.Game,Collection.08.Name"
+msgid "喷发中的可乐"
+msgstr "Erupting Cola"
+
+msgctxt "BrainMining.Game,Collection.08.Quote"
+msgid "曼妥思VS可乐，你们知道吗？"
+msgstr "Mentos versus cola. Heard of that one?"
+
+msgctxt "BrainMining.Game,Collection.09.Clue"
+msgid "土面上的一簇微光小花"
+msgstr "A cluster of softly glowing flowers"
+
+msgctxt "BrainMining.Game,Collection.09.Description"
+msgid "大量简单的计算单元经过训练与连接，逐渐表现出组织语言、关联概念的复杂能力。"
+msgstr "Through training and connections, vast numbers of simple computational units gradually develop complex abilities to organize language and link concepts."
+
+msgctxt "BrainMining.Game,Collection.09.Name"
+msgid "「GPT」之花"
+msgstr "The GPT Flower"
+
+msgctxt "BrainMining.Game,Collection.09.Quote"
+msgid "好牛#的花。"
+msgstr "That is one heck of a flower."
+
+msgctxt "BrainMining.Game,Collection.10.Clue"
+msgid "沿土层延伸的闪烁光点"
+msgstr "Flickering lights stretching through the earth"
+
+msgctxt "BrainMining.Game,Collection.10.Description"
+msgid "每只萤火虫都按自己的节奏闪烁，也会根据附近同伴的闪光调整时机。局部的微小调整不断传递，原本零散的亮点便可能逐渐同步。没有统一指挥，秩序依然能从彼此回应中涌现。"
+msgstr "Each firefly flashes to its own rhythm, adjusting its timing in response to nearby flashes. Small local adjustments spread, and scattered lights may gradually synchronize. Even without a conductor, order can emerge from responding to one another."
+
+msgctxt "BrainMining.Game,Collection.10.Name"
+msgid "罐子里的萤火虫"
+msgstr "Fireflies in a Jar"
+
+msgctxt "BrainMining.Game,Collection.10.Quote"
+msgid "萤火虫萤火虫慢慢飞 夏夜里夏夜里风轻吹"
+msgstr "Fireflies drift slowly through a summer night’s gentle breeze."
+
+msgctxt "BrainMining.Game,Collection.11.Clue"
+msgid "红幕布后的庆祝舞台"
+msgstr "A celebration stage behind a red curtain"
+
+msgctxt "BrainMining.Game,Collection.11.Description"
+msgid "成千上万根彩带喷涌而出，一起旋转、荡漾、飘落。"
+msgstr "Thousands upon thousands of streamers burst out, swirling, swaying, and drifting down together."
+
+msgctxt "BrainMining.Game,Collection.11.Name"
+msgid "散落的彩带"
+msgstr "Scattered Streamers"
+
+msgctxt "BrainMining.Game,Collection.11.Quote"
+msgid "恭喜！"
+msgstr "Congratulations!"
+
+msgctxt "BrainMining.Game,Collection.12.Description"
+msgid "散乱的铜线看起来很普通。直到电流沿着回路涌动，灯泡亮了！"
+msgstr "A tangle of copper wire looks quite ordinary. Then current flows through the circuit, and the bulb lights up!"
+
+msgctxt "BrainMining.Game,Collection.12.Name"
+msgid "发光的灯泡"
+msgstr "A Glowing Light Bulb"
+
+msgctxt "BrainMining.Game,Collection.12.Quote"
+msgid "我有一个想法！"
+msgstr "I have an idea!"
+
+msgctxt "BrainMining.Game,Collection.13.Description"
+msgid "铁针内部有许多微小的磁畴。磁化让更多磁畴的方向趋于一致，整根针便显出磁性。能够自由转动的磁针在地磁场作用下偏转，指向磁南北。微小的排列，汇成了看得见的方向。"
+msgstr "Inside the iron needle are many tiny magnetic domains. Magnetization aligns more of them, giving the whole needle its magnetism. Free to turn, it responds to Earth’s magnetic field and points along magnetic north and south. Tiny alignments become a visible direction."
+
+msgctxt "BrainMining.Game,Collection.13.Name"
+msgid "指南针"
+msgstr "A Compass"
+
+msgctxt "BrainMining.Game,Collection.13.Quote"
+msgid "海的那边是什么？"
+msgstr "What lies beyond the sea?"
+
+msgctxt "BrainMining.Game,Collection.14.Description"
+msgid "层层绿色纹带藏在一小块孔雀石里。换个角度，起伏成了远山，留白成了河流，一条小路穿过山间。无意的纹理，在人眼中形成了有情的诗意。"
+msgstr "Bands of green lie within a small piece of malachite. From another angle, the ridges become distant mountains, the open spaces become rivers, and a path winds between the peaks. Accidental patterns become poetry in the beholder’s eye."
+
+msgctxt "BrainMining.Game,Collection.14.Name"
+msgid "石间山水"
+msgstr "A Landscape in Stone"
+
+msgctxt "BrainMining.Game,Collection.14.Quote"
+msgid "山在石头里，又或者，山在心里。"
+msgstr "Mountains in the stone, or mountains in the mind?"
+
+msgctxt "BrainMining.Game,Collection.15.Description"
+msgid "一束白光进入钻石，经折射与色散显出不同的颜色。这些色彩再由镜筒内的镜片反复映照，随着转动，组合成不断变化的花朵与星芒。"
+msgstr "A beam of white light enters a diamond. Refraction and dispersion reveal its colors. Mirrors inside the tube reflect them again and again. As it turns, they form ever-changing flowers and starbursts."
+
+msgctxt "BrainMining.Game,Collection.15.Name"
+msgid "光之万花筒"
+msgstr "A Kaleidoscope of Light"
+
+msgctxt "BrainMining.Game,Collection.15.Quote"
+msgid "复杂的美，可以来自简单的重复。"
+msgstr "Complex beauty can come from simple repetition."
+
+msgctxt "BrainMining.Game,Collection.16.Description"
+msgid "牛肉、盐和香料原本各有滋味。遇上火候，褐变反应让新的香气与颜色逐渐出现，几样食材竟变成让人垂涎的美味。"
+msgstr "Beef, salt, and spices each have their own flavors. Add heat, and browning reactions gradually produce new aromas and colors. A few ingredients become something mouthwatering."
+
+msgctxt "BrainMining.Game,Collection.16.Name"
+msgid "碳烤牛肉串"
+msgstr "Charcoal-Grilled Beef Skewers"
+
+msgctxt "BrainMining.Game,Collection.16.Quote"
+msgid "高端的食材往往只需要最朴素的烹饪方式"
+msgstr "The finest ingredients often need only the simplest cooking."
+
+msgctxt "BrainMining.Game,Collection.17.Description"
+msgid "鱼、水草与微生物住进同一片水里。呼吸、光合作用与分解彼此衔接，在光照、换水和照料下，小小的鱼缸形成了一张相互依存的生命网络。"
+msgstr "Fish, plants, and microorganisms share the same water. Respiration, photosynthesis, and decomposition connect. With light, fresh water, and care, a tiny aquarium becomes an interdependent web of life."
+
+msgctxt "BrainMining.Game,Collection.17.Name"
+msgid "水世界"
+msgstr "Water World"
+
+msgctxt "BrainMining.Game,Collection.17.Quote"
+msgid "小小鱼缸，大大世界！"
+msgstr "A tiny aquarium, a whole wide world!"
+
+msgctxt "BrainMining.Game,Collection.18.Description"
+msgid "一枚金币的回报再投入下一轮，新的回报又加入其中。一次次积累，让增长逐渐加快；不过，袋子里也藏着风险，财富并不会凭空出现。"
+msgstr "The return on one gold coin is reinvested, and new returns join it. Repeated accumulation can accelerate growth. But there is risk in the bag too: wealth does not appear from nothing."
+
+msgctxt "BrainMining.Game,Collection.18.Name"
+msgid "沉甸甸的金币袋"
+msgstr "A Heavy Bag of Gold"
+
+msgctxt "BrainMining.Game,Collection.18.Quote"
+msgid "假如给你一个亿，代价是……先给我我就愿意！"
+msgstr "A hundred million, but at a price... Give me the money first. I’m in!"
+
+msgctxt "BrainMining.Game,Collection.19.Description"
+msgid "酸、甜、苦与酒香各有棱角。经过比例、摇和与冰的稀释，它们在杯中相互衬托，涌现出单独品尝时没有的层次。"
+msgstr "Sourness, sweetness, bitterness, and the aroma of spirits each have sharp edges. Proportion, shaking, and dilution with ice bring them together, creating layers that none has on its own."
+
+msgctxt "BrainMining.Game,Collection.19.Name"
+msgid "一杯鸡尾酒"
+msgstr "A Cocktail"
+
+msgctxt "BrainMining.Game,Collection.19.Quote"
+msgid "嗯～恰到好处"
+msgstr "Mmm... just right."
+
+msgctxt "BrainMining.Game,Collection.20.Description"
+msgid "无极而太极，以至万物化生。"
+msgstr "From the boundless arises Taiji, and from it, the transformation of all things."
+
+msgctxt "BrainMining.Game,Collection.20.Name"
+msgid "太极"
+msgstr "Taiji"
+
+msgctxt "BrainMining.Game,Collection.20.Quote"
+msgid "道生一，一生二，二生三，三生万物"
+msgstr "The Dao gives rise to one, one to two, two to three, and three to all things."
+
+msgctxt "BrainMining.Game,Collection.21.Description"
+msgid "车门一开，人潮涌现。\n每个人都有自己的目的地。"
+msgstr "The doors open, and a crowd emerges.\nEveryone has somewhere to go."
+
+msgctxt "BrainMining.Game,Collection.21.Name"
+msgid "晚高峰"
+msgstr "Rush Hour"
+
+msgctxt "BrainMining.Game,Collection.21.Quote"
+msgid "宁等一辆车，不抢一扇门。"
+msgstr "Wait for the next train. Don’t fight for the doors."
+
+msgctxt "BrainMining.Game,Collection.22.Description"
+msgid "众口铄金，积毁销骨。"
+msgstr "Repeated accusations can melt metal; relentless slander can wear away bone."
+
+msgctxt "BrainMining.Game,Collection.22.Name"
+msgid "满屏消息的手机"
+msgstr "A Phone Full of Messages"
+
+msgctxt "BrainMining.Game,Collection.22.Quote"
+msgid "其实很多话根本不重要"
+msgstr "Most of those words don’t really matter."
+
+msgctxt "BrainMining.Game,Mineral.Copper"
+msgid "铜矿"
+msgstr "copper"
+
+msgctxt "BrainMining.Game,Mineral.Diamond"
+msgid "钻石"
+msgstr "diamond"
+
+msgctxt "BrainMining.Game,Mineral.Iron"
+msgid "铁矿"
+msgstr "iron"
+
+msgctxt "BrainMining.Game,Mineral.Malachite"
+msgid "孔雀石"
+msgstr "malachite"
+
+msgctxt "BrainMining.Game,Mineral.Unknown"
+msgid "未知矿石"
+msgstr "unknown mineral"
+
+msgctxt "BrainMining.Game,Office.Hint.BombAbility"
+msgid "E 获取炸弹技能"
+msgstr "E — collect bomb ability"
+
+msgctxt "BrainMining.Game,Office.Hint.BombExit"
+msgid "按G使用炸弹炸开出口"
+msgstr "Press G to blast open the exit"
+
+msgctxt "BrainMining.Game,Office.Hint.Computer"
+msgid "使用电脑"
+msgstr "Use computer"
+
+msgctxt "BrainMining.Game,Office.Hint.ComputerKey"
+msgid "按 E 使用电脑"
+msgstr "Press E to use the computer"
+
+msgctxt "BrainMining.Game,Office.Hint.Create"
+msgid "开始创作"
+msgstr "Start creating"
+
+msgctxt "BrainMining.Game,Office.Hint.Leave"
+msgid "按 E 退出电脑"
+msgstr "Press E to leave the computer"
+
+msgctxt "BrainMining.Game,Office.Hint.PickupBomb"
+msgid "拾取炸弹"
+msgstr "Pick up the bomb"
+
+msgctxt "BrainMining.Game,Office.Hint.Printed"
+msgid "处理文件 · {0} 张"
+msgstr "Process documents · {0} sheets"
+
+msgctxt "BrainMining.Game,Office.Hint.PrintedKey"
+msgid "按 E 处理文件 · {0} 张"
+msgstr "Press E to process documents · {0} sheets"
+
+msgctxt "BrainMining.Game,Office.Hint.Reply"
+msgid "回复"
+msgstr "Reply"
+
+msgctxt "BrainMining.Game,Office.Hint.Theme"
+msgid "本届创作主题"
+msgstr "This jam’s theme"
+
+msgctxt "BrainMining.Game,Office.Hint.ViewTheme"
+msgid "查看主题"
+msgstr "View theme"
+
+msgctxt "BrainMining.Game,Office.Physical.0.Body"
+msgid "今日 18:00 前提交项目汇报。\n附件、数据和演示稿仍待确认。"
+msgstr "Project report due today at 18:00.\nAttachments, data and slides still need review."
+
+msgctxt "BrainMining.Game,Office.Physical.0.Title"
+msgid "DDL 提醒"
+msgstr "Deadline reminder"
+
+msgctxt "BrainMining.Game,Office.Physical.1.Body"
+msgid "项目群：刚才的方案需要再调整一下。\n请尽快回复并同步最新进度。"
+msgstr "Project chat: the plan needs another revision.\nPlease reply and share an update soon."
+
+msgctxt "BrainMining.Game,Office.Physical.1.Title"
+msgid "有新的工作消息"
+msgstr "New work message"
+
+msgctxt "BrainMining.Game,Office.Physical.2.Body"
+msgid "你收到一项新的紧急任务。\n优先级：高。交付时间：今天。"
+msgstr "You have a new urgent task.\nPriority: high. Due: today."
+
+msgctxt "BrainMining.Game,Office.Physical.2.Title"
+msgid "新增待办"
+msgstr "New task"
+
+msgctxt "BrainMining.Game,Office.Popup.00.Body"
+msgid "21天gamejam游戏创作主题公布！"
+msgstr "The theme for the 21-day game jam is here!"
+
+msgctxt "BrainMining.Game,Office.Popup.00.Title"
+msgid "Game Jam · 主题公布"
+msgstr "Game Jam · Theme announced"
+
+msgctxt "BrainMining.Game,Office.Popup.01.Body"
+msgid "【涌现】"
+msgstr "EMERGENCE"
+
+msgctxt "BrainMining.Game,Office.Popup.01.Title"
+msgid "21天 GAME JAM · 主题发布页"
+msgstr "21-Day Game Jam · Theme"
+
+msgctxt "BrainMining.Game,Office.Popup.02.Body"
+msgid "题目出来了。\n「涌现」……你们有什么想法？"
+msgstr "The theme is out.\n“Emergence”… any ideas?"
+
+msgctxt "BrainMining.Game,Office.Popup.02.Title"
+msgid "组队群 · 2条新消息"
+msgstr "Team chat · 2 new messages"
+
+msgctxt "BrainMining.Game,Office.Popup.03.Body"
+msgid "@你 玩法草案放文档里了。\n有空看下，晚上一起定。"
+msgstr "@You The gameplay draft is in the doc.\nTake a look; let’s decide tonight."
+
+msgctxt "BrainMining.Game,Office.Popup.03.Title"
+msgid "共享文档 · 有人提到了你"
+msgstr "Shared document · Mention"
+
+msgctxt "BrainMining.Game,Office.Popup.04.Body"
+msgid "主题讨论会将在5分钟后开始。\n3位成员已加入。"
+msgstr "Theme discussion starts in 5 minutes.\n3 members have joined."
+
+msgctxt "BrainMining.Game,Office.Popup.04.Title"
+msgid "会议提醒"
+msgstr "Meeting reminder"
+
+msgctxt "BrainMining.Game,Office.Popup.05.Body"
+msgid "检测到较新的云端版本。\n是否加载其他成员的修改？"
+msgstr "A newer cloud version is available.\nLoad your teammates’ changes?"
+
+msgctxt "BrainMining.Game,Office.Popup.05.Title"
+msgid "企划草案.docx"
+msgstr "Design draft.docx"
+
+msgctxt "BrainMining.Game,Office.Popup.06.Body"
+msgid "先做一个能玩的版本吧。\n剩下几个点子放备选。"
+msgstr "Let’s get a playable version first.\nKeep the other ideas for later."
+
+msgctxt "BrainMining.Game,Office.Popup.06.Title"
+msgid "组队群 · 新消息"
+msgstr "Team chat · New message"
+
+msgctxt "BrainMining.Game,Office.Popup.07.Body"
+msgid "任务「角色移动」已指派给你。\n截止时间：明天18:00。"
+msgstr "“Character movement” is assigned to you.\nDue tomorrow at 18:00."
+
+msgctxt "BrainMining.Game,Office.Popup.07.Title"
+msgid "任务已分配给你"
+msgstr "Task assigned to you"
+
+msgctxt "BrainMining.Game,Office.Popup.08.Body"
+msgid "角色移动、物品交互、新手引导。\n还有3项任务未完成。"
+msgstr "Movement, item interaction, tutorial.\n3 tasks still unfinished."
+
+msgctxt "BrainMining.Game,Office.Popup.08.Title"
+msgid "To-do List · 今日到期"
+msgstr "To-do List · Due today"
+
+msgctxt "BrainMining.Game,Office.Popup.09.Body"
+msgid "进度同步会已开始。\n主持人正在等待你加入。"
+msgstr "The progress meeting has started.\nThe host is waiting for you."
+
+msgctxt "BrainMining.Game,Office.Popup.09.Title"
+msgid "会议提醒"
+msgstr "Meeting reminder"
+
+msgctxt "BrainMining.Game,Office.Popup.10.Body"
+msgid "场景素材.zip 已下载。\n新增24个文件，替换6个文件。"
+msgstr "Scene assets.zip downloaded.\n24 files added, 6 replaced."
+
+msgctxt "BrainMining.Game,Office.Popup.10.Title"
+msgid "资源同步完成"
+msgstr "Asset sync complete"
+
+msgctxt "BrainMining.Game,Office.Popup.11.Body"
+msgid "音效发群文件了。\n按钮和脚步声记得接一下。"
+msgstr "Sound effects are in the shared files.\nDon’t forget buttons and footsteps."
+
+msgctxt "BrainMining.Game,Office.Popup.11.Title"
+msgid "组队群 · 新消息"
+msgstr "Team chat · New message"
+
+msgctxt "BrainMining.Game,Office.Popup.12.Body"
+msgid "游戏引擎意外退出。\n是否恢复上次自动保存的项目？"
+msgstr "The game engine closed unexpectedly.\nRestore the last autosave?"
+
+msgctxt "BrainMining.Game,Office.Popup.12.Title"
+msgid "引擎崩溃报告"
+msgstr "Engine crash report"
+
+msgctxt "BrainMining.Game,Office.Popup.13.Body"
+msgid "关卡文件存在冲突。\n请解决冲突后重试。"
+msgstr "The level file has conflicts.\nResolve them and try again."
+
+msgctxt "BrainMining.Game,Office.Popup.13.Title"
+msgid "版本控制 · 合并失败"
+msgstr "Version control · Merge failed"
+
+msgctxt "BrainMining.Game,Office.Popup.14.Body"
+msgid "正在重新连接5/5"
+msgstr "Reconnecting… 5/5"
+
+msgctxt "BrainMining.Game,Office.Popup.14.Title"
+msgid "连接已断开"
+msgstr "Connection lost"
+
+msgctxt "BrainMining.Game,Office.Popup.15.Body"
+msgid "我进游戏了。\n开头这里是要往哪边走？"
+msgstr "I’m in the game.\nWhich way do I go at the start?"
+
+msgctxt "BrainMining.Game,Office.Popup.15.Title"
+msgid "试玩群 · 新消息"
+msgstr "Playtest chat · New message"
+
+msgctxt "BrainMining.Game,Office.Popup.16.Body"
+msgid "「跳过对话以后动不了了。」\n附件：录屏_02.mp4"
+msgstr "“I can’t move after skipping dialogue.”\nAttachment: recording_02.mp4"
+
+msgctxt "BrainMining.Game,Office.Popup.16.Title"
+msgid "收到新的反馈"
+msgstr "New feedback received"
+
+msgctxt "BrainMining.Game,Office.Popup.17.Body"
+msgid "存档无法读取、角色穿墙、音效丢失。\n其中2项被标记为阻塞。"
+msgstr "Save won’t load, clipping, missing audio.\n2 issues marked as blockers."
+
+msgctxt "BrainMining.Game,Office.Popup.17.Title"
+msgid "问题追踪 · 新增3项"
+msgstr "Issue tracker · 3 new issues"
+
+msgctxt "BrainMining.Game,Office.Popup.18.Body"
+msgid "跳跃参数调过了，再试下？\n我把新包传上去了。"
+msgstr "Jumping has been tweaked. Try again?\nI’ve uploaded a new build."
+
+msgctxt "BrainMining.Game,Office.Popup.18.Title"
+msgid "组队群 · @你"
+msgstr "Team chat · @You"
+
+msgctxt "BrainMining.Game,Office.Popup.19.Body"
+msgid "检测到帧耗时峰值：86 ms。\n记录已保存至性能报告。"
+msgstr "Peak frame time detected: 86 ms.\nSaved to the performance report."
+
+msgctxt "BrainMining.Game,Office.Popup.19.Title"
+msgid "性能分析 · 警告"
+msgstr "Performance analysis · Warning"
+
+msgctxt "BrainMining.Game,Office.Popup.20.Body"
+msgid "今天修复了12个问题。\n还有3项等待确认。"
+msgstr "12 issues fixed today.\n3 more awaiting confirmation."
+
+msgctxt "BrainMining.Game,Office.Popup.20.Title"
+msgid "回归测试提醒"
+msgstr "Regression test reminder"
+
+msgctxt "BrainMining.Game,Office.Popup.21.Body"
+msgid "缺少资源：开始按钮音效。\n构建已终止，查看日志。"
+msgstr "Missing asset: start-button sound.\nBuild stopped. Check the log."
+
+msgctxt "BrainMining.Game,Office.Popup.21.Title"
+msgid "打包失败"
+msgstr "Packaging failed"
+
+msgctxt "BrainMining.Game,Office.Popup.22.Body"
+msgid "新包打开是黑屏。\n等等……好了，能进了。"
+msgstr "The new build opens to a black screen.\nWait… okay, it’s working now."
+
+msgctxt "BrainMining.Game,Office.Popup.22.Title"
+msgid "测试群 · 新消息"
+msgstr "Test chat · New message"
+
+msgctxt "BrainMining.Game,Office.Popup.23.Body"
+msgid "作品页面尚未发布。\n待填写：操作说明、封面。"
+msgstr "Your game page is not published.\nStill needed: controls and cover art."
+
+msgctxt "BrainMining.Game,Office.Popup.23.Title"
+msgid "Game Jam · 草稿已保存"
+msgstr "Game Jam · Draft saved"
+
+msgctxt "BrainMining.Game,Office.Popup.24.Body"
+msgid "最后这个包谁测过了？\n没问题我就上传了。"
+msgstr "Has anyone tested this final build?\nI’ll upload it if it’s ready."
+
+msgctxt "BrainMining.Game,Office.Popup.24.Title"
+msgid "组队群 · @所有人"
+msgstr "Team chat · @Everyone"
+
+msgctxt "BrainMining.Game,Office.Popup.25.Body"
+msgid "game_final_final.zip — 99%\n请勿关闭此窗口。"
+msgstr "game_final_final.zip — 99%\nPlease do not close this window."
+
+msgctxt "BrainMining.Game,Office.Popup.25.Title"
+msgid "上传中"
+msgstr "Uploading"
+
+msgctxt "BrainMining.Game,Office.Popup.26.Body"
+msgid "距离截止还有10分钟。\n你的作品仍处于草稿状态。"
+msgstr "10 minutes until the deadline.\nYour entry is still a draft."
+
+msgctxt "BrainMining.Game,Office.Popup.26.Title"
+msgid "Game Jam · 提交提醒"
+msgstr "Game Jam · Submission reminder"
+
+msgctxt "BrainMining.Game,Subtitle.Cards1.001"
+msgid "卡牌之间的连携可以打出强大的效果"
+msgstr "Combining cards can produce powerful effects."
+
+msgctxt "BrainMining.Game,Subtitle.Cards1.002"
+msgid "比如元素之间的反应 涌现出新的效果"
+msgstr "Like elements reacting to create something new."
+
+msgctxt "BrainMining.Game,Subtitle.Cards2.001"
+msgid "这种卡牌玩法会不会太常见了呢？"
+msgstr "But isn’t this kind of card game a little too familiar?"
+
+msgctxt "BrainMining.Game,Subtitle.CardsVictory.001"
+msgid "*恭喜你获得钻机！按V可切换使用*"
+msgstr "*You got the drill! Press V to switch tools.*"
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_00.001"
+msgid "马桶堵住了然后上涌……有点味道的想法"
+msgstr "The toilet clogged and overflowed… a rather fragrant idea."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_01.001"
+msgid "蚂蚁一直挖掘 涌现出了复杂的通路"
+msgstr "The ants keep digging, and complex paths emerge."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_02.001"
+msgid "化学元素通过反应产生新的物质 进而形成大千世界"
+msgstr "Elements react to form new substances—and, eventually, a whole world."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_03.001"
+msgid "肉鸽游戏很适合做连携 算是\"1+1>2\"的涌现吧"
+msgstr "Roguelikes are great for combos. A kind of “1 + 1 > 2” emergence, I suppose."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_04.001"
+msgid "“1+1>2” 从这个点出发想想“涌现”吧"
+msgstr "“1 + 1 > 2.” Maybe that’s a way to think about emergence."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_05.001"
+msgid "把磁带扯出来……这算一种涌现吗"
+msgstr "Pull the tape out… does that count as emergence?"
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_06.001"
+msgid "简单的几个音符能涌现出复杂的旋律"
+msgstr "Complex melodies can emerge from just a few simple notes."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_07.001"
+msgid "回忆涌上心头……这也是一种涌现"
+msgstr "Memories come flooding back… that’s a kind of emergence, too."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_08.001"
+msgid "将曼妥思投入可乐的话 可乐就会“涌现”出来"
+msgstr "Drop Mentos into cola, and the cola comes “emerging” out."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_09.001"
+msgid "AI的思考不断涌现 就如同不断向下延伸的根"
+msgstr "AI thoughts keep emerging, like roots reaching ever deeper."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_10.001"
+msgid "萤火虫的同步闪烁：随机中怎样涌现出秩序？"
+msgstr "Fireflies blinking in sync: how does order emerge from randomness?"
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_11.001"
+msgid "大量的彩带喷涌而出 也很涌现"
+msgstr "A shower of confetti bursting out. That feels like emergence, too."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_11.002"
+msgid "继续往前走走"
+msgstr "Let’s go a little farther."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_12.001"
+msgid "收集到了25个铜矿！灵感涌现！"
+msgstr "25 copper deposits collected! Inspiration strikes!"
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_13.001"
+msgid "收集到了15个铁矿！灵感涌现！"
+msgstr "15 iron deposits collected! Inspiration strikes!"
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_14.001"
+msgid "收集到了10个孔雀石！灵感涌现！"
+msgstr "10 malachite deposits collected! Inspiration strikes!"
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_15.001"
+msgid "收集到了5个钻石！灵感涌现！"
+msgstr "5 diamonds collected! Inspiration strikes!"
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_16.001"
+msgid "火候让食材涌现出新的香气 真香！"
+msgstr "Heat brings new aromas out of the ingredients. Smells delicious!"
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_17.001"
+msgid "小小鱼缸里也有复杂生态"
+msgstr "Even a tiny fish tank holds a complex ecosystem."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_18.001"
+msgid "钱生钱~财富涌现！"
+msgstr "Money makes money. Wealth emerges!"
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_19.001"
+msgid "几种滋味碰在一起 口感也有了新的层次"
+msgstr "A few flavors meet, and new layers of taste emerge."
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_20.001"
+msgid "一生二 二生三 三生万物……"
+msgstr "One gives birth to two, two to three, and three to all things…"
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_21.001"
+msgid "车门一开 人潮就涌出来了！"
+msgstr "The doors open, and a crowd pours out!"
+
+msgctxt "BrainMining.Game,Subtitle.CollectiblePickup_22.001"
+msgid "一句话很轻 无数句话堆在一起 却能改变世界 也能压垮一个人"
+msgstr "One sentence weighs little. Countless words together can change the world—or crush a person."
+
+msgctxt "BrainMining.Game,Subtitle.EchoMaze.001"
+msgid "通过敲击产生的声音 让前方的道路涌现出来"
+msgstr "The sound of your strikes makes the path ahead emerge."
+
+msgctxt "BrainMining.Game,Subtitle.FirstCollectionHint.001"
+msgid "按C打开藏品界面吧"
+msgstr "Press C to open your collection."
+
+msgctxt "BrainMining.Game,Subtitle.Interaction.Book"
+msgid "遇到好点子就收下来吧！"
+msgstr "Keep any good ideas you find!"
+
+msgctxt "BrainMining.Game,Subtitle.Interaction.BookLeft"
+msgid "纸上得来终觉浅"
+msgstr "What you learn on paper only goes so far."
+
+msgctxt "BrainMining.Game,Subtitle.Interaction.BookRight"
+msgid "绝知此事要躬行！"
+msgstr "To truly understand, you must try it yourself!"
+
+msgctxt "BrainMining.Game,Subtitle.Interaction.Computer"
+msgid "时间到了，该出门干活了……"
+msgstr "It’s time. Better head out and get to work…"
+
+msgctxt "BrainMining.Game,Subtitle.Interaction.Pear"
+msgid "哦！美味被你发现~"
+msgstr "Oh! You found something delicious!"
+
+msgctxt "BrainMining.Game,Subtitle.Interaction.Plant"
+msgid "祝我有好收获。"
+msgstr "Here’s hoping I find something good."
+
+msgctxt "BrainMining.Game,Subtitle.Interaction.Robot"
+msgid "你好。"
+msgstr "Hello."
+
+msgctxt "BrainMining.Game,Subtitle.Interaction.Toilet"
+msgid "谢谢你。"
+msgstr "Thank you."
+
+msgctxt "BrainMining.Game,Subtitle.LeaveStartRoom.001"
+msgid "亮晶晶的地方说明一定有矿石 赶紧挖挖看"
+msgstr "Those sparkling spots must hide minerals. Try digging!"
+
+msgctxt "BrainMining.Game,Subtitle.Museum1.001"
+msgid "当你看到一个东西 一句话就会”涌现”在你的脑海里"
+msgstr "When you look at something, a sentence “emerges” in your mind."
+
+msgctxt "BrainMining.Game,Subtitle.Museum1.002"
+msgid "如果有两个这样的东西 就可以交换他们的描述"
+msgstr "With two things in mind, you can swap their descriptions."
+
+msgctxt "BrainMining.Game,Subtitle.Museum2.001"
+msgid "会不会太难了"
+msgstr "Is this too difficult?"
+
+msgctxt "BrainMining.Game,Subtitle.Museum2.002"
+msgid "也许需要设计一个方法跳过这一部分"
+msgstr "Maybe there should be a way to skip this part."
+
+msgctxt "BrainMining.Game,Subtitle.Museum2.003"
+msgid "比如长按P键持续3秒，就可以跳过这一关"
+msgstr "For example, hold P for three seconds to skip this puzzle."
+
+msgctxt "BrainMining.Game,Subtitle.Museum3.001"
+msgid "真的不是很喜欢解谜啊 算了吧"
+msgstr "I really don’t enjoy puzzles that much. Never mind."
+
+msgctxt "BrainMining.Game,Subtitle.OfficeGameplay1.001"
+msgid "工作是一个能引发共鸣的话题"
+msgstr "Work is something everyone can relate to."
+
+msgctxt "BrainMining.Game,Subtitle.OfficeGameplay1.002"
+msgid "DDL不断从电脑和打印机里“涌现”出来"
+msgstr "Deadlines keep “emerging” from the computer and printer."
+
+msgctxt "BrainMining.Game,Subtitle.OfficeGameplay1.003"
+msgid "玩家要一直处理它们……"
+msgstr "And the player has to keep dealing with them…"
+
+msgctxt "BrainMining.Game,Subtitle.OfficeGameplay2.001"
+msgid "感觉有点太辛苦了"
+msgstr "This feels a little too exhausting."
+
+msgctxt "BrainMining.Game,Subtitle.OfficeGameplay3.001"
+msgid "炸弹能不能涌现呢……"
+msgstr "Could bombs emerge, too…?"
+
+msgctxt "BrainMining.Game,Subtitle.OfficeGameplay4.001"
+msgid "还是想想别的吧……"
+msgstr "Let’s think of something else…"
+
+msgctxt "BrainMining.Game,Subtitle.PickaxeUpgrade1.001"
+msgid "矿镐升级可以让挖掘更轻松"
+msgstr "Upgrading your pickaxe makes digging easier."
+
+msgctxt "BrainMining.Game,Subtitle.PickaxeUpgrade2.001"
+msgid "似乎有点感觉了……"
+msgstr "I think I’m getting somewhere…"
+
+msgctxt "BrainMining.Game,Subtitle.PickaxeUpgrade3.001"
+msgid "这样也许可以……"
+msgstr "Maybe this could work…"
+
+msgctxt "BrainMining.Game,Subtitle.PickaxeUpgrade4.001"
+msgid "我快要想到了……"
+msgstr "The idea is almost there…"
+
+msgctxt "BrainMining.Game,Subtitle.RisingWater.001"
+msgid "水？上涌的水…不断地跳"
+msgstr "Water? Rising water… keep jumping."
+
+msgctxt "BrainMining.Game,Subtitle.StartRoom.001"
+msgid "12点了，是时候了"
+msgstr "It’s twelve. It’s time."
+
+msgctxt "BrainMining.Game,Subtitle.StartRoomBook.001"
+msgid "有新东西的话就记录下吧"
+msgstr "Write down anything new you find."
+
+msgctxt "BrainMining.Game,Subtitle.StartRoomComputer.001"
+msgid "12点了，是时候了……"
+msgstr "It’s twelve. It’s time…"
+
+msgctxt "BrainMining.Game,Subtitle.StartRoomPear.001"
+msgid "哦！美味被你发现~"
+msgstr "Oh! You found something delicious!"
+
+msgctxt "BrainMining.Game,Subtitle.StartRoomPlant.001"
+msgid "祝我好运"
+msgstr "Wish me luck."
+
+msgctxt "BrainMining.Game,Subtitle.StartRoomRobot.001"
+msgid "你好。"
+msgstr "Hello."
+
+msgctxt "BrainMining.Game,UI.Action.Door"
+msgid "开门"
+msgstr "Open door"
+
+msgctxt "BrainMining.Game,UI.Action.Drill"
+msgid "钻机"
+msgstr "Drill"
+
+msgctxt "BrainMining.Game,UI.Action.Enter"
+msgid "进入 · {Name}"
+msgstr "Enter · {Name}"
+
+msgctxt "BrainMining.Game,UI.Action.HoldE"
+msgid "长按E"
+msgstr "Hold E"
+
+msgctxt "BrainMining.Game,UI.Action.HoldX"
+msgid "长按X"
+msgstr "Hold X"
+
+msgctxt "BrainMining.Game,UI.Action.Inspect"
+msgid "查看"
+msgstr "Inspect"
+
+msgctxt "BrainMining.Game,UI.Action.Play"
+msgid "出牌"
+msgstr "Play cards"
+
+msgctxt "BrainMining.Game,UI.Action.Portal"
+msgid "进入画中的圆圈"
+msgstr "Enter the circle in the painting"
+
+msgctxt "BrainMining.Game,UI.Action.Reset"
+msgid "重置谜题"
+msgstr "Reset puzzle"
+
+msgctxt "BrainMining.Game,UI.Action.SelectAll"
+msgid "全选"
+msgstr "Select all"
+
+msgctxt "BrainMining.Game,UI.Action.Sit"
+msgid "入座"
+msgstr "Take a seat"
+
+msgctxt "BrainMining.Game,UI.Action.SkipKey"
+msgid "长按 P 跳过"
+msgstr "Hold P to skip"
+
+msgctxt "BrainMining.Game,UI.Action.SkipTouch"
+msgid "继续按住以跳过"
+msgstr "Keep holding to skip"
+
+msgctxt "BrainMining.Game,UI.Action.Space"
+msgid "空格"
+msgstr "Space"
+
+msgctxt "BrainMining.Game,UI.Action.Think"
+msgid "思考"
+msgstr "Think"
+
+msgctxt "BrainMining.Game,UI.Action.ThinkAbout"
+msgid "思考 · {Name}"
+msgstr "Think · {Name}"
+
+msgctxt "BrainMining.Game,UI.Collection.Count"
+msgid "已收集{Count}/{Total}"
+msgstr "Collected {Count}/{Total}"
+
+msgctxt "BrainMining.Game,UI.Collection.DescriptionFormat"
+msgid "{0}\n\n“{1}”"
+msgstr "{0}\n\n“{1}”"
+
+msgctxt "BrainMining.Game,UI.Collection.Locked"
+msgid "尚未解锁\n\n继续探索，寻找潜藏的灵感吧！"
+msgstr "Locked\n\nKeep exploring to uncover hidden inspiration!"
+
+msgctxt "BrainMining.Game,UI.Collection.MineralCondition"
+msgid "尚未解锁\n\n解锁条件：累计收集{Target}个{Mineral}\n当前进度：{Count} / {Target}"
+msgstr "Locked\n\nCollect {Target} {Mineral} deposits to unlock.\nProgress: {Count} / {Target}"
+
+msgctxt "BrainMining.Game,UI.Collection.MineralGoal"
+msgid "收集{Target}个{Mineral}"
+msgstr "Collect {Target} {Mineral}"
+
+msgctxt "BrainMining.Game,UI.Collection.MineralGoalComplete"
+msgid "已收集{Target}个{Mineral}"
+msgstr "Collected {Target} {Mineral}"
+
+msgctxt "BrainMining.Game,UI.Collection.Pickup"
+msgid "已收集 · {Name}"
+msgstr "Collected · {Name}"
+
+msgctxt "BrainMining.Game,UI.Collection.Shortcut"
+msgid "[C]查看藏品"
+msgstr "[C] Collection"
+
+msgctxt "BrainMining.Game,UI.Collection.Title"
+msgid "奇物收藏"
+msgstr "Collection"
+
+msgctxt "BrainMining.Game,UI.Collection.Undiscovered"
+msgid "尚未发现"
+msgstr "Undiscovered"
+
+msgctxt "BrainMining.Game,UI.Collection.Unknown"
+msgid "未知藏品"
+msgstr "Unknown collectible"
+
+msgctxt "BrainMining.Game,UI.Ending.Back"
+msgid "按S可加速后退"
+msgstr "Hold S to move back faster"
+
+msgctxt "BrainMining.Game,UI.Ending.DrillKey"
+msgid "W-加速前进"
+msgstr "W — accelerate"
+
+msgctxt "BrainMining.Game,UI.Ending.DrillTouch"
+msgid "自动钻进 · 上推加速 · 左右微调"
+msgstr "Auto-drill · push up to accelerate · steer left/right"
+
+msgctxt "BrainMining.Game,UI.Ending.Enter"
+msgid "涌入"
+msgstr "Flow in"
+
+msgctxt "BrainMining.Game,UI.Ending.Forward"
+msgid "按W可加速前进"
+msgstr "Hold W to move forward faster"
+
+msgctxt "BrainMining.Game,UI.Ending.Meal"
+msgid "唉算了，涌现不出来了，我们去吃饭吧。"
+msgstr "Forget it. Nothing’s emerging. Let’s get something to eat."
+
+msgctxt "BrainMining.Game,UI.Ending.Paper.Ants"
+msgid "蚂蚁"
+msgstr "Ants"
+
+msgctxt "BrainMining.Game,UI.Ending.Paper.Brain"
+msgid "大脑"
+msgstr "Brain"
+
+msgctxt "BrainMining.Game,UI.Ending.Paper.Cards"
+msgid "卡牌"
+msgstr "Cards"
+
+msgctxt "BrainMining.Game,UI.Ending.Paper.Computer"
+msgid "电脑"
+msgstr "Computer"
+
+msgctxt "BrainMining.Game,UI.Ending.Paper.Fountain"
+msgid "喷泉"
+msgstr "Fountain"
+
+msgctxt "BrainMining.Game,UI.Ending.Paper.Glasses"
+msgid "眼镜"
+msgstr "Glasses"
+
+msgctxt "BrainMining.Game,UI.Ending.Paper.Roguelike"
+msgid "肉鸽"
+msgstr "Roguelike"
+
+msgctxt "BrainMining.Game,UI.Ending.Paper.Solar"
+msgid "太阳系"
+msgstr "Solar system"
+
+msgctxt "BrainMining.Game,UI.Ending.Paper.Thought"
+msgid "思考"
+msgstr "Thought"
+
+msgctxt "BrainMining.Game,UI.Ending.Paper.Toilet"
+msgid "马桶"
+msgstr "Toilet"
+
+msgctxt "BrainMining.Game,UI.Ending.Paper.Warning"
+msgid "警告"
+msgstr "Warning"
+
+msgctxt "BrainMining.Game,UI.Ending.Prompt"
+msgid "[C] 收集界面     [ESC] 退出游戏"
+msgstr "[C] Collection     [ESC] Quit game"
+
+msgctxt "BrainMining.Game,UI.Ending.PulseKey"
+msgid "空格-传导"
+msgstr "Space — transmit"
+
+msgctxt "BrainMining.Game,UI.Ending.PulseTouch"
+msgid "跃迁键-传导"
+msgstr "Jump button — transmit"
+
+msgctxt "BrainMining.Game,UI.Ending.Thanks"
+msgid "恭喜你挖出来了！《挖哦》也因此诞生！感谢游玩！"
+msgstr "You dug it out! And WOoOW! was born. Thank you for playing!"
+
+msgctxt "BrainMining.Game,UI.Ending.Wait"
+msgid "等一下！"
+msgstr "Wait!"
+
+msgctxt "BrainMining.Game,UI.Language.Auto"
+msgid "自动"
+msgstr "Auto"
+
+msgctxt "BrainMining.Game,UI.Language.English"
+msgid "English"
+msgstr "English"
+
+msgctxt "BrainMining.Game,UI.Language.Simplified"
+msgid "简体中文"
+msgstr "简体中文"
+
+msgctxt "BrainMining.Game,UI.Language.Traditional"
+msgid "繁體中文"
+msgstr "繁體中文"
+
+msgctxt "BrainMining.Game,UI.Loading"
+msgid "加载中"
+msgstr "Loading"
+
+msgctxt "BrainMining.Game,UI.MainMenu.Clear"
+msgid "清除"
+msgstr "Clear"
+
+msgctxt "BrainMining.Game,UI.MainMenu.Continue"
+msgid "继续游戏"
+msgstr "Continue"
+
+msgctxt "BrainMining.Game,UI.MainMenu.Keep"
+msgid "保留"
+msgstr "Keep"
+
+msgctxt "BrainMining.Game,UI.MainMenu.KeepCollectionQuestion"
+msgid "发现有藏品进度，是否要保留藏品进度"
+msgstr "You already have a collection. Keep it for your new game?"
+
+msgctxt "BrainMining.Game,UI.MainMenu.Quit"
+msgid "退出游戏"
+msgstr "Quit"
+
+msgctxt "BrainMining.Game,UI.MainMenu.Start"
+msgid "开始游戏"
+msgstr "New game"
+
+msgctxt "BrainMining.Game,UI.Mining.BombWall"
+msgid "这堵墙很硬，用炸弹试试"
+msgstr "This wall is too hard. Try a bomb."
+
+msgctxt "BrainMining.Game,UI.Mining.Hardness"
+msgid "破坏等级不足：矿镐 {0} / 岩层硬度 {1}，无法破坏"
+msgstr "Too hard to break: pickaxe {0} / rock hardness {1}."
+
+msgctxt "BrainMining.Game,UI.Mobile.Auto"
+msgid "自动"
+msgstr "Auto"
+
+msgctxt "BrainMining.Game,UI.Mobile.AutoHint"
+msgid "当前自动使用画质模式。设置立即生效并保存。"
+msgstr "Auto uses Quality mode. Changes apply and save immediately."
+
+msgctxt "BrainMining.Game,UI.Mobile.Balanced"
+msgid "均衡"
+msgstr "Balanced"
+
+msgctxt "BrainMining.Game,UI.Mobile.BalancedHint"
+msgid "进一步减轻渲染负担，画面细节略有降低。"
+msgstr "Reduces rendering work further, with slightly less detail."
+
+msgctxt "BrainMining.Game,UI.Mobile.Comfort"
+msgid "舒适镜头（减少结局旋转与震动）"
+msgstr "Comfort camera (less rotation and shaking in the finale)"
+
+msgctxt "BrainMining.Game,UI.Mobile.Off"
+msgid "关闭"
+msgstr "Off"
+
+msgctxt "BrainMining.Game,UI.Mobile.OffHint"
+msgid "已关闭超分辨率，使用原有画面设置。"
+msgstr "Upscaling is off. Original graphics settings are used."
+
+msgctxt "BrainMining.Game,UI.Mobile.Performance"
+msgid "性能"
+msgstr "Performance"
+
+msgctxt "BrainMining.Game,UI.Mobile.PerformanceHint"
+msgid "优先减轻渲染负担，画面会更柔和。"
+msgstr "Prioritizes performance with a softer image."
+
+msgctxt "BrainMining.Game,UI.Mobile.Quality"
+msgid "画质"
+msgstr "Quality"
+
+msgctxt "BrainMining.Game,UI.Mobile.QualityHint"
+msgid "优先保留画面细节，同时减轻渲染负担。"
+msgstr "Preserves more detail while reducing rendering work."
+
+msgctxt "BrainMining.Game,UI.Mobile.Sensitivity"
+msgid "视角灵敏度"
+msgstr "Look sensitivity"
+
+msgctxt "BrainMining.Game,UI.Mobile.Unsupported"
+msgid "当前设备暂不支持超分辨率，自动保留原画质。"
+msgstr "Upscaling is unavailable on this device. Original quality is retained."
+
+msgctxt "BrainMining.Game,UI.Mobile.Upscaling"
+msgid "画面超分辨率"
+msgstr "Upscaling"
+
+msgctxt "BrainMining.Game,UI.Museum.LifeHint"
+msgid "再想想，比如说生命的涌现呢？"
+msgstr "Think again. What about the emergence of life?"
+
+msgctxt "BrainMining.Game,UI.Museum.PaintingHint"
+msgid "这画上好像有个奇怪的圆圈"
+msgstr "There seems to be a strange circle in this painting."
+
+msgctxt "BrainMining.Game,UI.Pad.Back"
+msgid "返回"
+msgstr "Back"
+
+msgctxt "BrainMining.Game,UI.Pad.Bomb"
+msgid "炸弹"
+msgstr "Bomb"
+
+msgctxt "BrainMining.Game,UI.Pad.Catalogue"
+msgid "图鉴"
+msgstr "Collection"
+
+msgctxt "BrainMining.Game,UI.Pad.Choose"
+msgid "左右选牌"
+msgstr "Choose card"
+
+msgctxt "BrainMining.Game,UI.Pad.Clear"
+msgid "清空"
+msgstr "Clear"
+
+msgctxt "BrainMining.Game,UI.Pad.ClearThoughts"
+msgid "清空思维"
+msgstr "Clear thoughts"
+
+msgctxt "BrainMining.Game,UI.Pad.Click"
+msgid "点击"
+msgstr "Click"
+
+msgctxt "BrainMining.Game,UI.Pad.CloseThoughts"
+msgid "关闭左右思维"
+msgstr "Clear left/right thought"
+
+msgctxt "BrainMining.Game,UI.Pad.Collection"
+msgid "切换藏品"
+msgstr "Change item"
+
+msgctxt "BrainMining.Game,UI.Pad.Confirm"
+msgid "确认"
+msgstr "Confirm"
+
+msgctxt "BrainMining.Game,UI.Pad.Cursor"
+msgid "光标"
+msgstr "Cursor"
+
+msgctxt "BrainMining.Game,UI.Pad.Drag"
+msgid "按住拖拽"
+msgstr "Hold to drag"
+
+msgctxt "BrainMining.Game,UI.Pad.Drill"
+msgid "钻机"
+msgstr "Drill"
+
+msgctxt "BrainMining.Game,UI.Pad.Edit"
+msgid "编辑"
+msgstr "Edit"
+
+msgctxt "BrainMining.Game,UI.Pad.Fine"
+msgid "精调"
+msgstr "Fine control"
+
+msgctxt "BrainMining.Game,UI.Pad.Fly"
+msgid "跳跃/飞行"
+msgstr "Jump/fly"
+
+msgctxt "BrainMining.Game,UI.Pad.HoldFly"
+msgid "跳跃/按住飞行"
+msgstr "Jump/hold to fly"
+
+msgctxt "BrainMining.Game,UI.Pad.Interact"
+msgid "交互"
+msgstr "Interact"
+
+msgctxt "BrainMining.Game,UI.Pad.LeaveComputer"
+msgid "离开电脑"
+msgstr "Leave computer"
+
+msgctxt "BrainMining.Game,UI.Pad.Navigate"
+msgid "导航"
+msgstr "Navigate"
+
+msgctxt "BrainMining.Game,UI.Pad.Pause"
+msgid "暂停"
+msgstr "Pause"
+
+msgctxt "BrainMining.Game,UI.Pad.Play"
+msgid "出牌 {0}/{1}"
+msgstr "Play {0}/{1}"
+
+msgctxt "BrainMining.Game,UI.Pad.Purchased"
+msgid "升级成功"
+msgstr "Upgrade purchased"
+
+msgctxt "BrainMining.Game,UI.Pad.Rejected"
+msgid "暂时无法升级：资源不足或已满级"
+msgstr "Cannot upgrade: not enough resources or already maxed"
+
+msgctxt "BrainMining.Game,UI.Pad.Reset"
+msgid "复位"
+msgstr "Reset view"
+
+msgctxt "BrainMining.Game,UI.Pad.ResetProgress"
+msgid "重置：{0}% · 松开取消"
+msgstr "Reset: {0}% · release to cancel"
+
+msgctxt "BrainMining.Game,UI.Pad.Reward"
+msgid "领取钻机"
+msgstr "Claim drill"
+
+msgctxt "BrainMining.Game,UI.Pad.Rotate"
+msgid "旋转"
+msgstr "Rotate"
+
+msgctxt "BrainMining.Game,UI.Pad.SelectAll"
+msgid "全选"
+msgstr "Select all"
+
+msgctxt "BrainMining.Game,UI.Pad.Swap"
+msgid "交换"
+msgstr "Swap"
+
+msgctxt "BrainMining.Game,UI.Pad.SwapProperties"
+msgid "交换属性"
+msgstr "Swap properties"
+
+msgctxt "BrainMining.Game,UI.Pad.Think"
+msgid "思考/交互"
+msgstr "Think/interact"
+
+msgctxt "BrainMining.Game,UI.Pad.Thoughts"
+msgid "思维操作"
+msgstr "Manage thoughts"
+
+msgctxt "BrainMining.Game,UI.Pad.Toggle"
+msgid "选中/取消"
+msgstr "Select/deselect"
+
+msgctxt "BrainMining.Game,UI.Pad.ToggleAll"
+msgid "全选/清空"
+msgstr "Select all/clear"
+
+msgctxt "BrainMining.Game,UI.Pad.Upgrade"
+msgid "升级"
+msgstr "Upgrade"
+
+msgctxt "BrainMining.Game,UI.Pad.Use"
+msgid "操作"
+msgstr "Use"
+
+msgctxt "BrainMining.Game,UI.Pad.Waiting"
+msgid "暂停 · 等待牌局演出"
+msgstr "Pause · waiting for animation"
+
+msgctxt "BrainMining.Game,UI.Pad.Zoom"
+msgid "缩放"
+msgstr "Zoom"
+
+msgctxt "BrainMining.Game,UI.Pause.Collection"
+msgid "查看藏品"
+msgstr "Collection"
+
+msgctxt "BrainMining.Game,UI.Pause.MainMenu"
+msgid "返回主界面"
+msgstr "Main menu"
+
+msgctxt "BrainMining.Game,UI.Pause.Resume"
+msgid "继续游戏"
+msgstr "Resume"
+
+msgctxt "BrainMining.Game,UI.Pause.Save"
+msgid "保存进度"
+msgstr "Save progress"
+
+msgctxt "BrainMining.Game,UI.Pause.Title"
+msgid "暂停"
+msgstr "Paused"
+
+msgctxt "BrainMining.Game,UI.Pickaxe.Hardness"
+msgid "破坏等级 {Level} · 范围边长 {Width} cm · 每击基础深度 {Depth} cm（按岩层硬度修正）· 间隔 {Interval} 秒"
+msgstr "Mining tier {Level} · width {Width} cm · base depth per hit {Depth} cm (adjusted for hardness) · interval {Interval} s"
+
+msgctxt "BrainMining.Game,UI.Pickaxe.Stages"
+msgid "{Hits} 击挖开 · 基础边长 {Width} cm · 基础深度 {Depth} cm · 间隔 {Interval} 秒"
+msgstr "{Hits} hits to break · base width {Width} cm · base depth {Depth} cm · interval {Interval} s"
+
+msgctxt "BrainMining.Game,UI.Quit.Cancel"
+msgid "取消"
+msgstr "Cancel"
+
+msgctxt "BrainMining.Game,UI.Quit.Confirm"
+msgid "确认退出"
+msgstr "Quit"
+
+msgctxt "BrainMining.Game,UI.Quit.Question"
+msgid "确定退出游戏？"
+msgstr "Quit the game?"
+
+msgctxt "BrainMining.Game,UI.Save.Success"
+msgid "进度已保存"
+msgstr "Progress saved."
+
+msgctxt "BrainMining.Game,UI.Save.TerrainBusy"
+msgid "地形还在更新，稍等片刻后再返回主界面吧"
+msgstr "The terrain is still updating. Please wait a moment before returning to the main menu."
+
+msgctxt "BrainMining.Game,UI.Save.Unavailable"
+msgid "当前暂时无法保存，请回到探索状态后重试"
+msgstr "Cannot save right now. Return to exploring and try again."
+
+msgctxt "BrainMining.Game,UI.Saving"
+msgid "保存中"
+msgstr "Saving"
+
+msgctxt "BrainMining.Game,UI.Settings.Ambience"
+msgid "环境声"
+msgstr "Ambience"
+
+msgctxt "BrainMining.Game,UI.Settings.Audio"
+msgid "音频"
+msgstr "Audio"
+
+msgctxt "BrainMining.Game,UI.Settings.Back"
+msgid "返回游戏"
+msgstr "Back to game"
+
+msgctxt "BrainMining.Game,UI.Settings.Effects"
+msgid "音效"
+msgstr "Sound effects"
+
+msgctxt "BrainMining.Game,UI.Settings.FOV"
+msgid "视野 FOV"
+msgstr "Field of view"
+
+msgctxt "BrainMining.Game,UI.Settings.Haptics"
+msgid "手柄震动"
+msgstr "Controller vibration"
+
+msgctxt "BrainMining.Game,UI.Settings.HapticsContinuous"
+msgid "钻机与喷气持续震动"
+msgstr "Continuous drill and jetpack vibration"
+
+msgctxt "BrainMining.Game,UI.Settings.HapticsEnabled"
+msgid "震动总开关"
+msgstr "Enable vibration"
+
+msgctxt "BrainMining.Game,UI.Settings.HapticsOptional"
+msgid "轻微交互与演出提示"
+msgstr "Subtle interaction and cinematic feedback"
+
+msgctxt "BrainMining.Game,UI.Settings.HapticsStrength"
+msgid "震动强度   {Strength}"
+msgstr "Vibration strength   {Strength}"
+
+msgctxt "BrainMining.Game,UI.Settings.Language"
+msgid "语言"
+msgstr "Language"
+
+msgctxt "BrainMining.Game,UI.Settings.Look"
+msgid "镜头移动"
+msgstr "Look sensitivity"
+
+msgctxt "BrainMining.Game,UI.Settings.Master"
+msgid "总音量"
+msgstr "Master volume"
+
+msgctxt "BrainMining.Game,UI.Settings.Music"
+msgid "音乐"
+msgstr "Music"
+
+msgctxt "BrainMining.Game,UI.Settings.Reset"
+msgid "恢复默认"
+msgstr "Reset defaults"
+
+msgctxt "BrainMining.Game,UI.Settings.Sensitivity"
+msgid "灵敏度"
+msgstr "Sensitivity"
+
+msgctxt "BrainMining.Game,UI.Settings.Title"
+msgid "设置"
+msgstr "Settings"
+
+msgctxt "BrainMining.Game,UI.Settings.Voice"
+msgid "语音"
+msgstr "Voice"
+
+msgctxt "BrainMining.Game,UI.Tool.Bomb"
+msgid "炸弹"
+msgstr "Bomb"
+
+msgctxt "BrainMining.Game,UI.Tool.Drill"
+msgid "钻机"
+msgstr "Drill"
+
+msgctxt "BrainMining.Game,UI.Tool.Jetpack"
+msgid "喷气背包"
+msgstr "Jetpack"
+
+msgctxt "BrainMining.Game,UI.Tool.Pickaxe"
+msgid "矿镐"
+msgstr "Pickaxe"
+
+msgctxt "BrainMining.Game,UI.Tutorial.Copper"
+msgid "收集1个铜矿"
+msgstr "Collect 1 copper deposit"
+
+msgctxt "BrainMining.Game,UI.Tutorial.Explore"
+msgid "继续前进探索"
+msgstr "Keep exploring"
+
+msgctxt "BrainMining.Game,UI.Tutorial.GuideHint"
+msgid "没思路的话就看看左侧引导栏吧"
+msgstr "Not sure what to do? Check the guide on the left."
+
+msgctxt "BrainMining.Game,UI.Tutorial.Iron"
+msgid "收集1个铁矿"
+msgstr "Collect 1 iron deposit"
+
+msgctxt "BrainMining.Game,UI.Tutorial.Prototype"
+msgid "发现第{0}个灵感原型"
+msgstr "Find inspiration prototype {0}"
+
+msgctxt "BrainMining.Game,UI.Tutorial.SoftSoil"
+msgid "哦！软软的泥土，这边一定是路"
+msgstr "Oh! Soft soil. This must be the way."
+
+msgctxt "BrainMining.Game,UI.Tutorial.Soil"
+msgid "穿过1个泥土层"
+msgstr "Dig through a soil layer"
+
+msgctxt "BrainMining.Game,UI.Tutorial.Upgrade1"
+msgid "升级1次矿镐"
+msgstr "Upgrade your pickaxe"
+
+msgctxt "BrainMining.Game,UI.Tutorial.Upgrade2"
+msgid "将矿镐升至2级"
+msgstr "Reach pickaxe level 2"
+
+msgctxt "BrainMining.Game,UI.Tutorial.UpgradeReady"
+msgid "材料充足！按[Tab]升级矿镐"
+msgstr "Materials ready! Press [Tab] to upgrade your pickaxe."
+
+msgctxt "BrainMining.Game,UI.Upgrade.BombCapacity"
+msgid "炸弹最大容量 ×2"
+msgstr "Bomb capacity ×2"
+
+msgctxt "BrainMining.Game,UI.Upgrade.BombCapacityAndFuse"
+msgid "最大容量再 ×2，引爆时间 ×0.5"
+msgstr "Bomb capacity ×2 again; fuse time ×0.5"
+
+msgctxt "BrainMining.Game,UI.Upgrade.BombRadius"
+msgid "炸弹破坏范围 ×2"
+msgstr "Blast radius ×2"
+
+msgctxt "BrainMining.Game,UI.Upgrade.BombRecharge"
+msgid "自动补充时间 ×0.8"
+msgstr "Bomb recharge time ×0.8"
+
+msgctxt "BrainMining.Game,UI.Upgrade.CoolingDelay"
+msgid "开始自然散热的等待时间 ×0.5"
+msgstr "Cooling delay ×0.5"
+
+msgctxt "BrainMining.Game,UI.Upgrade.CoolingRate"
+msgid "自然散热速度 ×2"
+msgstr "Cooling rate ×2"
+
+msgctxt "BrainMining.Game,UI.Upgrade.CreativeFlight"
+msgid "创造飞行：松手悬停，空格上升，左Ctrl下降"
+msgstr "Free flight: release to hover, Space to rise, Left Ctrl to descend"
+
+msgctxt "BrainMining.Game,UI.Upgrade.DrillCapacity"
+msgid "最大能量储量 ×1.5"
+msgstr "Drill energy capacity ×1.5"
+
+msgctxt "BrainMining.Game,UI.Upgrade.DrillConsumption"
+msgid "能量消耗速度 ×0.75"
+msgstr "Drill energy use ×0.75"
+
+msgctxt "BrainMining.Game,UI.Upgrade.DrillRecovery"
+msgid "自然能量恢复速度 ×1.5"
+msgstr "Drill recharge rate ×1.5"
+
+msgctxt "BrainMining.Game,UI.Upgrade.Enough"
+msgid "✓ 已足够"
+msgstr "✓ Ready"
+
+msgctxt "BrainMining.Game,UI.Upgrade.HeatCapacity"
+msgid "最大热量 ×2"
+msgstr "Heat capacity ×2"
+
+msgctxt "BrainMining.Game,UI.Upgrade.InfiniteDrill"
+msgid "无限钻机能量"
+msgstr "Unlimited drill energy"
+
+msgctxt "BrainMining.Game,UI.Upgrade.Key"
+msgid "[ {0} ] 升级"
+msgstr "[ {0} ] Upgrade"
+
+msgctxt "BrainMining.Game,UI.Upgrade.Level"
+msgid "等级 {0}"
+msgstr "Level {0}"
+
+msgctxt "BrainMining.Game,UI.Upgrade.Max"
+msgid "已满级"
+msgstr "Max level"
+
+msgctxt "BrainMining.Game,UI.Upgrade.Need"
+msgid "还需{0}个"
+msgstr "Need {0} more"
+
+msgctxt "BrainMining.Game,UI.World.Ride"
+msgid "乘车"
+msgstr "Ride"
+
+msgctxt "BrainMining.Game,UI.World.VoidRecovery"
+msgid "呼，刚才想到什么来着？"
+msgstr "Phew... what was I thinking about?"
+
+msgctxt "BrainMining.Game,WenSi.Hint.Edit"
+msgid "拖动红词交换    G 返回    Q 放下思考"
+msgstr "Drag red words to swap    G — back    Q — clear thoughts"
+
+msgctxt "BrainMining.Game,WenSi.Hint.Rearrange"
+msgid "G 重组    Q 放下左侧    R 放下右侧"
+msgstr "G — rearrange    Q — clear left    R — clear right"
+
+msgctxt "BrainMining.Game,WenSi.Hint.Reset"
+msgid "长按E-重置谜题"
+msgstr "Hold E — reset puzzle"
+
+msgctxt "BrainMining.Game,WenSi.Hint.Swap"
+msgid "R-交换词组    Q-关闭思考"
+msgstr "R — swap words    Q — close thoughts"
+
+msgctxt "BrainMining.Game,WenSi.Hint.Think"
+msgid "E 思考    "
+msgstr "E — think    "
+
+msgctxt "BrainMining.Game,WenSi.Noun.Ball"
+msgid "陶瓷球"
+msgstr "ceramic ball"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Balloon"
+msgid "气球"
+msgstr "balloon"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Board"
+msgid "木板"
+msgstr "board"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Cover"
+msgid "罩子"
+msgstr "cover"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Metal"
+msgid "金属块"
+msgstr "metal block"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Miner"
+msgid "矿工"
+msgstr "miner"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Object"
+msgid "物体"
+msgstr "object"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Ornament"
+msgid "摆件"
+msgstr "ornament"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Rock"
+msgid "石块"
+msgstr "rock"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Screen"
+msgid "屏风"
+msgstr "screen"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Sculpture"
+msgid "雕塑"
+msgstr "sculpture"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Smoke"
+msgid "烟雾"
+msgstr "smoke"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Statue"
+msgid "雕像"
+msgstr "statue"
+
+msgctxt "BrainMining.Game,WenSi.Noun.Weight"
+msgid "压块"
+msgstr "weight"
+
+msgctxt "BrainMining.Game,WenSi.Statement"
+msgid "这是一个{Property}的{Noun}"
+msgstr "This {Noun} is {Property}."
+
+msgctxt "BrainMining.Game,WenSi.Word.Big"
+msgid "大"
+msgstr "large"
+
+msgctxt "BrainMining.Game,WenSi.Word.Conductive"
+msgid "导电"
+msgstr "conductive"
+
+msgctxt "BrainMining.Game,WenSi.Word.Floating"
+msgid "悬浮"
+msgstr "floating"
+
+msgctxt "BrainMining.Game,WenSi.Word.Heavy"
+msgid "沉重"
+msgstr "heavy"
+
+msgctxt "BrainMining.Game,WenSi.Word.Intangible"
+msgid "虚无"
+msgstr "intangible"
+
+msgctxt "BrainMining.Game,WenSi.Word.Light"
+msgid "轻盈"
+msgstr "light"
+
+msgctxt "BrainMining.Game,WenSi.Word.Normal"
+msgid "普通"
+msgstr "ordinary"
+
+msgctxt "BrainMining.Game,WenSi.Word.Passable"
+msgid "可穿过"
+msgstr "passable"
+
+msgctxt "BrainMining.Game,WenSi.Word.Small"
+msgid "小"
+msgstr "small"
+

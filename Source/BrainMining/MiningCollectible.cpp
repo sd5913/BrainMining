@@ -1,4 +1,5 @@
 #include "MiningCollection.h"
+#include "MiningLocalizationSubsystem.h"
 #include "DiggableRock.h"
 #include "Showcase/MiningTreasure.h"
 #include "Components/BoxComponent.h"
@@ -105,53 +106,23 @@ AMiningCollectible::AMiningCollectible()
     Outline->SetCollisionEnabled(ECollisionEnabled::NoCollision); Outline->SetCastShadow(false); Outline->SetVisibility(false);
 }
 
-FString AMiningCollectible::ItemName(int32 Id)
+FText AMiningCollectible::ItemNameText(int32 Id)
 {
-    const TCHAR* Names[]={TEXT("来自天堂的马桶"),TEXT("电脑里的蚂蚁窝"),TEXT("化学试剂"),TEXT("肉鸽"),TEXT("奇怪的计算器"),TEXT("损坏的磁带"),TEXT("音符"),TEXT("老旧的相片"),TEXT("喷发中的可乐"),TEXT("「GPT」之花"),TEXT("罐子里的萤火虫"),TEXT("散落的彩带"),TEXT("发光的灯泡"),TEXT("指南针"),TEXT("石间山水"),TEXT("光之万花筒"),TEXT("碳烤牛肉串"),TEXT("水世界"),TEXT("沉甸甸的金币袋"),TEXT("一杯鸡尾酒"),TEXT("太极"),TEXT("晚高峰"),TEXT("满屏消息的手机")};
-    return Id>=0&&Id<ItemTypeCount?Names[Id]:TEXT("未知藏品");
+    return Id>=0&&Id<ItemTypeCount?MiningText::Get(*FString::Printf(TEXT("Collection.%02d.Name"),Id)):MiningText::Get(TEXT("UI.Collection.Unknown"));
 }
-FString AMiningCollectible::Description(int32 Id)
+FText AMiningCollectible::DescriptionText(int32 Id)
 {
-    const TCHAR* Descriptions[]={
-        TEXT("这也许是一场令人措手不及的涌现。"),
-        TEXT("每只蚂蚁只顾着挖掘、搬运，再循着同伴留下的气味前进。没有谁拿着整个巢穴的设计图，复杂的通路却在无数次微小的行动中逐渐成形。也许，宏大的结构就藏在这些简单规则里。"),
-        TEXT("单独看，每一种试剂都有自己的性质。混合之后，分子之间的相互作用却可能带来新的颜色、气味，甚至一种全新的物质。把简单的东西放在一起，有时会得到超出直觉的结果——试管里似乎藏着更多可能。"),
-        TEXT("一件道具增加弹射，另一件让命中产生爆炸，再来一件，让爆炸也能触发弹射。原本普通的效果开始相互放大，最后形成连设计者都未必预料到的打法。许多肉鸽游戏（roguelike）都会做这种设计。"),
-        TEXT("把两个东西放在一起，它们之间便多了一种关系；当关系足够丰富，整体就可能表现出单个部分所没有的能力。"),
-        TEXT("把磁带扯出来……大概只会让桌上涌现一团乱麻。"),
-        TEXT("音符之间有了先后、间隔与重复，旋律和情绪便逐渐浮现。同样几个音，换一种关系，就能涌现出完全不同的世界。"),
-        TEXT("相片只留住了一个瞬间，却能牵出当时的声音、气味，以及早已忘记的人。一个细节唤醒另一个细节，零散的记忆彼此连接，往事便重新变得鲜活。"),
-        TEXT("无数气泡迅速生长，推动液体一起冲出瓶口，涌现出一次剧烈的喷发。"),
-        TEXT("大量简单的计算单元经过训练与连接，逐渐表现出组织语言、关联概念的复杂能力。"),
-        TEXT("每只萤火虫都按自己的节奏闪烁，也会根据附近同伴的闪光调整时机。局部的微小调整不断传递，原本零散的亮点便可能逐渐同步。没有统一指挥，秩序依然能从彼此回应中涌现。"),
-        TEXT("成千上万根彩带喷涌而出，一起旋转、荡漾、飘落。"),
-        TEXT("散乱的铜线看起来很普通。直到电流沿着回路涌动，灯泡亮了！"),
-        TEXT("铁针内部有许多微小的磁畴。磁化让更多磁畴的方向趋于一致，整根针便显出磁性。能够自由转动的磁针在地磁场作用下偏转，指向磁南北。微小的排列，汇成了看得见的方向。"),
-        TEXT("层层绿色纹带藏在一小块孔雀石里。换个角度，起伏成了远山，留白成了河流，一条小路穿过山间。无意的纹理，在人眼中形成了有情的诗意。"),
-        TEXT("一束白光进入钻石，经折射与色散显出不同的颜色。这些色彩再由镜筒内的镜片反复映照，随着转动，组合成不断变化的花朵与星芒。"),
-        TEXT("牛肉、盐和香料原本各有滋味。遇上火候，褐变反应让新的香气与颜色逐渐出现，几样食材竟变成让人垂涎的美味。"),
-        TEXT("鱼、水草与微生物住进同一片水里。呼吸、光合作用与分解彼此衔接，在光照、换水和照料下，小小的鱼缸形成了一张相互依存的生命网络。"),
-        TEXT("一枚金币的回报再投入下一轮，新的回报又加入其中。一次次积累，让增长逐渐加快；不过，袋子里也藏着风险，财富并不会凭空出现。"),
-        TEXT("酸、甜、苦与酒香各有棱角。经过比例、摇和与冰的稀释，它们在杯中相互衬托，涌现出单独品尝时没有的层次。"),
-        TEXT("无极而太极，以至万物化生。"),
-        TEXT("车门一开，人潮涌现。\n每个人都有自己的目的地。"),
-        TEXT("众口铄金，积毁销骨。")};
-    const TCHAR* Quotes[]={TEXT("不觉得这很神圣吗？"),TEXT("一台正在运行一个游戏的电脑……这是什么游戏？"),TEXT("加点这个……再加点那个……"),TEXT("好肥的鸟！"),
-        TEXT("这个年代计算器也有自我意识了吗？"),
-        TEXT("小时候最喜欢的一集。"),
-        TEXT("长得很像蝌蚪，它会变成青蛙吗？"),
-        TEXT("记忆是很宝贵的。"),
-        TEXT("曼妥思VS可乐，你们知道吗？"),
-        TEXT("好牛#的花。"),
-        TEXT("萤火虫萤火虫慢慢飞 夏夜里夏夜里风轻吹"),
-        TEXT("恭喜！"),TEXT("我有一个想法！"),TEXT("海的那边是什么？"),TEXT("山在石头里，又或者，山在心里。"),TEXT("复杂的美，可以来自简单的重复。"),TEXT("高端的食材往往只需要最朴素的烹饪方式"),TEXT("小小鱼缸，大大世界！"),TEXT("假如给你一个亿，代价是……先给我我就愿意！"),TEXT("嗯～恰到好处"),TEXT("道生一，一生二，二生三，三生万物"),TEXT("宁等一辆车，不抢一扇门。"),TEXT("其实很多话根本不重要")};
-    // Plain text remains useful outside UMG; the inspect widget styles the quote separately.
-    return Id>=0&&Id<ItemTypeCount?FString(Descriptions[Id])+TEXT("\n\n“")+Quotes[Id]+TEXT("”"):FString();
+    if(Id<0||Id>=ItemTypeCount)return FText::GetEmpty();
+    return FText::Format(MiningText::Get(TEXT("UI.Collection.DescriptionFormat")),
+        MiningText::Get(*FString::Printf(TEXT("Collection.%02d.Description"),Id)),
+        MiningText::Get(*FString::Printf(TEXT("Collection.%02d.Quote"),Id)));
 }
+FString AMiningCollectible::ItemName(int32 Id) { return ItemNameText(Id).ToString(); }
+FString AMiningCollectible::Description(int32 Id) { return DescriptionText(Id).ToString(); }
 FString AMiningCollectible::Clue(int32 Id)
 {
-    const TCHAR* Lines[]={TEXT("滴水的管道"),TEXT("沿土层爬向蚁穴的蚂蚁"),TEXT("彩色液滴"),TEXT("高处的鸟巢"),TEXT("土里错落埋藏的数字 1"),TEXT(""),TEXT(""),TEXT(""),TEXT("连通地下空腔、持续向上冒泡的孔洞"),TEXT("土面上的一簇微光小花"),TEXT("沿土层延伸的闪烁光点"),TEXT("红幕布后的庆祝舞台")};
-    return Id>=0&&Id<WorldItemTypeCount?Lines[Id]:FString();
+    return Id>=0&&Id<WorldItemTypeCount&&Id!=5&&Id!=6&&Id!=7?
+        MiningText::Get(*FString::Printf(TEXT("Collection.%02d.Clue"),Id)).ToString():FString();
 }
 
 void AMiningCollectible::BuildModel(int32 Id,bool Flying)

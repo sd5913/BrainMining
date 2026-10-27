@@ -1,4 +1,6 @@
 #include "PopupClose/PopupCloseFlyingWindow.h"
+#include "PopupClose/PopupLocalizedArtSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "PopupClose/PopupCloseContent.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -51,6 +53,7 @@ void APopupCloseFlyingWindow::PrepareForPool(int32 Variant,bool bPaper,float Siz
  const auto& Copy=PopupCloseContent::Get(Variant);
  const auto& Skin=PopupCloseContent::GetArt(Variant);
  auto Artwork=bPaper?nullptr:LoadObject<UMaterialInterface>(nullptr,*(FString(TEXT("/Game/PopupClose/PopupArt/M_Popup"))+Skin.AssetName));
+ if(!bPaper && GetGameInstance())Artwork=GetGameInstance()->GetSubsystem<UPopupLocalizedArtSubsystem>()->GetArtwork(Variant);
  const FVector2D PopupSize=Artwork?Skin.Size:Copy.Size;
  const float Width=(bPaper?21.f:PopupSize.X*.13f)*SizeScale,Height=(bPaper?29.7f:PopupSize.Y*.13f)*SizeScale;
  Body->SetRelativeScale3D(FVector(bPaper?.0015f:.025f,Width/100.f,Height/100.f));

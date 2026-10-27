@@ -74,6 +74,7 @@ function Start-MiningGuardedProcess {
         [switch]$EditorSession,
         [switch]$BelowNormal,
         [switch]$TrimCookWorkingSet,
+        [switch]$TrimCommandletWorkingSet,
         [int]$MaximumSeconds = 0
     )
     if (-not $EditorSession) {
@@ -97,6 +98,12 @@ function Start-MiningGuardedProcess {
             $snapshot = Get-MiningResourceSnapshot
             $process.Refresh()
             if ($process.HasExited) { break }
+            if ($TrimCommandletWorkingSet -and [IO.Path]::GetFileName($Executable) -eq 'UnrealEditor-Cmd.exe' -and $snapshot.AvailablePhysicalGB -lt 3.5 -and $snapshot.AvailableCommitGB -gt 8 -and $process.WorkingSet64 -gt 1GB -and ([DateTime]::UtcNow - $lastTrim).TotalSeconds -ge 5) {
+                if ([BrainMiningResourceProbe]::EmptyWorkingSet($process.Handle)) {
+                    $lastTrim = [DateTime]::UtcNow
+                    $snapshot = Get-MiningResourceSnapshot
+                }
+            }
             if ($TrimCookWorkingSet -and $snapshot.AvailablePhysicalGB -lt 3.5 -and $snapshot.AvailableCommitGB -gt 8 -and ([DateTime]::UtcNow - $lastTrim).TotalSeconds -ge 10) {
                 $cookChildren = @()
                 try {

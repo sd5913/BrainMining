@@ -1,4 +1,5 @@
 #include "Subtitles/SubtitleSubsystem.h"
+#include "MiningLocalizationSubsystem.h"
 #include "EndingEmergence.h"
 #include "EndingComicRock.h"
 #include "Camera/CameraActor.h"
@@ -367,13 +368,13 @@ void AEndingEmergence::UpdatePaperProps(float CameraX,float Dt)
 {
     if(!bMealSubtitle)
     {
-        const TCHAR* Captions[]={TEXT("马桶"),TEXT("警告"),TEXT("眼镜"),TEXT("卡牌"),TEXT("喷泉"),TEXT("思考"),TEXT("电脑"),TEXT("大脑"),TEXT("太阳系"),TEXT("蚂蚁"),TEXT("肉鸽")};
+        const TCHAR* Captions[]={TEXT("UI.Ending.Paper.Toilet"),TEXT("UI.Ending.Paper.Warning"),TEXT("UI.Ending.Paper.Glasses"),TEXT("UI.Ending.Paper.Cards"),TEXT("UI.Ending.Paper.Fountain"),TEXT("UI.Ending.Paper.Thought"),TEXT("UI.Ending.Paper.Computer"),TEXT("UI.Ending.Paper.Brain"),TEXT("UI.Ending.Paper.Solar"),TEXT("UI.Ending.Paper.Ants"),TEXT("UI.Ending.Paper.Roguelike")};
         int32 Pair=LastPaperSubtitle;
         for(int32 I=0;I+1<PaperCards.Num();I+=2)if(CameraX+600>PaperCards[I]->GetRelativeLocation().X)Pair=FMath::Max(Pair,I/2);
         if(Pair!=LastPaperSubtitle)
         {
             LastPaperSubtitle=Pair;
-            if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(FString(Captions[(Pair*2)%11])+TEXT(" · ")+Captions[(Pair*2+1)%11]),.8f);}
+            if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::Format(FText::AsCultureInvariant(TEXT("{0} · {1}")),MiningText::Get(Captions[(Pair*2)%11]),MiningText::Get(Captions[(Pair*2+1)%11])),.8f);}
         }
     }
     for(int I=0;I<PaperCards.Num();++I)
@@ -455,7 +456,7 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
         FVector Aim=FMath::Lerp(FVector(1,FMath::Cos(T*2*PI)*.025f,0).GetSafeNormal(),(FVector(8000,0,240)-Eye).GetSafeNormal(),FrameRock);
         PaperPose(Eye,Aim,108,bComfortMode?0:FMath::Sin(T*2*PI)*4.5f);
         if(ShotTime>=4.85f && !bMealSubtitle)
-        {bMealSubtitle=true;if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("唉算了，涌现不出来了，我们去吃饭吧。")),5.f);}}
+        {bMealSubtitle=true;if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(MiningText::Get(TEXT("UI.Ending.Meal")),5.f);}}
         PaperRock->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.85f)/.70f)),0,0));
         PaperPick->SetRelativeRotation(FRotator(-90*(1-PaperEnding::Ease((ShotTime-4.95f)/.65f)),0,0));
         // Submit the film surface while the upright, unbroken rock still covers
@@ -472,7 +473,7 @@ void AEndingEmergence::UpdatePaperFinale(float Dt)
         PaperPickSwing->SetRelativeRotation(FQuat(FVector::ForwardVector,FMath::DegreesToRadians(PickAngle)));
         if(ShotTime>=.75f&&!bPaperRockBroken)
         {
-            if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("等一下！")),5.f);}
+            if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(MiningText::Get(TEXT("UI.Ending.Wait")),5.f);}
             bPaperRockBroken=true;PaperRockCap->SetVisibility(false,true);
             StartFinaleVideo(); // Already decoded: motion starts with the opening, not at the rim.
             for(auto Chip:PaperRockChips)Chip->SetVisibility(true,true);

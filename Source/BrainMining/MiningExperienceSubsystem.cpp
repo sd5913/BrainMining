@@ -1,4 +1,6 @@
 #include "MiningExperienceSubsystem.h"
+#include "MiningAchievementSubsystem.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningUISounds.h"
 #include "MiningSaveSubsystem.h"
 #include "BrainMiningPlayerController.h"
@@ -107,6 +109,7 @@ namespace MiningExperiences
 
 void UMiningExperienceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
+    Collection.InitializeDependency<UMiningLocalizationSubsystem>();
     Super::Initialize(Collection);
     WorldCleanupHandle = FWorldDelegates::OnWorldCleanup.AddUObject(this, &ThisClass::OnWorldCleanup);
     if (FSlateApplication::IsInitialized())
@@ -154,6 +157,7 @@ bool UMiningExperienceSubsystem::DeveloperGrantTool(int32 ToolIndex)
 {
     auto* PC=MenuController.Get();
     if(!Menu || !bDeveloperMenu || !PC || !PC->GetPawn() || ToolIndex<0 || ToolIndex>2)return false;
+    GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->DisableForDebug();
     APawn* Pawn=PC->GetPawn();
     if(ToolIndex==0)
     {
@@ -183,6 +187,7 @@ bool UMiningExperienceSubsystem::DeveloperUnlockMineral(int32 ItemId)
 {
     if(!Menu || !bDeveloperMenu || !MenuController.IsValid() ||
         (ItemId!=INDEX_NONE && !AMiningCollectible::IsMineralReward(ItemId)))return false;
+    GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->DisableForDebug();
     for(TActorIterator<AMiningCollectionField> Field(GetWorld());Field;++Field)
         if(!Field->bCatalogueOnly)
         {
@@ -409,6 +414,7 @@ bool UMiningExperienceSubsystem::JumpToDeveloperArea(int32 Index)
 {
     auto* Hall = AMiningExhibitHall::Find(GetWorld());
     if (!Menu || !bDeveloperMenu) return false;
+    GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->DisableForDebug();
     if(!Hall)
     {
         if(Index<0 || Index>=6)return false;
@@ -440,6 +446,7 @@ bool UMiningExperienceSubsystem::OpenDeveloperExperience(int32 Index)
         return false;
     }
     const FName Map(*Paths[Index]);
+    GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->DisableForDebug();
     CloseMenu();
     GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->EndSession();
     UGameplayStatics::OpenLevel(GetWorld(), Map);

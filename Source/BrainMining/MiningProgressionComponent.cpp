@@ -1,4 +1,6 @@
 #include "MiningProgressionComponent.h"
+#include "MiningLocalizationSubsystem.h"
+#include "MiningAchievementSubsystem.h"
 #include "Subtitles/SubtitleLibrary.h"
 #include "BrainMiningCharacter.h"
 #include "MiningComponent.h"
@@ -15,29 +17,29 @@ bool FMiningUpgradeStep::IsValid() const
 
 UMiningProgressionComponent::UMiningProgressionComponent()
 {
-    const TCHAR* Names[] = {TEXT("镐子"), TEXT("喷气背包"), TEXT("炸弹"), TEXT("钻机")};
-    for (const TCHAR* Name : Names) Tracks.AddDefaulted_GetRef().Name = FText::FromString(Name);
-    const auto Add = [this](int32 Track, int64 Price, EMiningUpgradeEffect Effect, float Value, const TCHAR* Description, float Secondary = 1)
+    const TCHAR* Names[] = {TEXT("UI.Tool.Pickaxe"), TEXT("UI.Tool.Jetpack"), TEXT("UI.Tool.Bomb"), TEXT("UI.Tool.Drill")};
+    for (const TCHAR* Name : Names) Tracks.AddDefaulted_GetRef().Name = MiningText::Get(Name);
+    const auto Add = [this](int32 Track, int64 Price, EMiningUpgradeEffect Effect, float Value, const FText& Description, float Secondary = 1)
     {
         auto& Step = Tracks[Track].Steps.AddDefaulted_GetRef();
         Step.Price = Price; Step.Effect = Effect; Step.Value = Value; Step.SecondaryValue = Secondary;
-        Step.Description = FText::FromString(Description);
+        Step.Description = Description;
     };
     const auto PickaxeLevels = UMiningPickaxeSettings::MakeRecommendedLevels();
     for (int32 Level = 1; Level <= 4; ++Level)
-        Add(0, PickaxeLevels[Level].Price, EMiningUpgradeEffect::PickaxeProfile, Level, *PickaxeLevels[Level].GetDescription().ToString());
-    Add(1, 250, EMiningUpgradeEffect::CoolingDelay, .5f, TEXT("开始自然散热的等待时间 ×0.5"));
-    Add(1, 7500, EMiningUpgradeEffect::CoolingRate, 2, TEXT("自然散热速度 ×2"));
-    Add(1, 25000, EMiningUpgradeEffect::HeatCapacity, 2, TEXT("最大热量 ×2"));
-    Add(1, 125000, EMiningUpgradeEffect::CreativeFlight, 1, TEXT("创造飞行：松手悬停，空格上升，左Ctrl下降"));
-    Add(2, 1500, EMiningUpgradeEffect::BombRecharge, .8f, TEXT("自动补充时间 ×0.8"));
-    Add(2, 10000, EMiningUpgradeEffect::BombCapacity, 2, TEXT("炸弹最大容量 ×2"));
-    Add(2, 40000, EMiningUpgradeEffect::BombRadius, 2, TEXT("炸弹破坏范围 ×2"));
-    Add(2, 160000, EMiningUpgradeEffect::BombCapacityAndFuse, 2, TEXT("最大容量再 ×2，引爆时间 ×0.5"), .5f);
-    Add(3, 20000, EMiningUpgradeEffect::DrillRecovery, 1.5f, TEXT("自然能量恢复速度 ×1.5"));
-    Add(3, 100000, EMiningUpgradeEffect::DrillCapacity, 1.5f, TEXT("最大能量储量 ×1.5"));
-    Add(3, 500000, EMiningUpgradeEffect::DrillConsumption, .75f, TEXT("能量消耗速度 ×0.75"));
-    Add(3, 2000000, EMiningUpgradeEffect::InfiniteDrill, 1, TEXT("无限钻机能量"));
+        Add(0, PickaxeLevels[Level].Price, EMiningUpgradeEffect::PickaxeProfile, Level, PickaxeLevels[Level].GetDescription());
+    Add(1, 250, EMiningUpgradeEffect::CoolingDelay, .5f, MiningText::Get(TEXT("UI.Upgrade.CoolingDelay")));
+    Add(1, 7500, EMiningUpgradeEffect::CoolingRate, 2, MiningText::Get(TEXT("UI.Upgrade.CoolingRate")));
+    Add(1, 25000, EMiningUpgradeEffect::HeatCapacity, 2, MiningText::Get(TEXT("UI.Upgrade.HeatCapacity")));
+    Add(1, 125000, EMiningUpgradeEffect::CreativeFlight, 1, MiningText::Get(TEXT("UI.Upgrade.CreativeFlight")));
+    Add(2, 1500, EMiningUpgradeEffect::BombRecharge, .8f, MiningText::Get(TEXT("UI.Upgrade.BombRecharge")));
+    Add(2, 10000, EMiningUpgradeEffect::BombCapacity, 2, MiningText::Get(TEXT("UI.Upgrade.BombCapacity")));
+    Add(2, 40000, EMiningUpgradeEffect::BombRadius, 2, MiningText::Get(TEXT("UI.Upgrade.BombRadius")));
+    Add(2, 160000, EMiningUpgradeEffect::BombCapacityAndFuse, 2, MiningText::Get(TEXT("UI.Upgrade.BombCapacityAndFuse")), .5f);
+    Add(3, 20000, EMiningUpgradeEffect::DrillRecovery, 1.5f, MiningText::Get(TEXT("UI.Upgrade.DrillRecovery")));
+    Add(3, 100000, EMiningUpgradeEffect::DrillCapacity, 1.5f, MiningText::Get(TEXT("UI.Upgrade.DrillCapacity")));
+    Add(3, 500000, EMiningUpgradeEffect::DrillConsumption, .75f, MiningText::Get(TEXT("UI.Upgrade.DrillConsumption")));
+    Add(3, 2000000, EMiningUpgradeEffect::InfiniteDrill, 1, MiningText::Get(TEXT("UI.Upgrade.InfiniteDrill")));
 }
 
 bool UMiningProgressionComponent::InitializeProgression()
@@ -90,7 +92,7 @@ bool UMiningProgressionComponent::CanUpgradePickaxe() const
 FText UMiningProgressionComponent::GetNextMaterialRequirements() const
 {
     const int32 Level = GetLevel(0);
-    if (Level < 0 || Level >= 4) return FText::FromString(TEXT("已满级"));
+    if (Level < 0 || Level >= 4) return MiningText::Get(TEXT("UI.Upgrade.Max"));
     TArray<FString> Lines;
     for (const auto& Cost : UMiningPickaxeSettings::ResolveLevel(Level + 1).MaterialCosts)
         Lines.Add(FString::Printf(TEXT("%s  %d / %d"), *FMiningMineralCost::Name(Cost.Mineral), GetWallet()->GetMineralCount(Cost.Mineral), Cost.Count));
@@ -108,9 +110,9 @@ int64 UMiningProgressionComponent::GetNextPrice(int32 TrackIndex) const
 FText UMiningProgressionComponent::GetNextDescription(int32 TrackIndex) const
 {
     const int32 Level = GetLevel(TrackIndex);
-    if (TrackIndex == 0) return Level >= 0 && Level < 4 ? UMiningPickaxeSettings::ResolveLevel(Level + 1).GetDescription() : FText::FromString(TEXT("已满级"));
+    if (TrackIndex == 0) return Level >= 0 && Level < 4 ? UMiningPickaxeSettings::ResolveLevel(Level + 1).GetDescription() : MiningText::Get(TEXT("UI.Upgrade.Max"));
     return Tracks.IsValidIndex(TrackIndex) && Tracks[TrackIndex].Steps.IsValidIndex(Level) && Level < 4 ?
-        Tracks[TrackIndex].Steps[Level].Description : FText::FromString(TEXT("已满级"));
+        Tracks[TrackIndex].Steps[Level].Description : MiningText::Get(TEXT("UI.Upgrade.Max"));
 }
 
 bool UMiningProgressionComponent::Purchase(int32 TrackIndex, int32 RequestedLevel)
@@ -123,6 +125,7 @@ bool UMiningProgressionComponent::Purchase(int32 TrackIndex, int32 RequestedLeve
         if (!Wallet->SpendMinerals(UMiningPickaxeSettings::ResolveLevel(RequestedLevel).MaterialCosts)) return false;
         Wallet->UpgradeLevels[0] = RequestedLevel;
         ApplyUpgrades();
+        GetOwner()->GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->RecordPickaxe(RequestedLevel);
         USubtitleLibrary::PlayMainGameSubtitle(this,FName(*FString::Printf(TEXT("镐子升级%d"),RequestedLevel)));
         return true;
     }
@@ -136,6 +139,7 @@ bool UMiningProgressionComponent::Purchase(int32 TrackIndex, int32 RequestedLeve
         if (!Wallet->Spend(UMiningPickaxeSettings::ResolveLevel(RequestedLevel).Price)) return false;
         Wallet->UpgradeLevels[0] = RequestedLevel;
         ApplyUpgrades();
+        GetOwner()->GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->RecordPickaxe(RequestedLevel);
         USubtitleLibrary::PlayMainGameSubtitle(this,FName(*FString::Printf(TEXT("镐子升级%d"),RequestedLevel)));
         return true;
     }
@@ -151,7 +155,7 @@ void UMiningProgressionComponent::RefreshPickaxeTrack()
 {
     if (UsesMineralInventory()) Tracks.SetNum(1);
     if (Tracks.IsEmpty()) Tracks.AddDefaulted();
-    Tracks[0].Name = FText::FromString(TEXT("矿镐"));
+    Tracks[0].Name = MiningText::Get(TEXT("UI.Tool.Pickaxe"));
     Tracks[0].Steps.Reset();
     for (int32 Level = 1; Level <= 4; ++Level)
     {

@@ -1,4 +1,5 @@
 #include "EndingEmergence.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MobileRuntimeSettings.h"
 #include "MiningWaypoint.h"
 #include "EngineUtils.h"
@@ -52,14 +53,14 @@
 
 namespace Ending
 {
-    void TravelHintOnce(AEndingEmergence* Director, FName Id, const TCHAR* Text)
+    void TravelHintOnce(AEndingEmergence* Director, FName Id, const FText& Text)
     {
         if(Director->ActorHasTag(Id))return;
         if(auto* Subtitles=USubtitleSubsystem::Get(Director))
         {
             Director->Tags.Add(Id);
             Subtitles->StopAll();
-            Subtitles->PlayStatusLine(FText::FromString(Text),4.f);
+            Subtitles->PlayStatusLine(Text,4.f);
         }
     }
 
@@ -143,12 +144,12 @@ public:
         if(Fade>0)FSlateDrawElement::MakeBox(Out,++L,G.ToPaintGeometry(),FCoreStyle::Get().GetBrush("WhiteBrush"),ESlateDrawEffect::None,FLinearColor(0,0,0,Fade));
         if(Fade>.995f)return L;
         if(D->Shot<0 && D->GateIndex==0 && D->Gates.IsValidIndex(0))
-            L=MiningWaypoint::Paint(G,Out,L,D->Player,D->Gates[0]->GetActorLocation(),TEXT("涌入"));
+            L=MiningWaypoint::Paint(G,Out,L,D->Player,D->Gates[0]->GetActorLocation(),MiningText::Get(TEXT("UI.Ending.Enter")).ToString());
         if(D->Shot==9 || (D->Shot<0 && D->GateIndex==2 && !D->bEnteringBrain))
         {
             const auto* Controller=Cast<ABrainMiningPlayerController>(D->GetWorld()->GetFirstPlayerController());
             const bool Touch=Controller && Controller->IsUsingTouchControls();
-            const FString Hint=D->Shot==9?(Touch?TEXT("自动钻进 · 上推加速 · 左右微调"):TEXT("W-加速前进")):(Touch?TEXT("跃迁键-传导"):TEXT("空格-传导"));
+            const FString Hint=D->Shot==9?(Touch?MiningText::Get(TEXT("UI.Ending.DrillTouch")).ToString():MiningText::Get(TEXT("UI.Ending.DrillKey")).ToString()):(Touch?MiningText::Get(TEXT("UI.Ending.PulseTouch")).ToString():MiningText::Get(TEXT("UI.Ending.PulseKey")).ToString());
             const auto Font=BrainMiningFonts::Body(18);
             const FVector2D TextSize=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Hint,Font);
             const FVector2D Position((Size.X-TextSize.X)*.5f,Size.Y-40.f-TextSize.Y);
@@ -1289,7 +1290,7 @@ void AEndingEmergence::SetShot(int32 Index)
         SetAmbience(TEXT("Afternoon"),.24f);
         if(!bFinalResolvePlayed){Sound(TEXT("FinalComputer"),.55f,.96f);bFinalResolvePlayed=true;}
     }
-    if(Shot==0){Ending::TravelHintOnce(this,TEXT("EndingHint_Street"),TEXT("按S可加速后退"));SetAmbience(TEXT("Street"),.28f);Sound(TEXT("ScaleWhoosh_01"),.32f,.86f);}
+    if(Shot==0){Ending::TravelHintOnce(this,TEXT("EndingHint_Street"),MiningText::Get(TEXT("UI.Ending.Back")));SetAmbience(TEXT("Street"),.28f);Sound(TEXT("ScaleWhoosh_01"),.32f,.86f);}
     if(Shot==3){SetAmbience(TEXT("Space"),.18f);Sound(TEXT("ScaleWhoosh_02"),.34f,.82f);}
     UE_LOG(LogTemp,Display,TEXT("ENDING_SHOT %d"),Shot);
 }
@@ -1727,7 +1728,7 @@ void AEndingEmergence::UpdateNerves()
 void AEndingEmergence::EnterBlood()
 {
     if(auto* M=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>())M->SetEndingCellFloat(false);
-    Ending::TravelHintOnce(this,TEXT("EndingHint_Blood"),TEXT("按W可加速前进"));
+    Ending::TravelHintOnce(this,TEXT("EndingHint_Blood"),MiningText::Get(TEXT("UI.Ending.Forward")));
     GateIndex=1;BloodAt=Age;BeatAt=Age+3;BloodSpeed=480;BloodY=0;
     UpdatePainterly(); // Clear both views before the camera handoff, not a tick later.
     const FVector Eye=Player->PlayerCameraManager->GetCameraLocation();

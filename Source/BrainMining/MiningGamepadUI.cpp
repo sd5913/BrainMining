@@ -1,4 +1,5 @@
 #include "MiningGamepadSubsystem.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "MiningGamepadHints.h"
 #include "MiningGUIWidgets.h"
@@ -169,7 +170,7 @@ void UMiningGamepadSubsystem::PurchaseUpgrade()
     auto* Progression = Player->GetPawn()->FindComponentByClass<UMiningProgressionComponent>();
     if (!Progression || (!Progression->bInitialized && !Progression->InitializeProgression())) return;
     const bool bPurchased = Progression->Purchase(0, Progression->GetLevel(0) + 1);
-    UpgradeFeedback = FText::FromString(bPurchased ? TEXT("升级成功") : TEXT("暂时无法升级：资源不足或已满级"));
+    UpgradeFeedback = MiningText::Get(bPurchased?TEXT("UI.Pad.Purchased"):TEXT("UI.Pad.Rejected"));
     UpgradeFeedbackRemaining = 2.5f;
     UMiningHapticsSubsystem::Emit(Player, bPurchased ? EMiningHapticCue::UpgradeSuccess : EMiningHapticCue::UpgradeRejected);
     if (auto* Audio = Player->GetPawn()->FindComponentByClass<UMiningAudioComponent>()) Audio->PlayPurchase(bPurchased);
@@ -185,33 +186,33 @@ TArray<FMiningGamepadHint> UMiningGamepadSubsystem::GetHintEntries() const
     {
         const auto* Cards = Controller()->FindComponentByClass<UCardRoomInteractionComponent>();
         if (Cards && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing)
-            return {{Glyph::DPad, TEXT("左右选牌")}, {Glyph::A, TEXT("选中/取消")}, {Glyph::Y, TEXT("全选/清空")}, {Glyph::B, TEXT("清空")}, {Glyph::X, Cards->Stage->Run.Round == 4 && !Cards->Stage->Run.CanConfirm() ? TEXT("全选") : FString::Printf(TEXT("出牌 %d/%d"), Cards->Stage->Run.Staged.Num(), Cards->Stage->Run.Hand.Num())}, {Glyph::Menu, TEXT("暂停")}};
+            return {{Glyph::DPad, MiningText::Get(TEXT("UI.Pad.Choose")).ToString()}, {Glyph::A, MiningText::Get(TEXT("UI.Pad.Toggle")).ToString()}, {Glyph::Y, MiningText::Get(TEXT("UI.Pad.ToggleAll")).ToString()}, {Glyph::B, MiningText::Get(TEXT("UI.Pad.Clear")).ToString()}, {Glyph::X, Cards->Stage->Run.Round == 4 && !Cards->Stage->Run.CanConfirm() ? MiningText::Get(TEXT("UI.Pad.SelectAll")).ToString() : FText::Format(MiningText::Get(TEXT("UI.Pad.Play")),Cards->Stage->Run.Staged.Num(),Cards->Stage->Run.Hand.Num()).ToString()}, {Glyph::Menu, MiningText::Get(TEXT("UI.Pad.Pause")).ToString()}};
         if (Cards && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Victory)
-            return {{Glyph::X, TEXT("领取钻机"), Glyph::A}, {Glyph::Menu, TEXT("暂停")}};
-        return {{Glyph::Menu, TEXT("暂停 · 等待牌局演出")}};
+            return {{Glyph::X, MiningText::Get(TEXT("UI.Pad.Reward")).ToString(), Glyph::A}, {Glyph::Menu, MiningText::Get(TEXT("UI.Pad.Pause")).ToString()}};
+        return {{Glyph::Menu, MiningText::Get(TEXT("UI.Pad.Waiting")).ToString()}};
     }
     if (Context == EMiningInputContext::Office)
-        return {{Glyph::RightStick, TEXT("光标")}, {Glyph::LT, TEXT("精调")}, {Glyph::A, TEXT("点击"), Glyph::RT}, {Glyph::B, TEXT("离开电脑")}};
+        return {{Glyph::RightStick, MiningText::Get(TEXT("UI.Pad.Cursor")).ToString()}, {Glyph::LT, MiningText::Get(TEXT("UI.Pad.Fine")).ToString()}, {Glyph::A, MiningText::Get(TEXT("UI.Pad.Click")).ToString(), Glyph::RT}, {Glyph::B, MiningText::Get(TEXT("UI.Pad.LeaveComputer")).ToString()}};
     if (Context == EMiningInputContext::Catalogue)
-        return {{Glyph::LB, TEXT("切换藏品"), Glyph::RB}, {Glyph::RightStick, TEXT("旋转")}, {Glyph::LT, TEXT("缩放"), Glyph::RT}, {Glyph::Y, TEXT("复位")}, {Glyph::B, TEXT("返回")}};
+        return {{Glyph::LB, MiningText::Get(TEXT("UI.Pad.Collection")).ToString(), Glyph::RB}, {Glyph::RightStick, MiningText::Get(TEXT("UI.Pad.Rotate")).ToString()}, {Glyph::LT, MiningText::Get(TEXT("UI.Pad.Zoom")).ToString(), Glyph::RT}, {Glyph::Y, MiningText::Get(TEXT("UI.Pad.Reset")).ToString()}, {Glyph::B, MiningText::Get(TEXT("UI.Pad.Back")).ToString()}};
     if (Context == EMiningInputContext::Menu)
-        return {{Glyph::DPad, TEXT("导航")}, {Glyph::A, TEXT("确认")}, {Glyph::RightStick, TEXT("光标")}, {Glyph::RT, TEXT("点击")}, {Glyph::B, TEXT("返回")}};
+        return {{Glyph::DPad, MiningText::Get(TEXT("UI.Pad.Navigate")).ToString()}, {Glyph::A, MiningText::Get(TEXT("UI.Pad.Confirm")).ToString()}, {Glyph::RightStick, MiningText::Get(TEXT("UI.Pad.Cursor")).ToString()}, {Glyph::RT, MiningText::Get(TEXT("UI.Pad.Click")).ToString()}, {Glyph::B, MiningText::Get(TEXT("UI.Pad.Back")).ToString()}};
     if (Context == EMiningInputContext::Thoughts)
-        return {{Glyph::A, TEXT("交换")}, {Glyph::RightStick, TEXT("光标")}, {Glyph::RT, TEXT("按住拖拽")}, {Glyph::LB, TEXT("思维操作"), Glyph::RB}, {Glyph::B, TEXT("返回")}};
+        return {{Glyph::A, MiningText::Get(TEXT("UI.Pad.Swap")).ToString()}, {Glyph::RightStick, MiningText::Get(TEXT("UI.Pad.Cursor")).ToString()}, {Glyph::RT, MiningText::Get(TEXT("UI.Pad.Drag")).ToString()}, {Glyph::LB, MiningText::Get(TEXT("UI.Pad.Thoughts")).ToString(), Glyph::RB}, {Glyph::B, MiningText::Get(TEXT("UI.Pad.Back")).ToString()}};
     if (UpgradeFeedbackRemaining > 0) return {{Glyph::LT, UpgradeFeedback.ToString()}};
     if (const auto* Player = Controller())
     {
         for (TActorIterator<AWenSiMirrorPuzzle> Puzzle(Player->GetWorld()); Puzzle; ++Puzzle)
             if (Puzzle->bAreaActive)
-                return {{Glyph::X, TEXT("思考/交互")}, {Glyph::RB, TEXT("交换属性")}, {Glyph::LB, TEXT("清空思维")}, {Glyph::Y, TEXT("编辑")}, {Glyph::A, TEXT("跳跃/飞行")}};
+                return {{Glyph::X, MiningText::Get(TEXT("UI.Pad.Think")).ToString()}, {Glyph::RB, MiningText::Get(TEXT("UI.Pad.SwapProperties")).ToString()}, {Glyph::LB, MiningText::Get(TEXT("UI.Pad.ClearThoughts")).ToString()}, {Glyph::Y, MiningText::Get(TEXT("UI.Pad.Edit")).ToString()}, {Glyph::A, MiningText::Get(TEXT("UI.Pad.Fly")).ToString()}};
         for (TActorIterator<AWenSiPuzzle> Puzzle(Player->GetWorld()); Puzzle; ++Puzzle)
             if (Puzzle->bAreaActive)
-                return {{Glyph::X, TEXT("思考/交互")}, {Glyph::Y, TEXT("编辑")}, {Glyph::LB, TEXT("关闭左右思维"), Glyph::RB}, {Glyph::A, TEXT("跳跃/飞行")}};
+                return {{Glyph::X, MiningText::Get(TEXT("UI.Pad.Think")).ToString()}, {Glyph::Y, MiningText::Get(TEXT("UI.Pad.Edit")).ToString()}, {Glyph::LB, MiningText::Get(TEXT("UI.Pad.CloseThoughts")).ToString(), Glyph::RB}, {Glyph::A, MiningText::Get(TEXT("UI.Pad.Fly")).ToString()}};
     }
     if (bResetHeld)
-        return {{Glyph::DPad, FString::Printf(TEXT("重置：%d%% · 松开取消"), FMath::Clamp(FMath::RoundToInt(ResetElapsed / FMath::Max(.4f, ResetHoldSeconds) * 100), 0, 100))}};
-    return {{Glyph::A, TEXT("跳跃/按住飞行")}, {Glyph::RT, TEXT("操作")}, {Glyph::X, TEXT("交互")}, {Glyph::Y, TEXT("钻机")},
-        {Glyph::RB, TEXT("炸弹")}, {Glyph::DPadUp, TEXT("图鉴")}, {Glyph::LT, TEXT("升级")}, {Glyph::Menu, TEXT("暂停")}};
+        return {{Glyph::DPad, FText::Format(MiningText::Get(TEXT("UI.Pad.ResetProgress")),FMath::Clamp(FMath::RoundToInt(ResetElapsed / FMath::Max(.4f, ResetHoldSeconds) * 100),0,100)).ToString()}};
+    return {{Glyph::A, MiningText::Get(TEXT("UI.Pad.HoldFly")).ToString()}, {Glyph::RT, MiningText::Get(TEXT("UI.Pad.Use")).ToString()}, {Glyph::X, MiningText::Get(TEXT("UI.Pad.Interact")).ToString()}, {Glyph::Y, MiningText::Get(TEXT("UI.Pad.Drill")).ToString()},
+        {Glyph::RB, MiningText::Get(TEXT("UI.Pad.Bomb")).ToString()}, {Glyph::DPadUp, MiningText::Get(TEXT("UI.Pad.Catalogue")).ToString()}, {Glyph::LT, MiningText::Get(TEXT("UI.Pad.Upgrade")).ToString()}, {Glyph::Menu, MiningText::Get(TEXT("UI.Pad.Pause")).ToString()}};
 }
 
 FString UMiningGamepadSubsystem::GetHint() const

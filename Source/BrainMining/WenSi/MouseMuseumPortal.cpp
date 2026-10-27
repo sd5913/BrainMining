@@ -1,4 +1,7 @@
 #include "WenSi/MouseMuseumPortal.h"
+#include "MiningLocalizationSubsystem.h"
+#include "MiningAchievementSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "Camera/CameraActor.h"
@@ -100,7 +103,7 @@ void AMouseMuseumPortal::RefreshFocus()
    bInsideGallery=true;
    if(GalleryEnteredAt<0)GalleryEnteredAt=GetWorld()->GetTimeSeconds();
    if(!bGalleryHintShown && GetWorld()->GetTimeSeconds()-GalleryEnteredAt>=3.f)
-   {bGalleryHintShown=true;if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("这画上好像有个奇怪的圆圈")),4.f);}}
+   {bGalleryHintShown=true;if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(MiningText::Get(TEXT("UI.Museum.PaintingHint")),4.f);}}
    FVector Eye;FRotator R;PC->GetPlayerViewPoint(Eye,R);const FVector D=R.Vector(),Center=CellCenter();
    if(D.X>.05f)
    {
@@ -132,7 +135,7 @@ bool AMouseMuseumPortal::TryEnter()
  EntryPawn=Pawn;bPawnWasHidden=Pawn->IsHidden();Pawn->SetActorHiddenInGame(true);
  PreviousMovementMode=Pawn->GetCharacterMovement()->MovementMode;PreviousCustomMode=Pawn->GetCharacterMovement()->CustomMovementMode;
  Pawn->GetCharacterMovement()->StopMovementImmediately();Pawn->GetCharacterMovement()->DisableMovement();
- if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(FText::FromString(TEXT("再想想，比如说生命的涌现呢？")),5.f);}
+ if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(MiningText::Get(TEXT("UI.Museum.LifeHint")),5.f);}
  EntryAge=0;bFocused=false;bTravelRequested=false;return true;
 }
 
@@ -154,7 +157,7 @@ bool AMouseMuseumPortal::Advance(float Dt)
   bTravelRequested=true;
   bool Campaign=false;
   if(auto Hall=AMiningExhibitHall::Find(GetWorld());Hall && Hall->Areas.IsValidIndex(Hall->ActiveArea))Campaign=Puzzle->bAreaManaged && Hall->Areas[Hall->ActiveArea].Tag==TEXT("BM_Campaign_MainGameMuseum");
-  if(Campaign){Puzzle->bComplete=true;UGameplayStatics::OpenLevel(this,TEXT("/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo"),true);}
+  if(Campaign){Puzzle->bComplete=true;GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->RecordMilestone(TEXT("ACH_MUSEUM_CLEAR"));UGameplayStatics::OpenLevel(this,TEXT("/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo"),true);}
   else {Puzzle->bComplete=true;Cancel();}
  }
  // A missing packaged destination must not leave the player permanently locked.

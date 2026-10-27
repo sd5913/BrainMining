@@ -1,4 +1,5 @@
 #include "MiningGUIWidgets.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningUISounds.h"
 #include "MiningSaveSubsystem.h"
 #include "MiningCollection.h"
@@ -625,7 +626,7 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
     HintSlot->SetSize(bMaxLevel?FVector2D(112,26):FVector2D(220,26));
     PickaxeUpgradeHint->SetJustification(bMaxLevel?ETextJustify::Center:ETextJustify::Left);
     PickaxeUpgrade->SetUpgradeLevel(Level, true);
-    SetText(PickaxeLevelLabel, FText::FromString(FString::Printf(TEXT("等级 %d"), Level)));
+    SetText(PickaxeLevelLabel, FText::Format(MiningText::Get(TEXT("UI.Upgrade.Level")),Level));
     Visible(PickaxeRequirements, Level < 4);
     const auto Costs = UMiningPickaxeSettings::ResolveLevel(Level+1).MaterialCosts;
     for (int32 Row = 0; Row < PickaxeRequirementRows.Num(); ++Row)
@@ -640,8 +641,8 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
             const auto& Cost = Costs[Row];
             const int32 Owned = Wallet->GetMineralCount(Cost.Mineral);
             SetMineralIcon(Icon, Cost.Mineral);
-            SetText(Label, FText::FromString(FMiningMineralCost::Name(Cost.Mineral)));
-            SetText(Count, FText::FromString(Owned>=Cost.Count?TEXT("✓ 已足够"):FString::Printf(TEXT("还需%d个"),Cost.Count-Owned)));
+            SetText(Label, FMiningMineralCost::NameText(Cost.Mineral));
+            SetText(Count, Owned>=Cost.Count?MiningText::Get(TEXT("UI.Upgrade.Enough")):FText::Format(MiningText::Get(TEXT("UI.Upgrade.Need")),Cost.Count-Owned));
             Label->SetColorAndOpacity(Owned>=Cost.Count?FLinearColor(.42f,.95f,.65f):FLinearColor(.94f,.95f,.92f));
             Count->SetColorAndOpacity(Owned >= Cost.Count ? FLinearColor(.42f,.95f,.65f) : FLinearColor(.89f,.9f,.87f));
         }
@@ -652,7 +653,7 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
         }
     }
     const bool bReady = Progression->CanUpgradePickaxe();
-    SetText(PickaxeUpgradeHint, FText::FromString(Level >= 4 ? TEXT("已满级") : (UMiningGamepadSubsystem::UsesGamepad(GetOwningPlayer()) ? TEXT("[ LT ] 升级") : TEXT("[ Tab ] 升级"))));
+    SetText(PickaxeUpgradeHint, Level>=4?MiningText::Get(TEXT("UI.Upgrade.Max")):FText::Format(MiningText::Get(TEXT("UI.Upgrade.Key")),FText::AsCultureInvariant(UMiningGamepadSubsystem::UsesGamepad(GetOwningPlayer())?TEXT("LT"):TEXT("Tab"))));
     PickaxeUpgradeHint->SetColorAndOpacity(bReady ? FLinearColor(.42f,.95f,.65f) : FLinearColor(.82f,.85f,.83f));
 }
 
@@ -691,7 +692,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
     if(!CollectionShortcut)
     {
         CollectionShortcut=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("CollectionShortcut"));
-        CollectionShortcut->SetText(FText::FromString(TEXT("[C]查看藏品")));
+        CollectionShortcut->SetText(MiningText::Get(TEXT("UI.Collection.Shortcut")));
         CollectionShortcut->SetFont(BrainMiningFonts::Body(18));
         CollectionShortcut->SetColorAndOpacity(FLinearColor(.94f,.95f,.92f));
         CollectionShortcut->SetShadowOffset(FVector2D(0,1));CollectionShortcut->SetShadowColorAndOpacity(FLinearColor(0,0,0,.65f));
@@ -733,7 +734,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
             TutorialAge+=Dt;
             for(int32 I=0;I<5;++I)TutorialRows[I]->SetVisibility(I==0?ESlateVisibility::HitTestInvisible:ESlateVisibility::Collapsed);
             auto* Row=TutorialRows[0].Get();
-            Row->SetText(FText::FromString(Saves->TutorialSoilPassed?TEXT("✓  穿过1个泥土层"):TEXT("·  穿过1个泥土层")));
+            Row->SetText(FText::FromString(FString(Saves->TutorialSoilPassed?TEXT("✓  "):TEXT("·  "))+MiningText::Get(TEXT("UI.Tutorial.Soil")).ToString()));
             Row->SetColorAndOpacity(Saves->TutorialSoilPassed?FLinearColor(.42f,.95f,.66f):FLinearColor(.94f,.95f,.92f));
             Row->SetRenderOpacity(Saves->TutorialSoilPassed?FMath::Clamp((1.4f-TutorialSoilDoneAge)/.4f,0.f,1.f):1.f);
             CastChecked<UCanvasPanelSlot>(Row->Slot)->SetPosition(FVector2D(16,14));
@@ -758,8 +759,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         PickaxePanel->SetRenderOpacity(UpgradeAttentionAge<2.4f?.70f+.30f*FMath::Cos(UpgradeAttentionAge*2.f*PI/.8f):1.f);
     if(DisplayedUpgrade==1 && TutorialDoneAge[2]>1.4f)
     {DisplayedUpgrade=2;TutorialDoneAge[2]=0;TutorialAge=0;UpgradeAttentionAge=0;}
-    const TCHAR* Basic[]={TEXT("收集1个铜矿"),TEXT("收集1个铁矿"),DisplayedUpgrade==1?TEXT("升级1次矿镐"):TEXT("将矿镐升至2级"),TEXT("")};
-    const TCHAR* Prototype[]={TEXT("发现1个灵感原型"),TEXT("发现第2个灵感原型"),TEXT("发现第3个灵感原型"),TEXT("发现第4个灵感原型")};
+    const FText Basic[]={MiningText::Get(TEXT("UI.Tutorial.Copper")),MiningText::Get(TEXT("UI.Tutorial.Iron")),MiningText::Get(DisplayedUpgrade==1?TEXT("UI.Tutorial.Upgrade1"):TEXT("UI.Tutorial.Upgrade2")),FText::GetEmpty()};
     int32 VisibleRows=0;
     for(int32 I=0;I<5;++I)
     {
@@ -773,8 +773,8 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         if(Hidden)continue;
         const bool Checked=I<4?Done:Saves->PrototypesFound>=DisplayedPrototype;
         // Keep undiscovered prototypes a surprise; reveal their names only on completion.
-        const TCHAR* Objective=I<4?Basic[I]:(Checked?Prototype[DisplayedPrototype-1]:TEXT("继续前进探索"));
-        Row->SetText(FText::FromString(FString(Checked?TEXT("✓  "):TEXT("·  "))+Objective));
+        const FText Objective=I<4?Basic[I]:(Checked?FText::Format(MiningText::Get(TEXT("UI.Tutorial.Prototype")),DisplayedPrototype):MiningText::Get(TEXT("UI.Tutorial.Explore")));
+        Row->SetText(FText::FromString(FString(Checked?TEXT("✓  "):TEXT("·  "))+Objective.ToString()));
         Row->SetColorAndOpacity(Checked?FLinearColor(.42f,.95f,.66f):FLinearColor(.94f,.95f,.92f));
         Row->SetRenderOpacity(Checked?FMath::Clamp((1.4f-TutorialDoneAge[I])/.4f,0.f,1.f):1.f);
         CastChecked<UCanvasPanelSlot>(Row->Slot)->SetPosition(FVector2D(16,14+VisibleRows*31));++VisibleRows;

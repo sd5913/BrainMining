@@ -1,4 +1,5 @@
 #include "EndingCreditsWidget.h"
+#include "MiningLocalizationSubsystem.h"
 #include "Components/Image.h"
 #include "Components/CanvasPanel.h"
 #include "Components/TextBlock.h"
@@ -25,8 +26,8 @@ void UEndingCreditsWidget::NativeConstruct()
         Contributors->SetVisibility(ESlateVisibility::HitTestInvisible);
         Contributors->SetRenderOpacity(0);
     }
-    if(ThankYou){ThankYou->SetText(FText::FromString(TEXT("恭喜你挖出来了！《挖哦》也因此诞生！感谢游玩！")));ThankYou->SetRenderOpacity(0);}
-    if(Prompt)Prompt->SetRenderOpacity(0);
+    if(ThankYou){ThankYou->SetText(MiningText::Get(TEXT("UI.Ending.Thanks")));ThankYou->SetRenderOpacity(0);}
+    if(Prompt){Prompt->SetText(MiningText::Get(TEXT("UI.Ending.Prompt")));Prompt->SetRenderOpacity(0);}
 }
 
 void UEndingCreditsWidget::NativeTick(const FGeometry& G,float Dt)

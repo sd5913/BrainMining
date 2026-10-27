@@ -102,6 +102,8 @@ public:
     void Release();
     float MeasureExposure() const;
     bool CanRelease(float Threshold) const;
+    static FText ItemNameText(int32 Id);
+    static FText DescriptionText(int32 Id);
     static FString ItemName(int32 Id);
     static FString Description(int32 Id);
     static FString Clue(int32 Id);

@@ -1,4 +1,5 @@
 #include "PopupClose/PopupCloseStage.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "MiningMobileGraphicsSettings.h"
 #include "Subtitles/SubtitleLibrary.h"
@@ -320,11 +321,11 @@ APopupOfficeDevice* APopupCloseStage::FocusedDevice(APlayerController* PC) const
 FString APopupCloseStage::GetInteractionAction(APlayerController* PC) const
 {
  if (!bAreaActive) return FString();
- if(Exit && Exit->IsWaitingForBomb() && Exit->CanCollect(PC))return TEXT("炸弹");
+ if(Exit && Exit->IsWaitingForBomb() && Exit->CanCollect(PC))return MiningText::Get(TEXT("UI.Tool.Bomb")).ToString();
  auto* Device = FocusedDevice(PC);
  if (!Device) return FString();
  if (Phase == EPhase::Idle) return FString();
- return Device->IsPrinter() ? FString::Printf(TEXT("处理文件 · %d 张"), Device->Pending()) : TEXT("使用电脑");
+ return Device->IsPrinter() ? FText::Format(MiningText::Get(TEXT("Office.Hint.Printed")),Device->Pending()).ToString() : MiningText::Get(TEXT("Office.Hint.Computer")).ToString();
 }
 bool APopupCloseStage::HandleInteractionInput(APlayerController* PC)
 {
@@ -521,7 +522,7 @@ void APopupCloseStage::Tick(float Dt)
  if(auto Device=FocusedDevice(PC))
  {
   ShowPrompt(PC,Phase==EPhase::Idle?TEXT(""):
-   Device->IsPrinter()?FString::Printf(TEXT("按 E 处理文件  ·  %d 张"),Device->Pending()):TEXT("按 E 使用电脑"));
+   Device->IsPrinter()?FText::Format(MiningText::Get(TEXT("Office.Hint.PrintedKey")),Device->Pending()).ToString():MiningText::Get(TEXT("Office.Hint.ComputerKey")).ToString());
  }
  else ShowPrompt(PC,TEXT(""));
 }

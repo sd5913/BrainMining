@@ -2,6 +2,7 @@
 
 
 #include "BrainMiningPlayerController.h"
+#include "MiningLocalizationSubsystem.h"
 #include "EndingCreditsInput.h"
 #include "EndingEmergence.h"
 #include "MobileUIWidgets.h"
@@ -778,10 +779,11 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 	SetIgnoreLookInput(true);
 	bAudioPausedWorld = SetPause(true);
     TSharedRef<SVerticalBox> Rows=SNew(SVerticalBox);
-    Rows->AddSlot().AutoHeight().Padding(0,0,0,18)[SNew(STextBlock).Text(FText::FromString(TEXT("设置"))).Font(BrainMiningFonts::Title(32)).ColorAndOpacity(MiningMenuStyle::Gold)];
-    Rows->AddSlot().AutoHeight().Padding(0,0,0,10)[MiningMenuStyle::Section(TEXT("音频"))];
+    Rows->AddSlot().AutoHeight().Padding(0,0,0,18)[SNew(STextBlock).Text(MiningText::Get(TEXT("UI.Settings.Title"))).Font(BrainMiningFonts::Title(32)).ColorAndOpacity(MiningMenuStyle::Gold)];
+    Rows->AddSlot().AutoHeight()[GetGameInstance()->GetSubsystem<UMiningLocalizationSubsystem>()->MakeLanguageSelector()];
+    Rows->AddSlot().AutoHeight().Padding(0,0,0,10)[MiningMenuStyle::Section(MiningText::Get(TEXT("UI.Settings.Audio")))];
     TSharedPtr<SSlider> FirstSlider;
-    const TCHAR* Labels[]={TEXT("总音量"),TEXT("音乐"),TEXT("音效"),TEXT("环境声"),TEXT("语音")};
+    const TCHAR* Labels[]={TEXT("UI.Settings.Master"),TEXT("UI.Settings.Music"),TEXT("UI.Settings.Effects"),TEXT("UI.Settings.Ambience"),TEXT("UI.Settings.Voice")};
     TWeakObjectPtr<UMiningAudioSettings> WeakSettings(Settings);
     auto SliderRow=[&](const TCHAR* Label,TAttribute<float> Value,TAttribute<FText> Readout,FOnFloatValueChanged Changed)
     {
@@ -789,7 +791,7 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
         Rows->AddSlot().AutoHeight().Padding(0,3)[SNew(SBorder).BorderImage(MiningMenuStyle::Brush(1)).Padding(FMargin(18,12))
             [SNew(SHorizontalBox)
                 +SHorizontalBox::Slot().FillWidth(.42f).VAlign(VAlign_Center).Padding(0,0,22,0)
-                    [SNew(STextBlock).Text(FText::FromString(Label)).Justification(ETextJustify::Right).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(MiningMenuStyle::Cream)]
+                    [SNew(STextBlock).Text(MiningText::Get(Label)).Justification(ETextJustify::Right).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(MiningMenuStyle::Cream)]
                 +SHorizontalBox::Slot().FillWidth(.46f).VAlign(VAlign_Center).Padding(20,0)
                     [SAssignNew(Slider,SSlider).Style(MiningMenuStyle::Slider()).Value(Value).OnValueChanged(Changed)]
                 +SHorizontalBox::Slot().FillWidth(.12f).VAlign(VAlign_Center)
@@ -800,11 +802,11 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
         SliderRow(Labels[Channel],TAttribute<float>::CreateLambda([WeakSettings,Channel](){return WeakSettings.IsValid()?WeakSettings->GetVolume(Channel):0.f;}),
             TAttribute<FText>::CreateLambda([WeakSettings,Channel](){return FText::AsPercent(WeakSettings.IsValid()?WeakSettings->GetVolume(Channel):0.f);}),
             FOnFloatValueChanged::CreateLambda([WeakSettings,Channel](float Value){if(WeakSettings.IsValid())WeakSettings->SetVolume(Channel,Value);}));
-    Rows->AddSlot().AutoHeight().Padding(0,18,0,8)[MiningMenuStyle::Section(TEXT("灵敏度"))];
-    SliderRow(TEXT("镜头移动"),TAttribute<float>::CreateLambda([WeakSettings](){return WeakSettings.IsValid()?(WeakSettings->GetLookSensitivity()-.2f)/2.8f:2.f/7.f;}),
+    Rows->AddSlot().AutoHeight().Padding(0,18,0,8)[MiningMenuStyle::Section(MiningText::Get(TEXT("UI.Settings.Sensitivity")))];
+    SliderRow(TEXT("UI.Settings.Look"),TAttribute<float>::CreateLambda([WeakSettings](){return WeakSettings.IsValid()?(WeakSettings->GetLookSensitivity()-.2f)/2.8f:2.f/7.f;}),
         TAttribute<FText>::CreateLambda([WeakSettings](){return FText::FromString(FString::Printf(TEXT("%.2f ×"),WeakSettings.IsValid()?WeakSettings->GetLookSensitivity():1.f));}),
         FOnFloatValueChanged::CreateLambda([WeakSettings](float Value){if(WeakSettings.IsValid())WeakSettings->SetLookSensitivity(.2f+Value*2.8f);}));
-    SliderRow(TEXT("视野 FOV"),TAttribute<float>::CreateLambda([WeakSettings](){return WeakSettings.IsValid()?(WeakSettings->GetFieldOfView()-80.f)/35.f:20.f/35.f;}),
+    SliderRow(TEXT("UI.Settings.FOV"),TAttribute<float>::CreateLambda([WeakSettings](){return WeakSettings.IsValid()?(WeakSettings->GetFieldOfView()-80.f)/35.f:20.f/35.f;}),
         TAttribute<FText>::CreateLambda([WeakSettings](){return FText::AsNumber(FMath::RoundToInt(WeakSettings.IsValid()?WeakSettings->GetFieldOfView():100.f));}),
         FOnFloatValueChanged::CreateLambda([WeakSettings](float Value){if(WeakSettings.IsValid())WeakSettings->SetFieldOfView(80.f+Value*35.f);}));
     if(auto* Haptics=UMiningHapticsSubsystem::Find(this))Rows->AddSlot().AutoHeight()[Haptics->MakeSettingsWidget()];
@@ -813,9 +815,9 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
         +SVerticalBox::Slot().AutoHeight().Padding(0,20,0,0)[SNew(SHorizontalBox)
             +SHorizontalBox::Slot().FillWidth(1).Padding(0,0,8,0)[SNew(SButton).ButtonStyle(MiningMenuStyle::Button()).HAlign(HAlign_Center).OnClicked_Lambda([WeakSettings]()
                 {if(WeakSettings.IsValid())WeakSettings->RestoreDefaults();return FReply::Handled();})
-                [SNew(STextBlock).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(FSlateColor::UseForeground()).Text(FText::FromString(TEXT("恢复默认设置")))]]
+                [SNew(STextBlock).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(FSlateColor::UseForeground()).Text(MiningText::Get(TEXT("UI.Settings.Reset")))]]
             +SHorizontalBox::Slot().FillWidth(1).Padding(8,0,0,0)[SNew(SButton).ButtonStyle(MiningMenuStyle::Button()).HAlign(HAlign_Center).OnClicked_Lambda([this](){ToggleAudioSettings();return FReply::Handled();})
-                [SNew(STextBlock).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(FSlateColor::UseForeground()).Text_Lambda([this](){return FText::FromString(UMiningGamepadSubsystem::UsesGamepad(this)?TEXT("[ B ] 返回游戏"):TEXT("[ ESC ] 返回游戏"));})]]];
+                [SNew(STextBlock).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(FSlateColor::UseForeground()).Text_Lambda([this](){return FText::Format(FText::AsCultureInvariant(TEXT("[ {0} ] {1}")),FText::AsCultureInvariant(UMiningGamepadSubsystem::UsesGamepad(this)?TEXT("B"):TEXT("ESC")),MiningText::Get(TEXT("UI.Settings.Back")));})]]];
     AudioSettingsPanel=MiningMenuStyle::Frame(Page,1060,820);
     Viewport->AddViewportWidgetContent(AudioSettingsPanel.ToSharedRef(),1000);
     bShowMouseCursor=true;

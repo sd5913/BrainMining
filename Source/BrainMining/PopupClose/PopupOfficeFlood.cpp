@@ -1,4 +1,6 @@
 #include "PopupClose/PopupOfficeFlood.h"
+#include "PopupClose/PopupLocalizedArtSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "PopupClose/PopupCloseLayout.h"
 #include "PopupClose/PopupCloseFlyingWindow.h"
 #include "PopupClose/PopupCloseContent.h"
@@ -67,7 +69,11 @@ FPopupOfficeFlood::FPopupOfficeFlood(AActor& InOwner):Owner(InOwner)
   const FLinearColor Color=I<8?PopupCloseContent::Get(I).Color:I==8?FLinearColor(.11f,.19f,.29f):I==9?FLinearColor(.85f,.12f,.10f):FLinearColor(.94f,.92f,.86f);
   auto Material=UMaterialInstanceDynamic::Create(Parent,Mesh);Material->SetVectorParameterValue(TEXT("Color"),Color);Mesh->SetMaterial(0,Material);
   if(I<PopupCloseContent::ArtCount)
-   if(auto Art=LoadObject<UMaterialInterface>(nullptr,*(FString(TEXT("/Game/PopupClose/PopupArt/M_Popup"))+PopupCloseContent::GetArt(I).AssetName)))Mesh->SetMaterial(0,Art);
+  {
+   auto* Instance=Owner.GetGameInstance();
+   auto* Art=Instance?Instance->GetSubsystem<UPopupLocalizedArtSubsystem>()->GetArtwork(I):LoadObject<UMaterialInterface>(nullptr,*(FString(TEXT("/Game/PopupClose/PopupArt/M_Popup"))+PopupCloseContent::GetArt(I).AssetName));
+   if(Art)Mesh->SetMaterial(0,Art);
+  }
   Mesh->RegisterComponent();Ground.Add(Mesh);
  }
  // Shuffled cells preserve floor coverage underneath the localized mounds.

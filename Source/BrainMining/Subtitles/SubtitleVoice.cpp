@@ -8,12 +8,34 @@ namespace
 		float Seconds;
 	};
 
+    bool IsWordCharacter(TCHAR Character)
+    {
+        return (FChar::IsAlpha(Character) || FChar::IsDigit(Character)) &&
+            !(Character >= 0x2e80 && Character <= 0x9fff) &&
+            !(Character >= 0xac00 && Character <= 0xd7af) &&
+            !(Character >= 0xf900 && Character <= 0xfaff) &&
+            !(Character >= 0xff00 && Character <= 0xffef);
+    }
+
 	TArray<FCharacterSlot> CharacterSlots(const FString& Text)
 	{
 		TArray<FCharacterSlot> Slots;
 		for (int32 Index = 0; Index < Text.Len(); ++Index)
 		{
 			const TCHAR Character = Text[Index];
+            if (IsWordCharacter(Character))
+            {
+                int32 WordLength = 1;
+                while (Index + 1 < Text.Len())
+                {
+                    const TCHAR Next = Text[Index + 1];
+                    if (IsWordCharacter(Next) || ((Next == '\'' || Next == 0x2019) && Index + 2 < Text.Len() && IsWordCharacter(Text[Index + 2])))
+                    { ++Index; ++WordLength; }
+                    else break;
+                }
+                Slots.Add({true, FMath::Clamp(.16f + .018f * WordLength, .20f, .42f)});
+                continue;
+            }
 			// UTF-16 surrogate pairs represent one character, not two syllables.
 			if (Character >= 0xd800 && Character <= 0xdbff && Index + 1 < Text.Len() &&
 				Text[Index + 1] >= 0xdc00 && Text[Index + 1] <= 0xdfff) ++Index;

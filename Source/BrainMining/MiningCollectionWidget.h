@@ -62,4 +62,5 @@ private:
     float RevealElapsed=0;
     bool bRevealing=false;
     int32 CurrentPage=0;
+    uint16 TextRevision=0;
 };

@@ -1,4 +1,5 @@
 #include "Showcase/MiningExhibitHall.h"
+#include "MiningAchievementSubsystem.h"
 #include "MiningAudioComponent.h"
 #include "BrainMiningCharacter.h"
 #include "Components/LightComponent.h"
@@ -456,6 +457,7 @@ bool AMiningExhibitHall::SkipCurrentRoom()
     const auto Kind=AreaKind(ActiveArea);
     if(!bLinearCampaign || !Areas.IsValidIndex(ActiveArea+1) ||
        (Kind!=EMiningExperienceKind::Office && Kind!=EMiningExperienceKind::Journey && Kind!=EMiningExperienceKind::Museum)) return false;
+    if(auto* Instance=GetGameInstance())Instance->GetSubsystem<UMiningAchievementSubsystem>()->DisableForDebug();
     const int32 Skipped=ActiveArea;
     CompletedAreas.Add(Skipped);
     if(Areas[Skipped].ProgressGate)

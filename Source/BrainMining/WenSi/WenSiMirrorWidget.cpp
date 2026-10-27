@@ -1,5 +1,7 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "MiningLocalizationSubsystem.h"
 #include "BrainMiningFonts.h"
+#include "Internationalization/TextLocalizationManager.h"
 #include "WenSi/MouseMuseumPortal.h"
 #include "WenSi/WenSiThoughtBubble.h"
 #include "Widgets/Layout/SScaleBox.h"
@@ -176,7 +178,7 @@ void UWenSiMirrorWidget::NativeTick(const FGeometry& MyGeometry,float InDeltaTim
 void UWenSiMirrorWidget::Refresh()
 {
  if (!Puzzle.IsValid() || !Hint.IsValid()) return;
- FString NewSignature=Puzzle->bEditing ? TEXT("edit") : TEXT("walk");
+ FString NewSignature=FString::FromInt(FTextLocalizationManager::Get().GetTextRevision())+(Puzzle->bEditing ? TEXT("edit") : TEXT("walk"));
  NewSignature+=Puzzle->IsSwapping()?(Puzzle->HasSwapCommitted()?TEXT("landed"):TEXT("swapping")):TEXT("idle");
  for (int32 I=0;I<2;++I)
  {
@@ -197,9 +199,8 @@ void UWenSiMirrorWidget::Refresh()
    }
    Cards[I]->SetVisibility(Obj ? (Puzzle->bEditing ? EVisibility::Visible:EVisibility::HitTestInvisible) : EVisibility::Collapsed);
    Rows[I]->ClearChildren();WordWidgets[I].Reset(); if (!Obj) continue;
-   WenSiThoughtBubble::AddText(Rows[I],TEXT("这是一个"),ThoughtFont(26));
-   Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SAssignNew(WordWidgets[I],SThoughtWord).ThoughtIndex(I).Word(Obj->Adjective()).Puzzle(Puzzle)];
-   WenSiThoughtBubble::AddText(Rows[I],TEXT("的")+Obj->Noun(),ThoughtFont(26));
+   WenSiThoughtBubble::AddStatement(Rows[I],Obj->Noun(),
+    SAssignNew(WordWidgets[I],SThoughtWord).ThoughtIndex(I).Word(Obj->Adjective()).Puzzle(Puzzle),ThoughtFont(26));
   }
  }
  for(int32 Index=0;Index<2;++Index)
@@ -215,10 +216,10 @@ void UWenSiMirrorWidget::Refresh()
  FString Message;
  if(Puzzle->MousePortal && Puzzle->MousePortal->IsEntering()) Message=TEXT("");
  else if(Puzzle->MousePortal && Puzzle->MousePortal->IsFocused()) Message=FString();
- else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=TEXT("长按E-重置谜题");
+ else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=MiningText::Get(TEXT("WenSi.Hint.Reset")).ToString();
  else if (!Puzzle->bComplete)
  {
-  Message=TEXT("R-交换词组    Q-关闭思考");
+  Message=MiningText::Get(TEXT("WenSi.Hint.Swap")).ToString();
  }
  Hint->SetText(FText::FromString(Message));
 }

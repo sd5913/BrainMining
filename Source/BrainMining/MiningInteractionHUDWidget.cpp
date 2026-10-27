@@ -1,4 +1,5 @@
 #include "MiningInteractionHUDWidget.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MainGameDoor.h"
 #include "MiningGamepadSubsystem.h"
 #include "BrainMiningFonts.h"
@@ -82,13 +83,13 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
 {
     auto* Controller = GetOwningPlayer();
     if (!Controller || !Controller->GetPawn()) return FString();
-    if(AMainGameDoor::FindInteractionTarget(Controller))return TEXT("开门");
+    if(AMainGameDoor::FindInteractionTarget(Controller))return MiningText::Get(TEXT("UI.Action.Door")).ToString();
     if (auto* Cards = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
         Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing)
     {
         const auto& Run = Cards->Stage->Run;
-        if (Run.Round == 4 && !Run.CanConfirm()) return TEXT("全选");
-        return Run.CanConfirm() ? TEXT("出牌") : FString();
+        if (Run.Round == 4 && !Run.CanConfirm()) return MiningText::Get(TEXT("UI.Action.SelectAll")).ToString();
+        return Run.CanConfirm() ? MiningText::Get(TEXT("UI.Action.Play")).ToString() : FString();
     }
     if (auto* Room = AMiningStartRoom::Find(GetWorld()))
     {
@@ -104,27 +105,27 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
     for (TActorIterator<AWenSiPuzzle> Puzzle(GetWorld()); Puzzle; ++Puzzle)
         if (Puzzle->bAreaActive && !Puzzle->bEditing)
         {
-            if (Puzzle->bAimReset) return TEXT("重置谜题");
+            if (Puzzle->bAimReset) return MiningText::Get(TEXT("UI.Action.Reset")).ToString();
             if (!Puzzle->bComplete && Puzzle->Objects.IsValidIndex(Puzzle->Aim))
             {
                 auto* Object = Puzzle->Objects[Puzzle->Aim].Get();
                 if (Puzzle->CanThinkAbout(Object) && Puzzle->Thoughts[0] != Object && Puzzle->Thoughts[1] != Object
                     && (!Puzzle->Thoughts[0].IsValid() || !Puzzle->Thoughts[1].IsValid()))
-                    return TEXT("思考 · ") + Object->Noun();
+                    return FText::Format(MiningText::Get(TEXT("UI.Action.ThinkAbout")),FFormatNamedArguments{{TEXT("Name"),FText::FromString(Object->Noun())}}).ToString();
             }
         }
     for (TActorIterator<AWenSiMirrorPuzzle> Mirror(GetWorld()); Mirror; ++Mirror)
         if(Mirror->bAreaActive && !Mirror->bEditing)
         {
-            if(Mirror->MousePortal && Mirror->MousePortal->IsFocused())return TEXT("进入画中的圆圈");
-            if(Mirror->bAimReset)return TEXT("重置谜题");
+            if(Mirror->MousePortal && Mirror->MousePortal->IsFocused())return MiningText::Get(TEXT("UI.Action.Portal")).ToString();
+            if(Mirror->bAimReset)return MiningText::Get(TEXT("UI.Action.Reset")).ToString();
             if(Mirror->bComplete || Mirror->IsSwapping() || !Mirror->Aim.IsValid())continue;
             const auto* Object=Mirror->Aim.Get();
             const auto IsSelf=[](const AWenSiMirrorExhibit* E){return E && (E->Kind==10 || E->Kind==11);};
             bool AlreadyThinking=false;
             for(const auto& Thought:Mirror->Thoughts)
                 AlreadyThinking|=Thought.Get()==Object || (IsSelf(Thought.Get()) && IsSelf(Object));
-            if(!AlreadyThinking && (!Mirror->Thoughts[0].IsValid() || !Mirror->Thoughts[1].IsValid()))return TEXT("思考");
+            if(!AlreadyThinking && (!Mirror->Thoughts[0].IsValid() || !Mirror->Thoughts[1].IsValid()))return MiningText::Get(TEXT("UI.Action.Think")).ToString();
         }
     for (TActorIterator<AMiningCollectionField> Collection(GetWorld()); Collection; ++Collection)
         if (Collection->IsAreaActive() && !Collection->bCatalogueOpen && IsValid(Collection->Target)
@@ -136,17 +137,17 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
             return Treasure->Target->TreasureName.ToString();
     if (auto* Reward = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
         Reward && Reward->bRoomActive && IsValid(Reward->Stage) && Reward->Stage->Run.Phase == ECardRoomPhase::Victory)
-        return TEXT("钻机");
+        return MiningText::Get(TEXT("UI.Action.Drill")).ToString();
     if (auto* Cards = Controller->FindComponentByClass<UCardRoomInteractionComponent>();
         Cards && Cards->bRoomActive && IsValid(Cards->Stage) && Cards->Stage->Run.Phase == ECardRoomPhase::Exploring
         && Cards->Stage->IsPlayerNear(Controller->GetPawn()->GetActorLocation()))
-        return TEXT("入座");
+        return MiningText::Get(TEXT("UI.Action.Sit")).ToString();
     if (auto* Hall = AMiningExhibitHall::Find(GetWorld()); Hall && Hall->bReady && Hall->ActiveArea == INDEX_NONE && !Hall->IsInteractionOpen())
         for (int32 Index = 0; Index < Hall->Areas.Num(); ++Index)
         {
             const FVector Portal = Hall->LobbyEntry.GetLocation() + FVector(550 + (Index / 3) * 650, ((Index % 3) - 1) * 650, -90);
             if (FVector::Dist2D(Controller->GetPawn()->GetActorLocation(), Portal) < 280)
-                return TEXT("进入 · ") + Hall->Areas[Index].Title.ToString();
+                return FText::Format(MiningText::Get(TEXT("UI.Action.Enter")),FFormatNamedArguments{{TEXT("Name"),Hall->Areas[Index].Title}}).ToString();
         }
     return FString();
 }
@@ -217,7 +218,9 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
         const auto* Cards = GetOwningPlayer()->FindComponentByClass<UCardRoomInteractionComponent>();
         const bool bPlayCard = Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing;
         const bool bGamepad = UMiningGamepadSubsystem::UsesGamepad(GetOwningPlayer());
-        const bool HoldReset=InteractionAction==TEXT("重置谜题");
+        bool HoldReset=false;
+        for(TActorIterator<AWenSiMirrorPuzzle> Puzzle(GetWorld());Puzzle;++Puzzle)HoldReset|=Puzzle->bAreaActive && !Puzzle->bEditing && Puzzle->bAimReset;
+        for(TActorIterator<AWenSiPuzzle> Puzzle(GetWorld());Puzzle;++Puzzle)HoldReset|=Puzzle->bAreaActive && !Puzzle->bEditing && Puzzle->bAimReset;
         float HoldProgress=0;
         if(HoldReset)
         {
@@ -229,7 +232,7 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
         Text(InteractionAction, FVector2D(0, 38), 20, FLinearColor::White, true);
         Box(FVector2D(-HalfKey, 73), FVector2D(HalfKey*2, 34), Key, FLinearColor(.015f, .02f, .025f, .85f));
         Box(FVector2D(-HalfKey+2, 74), FVector2D(HalfKey*2-4, 30), Key, FLinearColor(.96f, .95f, .89f));
-        Text(HoldReset?(bGamepad?TEXT("长按X"):TEXT("长按E")):(bGamepad ? TEXT("X") : (bPlayCard ? TEXT("空格") : TEXT("E"))), FVector2D(0, 77), 19, FLinearColor(.04f, .045f, .05f), true);
+        Text(HoldReset?(bGamepad?MiningText::Get(TEXT("UI.Action.HoldX")).ToString():MiningText::Get(TEXT("UI.Action.HoldE")).ToString()):(bGamepad ? TEXT("X") : (bPlayCard ? MiningText::Get(TEXT("UI.Action.Space")).ToString() : TEXT("E"))), FVector2D(0, 77), 19, FLinearColor(.04f, .045f, .05f), true);
         if(HoldReset && HoldProgress>0)
         {
             Box(FVector2D(-81,116),FVector2D(162,10),Key,FLinearColor(.02f,.02f,.025f,.9f));
@@ -239,7 +242,7 @@ int32 UMiningInteractionHUDWidget::NativePaint(const FPaintArgs& Args, const FGe
     if(SkipProgress>0.f)
     {
         const float Y=Size.Y/(2.f*Scale)-208.f;
-        const FString Label=TouchController && TouchController->IsUsingTouchControls()?TEXT("继续按住以跳过"):TEXT("长按 P 跳过");
+        const FString Label=TouchController && TouchController->IsUsingTouchControls()?MiningText::Get(TEXT("UI.Action.SkipTouch")).ToString():MiningText::Get(TEXT("UI.Action.SkipKey")).ToString();
         Text(Label,FVector2D(1,Y-35),20,FLinearColor(0,0,0,.85f),true);
         Text(Label,FVector2D(0,Y-36),20,FLinearColor::White,true);
         Box(FVector2D(-152,Y-2),FVector2D(304,12),Key,FLinearColor(.015f,.02f,.025f,.85f));

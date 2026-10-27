@@ -1,4 +1,5 @@
 #include "StartRoom/MiningOpening.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningLoadingScreen.h"
 #include "MiningMenuStyle.h"
 #include "Engine/GameViewportClient.h"
@@ -116,7 +117,7 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
         Button->SetRenderTransformAngle(Angle);
         Button->SetRenderShear(FVector2D(Shear,0));
         Button->SetRenderTranslation(FVector2D(Offset,0));
-        auto* Text=WidgetTree->ConstructWidget<UTextBlock>();Text->SetText(FText::FromString(Label));
+        auto* Text=WidgetTree->ConstructWidget<UTextBlock>();Text->SetText(MiningText::Get(Label));
         Text->SetFont(BrainMiningFonts::Title(36));Text->SetColorAndOpacity(FSlateColor(FLinearColor(.94f,.95f,.91f)));
         Text->SetShadowColorAndOpacity(FLinearColor(.035f,.018f,.012f,.65f));Text->SetShadowOffset(FVector2D(2,3));
         Button->AddChild(Text);
@@ -125,13 +126,17 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
     ContinueButton=nullptr;
     if(bHasSave)
     {
-        ContinueButton=AddButton(TEXT("OpeningContinueButton"),TEXT("继续游戏"),7.f,10.f,18.f);
+        ContinueButton=AddButton(TEXT("OpeningContinueButton"),TEXT("UI.MainMenu.Continue"),7.f,10.f,18.f);
         ContinueButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::ContinueGame);
     }
-    StartButton=AddButton(TEXT("OpeningStartButton"),TEXT("开始游戏"),7.f,10.f,4.f);
+    StartButton=AddButton(TEXT("OpeningStartButton"),TEXT("UI.MainMenu.Start"),7.f,10.f,4.f);
     StartButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);
-    ExitButton=AddButton(TEXT("OpeningExitButton"),TEXT("退出游戏"),7.f,10.f,-12.f);
+    ExitButton=AddButton(TEXT("OpeningExitButton"),TEXT("UI.MainMenu.Quit"),7.f,10.f,-12.f);
     ExitButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);
+    auto* Language=WidgetTree->ConstructWidget<UMiningLanguageWidget>();
+    auto* LanguageSlot=Canvas->AddChildToCanvas(Language);
+    LanguageSlot->SetAnchors(FAnchors(.045f,.83f));
+    LanguageSlot->SetOffsets(FMargin(0,0,530,125));
     auto* DesignSize=WidgetTree->ConstructWidget<USizeBox>();
     DesignSize->SetWidthOverride(1600);DesignSize->SetHeightOverride(900);DesignSize->AddChild(Canvas);
     auto* Responsive=WidgetTree->ConstructWidget<UScaleBox>();Responsive->SetStretch(EStretch::ScaleToFit);
@@ -242,15 +247,15 @@ void AMiningOpening::StartGame()
     {
         auto Choices=SNew(SVerticalBox);
         Choices->AddSlot().AutoHeight().Padding(0,0,0,28)
-            [SNew(STextBlock).Text(FText::FromString(TEXT("发现有藏品进度，是否要保留藏品进度")))
+            [SNew(STextBlock).Text(MiningText::Get(TEXT("UI.MainMenu.KeepCollectionQuestion")))
                 .Font(BrainMiningFonts::Body(24)).ColorAndOpacity(MiningMenuStyle::Gold).AutoWrapText(true)];
         TSharedPtr<SButton> Keep;
         Choices->AddSlot().AutoHeight().Padding(0,8)[SAssignNew(Keep,SButton).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(20)
             .OnClicked_Lambda([this](){ConfirmNewGame(true);return FReply::Handled();})
-            [SNew(STextBlock).Text(FText::FromString(TEXT("保留"))).Font(BrainMiningFonts::Body(24))]];
+            [SNew(STextBlock).Text(MiningText::Get(TEXT("UI.MainMenu.Keep"))).Font(BrainMiningFonts::Body(24))]];
         Choices->AddSlot().AutoHeight().Padding(0,8)[SNew(SButton).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(20)
             .OnClicked_Lambda([this](){ConfirmNewGame(false);return FReply::Handled();})
-            [SNew(STextBlock).Text(FText::FromString(TEXT("清除"))).Font(BrainMiningFonts::Body(24)).ColorAndOpacity(FLinearColor(1.f,.16f,.12f,1.f))]];
+            [SNew(STextBlock).Text(MiningText::Get(TEXT("UI.MainMenu.Clear"))).Font(BrainMiningFonts::Body(24)).ColorAndOpacity(FLinearColor(1.f,.16f,.12f,1.f))]];
         CollectionChoice=MiningMenuStyle::Frame(Choices,640,0);
         GetGameInstance()->GetGameViewportClient()->AddViewportWidgetContent(CollectionChoice.ToSharedRef(),2000);
         FInputModeUIOnly Mode;Mode.SetWidgetToFocus(Keep);Player->SetInputMode(Mode);

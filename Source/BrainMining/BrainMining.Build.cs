@@ -35,10 +35,19 @@ public class BrainMining : ModuleRules
         PrivateDependencyModuleNames.Add("ApplicationCore");
         RuntimeDependencies.Add("$(ProjectDir)/Content/UI/Gamepad/*.svg", StagedFileType.NonUFS);
         RuntimeDependencies.Add("$(ProjectDir)/Content/UI/Mobile/*.svg", StagedFileType.NonUFS);
+        RuntimeDependencies.Add("$(ProjectDir)/Content/Localization/Tables/*.csv", StagedFileType.UFS);
 		PrivateDependencyModuleNames.Add("AudioMixer");
 		PrivateDependencyModuleNames.Add("MediaAssets");
 		if (Target.Platform == UnrealTargetPlatform.Win64) PrivateDependencyModuleNames.Add("OverCrowd");
 		PrivateDependencyModuleNames.Add("GameplayTags");
+        bool WithSteam = Target.Platform == UnrealTargetPlatform.Win64 && (Target.bBuildEditor || Target.CustomConfig == "SteamPC");
+        PublicDefinitions.Add("BRAINMINING_WITH_STEAM=" + (WithSteam ? "1" : "0"));
+        if (WithSteam)
+        {
+            PrivateDependencyModuleNames.AddRange(new[] { "OnlineSubsystem", "OnlineSubsystemUtils" });
+            AddEngineThirdPartyPrivateStaticDependencies(Target, "Steamworks");
+            DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
+        }
 		PrivateDependencyModuleNames.AddRange(new[] { "GeometryAlgorithms", "AssetRegistry" });
 		if (Target.bBuildEditor) PrivateDependencyModuleNames.AddRange(new[] { "UnrealEd", "MeshConversion", "MeshDescription", "StaticMeshDescription" });
 

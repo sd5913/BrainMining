@@ -1,4 +1,5 @@
 #include "MiningComponent.h"
+#include "MiningLocalizationSubsystem.h"
 #include "Subtitles/SubtitleSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "DiggableRock.h"
@@ -132,7 +133,7 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 	if (Rock->ActorHasTag(TEXT("BM_BombOnly")))
 	{
 		if(auto* Subtitles=USubtitleSubsystem::Get(this))
-            Subtitles->PlayInteractionLines(TEXT("BombWallHint"),{FText::FromString(TEXT("这堵墙很硬，用炸弹试试"))});
+            Subtitles->PlayInteractionLines(TEXT("BombWallHint"),{MiningText::Get(TEXT("UI.Mining.BombWall"))});
 		Status.Empty();
 		TargetPickaxeHits = 0; bLastPickaxeBreak = false; return false;
 	}
@@ -151,7 +152,7 @@ bool UMiningComponent::ApplyPickaxeHit(const FHitResult& Hit)
 	}
 	if (GetPickaxeDepthMultiplier(Rock)<=0)
 	{
-		Status=FString::Printf(TEXT("破坏等级不足：矿镐 %d / 岩层硬度 %d，无法破坏"),PickaxeBalance.DestructionLevel,Rock->HardnessLevel);
+		Status=FText::Format(MiningText::Get(TEXT("UI.Mining.Hardness")),FText::AsNumber(PickaxeBalance.DestructionLevel),FText::AsNumber(Rock->HardnessLevel)).ToString();
 		TargetPickaxeHits=0;bLastPickaxeBreak=false;return false;
 	}
 	RefreshPickaxePatches();

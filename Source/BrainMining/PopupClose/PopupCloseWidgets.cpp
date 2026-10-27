@@ -1,4 +1,5 @@
 #include "PopupClose/PopupCloseWidgets.h"
+#include "MiningLocalizationSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "PopupClose/PopupCloseContent.h"
 
@@ -14,6 +15,7 @@
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBox.h"
 #include "Engine/Texture2D.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Brushes/SlateNoResource.h"
 #include "Rendering/DrawElements.h"
 #include "Widgets/SLeafWidget.h"
@@ -107,7 +109,7 @@ TSharedRef<SWidget> UPopupCloseDesktopWidget::RebuildWidget()
 		[
 			SNew(STextBlock)
 			.Visibility(EVisibility::HitTestInvisible)
-			.Text(FText::FromString(TEXT("按 E 退出电脑")))
+			.Text(MiningText::Get(TEXT("Office.Hint.Leave")))
 			.Font(PopupFont(20.f))
 			.ColorAndOpacity(FLinearColor(0.8f, 0.88f, 1.f))
 		];
@@ -157,7 +159,7 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 					.VAlign(VAlign_Center)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(Copy.Title))
+						.Text(Copy.Title)
 						.Font(BrainMiningFonts::Title(22.f))
 						.ColorAndOpacity(FLinearColor(0.08f, 0.08f, 0.1f))
 					]
@@ -172,11 +174,11 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 				SNew(SVerticalBox)
 				+SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,0,0,bThemePage?28.f:0.f)
 				[SNew(STextBlock).Visibility(bThemePage?EVisibility::HitTestInvisible:EVisibility::Collapsed)
-				 .Text(FText::FromString(TEXT("本届创作主题"))).Font(PopupFont(24.f)).ColorAndOpacity(FLinearColor(.25f,.32f,.4f))]
+				 .Text(MiningText::Get(TEXT("Office.Hint.Theme"))).Font(PopupFont(24.f)).ColorAndOpacity(FLinearColor(.25f,.32f,.4f))]
 				+SVerticalBox::Slot().AutoHeight()
 				[
 				SNew(STextBlock)
-				.Text(FText::FromString(Copy.Body))
+				.Text(Copy.Body)
 				.Font(bThemePage?BrainMiningFonts::Title(80.f):PopupFont(bIntroduction?28.f:20.f))
 				.Justification(bIntroduction?ETextJustify::Center:ETextJustify::Left)
 				.AutoWrapText(true)
@@ -199,7 +201,7 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 						return FReply::Handled();
 					})
 					[
-						SNew(STextBlock).Text(FText::FromString(bThemePage?TEXT("开始创作"):bIntroduction?TEXT("查看主题"):TEXT("回复"))).Font(PopupFont(22.f))
+						SNew(STextBlock).Text(MiningText::Get(bThemePage?TEXT("Office.Hint.Create"):bIntroduction?TEXT("Office.Hint.ViewTheme"):TEXT("Office.Hint.Reply"))).Font(PopupFont(22.f))
 						.ColorAndOpacity(FLinearColor::White).Justification(ETextJustify::Center)
 					]
 				]
@@ -244,16 +246,17 @@ TSharedRef<SWidget> UPopupCloseDesktopWidget::MakeArtPopup(int32 Id,int32 Varian
   [SNew(SImage).Image(ArtBrushes[Variant].Get()).Visibility(EVisibility::HitTestInvisible)]];
  if(Skin.bUseWorkText)
  {
-  int32 LineBreaks=0;for(const TCHAR* P=Copy.Body;*P;++P)if(*P=='\n')++LineBreaks;
+  int32 LineBreaks=0;for(TCHAR Character:Copy.Body.ToString())if(Character=='\n')++LineBreaks;
   const int32 BodyFont=bThemePage?80:bIntroduction?26:Variant==2?(LineBreaks>2?11:15):16;
   const FVector4 R=Skin.TextRect;
   Panel->AddSlot().Offset(FMargin(R.X*W,R.Y*H,R.Z*W,R.W*H)).Alignment(FVector2D(0,0)).ZOrder(1)
-  [SNew(SVerticalBox).Visibility(EVisibility::HitTestInvisible)
+  [SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly).HAlign(HAlign_Left).VAlign(VAlign_Top)
+   [SNew(SVerticalBox).Visibility(EVisibility::HitTestInvisible)
    +SVerticalBox::Slot().AutoHeight().Padding(0,0,0,5)
-    [SNew(STextBlock).Text(FText::FromString(Copy.Title)).Font(BrainMiningFonts::Title(bIntroduction?24:Variant==2?(LineBreaks>2?13:16):18)).ColorAndOpacity(FLinearColor(.035f,.035f,.04f))]
+    [SNew(STextBlock).Text(Copy.Title).WrapTextAt(R.Z*W).Font(BrainMiningFonts::Title(bIntroduction?24:Variant==2?(LineBreaks>2?13:16):18)).ColorAndOpacity(FLinearColor(.035f,.035f,.04f))]
    +SVerticalBox::Slot().FillHeight(1).VAlign(bIntroduction?VAlign_Center:VAlign_Top)
-    [SNew(STextBlock).Text(FText::FromString(Copy.Body)).Font(bThemePage?BrainMiningFonts::Title(BodyFont):PopupFont(BodyFont))
-     .Justification(bIntroduction?ETextJustify::Center:ETextJustify::Left).AutoWrapText(true).ColorAndOpacity(FLinearColor(.035f,.035f,.04f))]];
+    [SNew(STextBlock).Text(Copy.Body).Font(bThemePage?BrainMiningFonts::Title(BodyFont):PopupFont(BodyFont))
+     .Justification(bIntroduction?ETextJustify::Center:ETextJustify::Left).WrapTextAt(R.Z*W).ColorAndOpacity(FLinearColor(.035f,.035f,.04f))]]];
  }
  static const FButtonStyle HitStyle=FButtonStyle().SetNormal(FSlateNoResource()).SetHovered(FSlateNoResource()).SetPressed(FSlateNoResource()).SetDisabled(FSlateNoResource()).SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));
  TWeakObjectPtr<UPopupCloseDesktopWidget> WeakThis(this);
@@ -332,13 +335,13 @@ int32 UPopupCloseDesktopWidget::GetFrontPopupPhase() const
 FString UPopupCloseDesktopWidget::GetFrontPopupTitle() const
 {
  const int32 Index=FrontWindowIndex();
- return Windows.IsValidIndex(Index)?PopupCloseContent::Get(Windows[Index].ContentIndex).Title:FString();
+ return Windows.IsValidIndex(Index)?PopupCloseContent::Get(Windows[Index].ContentIndex).Title.ToString():FString();
 }
 
 FString UPopupCloseDesktopWidget::GetFrontPopupBody() const
 {
  const int32 Index=FrontWindowIndex();
- return Windows.IsValidIndex(Index)?PopupCloseContent::Get(Windows[Index].ContentIndex).Body:FString();
+ return Windows.IsValidIndex(Index)?PopupCloseContent::Get(Windows[Index].ContentIndex).Body.ToString():FString();
 }
 
 FVector2D UPopupCloseDesktopWidget::GetLatestClosePoint() const

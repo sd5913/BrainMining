@@ -1,4 +1,5 @@
 #include "MiningHapticsSubsystem.h"
+#include "MiningLocalizationSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "MiningMenuStyle.h"
 #include "Misc/ConfigCacheIni.h"
@@ -43,7 +44,7 @@ TSharedRef<SWidget> UMiningHapticsSubsystem::MakeSettingsWidget()
 {
     TWeakObjectPtr<UMiningHapticsSubsystem> Weak(this);
     auto Rows = SNew(SVerticalBox);
-    Rows->AddSlot().AutoHeight().Padding(0,18,0,8)[MiningMenuStyle::Section(TEXT("手柄震动"))];
+    Rows->AddSlot().AutoHeight().Padding(0,18,0,8)[MiningMenuStyle::Section(MiningText::Get(TEXT("UI.Settings.Haptics")))];
     for (int32 Option = 0; Option < 3; ++Option)
     {
         Rows->AddSlot().AutoHeight().Padding(0, 4)[SNew(SButton).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(FMargin(18,10))
@@ -59,13 +60,13 @@ TSharedRef<SWidget> UMiningHapticsSubsystem::MakeSettingsWidget()
             })[SNew(STextBlock).Font(BrainMiningFonts::Body(17)).ColorAndOpacity(FSlateColor::UseForeground()).Text_Lambda([Weak, Option]()
             {
                 const bool Enabled = Weak.IsValid() && (Option == 0 ? Weak->bEnabled : Option == 1 ? Weak->bContinuous : Weak->bOptional);
-                const TCHAR* Label = Option == 0 ? TEXT("震动总开关") : Option == 1 ? TEXT("钻机与喷气持续震动") : TEXT("轻微交互与演出提示");
-                return FText::FromString(FString::Printf(TEXT("%s     [ %s ]"), Label, Enabled ? TEXT("×") : TEXT(" ")));
+                const TCHAR* Key = Option == 0 ? TEXT("UI.Settings.HapticsEnabled") : Option == 1 ? TEXT("UI.Settings.HapticsContinuous") : TEXT("UI.Settings.HapticsOptional");
+                return FText::Format(FText::AsCultureInvariant(TEXT("{0}     [ {1} ]")), MiningText::Get(Key), FText::AsCultureInvariant(Enabled ? TEXT("×") : TEXT(" ")));
             })]];
     }
     Rows->AddSlot().AutoHeight().Padding(0, 8)[SNew(STextBlock).Font(BrainMiningFonts::Style("Regular", 16)).Text_Lambda([Weak]()
     {
-        return FText::FromString(FString::Printf(TEXT("震动强度   %d%%"), Weak.IsValid() ? FMath::RoundToInt(Weak->Strength * 100) : 0));
+        return FText::FormatNamed(MiningText::Get(TEXT("UI.Settings.HapticsStrength")), TEXT("Strength"), FText::AsPercent(Weak.IsValid() ? Weak->Strength : 0.f));
     })];
     Rows->AddSlot().AutoHeight()[SNew(SSlider).Style(MiningMenuStyle::Slider()).StepSize(.05f).Value_Lambda([Weak]() { return Weak.IsValid() ? Weak->Strength : 0.f; })
         .OnValueChanged_Lambda([Weak](float Value) { if (Weak.IsValid()) Weak->SetStrength(Value); })];

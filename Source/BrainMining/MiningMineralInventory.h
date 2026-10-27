@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningMineralInventory.generated.h"
 
 // Values match the existing authored treasure IDs; old assets keep their identity.
@@ -24,15 +25,16 @@ struct BRAINMINING_API FMiningMineralCost
     {
         return Type == EMiningMineral::Copper || Type == EMiningMineral::Iron || Type == EMiningMineral::Malachite || Type == EMiningMineral::Diamond;
     }
-    static FString Name(EMiningMineral Type)
+    static FText NameText(EMiningMineral Type)
     {
         switch (Type)
         {
-        case EMiningMineral::Copper: return TEXT("铜矿");
-        case EMiningMineral::Iron: return TEXT("铁矿");
-        case EMiningMineral::Malachite: return TEXT("孔雀石");
-        case EMiningMineral::Diamond: return TEXT("钻石");
-        default: return TEXT("未知矿石");
+        case EMiningMineral::Copper: return MiningText::Get(TEXT("Mineral.Copper"));
+        case EMiningMineral::Iron: return MiningText::Get(TEXT("Mineral.Iron"));
+        case EMiningMineral::Malachite: return MiningText::Get(TEXT("Mineral.Malachite"));
+        case EMiningMineral::Diamond: return MiningText::Get(TEXT("Mineral.Diamond"));
+        default: return MiningText::Get(TEXT("Mineral.Unknown"));
         }
     }
+    static FString Name(EMiningMineral Type) { return NameText(Type).ToString(); }
 };

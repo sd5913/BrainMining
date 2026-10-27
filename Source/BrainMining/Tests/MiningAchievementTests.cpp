@@ -1,0 +1,136 @@
+#include "MiningAchievementState.h"
+#include "MiningAchievementSubsystem.h"
+#include "Engine/GameInstance.h"
+#include "HAL/PlatformTime.h"
+#include "Kismet/GameplayStatics.h"
+#include "Misc/AutomationTest.h"
+#include "Misc/ScopeExit.h"
+
+#if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAchievementRulesTest,"BrainMining.Achievements.RulesAndDeduplication",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningAchievementRulesTest::RunTest(const FString&)
+{
+    FMiningAchievementProgress Progress;
+    FMiningAchievementProgress KeptCatalogue;
+    TArray<int32> DisplayInventory;DisplayInventory.Init(1,23);
+    const TArray<int32> NoVerifiedItems;
+    TestFalse(TEXT("Keeping a foreign or debug catalogue cannot award achievements after restart"), KeptCatalogue.RecordSavedCollections(DisplayInventory, &NoVerifiedItems));
+    const TArray<int32> VerifiedItems={2,4};
+    TestTrue(TEXT("Only verified account collection is restored"), KeptCatalogue.RecordSavedCollections(DisplayInventory, &VerifiedItems));
+    TestEqual(TEXT("Display-only collectibles are not counted"), KeptCatalogue.CollectionIds.Num(), 2);
+    TestTrue(TEXT("Legacy saves reconcile locally"), UMiningAchievementSubsystem::IsSaveOwnerCompatible(TEXT(""), TEXT("local")));
+    TestFalse(TEXT("Legacy saves do not transfer to Steam"), UMiningAchievementSubsystem::IsSaveOwnerCompatible(TEXT(""), TEXT("steam_a")));
+    TestFalse(TEXT("Local records do not transfer to Steam"), UMiningAchievementSubsystem::IsSaveOwnerCompatible(TEXT("local"), TEXT("steam_a")));
+    TestFalse(TEXT("Different Steam owners stay isolated"), UMiningAchievementSubsystem::IsSaveOwnerCompatible(TEXT("steam_a"), TEXT("steam_b")));
+    TestTrue(TEXT("Same account resumes"), UMiningAchievementSubsystem::IsSaveOwnerCompatible(TEXT("steam_a"), TEXT("steam_a")));
+    TestFalse(TEXT("An uninitialized owner cannot claim a save"), UMiningAchievementSubsystem::IsSaveOwnerCompatible(TEXT(""), TEXT("")));
+    TestFalse(TEXT("Invalid item is rejected"),Progress.RecordCollection(-1));
+    TestTrue(TEXT("First collection recorded"),Progress.RecordCollection(0));
+    TestFalse(TEXT("Repeat collection is not counted"),Progress.RecordCollection(0));
+    TestEqual(TEXT("Unique item count"),Progress.CollectionIds.Num(),1);
+    TestTrue(TEXT("First collection unlocks"),Progress.Unlocked.Contains(TEXT("ACH_FIRST_COLLECTION")));
+    TestFalse(TEXT("Five collections not prematurely awarded"),Progress.Unlocked.Contains(TEXT("ACH_COLLECTION_5")));
+    for(int32 Index=1;Index<5;++Index)Progress.RecordCollection(Index);
+    TestTrue(TEXT("Five unique collections unlock"),Progress.Unlocked.Contains(TEXT("ACH_COLLECTION_5")));
+    TestFalse(TEXT("Partial collection does not award full collection"),Progress.Unlocked.Contains(TEXT("ACH_COLLECTION_COMPLETE")));
+    for(int32 Id:MiningAchievements::RequiredCollection())Progress.RecordCollection(Id);
+    TestTrue(TEXT("Explicit release collection unlocks"),Progress.Unlocked.Contains(TEXT("ACH_COLLECTION_COMPLETE")));
+    TestFalse(TEXT("Future item is excluded from release collection"),Progress.RecordCollection(23));
+    TestFalse(TEXT("Invalid upgrade is rejected"),Progress.RecordPickaxe(5));
+    TestTrue(TEXT("First upgrade recorded"),Progress.RecordPickaxe(1));
+    TestFalse(TEXT("First upgrade does not award max level"),Progress.Unlocked.Contains(TEXT("ACH_PICKAXE_MAX")));
+    Progress.RecordPickaxe(4);
+    TestTrue(TEXT("Max level unlocks"),Progress.Unlocked.Contains(TEXT("ACH_PICKAXE_MAX")));
+    TestFalse(TEXT("Old save cannot reduce best level"),Progress.RecordPickaxe(1));
+    TestEqual(TEXT("Best level is monotonic"),Progress.BestPickaxeLevel,4);
+    TestFalse(TEXT("Unknown API ID is rejected"),Progress.Unlock(TEXT("UNKNOWN")));
+    TestTrue(TEXT("Ledger validates"),Progress.IsValid());
+    return true;
+}
+
+namespace
+{
+    class FTestAchievementProvider : public IMiningAchievementProvider
+    {
+    public:
+        FString User=TEXT("steam_test_a");
+        TFunction<void(bool,TSet<FName>)> QueryCallback;
+        TFunction<void(bool)> WriteCallback;
+        TSet<FName> Submitted;
+        int32 Queries=0;
+        int32 Writes=0;
+        virtual FString AccountId() const override {return User;}
+        virtual void Query(TFunction<void(bool,TSet<FName>)> Callback) override {++Queries;QueryCallback=MoveTemp(Callback);}
+        virtual void Unlock(const TSet<FName>& Ids,TFunction<void(bool)> Callback) override {++Writes;Submitted=Ids;WriteCallback=MoveTemp(Callback);}
+    };
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAchievementSyncTest,"BrainMining.Achievements.QueryRetryAndAccountIsolation",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningAchievementSyncTest::RunTest(const FString&)
+{
+    auto* Instance=NewObject<UGameInstance>();
+    auto* System=NewObject<UMiningAchievementSubsystem>(Instance);
+    auto Provider=MakeShared<FTestAchievementProvider>();
+    System->Provider=Provider;System->OwnerId=Provider->User;System->bInitialized=true;
+    System->Progress.Unlock(TEXT("ACH_FIRST_COLLECTION"));
+    System->Synchronize();
+    TestEqual(TEXT("Query precedes write"),Provider->Queries,1);
+    TestEqual(TEXT("No write before successful query"),Provider->Writes,0);
+    Provider->QueryCallback(false,{});
+    TestFalse(TEXT("Failed query does not mark ready"),System->bQueried);
+    TestTrue(TEXT("Failure uses a delayed retry"),System->NextSyncTime>FPlatformTime::Seconds()+9);
+    System->Synchronize();Provider->QueryCallback(true,{});
+    System->Synchronize();
+    TestEqual(TEXT("Ready query submits one batch"),Provider->Writes,1);
+    TestTrue(TEXT("Batch contains only completed achievement"),Provider->Submitted.Contains(TEXT("ACH_FIRST_COLLECTION")));
+    Provider->WriteCallback(false);
+    TestFalse(TEXT("Failed write remains unconfirmed"),System->Confirmed.Contains(TEXT("ACH_FIRST_COLLECTION")));
+    System->Synchronize();Provider->QueryCallback(true,{});
+    System->Synchronize();Provider->WriteCallback(true);
+    TestTrue(TEXT("Successful callback confirms delivery"),System->Confirmed.Contains(TEXT("ACH_FIRST_COLLECTION")));
+    System->Synchronize();
+    TestEqual(TEXT("Confirmed achievement is not resent"),Provider->Writes,2);
+    System->Progress.Unlock(TEXT("ACH_CARD_ROOM_CLEAR"));
+    Provider->User=TEXT("steam_test_b");System->Synchronize();
+    TestEqual(TEXT("Different user receives no pending writes"),Provider->Writes,2);
+    Provider->User=TEXT("steam_test_a");System->Synchronize();
+    Provider->User=TEXT("steam_test_b");Provider->WriteCallback(true);
+    TestFalse(TEXT("Account switch during callback does not acknowledge delivery"),System->Confirmed.Contains(TEXT("ACH_CARD_ROOM_CLEAR")));
+    System->bInitialized=false;
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAchievementStorageTest,"BrainMining.Achievements.RecoveryAndOwnerValidation",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningAchievementStorageTest::RunTest(const FString&)
+{
+    const FString Slot=TEXT("BrainMining_Automation_Achievements_")+FGuid::NewGuid().ToString(EGuidFormats::Digits);
+    ON_SCOPE_EXIT
+    {
+        for(const FString& Candidate:{Slot,Slot+TEXT("_pending"),Slot+TEXT("_backup")})UGameplayStatics::DeleteGameInSlot(Candidate,0);
+    };
+    auto* Instance=NewObject<UGameInstance>();
+    auto* System=NewObject<UMiningAchievementSubsystem>(Instance);
+    System->Slot=Slot;System->OwnerId=TEXT("steam_test_a");
+    System->Progress.RecordCollection(0);System->bDirty=true;
+    TestTrue(TEXT("Profile writes successfully"),System->SaveProfile());
+    auto* Pending=NewObject<UMiningAchievementSave>();
+    Pending->OwnerId=System->OwnerId;Pending->Revision=2;Pending->Progress=System->Progress;
+    Pending->Progress.RecordPickaxe(4);
+    TestTrue(TEXT("Newer pending file simulates interrupted commit"),UGameplayStatics::SaveGameToSlot(Pending,Slot+TEXT("_pending"),0));
+    auto* Reloaded=NewObject<UMiningAchievementSubsystem>(Instance);
+    Reloaded->Slot=Slot;Reloaded->OwnerId=System->OwnerId;Reloaded->LoadProfile();
+    TestEqual(TEXT("Newest valid revision recovered"),Reloaded->Revision,int64(2));
+    TestTrue(TEXT("Recovered pending unlock retained"),Reloaded->Progress.Unlocked.Contains(TEXT("ACH_PICKAXE_MAX")));
+    Reloaded->BeginRun();
+    TestTrue(TEXT("New run preserves account achievements"),Reloaded->Progress.Unlocked.Contains(TEXT("ACH_PICKAXE_MAX")));
+    Reloaded->DisableForDebug();
+    TestFalse(TEXT("Debug actions disable run eligibility"),Reloaded->IsRunEligible());
+    auto* DifferentUser=NewObject<UMiningAchievementSubsystem>(Instance);
+    DifferentUser->Slot=Slot;DifferentUser->OwnerId=TEXT("steam_test_b");
+    AddExpectedError(TEXT("Achievement profile could not be recovered"),EAutomationExpectedErrorFlags::Contains,1);
+    DifferentUser->LoadProfile();
+    TestFalse(TEXT("Wrong-owner files are preserved rather than overwritten"),DifferentUser->bStorageHealthy);
+    TestTrue(TEXT("No cross-account achievement migration"),DifferentUser->Progress.Unlocked.IsEmpty());
+    return true;
+}
+#endif

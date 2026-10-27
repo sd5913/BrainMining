@@ -110,8 +110,8 @@ namespace PopupOfficeArtTests
     Test->TestTrue(TEXT("Save narrative page capture"),FFileHelper::SaveArrayToFile(PNG,*(Folder/FString::Printf(TEXT("desktop-%d.png"),Skin))));
    }
    const int32 Before=Desktop->GetOpenCount();
-   Test->TestEqual(TEXT("Each staged copy reaches the real desktop"),Desktop->GetFrontPopupBody(),FString(PopupCloseContent::Get(Skin).Body));
-   Test->TestTrue(PopupCloseContent::Get(Skin).Title,Device->ClickReplyForValidation());
+   Test->TestEqual(TEXT("Each staged copy reaches the real desktop"),Desktop->GetFrontPopupBody(),PopupCloseContent::Get(Skin).Body.ToString());
+   Test->TestTrue(PopupCloseContent::Get(Skin).Title.ToString(),Device->ClickReplyForValidation());
    Test->TestEqual(TEXT("Exactly one real button reply removes one popup"),Desktop->GetOpenCount(),Before-1);
    Test->TestEqual(TEXT("Each art skin keeps independent close accounting"),Desktop->GetManuallyClosedCount(),Skin+1);
    Test->TestTrue(TEXT("Narrative pages preserve device problem accounting"),Device->AccountingValid());

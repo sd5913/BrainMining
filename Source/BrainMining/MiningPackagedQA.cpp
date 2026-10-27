@@ -9,6 +9,10 @@
 #include "MiningExperienceSubsystem.h"
 #include "MiningComponent.h"
 #include "MiningAudioComponent.h"
+#include "MiningRoomAudioSubsystem.h"
+#include "MiningCollectionEffects.h"
+#include "AudioMixerBlueprintLibrary.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/LightComponent.h"
 #include "Components/AudioComponent.h"
 #include "Sound/SoundBase.h"
@@ -19,6 +23,7 @@
 #include "MiningSaveSubsystem.h"
 #include "MiningGUIWidgets.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Engine/StaticMesh.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
@@ -32,12 +37,12 @@
 #include "MiningProgressionComponent.h"
 #include "MiningCollection.h"
 #include "MiningRoomEscape.h"
-#include "HeavenToiletWater.h"
 #include "Engine/StaticMeshActor.h"
 #include "Materials/Material.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "MiningAudioSettings.h"
 #include "WenSi/MouseMuseumPortal.h"
 #include "EndingEmergence.h"
 #include "GeneratedMiningRock.h"
@@ -46,6 +51,8 @@
 #include "StartRoom/MiningOpening.h"
 #include "StartRoom/MiningStartRoom.h"
 #include "PopupClose/PopupCloseStage.h"
+#include "PopupClose/PopupOfficeDevice.h"
+#include "PopupClose/PopupCloseWidgets.h"
 #include "CardRoomStage.h"
 #include "CardRoomPlayer.h"
 #include "NiagaraComponent.h"
@@ -241,6 +248,8 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     else if(Op==TEXT("gm_menu"))Ok=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->ToggleDeveloperMenu();
     else if(Op==TEXT("gm_jump"))
     {auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->JumpToDeveloperArea(int32(C->GetNumberField(TEXT("area"))));}
+    else if(Op==TEXT("gm_collectible"))
+    {auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->JumpToCollectible(int32(C->GetNumberField(TEXT("item"))));}
     else if(Op==TEXT("gm_map")){auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->OpenDeveloperExperience(int32(C->GetNumberField(TEXT("index"))));}
     else if(Op==TEXT("throw_bomb")){auto* Bomb=Pawn->FindComponentByClass<UMiningBombToolComponent>();Ok=Bomb && Bomb->ThrowBomb();}
     else if(Op==TEXT("save"))Ok=Save->SaveProgress();
@@ -331,6 +340,19 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     }
     else if(Op==TEXT("credits_fixture"))
     {if(auto* Ending=First<AEndingEmergence>(W))Ending->bComplete=true;else Ok=false;}
+    else if(Op==TEXT("museum_word_fixture"))
+    {
+        Ok=false;
+        for(TActorIterator<AWenSiMirrorExhibit> It(W);It;++It)
+            if(It->Kind==int32(C->GetNumberField(TEXT("kind"))))
+            {It->Word=EWenSiMirrorWord(FMath::Clamp(int32(C->GetNumberField(TEXT("word"))),0,6));It->Apply();Ok=true;break;}
+    }
+    else if(Op==TEXT("mouse_gallery_fixture"))
+    {
+        if(auto* Museum=First<AWenSiMirrorPuzzle>(W))
+        {Museum->bRewardUnlocked=true;Museum->SetPlayerWord(EWenSiMirrorWord::Small);}
+        else Ok=false;
+    }
     else if(Op==TEXT("walking_fixture")){Pawn->GetCharacterMovement()->SetMovementMode(MOVE_Walking);}
     else if(Op==TEXT("catalogue_rotate"))
     {if(auto* Field=First<AMiningCollectionField>(W)){Field->SelectItem(C->HasField(TEXT("item"))?int32(C->GetNumberField(TEXT("item"))):0);Field->RotatePreview(C->GetNumberField(TEXT("yaw")),C->GetNumberField(TEXT("pitch")));}else Ok=false;}
@@ -420,6 +442,14 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Result->SetStringField(TEXT("label"),SampleLabel);Result->SetArrayField(TEXT("frame_ms"),Samples);SampleLabel.Empty();FrameSamples.Reset();
         Result->SetNumberField(TEXT("max_camera_step_cm"),MaxCameraStep);
     }
+    else if(Op==TEXT("audio_volume_fixture"))
+    {
+        if(auto* Settings=GetGameInstance()->GetSubsystem<UMiningAudioSettings>())
+            Settings->SetVolume(int32(C->GetNumberField(TEXT("channel"))),C->GetNumberField(TEXT("value")));
+        else Ok=false;
+    }
+    else if(Op==TEXT("audio_capture_start"))UAudioMixerBlueprintLibrary::StartRecordingOutput(W,12.f);
+    else if(Op==TEXT("audio_capture_stop"))UAudioMixerBlueprintLibrary::StopRecordingOutput(W,EAudioRecordingExportType::WavFile,FPaths::MakeValidFileName(C->GetStringField(TEXT("name"))),Directory);
     else if(Op==TEXT("shot"))FScreenshotRequest::RequestScreenshot(Directory/(FPaths::MakeValidFileName(C->GetStringField(TEXT("name")))+TEXT(".png")),true,false);
     else if(Op==TEXT("quit"))FPlatformMisc::RequestExit(false);
     else if(Op!=TEXT("state") && Op!=TEXT("actors") && Op!=TEXT("neurons") && Op!=TEXT("slate_ui"))Ok=false;
@@ -430,8 +460,12 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     for(auto* Lamp:Lamps)
     {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),Lamp->GetName());J->SetBoolField(TEXT("visible"),Lamp->IsVisible()&&!Lamp->bHiddenInGame);J->SetNumberField(TEXT("intensity"),Lamp->Intensity);LampState.Add(MakeShared<FJsonValueObject>(J));}
     for(TObjectIterator<UAudioComponent> It;It;++It)if(It->GetWorld()==W && It->Sound && It->Sound->GetName().StartsWith(TEXT("M_")))
-    {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),It->Sound->GetName());J->SetBoolField(TEXT("playing"),It->IsPlaying());J->SetBoolField(TEXT("unpaused"),It->bIsUISound);MusicState.Add(MakeShared<FJsonValueObject>(J));}
+    {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),It->Sound->GetName());J->SetBoolField(TEXT("playing"),It->IsPlaying());J->SetBoolField(TEXT("unpaused"),It->bIsUISound);J->SetBoolField(TEXT("fading_in"),It->GetPlayState()==EAudioComponentPlayState::FadingIn);J->SetNumberField(TEXT("gain"),It->VolumeMultiplier);J->SetNumberField(TEXT("player_id"),It->GetUniqueID());MusicState.Add(MakeShared<FJsonValueObject>(J));}
     Result->SetArrayField(TEXT("lamps"),LampState);Result->SetArrayField(TEXT("music"),MusicState);
+    if(auto* Settings=GetGameInstance()->GetSubsystem<UMiningAudioSettings>())Result->SetNumberField(TEXT("menu_music_gain"),Settings->GetMenuMusicGain());
+    if(auto* RoomAudio=W->GetSubsystem<UMiningRoomAudioSubsystem>())Result->SetNumberField(TEXT("tv_victory_events"),RoomAudio->EventCount(TEXT("S_TVEscapeVictory")));
+    if(auto* Escape=First<AMiningRoomEscape>(W);Escape && Escape->StageCelebration)
+    {Result->SetBoolField(TEXT("confetti_active"),Escape->StageCelebration->bStageActive);Result->SetArrayField(TEXT("celebration_position"),Vec(Escape->StageCelebration->GetActorLocation()));}
     if(auto* Water=First<AHeavenToiletWater>(W))if(Water->InteriorExposure)Result->SetNumberField(TEXT("heaven_exposure_weight"),Water->InteriorExposure->BlendWeight);
     Result->SetNumberField(TEXT("autosaves"),Save->AutosavesCompleted);
     Result->SetBoolField(TEXT("save_in_flight"),Save->IsSaveInFlight());
@@ -440,9 +474,9 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     TArray<TSharedPtr<FJsonValue>> DebugMaps;
     for(const auto& Map:UMiningExperienceSubsystem::DeveloperMapPaths())DebugMaps.Add(MakeShared<FJsonValueString>(Map));
     Result->SetArrayField(TEXT("gm_maps"),DebugMaps);
-    if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()){Result->SetNumberField(TEXT("drill_capacity"),Mining->MaxDrillEnergy);Result->SetNumberField(TEXT("drill_energy"),Mining->DrillEnergy);Result->SetNumberField(TEXT("drill_recovery_per_second"),Mining->DrillRecoveryRate*.6f);}
+    if(auto* Mining=Pawn->FindComponentByClass<UMiningComponent>()){Result->SetNumberField(TEXT("drill_capacity"),Mining->MaxDrillEnergy);Result->SetNumberField(TEXT("drill_energy"),Mining->DrillEnergy);Result->SetNumberField(TEXT("drill_recovery_per_second"),Mining->GetEffectiveDrillRecoveryRate());}
     if(auto* Museum=First<AWenSiMirrorPuzzle>(W))
-    {Result->SetBoolField(TEXT("aim_reset"),Museum->bAimReset);Result->SetNumberField(TEXT("reset_hold"),Museum->ResetHold.Progress());Result->SetNumberField(TEXT("reset_count"),Museum->ResetCount);}
+    {Result->SetBoolField(TEXT("aim_reset"),Museum->bAimReset);Result->SetNumberField(TEXT("museum_aim_kind"),Museum->Aim.IsValid()?Museum->Aim->Kind:-1);Result->SetNumberField(TEXT("reset_hold"),Museum->ResetHold.Progress());Result->SetNumberField(TEXT("reset_count"),Museum->ResetCount);}
     if(auto* Toilet=First<AHeavenToilet>(W))Result->SetBoolField(TEXT("toilet_outline"),Toilet->Body->bRenderCustomDepth);
     Result->SetNumberField(TEXT("area"),Hall?Hall->ActiveArea:-1);Result->SetNumberField(TEXT("unlocked"),Hall?Hall->UnlockedArea:-1);
     Result->SetBoolField(TEXT("opening"),AMiningOpening::IsOpening(W));
@@ -564,9 +598,9 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         TArray<TSharedPtr<FJsonValue>> Labels,Buttons;
         for(const TCHAR* WidgetName:{TEXT("ItemName"),TEXT("ItemLabel0"),TEXT("ItemLabel1"),TEXT("ItemLabel2"),TEXT("ItemLabel3"),TEXT("ItemCondition0"),TEXT("ItemCondition1"),TEXT("ItemCondition2"),TEXT("ItemCondition3")})
             if(auto* T=Cast<UTextBlock>(Widget->GetWidgetFromName(WidgetName))){auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),WidgetName);J->SetStringField(TEXT("text"),T->GetText().ToString());Labels.Add(MakeShared<FJsonValueObject>(J));}
-        for(const TCHAR* WidgetName:{TEXT("PreviousButton"),TEXT("NextButton"),TEXT("CloseButton"),TEXT("ItemButton0"),TEXT("ItemButton3")})
+        for(const TCHAR* WidgetName:{TEXT("PreviousButton"),TEXT("NextButton"),TEXT("CloseButton"),TEXT("ItemButton0"),TEXT("ItemButton3"),TEXT("PageButton0"),TEXT("PageButton1"),TEXT("PageButton2"),TEXT("PageButton3"),TEXT("PageButton4"),TEXT("PageButton5")})
             if(auto* B=Cast<UButton>(Widget->GetWidgetFromName(WidgetName)))
-            {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),WidgetName);const auto G=B->GetCachedGeometry();J->SetArrayField(TEXT("position"),Vec(FVector(G.GetAbsolutePosition(),0)));J->SetArrayField(TEXT("size"),Vec(FVector(G.GetAbsoluteSize(),0)));J->SetBoolField(TEXT("hovered"),B->IsHovered());J->SetNumberField(TEXT("scale"),B->GetRenderTransform().Scale.X);Buttons.Add(MakeShared<FJsonValueObject>(J));}
+            {auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),WidgetName);const auto G=B->GetCachedGeometry();J->SetArrayField(TEXT("position"),Vec(FVector(G.GetAbsolutePosition(),0)));J->SetArrayField(TEXT("size"),Vec(FVector(G.GetAbsoluteSize(),0)));J->SetStringField(TEXT("hover_sound"),GetNameSafe(B->GetStyle().HoveredSlateSound.GetResourceObject()));J->SetStringField(TEXT("click_sound"),GetNameSafe(B->GetStyle().ClickedSlateSound.GetResourceObject()));J->SetBoolField(TEXT("hovered"),B->IsHovered());J->SetNumberField(TEXT("scale"),B->GetRenderTransform().Scale.X);Buttons.Add(MakeShared<FJsonValueObject>(J));}
         Result->SetArrayField(TEXT("catalogue_labels"),Labels);Result->SetArrayField(TEXT("catalogue_buttons"),Buttons);
         if(Field->Preview)
         {
@@ -656,6 +690,16 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     }
     Result->SetArrayField(TEXT("menu_buttons"),MenuButtons);
     if(auto* Office=First<APopupCloseStage>(W)){Result->SetStringField(TEXT("office"),Office->GetSessionStatus());Result->SetStringField(TEXT("office_exit"),Office->GetExitStatus());}
+    TArray<TSharedPtr<FJsonValue>> Desktops;
+    for(TActorIterator<APopupOfficeDevice> It(W);It;++It)if(auto* Desktop=It->GetDesktop())
+    {
+        auto Item=MakeShared<FJsonObject>();Item->SetNumberField(TEXT("device"),It->DeviceIndex);
+        Item->SetStringField(TEXT("title"),Desktop->GetFrontPopupTitle());Item->SetStringField(TEXT("body"),Desktop->GetFrontPopupBody());
+        Item->SetNumberField(TEXT("phase"),Desktop->GetFrontPopupPhase());
+        Item->SetNumberField(TEXT("pending"),It->Pending());Item->SetNumberField(TEXT("handled"),It->Handled());
+        Item->SetBoolField(TEXT("accounting_valid"),It->AccountingValid());Desktops.Add(MakeShared<FJsonValueObject>(Item));
+    }
+    Result->SetArrayField(TEXT("office_desktops"),Desktops);
     if(auto* Cards=First<ACardRoomStage>(W))
     {
         Result->SetNumberField(TEXT("card_phase"),int32(Cards->Run.Phase));Result->SetNumberField(TEXT("card_round"),Cards->Run.Round);
@@ -679,7 +723,21 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
                 Value->SetStringField(TEXT("text"),Row->GetText().ToString());Value->SetBoolField(TEXT("visible"),Row->IsVisible());
                 Rows.Add(MakeShared<FJsonValueObject>(Value));
             }
-        Result->SetArrayField(TEXT("guide_rows"),Rows);break;
+        Result->SetArrayField(TEXT("guide_rows"),Rows);
+        TArray<TSharedPtr<FJsonValue>> Requirements;
+        for(int32 I=0;I<4;++I)
+        {
+            auto* Label=Cast<UTextBlock>(It->GetWidgetFromName(*FString::Printf(TEXT("PickaxeRequirementName%d"),I)));
+            auto* Count=Cast<UTextBlock>(It->GetWidgetFromName(*FString::Printf(TEXT("PickaxeRequirementCount%d"),I)));
+            if(!Label || !Count)continue;
+            auto J=MakeShared<FJsonObject>();J->SetStringField(TEXT("name"),Label->GetText().ToString());J->SetStringField(TEXT("count"),Count->GetText().ToString());J->SetBoolField(TEXT("visible"),Label->IsVisible());
+            const FLinearColor Color=Label->GetColorAndOpacity().GetSpecifiedColor();J->SetArrayField(TEXT("color"),{MakeShared<FJsonValueNumber>(Color.R),MakeShared<FJsonValueNumber>(Color.G),MakeShared<FJsonValueNumber>(Color.B)});Requirements.Add(MakeShared<FJsonValueObject>(J));
+        }
+        Result->SetArrayField(TEXT("upgrade_requirements"),Requirements);
+        if(auto* Panel=It->GetWidgetFromName(TEXT("PickaxeSummaryPanel")))if(auto* Slot=Cast<UCanvasPanelSlot>(Panel->Slot))
+        {const FVector2D Size=Slot->GetSize();Result->SetArrayField(TEXT("upgrade_panel_size"),{MakeShared<FJsonValueNumber>(Size.X),MakeShared<FJsonValueNumber>(Size.Y)});}
+        if(auto* Hint=Cast<UTextBlock>(It->GetWidgetFromName(TEXT("PickaxeTabUpgrade"))))Result->SetStringField(TEXT("upgrade_hint"),Hint->GetText().ToString());
+        break;
     }
     if(Op==TEXT("actors"))
     {
@@ -691,6 +749,24 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
             A->SetArrayField(TEXT("position"),Vec(It->GetActorLocation()));A->SetArrayField(TEXT("center"),Vec(It->GetComponentsBoundingBox(true).GetCenter()));
             A->SetArrayField(TEXT("extent"),Vec(It->GetComponentsBoundingBox(true).GetExtent()));A->SetArrayField(TEXT("forward"),Vec(It->GetActorForwardVector()));
             if(auto* Exhibit=Cast<AWenSiMirrorExhibit>(*It)){A->SetNumberField(TEXT("kind"),Exhibit->Kind);A->SetNumberField(TEXT("word"),int32(Exhibit->Word));}
+            A->SetBoolField(TEXT("hidden"),It->IsHidden());A->SetBoolField(TEXT("ticking"),It->IsActorTickEnabled());
+            TArray<TSharedPtr<FJsonValue>> Tags;for(FName Tag:It->Tags)Tags.Add(MakeShared<FJsonValueString>(Tag.ToString()));A->SetArrayField(TEXT("tags"),Tags);
+            if(auto* Rock=Cast<AGeneratedMiningRock>(*It))
+            {
+                int32 NearMissing=0,NearSolid=0,HiddenReady=0;
+                const FVector Local=Rock->GetActorTransform().InverseTransformPosition(Pawn->GetPawnViewLocation());
+                const double Radius=2800.f/FMath::Max(.001,Rock->GetActorScale3D().GetAbsMin());
+                for(const auto& Chunk:Rock->Chunks)
+                {
+                    if(!Chunk.Bounds.IsValid || Chunk.Bounds.ComputeSquaredDistanceToPoint(Local)>Radius*Radius)continue;
+                    auto* Query=Rock->GetChunkQueryMesh(Chunk);if(!Query || Query->GetMeshRef().TriangleCount()==0)continue;
+                    ++NearSolid;
+                    if(!Chunk.Mesh || !Chunk.Mesh->IsRegistered() || !Chunk.Mesh->IsVisible() || Chunk.bRuntimeDeferred || Rock->IsHidden())++NearMissing;
+                    if(Chunk.Mesh && Chunk.Mesh->IsRegistered() && !Chunk.bRuntimeDeferred && !Chunk.Mesh->IsVisible())++HiddenReady;
+                }
+                A->SetNumberField(TEXT("near_solid_chunks"),NearSolid);A->SetNumberField(TEXT("near_missing_chunks"),NearMissing);
+                A->SetNumberField(TEXT("near_hidden_ready_chunks"),HiddenReady);A->SetNumberField(TEXT("deferred_chunks"),Rock->DeferredRuntimeChunks);
+            }
             if(auto* Rock=Cast<ADiggableRock>(*It)){A->SetBoolField(TEXT("collision"),Rock->GetActorEnableCollision());A->SetNumberField(TEXT("cuts"),Rock->SuccessfulCuts);A->SetNumberField(TEXT("triangles"),Rock->TriangleCount);A->SetArrayField(TEXT("rock_size"),Vec(Rock->RockSize));}
             if(auto* Item=Cast<AMiningTreasure>(*It))
             {
@@ -708,6 +784,28 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
                     if(Item->EmergenceParts.Num()>108)A->SetArrayField(TEXT("door"),Vec(Item->EmergenceParts[108]->GetRelativeLocation()));
                 }
                 A->SetBoolField(TEXT("released"),Item->bReleased);A->SetBoolField(TEXT("collected"),Item->bCollected);A->SetStringField(TEXT("host"),Item->HostRock?Item->HostRock->GetName():TEXT(""));}
+            if(auto* Water=Cast<AHeavenToiletWater>(*It))
+            {A->SetBoolField(TEXT("inside"),Water->bPlayerInHeaven);A->SetBoolField(TEXT("choir_playing"),Water->EntranceChoir&&Water->EntranceChoir->IsPlaying());}
+            if(auto* Portal=Cast<AMouseMuseumPortal>(*It))
+            {A->SetArrayField(TEXT("cell"),Vec(Portal->CellCenter()));A->SetNumberField(TEXT("cell_radius"),Portal->CellRadius);A->SetBoolField(TEXT("focused"),Portal->IsFocused());}
+            bool IncludeParts=false;C->TryGetBoolField(TEXT("parts"),IncludeParts);
+            if(IncludeParts)
+            {
+                TArray<TSharedPtr<FJsonValue>> Parts;
+                TInlineComponentArray<UStaticMeshComponent*> Meshes(*It);
+                for(auto* Mesh:Meshes)
+                {
+                    auto P=MakeShared<FJsonObject>();P->SetStringField(TEXT("name"),Mesh->GetName());
+                    P->SetBoolField(TEXT("visible"),Mesh->IsVisible()&&!Mesh->bHiddenInGame);
+                    P->SetArrayField(TEXT("position"),Vec(Mesh->GetComponentLocation()));
+                    P->SetArrayField(TEXT("relative"),Vec(Mesh->GetRelativeLocation()));
+                    P->SetStringField(TEXT("mesh"),Mesh->GetStaticMesh()?Mesh->GetStaticMesh()->GetPathName():TEXT(""));
+                    if(auto* Mat=Mesh->GetMaterial(0))
+                    {P->SetStringField(TEXT("material"),Mat->GetName());float Highlight=0;if(Mat->GetScalarParameterValue(FMaterialParameterInfo(TEXT("Highlight")),Highlight))P->SetNumberField(TEXT("highlight"),Highlight);}
+                    Parts.Add(MakeShared<FJsonValueObject>(P));
+                }
+                A->SetArrayField(TEXT("parts"),Parts);
+            }
             Actors.Add(MakeShared<FJsonValueObject>(A));
         }
         Result->SetArrayField(TEXT("actors"),Actors);

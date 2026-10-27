@@ -1,4 +1,5 @@
 #include "MobileUIWidgets.h"
+#include "MiningUISounds.h"
 #include "BrainMiningFonts.h"
 #include "BrainMiningPlayerController.h"
 #include "MiningAudioComponent.h"
@@ -75,6 +76,7 @@ namespace
             Pressed.TintColor = FLinearColor(.72f, .72f, .72f, 1.f);
             Style.SetNormal(*Brush(TEXT("panel"))).SetHovered(*Brush(TEXT("panel"))).SetPressed(Pressed)
                 .SetNormalPadding(FMargin(12)).SetPressedPadding(FMargin(14));
+            MiningUISounds::Apply(Style);
             bReady = true;
         }
         return &Style;

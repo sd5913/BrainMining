@@ -68,7 +68,7 @@ try:
     check(visible(state)==['·  穿过1个泥土层'], 'only crossing task appears')
     samples = [client.command('state') for _ in range(12)]
     check(max(s['guide_opacity'] for s in samples)-min(s['guide_opacity'] for s in samples)>.25, 'first task flashes')
-    check(all('软软的泥土' not in s['subtitle'] for s in samples), 'discovery subtitle withheld before crossing')
+    check(any('软软的泥土' in s['subtitle'] for s in samples), 'discovery subtitle plays on approach before crossing')
     client.command('shot', name='01-soil-task')
     check(client.command('save')['ok'], 'save before excavation')
     close(); launch(); client.command('continue'); time.sleep(2)
@@ -87,7 +87,7 @@ try:
     check(not pose(-30100)['soil_passed'], 'standing inside soil thickness does not count')
     state = pose(-29850)
     check(state['soil_passed'], 'clearing the far side completes task')
-    check(state['subtitle']=='哦！软软的泥土，这边一定是路', 'completion plays exact new discovery line')
+    check('软软的泥土' not in state['subtitle'], 'crossing does not repeat the approach hint')
     check(visible(state)==['✓  穿过1个泥土层'], 'completed soil task shows checkmark before replacement')
     client.command('shot', name='02-soil-complete')
     time.sleep(2)

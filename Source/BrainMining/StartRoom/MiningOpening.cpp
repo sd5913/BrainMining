@@ -111,7 +111,7 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
         FButtonStyle Style;
         FSlateBrush Empty;Empty.DrawAs=ESlateBrushDrawType::NoDrawType;
         Style.SetNormal(Empty).SetHovered(Empty).SetPressed(Empty);
-        Style.SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));Button->SetStyle(Style);
+        Style.SetNormalPadding(FMargin(0)).SetPressedPadding(FMargin(0));MiningUISounds::Apply(Style);Button->SetStyle(Style);
         Button->SetRenderTransformPivot(FVector2D(.5f,.5f));
         Button->SetRenderTransformAngle(Angle);
         Button->SetRenderShear(FVector2D(Shear,0));

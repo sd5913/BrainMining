@@ -1,5 +1,6 @@
 #include "HeavenToiletWater.h"
 #include "MobileRuntimeSettings.h"
+#include "Components/AudioComponent.h"
 #include "Engine/PostProcessVolume.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
@@ -197,6 +198,12 @@ void AHeavenToiletWater::RefreshBreach()
     Flow.Apply(Spill);
 }
 
+void AHeavenToiletWater::EndPlay(const EEndPlayReason::Type Reason)
+{
+    if(EntranceChoir)EntranceChoir->Stop();
+    Super::EndPlay(Reason);
+}
+
 void AHeavenToiletWater::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
@@ -205,7 +212,20 @@ void AHeavenToiletWater::Tick(float DeltaSeconds)
         const FVector P=Pawn->GetActorLocation(),Center=GetActorLocation();
         const float EntryRadius=FMath::Max(100.f,Radius-180.f)+(bPlayerInHeaven?60.f:0.f);
         const bool Inside=FVector::DistSquared2D(P,Center)<FMath::Square(EntryRadius) && P.Z>Center.Z-100 && P.Z<Center.Z+1800;
-        if(Inside && !bPlayerInHeaven)UMiningRoomAudioSubsystem::Emit(this,TEXT("S_HeavenAngelChoir"),.45f,false,0.f);
+        if(Inside && !bPlayerInHeaven)
+        {
+            if(!EntranceChoir)
+                if(auto* Audio=GetWorld()->GetSubsystem<UMiningRoomAudioSubsystem>())
+                    if(auto* Sound=Audio->Resolve(TEXT("S_HeavenAngelChoir")))
+                    {
+                        EntranceChoir=NewObject<UAudioComponent>(this,TEXT("HeavenEntranceChoir"));
+                        EntranceChoir->bAutoActivate=false;EntranceChoir->bAutoDestroy=false;
+                        EntranceChoir->bAllowSpatialization=false;EntranceChoir->SetSound(Sound);
+                        EntranceChoir->SetVolumeMultiplier(.45f);EntranceChoir->RegisterComponentWithWorld(GetWorld());
+                    }
+            if(EntranceChoir)EntranceChoir->Play();
+        }
+        if(!Inside && EntranceChoir && EntranceChoir->IsPlaying())EntranceChoir->Stop();
         bPlayerInHeaven=Inside;
     }
     if(InteriorExposure)

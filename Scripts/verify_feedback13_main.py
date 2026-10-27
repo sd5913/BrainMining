@@ -33,7 +33,7 @@ def run():
  for delay in [.12,.18,.2,.45]:
   yield delay;cur=unreal.SystemLibrary.get_component_bounds(door.door_mesh)[0];arcs.append(unreal.MathLibrary.dot_vector_vector(cur-before,out))
  r['door_outward_arc_cm']=arcs;check(min(arcs)>0 and arcs[-1]>25,'Actual door leaf moves outward at every sampled point, relative to bed interior');shot('door_outward')
- seg=unreal.load_asset('/Game/Subtitles/DA_LeaveStartRoom');check(not any('软软的泥土' in str(x.text) for x in seg.get_editor_property('lines')),'Dirt hint is reserved for crossing completion')
+ seg=unreal.load_asset('/Game/Subtitles/DA_LeaveStartRoom');check(not any('软软的泥土' in str(x.text) for x in seg.get_editor_property('lines')),'Dirt hint is reserved for approaching the soil, not leaving the bedroom')
  room=actors(unreal.MiningStartRoom)[0];pack=next(a for a in actors(unreal.MiningStarterPickup) if a.equipment==unreal.MiningStarterEquipment.JETPACK);target=pack.get_actor_location();eye=target+unreal.Vector(-100,0,65);offset=pawn.get_actor_eyes_view_point()[0]-pawn.get_actor_location();pawn.set_actor_location(eye-offset,False,True);m.disable_movement();pc.set_control_rotation(unreal.MathLibrary.find_look_at_rotation(eye,target));yield .3;check(room.interact(pc),'Collect actual starter jetpack before testing encounter flight')
  check(H.prepare_collection_preview_area(pc,3,False),'Enter blind echo area');yield .6
  fs=m.flight_settings;fs.set_editor_property('bEnabled',True);m.flight_settings=fs;m.set_flight_input_held(True)

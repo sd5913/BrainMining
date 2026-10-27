@@ -1,0 +1,16 @@
+[
+  {
+    "asset": "S_UI_Hover",
+    "duration": 0.055,
+    "volume": 0.2,
+    "source": "Original procedural synthesis",
+    "seed": 41
+  },
+  {
+    "asset": "S_UI_Click",
+    "duration": 0.105,
+    "volume": 0.32,
+    "source": "Original procedural synthesis",
+    "seed": 42
+  }
+]

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MiningUISounds.h"
 #include "BrainMiningFonts.h"
 #include "Engine/Texture2D.h"
 #include "UObject/StrongObjectPtr.h"
@@ -41,9 +42,10 @@ namespace MiningMenuStyle
     }
     inline const FButtonStyle* Button()
     {
-        static FButtonStyle Style=FButtonStyle().SetNormal(*Brush(1)).SetHovered(*Brush(2)).SetPressed(*Brush(3)).SetDisabled(*Brush(1))
+        static FButtonStyle Style=[](){FButtonStyle S=FButtonStyle().SetNormal(*Brush(1)).SetHovered(*Brush(2)).SetPressed(*Brush(3)).SetDisabled(*Brush(1))
             .SetNormalForeground(Cream).SetHoveredForeground(FLinearColor(.025f,.02f,.005f)).SetPressedForeground(FLinearColor::Black)
             .SetNormalPadding(FMargin(20,12)).SetPressedPadding(FMargin(20,12));
+            MiningUISounds::Apply(S);return S;}();
         return &Style;
     }
     inline const FSliderStyle* Slider()

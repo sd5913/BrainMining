@@ -321,6 +321,16 @@ void AMiningCollectionField::Tick(float Dt)
         if(Item->LastObservedCuts==Item->HostRock->SuccessfulCuts) continue;
         Item->LastObservedCuts=Item->HostRock->SuccessfulCuts;
         Item->Exposure=Item->MeasureExposure();
+        // The beak points along local -X. Face the actual excavation opening on
+        // first reveal, including when the player approaches from the far side.
+        if((Item->ItemId==3 || Item->ItemId==16) && Item->Exposure>.05f && !Item->ActorHasTag(TEXT("BM_BirdFacingOpening")))
+        {
+            FVector Eye;FRotator ViewRotation;Player->GetPlayerViewPoint(Eye,ViewRotation);
+            Item->SetActorRotation((Item->GetActorLocation()-Eye).Rotation());
+            Item->BuriedTransform=Item->GetActorTransform();
+            Item->Tags.Add(TEXT("BM_BirdFacingOpening"));
+            Item->Exposure=Item->MeasureExposure();
+        }
         // Exposure triggers release; only released items become interaction targets.
         if(Item->CanRelease(AMiningCollectible::PickupExposure))
         {
@@ -432,11 +442,8 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         Player->SetIgnoreLookInput(true); Player->SetIgnoreMoveInput(true);
         if(auto* Move=Player->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()) { Move->ResetFlightInput(); Move->StopMovementImmediately(); }
         Player->GetPawn()->DisableInput(Player);
-        // Keep already-playing music at its current playback position while gameplay pauses.
-        CatalogueMusic.Reset();
-        for(TObjectIterator<UAudioComponent> It;It;++It)
-            if(It->GetWorld()==GetWorld() && It->Sound && !It->bIsUISound && It->Sound->GetName().StartsWith(TEXT("M_")))
-            { It->SetUISound(true); CatalogueMusic.Add(*It); }
+        // Music is pause-independent from creation; opening/closing this view must
+        // not change active audio-thread pause flags or restart the playback voice.
         Player->SetPause(true);
         FInputModeUIOnly Mode;
         if(CatalogueWidget)
@@ -452,15 +459,10 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
         if(SelectedId==INDEX_NONE){const auto Ids=CatalogueIds();if(!Ids.IsEmpty())SelectedId=Ids[0];}
         SelectItem(SelectedId);
         if(CatalogueWidget)CatalogueWidget->RevealCollection();
-        if(UniqueCount()==0)if(auto* Subtitles=USubtitleSubsystem::Get(this))
-            Subtitles->PlayInteractionLines(TEXT("EmptyCollection"),{FText::FromString(TEXT("挖掘就能找到灵感啦~"))});
     }
     else
     {
-        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->StopInteraction(TEXT("EmptyCollection"));
         Player->SetPause(false);
-        for(auto& Music:CatalogueMusic)if(Music.IsValid())Music->SetUISound(false);
-        CatalogueMusic.Reset();
         Player->ResetIgnoreLookInput(); Player->ResetIgnoreMoveInput();
         Player->GetPawn()->EnableInput(Player); Player->bShowMouseCursor=false; Player->SetInputMode(FInputModeGameOnly());
         if(CatalogueWidget)CatalogueWidget->SetVisibility(ESlateVisibility::Collapsed);
@@ -472,8 +474,6 @@ void AMiningCollectionField::SetCatalogueOpen(bool Open)
 void AMiningCollectionField::SelectItem(int32 Id)
 {
     SelectedId=Id;PreviewAnimationTime=0;
-    if(bCatalogueOpen && AMiningCollectible::IsMineralReward(Id))
-        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->StopInteraction(TEXT("EmptyCollection"));
     if(!Preview) return;
     const bool Owned=Inventory.IsValidIndex(Id)&&Inventory[Id]>0;
     Preview->SetActorHiddenInGame(!Owned || (PreviewToilet && Id==0));
@@ -482,7 +482,7 @@ void AMiningCollectionField::SelectItem(int32 Id)
     ResetPreview();
     if(CatalogueWidget)CatalogueWidget->RefreshCollection();
 }
-void AMiningCollectionField::ResetPreview() { PreviewYaw=-30; PreviewPitch=-8; PreviewDistance=SelectedId==9?1300:(SelectedId==0?480:330); RotatePreview(0,0); }
+void AMiningCollectionField::ResetPreview() { PreviewYaw=SelectedId==16?0:-30; PreviewPitch=SelectedId==16?0:-8; PreviewDistance=SelectedId==9?1300:(SelectedId==0?480:330); RotatePreview(0,0); }
 void AMiningCollectionField::RotatePreview(float Yaw,float Pitch)
 {
     if(!Preview) return;

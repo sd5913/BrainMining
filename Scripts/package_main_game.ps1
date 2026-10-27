@@ -108,6 +108,12 @@ $containerText = Get-Content -LiteralPath $containerList -Raw
 $requiredAssets = @(
     'Audio/Rooms/S_OfficeMouseClick.uasset',
     'Audio/Rooms/S_HeavenAngelChoir.uasset',
+    'Audio/RoomMusic/M_Room_CardExplore_Loop.uasset',
+    'Audio/RoomMusic/M_Room_Museum_Loop.uasset',
+    'Audio/Pilot/M_DreamyFlashback_Loop.uasset',
+    'Audio/Pilot/S_UI_Hover.uasset',
+    'Audio/Pilot/S_UI_Click.uasset',
+    'Audio/Rooms/S_TVEscapeVictory.uasset',
     'Pickaxe/SM_Pickaxe_max.uasset',
     'Subtitles/DA_CardsVictory.uasset',
     'Fonts/F_CreditsBilingual.uasset',

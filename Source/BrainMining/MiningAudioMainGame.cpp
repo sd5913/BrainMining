@@ -128,6 +128,8 @@ void UMiningAudioComponent::SetSoundscapeLayer(FName Name, float Target, float D
 		Layer->bAutoActivate = false;
 		Layer->bAutoDestroy = false;
 		Layer->bAllowSpatialization = false;
+		Layer->bIsUISound = Name.ToString().StartsWith(TEXT("M_"));
+		Layer->bAlwaysPlay = Layer->bIsUISound;
 		Layer->SetSound(Sound->Get());
 		Layer->SetVolumeMultiplier(0.f);
 		Layer->RegisterComponent();
@@ -140,8 +142,16 @@ void UMiningAudioComponent::SetSoundscapeLayer(FName Name, float Target, float D
 	const float FadeSpeed = bRoomMusic ? .09f : Name.ToString().StartsWith(TEXT("M_")) ? .28f : .045f;
 	const float Gain = FMath::FInterpConstantTo(Layer->VolumeMultiplier, Target, DeltaTime, FadeSpeed);
 	Layer->SetVolumeMultiplier(Gain);
-	if (Target > 0 && !Layer->IsPlaying()) Layer->Play();
-	else if (Gain <= 0 && Layer->IsPlaying()) Layer->Stop();
+	if (Target > 0 && !Layer->IsPlaying())
+	{
+		// Fade the first exploration voice on the audio thread, so loading frames
+		// cannot skip the title screen's fade. Room returns keep the same voice.
+		if (Name == TEXT("M_DreamyFlashback_Loop")) Layer->FadeIn(2.5f, 1.f);
+		else Layer->Play();
+	}
+	// Keep the exploration loop's playback timeline alive underneath room music.
+	// Re-entering a mine only fades it back in, rather than restarting a stopped voice.
+	else if (Gain <= 0 && Layer->IsPlaying() && Name != TEXT("M_DreamyFlashback_Loop")) Layer->Stop();
 	if (bRoomMusic && Target <= 0 && Gain <= 0)
 	{
 		Layer->DestroyComponent();
@@ -151,6 +161,8 @@ void UMiningAudioComponent::SetSoundscapeLayer(FName Name, float Target, float D
 
 void UMiningAudioComponent::UpdateMainGameSoundscape(float DeltaTime)
 {
+	// Pausing gameplay must not destroy the persistent music voices.
+	if (UGameplayStatics::IsGamePaused(this)) return;
 	if (!CanPlay()) { StopSoundscape(); return; }
 	const int32 Region = FindAudioRegion();
 	if (Region != PendingAudioRegion) { PendingAudioRegion = Region; RegionStableSeconds = 0; }
@@ -163,7 +175,7 @@ void UMiningAudioComponent::UpdateMainGameSoundscape(float DeltaTime)
 	UpdateRoomMusic(DeltaTime, MusicTarget);
 	const bool bMine = AudioRegion >= 1 && AudioRegion <= 4;
 	const float Bed = bBusy ? .55f : 1.f;
-	SetSoundscapeLayer(TEXT("M_DreamyFlashback_Loop"), AudioRegion == 0 ? MusicTarget * .6f : bMine ? MusicTarget : 0.f, DeltaTime);
+	SetSoundscapeLayer(TEXT("M_DreamyFlashback_Loop"), AudioRegion == 0 || bMine ? MusicTarget : 0.f, DeltaTime);
 	SetSoundscapeLayer(TEXT("A_MineWind_Loop"), bMine ? (AudioRegion == 1 ? .075f : AudioRegion == 4 ? .045f : .015f) * Bed : 0.f, DeltaTime);
 	SetSoundscapeLayer(TEXT("A_Cavern_Loop"), AudioRegion >= 2 && AudioRegion <= 4 ? (AudioRegion == 2 ? .065f : .035f) * Bed : 0.f, DeltaTime);
 	SetSoundscapeLayer(TEXT("A_Drips_Loop"), AudioRegion == 3 ? .04f * Bed : 0.f, DeltaTime);

@@ -20,6 +20,7 @@ public:
     virtual bool IsTickableWhenPaused() const override { return true; }
     virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UMiningAudioSettings, STATGROUP_Tickables); }
     float GetVolume(int32 Channel) const;
+    float GetMenuMusicGain() const { return bAppliedPauseDuck?.35f:1.f; }
     void SetVolume(int32 Channel, float Value);
     void RestoreDefaults();
     void LoadVolumes(const FString& Filename);
@@ -38,4 +39,5 @@ private:
     UPROPERTY(Transient) TArray<TObjectPtr<USoundClass>> Classes;
     UPROPERTY(Transient) TObjectPtr<USoundMix> Mix;
     TWeakObjectPtr<UWorld> AppliedWorld;
+    bool bAppliedPauseDuck=false;
 };

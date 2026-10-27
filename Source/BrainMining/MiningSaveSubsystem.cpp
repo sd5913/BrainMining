@@ -394,7 +394,7 @@ void UMiningSaveSubsystem::Tick(float Dt)
 
 void UMiningSaveSubsystem::RecordCollectible(int32 Id)
 {
-    if(!(TutorialCompleted&8) && TutorialActive && TutorialSoilPassed)CompletionNotices.Add(TEXT("找到1个灵感藏品"));
+    // Preserve the legacy save bit without presenting the retired collectible objective.
     RunCollectedItems.Add(Id);TutorialCompleted|=8;
 }
 void UMiningSaveSubsystem::RecordMineral(EMiningMineral Mineral)
@@ -429,7 +429,7 @@ void UMiningSaveSubsystem::UpdateTutorial()
         if(Hall->ActiveArea>0)TutorialActive=true;
         if(TutorialActive)
             if(auto* Subtitles=USubtitleSubsystem::Get(this))
-                Subtitles->PlayInteractionLines(TEXT("TutorialIntro"),{FText::FromString(TEXT("没思路的话就看看左侧引导栏吧"))});
+                Subtitles->PlayInteractionLines(TEXT("TutorialIntro"),{FText::FromString(TEXT("哦！软软的泥土，这边一定是路")),FText::FromString(TEXT("没思路的话就看看左侧引导栏吧"))});
     }
     if(TutorialActive && !TutorialSoilPassed && Soil && Soil->SuccessfulCuts>0 && !Soil->IsTerrainCutPending())
     {
@@ -444,8 +444,6 @@ void UMiningSaveSubsystem::UpdateTutorial()
         if(Local.X>Half.X+LocalRadius && Local.X<Half.X+2000.f && FMath::Abs(Local.Y)<Half.Y && FMath::Abs(Local.Z)<Half.Z)
         {
             TutorialSoilPassed=true;CompletionNotices.Add(TEXT("穿过1个泥土层"));
-            if(auto* Subtitles=USubtitleSubsystem::Get(this))
-                Subtitles->PlayInteractionLines(TEXT("TutorialSoilPassed"),{FText::FromString(TEXT("哦！软软的泥土，这边一定是路"))});
         }
     }
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();

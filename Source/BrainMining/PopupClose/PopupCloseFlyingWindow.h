@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "RenderCommandFence.h"
 #include "PopupCloseFlyingWindow.generated.h"
 
 class UStaticMeshComponent;
@@ -20,8 +21,11 @@ public:
  void RetireToPool();
  void SetDenseRendering();
  void LaunchGenerated();
+ bool IsReadyForLaunch();
 
 private:
+ FRenderCommandFence VisualReadyFence;
+ bool bVisualFenceStarted=false;
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> Body;
 

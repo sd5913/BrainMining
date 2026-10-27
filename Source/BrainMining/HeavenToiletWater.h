@@ -5,6 +5,7 @@
 #include "HeavenToiletWater.generated.h"
 
 class ADiggableRock;
+class UAudioComponent;
 class APostProcessVolume;
 class UDynamicMeshComponent;
 class UMaterialInterface;
@@ -21,8 +22,10 @@ public:
     AHeavenToiletWater();
     virtual void OnConstruction(const FTransform& Transform) override;
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     virtual void Tick(float DeltaSeconds) override;
 
+    UPROPERTY(Transient) TObjectPtr<UAudioComponent> EntranceChoir;
     UPROPERTY(Transient) TObjectPtr<APostProcessVolume> InteriorExposure;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<UDynamicMeshComponent> Basin;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<UDynamicMeshComponent> Spill;

@@ -1,0 +1,48 @@
+[
+  {
+    "asset": "screen",
+    "url": "https://cdn.3dassets.dev/assets/36207/v1/model.glb",
+    "path": "SourceAssets\\MuseumRefresh\\screen\\screen.glb",
+    "license": "CC0-1.0",
+    "sha256": "90571c1a1c0447e823b92ac5c910ede7ff8932f9d0005a80769e05ba3280b249"
+  },
+  {
+    "asset": "balance",
+    "url": "https://cdn.3dassets.dev/assets/37604/v1/model.glb",
+    "path": "SourceAssets\\MuseumRefresh\\balance\\balance.glb",
+    "license": "CC0-1.0",
+    "sha256": "745152b20bbe40d15ec9fff5af59a1959f2f5873b4b8a2893d7c00d611b28f62"
+  },
+  {
+    "asset": "bronze_shark_statue",
+    "kind": "model",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/fbx/2k/bronze_shark_statue/bronze_shark_statue_2k.fbx",
+    "path": "SourceAssets\\MuseumRefresh\\bronze_shark_statue\\bronze_shark_statue_2k.fbx",
+    "license": "CC0-1.0",
+    "md5": "0916ee71ce2d984db4a4459be29c0965"
+  },
+  {
+    "asset": "bronze_shark_statue",
+    "kind": "diffuse",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/bronze_shark_statue/bronze_shark_statue_diff_2k.jpg",
+    "path": "SourceAssets\\MuseumRefresh\\bronze_shark_statue\\bronze_shark_statue_diff_2k.jpg",
+    "license": "CC0-1.0",
+    "md5": "b9ac116b3770aba31d0d492ac37675a9"
+  },
+  {
+    "asset": "bronze_shark_statue",
+    "kind": "normal",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/png/2k/bronze_shark_statue/bronze_shark_statue_nor_dx_2k.png",
+    "path": "SourceAssets\\MuseumRefresh\\bronze_shark_statue\\bronze_shark_statue_nor_dx_2k.png",
+    "license": "CC0-1.0",
+    "md5": "6e9e25432bb1d5fe6a1b6818d48db7e7"
+  },
+  {
+    "asset": "bronze_shark_statue",
+    "kind": "arm",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/bronze_shark_statue/bronze_shark_statue_arm_2k.jpg",
+    "path": "SourceAssets\\MuseumRefresh\\bronze_shark_statue\\bronze_shark_statue_arm_2k.jpg",
+    "license": "CC0-1.0",
+    "md5": "aa61937c69f45f7038f3f6ad27e951a0"
+  }
+]

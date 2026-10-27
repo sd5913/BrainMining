@@ -28,9 +28,9 @@ def run():
  bind();s['opening'].start_game();yield 4
  check(s['opening'].get_editor_property('bFinished'),'Opening completes')
  for name,text,offset in [
- ('Computer','这次gamejam的主题是“涌现”。嗯……得想一想……',(-130,0,30)),
- ('Book','想到好的点子就记下来吧！',(-90,-70,65)),
- ('Plant','别转悠啦！这里只是休息室，该出门开开脑洞了！',(70,-60,40)),
+ ('Computer','时间到了，该出门干活了……',(-130,0,30)),
+ ('Book','遇到好点子就收下来吧！',(-90,-70,65)),
+ ('Plant','祝我有好收获。',(70,-60,40)),
  ('BookLeft','纸上得来终觉浅',(0,-140,30)),
  ('BookRight','绝知此事要躬行！',(0,-140,30)),
  ('Toilet','谢谢你。',(-100,-100,60))]:
@@ -42,11 +42,11 @@ def run():
   for i in range(20):s['room'].interact(s['pc'])
   check(s['subtitle'].get_pending_segment_count()==0,'No queued repeated clicks '+name)
   if name=='Book':
-   yield 4
-   check(str(s['subtitle'].get_active_text())=='按C可以查看灵感藏品','Notebook follow-up')
+   yield 6
+   check(not str(s['subtitle'].get_active_text()),'Notebook has no follow-up controls subtitle')
   if name=='BookLeft':shot('book-left')
  s['subtitle'].stop_all();key('C');yield .5
- check(str(s['subtitle'].get_active_text())=='挖掘就能找到灵感啦~','Empty catalogue subtitle')
+ check(not str(s['subtitle'].get_active_text()),'Empty catalogue has no extra subtitle')
  shot('empty-collection');key('C');yield .3
  # Reach the upper junction (second soil wall) and exercise the persistent guide.
  junction=next(a for a in actors(unreal.DiggableRock) if a.actor_has_tag('BM_MainGame_StartRoomJunction'))

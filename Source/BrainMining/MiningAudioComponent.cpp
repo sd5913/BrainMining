@@ -167,6 +167,7 @@ bool UMiningAudioComponent::HasFootsteps() const
 
 void UMiningAudioComponent::UpdateMusic(float DeltaTime)
 {
+	if (UGameplayStatics::IsGamePaused(this)) return;
 	if (bMainGameAudio) { UpdateMainGameSoundscape(DeltaTime); return; }
 	const float Target = CanPlay() && IsMiningArea() ? FMath::Clamp(MusicVolume.GetValueOnGameThread(), 0.f, 1.f) : 0.f;
 	MusicGain = FMath::FInterpConstantTo(MusicGain, Target, DeltaTime, .25f);
@@ -178,6 +179,8 @@ void UMiningAudioComponent::UpdateMusic(float DeltaTime)
 			Music->bAutoActivate = false;
 			Music->bAutoDestroy = false;
 			Music->bAllowSpatialization = false;
+			Music->bIsUISound = true;
+			Music->bAlwaysPlay = true;
 			Music->SetSound(Sound->Get());
 			Music->RegisterComponent();
 		}

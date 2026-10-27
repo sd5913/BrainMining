@@ -95,10 +95,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill", meta=(ClampMin="0.1"))
 	float DrillCooldownDuration = 10.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") bool bUseDrillEnergy = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float MaxDrillEnergy = 60;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float MaxDrillEnergy = 36;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float DrillRecoveryRate = 10;
+	float GetEffectiveDrillRecoveryRate() const { return FMath::Max(0.f, DrillRecoveryRate) * .15f; }
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining|Drill") float DrillConsumptionRate = 10;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Drill") float DrillEnergy = 60;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Drill") float DrillEnergy = 36;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mining|Drill") bool bInfiniteDrillEnergy = false;
 	void UpdateDrillEnergy(float DeltaSeconds);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mining", meta=(ClampMin="1", ClampMax="4")) float DepthMultiplier = 1;

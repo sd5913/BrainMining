@@ -46,11 +46,16 @@ namespace WenSiExhibitArt
    }
    Visual->SetMaterial(I,Material);
   }
-  if(Rim && !Cast<UMaterialInstanceDynamic>(Visual->GetOverlayMaterial()))Visual->SetOverlayMaterial(UMaterialInstanceDynamic::Create(Rim,Visual));
+  // Authored UV islands cannot be used as face-edge masks. Draw the actual
+  // visible silhouette through custom depth, preserving all interior pixels.
+  Visual->SetOverlayMaterial(nullptr);
+  Visual->SetCustomDepthStencilValue(1);
+  Visual->SetRenderCustomDepth(true);
  }
 
  inline void Highlight(UStaticMeshComponent* Visual,float Strength,float Width,const FLinearColor& Tint)
  {
+  if(Visual->GetStaticMesh())Visual->SetRenderCustomDepth(Strength>0.f && Visual->IsVisible());
   if(auto Glow=Cast<UMaterialInstanceDynamic>(Visual->GetOverlayMaterial()))
   {
    Glow->SetScalarParameterValue(TEXT("Strength"),Strength);Glow->SetScalarParameterValue(TEXT("OutlineWidth"),Width);Glow->SetVectorParameterValue(TEXT("Tint"),Tint);

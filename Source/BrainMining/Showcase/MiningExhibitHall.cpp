@@ -236,7 +236,12 @@ void AMiningExhibitHall::UpdateActorVisibility()
     for(auto& Entry:ManagedActors)
     {
         auto* Actor=Entry.Actor.Get(); if(!Actor) continue;
-        const bool bActive=Entry.Area==ActiveArea;
+        // Chunk visibility follows the player, not room gameplay. Suspending this
+        // tick freezes distance-hidden soil while its mineral inclusions stay visible.
+        // Keep the existing nearby-only activation and shared preparation budget.
+        const auto* Terrain=Cast<AGeneratedMiningRock>(Actor);
+        const bool bActive=Entry.Area==ActiveArea || (bContinuousCampaign && Terrain && Terrain->bChunked);
+
         const bool bFar=bContinuousCampaign && ActiveArea!=INDEX_NONE && Entry.Area!=INDEX_NONE && FMath::Abs(Entry.Area-ActiveArea)>1;
         if(bFar && !Entry.bEffectsSuspended)
         {

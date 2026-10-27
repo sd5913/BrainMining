@@ -18,6 +18,7 @@
 #include "Engine/DataTable.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Fonts/FontMeasure.h"
+#include "Styling/CoreStyle.h"
 
 namespace
 {
@@ -44,6 +45,16 @@ FString FittedQuoteStyle(const FString& Quote, const URichTextBlock* Text)
     }
     return TEXT("Quote"); // Long quotations remain readable and wrap normally.
 }
+}
+
+void UMiningCollectionPageButton::Configure(UMiningCollectionWidget* InOwner,int32 InPage)
+{
+    CollectionWidget=InOwner;Page=InPage;
+    OnClicked.AddUniqueDynamic(this,&ThisClass::SelectPage);
+}
+void UMiningCollectionPageButton::SelectPage()
+{
+    if(CollectionWidget.IsValid())CollectionWidget->SelectCollectionPage(Page);
 }
 
 void UMiningCollectionWidget::NativeConstruct()
@@ -83,12 +94,51 @@ void UMiningCollectionWidget::NativeConstruct()
                 Style.Pressed.TintColor=FSlateColor(FLinearColor(1.f,.95f,.65f));
                 Style.SetPressedPadding(Style.NormalPadding+FMargin(0,2,0,-2));
             }
-            Style.SetDisabled(Style.Normal);B->SetStyle(Style);
+            if(B->GetFName()==TEXT("PreviousButton") || B->GetFName()==TEXT("NextButton"))
+            {
+                const FName GlyphName(*(FString(Name)+TEXT("Glyph")));
+                auto* Glyph=Cast<UImage>(GetWidgetFromName(GlyphName));
+                if(!Glyph)Glyph=WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(),GlyphName);
+                FSlateBrush ArrowBrush;ArrowBrush.DrawAs=ESlateBrushDrawType::Image;
+                ArrowBrush.SetResourceObject(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/UI/Redesign/M_CollectionArrowTint.M_CollectionArrowTint")));
+                ArrowBrush.ImageSize=FVector2D(32,38);
+                ArrowBrush.Mirroring=B->GetFName()==TEXT("PreviousButton")?ESlateBrushMirrorType::Horizontal:ESlateBrushMirrorType::NoMirror;
+                Glyph->SetBrush(ArrowBrush);Glyph->SetColorAndOpacity(MiningMenuStyle::Gold);Glyph->SetVisibility(ESlateVisibility::HitTestInvisible);
+                B->SetContent(Glyph);
+                FSlateBrush Empty;Empty.DrawAs=ESlateBrushDrawType::NoDrawType;
+                Style.SetNormal(Empty).SetHovered(Empty).SetPressed(Empty);
+                // A smaller glyph sits inside the original, generous hit area.
+                Style.SetNormalPadding(FMargin(7,8)).SetPressedPadding(FMargin(7,10,7,6));
+            }
+            Style.SetDisabled(Style.Normal);MiningUISounds::Apply(Style);B->SetStyle(Style);
         }
     // Enlarge only the empty gutters: cards start at x=51 and end at x=957.
     for(const TCHAR* Name:{TEXT("PreviousButton"),TEXT("NextButton")})
         if(auto* B=GetWidgetFromName(Name))if(auto* ButtonSlot=Cast<UCanvasPanelSlot>(B->Slot))
         {ButtonSlot->SetPosition(FVector2D(B->GetFName()==TEXT("PreviousButton")?0:963,20));ButtonSlot->SetSize(FVector2D(46,54));}
+    if(auto* Bar=Cast<UCanvasPanel>(GetWidgetFromName(TEXT("CollectionBar"))))
+    {
+        const int32 Pages=FMath::DivideAndRoundUp(AMiningCollectible::ItemTypeCount,4);
+        for(int32 I=0;I<Pages;++I)
+        {
+            const FName Name(*FString::Printf(TEXT("PageIndicator%d"),I));
+            if(GetWidgetFromName(Name))continue;
+            auto* Button=WidgetTree->ConstructWidget<UMiningCollectionPageButton>(UMiningCollectionPageButton::StaticClass(),FName(*FString::Printf(TEXT("PageButton%d"),I)));
+            Button->Configure(this,I);
+            FButtonStyle PageStyle;FSlateBrush Empty;Empty.DrawAs=ESlateBrushDrawType::NoDrawType;
+            PageStyle.SetNormal(Empty).SetHovered(Empty).SetPressed(Empty).SetDisabled(Empty);
+            PageStyle.SetNormalPadding(FMargin(4,12)).SetPressedPadding(FMargin(4,12));MiningUISounds::Apply(PageStyle);Button->SetStyle(PageStyle);
+            auto* Segment=WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(),Name);
+            Segment->SetBrush(*FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")));
+            Segment->SetVisibility(ESlateVisibility::HitTestInvisible);
+            auto* S=Bar->AddChildToCanvas(Button);
+            const float X=(1010.f-(Pages*24.f+(Pages-1)*8.f))*.5f+I*32.f;
+            S->SetPosition(FVector2D(X-4.f,104));
+            S->SetSize(FVector2D(32,31));
+            auto* Visual=Bar->AddChildToCanvas(Segment);Visual->SetPosition(FVector2D(X,116));Visual->SetSize(FVector2D(24,7));Visual->SetZOrder(2);
+        }
+
+    }
     for(int32 I=0;I<4;++I)
         if(auto* Label=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemLabel%d"),I)))))
             if(auto* Canvas=Cast<UCanvasPanel>(Label->GetParent()))
@@ -150,6 +200,18 @@ void UMiningCollectionWidget::NativeTick(const FGeometry& G,float Dt)
     Super::NativeTick(G,Dt);
     if(auto* Back=Cast<UButton>(GetWidgetFromName(TEXT("CloseButton"))))
         Back->SetRenderScale(FVector2D(Back->IsPressed()?.96f:Back->IsHovered()||Back->HasKeyboardFocus()?1.16f:1.f));
+    for(const TCHAR* Name:{TEXT("PreviousButton"),TEXT("NextButton")})
+        if(auto* B=Cast<UButton>(GetWidgetFromName(Name)))
+            if(auto* Glyph=Cast<UImage>(B->GetContent()))
+                Glyph->SetColorAndOpacity(B->IsPressed()?FLinearColor(.72f,.38f,.008f):B->IsHovered()||B->HasKeyboardFocus()?FLinearColor(1.f,.90f,.42f):MiningMenuStyle::Gold);
+    for(int32 I=0;I<FMath::DivideAndRoundUp(AMiningCollectible::ItemTypeCount,4);++I)
+        if(auto* Button=Cast<UButton>(GetWidgetFromName(FName(*FString::Printf(TEXT("PageButton%d"),I)))))
+            if(auto* Segment=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("PageIndicator%d"),I)))))
+            {
+                const bool Hover=Button->IsHovered() || Button->HasKeyboardFocus();
+                Segment->SetColorAndOpacity(I==CurrentPage?(Hover?FLinearColor(1.f,.85f,.15f):MiningMenuStyle::Gold):Hover?MiningMenuStyle::Cream:FLinearColor(.18f,.14f,.035f,.85f));
+                Segment->SetRenderScale(FVector2D(1.f,Hover?1.4f:1.f));
+            }
     if(!bRevealing)return;
     RevealElapsed+=Dt;
     const float T=FMath::Clamp(RevealElapsed/FMath::Max(.05f,PanelSlideDuration),0.f,1.f);
@@ -191,6 +253,9 @@ void UMiningCollectionWidget::RefreshCollection()
     if(auto* W=GetWidgetFromName(TEXT("PreviewHelp")))W->SetVisibility(ESlateVisibility::Collapsed);
     const auto Ids=Collection->CatalogueIds();
     const int32 Page=CurrentPage;
+    for(int32 I=0;I<FMath::DivideAndRoundUp(AMiningCollectible::ItemTypeCount,4);++I)
+        if(auto* Segment=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("PageIndicator%d"),I)))))
+            Segment->SetColorAndOpacity(I==Page?MiningMenuStyle::Gold:FLinearColor(.18f,.14f,.035f,.85f));
     if(auto* W=GetWidgetFromName(TEXT("PreviousButton")))W->SetVisibility(Page>0?ESlateVisibility::Visible:ESlateVisibility::Hidden);
     if(auto* W=GetWidgetFromName(TEXT("NextButton")))W->SetVisibility((Page+1)*4<Ids.Num()?ESlateVisibility::Visible:ESlateVisibility::Hidden);
     for(int32 I=0;I<4;++I)
@@ -208,12 +273,12 @@ void UMiningCollectionWidget::RefreshCollection()
             // label can reuse a collapsed width and stack a short name vertically.
             T->SetAutoWrapText(false);T->SetWrapTextAt(208.f);T->SetJustification(ETextJustify::Center);
             T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):TEXT("尚未发现")));
-            T->SetRenderTranslation(FVector2D(0,!Has&&AMiningCollectible::IsMineralReward(Item)?-14:0));
+            T->SetRenderTranslation(FVector2D(0,AMiningCollectible::IsMineralReward(Item)?-14:0));
         }
         if(auto* Condition=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemCondition%d"),I)))))
         {
-            const bool Show=!Has&&AMiningCollectible::IsMineralReward(Item);
-            Condition->SetText(FText::FromString(Show?FString::Printf(TEXT("收集%d个%s"),AMiningCollectible::UnlockThreshold(Item),*FMiningMineralCost::Name(MineralRewardType(Item))):FString()));
+            const bool Show=AMiningCollectible::IsMineralReward(Item);
+            Condition->SetText(FText::FromString(Show?FString::Printf(TEXT("%s收集%d个%s"),Has?TEXT("已"):TEXT(""),AMiningCollectible::UnlockThreshold(Item),*FMiningMineralCost::Name(MineralRewardType(Item))):FString()));
             Condition->SetColorAndOpacity(Id==Item?FLinearColor(.12f,.10f,.025f):FLinearColor(.62f,.62f,.58f));
         }
         if(auto* W=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I)))))
@@ -236,10 +301,14 @@ void UMiningCollectionWidget::SelectCollectionItem(int32 Id)
 }
 void UMiningCollectionWidget::TurnCollectionPage(int32 Direction)
 {
+    SelectCollectionPage(CurrentPage+(Direction<0?-1:1));
+}
+void UMiningCollectionWidget::SelectCollectionPage(int32 RequestedPage)
+{
     if(!IsValid(Collection))return;
     const auto Ids=Collection->CatalogueIds(); if(Ids.IsEmpty())return;
     const int32 Pages=FMath::DivideAndRoundUp(Ids.Num(),4);
-    const int32 Page=FMath::Clamp(CurrentPage+(Direction<0?-1:1),0,Pages-1);
+    const int32 Page=FMath::Clamp(RequestedPage,0,Pages-1);
     if(Page==CurrentPage)return;
     CurrentPage=Page;
     const int32 Selection=Ids[Page*4];

@@ -1,4 +1,5 @@
 #include "MiningExperienceSubsystem.h"
+#include "MiningUISounds.h"
 #include "MiningSaveSubsystem.h"
 #include "BrainMiningPlayerController.h"
 #include "EndingCreditsInput.h"
@@ -230,24 +231,24 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
         for(int32 Index=0;Index<AreaCount;++Index)
         {
             const FString Label=Index<UE_ARRAY_COUNT(Destinations)?FString(Destinations[Index]):Hall->Areas[Index].Title.ToString();
-            Choices->AddSlot().AutoHeight().Padding(0,2)[SNew(SButton).ContentPadding(FMargin(12,7))
+            Choices->AddSlot().AutoHeight().Padding(0,2)[SNew(SButton).ButtonStyle(MiningUISounds::DefaultButton()).ContentPadding(FMargin(12,7))
                 .Tag(FName(*FString::Printf(TEXT("GM_Area_%d"),Index))).IsEnabled(!Hall || Hall->bReady)
                 .OnClicked_Lambda([this,Index](){JumpToDeveloperArea(Index);return FReply::Handled();})
                 [SNew(STextBlock).Text(FText::FromString(TEXT("跳转 · ")+Label)).Font(BrainMiningFonts::Body(18))]];
         }
         if(!Hall)Choices->AddSlot().AutoHeight().Padding(0,4)[SNew(STextBlock)
             .Text(FText::FromString(TEXT("选择后返回主流程，恢复已有存档，再跳到指定入口。"))).Font(BrainMiningFonts::Body(14))];
-        Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ContentPadding(12)
+        Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ButtonStyle(MiningUISounds::DefaultButton()).ContentPadding(12)
             .Tag(TEXT("GM_ToggleUI"))
             .OnClicked_Lambda([this](){CloseMenu();ToggleAllUI();return FReply::Handled();})
             [SNew(STextBlock).Text(FText::FromString(bAllUIHidden?TEXT("恢复全部 UI"):TEXT("隐藏全部 UI（录制模式）"))).Font(BrainMiningFonts::Body(18))]];
         if(Hall)
         {
-            Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ContentPadding(12)
+            Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ButtonStyle(MiningUISounds::DefaultButton()).ContentPadding(12)
                 .Tag(TEXT("GM_ReturnToStart"))
                 .OnClicked_Lambda([this](){if(auto* H=AMiningExhibitHall::Find(GetWorld()))H->ReturnToLobby();CloseMenu();return FReply::Handled();})
                 [SNew(STextBlock).Text(FText::FromString(TEXT("返回当前通路／关卡起点"))).Font(BrainMiningFonts::Body(18))]];
-            Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ContentPadding(12)
+            Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ButtonStyle(MiningUISounds::DefaultButton()).ContentPadding(12)
                 .Tag(TEXT("GM_SkipRoom"))
                 .OnClicked_Lambda([this](){if(auto* H=AMiningExhibitHall::Find(GetWorld());H && H->SkipCurrentRoom())CloseMenu();else MenuError=TEXT("当前区域没有可以跳过的房间。");return FReply::Handled();})
                 [SNew(STextBlock).Text(FText::FromString(TEXT("跳过当前玩法房间"))).Font(BrainMiningFonts::Body(18))]];
@@ -255,7 +256,7 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
         Choices->AddSlot().AutoHeight().Padding(0,10)[SNew(STextBlock).Text(FText::FromString(TEXT("GM · 装备"))).Font(BrainMiningFonts::Style("Bold",18))];
         const TCHAR* Tools[]={TEXT("升级矿镐一级（最高：钻石大矿镐）"),TEXT("解锁炸弹"),TEXT("解锁钻机")};
         for(int32 Tool=0;Tool<3;++Tool)
-            Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ContentPadding(12)
+            Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ButtonStyle(MiningUISounds::DefaultButton()).ContentPadding(12)
                 .OnClicked_Lambda([this,Tool](){DeveloperGrantTool(Tool);return FReply::Handled();})
                 [SNew(STextBlock).Text(FText::FromString(Tools[Tool])).Font(BrainMiningFonts::Body(18))]];
         Choices->AddSlot().AutoHeight().Padding(0,10)[SNew(STextBlock)
@@ -263,7 +264,7 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
         for(int32 Id=12;Id<=16;++Id)
         {
             const int32 RewardId=Id==16?INDEX_NONE:Id;
-            Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ContentPadding(12)
+            Choices->AddSlot().AutoHeight().Padding(0,3)[SNew(SButton).ButtonStyle(MiningUISounds::DefaultButton()).ContentPadding(12)
                 .Tag(FName(*FString::Printf(TEXT("GM_UnlockMineral_%d"),RewardId)))
                 .OnClicked_Lambda([this,RewardId](){DeveloperUnlockMineral(RewardId);return FReply::Handled();})
                 [SNew(STextBlock).Text(FText::FromString(Id==16?TEXT("一键解锁四件矿石藏品"):
@@ -272,7 +273,7 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
         if(Hall && !Hall->bReady)MenuError=TEXT("房间仍在加载，稍后重新打开面板即可跳转。");
         Choices->AddSlot().AutoHeight().Padding(0,12)[SNew(STextBlock).Text(FText::FromString(TEXT("GM · 收集物附近"))).Font(BrainMiningFonts::Style("Bold",18))];
         for(int32 Id=0;Id<AMiningCollectible::ItemTypeCount;++Id)
-            if(!AMiningCollectible::IsMineralReward(Id))Choices->AddSlot().AutoHeight().Padding(0,2)[SNew(SButton).ContentPadding(10)
+            if(!AMiningCollectible::IsMineralReward(Id))Choices->AddSlot().AutoHeight().Padding(0,2)[SNew(SButton).ButtonStyle(MiningUISounds::DefaultButton()).ContentPadding(10)
                 .OnClicked_Lambda([this,Id](){JumpToCollectible(Id);return FReply::Handled();})
                 [SNew(STextBlock).Font(BrainMiningFonts::Body(12)).Text(FText::FromString(AMiningCollectible::ItemName(Id)))]];
         Choices->AddSlot().AutoHeight().Padding(0, 16, 0, 6)
@@ -286,7 +287,7 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
         const auto& Entry = MenuEntries[Index];
         const bool bAvailable = FPackageName::DoesPackageExist(Entry.Map);
         Choices->AddSlot().AutoHeight().Padding(0, 3)
-        [SNew(SButton).IsEnabled(bAvailable).ContentPadding(FMargin(18, 9)).OnClicked_Lambda([this, Index, bDeveloper]()
+        [SNew(SButton).ButtonStyle(MiningUISounds::DefaultButton()).IsEnabled(bAvailable).ContentPadding(FMargin(18, 9)).OnClicked_Lambda([this, Index, bDeveloper]()
             { if (bDeveloper) OpenDeveloperExperience(Index); else OpenExperience(Index); return FReply::Handled(); })
             [SNew(SVerticalBox)
                 + SVerticalBox::Slot().AutoHeight()
@@ -312,7 +313,7 @@ bool UMiningExperienceSubsystem::BuildMenu(bool bDeveloper)
                     [SNew(STextBlock).Font(BrainMiningFonts::Body(12)).Text_Lambda([this]() { return FText::FromString(MenuError); })
                         .ColorAndOpacity(FLinearColor(1.f, .55f, .3f)).AutoWrapText(true)]
                 + SVerticalBox::Slot().AutoHeight().Padding(0,8)
-                    [SAssignNew(CloseButton, SButton).HAlign(HAlign_Center).ContentPadding(12)
+                    [SAssignNew(CloseButton, SButton).ButtonStyle(MiningUISounds::DefaultButton()).HAlign(HAlign_Center).ContentPadding(12)
                         .OnClicked_Lambda([this]() { CloseMenu(); return FReply::Handled(); })
                         [SNew(STextBlock).Text(FText::FromString(TEXT("继续当前试玩"))).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(FLinearColor::White)]]]];
     Controller->SetIgnoreMoveInput(true);

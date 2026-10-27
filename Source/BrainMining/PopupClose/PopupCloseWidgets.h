@@ -34,8 +34,13 @@ public:
 	int32 GetManuallyClosedCount() const { return ManuallyClosedCount; }
 	void ClearOldestPopup();
 	void ClearPopups();
+	void AdvanceIntroduction(float DeltaSeconds);
+	void SetWorkElapsed(float Seconds) { WorkElapsed=Seconds; }
 	FVector2D GetLatestClosePoint() const;
 	bool HasVariedWindowSizes() const;
+	UFUNCTION(BlueprintPure, Category="Office") FString GetFrontPopupTitle() const;
+	UFUNCTION(BlueprintPure, Category="Office") FString GetFrontPopupBody() const;
+	UFUNCTION(BlueprintPure, Category="Office") int32 GetFrontPopupPhase() const;
 	void SetRepliesEnabled(bool bEnabled) { bRepliesEnabled=bEnabled; }
 	TFunction<void()> OnReply;
 
@@ -45,7 +50,8 @@ protected:
 
 private:
 	bool ClosePopup(int32 Id);
- TSharedRef<SWidget> MakeArtPopup(int32 Id,int32 Variant);
+	int32 FrontWindowIndex() const;
+ TSharedRef<SWidget> MakeArtPopup(int32 Id,int32 Variant,FVector2D Size,int32 ContentIndex);
  UPROPERTY(Transient) TArray<TObjectPtr<UTexture2D>> ArtTextures;
  TArray<TSharedPtr<FSlateBrush>> ArtBrushes;
 
@@ -54,6 +60,7 @@ private:
 	struct FWindow
 	{
 		int32 Id = 0;
+		int32 ContentIndex = 0;
 		TSharedPtr<SWidget> Root;
 		FVector2D Position;
 		FVector2D Size;
@@ -64,6 +71,11 @@ private:
 	int32 NextId = 1;
 	int32 ManuallyClosedCount = 0;
 	bool bRepliesEnabled = true;
+	int32 IntroductionPriority=1;
+	float IntroductionAge=0.f;
+	bool bIntroductionFallback=false;
+	float WorkElapsed=-1.f;
+	bool bReconnectShown=false;
 };
 
 UCLASS()

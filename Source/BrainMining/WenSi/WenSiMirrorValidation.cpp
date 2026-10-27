@@ -113,6 +113,52 @@ FString AWenSiMirrorPuzzle::ValidateMirrorPuzzle()
  Thoughts[0]=Find(3);Thoughts[1]=Find(2);SwapThoughts();SetAreaActive(false);AdvanceSwap(SwapTotalSeconds);
  Check(!IsSwapping() && Find(3)->Word==EWenSiMirrorWord::Floating,TEXT("leaving the room cancels pending exchange"));
  SetAreaActive(true);ResetPuzzle();
+ // Scaling must preserve the display's support plane after subsequent ticks,
+ // including returning from Small to an ordinary or Big word.
+ auto Bottom=[](AWenSiMirrorExhibit* Exhibit)
+ {
+  double Z=BIG_NUMBER;
+  for(auto Part:Exhibit->Parts)if(Part->IsVisible()&&Part->GetStaticMesh()){Part->UpdateBounds();Z=FMath::Min(Z,Part->Bounds.GetBox().Min.Z);}
+  return Z;
+ };
+ Pawn->SetActorLocation(RoomPoint(FVector(-550,0,89)));
+ for(int32 Kind:{8,12})
+ {
+  auto Exhibit=Find(Kind);const double Support=Bottom(Exhibit);bool Stable=true,VisualSeated=true;
+  for(auto Word:{EWenSiMirrorWord::Big,EWenSiMirrorWord::Small,EWenSiMirrorWord::Ordinary,EWenSiMirrorWord::Big})
+  {
+   Exhibit->Word=Word;Exhibit->Apply();const double Applied=Bottom(Exhibit);Settle();
+   Stable&=FMath::IsNearlyEqual(Bottom(Exhibit),Support,.1)&&FMath::IsNearlyEqual(Applied,Support,.1);
+   if(Exhibit->ArtVisual && Exhibit->ArtVisual->GetStaticMesh())
+   {Exhibit->ArtVisual->UpdateBounds();VisualSeated&=FMath::IsNearlyEqual(Exhibit->ArtVisual->Bounds.GetBox().Min.Z,Support,.1);}
+  }
+  Check(Stable,Kind==8?TEXT("metal block keeps its plinth support through repeated size changes and movement ticks"):TEXT("ornament keeps its authored plinth support through repeated size changes and movement ticks"));
+  Check(VisualSeated,Kind==8?TEXT("metal art and collision share the same bottom at every size"):TEXT("cat art and collision share the same bottom at every size"));
+ }
+ ResetPuzzle();Pawn->SetActorLocation(RoomPoint(FVector(-550,0,89)));
+ bool SeatedOnPan=true,NoFalsePressure=true;
+ for(auto Word:{EWenSiMirrorWord::Big,EWenSiMirrorWord::Small,EWenSiMirrorWord::Ordinary,EWenSiMirrorWord::Heavy})
+ {
+  Find(6)->Word=Word;Find(6)->Apply();Settle();
+  auto Tray=Cast<AStaticMeshActor>(LeftTray);Tray->GetStaticMeshComponent()->UpdateBounds();
+  SeatedOnPan&=FMath::IsNearlyEqual(Bottom(Find(6)),Tray->GetStaticMeshComponent()->Bounds.GetBox().Max.Z,.1);
+  NoFalsePressure&=bPressure==(Word==EWenSiMirrorWord::Heavy);
+ }
+ Check(SeatedOnPan,TEXT("porcelain sculpture stays on its animated balance pan at every size"));
+ Check(NoFalsePressure,TEXT("size offsets do not falsely activate the balance pressure lock"));
+ ResetPuzzle();Pawn->SetActorLocation(RoomPoint(FVector(-550,0,89)));
+ auto Metal=Find(8);auto Ball=Find(9);
+ FActorSpawnParameters ObstacleParams;ObstacleParams.ObjectFlags|=RF_Transient;
+ auto Obstacle=GetWorld()->SpawnActor<AStaticMeshActor>(Metal->GetActorLocation()+FVector(25,0,0),FRotator::ZeroRotator,ObstacleParams);
+ auto ObstacleMesh=Obstacle->GetStaticMeshComponent();ObstacleMesh->SetMobility(EComponentMobility::Movable);
+ ObstacleMesh->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube")));
+ Obstacle->SetActorScale3D(FVector(.02,.5,.5));ObstacleMesh->SetCollisionProfileName(TEXT("BlockAll"));
+ Thoughts[0]=Metal;Thoughts[1]=Ball;const auto BeforeMetal=Metal->GetActorTransform();
+ const bool GrowthRejected=!SwapWords(0,1);
+ Check(GrowthRejected && Metal->Word==EWenSiMirrorWord::Conductive && Ball->Word==EWenSiMirrorWord::Big && Metal->GetActorTransform().Equals(BeforeMetal),TEXT("obstructed exhibit growth rejects both words without moving or scaling either side"));
+ Obstacle->Destroy();
+ Check(SwapWords(0,1) && Metal->Word==EWenSiMirrorWord::Big,TEXT("the same exhibit can grow when the blocking geometry is removed"));
+ ResetPuzzle();
  const FString Summary=FString::Printf(TEXT("%s: %d checks, %d failures"),Failures?TEXT("FAIL"):TEXT("PASS"),Results.Num(),Failures);Results.Insert(Summary,0);
  FFileHelper::SaveStringArrayToFile(Results,*(FPaths::ProjectSavedDir()/TEXT("Validation/WenSiMirror/runtime_checks.txt")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
  for(auto& Line:Results)UE_LOG(LogTemp,Display,TEXT("WenSiMirror %s"),*Line);return Summary;

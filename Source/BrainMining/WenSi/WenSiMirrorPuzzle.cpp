@@ -16,9 +16,11 @@
 #include "Showcase/MiningExhibitHall.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
+#include "Components/PostProcessComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/World.h"
 #include "Engine/StaticMeshActor.h"
@@ -86,12 +88,53 @@ namespace
   for(auto Part:Exhibit->Parts)if(Part->IsVisible() && Part->GetStaticMesh()){Part->UpdateBounds();Box+=Part->Bounds.GetBox();}
   return Box;
  }
+ FBox SupportBounds(const AWenSiMirrorExhibit* Exhibit)
+ {
+  // The tether is anchored separately and must not define the balloon's foot.
+  if(Exhibit->Kind==3 && Exhibit->Parts.Num() && Exhibit->Parts[0]->GetStaticMesh())
+   return Exhibit->Parts[0]->GetStaticMesh()->GetBoundingBox().TransformBy(Exhibit->Parts[0]->GetComponentTransform());
+  return ExhibitBounds(Exhibit);
+ }
+ float SupportLocalMinZ(const AWenSiMirrorExhibit* Exhibit)
+ {
+  FBox Bounds(ForceInit);
+  for(int32 I=0;I<Exhibit->Parts.Num();++I)
+  {
+   auto* Part=Exhibit->Parts[I].Get();
+   if(Part->IsVisible() && Part->GetStaticMesh() && (Exhibit->Kind!=3 || I==0))
+    Bounds+=Part->GetStaticMesh()->GetBoundingBox().TransformBy(Part->GetRelativeTransform());
+  }
+  return Bounds.IsValid?float(Bounds.Min.Z):0.f;
+ }
+ bool HasResizeRoom(AWenSiMirrorExhibit* Exhibit,EWenSiMirrorWord NewWord,AActor* Other,AActor* Pawn)
+ {
+  const float OldScale=Exhibit->GetActorScale3D().Z,NewScale=WordScale(NewWord);
+  if(IsSelf(Exhibit) || Exhibit->Kind==4 || Exhibit->Kind==9 || NewWord==EWenSiMirrorWord::Passable || NewScale<=OldScale+.001f)return true;
+  FCollisionQueryParams Query(SCENE_QUERY_STAT(WenSiExhibitGrowth),false,Exhibit);
+  Query.AddIgnoredActor(Other);Query.AddIgnoredActor(Pawn);
+  const FTransform Next(Exhibit->GetActorQuat(),Exhibit->ResizedLocation(NewWord),FVector(NewScale));
+  for(int32 I=0;I<Exhibit->Parts.Num();++I)
+  {
+   auto* Part=Exhibit->Parts[I].Get();
+   if(!Part->IsVisible() || !Part->GetStaticMesh() || (Exhibit->Kind==3 && I>0))continue;
+   const FTransform Transform=Part->GetRelativeTransform()*Next;
+   const FBox Bounds=Part->GetStaticMesh()->GetBoundingBox();
+   const FVector Extent=(Bounds.GetExtent()*Transform.GetScale3D().GetAbs()-FVector(.5f)).ComponentMax(FVector(.1f));
+   const auto Shape=Part->GetStaticMesh()->GetName()==TEXT("Sphere")?FCollisionShape::MakeSphere(Extent.GetMax()):FCollisionShape::MakeBox(Extent);
+   if(Exhibit->GetWorld()->OverlapBlockingTestByChannel(Transform.TransformPosition(Bounds.GetCenter()),Transform.GetRotation(),ECC_Pawn,Shape,Query))return false;
+  }
+  return true;
+ }
 }
 
 AWenSiMirrorExhibit::AWenSiMirrorExhibit()
 {
  PrimaryActorTick.bCanEverTick=true;
  SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
+ TetherSelection=CreateDefaultSubobject<UBoxComponent>(TEXT("BalloonTetherSelection"));
+ TetherSelection->SetupAttachment(RootComponent);TetherSelection->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ TetherSelection->SetCollisionResponseToAllChannels(ECR_Ignore);TetherSelection->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);
+ TetherSelection->SetGenerateOverlapEvents(false);
  for(int32 I=0;I<12;++I)
  {
   auto Part=CreateDefaultSubobject<UStaticMeshComponent>(*FString::Printf(TEXT("Part%d"),I));
@@ -115,6 +158,21 @@ FString AWenSiMirrorExhibit::Adjective() const{return WordText(Word);}
 void AWenSiMirrorExhibit::RefreshArtModel(){Configure();}
 void AWenSiMirrorExhibit::Configure()
 {
+ // Saved maps retain their original twelve-element component array.
+ // Extend only this cover, including when loading those existing map instances.
+ while(Kind==7 && Parts.Num()<23)
+ {
+  const FName Name(*FString::Printf(TEXT("Part%d"),Parts.Num()));
+  auto* Part=FindObjectFast<UStaticMeshComponent>(this,Name);
+  if(!Part)
+  {
+   Part=NewObject<UStaticMeshComponent>(this,Name);AddInstanceComponent(Part);
+   Part->SetupAttachment(RootComponent);Part->SetMobility(EComponentMobility::Movable);
+   Part->RegisterComponent();
+  }
+  Parts.Add(Part);
+ }
+
  auto Cube=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
  auto Sphere=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Sphere.Sphere"));
  auto Cylinder=LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
@@ -133,7 +191,8 @@ void AWenSiMirrorExhibit::Configure()
  case 1:
   Shape(0,FVector(0,0,120),FVector(150,228,14));
   Shape(1,FVector(0,-108,0),FVector(150,12,240));Shape(2,FVector(0,108,0),FVector(150,12,240));
-  for(int32 I=0;I<4;++I)Shape(3+I,FVector(68,-75+I*50,0),FVector(12,10,240));
+  // A continuous back panel closes the cover; the front remains the entrance.
+  Shape(3,FVector(68,0,0),FVector(12,228,240));
   break;
  case 2:
  case 12:
@@ -150,8 +209,19 @@ void AWenSiMirrorExhibit::Configure()
   Shape(0,FVector::ZeroVector,FVector(18,220,236));Shape(1,FVector(0,-114,0),FVector(30,12,240));Shape(2,FVector(0,114,0),FVector(30,12,240));break;
  case 6: Shape(0,FVector::ZeroVector,FVector(85,85,80));break;
  case 7:
-  Shape(0,FVector(0,0,130),FVector(200,200,10));Shape(1,FVector(94,0,0),FVector(12,200,260));
-  Shape(2,FVector(0,-94,0),FVector(200,12,260));Shape(3,FVector(0,94,0),FVector(200,12,260));
+  Shape(0,FVector(0,0,130),FVector(200,200,10));
+  // Three additional glazed windows; solid lower panels retain the single original entrance.
+  for(int Side=0;Side<3;++Side)
+  {
+   const FRotator Turn(0,Side==0?0.f:Side==1?-90.f:90.f,0);
+   auto Wall=[&](int Index,FVector P,FVector Size)
+   {Shape(Index,Turn.RotateVector(P),Side==0?Size:FVector(Size.Y,Size.X,Size.Z));};
+   Wall(1+Side,FVector(94,0,7.5),FVector(3,70,65));
+   Wall(11+Side*4,FVector(94,-67.5,0),FVector(12,65,260));
+   Wall(12+Side*4,FVector(94,67.5,0),FVector(12,65,260));
+   Wall(13+Side*4,FVector(94,0,-77.5),FVector(12,70,105));
+   Wall(14+Side*4,FVector(94,0,85),FVector(12,70,90));
+  }
   Shape(4,FVector(-94,-67.5,0),FVector(12,65,260));Shape(5,FVector(-94,67.5,0),FVector(12,65,260));
   Shape(6,FVector(-94,0,-32.5),FVector(12,70,15));
   Shape(7,FVector(-94,0,85),FVector(12,70,90));
@@ -171,11 +241,19 @@ void AWenSiMirrorExhibit::Configure()
 }
 void AWenSiMirrorExhibit::Apply()
 {
+ TetherSelection->SetCollisionEnabled(Kind==3?ECollisionEnabled::QueryOnly:ECollisionEnabled::NoCollision);
  const float Scale=IsSelf(this)?1.f:WordScale(Word);
+ const FVector NextLocation=ResizedLocation(Word);
  SetActorScale3D(FVector(Scale));
+ if(bRestBoundsInitialized && Kind!=9)SetActorLocation(NextLocation);
  auto Parent=Surface(Kind==3?TEXT("MI_Burgundy"):Kind==8||Kind==1||Kind==7?TEXT("MI_Brass"):Kind==5?TEXT("MI_DeepBlue"):TEXT("MI_Limestone"));
+ if(Kind==1 || Kind==7 || Kind==8)
+  if(auto Metal=Surface(TEXT("MI_MuseumMetal032")))Parent=Metal;
+ if(Kind==9)
+  if(auto Porcelain=Surface(TEXT("MI_MuseumPorcelain")))Parent=Porcelain;
  auto Glass=Surface(TEXT("M_DisplayGlass"));auto Rim=Surface(TEXT("M_InteractiveRim"));
  auto Ghost=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/EngineDebugMaterials/M_SimpleTranslucent.M_SimpleTranslucent"));
+ if(auto Passable=Surface(TEXT("M_MuseumPassable")))Ghost=Passable;
  for(int32 I=0;I<Parts.Num();++I)
  {
   auto Part=Parts[I];if(!Part->IsVisible())continue;
@@ -185,22 +263,21 @@ void AWenSiMirrorExhibit::Apply()
   if(Kind==4 && Word!=EWenSiMirrorWord::Heavy){Part->SetCollisionResponseToAllChannels(ECR_Ignore);Part->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);}
   UMaterialInterface* Use=(Word==EWenSiMirrorWord::Passable && !IsSelf(this))||Kind==4?Ghost:Parent;
   // A clear pane exposes the prize visually while retaining the puzzle's thinking/collision barrier.
-  if(Kind==7 && I==8 && Word!=EWenSiMirrorWord::Passable && Glass)Use=Glass;
+  if(Kind==7 && (I==8 || (I>=1 && I<=3)) && Word!=EWenSiMirrorWord::Passable && Glass)Use=Glass;
   if(Use)
   {
    auto Mat=UMaterialInstanceDynamic::Create(Use,this);Mat->SetVectorParameterValue(TEXT("Color"),FLinearColor(.68f,.72f,.78f,.2f));Mat->SetScalarParameterValue(TEXT("Opacity"),Kind==4?.18f:.15f);Part->SetMaterial(0,Mat);
   }
-  if(Rim && !Part->GetOverlayMaterial())Part->SetOverlayMaterial(UMaterialInstanceDynamic::Create(Rim,this));
+  Part->SetOverlayMaterial(nullptr);
  }
  if(IsSelf(this)&&MirrorTarget)
  {
   auto Mat=UMaterialInstanceDynamic::Create(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/WenSi/Mirror/Materials/M_WenSiMirror.M_WenSiMirror")),this);
   if(Mat){Mat->SetTextureParameterValue(TEXT("MirrorTexture"),MirrorTarget);Parts[0]->SetMaterial(0,Mat);}
  }
- // Word scaling is applied around the actor origin. Re-seat the exhibit on
- // the same support plane after a big/small exchange so the enlarged mesh
- // does not sink through its plinth and the small mesh does not float.
- if(bRestBoundsInitialized && !(Kind==9 && bBallLanded))
+ // The hopper ball has a separate scripted descent and contact-seat height.
+ // Keep its initial suspended support plane until that descent has landed.
+ if(bRestBoundsInitialized && Kind==9 && !bBallLanded)
  {
   const FBox Bounds=ExhibitBounds(this);
   if(Bounds.IsValid)
@@ -209,15 +286,46 @@ void AWenSiMirrorExhibit::Apply()
    if(!FMath::IsNearlyZero(Delta,.01f)) AddActorWorldOffset(FVector(0,0,Delta),false,nullptr,ETeleportType::TeleportPhysics);
   }
  }
- WenSiExhibitArt::Apply(ArtVisual,Parts,ArtModel,ArtRotation,bUniformArtScale,Word==EWenSiMirrorWord::Passable,Ghost,Rim);
+ // Fit the balloon body to its body proxy only. The tether keeps its own
+ // independently stretching geometry and selection/collision rules.
+ if(Kind==3 && ArtModel)
+ {
+  TArray<TObjectPtr<UStaticMeshComponent>> BodyParts{Parts[0]};
+  WenSiExhibitArt::Apply(ArtVisual,BodyParts,ArtModel,ArtRotation,bUniformArtScale,Word==EWenSiMirrorWord::Passable,Ghost,Rim);
+  Parts[1]->SetRenderInMainPass(false);Parts[1]->SetRenderInDepthPass(false);Parts[1]->SetCastShadow(false);Parts[1]->SetVisibleInRayTracing(false);
+  Parts[2]->SetRenderInMainPass(true);Parts[2]->SetRenderInDepthPass(true);Parts[2]->SetCastShadow(true);Parts[2]->SetVisibleInRayTracing(true);
+ }
+ else WenSiExhibitArt::Apply(ArtVisual,Parts,ArtModel,ArtRotation,bUniformArtScale,Word==EWenSiMirrorWord::Passable,Ghost,Rim);
  if(Kind==7 && Word!=EWenSiMirrorWord::Passable && Parent)
   for(int32 I=0;I<ArtVisual->GetNumMaterials();++I)ArtVisual->SetMaterial(I,Parent);
- if(Kind==3 || Kind==7)
+ if((Kind==3 && !ArtModel) || Kind==7)
  {
   // The window and balloon tether are represented by the separate proxy parts.
   // The tether stretches independently; a fixed authored string cannot follow the ceiling balloon.
   ArtVisual->SetVisibility(false);
-  for(auto Part:Parts)if(Part->GetStaticMesh()){Part->SetRenderInMainPass(true);Part->SetRenderInDepthPass(true);Part->SetCastShadow(true);if(Kind==7 && Rim && !Part->GetOverlayMaterial())Part->SetOverlayMaterial(UMaterialInstanceDynamic::Create(Rim,this));}
+  for(auto Part:Parts)if(Part->GetStaticMesh()){Part->SetRenderInMainPass(true);Part->SetRenderInDepthPass(true);Part->SetCastShadow(true);}
+ }
+ if(Kind==4)
+ {
+  auto Smoke=FindObjectFast<UNiagaraComponent>(this,TEXT("MuseumSmoke"));
+  if(!Smoke)
+   if(auto System=LoadObject<UNiagaraSystem>(nullptr,TEXT("/Game/WenSi/Museum/Refresh/VFX/NS_MuseumSmoke.NS_MuseumSmoke")))
+   {
+    Smoke=NewObject<UNiagaraComponent>(this,TEXT("MuseumSmoke"));AddInstanceComponent(Smoke);
+    Smoke->SetupAttachment(RootComponent);Smoke->SetAutoActivate(false);Smoke->SetAsset(System);Smoke->RegisterComponent();
+   }
+  if(Smoke && Smoke->GetAsset())
+  {
+   // Keep the original seven parts as thinking/collision proxies. Only the
+   // Niagara plume renders; assigning Heavy still makes the same barrier.
+   for(auto Part:Parts)if(Part->GetStaticMesh())
+   {Part->SetRenderInMainPass(false);Part->SetRenderInDepthPass(false);Part->SetCastShadow(false);Part->SetVisibleInRayTracing(false);Part->SetOverlayMaterial(nullptr);}
+   ArtVisual->SetVisibility(false);Smoke->SetRelativeLocation(FVector(0,0,-12));
+   Smoke->SetVariableFloat(TEXT("SpawnRate"),20.f);
+   Smoke->SetVariableFloat(TEXT("Sprite Size"),42.f);
+   Smoke->SetVariableLinearColor(TEXT("Smoke Color"),FLinearColor(.48f,.52f,.56f,Word==EWenSiMirrorWord::Passable?.35f:.8f));
+   Smoke->SetVisibility(true);Smoke->Activate(true);
+  }
  }
  if(ConductiveFX)
  {
@@ -231,15 +339,33 @@ void AWenSiMirrorExhibit::Apply()
 void AWenSiMirrorExhibit::Highlight(bool bAimed)
 {
  WenSiExhibitArt::Highlight(ArtVisual,bThinkingEnabled ? (bAimed ? 2.2f:.8f):0.f,bAimed ? 4.0f:1.8f,FLinearColor(1.f,.89f,.7f));
- for(auto Part:Parts)if(auto Glow=Cast<UMaterialInstanceDynamic>(Part->GetOverlayMaterial()))
- {Glow->SetScalarParameterValue(TEXT("Strength"),bThinkingEnabled?(bAimed?4.5f:1.8f):0.f);Glow->SetScalarParameterValue(TEXT("OutlineWidth"),bAimed?4.0f:1.8f);Glow->SetVectorParameterValue(TEXT("Tint"),FLinearColor(1.f,.89f,.7f));}
+ // All exhibits use the same visible silhouette. Hidden art/collision proxies
+ // must not contribute depth, otherwise they outline their old blockout shapes.
+ for(auto Part:Parts)
+ {
+  Part->SetOverlayMaterial(nullptr);
+  Part->SetCustomDepthStencilValue(1);
+  Part->SetRenderCustomDepth(bThinkingEnabled && Part->GetStaticMesh() && Part->IsVisible() && Part->bRenderInMainPass);
+ }
+ if(auto Smoke=FindObjectFast<UNiagaraComponent>(this,TEXT("MuseumSmoke")))
+ {
+  Smoke->SetCustomDepthStencilValue(1);
+  Smoke->SetRenderCustomDepth(bThinkingEnabled && Smoke->IsVisible());
+ }
 }
 void AWenSiMirrorExhibit::BeginPlay()
 {
- Super::BeginPlay();Rest=GetActorLocation();Configure();
+ Super::BeginPlay();Rest=GetActorLocation();
+ const FBox AuthoredBounds=SupportBounds(this);
+ Configure();
  if(Kind==3){Rest.Z+=195;SetActorLocation(Rest);}
- const FBox InitialBounds=ExhibitBounds(this);
- if(InitialBounds.IsValid){RestBoundsMinZ=InitialBounds.Min.Z;bRestBoundsInitialized=true;}
+ const FBox InitialBounds=SupportBounds(this);
+ if(InitialBounds.IsValid)
+ {
+  RestBoundsMinZ=Kind!=9 && AuthoredBounds.IsValid?AuthoredBounds.Min.Z+(Kind==3?195.f:0.f):InitialBounds.Min.Z;
+  bRestBoundsInitialized=true;
+  if(Kind!=9)AddActorWorldOffset(FVector(0,0,SizeSupportOffset()));
+ }
  if(Kind==2)
  {
   SetActorHiddenInGame(true);SetActorEnableCollision(false);bThinkingEnabled=false;
@@ -250,6 +376,16 @@ void AWenSiMirrorExhibit::BeginPlay()
   Capture->TextureTarget=MirrorTarget;Capture->HiddenActors.Add(this);Apply();
   BuildMirrorPresence();
  }
+}
+float AWenSiMirrorExhibit::SizeSupportOffset() const
+{
+ return bRestBoundsInitialized && Kind!=9 && !IsSelf(this) ? RestBoundsMinZ-Rest.Z-SupportLocalMinZ(this)*GetActorScale3D().Z : 0.f;
+}
+FVector AWenSiMirrorExhibit::ResizedLocation(EWenSiMirrorWord NewWord) const
+{
+ FVector Location=GetActorLocation();
+ if(bRestBoundsInitialized && Kind!=9 && !IsSelf(this))Location.Z+=SupportLocalMinZ(this)*(GetActorScale3D().Z-WordScale(NewWord));
+ return Location;
 }
 void AWenSiMirrorExhibit::UpdateMirror()
 {
@@ -324,6 +460,9 @@ void AWenSiMirrorExhibit::Tick(float Dt)
   const float Anchor=Rest.Z-301.f,Bottom=GetActorLocation().Z-55.f*GetActorScale3D().Z;
   Parts[2]->SetWorldLocation(FVector(Rest.X,Rest.Y,(Anchor+Bottom)*.5f));
   Parts[2]->SetWorldScale3D(FVector(.015f,.015f,FMath::Max(1.f,Bottom-Anchor)/100.f));
+  TetherSelection->SetWorldLocation(FVector(Rest.X,Rest.Y,(Anchor+Bottom)*.5f));
+  TetherSelection->SetWorldScale3D(FVector::OneVector);
+  TetherSelection->SetBoxExtent(FVector(10.f,10.f,FMath::Max(1.f,Bottom-Anchor)*.5f));
  }
  if(Kind==6 && Word==EWenSiMirrorWord::Heavy)Target=Rest.Z-WenSiMuseumMechanisms::BalanceTravel;
  if(Kind==6 && Word==EWenSiMirrorWord::Ordinary)Target=Rest.Z-WenSiMuseumMechanisms::BalanceTravel*WenSiMuseumMechanisms::InitialBalanceAlpha;
@@ -332,6 +471,8 @@ void AWenSiMirrorExhibit::Tick(float Dt)
   if(Word==EWenSiMirrorWord::Small || bBallLanded)Target=Rest.Z-177.f;
   if(bBallLanded && Word==EWenSiMirrorWord::Floating)Target=Rest.Z-92.f;
  }
+ // Keep the same support plane every frame, not just when Apply changes scale.
+ Target+=SizeSupportOffset();
  FVector P=GetActorLocation();P.Z=FMath::FInterpConstantTo(P.Z,Target,Dt,Kind==9?130.f:100.f);
  if(!P.Equals(GetActorLocation(),.01f))
  {
@@ -432,6 +573,7 @@ bool AWenSiMirrorPuzzle::SetPlayerWord(EWenSiMirrorWord NewWord)
 }
 void AWenSiMirrorPuzzle::SetAreaActive(bool Active)
 {
+ if(auto Outline=FindObjectFast<UPostProcessComponent>(this,TEXT("MuseumSilhouette")))Outline->bEnabled=Active;
  const bool WasActive=bAreaActive;bAreaActive=Active;
  if(!Active){CancelSwap();if(MousePortal)MousePortal->Cancel();}
  if(!Active && bEditing)ToggleEdit();
@@ -462,6 +604,10 @@ void AWenSiMirrorPuzzle::SetAreaActive(bool Active)
 void AWenSiMirrorPuzzle::BeginPlay()
 {
  Super::BeginPlay();
+ auto Outline=NewObject<UPostProcessComponent>(this,TEXT("MuseumSilhouette"));AddInstanceComponent(Outline);
+ Outline->SetupAttachment(RootComponent);Outline->bUnbound=true;Outline->Priority=100;
+ if(auto Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionSilhouette.M_CollectionSilhouette")))Outline->Settings.AddBlendable(Material,1);
+ Outline->RegisterComponent();
  TuneCampaignMirrorGeometry(GetWorld(),GetActorTransform(),bAreaManaged);
  for(TActorIterator<AWenSiMirrorExhibit> It(GetWorld());It;++It){Exhibits.Add(*It);InitialTransforms.Add(It->GetActorTransform());InitialWords.Add(It->Word);}
  TActorIterator<APlayerStart> PlayerStartIt(GetWorld());
@@ -577,7 +723,9 @@ bool AWenSiMirrorPuzzle::SwapWords(int32 From,int32 To)
  {
   if(IsSelf(Pair.Key) || Pair.Value==EWenSiMirrorWord::Passable || Pair.Key->Kind==4)continue;
   const float ScaleRatio=WordScale(Pair.Value)/WordScale(Pair.Key->Word);
-  const FVector ProbePosition=Pair.Key->GetActorLocation()+(Pawn->GetCapsuleComponent()->GetComponentLocation()-Pair.Key->GetActorLocation())/ScaleRatio;
+  if(!HasResizeRoom(Pair.Key,Pair.Value,Pair.Key==A?B:A,Pawn))
+  {UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleRejected);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);return false;}
+  const FVector ProbePosition=Pair.Key->GetActorLocation()+(Pawn->GetCapsuleComponent()->GetComponentLocation()-Pair.Key->ResizedLocation(Pair.Value))/ScaleRatio;
   const FCollisionShape ProbeShape=FCollisionShape::MakeCapsule(Pawn->GetCapsuleComponent()->GetScaledCapsuleRadius()/ScaleRatio,Pawn->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()/ScaleRatio);
   for(int32 PartIndex=0;PartIndex<Pair.Key->Parts.Num();++PartIndex)
   {
@@ -604,7 +752,7 @@ void AWenSiMirrorPuzzle::UpdateMechanism()
 {
  const bool WasPressure=bPressure,WasPower=bPower;
  auto Block=Find(6);auto Ball=Find(9);
- float BalanceAlpha=Block?FMath::Clamp(float((Block->Rest.Z-Block->GetActorLocation().Z)/WenSiMuseumMechanisms::BalanceTravel),0.f,1.f):0.f;
+ float BalanceAlpha=Block?FMath::Clamp(float((Block->Rest.Z+Block->SizeSupportOffset()-Block->GetActorLocation().Z)/WenSiMuseumMechanisms::BalanceTravel),0.f,1.f):0.f;
  // The unassigned counterweight starts slightly heavy so the beam is visibly
  // out of balance before the pressure block is transferred.
  if(Block && Block->Word==EWenSiMirrorWord::Ordinary)BalanceAlpha=WenSiMuseumMechanisms::InitialBalanceAlpha;

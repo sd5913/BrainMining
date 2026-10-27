@@ -210,7 +210,6 @@ private:
     UPROPERTY() TObjectPtr<UInputMappingContext> CollectionContext;
     UPROPERTY() TArray<TObjectPtr<UInputAction>> Actions;
     TSharedPtr<SMiningCollectionView> View;
-    TArray<TWeakObjectPtr<class UAudioComponent>> CatalogueMusic;
     bool bInitialized = false;
     bool bAreaActive = true;
     int32 PreviewRefreshFrames=0;

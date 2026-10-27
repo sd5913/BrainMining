@@ -32,3 +32,9 @@ own triangle collision so the removed empty plinth leaves no invisible box.
 Direct download URLs and hashes for follow-up sources are in
 `downloads_followup.json`. Preparation/import/application scripts are under
 `Scripts/*museum*followup.py` and `Scripts/export_museum_balance.py`.
+
+## Current balance and counterweight
+
+- **Medieval balance scales** — chaschinkaa, [Sketchfab](https://sketchfab.com/3d-models/medieval-balance-scales-0893d68839d74b629b5b25696700d646), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Replaces the previous hanging-scale art. Original textured mesh split into stand, beam and two suspended pans, resized to the existing puzzle. Source UVs and PBR maps retained; texture resolution reduced to 2K. Beam and pans follow the game's existing animated mechanism.
+- **Mining weight** — Virtual Museums of Małopolska / Regional Digitalisation Lab, Małopolska Institute of Culture, [Sketchfab](https://sketchfab.com/3d-models/mining-weight-cde7d7de1e4543b9954fc36faacc2226), CC0. Scan of a seventeenth-century mining-scale weight from the Antoni Minkiewicz Regional Museum in Olkusz (MR PTTK Olkusz 11/67). Resized and centered to replace the right pan's counterweight; original collision and motion retained.
+- **Rough gold** — instance of the existing museum PBR parent, reusing ambientCG Metal032's CC0 normal texture with a project-authored gold tint, metallic response and roughness. Shared by the sphere apparatus and both covers.

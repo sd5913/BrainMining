@@ -1,5 +1,6 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
 #include "WenSi/WenSiMirrorMechanismLayout.h"
+#include "Subtitles/SubtitleSubsystem.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -44,6 +45,7 @@ FString AWenSiMirrorPuzzle::ValidateMirrorPuzzle()
  // Growing inside the enclosed maintenance box must reject the entire swap.
  Pawn->SetActorLocation(RoomPoint(FVector(1340,270,25)));const auto OldBall=Find(9)->Word;Exchange(10,9);
  Check(GetPlayerWord()==EWenSiMirrorWord::Small && Find(9)->Word==OldBall,TEXT("blocked growth rejects both sides of a word exchange"));
+ Check(USubtitleSubsystem::Get(this) && USubtitleSubsystem::Get(this)->GetActiveText().ToString()==TEXT("空间不足 调整站位再试试吧"),TEXT("blocked player growth explains the space requirement with a subtitle"));
  Check(Thoughts[0]==Find(10) && Thoughts[1]==Find(9) && !bEditing,TEXT("rejected quick swap preserves both thoughts without opening mouse editing"));
  Pawn->SetActorLocation(RoomPoint(FVector(1650,40,25)));Exchange(5,7);Exchange(5,6);
  Check(bPressure && !bPower && !bRewardUnlocked,TEXT("heavy block tips balance; balance alone does not unlock prize"));
@@ -156,6 +158,7 @@ FString AWenSiMirrorPuzzle::ValidateMirrorPuzzle()
  Thoughts[0]=Metal;Thoughts[1]=Ball;const auto BeforeMetal=Metal->GetActorTransform();
  const bool GrowthRejected=!SwapWords(0,1);
  Check(GrowthRejected && Metal->Word==EWenSiMirrorWord::Conductive && Ball->Word==EWenSiMirrorWord::Big && Metal->GetActorTransform().Equals(BeforeMetal),TEXT("obstructed exhibit growth rejects both words without moving or scaling either side"));
+ Check(USubtitleSubsystem::Get(this) && USubtitleSubsystem::Get(this)->GetActiveText().ToString()==TEXT("空间不足 调整站位再试试吧"),TEXT("blocked exhibit growth displays the same space feedback"));
  Obstacle->Destroy();
  Check(SwapWords(0,1) && Metal->Word==EWenSiMirrorWord::Big,TEXT("the same exhibit can grow when the blocking geometry is removed"));
  ResetPuzzle();

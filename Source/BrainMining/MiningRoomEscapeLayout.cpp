@@ -1,4 +1,5 @@
 #include "MiningRoomEscape.h"
+#include "MobileRuntimeSettings.h"
 #include "CardRoomStage.h"
 #include "DiggableRock.h"
 #include "Components/StaticMeshComponent.h"
@@ -99,6 +100,8 @@ void AMiningRoomEscape::BuildStudyLayout()
         GeneratedActors.Add(A);return A;
     };
     auto* WaterMat=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Rooms/CardDuel/Materials/M_EscapeWater.M_EscapeWater"));
+    if(UMobileRuntimeSettings::IsMobileVerticalSliceEnabled())
+        if(auto* MobileWater=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Mobile/Water/MI_MobileFlood.MI_MobileFlood")))WaterMat=MobileWater;
     if(!WaterMat)WaterMat=Blue;
     Water=WaterActor(FVector(15000,3600,0)+SourceLevelOffset,FVector(17000,19800,60),WaterMat);
     Cast<AStaticMeshActor>(Water)->GetStaticMeshComponent()->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Plane.Plane")));

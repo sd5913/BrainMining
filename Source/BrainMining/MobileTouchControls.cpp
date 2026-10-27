@@ -257,10 +257,13 @@ FReply SMobileTouchControls::HandlePointerStarted(const FGeometry& MyGeometry, i
         return FReply::Handled().CaptureMouse(SharedThis(this));
     }
 
-    if (OwnerController->IsMobileLookEnabled() && LookPointer == -1 && LocalPosition.X >= Size.X * .58f)
+    if (OwnerController->IsMobileLookEnabled() && LookPointer == -1 && (LocalPosition.X >= Size.X * .42f || LocalPosition.Y <= Size.Y * .34f))
     {
         LookPointer = PointerIndex;
         LastLookPosition = LocalPosition;
+        LookPendingDelta = ButtonLookPendingDelta = FVector2D::ZeroVector;
+        bLookDragging = bButtonLookDragging = false;
+        ButtonLookPointer = -1;
         return FReply::Handled().CaptureMouse(SharedThis(this));
     }
     return FReply::Unhandled();
@@ -278,7 +281,7 @@ FReply SMobileTouchControls::HandlePointerMoved(const FGeometry& MyGeometry, int
     {
         const FVector2D Delta = LocalPosition - LastLookPosition;
         LastLookPosition = LocalPosition;
-        OwnerController->HandleMobileLook(Delta);
+        ApplyPointerLook(Delta, MyGeometry.GetLocalSize(), false);
         return FReply::Handled();
     }
     const EButton Buttons[] = { EButton::Mine, EButton::Bomb, EButton::Drill, EButton::Jetpack, EButton::Interact, EButton::Upgrade,
@@ -291,15 +294,45 @@ FReply SMobileTouchControls::HandlePointerMoved(const FGeometry& MyGeometry, int
             {
                 const FVector2D Delta = LocalPosition - *LastPosition;
                 *ButtonLastPositions.Find(PointerIndex) = LocalPosition;
-                OwnerController->HandleMobileLook(Delta);
+                const bool CanAim = Button == EButton::Mine || Button == EButton::Jetpack;
+                if (CanAim && LookPointer == -1 && (ButtonLookPointer == -1 || ButtonLookPointer == PointerIndex))
+                {
+                    ButtonLookPointer = PointerIndex;
+                    ApplyPointerLook(Delta, MyGeometry.GetLocalSize(), true);
+                }
             }
             return FReply::Handled();
         }
     return FReply::Unhandled();
 }
 
+void SMobileTouchControls::ApplyPointerLook(const FVector2D& Delta, const FVector2D& Size, bool bButtonDrag)
+{
+    const float ShortSide = FMath::Max(1.f, float(FMath::Min(Size.X, Size.Y)));
+    FVector2D AppliedDelta = Delta;
+    bool& Dragging = bButtonDrag ? bButtonLookDragging : bLookDragging;
+    FVector2D& Pending = bButtonDrag ? ButtonLookPendingDelta : LookPendingDelta;
+    if (!Dragging)
+    {
+        Pending += Delta;
+        const float Threshold = ShortSide / 720.f * (bButtonDrag ? 4.f : 2.f);
+        const double Distance = Pending.Size();
+        if (Distance <= Threshold) return;
+        AppliedDelta = Pending * (1. - Threshold / Distance);
+        Pending = FVector2D::ZeroVector;
+        Dragging = true;
+    }
+    OwnerController->HandleMobileLook(AppliedDelta / ShortSide);
+}
+
 FReply SMobileTouchControls::HandlePointerEnded(int32 PointerIndex)
 {
+    if (PointerIndex == ButtonLookPointer)
+    {
+        ButtonLookPointer = -1;
+        ButtonLookPendingDelta = FVector2D::ZeroVector;
+        bButtonLookDragging = false;
+    }
     if (PointerIndex == JoystickPointer)
     {
         ReleaseJoystick();
@@ -308,6 +341,8 @@ FReply SMobileTouchControls::HandlePointerEnded(int32 PointerIndex)
     if (PointerIndex == LookPointer)
     {
         LookPointer = -1;
+        LookPendingDelta = FVector2D::ZeroVector;
+        bLookDragging = false;
         return FReply::Handled().ReleaseMouseCapture();
     }
     const EButton Buttons[] = { EButton::Mine, EButton::Bomb, EButton::Drill, EButton::Jetpack, EButton::Interact, EButton::Upgrade,
@@ -441,12 +476,23 @@ void SMobileTouchControls::Tick(const FGeometry& AllottedGeometry, const double 
     SLeafWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
     if (OwnerController.IsValid() && OwnerController->IsPaused()) ResetInput();
     if (OwnerController.IsValid() && !OwnerController->IsMobileMoveEnabled()) ReleaseJoystick();
-    if (OwnerController.IsValid() && !OwnerController->IsMobileLookEnabled()) LookPointer = -1;
+    if (OwnerController.IsValid() && !OwnerController->IsMobileLookEnabled())
+    {
+        LookPointer = ButtonLookPointer = -1;
+        LookPendingDelta = ButtonLookPendingDelta = FVector2D::ZeroVector;
+        bLookDragging = bButtonLookDragging = false;
+    }
     for (const EButton Button : {EButton::Mine, EButton::Jetpack})
     {
         int32& Pointer = GetButtonPointer(Button);
         if (Pointer != -1 && !IsButtonVisible(Button))
         {
+            if (ButtonLookPointer == Pointer)
+            {
+                ButtonLookPointer = -1;
+                ButtonLookPendingDelta = FVector2D::ZeroVector;
+                bButtonLookDragging = false;
+            }
             ButtonLastPositions.Remove(Pointer);
             Pointer = -1;
             SetButtonPressed(Button, false);
@@ -467,7 +513,9 @@ void SMobileTouchControls::Tick(const FGeometry& AllottedGeometry, const double 
 void SMobileTouchControls::ResetInput()
 {
     if (JoystickPointer != -1) ReleaseJoystick();
-    LookPointer = -1;
+    LookPointer = ButtonLookPointer = -1;
+    LookPendingDelta = ButtonLookPendingDelta = FVector2D::ZeroVector;
+    bLookDragging = bButtonLookDragging = false;
     TArray<int32> Pointers;
     ButtonLastPositions.GetKeys(Pointers);
     for (const int32 Pointer : Pointers) HandlePointerEnded(Pointer);

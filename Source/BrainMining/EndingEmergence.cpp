@@ -1,4 +1,5 @@
 #include "EndingEmergence.h"
+#include "MobileRuntimeSettings.h"
 #include "MiningWaypoint.h"
 #include "EngineUtils.h"
 #include "Subtitles/SubtitleSubsystem.h"
@@ -147,7 +148,7 @@ public:
         {
             const auto* Controller=Cast<ABrainMiningPlayerController>(D->GetWorld()->GetFirstPlayerController());
             const bool Touch=Controller && Controller->IsUsingTouchControls();
-            const FString Hint=D->Shot==9?(Touch?TEXT("上推摇杆加速"):TEXT("W-加速前进")):(Touch?TEXT("跃迁键-传导"):TEXT("空格-传导"));
+            const FString Hint=D->Shot==9?(Touch?TEXT("自动钻进 · 上推加速 · 左右微调"):TEXT("W-加速前进")):(Touch?TEXT("跃迁键-传导"):TEXT("空格-传导"));
             const auto Font=BrainMiningFonts::Body(18);
             const FVector2D TextSize=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Hint,Font);
             const FVector2D Position((Size.X-TextSize.X)*.5f,Size.Y-40.f-TextSize.Y);
@@ -850,6 +851,12 @@ void AEndingEmergence::BeginPlay()
         ShellMesh->RecreatePhysicsState();
     }
     Camera=GetWorld()->SpawnActor<ACameraActor>();
+    if(UMobileRuntimeSettings::IsMobileVerticalSliceEnabled())
+    {
+        Camera->GetCameraComponent()->bConstrainAspectRatio=false;
+        Camera->GetCameraComponent()->bOverrideAspectRatioAxisConstraint=true;
+        Camera->GetCameraComponent()->AspectRatioAxisConstraint=AspectRatio_MaintainYFOV;
+    }
     Camera->GetCameraComponent()->PostProcessSettings.bOverride_MotionBlurAmount=true;
     Camera->GetCameraComponent()->PostProcessSettings.MotionBlurAmount=0;
     Camera->GetCameraComponent()->PostProcessSettings.bOverride_VignetteIntensity=true;
@@ -1000,6 +1007,7 @@ bool AEndingEmergence::Initialize()
     if(!Mining)return false;
     if(auto* PC=Cast<ABrainMiningPlayerController>(Player))
     {
+        if(PC->IsUsingTouchControls())bComfortMode=PC->bMobileComfortMode;
         PC->SetMiningGUIEnabled(false);
         if(PC->InteractionHUD)PC->InteractionHUD->SetVisibility(ESlateVisibility::Collapsed);
     }

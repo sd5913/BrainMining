@@ -109,6 +109,7 @@ Mineral.Diamond,钻石,Mineral.Diamond
 Mineral.Iron,铁矿,Mineral.Iron
 Mineral.Malachite,孔雀石,Mineral.Malachite
 Mineral.Unknown,未知矿石,Mineral.Unknown
+Museum.Swap.NoSpace,空间不足 调整站位再试试吧,Museum.Swap.NoSpace
 Office.Hint.BombAbility,E 获取炸弹技能,Office.Hint.BombAbility
 Office.Hint.BombExit,按G使用炸弹炸开出口,Office.Hint.BombExit
 Office.Hint.Computer,使用电脑,Office.Hint.Computer
@@ -208,6 +209,31 @@ Office.Popup.25.Title,上传中,Office.Popup.25.Title
 Office.Popup.26.Body,"距离截止还有10分钟。
 你的作品仍处于草稿状态。",Office.Popup.26.Body
 Office.Popup.26.Title,Game Jam · 提交提醒,Office.Popup.26.Title
+Office.Popup.AssetImport.Body,正在导入场景素材…,Office.Popup.AssetImport.Body
+Office.Popup.AssetImport.Title,资源导入,Office.Popup.AssetImport.Title
+Office.Popup.Clone.Body,正在克隆 gamejam-21…,Office.Popup.Clone.Body
+Office.Popup.Clone.Title,Git · 正在克隆,Office.Popup.Clone.Title
+Office.Popup.CoreLoop.Body,"@你 核心循环那页改好了。
+这一版先不做多人模式了。",Office.Popup.CoreLoop.Body
+Office.Popup.DesignRevision.Body,"有2条批注尚未解决。
+「这里能不能再简单一点？」",Office.Popup.DesignRevision.Body
+Office.Popup.DesignRevision.Title,策划案_v07.docx,Office.Popup.DesignRevision.Title
+Office.Popup.Greybox.Body,"先把灰盒跑通，素材还在改。
+今晚再同步一下进度。",Office.Popup.Greybox.Body
+Office.Popup.MeetingUpdate.Body,"玩法讨论会延长30分钟。
+下一场：分工与排期。",Office.Popup.MeetingUpdate.Body
+Office.Popup.MeetingUpdate.Title,会议时间已更新,Office.Popup.MeetingUpdate.Title
+Office.Popup.Repository.Body,"仓库 gamejam-21 已建立。
+邀请已发送给另外3位成员。",Office.Popup.Repository.Body
+Office.Popup.Repository.Title,Git · 新建仓库,Office.Popup.Repository.Title
+Office.Popup.Shaders.Body,正在编译着色器…,Office.Popup.Shaders.Body
+Office.Popup.Shaders.Title,着色器编译,Office.Popup.Shaders.Title
+Office.Popup.SubmissionVerification.Body,请完成验证后提交作品。,Office.Popup.SubmissionVerification.Body
+Office.Popup.SubmissionVerification.Title,提交验证,Office.Popup.SubmissionVerification.Title
+Office.Popup.Unread,"你有 {Count} 条
+未读消息",Office.Popup.Unread
+Office.Popup.Verification.Body,请完成验证后继续登录。,Office.Popup.Verification.Body
+Office.Popup.Verification.Title,账号验证,Office.Popup.Verification.Title
 Subtitle.Cards1.001,卡牌之间的连携可以打出强大的效果,Subtitle.Cards1.001
 Subtitle.Cards1.002,比如元素之间的反应 涌现出新的效果,Subtitle.Cards1.002
 Subtitle.Cards2.001,这种卡牌玩法会不会太常见了呢？,Subtitle.Cards2.001

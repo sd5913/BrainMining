@@ -124,7 +124,7 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 
 	const FVector2D ViewportSize(PopupCloseContent::DesktopWidth,PopupCloseContent::DesktopHeight);
 	int32 ContentIndex=NextId<=2 || WorkElapsed<0.f?NextId-1:PopupCloseContent::ForProgress(WorkElapsed,NextId-3);
- if(NextId>2 && WorkElapsed>=32.f && !bReconnectShown){ContentIndex=14;bReconnectShown=true;}
+ if(NextId>2 && WorkElapsed>=32.f && !bReconnectShown){ContentIndex=PopupCloseContent::ReconnectIndex;bReconnectShown=true;}
 	const auto& Copy = PopupCloseContent::Get(ContentIndex);
  const bool bIntroduction=PopupCloseContent::IsIntroduction(NextId-1);
  const bool bThemePage=NextId==2;
@@ -244,6 +244,17 @@ TSharedRef<SWidget> UPopupCloseDesktopWidget::MakeArtPopup(int32 Id,int32 Varian
  Panel->AddSlot().Offset(FMargin(0,0,W,H)).Alignment(FVector2D(0,0)).ZOrder(0)
  [SNew(SBorder).Padding(0).BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
   [SNew(SImage).Image(ArtBrushes[Variant].Get()).Visibility(EVisibility::HitTestInvisible)]];
+ // Localize only the baked message body. The patch shares the original
+ // neutral grey, with an explicit top-left anchor inside the supplied frame.
+ if(Variant==4)
+ {
+  Panel->AddSlot().Offset(FMargin(W*.10f,H*.24f,W*.80f,H*.50f)).Alignment(FVector2D(0,0)).ZOrder(1)
+   [SNew(SBorder).Padding(0).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+    .BorderBackgroundColor(FLinearColor(FColor(189,189,189))).Visibility(EVisibility::HitTestInvisible)
+    .HAlign(HAlign_Center).VAlign(VAlign_Center)
+    [SNew(STextBlock).Text(FText::Format(MiningText::Get(TEXT("Office.Popup.Unread")), FFormatNamedArguments{{TEXT("Count"), FText::AsNumber(PopupCloseContent::UnreadCount(WorkElapsed,Id,ContentIndex))}})).Font(PopupFont(24))
+     .Justification(ETextJustify::Center).ColorAndOpacity(FLinearColor(.015f,.015f,.015f))]];
+ }
  if(Skin.bUseWorkText)
  {
   int32 LineBreaks=0;for(TCHAR Character:Copy.Body.ToString())if(Character=='\n')++LineBreaks;

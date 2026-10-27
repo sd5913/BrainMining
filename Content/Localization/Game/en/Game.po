@@ -433,6 +433,10 @@ msgctxt "BrainMining.Game,Mineral.Unknown"
 msgid "未知矿石"
 msgstr "unknown mineral"
 
+msgctxt "BrainMining.Game,Museum.Swap.NoSpace"
+msgid "空间不足 调整站位再试试吧"
+msgstr "Not enough space. Try moving to another position."
+
 msgctxt "BrainMining.Game,Office.Hint.BombAbility"
 msgid "E 获取炸弹技能"
 msgstr "E — collect bomb ability"
@@ -720,6 +724,82 @@ msgstr "10 minutes until the deadline.\nYour entry is still a draft."
 msgctxt "BrainMining.Game,Office.Popup.26.Title"
 msgid "Game Jam · 提交提醒"
 msgstr "Game Jam · Submission reminder"
+
+msgctxt "BrainMining.Game,Office.Popup.AssetImport.Body"
+msgid "正在导入场景素材…"
+msgstr "Importing scene assets…"
+
+msgctxt "BrainMining.Game,Office.Popup.AssetImport.Title"
+msgid "资源导入"
+msgstr "Asset Import"
+
+msgctxt "BrainMining.Game,Office.Popup.Clone.Body"
+msgid "正在克隆 gamejam-21…"
+msgstr "Cloning gamejam-21…"
+
+msgctxt "BrainMining.Game,Office.Popup.Clone.Title"
+msgid "Git · 正在克隆"
+msgstr "Git · Cloning"
+
+msgctxt "BrainMining.Game,Office.Popup.CoreLoop.Body"
+msgid "@你 核心循环那页改好了。\n这一版先不做多人模式了。"
+msgstr "@you The core loop page is updated.\nWe are leaving multiplayer out of this version."
+
+msgctxt "BrainMining.Game,Office.Popup.DesignRevision.Body"
+msgid "有2条批注尚未解决。\n「这里能不能再简单一点？」"
+msgstr "2 comments remain unresolved.\n“Can we make this part a little simpler?”"
+
+msgctxt "BrainMining.Game,Office.Popup.DesignRevision.Title"
+msgid "策划案_v07.docx"
+msgstr "Design_Document_v07.docx"
+
+msgctxt "BrainMining.Game,Office.Popup.Greybox.Body"
+msgid "先把灰盒跑通，素材还在改。\n今晚再同步一下进度。"
+msgstr "Get the greybox working first; assets are still being revised.\nLet us check in again tonight."
+
+msgctxt "BrainMining.Game,Office.Popup.MeetingUpdate.Body"
+msgid "玩法讨论会延长30分钟。\n下一场：分工与排期。"
+msgstr "Gameplay discussion extended by 30 minutes.\nNext: assignments and scheduling."
+
+msgctxt "BrainMining.Game,Office.Popup.MeetingUpdate.Title"
+msgid "会议时间已更新"
+msgstr "Meeting Time Updated"
+
+msgctxt "BrainMining.Game,Office.Popup.Repository.Body"
+msgid "仓库 gamejam-21 已建立。\n邀请已发送给另外3位成员。"
+msgstr "Repository gamejam-21 created.\nInvitations sent to the other 3 members."
+
+msgctxt "BrainMining.Game,Office.Popup.Repository.Title"
+msgid "Git · 新建仓库"
+msgstr "Git · New Repository"
+
+msgctxt "BrainMining.Game,Office.Popup.Shaders.Body"
+msgid "正在编译着色器…"
+msgstr "Compiling shaders…"
+
+msgctxt "BrainMining.Game,Office.Popup.Shaders.Title"
+msgid "着色器编译"
+msgstr "Shader Compilation"
+
+msgctxt "BrainMining.Game,Office.Popup.SubmissionVerification.Body"
+msgid "请完成验证后提交作品。"
+msgstr "Complete verification to submit your game."
+
+msgctxt "BrainMining.Game,Office.Popup.SubmissionVerification.Title"
+msgid "提交验证"
+msgstr "Submission Verification"
+
+msgctxt "BrainMining.Game,Office.Popup.Unread"
+msgid "你有 {Count} 条\n未读消息"
+msgstr "You have {Count}\nunread messages"
+
+msgctxt "BrainMining.Game,Office.Popup.Verification.Body"
+msgid "请完成验证后继续登录。"
+msgstr "Complete verification to continue signing in."
+
+msgctxt "BrainMining.Game,Office.Popup.Verification.Title"
+msgid "账号验证"
+msgstr "Account Verification"
 
 msgctxt "BrainMining.Game,Subtitle.Cards1.001"
 msgid "卡牌之间的连携可以打出强大的效果"

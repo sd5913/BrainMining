@@ -358,5 +358,100 @@
     "zh-Hans": "你收到一项新的紧急任务。\n优先级：高。交付时间：今天。",
     "en": "You have a new urgent task.\nPriority: high. Due: today.",
     "zh-Hant": "你收到一項新的緊急任務。\n優先順序：高。交付時間：今天。"
+  },
+  "Office.Popup.Repository.Title": {
+    "zh-Hans": "Git · 新建仓库",
+    "en": "Git · New Repository",
+    "zh-Hant": "Git · 建立儲存庫"
+  },
+  "Office.Popup.Repository.Body": {
+    "zh-Hans": "仓库 gamejam-21 已建立。\n邀请已发送给另外3位成员。",
+    "en": "Repository gamejam-21 created.\nInvitations sent to the other 3 members.",
+    "zh-Hant": "儲存庫 gamejam-21 已建立。\n邀請已傳送給另外3位成員。"
+  },
+  "Office.Popup.Clone.Title": {
+    "zh-Hans": "Git · 正在克隆",
+    "en": "Git · Cloning",
+    "zh-Hant": "Git · 正在複製"
+  },
+  "Office.Popup.Clone.Body": {
+    "zh-Hans": "正在克隆 gamejam-21…",
+    "en": "Cloning gamejam-21…",
+    "zh-Hant": "正在複製 gamejam-21…"
+  },
+  "Office.Popup.Verification.Title": {
+    "zh-Hans": "账号验证",
+    "en": "Account Verification",
+    "zh-Hant": "帳號驗證"
+  },
+  "Office.Popup.Verification.Body": {
+    "zh-Hans": "请完成验证后继续登录。",
+    "en": "Complete verification to continue signing in.",
+    "zh-Hant": "請完成驗證後繼續登入。"
+  },
+  "Office.Popup.CoreLoop.Body": {
+    "zh-Hans": "@你 核心循环那页改好了。\n这一版先不做多人模式了。",
+    "en": "@you The core loop page is updated.\nWe are leaving multiplayer out of this version.",
+    "zh-Hant": "@你 核心循環那頁改好了。\n這一版先不做多人模式了。"
+  },
+  "Office.Popup.MeetingUpdate.Title": {
+    "zh-Hans": "会议时间已更新",
+    "en": "Meeting Time Updated",
+    "zh-Hant": "會議時間已更新"
+  },
+  "Office.Popup.MeetingUpdate.Body": {
+    "zh-Hans": "玩法讨论会延长30分钟。\n下一场：分工与排期。",
+    "en": "Gameplay discussion extended by 30 minutes.\nNext: assignments and scheduling.",
+    "zh-Hant": "玩法討論會延長30分鐘。\n下一場：分工與排程。"
+  },
+  "Office.Popup.DesignRevision.Title": {
+    "zh-Hans": "策划案_v07.docx",
+    "en": "Design_Document_v07.docx",
+    "zh-Hant": "企劃案_v07.docx"
+  },
+  "Office.Popup.DesignRevision.Body": {
+    "zh-Hans": "有2条批注尚未解决。\n「这里能不能再简单一点？」",
+    "en": "2 comments remain unresolved.\n“Can we make this part a little simpler?”",
+    "zh-Hant": "有2則註解尚未解決。\n「這裡能不能再簡單一點？」"
+  },
+  "Office.Popup.AssetImport.Title": {
+    "zh-Hans": "资源导入",
+    "en": "Asset Import",
+    "zh-Hant": "資源匯入"
+  },
+  "Office.Popup.AssetImport.Body": {
+    "zh-Hans": "正在导入场景素材…",
+    "en": "Importing scene assets…",
+    "zh-Hant": "正在匯入場景素材…"
+  },
+  "Office.Popup.Greybox.Body": {
+    "zh-Hans": "先把灰盒跑通，素材还在改。\n今晚再同步一下进度。",
+    "en": "Get the greybox working first; assets are still being revised.\nLet us check in again tonight.",
+    "zh-Hant": "先把灰盒跑通，素材還在改。\n今晚再同步一下進度。"
+  },
+  "Office.Popup.Shaders.Title": {
+    "zh-Hans": "着色器编译",
+    "en": "Shader Compilation",
+    "zh-Hant": "著色器編譯"
+  },
+  "Office.Popup.Shaders.Body": {
+    "zh-Hans": "正在编译着色器…",
+    "en": "Compiling shaders…",
+    "zh-Hant": "正在編譯著色器…"
+  },
+  "Office.Popup.SubmissionVerification.Title": {
+    "zh-Hans": "提交验证",
+    "en": "Submission Verification",
+    "zh-Hant": "提交驗證"
+  },
+  "Office.Popup.SubmissionVerification.Body": {
+    "zh-Hans": "请完成验证后提交作品。",
+    "en": "Complete verification to submit your game.",
+    "zh-Hant": "請完成驗證後提交作品。"
+  },
+  "Office.Popup.Unread": {
+    "zh-Hans": "你有 {Count} 条\n未读消息",
+    "en": "You have {Count}\nunread messages",
+    "zh-Hant": "你有 {Count} 則\n未讀訊息"
   }
 }

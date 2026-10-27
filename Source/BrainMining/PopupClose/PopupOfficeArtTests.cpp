@@ -13,6 +13,8 @@
 #include "MaterialShared.h"
 #include "SceneInterface.h"
 #include "InputCoreTypes.h"
+#include "MiningCollection.h"
+#include "Components/SceneComponent.h"
 #include "Tests/AutomationEditorCommon.h"
 #include "ImageUtils.h"
 #include "Misc/FileHelper.h"
@@ -66,12 +68,12 @@ namespace PopupOfficeArtTests
    {
     Test->TestTrue(TEXT("Visible top window remains clickable after timeouts"),Device->ClickReplyForValidation());
     Test->TestEqual(TEXT("Fallback theme remains readable below later work"),Desktop->GetFrontPopupBody(),FString(TEXT("【涌现】")));
-    for(float Seconds:{0.f,25.f,36.f,45.f,60.f})
+    for(float Seconds:{0.f,25.f,36.f,52.f,65.f})
     {
      Desktop->SetWorkElapsed(Seconds);Device->AddProblem();
      const int32 Phase=Desktop->GetFrontPopupPhase();
      if(Seconds==36.f)Test->TestEqual(TEXT("Mid-project connection interruption"),Desktop->GetFrontPopupBody(),FString(TEXT("正在重新连接5/5")));
-     Test->TestEqual(TEXT("Round time selects the development phase"),Phase,Seconds<20?0:Seconds<40?1:Seconds<55?2:3);
+     Test->TestEqual(TEXT("Round time selects the development phase"),Phase,Seconds<30?0:Seconds<48?1:Seconds<60?2:3);
     }
     Device->ResetSession();Device->AddProblem();Device->AddProblem();Device->AddProblem();Device->SetScreenInteractive(true);
     EdgePhase=3;Deadline=FPlatformTime::Seconds()+.3;return false;
@@ -89,6 +91,47 @@ namespace PopupOfficeArtTests
      auto Resource=Material->GetMaterialResource(Slab->GetWorld()->Scene->GetShaderPlatform());
      Test->TestTrue(FString::Printf(TEXT("Physical popup %s ready (resource=%d, complete=%d, pso=%d)"),*Material->GetName(),Resource!=nullptr,Resource && Resource->IsGameThreadShaderMapComplete(),Mesh->IsPSOPrecaching()),Slab->IsReadyForLaunch());Slab->Destroy();
     }
+    // Exercise the real train actor: opening must not distribute everyone
+    // along the platform, and rebuilding a preview must reset the departure.
+    auto Train=Device->GetWorld()->SpawnActor<AMiningCollectible>();
+    Train->BuildModel(21);Train->Exposure=.4f;Train->AnimateEmergence(100.f);
+    Test->TestFalse(TEXT("Opening starts with no crowd outside"),Train->EmergenceParts[0]->IsVisible());
+    Train->AnimateEmergence(101.f);
+    int Visible=0;for(int I=0;I<108;I+=3)Visible+=Train->EmergenceParts[I]->IsVisible()?1:0;
+    Test->TestTrue(TEXT("Opening releases a small first wave, not all 36 passengers"),Visible>0 && Visible<8);
+    const float FirstX=Train->EmergenceParts[0]->GetRelativeLocation().X;
+    Test->TestTrue(TEXT("First passenger starts inside the doorway"),FirstX>-30.f);
+    Train->AnimateEmergence(101.3f);
+    Test->TestTrue(TEXT("Passengers walk through the door at the faster pace"),Train->EmergenceParts[0]->GetRelativeLocation().X<FirstX-35.f);
+    for(int I=0;I<108;I+=3)
+    {
+     const auto P=Train->EmergenceParts[I]->GetRelativeLocation();
+     if(Train->EmergenceParts[I]->IsVisible() && P.X>=-34 && P.X<=-26)
+      Test->TestTrue(TEXT("Passengers cross within the door opening"),FMath::Abs(P.Y)<10);
+    }
+    Train->AnimateEmergence(102.f);
+    Test->TestTrue(TEXT("Retiring passengers remain whole instead of separating into parts"),
+     FMath::Abs(Train->EmergenceParts[0]->GetRelativeLocation().Z-Train->EmergenceParts[1]->GetRelativeLocation().Z)<2.f);
+    // Sample each lane at the door and along the stream, not just total population.
+    for(float Age=3.f;Age<18.f;Age+=.017f)
+    {
+     Train->AnimateEmergence(100.f+Age);int Moving=0;
+     for(int I=0;I<108;I+=3)Moving+=Train->EmergenceParts[I]->IsVisible()?1:0;
+     Test->TestTrue(TEXT("Crowd continues pouring out throughout later cycles"),Moving>=24);
+     for(int Lane=0;Lane<3;++Lane)for(float Front:{-24.f,-50.f,-76.f})
+     {
+      bool Occupied=false;
+      for(int Person=Lane;Person<36;Person+=3)
+      {
+       const auto Part=Train->EmergenceParts[Person*3];const float X=Part->GetRelativeLocation().X;
+       Occupied|=Part->IsVisible() && X<=Front && X>=Front-16.f;
+      }
+      Test->TestTrue(TEXT("No lane develops a gap at the door or midway through the stream"),Occupied);
+     }
+    }
+    Train->BuildModel(21);Train->AnimateEmergence(200.f);
+    Test->TestFalse(TEXT("Rebuilt train resets the first wave"),Train->EmergenceParts[0]->IsVisible());
+    Train->Destroy();
     Device->Destroy();return true;
    }
    if(!bSpawned)
@@ -101,9 +144,9 @@ namespace PopupOfficeArtTests
    if(Skin==0)Test->TestEqual(TEXT("Announcement remains in front of queued work"),Desktop->GetFrontPopupBody(),FString(TEXT("21天gamejam游戏创作主题公布！")));
    if(Skin==1)Test->TestEqual(TEXT("Large theme page comes before ordinary issues"),Desktop->GetFrontPopupBody(),FString(TEXT("【涌现】")));
    if(Skin==2)Test->TestEqual(TEXT("First ordinary popup starts with design"),Desktop->GetFrontPopupTitle(),FString(TEXT("组队群 · 2条新消息")));
-   if(Skin<3)
+   if(Skin<PopupCloseContent::Count)
    {
-    const FString Folder=FPaths::ProjectSavedDir()/TEXT("Validation/NarrativeOct27");
+    const FString Folder=FPaths::ProjectSavedDir()/TEXT("Validation/CollectibleIteration/Popups");
     IFileManager::Get().MakeDirectory(*Folder,true);
     FBufferArchive PNG;
     Test->TestTrue(TEXT("Render the visible desktop page"),FImageUtils::ExportRenderTarget2DAsPNG(Device->GetSurface()->GetRenderTarget(),PNG));
@@ -134,6 +177,15 @@ namespace PopupOfficeArtTests
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FOfficePopupArtInputTest,"BrainMining.Office.Art.PopupButtons",EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FOfficePopupArtInputTest::RunTest(const FString& Parameters)
 {
+ TestEqual(TEXT("First alert has one unread message"),PopupCloseContent::UnreadCount(0,3,2),1);
+ TestEqual(TEXT("Early counts can grow to three"),PopupCloseContent::UnreadCount(10,4,2),3);
+ TestEqual(TEXT("Late alerts can show 999 unread messages"),PopupCloseContent::UnreadCount(62,25,29),999);
+ int32 SkinMask=0;
+ for(int32 I=0;I<PopupCloseContent::Count;++I)SkinMask|=1<<PopupCloseContent::ArtVariant(I);
+ TestEqual(TEXT("All six supplied popup forms are reachable"),SkinMask,63);
+ TestEqual(TEXT("Slow opening preserves the planning revision before production"),PopupCloseContent::ForProgress(39.f,3),5);
+ for(int32 I=0;I<100;++I)
+  TestTrue(TEXT("Asset completion cannot appear during planning or early production"),PopupCloseContent::ForProgress(35.f,I)!=20 && PopupCloseContent::ForProgress(12.f,I)!=20);
  ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
  ADD_LATENT_AUTOMATION_COMMAND(PopupOfficeArtTests::FCheckSkins(this));
  ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());return true;

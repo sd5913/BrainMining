@@ -10,6 +10,7 @@
 #include "Styling/CoreStyle.h"
 #include "WenSi/WenSiExhibitArt.h"
 #include "MiningRoomAudioSubsystem.h"
+#include "Subtitles/SubtitleSubsystem.h"
 #include "WenSi/WenSiMirrorMechanismLayout.h"
 #include "WenSi/WenSiPuzzle.h"
 #include "MiningComponent.h"
@@ -249,8 +250,10 @@ void AWenSiMirrorExhibit::Apply()
  SetActorScale3D(FVector(Scale));
  if(bRestBoundsInitialized && Kind!=9)SetActorLocation(NextLocation);
  auto Parent=Surface(Kind==3?TEXT("MI_Burgundy"):Kind==8||Kind==1||Kind==7?TEXT("MI_Brass"):Kind==5?TEXT("MI_DeepBlue"):TEXT("MI_Limestone"));
- if(Kind==1 || Kind==7 || Kind==8)
+ if(Kind==8)
   if(auto Metal=Surface(TEXT("MI_MuseumMetal032")))Parent=Metal;
+ if(Kind==1 || Kind==7)
+  if(auto Gold=Surface(TEXT("MI_MuseumRoughGold")))Parent=Gold;
  if(Kind==9)
   if(auto Porcelain=Surface(TEXT("MI_MuseumPorcelain")))Parent=Porcelain;
  auto Glass=Surface(TEXT("M_DisplayGlass"));auto Rim=Surface(TEXT("M_InteractiveRim"));
@@ -268,7 +271,11 @@ void AWenSiMirrorExhibit::Apply()
   if(Kind==7 && (I==8 || (I>=1 && I<=3)) && Word!=EWenSiMirrorWord::Passable && Glass)Use=Glass;
   if(Use)
   {
-   auto Mat=UMaterialInstanceDynamic::Create(Use,this);Mat->SetVectorParameterValue(TEXT("Color"),FLinearColor(.68f,.72f,.78f,.2f));Mat->SetScalarParameterValue(TEXT("Opacity"),Kind==4?.18f:.15f);Part->SetMaterial(0,Mat);
+   auto Mat=UMaterialInstanceDynamic::Create(Use,this);
+   // Only the phase material needs the translucent tint. Preserve solid PBR
+   // parameters such as the covers' shared gold color.
+   if(Use==Ghost){Mat->SetVectorParameterValue(TEXT("Color"),FLinearColor(.68f,.72f,.78f,.2f));Mat->SetScalarParameterValue(TEXT("Opacity"),Kind==4?.18f:.15f);}
+   Part->SetMaterial(0,Mat);
   }
   Part->SetOverlayMaterial(nullptr);
  }
@@ -721,12 +728,20 @@ bool AWenSiMirrorPuzzle::SwapWords(int32 From,int32 To)
  RefreshSelfThoughts();auto A=Thoughts[From].Get();auto B=Thoughts[To].Get();if(IsSelf(A)&&IsSelf(B))return false;
  auto PC=GetWorld()->GetFirstPlayerController();auto Pawn=PC?Cast<ACharacter>(PC->GetPawn()):nullptr;if(!Pawn)return false;
  // Validate solidification and growth before changing either word, preserving atomic swaps.
+ auto RejectSpace=[this]()
+ {
+  UMiningHapticsSubsystem::Emit(this,EMiningHapticCue::PuzzleRejected);
+  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);
+  if(auto Subtitles=USubtitleSubsystem::Get(this))
+   Subtitles->PlayInteractionLines(TEXT("MuseumSwapNoSpace"),{MiningText::Get(TEXT("Museum.Swap.NoSpace"))});
+  return false;
+ };
  for(auto Pair:{TPair<AWenSiMirrorExhibit*,EWenSiMirrorWord>(A,B->Word),TPair<AWenSiMirrorExhibit*,EWenSiMirrorWord>(B,A->Word)})
  {
   if(IsSelf(Pair.Key) || Pair.Value==EWenSiMirrorWord::Passable || Pair.Key->Kind==4)continue;
   const float ScaleRatio=WordScale(Pair.Value)/WordScale(Pair.Key->Word);
   if(!HasResizeRoom(Pair.Key,Pair.Value,Pair.Key==A?B:A,Pawn))
-  {UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleRejected);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);return false;}
+   return RejectSpace();
   const FVector ProbePosition=Pair.Key->GetActorLocation()+(Pawn->GetCapsuleComponent()->GetComponentLocation()-Pair.Key->ResizedLocation(Pair.Value))/ScaleRatio;
   const FCollisionShape ProbeShape=FCollisionShape::MakeCapsule(Pawn->GetCapsuleComponent()->GetScaledCapsuleRadius()/ScaleRatio,Pawn->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()/ScaleRatio);
   for(int32 PartIndex=0;PartIndex<Pair.Key->Parts.Num();++PartIndex)
@@ -734,11 +749,12 @@ bool AWenSiMirrorPuzzle::SwapWords(int32 From,int32 To)
    auto* Part=Pair.Key->Parts[PartIndex].Get();
    if(!Part->IsVisible() || !Part->GetStaticMesh() || (Pair.Key->Kind==3 && PartIndex>0))continue;
    if(Part->OverlapComponent(ProbePosition,Pawn->GetActorQuat(),ProbeShape))
-   {UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleRejected);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f); return false;}
+    return RejectSpace();
   }
  }
  const EWenSiMirrorWord OldA=A->Word,OldB=B->Word;
- if(IsSelf(A)&&!SetPlayerWord(OldB)){UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleRejected);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f); return false;}if(IsSelf(B)&&!SetPlayerWord(OldA)){UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleRejected);UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f); return false;}
+ if(IsSelf(A)&&!SetPlayerWord(OldB))return RejectSpace();
+ if(IsSelf(B)&&!SetPlayerWord(OldA))return RejectSpace();
  A->Word=OldB;B->Word=OldA;if(!IsSelf(A))A->Apply();if(!IsSelf(B))B->Apply();RefreshSelfThoughts();
  UMiningHapticsSubsystem::Emit(this, EMiningHapticCue::PuzzleSwap);
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Swap"),.45f);

@@ -1233,5 +1233,10 @@
     "zh-Hans": "再想想，比如说生命的涌现呢？",
     "en": "Think again. What about the emergence of life?",
     "zh-Hant": "再想想，比如說生命的湧現呢？"
+  },
+  "Museum.Swap.NoSpace": {
+    "zh-Hans": "空间不足 调整站位再试试吧",
+    "en": "Not enough space. Try moving to another position.",
+    "zh-Hant": "空間不足 調整站位再試試吧"
   }
 }

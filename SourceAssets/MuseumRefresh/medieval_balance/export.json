@@ -1,0 +1,24 @@
+{
+  "Stand": {
+    "path": "H:\\PolyU\\Spotlight\\BrainMining\\SourceAssets\\MuseumRefresh\\medieval_balance\\MedievalScaleStand.fbx",
+    "vertices": 3362
+  },
+  "Beam": {
+    "path": "H:\\PolyU\\Spotlight\\BrainMining\\SourceAssets\\MuseumRefresh\\medieval_balance\\MedievalScaleBeam.fbx",
+    "vertices": 4470
+  },
+  "LeftPan": {
+    "path": "H:\\PolyU\\Spotlight\\BrainMining\\SourceAssets\\MuseumRefresh\\medieval_balance\\MedievalScaleLeftPan.fbx",
+    "vertices": 5628
+  },
+  "RightPan": {
+    "path": "H:\\PolyU\\Spotlight\\BrainMining\\SourceAssets\\MuseumRefresh\\medieval_balance\\MedievalScaleRightPan.fbx",
+    "vertices": 5628
+  },
+  "Weight": {
+    "materials": [
+      "defaultMat"
+    ],
+    "vertices": 31168
+  }
+}

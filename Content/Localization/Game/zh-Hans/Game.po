@@ -433,6 +433,10 @@ msgctxt "BrainMining.Game,Mineral.Unknown"
 msgid "未知矿石"
 msgstr "未知矿石"
 
+msgctxt "BrainMining.Game,Museum.Swap.NoSpace"
+msgid "空间不足 调整站位再试试吧"
+msgstr "空间不足 调整站位再试试吧"
+
 msgctxt "BrainMining.Game,Office.Hint.BombAbility"
 msgid "E 获取炸弹技能"
 msgstr "E 获取炸弹技能"
@@ -720,6 +724,82 @@ msgstr "距离截止还有10分钟。\n你的作品仍处于草稿状态。"
 msgctxt "BrainMining.Game,Office.Popup.26.Title"
 msgid "Game Jam · 提交提醒"
 msgstr "Game Jam · 提交提醒"
+
+msgctxt "BrainMining.Game,Office.Popup.AssetImport.Body"
+msgid "正在导入场景素材…"
+msgstr "正在导入场景素材…"
+
+msgctxt "BrainMining.Game,Office.Popup.AssetImport.Title"
+msgid "资源导入"
+msgstr "资源导入"
+
+msgctxt "BrainMining.Game,Office.Popup.Clone.Body"
+msgid "正在克隆 gamejam-21…"
+msgstr "正在克隆 gamejam-21…"
+
+msgctxt "BrainMining.Game,Office.Popup.Clone.Title"
+msgid "Git · 正在克隆"
+msgstr "Git · 正在克隆"
+
+msgctxt "BrainMining.Game,Office.Popup.CoreLoop.Body"
+msgid "@你 核心循环那页改好了。\n这一版先不做多人模式了。"
+msgstr "@你 核心循环那页改好了。\n这一版先不做多人模式了。"
+
+msgctxt "BrainMining.Game,Office.Popup.DesignRevision.Body"
+msgid "有2条批注尚未解决。\n「这里能不能再简单一点？」"
+msgstr "有2条批注尚未解决。\n「这里能不能再简单一点？」"
+
+msgctxt "BrainMining.Game,Office.Popup.DesignRevision.Title"
+msgid "策划案_v07.docx"
+msgstr "策划案_v07.docx"
+
+msgctxt "BrainMining.Game,Office.Popup.Greybox.Body"
+msgid "先把灰盒跑通，素材还在改。\n今晚再同步一下进度。"
+msgstr "先把灰盒跑通，素材还在改。\n今晚再同步一下进度。"
+
+msgctxt "BrainMining.Game,Office.Popup.MeetingUpdate.Body"
+msgid "玩法讨论会延长30分钟。\n下一场：分工与排期。"
+msgstr "玩法讨论会延长30分钟。\n下一场：分工与排期。"
+
+msgctxt "BrainMining.Game,Office.Popup.MeetingUpdate.Title"
+msgid "会议时间已更新"
+msgstr "会议时间已更新"
+
+msgctxt "BrainMining.Game,Office.Popup.Repository.Body"
+msgid "仓库 gamejam-21 已建立。\n邀请已发送给另外3位成员。"
+msgstr "仓库 gamejam-21 已建立。\n邀请已发送给另外3位成员。"
+
+msgctxt "BrainMining.Game,Office.Popup.Repository.Title"
+msgid "Git · 新建仓库"
+msgstr "Git · 新建仓库"
+
+msgctxt "BrainMining.Game,Office.Popup.Shaders.Body"
+msgid "正在编译着色器…"
+msgstr "正在编译着色器…"
+
+msgctxt "BrainMining.Game,Office.Popup.Shaders.Title"
+msgid "着色器编译"
+msgstr "着色器编译"
+
+msgctxt "BrainMining.Game,Office.Popup.SubmissionVerification.Body"
+msgid "请完成验证后提交作品。"
+msgstr "请完成验证后提交作品。"
+
+msgctxt "BrainMining.Game,Office.Popup.SubmissionVerification.Title"
+msgid "提交验证"
+msgstr "提交验证"
+
+msgctxt "BrainMining.Game,Office.Popup.Unread"
+msgid "你有 {Count} 条\n未读消息"
+msgstr "你有 {Count} 条\n未读消息"
+
+msgctxt "BrainMining.Game,Office.Popup.Verification.Body"
+msgid "请完成验证后继续登录。"
+msgstr "请完成验证后继续登录。"
+
+msgctxt "BrainMining.Game,Office.Popup.Verification.Title"
+msgid "账号验证"
+msgstr "账号验证"
 
 msgctxt "BrainMining.Game,Subtitle.Cards1.001"
 msgid "卡牌之间的连携可以打出强大的效果"

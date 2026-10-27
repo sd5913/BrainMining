@@ -75,7 +75,8 @@ void BranchCollectible(int Id)
         for(int I=0;I<7;++I)Cylinder({-30.f+I*9,-33.f+(I%3)*8,-47},6,2,4,16);
         // A bold coin emblem on the front of the bag.
         Ellipsoid({-32,0,-2},{1.2,13,13},4,24,12);
-        Rod({-34,0,-12},{-34,0,8},1,5);Rod({-34,-6,4},{-34,6,4},1,5);
+        // G denotes the game's gold, without implying a real-world currency.
+        Lettering(TEXT("G"),{-33.4,-4.8,5.2},2.4f,5);
     }
     else if(Id==19)
     {

@@ -348,7 +348,7 @@ void AWenSiMirrorExhibit::Apply()
 void AWenSiMirrorExhibit::Highlight(bool bAimed,bool bShowOutline)
 {
  // Distinct IDs retain internal boundaries where exhibits overlap (stone/cover).
- // 250 is reserved for the aimed exhibit's thicker cyan focus outline.
+ // 250 is reserved for the aimed exhibit's thicker warm-white focus outline.
  const int32 Stencil=bAimed?250:20+Kind;
  ArtVisual->SetCustomDepthStencilValue(Stencil);
  WenSiExhibitArt::Highlight(ArtVisual,bThinkingEnabled && bShowOutline ? 1.f:0.f,1.f,FLinearColor::White);

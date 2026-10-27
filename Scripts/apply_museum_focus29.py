@@ -53,8 +53,8 @@ float idle=0,focus=0,outer=0;
  }}
 }
 float3 color=lerp(Base.rgb,float3(.73,.78,.79),idle*.75);
-color=lerp(color,float3(.015,.065,.09),outer*.90);
-return lerp(color,float3(.12,.86,1.0),focus);
+color=lerp(color,float3(.055,.045,.035),outer*.80);
+return lerp(color,float3(1.0,.95,.85),focus);
 #endif
 ''',bindings)
 ml.recompile_material(m)

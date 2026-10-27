@@ -40,7 +40,7 @@ float2 texel=View.BufferSizeAndInvSize.zw;
 float center=Stencil.r;
 float idle=0,focus=0,outer=0;
 [unroll]for(int band=0;band<3;++band){
- float width=band==0?2.0:band==1?3.2:4.4;
+ float width=band==0?2.0:band==1?3.6:4.8;
  [unroll]for(int y=-1;y<=1;++y){[unroll]for(int x=-1;x<=1;++x){
   float2 p=uv+float2(x,y)*texel*width;
   float id=SceneTextureLookup(p,PPI_CustomStencil,false).r;
@@ -52,7 +52,7 @@ float idle=0,focus=0,outer=0;
   if(band==2&&id==250)outer=max(outer,visible);
  }}
 }
-float3 color=lerp(Base.rgb,float3(1.0,1.0,1.0),idle);
+float3 color=lerp(Base.rgb,float3(1.0,1.0,1.0),idle*.65);
 color=lerp(color,float3(0,0,0),outer);
 return lerp(color,float3(1.0,1.0,1.0),focus);
 #endif

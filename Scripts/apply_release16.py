@@ -49,6 +49,7 @@ for n in ml.get_material_expressions(m):
     if isinstance(n,unreal.MaterialExpressionCustom):
         code=n.get_editor_property('code').replace('band==0?1.0:','band==0?2.0:').replace('float3(.73,.78,.79),idle*.75','float3(1.0,1.0,1.0),idle')
         code=code.replace('band==1?2.7:3.8','band==1?3.2:4.4').replace('float3(.055,.045,.035),outer*.80','float3(0,0,0),outer').replace('float3(1.0,.95,.85),focus','float3(1.0,1.0,1.0),focus')
+        code=code.replace('band==1?3.2:4.4','band==1?3.6:4.8').replace('float3(1.0,1.0,1.0),idle);','float3(1.0,1.0,1.0),idle*.65);')
         n.set_editor_property('code',code)
 save(m)
 

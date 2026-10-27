@@ -75,7 +75,10 @@ void BranchCollectible(int Id)
         for(int I=0;I<7;++I)Cylinder({-30.f+I*9,-33.f+(I%3)*8,-47},6,2,4,16);
         // A bold coin emblem on the front of the bag.
         Ellipsoid({-32,0,-2},{1.2,13,13},4,24,12);
-        Rod({-34,0,-12},{-34,0,8},1,5);Rod({-34,-6,4},{-34,6,4},1,5);
+        // A currency stamp replaces the cross; retain the original clean fabric.
+        Curve({-34,5,4},{-34,-8,10},{-34,-8,-1},{-34,0,-2},1.25f,5,18);
+        Curve({-34,0,-2},{-34,9,-3},{-34,7,-12},{-34,-5,-8},1.25f,5,18);
+        Rod({-34.2,0,8},{-34.2,0,-12},.7f,5);
     }
     else if(Id==19)
     {

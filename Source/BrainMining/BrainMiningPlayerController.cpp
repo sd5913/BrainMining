@@ -240,9 +240,10 @@ bool ABrainMiningPlayerController::IsMobileJumpEnabled() const
 void ABrainMiningPlayerController::HandleMobileLook(const FVector2D& Delta)
 {
 	if (!IsMobileLookEnabled()) return;
-	const float Sensitivity=FMath::Clamp(MobileLookSensitivity, .03f, .18f);
-	AddYawInput(Delta.X*Sensitivity);
-	AddPitchInput(Delta.Y*Sensitivity);
+	if (!FMath::IsFinite(Delta.X) || !FMath::IsFinite(Delta.Y)) return;
+	const float DegreesPerScreenHeight=FMath::Clamp(MobileLookSensitivity, .03f, .18f)*1440.f;
+	RotationInput.Yaw+=Delta.X*DegreesPerScreenHeight;
+	RotationInput.Pitch-=Delta.Y*DegreesPerScreenHeight;
 }
 
 void ABrainMiningPlayerController::HandleMobileMove(const FVector2D& Axis)

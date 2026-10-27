@@ -79,6 +79,7 @@ private:
     TWeakObjectPtr<ABrainMiningPlayerController> OwnerController;
     int32 JoystickPointer = -1;
     int32 LookPointer = -1;
+    int32 ButtonLookPointer = -1;
     int32 MinePointer = -1;
     int32 BombPointer = -1;
     int32 DrillPointer = -1;
@@ -98,6 +99,10 @@ private:
     FVector2D JoystickPosition = FVector2D::ZeroVector;
     FVector2D JoystickAxis = FVector2D::ZeroVector;
     FVector2D LastLookPosition = FVector2D::ZeroVector;
+    FVector2D LookPendingDelta = FVector2D::ZeroVector;
+    FVector2D ButtonLookPendingDelta = FVector2D::ZeroVector;
+    bool bLookDragging = false;
+    bool bButtonLookDragging = false;
     TMap<int32, FVector2D> ButtonLastPositions;
     float JoystickOpacity = 0.f;
 
@@ -118,6 +123,7 @@ private:
     FReply HandlePointerStarted(const FGeometry& MyGeometry, int32 PointerIndex, const FVector2D& LocalPosition);
     FReply HandlePointerMoved(const FGeometry& MyGeometry, int32 PointerIndex, const FVector2D& LocalPosition);
     FReply HandlePointerEnded(int32 PointerIndex);
+    void ApplyPointerLook(const FVector2D& Delta, const FVector2D& Size, bool bButtonDrag);
     void UpdateJoystick(const FVector2D& LocalPosition, const FVector2D& Size);
     void ReleaseJoystick();
     void SetButtonPressed(EButton Button, bool bPressed);

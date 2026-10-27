@@ -10,6 +10,7 @@ $ErrorActionPreference = 'Stop'
 Assert-MiningLaunchResources -MinimumPhysicalGB 4 -MinimumCommitGB 8
 if ($RunName -notmatch '^AndroidSizeOptimized-[A-Za-z0-9-]+$') { throw 'RunName must be a single AndroidSizeOptimized-* directory name.' }
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$gameTarget = 'WOoOW'
 $runRoot = Join-Path $projectRoot "Saved/Validation/SizeOptimization/$RunName"
 $archive = Join-Path $projectRoot "Builds/MobileVerticalSlice/$RunName"
 $stagingRoot = Join-Path $projectRoot 'Saved/StagedBuilds'
@@ -28,7 +29,7 @@ New-Item -ItemType Directory -Path $runRoot -Force | Out-Null
 $cookOptions = "-corelimit=2 -NoAsyncLoadingThread -asyncassetcompilationmaxconcurrency=1 -asynctexturecompilationmaxconcurrency=1 -ini:Engine:[ConsoleVariables]:r.StaticMesh.StripMinLodDataDuringCooking=1 -ini:Editor:[CookSettings]:MemoryMinFreePhysical=3072,[CookSettings]:PackagesPerGC=5,[CookSettings]:MaxConcurrentShaderJobs=2 -LocalDataCachePath=$projectRoot/Saved/DerivedDataCache"
 $cookOptions += ' -CustomConfig=AndroidSize'
 $nativeMaterials = @(Get-ChildItem -LiteralPath "$projectRoot/Source", "$projectRoot/Plugins" -Recurse -File -Include '*.cpp', '*.h' | ForEach-Object {
-    [regex]::Matches([IO.File]::ReadAllText($_.FullName), '/Game/MainGame/Materials/[A-Za-z0-9_./]+') | ForEach-Object { $_.Value.Split('.')[0] }
+    [regex]::Matches([IO.File]::ReadAllText($_.FullName), '/Game/(?:MainGame/Materials|Mobile/Water)/[A-Za-z0-9_./]+') | ForEach-Object { $_.Value.Split('.')[0] }
 } | Sort-Object -Unique)
 if (-not $nativeMaterials.Count) { throw 'No native material paths found; refusing a cook without explicit runtime roots.' }
 $cookOptions += ' -PACKAGE=' + ($nativeMaterials -join '+')
@@ -36,7 +37,7 @@ $arguments = @(
     (Join-Path $EngineRoot 'Engine/Binaries/DotNET/AutomationTool/AutomationTool.dll'),
     "-ScriptsForProject=$projectRoot/BrainMining.uproject", '-NoCompile', '-Utf8Output',
     'BuildCookRun', "-project=$projectRoot/BrainMining.uproject", '-noP4', '-unattended',
-    '-target=WOoOW', '-platform=Android', '-targetplatform=Android', '-clientconfig=Shipping',
+    "-target=$gameTarget", '-platform=Android', '-targetplatform=Android', '-clientconfig=Shipping',
     '-skipbuild', '-cook', '-stage', '-package', '-pak', '-iostore', '-compressed', '-nodebuginfo', '-skipeditorcontent',
     '-map=/Game/MainGame/Maps/Lvl_MainGame+/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo',
     "-CookOutputDir=$runRoot/Cooked/Android", "-stagingdirectory=$stagingRoot",
@@ -55,7 +56,7 @@ try {
     [Environment]::SetEnvironmentVariable('uebp_LogFolder', "$runRoot/UAT", 'Process')
     @{run=$RunName; archive=$archive; started=(Get-Date).ToString('o'); native_materials=$nativeMaterials; arguments=$arguments} | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath "$runRoot/request.json" -Encoding UTF8
     Start-MiningGuardedProcess -Executable $runtime.FullName -Arguments $arguments -ReportPath "$runRoot/resources.csv" -BelowNormal -TrimCookWorkingSet -MaximumSeconds 14400
-    $package = Get-ChildItem -LiteralPath $archive -Filter 'BrainMining-Android-Shipping-arm64.apk' -File -Recurse | Select-Object -First 1
+    $package = Get-ChildItem -LiteralPath $archive -Filter "$gameTarget-Android-Shipping-arm64.apk" -File -Recurse | Select-Object -First 1
     if (-not $package) { throw 'Packaging completed without the main APK.' }
     & (Join-Path $EngineRoot 'Engine/Binaries/Win64/UnrealPak.exe') "-ListContainer=$stagingRoot/Android/BrainMining/Content/Paks/BrainMining-Android.utoc" "-Csv=$runRoot/android_iostore.csv" -unattended *> "$runRoot/container_listing.log"
     if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the cooked container.' }

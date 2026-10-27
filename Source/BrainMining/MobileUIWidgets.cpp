@@ -197,9 +197,22 @@ namespace
             else if (Page == EMobileMenuPage::Controls)
             {
                 Rows->AddSlot().AutoHeight().HAlign(HAlign_Center).Padding(0, 20, 0, 36)[Glyph(TEXT("sliders"), 64, Ink())];
+                Rows->AddSlot().AutoHeight()
+                    [SNew(STextBlock).Text(FText::FromString(TEXT("视角灵敏度"))).Font(BrainMiningFonts::Style("Bold", 24)).ColorAndOpacity(Ink())];
                 Rows->AddSlot().AutoHeight()[SNew(SBox).HeightOverride(80)
                     [SNew(SSlider).Value_Lambda([this]() { return Controller.IsValid() ? (Controller->MobileLookSensitivity - .03f) / .15f : .4f; })
                         .OnValueChanged_Lambda([this](float Value) { if (Controller.IsValid()) { Controller->MobileLookSensitivity = .03f + .15f * Value; bSettingsChanged = true; } })]];
+                Rows->AddSlot().AutoHeight().Padding(0, 12, 0, 12)
+                    [SNew(SCheckBox).Tag(TEXT("MobileComfortMode")).CheckBoxContentUsesAutoWidth(false)
+                        .IsChecked_Lambda([this]() { return Controller.IsValid() && Controller->bMobileComfortMode ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+                        .OnCheckStateChanged_Lambda([this](ECheckBoxState State)
+                        {
+                            if (!Controller.IsValid()) return;
+                            Controller->bMobileComfortMode = State == ECheckBoxState::Checked;
+                            if (auto* Ending = AEndingEmergence::FindForPlayer(Controller.Get()))Ending->bComfortMode = Controller->bMobileComfortMode;
+                            bSettingsChanged = true;
+                        })
+                        [SNew(STextBlock).Text(FText::FromString(TEXT("舒适镜头（减少结局旋转与震动）"))).AutoWrapText(true).Font(BrainMiningFonts::Style("Regular", 22)).ColorAndOpacity(Ink())]];
                 auto* Graphics = Controller.IsValid() ? Controller->GetGameInstance()->GetSubsystem<UMiningMobileGraphicsSettings>() : nullptr;
                 if (Graphics)
                 {

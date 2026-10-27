@@ -1,4 +1,5 @@
 #include "MiningPackagedQA.h"
+#include "BrainMiningPlayerController.h"
 #include "MiningMobileGraphicsSettings.h"
 #include "HAL/IConsoleManager.h"
 #include "DynamicRHI.h"
@@ -36,6 +37,10 @@
 #include "MiningProgressionComponent.h"
 #include "MiningCollection.h"
 #include "MiningRoomEscape.h"
+#include "Engine/StaticMeshActor.h"
+#include "Materials/Material.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
 #include "MiningAudioSettings.h"
 #include "WenSi/MouseMuseumPortal.h"
@@ -270,6 +275,33 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     {
         FVector Eye;FRotator R;PC->GetPlayerViewPoint(Eye,R);PC->SetControlRotation((ReadVec(*C,TEXT("target"))-Eye).Rotation());
     }
+    else if(Op==TEXT("water_fixture"))
+    {
+        UMeshComponent* Surface=nullptr;
+        if(C->GetStringField(TEXT("water"))==TEXT("card"))
+        {
+            if(auto* Escape=First<AMiningRoomEscape>(W);Escape&&Escape->Phase==EMiningEscapePhase::Flooding)
+                if(auto* Water=Cast<AStaticMeshActor>(Escape->Water))
+                {
+                    Escape->SetActorTickEnabled(false);
+                    if(C->HasField(TEXT("height")))Escape->WaterZ=C->GetNumberField(TEXT("height"));
+                    FVector Position=Water->GetActorLocation();Position.Z=Escape->WaterZ;Water->SetActorLocation(Position);
+                    Surface=Water->GetStaticMeshComponent();
+                }
+        }
+        else if(C->GetStringField(TEXT("water"))==TEXT("heaven"))
+        {
+            if(auto* Water=First<AHeavenToiletWater>(W))Surface=Water->Basin;
+        }
+        Ok=Surface!=nullptr;
+        bool Diagnostic=false;C->TryGetBoolField(TEXT("diagnostic"),Diagnostic);
+        if(Surface&&Diagnostic)
+        {
+            auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Mobile/Water/M_WaterVisibilityDiagnostic"));
+            Ok=Material!=nullptr;
+            if(Material)Surface->SetMaterial(0,Material);
+        }
+    }
     else if(Op==TEXT("film_fixture")){if(auto* Ending=First<AEndingEmergence>(W))Ending->PreviewFilm();else Ok=false;}
     else if(Op==TEXT("interact"))Ok=AMiningStartRoom::Find(W)->Interact(PC);
     else if(Op==TEXT("mineral_fixture"))Ok=Wallet->AddMineral(FName(*C->GetStringField(TEXT("mineral"))),int32(C->GetNumberField(TEXT("amount"))));
@@ -448,12 +480,51 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     if(auto* Toilet=First<AHeavenToilet>(W))Result->SetBoolField(TEXT("toilet_outline"),Toilet->Body->bRenderCustomDepth);
     Result->SetNumberField(TEXT("area"),Hall?Hall->ActiveArea:-1);Result->SetNumberField(TEXT("unlocked"),Hall?Hall->UnlockedArea:-1);
     Result->SetBoolField(TEXT("opening"),AMiningOpening::IsOpening(W));
+    if(auto* TouchController=Cast<ABrainMiningPlayerController>(PC))
+    {
+        Result->SetNumberField(TEXT("mobile_look_sensitivity"),TouchController->MobileLookSensitivity);
+        Result->SetBoolField(TEXT("mobile_comfort_preference"),TouchController->bMobileComfortMode);
+    }
     if(auto* Camera=PC->PlayerCameraManager.Get())
     {
         Result->SetArrayField(TEXT("camera"),Vec(Camera->GetCameraLocation()));
         Result->SetNumberField(TEXT("camera_fade"),Camera->FadeAmount);
         Result->SetNumberField(TEXT("camera_fov"),Camera->GetFOVAngle());
+        const FRotator Rotation=Camera->GetCameraRotation();
+        Result->SetArrayField(TEXT("camera_rotation"),Vec(FVector(Rotation.Pitch,Rotation.Yaw,Rotation.Roll)));
     }
+    if(auto* ViewCamera=Cast<ACameraActor>(PC->GetViewTarget()))
+    {
+        Result->SetBoolField(TEXT("camera_constrain_aspect"),ViewCamera->GetCameraComponent()->bConstrainAspectRatio);
+        Result->SetNumberField(TEXT("camera_aspect"),ViewCamera->GetCameraComponent()->AspectRatio);
+    }
+    TArray<TSharedPtr<FJsonValue>> WaterSurfaces;
+    auto DescribeWater=[&](UMeshComponent* Surface,const TCHAR* Name)
+    {
+        if(!Surface)return;
+        auto WaterInfo=MakeShared<FJsonObject>();
+        WaterInfo->SetStringField(TEXT("name"),Name);
+        WaterInfo->SetBoolField(TEXT("visible"),Surface->IsVisible()&&!Surface->GetOwner()->IsHidden());
+        WaterInfo->SetArrayField(TEXT("position"),Vec(Surface->GetComponentLocation()));
+        if(auto* Material=Surface->GetMaterial(0))
+        {
+            WaterInfo->SetStringField(TEXT("material"),Material->GetPathName());
+            if(auto* Base=Material->GetMaterial())WaterInfo->SetStringField(TEXT("base_material"),Base->GetPathName());
+        }
+        WaterSurfaces.Add(MakeShared<FJsonValueObject>(WaterInfo));
+    };
+    if(auto* Water=First<AHeavenToiletWater>(W))
+    {
+        DescribeWater(Water->Basin,TEXT("heaven_basin"));
+        DescribeWater(Water->Spill,TEXT("heaven_spill"));
+    }
+    if(auto* Escape=First<AMiningRoomEscape>(W))
+    {
+        Result->SetNumberField(TEXT("flood_phase"),int32(Escape->Phase));
+        Result->SetNumberField(TEXT("water_height"),Escape->WaterZ);
+        if(auto* Water=Cast<AStaticMeshActor>(Escape->Water))DescribeWater(Water->GetStaticMeshComponent(),TEXT("card_flood"));
+    }
+    Result->SetArrayField(TEXT("water_surfaces"),WaterSurfaces);
     if(auto* Viewport=W->GetGameViewport())
     {
         Result->SetBoolField(TEXT("world_render_disabled"),Viewport->bDisableWorldRendering);
@@ -568,6 +639,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Result->SetNumberField(TEXT("ending_gate"),Ending->GateIndex);Result->SetNumberField(TEXT("ending_shot"),Ending->Shot);
         Result->SetNumberField(TEXT("neuron"),Ending->CurrentNeuron);Result->SetBoolField(TEXT("ending_complete"),Ending->bComplete);
         Result->SetStringField(TEXT("ending_hint"),Ending->Hint());
+        Result->SetBoolField(TEXT("ending_comfort"),Ending->bComfortMode);
         Result->SetNumberField(TEXT("target_neuron"),Ending->TargetNeuron);
         Result->SetNumberField(TEXT("travelling_neuron"),Ending->TravellingToNeuron);
         if(Op==TEXT("neurons"))

@@ -59,6 +59,7 @@ public:
     void HandleMobilePause();
     void ResetMobileInput();
     UPROPERTY(Config, EditAnywhere, Category="Input|Touch Controls") float MobileLookSensitivity = .09f;
+    UPROPERTY(Config, EditAnywhere, Category="Input|Touch Controls") bool bMobileComfortMode = true;
     bool IsMobileActionVisible() const;
     bool IsMobileInteractVisible() const;
     bool IsMobileConfirmVisible() const;

@@ -38,7 +38,7 @@ void AMiningCollectible::BuildEmergenceParts()
     {
         auto* M=UMaterialInstanceDynamic::Create(Base,this);
         M->SetVectorParameterValue(TEXT("Tint"),ItemId==10?FLinearColor(.3f,1,.06f):ItemId==16?FLinearColor(.62,.57,.48):ItemId==18?FLinearColor(1,.64,.11):ItemId==21?(I==0?FLinearColor(.68,.45,.3):Colors[I]):ItemId==22?(I==0?FLinearColor(.82,.91,.95):Colors[I]):ItemId==13?FLinearColor(.62,.70,.76):ItemId==12?FLinearColor(1,.69,.15):Colors[I]);
-        M->SetScalarParameterValue(TEXT("Glow"),ItemId==10?2.5f:ItemId==2?1.8f:ItemId==13?.45f:ItemId==12?1.3f:.45f);M->SetScalarParameterValue(TEXT("Metallic"),.7f);M->SetScalarParameterValue(TEXT("Roughness"),.25f);Mats.Add(M);
+        M->SetScalarParameterValue(TEXT("Glow"),ItemId==10?2.5f:ItemId==2?1.8f:ItemId==13?.45f:ItemId==12?1.3f:ItemId==21?0.f:.45f);M->SetScalarParameterValue(TEXT("Metallic"),ItemId==21?0.f:.7f);M->SetScalarParameterValue(TEXT("Roughness"),ItemId==21?.85f:.25f);Mats.Add(M);
     }
     for(int32 I=0;I<Count;++I)
     {
@@ -139,7 +139,8 @@ void AMiningCollectible::AnimateEmergence(float Time)
     }
     const bool Preview=ActorHasTag(TEXT("CollectionPreview"));
     // Reveal the train at 40%, independently of its 70% pickup/release gate.
-    if(ItemId==21 && (Exposure>=.40f || bReleased) && EmergenceDoorStartTime<0)EmergenceDoorStartTime=Time;
+    // BuildEmergenceParts requests a zero-time construction pose, not a real departure.
+    if(Time>0.f && ItemId==21 && (Exposure>=.40f || bReleased) && EmergenceDoorStartTime<0)EmergenceDoorStartTime=Time;
     const float DoorAge=Preview?10.f:EmergenceDoorStartTime<0?-1.f:Time-EmergenceDoorStartTime;
     if(ItemId==21)bSubwayPickupReady=DoorAge>=1.35f;
     for(int32 I=0;I<EmergenceParts.Num();++I)
@@ -179,13 +180,27 @@ void AMiningCollectible::AnimateEmergence(float Time)
                 Part->SetRelativeLocation(Home.GetLocation()+FVector(0,(I<112?-1:1)*23.f*Open,0));
                 continue;
             }
-            const bool CrowdVisible=DoorAge>=1.2f;
-            Part->SetVisibility(CrowdVisible);if(!CrowdVisible)continue;
-            const float CrowdAge=Preview?Time:DoorAge-1.2f;
-            const int Person=I/3;const float T=FMath::Fmod(CrowdAge*.16f+Person/36.f,1.f);
-            const float Exit=FMath::SmoothStep(.08f,.8f,T);
-            const FVector P(-4-Exit*80,((Person%5)-2)*4+Exit*((Person%7)-3)*12,Home.GetLocation().Z+FMath::Sin(Time*11+Person)*.7f);
-            Part->SetRelativeLocation(P);Part->SetRelativeScale3D(Home.GetScale3D()*(Preview?1.f:FMath::SmoothStep(0.f,.35f,CrowdAge))*FMath::Min(FMath::SmoothStep(0.f,.08f,T),1-FMath::SmoothStep(.83f,1.f,T)));
+            // Each passenger starts inside the carriage. No phase offset may put
+            // a new passenger outside the doors on the very first reveal frame.
+            const float CrowdAge=Preview?Time:DoorAge-.95f;
+            const int Person=I/3;
+            // Twelve rows fill the entire recycling period. The last-to-first
+            // interval must equal every other interval, or a hole crosses the crowd.
+            constexpr float Cycle=1.25f,RowInterval=Cycle/12.f;
+            const float Depart=(Person/3)*RowInterval+(Person%3)*.008f;
+            const float Life=CrowdAge<Depart?-1.f:FMath::Fmod(CrowdAge-Depart,Cycle);
+            const bool Visible=Life>=0.f && Life<1.1f;
+            Part->SetVisibility(Visible);if(!Visible)continue;
+            const float X=-10.f-Life*132.f; // three lanes rush through the doorway together
+            const float Fan=FMath::Clamp((-X-34.f)/65.f,0.f,1.f);
+            const float Lane=(Person%3-1)*7.f;
+            const float Stride=FMath::Sin(Life*19.f+Person*.7f);
+            const float Fade=1-FMath::SmoothStep(.85f,1.1f,Life);
+            const FVector PersonRoot(X,Lane+Fan*((Person%7)-3)*11.f,-16+FMath::Abs(Stride)*.6f);
+            // Retire the complete figure around one pivot, keeping head and body together.
+            Part->SetRelativeLocation(PersonRoot+FVector(0,Home.GetLocation().Y,Home.GetLocation().Z+16)*Fade);
+            Part->SetRelativeScale3D(Home.GetScale3D()*Fade);
+
         }
         else if(ItemId==22)
         {

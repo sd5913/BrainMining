@@ -1,4 +1,5 @@
 #include "HeavenToiletWater.h"
+#include "MobileRuntimeSettings.h"
 #include "Components/AudioComponent.h"
 #include "Engine/PostProcessVolume.h"
 #include "EngineUtils.h"
@@ -98,6 +99,11 @@ void AHeavenToiletWater::RebuildWater()
 
 void AHeavenToiletWater::BeginPlay()
 {
+    if(UMobileRuntimeSettings::IsMobileVerticalSliceEnabled())
+    {
+        if(auto* MobileWater=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Mobile/Water/MI_MobileBasin.MI_MobileBasin")))WaterMaterial=MobileWater;
+        if(auto* MobileSpill=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Mobile/Water/MI_MobileOutflow.MI_MobileOutflow")))SpillMaterial=MobileSpill;
+    }
     Super::BeginPlay(); RebuildWater();
     for(TActorIterator<APostProcessVolume> V(GetWorld());V;++V)
         if(V->ActorHasTag(TEXT("BM_HeavenInteriorExposure"))) {InteriorExposure=*V;break;}

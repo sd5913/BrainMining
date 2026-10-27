@@ -6,7 +6,7 @@
 class FMiningLoadingScreen
 {
 public:
-    explicit FMiningLoadingScreen(const TCHAR* Label=TEXT("加载中"));
+    explicit FMiningLoadingScreen(const FText& Label=FText::GetEmpty());
     ~FMiningLoadingScreen();
     void ContinueThroughLevelTravel();
 private:

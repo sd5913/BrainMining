@@ -2,7 +2,7 @@
 import argparse,json,subprocess,time,traceback
 from pathlib import Path
 from packaged_qa_client import Client
-ap=argparse.ArgumentParser();ap.add_argument('output');args=ap.parse_args()
+ap=argparse.ArgumentParser();ap.add_argument('output');ap.add_argument('--exe',help='Verify a packaged Shipping executable instead of the editor');args=ap.parse_args()
 root=Path(__file__).resolve().parents[1];out=(root/args.output).resolve();profile=out/'profile';assert not profile.exists();out.mkdir(parents=True,exist_ok=True)
 report={'passed':False,'checks':[],'camera':[]};proc=None
 
@@ -19,7 +19,11 @@ def wait(pred,timeout=90):
   assert time.monotonic()<until,s
   time.sleep(.1)
 try:
- proc=subprocess.Popen(['C:/UE_5.8/Engine/Binaries/Win64/UnrealEditor.exe',str(root/'BrainMining.uproject'),'/Game/MainGame/Maps/Lvl_MainGame','-game','-windowed','-ResX=1280','-ResY=800','-RenderOffscreen','-NoSplash','-nosound','-EnablePlugins=GameFeatures','-DisablePlugins=AllToolsets,ModelContextProtocol','-MiningQA','-UserDir='+str(profile)])
+ for platform in ('Windows','WindowsEditor'):
+  config=profile/'Saved/Config'/platform/'GameUserSettings.ini';config.parent.mkdir(parents=True,exist_ok=True)
+  config.write_text('[BrainMining.Localization]\nLanguagePreference=zh-Hans\n',encoding='utf8')
+ launch=[args.exe] if args.exe else ['C:/UE_5.8/Engine/Binaries/Win64/UnrealEditor.exe',str(root/'BrainMining.uproject'),'/Game/MainGame/Maps/Lvl_MainGame','-game']
+ proc=subprocess.Popen(launch+['-windowed','-ResX=1280','-ResY=800','-RenderOffscreen','-NoSplash','-nosound','-EnablePlugins=GameFeatures','-DisablePlugins=AllToolsets,ModelContextProtocol','-MiningQA','-UserDir='+str(profile)])
  c=Client(profile);wait(lambda s:s['menu_buttons']);cmd('start');wait(lambda s:not s['opening']);time.sleep(2)
  cmd('area_fixture',area=5);time.sleep(3)
  exhibits=cmd('actors',filter='WenSiMirrorExhibit',parts=True)['actors'];stone=next(a for a in exhibits if a['kind']==0);p=stone['position']
@@ -38,6 +42,10 @@ try:
  origin=cmd('actors',filter='WenSiMirrorPuzzle')['actors'][0]['position']
  cmd('pose',eye=[origin[0]+1720,origin[1]+120,origin[2]+105],target=[origin[0]+1900,origin[1]+120,origin[2]+55]);time.sleep(1);cmd('shot',name='gold-contact-bases')
  cmd('area_fixture',area=1);time.sleep(3)
+ stage=cmd('actors',filter='PopupCloseStage',parts=True)['actors'][0]
+ door=next(p for p in stage['parts'] if p['name']=='OfficeBlastDoor');check(door['visible'],'First office blast door is visible before collecting the bomb')
+ q=door['position'];forward=stage['forward'];eye=[q[i]-forward[i]*320+(20 if i==2 else 0) for i in range(3)]
+ cmd('pose',eye=eye,target=q);time.sleep(1);cmd('shot',name='first-office-exit-bomb-stencil')
  devices=sorted(cmd('actors',filter='PopupOfficeDevice')['actors'],key=lambda a:a['name'])
  device=devices[0];p=device['position'];f=device['forward'];right=[-f[1],f[0],0]
  for n,(back,side,z) in enumerate([(190,0,170),(190,-85,170),(190,85,170),(155,0,145)]):

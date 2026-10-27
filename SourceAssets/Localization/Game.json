@@ -1,0 +1,1242 @@
+{
+  "UI.Language.Auto": {
+    "zh-Hans": "自动",
+    "en": "Auto",
+    "zh-Hant": "自動"
+  },
+  "UI.Language.Simplified": {
+    "zh-Hans": "简体中文",
+    "en": "简体中文",
+    "zh-Hant": "简体中文"
+  },
+  "UI.Language.English": {
+    "zh-Hans": "English",
+    "en": "English",
+    "zh-Hant": "English"
+  },
+  "UI.Language.Traditional": {
+    "zh-Hans": "繁體中文",
+    "en": "繁體中文",
+    "zh-Hant": "繁體中文"
+  },
+  "UI.Settings.Language": {
+    "zh-Hans": "语言",
+    "en": "Language",
+    "zh-Hant": "語言"
+  },
+  "UI.Settings.Title": {
+    "zh-Hans": "设置",
+    "en": "Settings",
+    "zh-Hant": "設定"
+  },
+  "UI.Settings.Audio": {
+    "zh-Hans": "音频",
+    "en": "Audio",
+    "zh-Hant": "音訊"
+  },
+  "UI.Settings.Master": {
+    "zh-Hans": "总音量",
+    "en": "Master volume",
+    "zh-Hant": "總音量"
+  },
+  "UI.Settings.Music": {
+    "zh-Hans": "音乐",
+    "en": "Music",
+    "zh-Hant": "音樂"
+  },
+  "UI.Settings.Effects": {
+    "zh-Hans": "音效",
+    "en": "Sound effects",
+    "zh-Hant": "音效"
+  },
+  "UI.Settings.Ambience": {
+    "zh-Hans": "环境声",
+    "en": "Ambience",
+    "zh-Hant": "環境音"
+  },
+  "UI.Settings.Voice": {
+    "zh-Hans": "语音",
+    "en": "Voice",
+    "zh-Hant": "語音"
+  },
+  "UI.Settings.Sensitivity": {
+    "zh-Hans": "灵敏度",
+    "en": "Sensitivity",
+    "zh-Hant": "靈敏度"
+  },
+  "UI.Settings.Look": {
+    "zh-Hans": "镜头移动",
+    "en": "Look sensitivity",
+    "zh-Hant": "鏡頭移動"
+  },
+  "UI.Settings.FOV": {
+    "zh-Hans": "视野 FOV",
+    "en": "Field of view",
+    "zh-Hant": "視野 FOV"
+  },
+  "UI.Settings.Reset": {
+    "zh-Hans": "恢复默认",
+    "en": "Reset defaults",
+    "zh-Hant": "恢復預設"
+  },
+  "UI.Settings.Back": {
+    "zh-Hans": "返回游戏",
+    "en": "Back to game",
+    "zh-Hant": "返回遊戲"
+  },
+  "UI.Settings.Haptics": {
+    "zh-Hans": "手柄震动",
+    "en": "Controller vibration",
+    "zh-Hant": "控制器震動"
+  },
+  "UI.Settings.HapticsEnabled": {
+    "zh-Hans": "震动总开关",
+    "en": "Enable vibration",
+    "zh-Hant": "啟用震動"
+  },
+  "UI.Settings.HapticsContinuous": {
+    "zh-Hans": "钻机与喷气持续震动",
+    "en": "Continuous drill and jetpack vibration",
+    "zh-Hant": "鑽機與噴氣持續震動"
+  },
+  "UI.Settings.HapticsOptional": {
+    "zh-Hans": "轻微交互与演出提示",
+    "en": "Subtle interaction and cinematic feedback",
+    "zh-Hant": "輕微互動與演出提示"
+  },
+  "UI.Settings.HapticsStrength": {
+    "zh-Hans": "震动强度   {Strength}",
+    "en": "Vibration strength   {Strength}",
+    "zh-Hant": "震動強度   {Strength}"
+  },
+  "UI.Pause.Title": {
+    "zh-Hans": "暂停",
+    "en": "Paused",
+    "zh-Hant": "暫停"
+  },
+  "UI.Pause.Resume": {
+    "zh-Hans": "继续游戏",
+    "en": "Resume",
+    "zh-Hant": "繼續遊戲"
+  },
+  "UI.Pause.Collection": {
+    "zh-Hans": "查看藏品",
+    "en": "Collection",
+    "zh-Hant": "查看收藏品"
+  },
+  "UI.Pause.Save": {
+    "zh-Hans": "保存进度",
+    "en": "Save progress",
+    "zh-Hant": "儲存進度"
+  },
+  "UI.Pause.MainMenu": {
+    "zh-Hans": "返回主界面",
+    "en": "Main menu",
+    "zh-Hant": "返回主選單"
+  },
+  "UI.Quit.Question": {
+    "zh-Hans": "确定退出游戏？",
+    "en": "Quit the game?",
+    "zh-Hant": "確定離開遊戲？"
+  },
+  "UI.Quit.Cancel": {
+    "zh-Hans": "取消",
+    "en": "Cancel",
+    "zh-Hant": "取消"
+  },
+  "UI.Quit.Confirm": {
+    "zh-Hans": "确认退出",
+    "en": "Quit",
+    "zh-Hant": "確認離開"
+  },
+  "UI.Save.Success": {
+    "zh-Hans": "进度已保存",
+    "en": "Progress saved.",
+    "zh-Hant": "進度已儲存"
+  },
+  "UI.Save.Unavailable": {
+    "zh-Hans": "当前暂时无法保存，请回到探索状态后重试",
+    "en": "Cannot save right now. Return to exploring and try again.",
+    "zh-Hant": "目前無法儲存，請回到探索狀態後重試"
+  },
+  "UI.Save.TerrainBusy": {
+    "zh-Hans": "地形还在更新，稍等片刻后再返回主界面吧",
+    "en": "The terrain is still updating. Please wait a moment before returning to the main menu.",
+    "zh-Hant": "地形仍在更新，請稍候再返回主選單"
+  },
+  "UI.MainMenu.Continue": {
+    "zh-Hans": "继续游戏",
+    "en": "Continue",
+    "zh-Hant": "繼續遊戲"
+  },
+  "UI.MainMenu.Start": {
+    "zh-Hans": "开始游戏",
+    "en": "New game",
+    "zh-Hant": "開始遊戲"
+  },
+  "UI.MainMenu.Quit": {
+    "zh-Hans": "退出游戏",
+    "en": "Quit",
+    "zh-Hant": "離開遊戲"
+  },
+  "UI.MainMenu.KeepCollectionQuestion": {
+    "zh-Hans": "发现有藏品进度，是否要保留藏品进度",
+    "en": "You already have a collection. Keep it for your new game?",
+    "zh-Hant": "已有收藏進度，要保留至新遊戲嗎？"
+  },
+  "UI.MainMenu.Keep": {
+    "zh-Hans": "保留",
+    "en": "Keep",
+    "zh-Hant": "保留"
+  },
+  "UI.MainMenu.Clear": {
+    "zh-Hans": "清除",
+    "en": "Clear",
+    "zh-Hant": "清除"
+  },
+  "UI.Collection.Unknown": {
+    "zh-Hans": "未知藏品",
+    "en": "Unknown collectible",
+    "zh-Hant": "未知收藏品"
+  },
+  "UI.Collection.Undiscovered": {
+    "zh-Hans": "尚未发现",
+    "en": "Undiscovered",
+    "zh-Hant": "尚未發現"
+  },
+  "UI.Collection.Count": {
+    "zh-Hans": "已收集{Count}/{Total}",
+    "en": "Collected {Count}/{Total}",
+    "zh-Hant": "已收集{Count}/{Total}"
+  },
+  "UI.Collection.Pickup": {
+    "zh-Hans": "已收集 · {Name}",
+    "en": "Collected · {Name}",
+    "zh-Hant": "已收集 · {Name}"
+  },
+  "UI.Collection.Locked": {
+    "zh-Hans": "尚未解锁\n\n继续探索，寻找潜藏的灵感吧！",
+    "en": "Locked\n\nKeep exploring to uncover hidden inspiration!",
+    "zh-Hant": "尚未解鎖\n\n繼續探索，尋找潛藏的靈感吧！"
+  },
+  "UI.Collection.MineralCondition": {
+    "zh-Hans": "尚未解锁\n\n解锁条件：累计收集{Target}个{Mineral}\n当前进度：{Count} / {Target}",
+    "en": "Locked\n\nCollect {Target} {Mineral} deposits to unlock.\nProgress: {Count} / {Target}",
+    "zh-Hant": "尚未解鎖\n\n解鎖條件：累計收集{Target}個{Mineral}\n目前進度：{Count} / {Target}"
+  },
+  "UI.Collection.MineralGoal": {
+    "zh-Hans": "收集{Target}个{Mineral}",
+    "en": "Collect {Target} {Mineral}",
+    "zh-Hant": "收集{Target}個{Mineral}"
+  },
+  "UI.Collection.MineralGoalComplete": {
+    "zh-Hans": "已收集{Target}个{Mineral}",
+    "en": "Collected {Target} {Mineral}",
+    "zh-Hant": "已收集{Target}個{Mineral}"
+  },
+  "Mineral.Copper": {
+    "zh-Hans": "铜矿",
+    "en": "copper",
+    "zh-Hant": "銅礦"
+  },
+  "Mineral.Iron": {
+    "zh-Hans": "铁矿",
+    "en": "iron",
+    "zh-Hant": "鐵礦"
+  },
+  "Mineral.Malachite": {
+    "zh-Hans": "孔雀石",
+    "en": "malachite",
+    "zh-Hant": "孔雀石"
+  },
+  "Mineral.Diamond": {
+    "zh-Hans": "钻石",
+    "en": "diamond",
+    "zh-Hant": "鑽石"
+  },
+  "Achievement.FirstCollection.Name": {
+    "zh-Hans": "第一件灵感",
+    "en": "A Spark of Inspiration",
+    "zh-Hant": "第一件靈感"
+  },
+  "Achievement.FirstCollection.Description": {
+    "zh-Hans": "获得第一件藏品。",
+    "en": "Find your first collectible.",
+    "zh-Hant": "獲得第一件收藏品。"
+  },
+  "Achievement.Collection5.Name": {
+    "zh-Hans": "灵感正在聚集",
+    "en": "Ideas Are Gathering",
+    "zh-Hant": "靈感正在聚集"
+  },
+  "Achievement.Collection5.Description": {
+    "zh-Hans": "获得五种不同藏品。",
+    "en": "Find five different collectibles.",
+    "zh-Hant": "獲得五種不同收藏品。"
+  },
+  "Achievement.CollectionComplete.Name": {
+    "zh-Hans": "灵感收藏家",
+    "en": "Collector of Ideas",
+    "zh-Hant": "靈感收藏家"
+  },
+  "Achievement.CollectionComplete.Description": {
+    "zh-Hans": "收齐首发版本的全部藏品。",
+    "en": "Find every collectible in the original collection.",
+    "zh-Hant": "收齊首發版本的全部收藏品。"
+  },
+  "Achievement.PickaxeUpgrade.Name": {
+    "zh-Hans": "再锋利一点",
+    "en": "A Sharper Idea",
+    "zh-Hant": "再鋒利一點"
+  },
+  "Achievement.PickaxeUpgrade.Description": {
+    "zh-Hans": "首次升级矿镐。",
+    "en": "Upgrade your pickaxe for the first time.",
+    "zh-Hant": "首次升級礦鎬。"
+  },
+  "Achievement.PickaxeMax.Name": {
+    "zh-Hans": "挖到底",
+    "en": "Dig Deep",
+    "zh-Hant": "挖到底"
+  },
+  "Achievement.PickaxeMax.Description": {
+    "zh-Hans": "将矿镐升级至最高等级。",
+    "en": "Fully upgrade your pickaxe.",
+    "zh-Hant": "將礦鎬升級至最高等級。"
+  },
+  "Achievement.CardRoom.Name": {
+    "zh-Hans": "组合的力量",
+    "en": "More Than the Sum",
+    "zh-Hant": "組合的力量"
+  },
+  "Achievement.CardRoom.Description": {
+    "zh-Hans": "赢得卡牌房挑战。",
+    "en": "Win the card room challenge.",
+    "zh-Hant": "贏得卡牌房挑戰。"
+  },
+  "Achievement.Museum.Name": {
+    "zh-Hans": "换个想法",
+    "en": "A Change of Mind",
+    "zh-Hant": "換個想法"
+  },
+  "Achievement.Museum.Description": {
+    "zh-Hans": "完成博物馆并进入结局。",
+    "en": "Finish the museum and enter the finale.",
+    "zh-Hant": "完成博物館並進入結局。"
+  },
+  "Achievement.Campaign.Name": {
+    "zh-Hans": "挖哦！",
+    "en": "WOoOW!",
+    "zh-Hant": "挖哦！"
+  },
+  "Achievement.Campaign.Description": {
+    "zh-Hans": "完成游戏。",
+    "en": "Complete the game.",
+    "zh-Hant": "完成遊戲。"
+  },
+  "WenSi.Noun.Rock": {
+    "zh-Hans": "石块",
+    "en": "rock",
+    "zh-Hant": "石塊"
+  },
+  "WenSi.Noun.Cover": {
+    "zh-Hans": "罩子",
+    "en": "cover",
+    "zh-Hant": "罩子"
+  },
+  "WenSi.Noun.Statue": {
+    "zh-Hans": "雕像",
+    "en": "statue",
+    "zh-Hant": "雕像"
+  },
+  "WenSi.Noun.Screen": {
+    "zh-Hans": "屏风",
+    "en": "screen",
+    "zh-Hant": "屏風"
+  },
+  "WenSi.Noun.Board": {
+    "zh-Hans": "木板",
+    "en": "board",
+    "zh-Hant": "木板"
+  },
+  "WenSi.Noun.Weight": {
+    "zh-Hans": "压块",
+    "en": "weight",
+    "zh-Hant": "壓塊"
+  },
+  "WenSi.Noun.Ball": {
+    "zh-Hans": "陶瓷球",
+    "en": "ceramic ball",
+    "zh-Hant": "陶瓷球"
+  },
+  "WenSi.Noun.Metal": {
+    "zh-Hans": "金属块",
+    "en": "metal block",
+    "zh-Hant": "金屬塊"
+  },
+  "WenSi.Noun.Balloon": {
+    "zh-Hans": "气球",
+    "en": "balloon",
+    "zh-Hant": "氣球"
+  },
+  "WenSi.Noun.Smoke": {
+    "zh-Hans": "烟雾",
+    "en": "smoke",
+    "zh-Hant": "煙霧"
+  },
+  "WenSi.Noun.Miner": {
+    "zh-Hans": "矿工",
+    "en": "miner",
+    "zh-Hant": "礦工"
+  },
+  "WenSi.Noun.Ornament": {
+    "zh-Hans": "摆件",
+    "en": "ornament",
+    "zh-Hant": "擺件"
+  },
+  "WenSi.Noun.Object": {
+    "zh-Hans": "物体",
+    "en": "object",
+    "zh-Hant": "物體"
+  },
+  "WenSi.Noun.Sculpture": {
+    "zh-Hans": "雕塑",
+    "en": "sculpture",
+    "zh-Hant": "雕塑"
+  },
+  "WenSi.Word.Heavy": {
+    "zh-Hans": "沉重",
+    "en": "heavy",
+    "zh-Hant": "沉重"
+  },
+  "WenSi.Word.Light": {
+    "zh-Hans": "轻盈",
+    "en": "light",
+    "zh-Hant": "輕盈"
+  },
+  "WenSi.Word.Intangible": {
+    "zh-Hans": "虚无",
+    "en": "intangible",
+    "zh-Hant": "虛無"
+  },
+  "WenSi.Word.Conductive": {
+    "zh-Hans": "导电",
+    "en": "conductive",
+    "zh-Hant": "導電"
+  },
+  "WenSi.Word.Normal": {
+    "zh-Hans": "普通",
+    "en": "ordinary",
+    "zh-Hant": "普通"
+  },
+  "WenSi.Word.Floating": {
+    "zh-Hans": "悬浮",
+    "en": "floating",
+    "zh-Hant": "懸浮"
+  },
+  "WenSi.Word.Passable": {
+    "zh-Hans": "可穿过",
+    "en": "passable",
+    "zh-Hant": "可穿過"
+  },
+  "WenSi.Word.Big": {
+    "zh-Hans": "大",
+    "en": "large",
+    "zh-Hant": "大"
+  },
+  "WenSi.Word.Small": {
+    "zh-Hans": "小",
+    "en": "small",
+    "zh-Hant": "小"
+  },
+  "WenSi.Statement": {
+    "zh-Hans": "这是一个{Property}的{Noun}",
+    "en": "This {Noun} is {Property}.",
+    "zh-Hant": "這是一個{Property}的{Noun}"
+  },
+  "WenSi.Hint.Reset": {
+    "zh-Hans": "长按E-重置谜题",
+    "en": "Hold E — reset puzzle",
+    "zh-Hant": "長按 E — 重置謎題"
+  },
+  "WenSi.Hint.Swap": {
+    "zh-Hans": "R-交换词组    Q-关闭思考",
+    "en": "R — swap words    Q — close thoughts",
+    "zh-Hant": "R — 交換詞組    Q — 關閉思考"
+  },
+  "WenSi.Hint.Edit": {
+    "zh-Hans": "拖动红词交换    G 返回    Q 放下思考",
+    "en": "Drag red words to swap    G — back    Q — clear thoughts",
+    "zh-Hant": "拖曳紅字交換    G — 返回    Q — 放下思考"
+  },
+  "WenSi.Hint.Think": {
+    "zh-Hans": "E 思考    ",
+    "en": "E — think    ",
+    "zh-Hant": "E — 思考    "
+  },
+  "WenSi.Hint.Rearrange": {
+    "zh-Hans": "G 重组    Q 放下左侧    R 放下右侧",
+    "en": "G — rearrange    Q — clear left    R — clear right",
+    "zh-Hant": "G — 重組    Q — 放下左側    R — 放下右側"
+  },
+  "UI.Action.Door": {
+    "zh-Hans": "开门",
+    "en": "Open door",
+    "zh-Hant": "開門"
+  },
+  "UI.Action.SelectAll": {
+    "zh-Hans": "全选",
+    "en": "Select all",
+    "zh-Hant": "全選"
+  },
+  "UI.Action.Play": {
+    "zh-Hans": "出牌",
+    "en": "Play cards",
+    "zh-Hant": "出牌"
+  },
+  "UI.Action.Reset": {
+    "zh-Hans": "重置谜题",
+    "en": "Reset puzzle",
+    "zh-Hant": "重置謎題"
+  },
+  "UI.Action.Think": {
+    "zh-Hans": "思考",
+    "en": "Think",
+    "zh-Hant": "思考"
+  },
+  "UI.Action.Portal": {
+    "zh-Hans": "进入画中的圆圈",
+    "en": "Enter the circle in the painting",
+    "zh-Hant": "進入畫中的圓圈"
+  },
+  "UI.Action.Drill": {
+    "zh-Hans": "钻机",
+    "en": "Drill",
+    "zh-Hant": "鑽機"
+  },
+  "UI.Action.Sit": {
+    "zh-Hans": "入座",
+    "en": "Take a seat",
+    "zh-Hant": "入座"
+  },
+  "UI.Action.HoldX": {
+    "zh-Hans": "长按X",
+    "en": "Hold X",
+    "zh-Hant": "長按 X"
+  },
+  "UI.Action.HoldE": {
+    "zh-Hans": "长按E",
+    "en": "Hold E",
+    "zh-Hant": "長按 E"
+  },
+  "UI.Action.Space": {
+    "zh-Hans": "空格",
+    "en": "Space",
+    "zh-Hant": "空白鍵"
+  },
+  "UI.Action.SkipTouch": {
+    "zh-Hans": "继续按住以跳过",
+    "en": "Keep holding to skip",
+    "zh-Hant": "繼續按住以跳過"
+  },
+  "UI.Action.SkipKey": {
+    "zh-Hans": "长按 P 跳过",
+    "en": "Hold P to skip",
+    "zh-Hant": "長按 P 跳過"
+  },
+  "UI.Action.ThinkAbout": {
+    "zh-Hans": "思考 · {Name}",
+    "en": "Think · {Name}",
+    "zh-Hant": "思考 · {Name}"
+  },
+  "UI.Action.Enter": {
+    "zh-Hans": "进入 · {Name}",
+    "en": "Enter · {Name}",
+    "zh-Hant": "進入 · {Name}"
+  },
+  "UI.Upgrade.CoolingDelay": {
+    "zh-Hans": "开始自然散热的等待时间 ×0.5",
+    "en": "Cooling delay ×0.5",
+    "zh-Hant": "開始自然散熱的等待時間 ×0.5"
+  },
+  "UI.Upgrade.CoolingRate": {
+    "zh-Hans": "自然散热速度 ×2",
+    "en": "Cooling rate ×2",
+    "zh-Hant": "自然散熱速度 ×2"
+  },
+  "UI.Upgrade.HeatCapacity": {
+    "zh-Hans": "最大热量 ×2",
+    "en": "Heat capacity ×2",
+    "zh-Hant": "最大熱量 ×2"
+  },
+  "UI.Upgrade.CreativeFlight": {
+    "zh-Hans": "创造飞行：松手悬停，空格上升，左Ctrl下降",
+    "en": "Free flight: release to hover, Space to rise, Left Ctrl to descend",
+    "zh-Hant": "自由飛行：鬆手懸停，空白鍵上升，左 Ctrl 下降"
+  },
+  "UI.Upgrade.BombRecharge": {
+    "zh-Hans": "自动补充时间 ×0.8",
+    "en": "Bomb recharge time ×0.8",
+    "zh-Hant": "自動補充時間 ×0.8"
+  },
+  "UI.Upgrade.BombCapacity": {
+    "zh-Hans": "炸弹最大容量 ×2",
+    "en": "Bomb capacity ×2",
+    "zh-Hant": "炸彈最大容量 ×2"
+  },
+  "UI.Upgrade.BombRadius": {
+    "zh-Hans": "炸弹破坏范围 ×2",
+    "en": "Blast radius ×2",
+    "zh-Hant": "炸彈破壞範圍 ×2"
+  },
+  "UI.Upgrade.BombCapacityAndFuse": {
+    "zh-Hans": "最大容量再 ×2，引爆时间 ×0.5",
+    "en": "Bomb capacity ×2 again; fuse time ×0.5",
+    "zh-Hant": "最大容量再 ×2，引爆時間 ×0.5"
+  },
+  "UI.Upgrade.DrillRecovery": {
+    "zh-Hans": "自然能量恢复速度 ×1.5",
+    "en": "Drill recharge rate ×1.5",
+    "zh-Hant": "自然能量恢復速度 ×1.5"
+  },
+  "UI.Upgrade.DrillCapacity": {
+    "zh-Hans": "最大能量储量 ×1.5",
+    "en": "Drill energy capacity ×1.5",
+    "zh-Hant": "最大能量儲量 ×1.5"
+  },
+  "UI.Upgrade.DrillConsumption": {
+    "zh-Hans": "能量消耗速度 ×0.75",
+    "en": "Drill energy use ×0.75",
+    "zh-Hant": "能量消耗速度 ×0.75"
+  },
+  "UI.Upgrade.InfiniteDrill": {
+    "zh-Hans": "无限钻机能量",
+    "en": "Unlimited drill energy",
+    "zh-Hant": "無限鑽機能量"
+  },
+  "UI.Tool.Pickaxe": {
+    "zh-Hans": "矿镐",
+    "en": "Pickaxe",
+    "zh-Hant": "礦鎬"
+  },
+  "UI.Tool.Jetpack": {
+    "zh-Hans": "喷气背包",
+    "en": "Jetpack",
+    "zh-Hant": "噴射背包"
+  },
+  "UI.Tool.Bomb": {
+    "zh-Hans": "炸弹",
+    "en": "Bomb",
+    "zh-Hant": "炸彈"
+  },
+  "UI.Tool.Drill": {
+    "zh-Hans": "钻机",
+    "en": "Drill",
+    "zh-Hant": "鑽機"
+  },
+  "UI.Upgrade.Max": {
+    "zh-Hans": "已满级",
+    "en": "Max level",
+    "zh-Hant": "已滿級"
+  },
+  "UI.Upgrade.Level": {
+    "zh-Hans": "等级 {0}",
+    "en": "Level {0}",
+    "zh-Hant": "等級 {0}"
+  },
+  "UI.Upgrade.Enough": {
+    "zh-Hans": "✓ 已足够",
+    "en": "✓ Ready",
+    "zh-Hant": "✓ 已足夠"
+  },
+  "UI.Upgrade.Need": {
+    "zh-Hans": "还需{0}个",
+    "en": "Need {0} more",
+    "zh-Hant": "還需{0}個"
+  },
+  "UI.Upgrade.Key": {
+    "zh-Hans": "[ {0} ] 升级",
+    "en": "[ {0} ] Upgrade",
+    "zh-Hant": "[ {0} ] 升級"
+  },
+  "UI.Pickaxe.Hardness": {
+    "zh-Hans": "破坏等级 {Level} · 范围边长 {Width} cm · 每击基础深度 {Depth} cm（按岩层硬度修正）· 间隔 {Interval} 秒",
+    "en": "Mining tier {Level} · width {Width} cm · base depth per hit {Depth} cm (adjusted for hardness) · interval {Interval} s",
+    "zh-Hant": "破壞等級 {Level} · 範圍邊長 {Width} cm · 每擊基礎深度 {Depth} cm（依岩層硬度修正）· 間隔 {Interval} 秒"
+  },
+  "UI.Pickaxe.Stages": {
+    "zh-Hans": "{Hits} 击挖开 · 基础边长 {Width} cm · 基础深度 {Depth} cm · 间隔 {Interval} 秒",
+    "en": "{Hits} hits to break · base width {Width} cm · base depth {Depth} cm · interval {Interval} s",
+    "zh-Hant": "{Hits} 擊挖開 · 基礎邊長 {Width} cm · 基礎深度 {Depth} cm · 間隔 {Interval} 秒"
+  },
+  "UI.Collection.Shortcut": {
+    "zh-Hans": "[C]查看藏品",
+    "en": "[C] Collection",
+    "zh-Hant": "[C] 查看收藏品"
+  },
+  "UI.Tutorial.Soil": {
+    "zh-Hans": "穿过1个泥土层",
+    "en": "Dig through a soil layer",
+    "zh-Hant": "穿過 1 個泥土層"
+  },
+  "UI.Tutorial.Copper": {
+    "zh-Hans": "收集1个铜矿",
+    "en": "Collect 1 copper deposit",
+    "zh-Hant": "收集 1 個銅礦"
+  },
+  "UI.Tutorial.Iron": {
+    "zh-Hans": "收集1个铁矿",
+    "en": "Collect 1 iron deposit",
+    "zh-Hant": "收集 1 個鐵礦"
+  },
+  "UI.Tutorial.Upgrade1": {
+    "zh-Hans": "升级1次矿镐",
+    "en": "Upgrade your pickaxe",
+    "zh-Hant": "升級 1 次礦鎬"
+  },
+  "UI.Tutorial.Upgrade2": {
+    "zh-Hans": "将矿镐升至2级",
+    "en": "Reach pickaxe level 2",
+    "zh-Hant": "將礦鎬升至 2 級"
+  },
+  "UI.Tutorial.Explore": {
+    "zh-Hans": "继续前进探索",
+    "en": "Keep exploring",
+    "zh-Hant": "繼續前進探索"
+  },
+  "UI.Tutorial.Prototype": {
+    "zh-Hans": "发现第{0}个灵感原型",
+    "en": "Find inspiration prototype {0}",
+    "zh-Hant": "發現第 {0} 個靈感原型"
+  },
+  "UI.Pad.Purchased": {
+    "zh-Hans": "升级成功",
+    "en": "Upgrade purchased",
+    "zh-Hant": "升級成功"
+  },
+  "UI.Pad.Rejected": {
+    "zh-Hans": "暂时无法升级：资源不足或已满级",
+    "en": "Cannot upgrade: not enough resources or already maxed",
+    "zh-Hant": "暫時無法升級：資源不足或已滿級"
+  },
+  "UI.Pad.Choose": {
+    "zh-Hans": "左右选牌",
+    "en": "Choose card",
+    "zh-Hant": "左右選牌"
+  },
+  "UI.Pad.Toggle": {
+    "zh-Hans": "选中/取消",
+    "en": "Select/deselect",
+    "zh-Hant": "選取／取消"
+  },
+  "UI.Pad.ToggleAll": {
+    "zh-Hans": "全选/清空",
+    "en": "Select all/clear",
+    "zh-Hant": "全選／清空"
+  },
+  "UI.Pad.Clear": {
+    "zh-Hans": "清空",
+    "en": "Clear",
+    "zh-Hant": "清空"
+  },
+  "UI.Pad.SelectAll": {
+    "zh-Hans": "全选",
+    "en": "Select all",
+    "zh-Hant": "全選"
+  },
+  "UI.Pad.Pause": {
+    "zh-Hans": "暂停",
+    "en": "Pause",
+    "zh-Hant": "暫停"
+  },
+  "UI.Pad.Reward": {
+    "zh-Hans": "领取钻机",
+    "en": "Claim drill",
+    "zh-Hant": "領取鑽機"
+  },
+  "UI.Pad.Waiting": {
+    "zh-Hans": "暂停 · 等待牌局演出",
+    "en": "Pause · waiting for animation",
+    "zh-Hant": "暫停 · 等待牌局演出"
+  },
+  "UI.Pad.Cursor": {
+    "zh-Hans": "光标",
+    "en": "Cursor",
+    "zh-Hant": "游標"
+  },
+  "UI.Pad.Fine": {
+    "zh-Hans": "精调",
+    "en": "Fine control",
+    "zh-Hant": "微調"
+  },
+  "UI.Pad.Click": {
+    "zh-Hans": "点击",
+    "en": "Click",
+    "zh-Hant": "點擊"
+  },
+  "UI.Pad.LeaveComputer": {
+    "zh-Hans": "离开电脑",
+    "en": "Leave computer",
+    "zh-Hant": "離開電腦"
+  },
+  "UI.Pad.Collection": {
+    "zh-Hans": "切换藏品",
+    "en": "Change item",
+    "zh-Hant": "切換收藏品"
+  },
+  "UI.Pad.Rotate": {
+    "zh-Hans": "旋转",
+    "en": "Rotate",
+    "zh-Hant": "旋轉"
+  },
+  "UI.Pad.Zoom": {
+    "zh-Hans": "缩放",
+    "en": "Zoom",
+    "zh-Hant": "縮放"
+  },
+  "UI.Pad.Reset": {
+    "zh-Hans": "复位",
+    "en": "Reset view",
+    "zh-Hant": "復位"
+  },
+  "UI.Pad.Back": {
+    "zh-Hans": "返回",
+    "en": "Back",
+    "zh-Hant": "返回"
+  },
+  "UI.Pad.Navigate": {
+    "zh-Hans": "导航",
+    "en": "Navigate",
+    "zh-Hant": "導覽"
+  },
+  "UI.Pad.Confirm": {
+    "zh-Hans": "确认",
+    "en": "Confirm",
+    "zh-Hant": "確認"
+  },
+  "UI.Pad.Swap": {
+    "zh-Hans": "交换",
+    "en": "Swap",
+    "zh-Hant": "交換"
+  },
+  "UI.Pad.Drag": {
+    "zh-Hans": "按住拖拽",
+    "en": "Hold to drag",
+    "zh-Hant": "按住拖曳"
+  },
+  "UI.Pad.Thoughts": {
+    "zh-Hans": "思维操作",
+    "en": "Manage thoughts",
+    "zh-Hant": "思維操作"
+  },
+  "UI.Pad.Think": {
+    "zh-Hans": "思考/交互",
+    "en": "Think/interact",
+    "zh-Hant": "思考／互動"
+  },
+  "UI.Pad.SwapProperties": {
+    "zh-Hans": "交换属性",
+    "en": "Swap properties",
+    "zh-Hant": "交換屬性"
+  },
+  "UI.Pad.ClearThoughts": {
+    "zh-Hans": "清空思维",
+    "en": "Clear thoughts",
+    "zh-Hant": "清空思維"
+  },
+  "UI.Pad.Edit": {
+    "zh-Hans": "编辑",
+    "en": "Edit",
+    "zh-Hant": "編輯"
+  },
+  "UI.Pad.Fly": {
+    "zh-Hans": "跳跃/飞行",
+    "en": "Jump/fly",
+    "zh-Hant": "跳躍／飛行"
+  },
+  "UI.Pad.CloseThoughts": {
+    "zh-Hans": "关闭左右思维",
+    "en": "Clear left/right thought",
+    "zh-Hant": "關閉左右思維"
+  },
+  "UI.Pad.HoldFly": {
+    "zh-Hans": "跳跃/按住飞行",
+    "en": "Jump/hold to fly",
+    "zh-Hant": "跳躍／按住飛行"
+  },
+  "UI.Pad.Use": {
+    "zh-Hans": "操作",
+    "en": "Use",
+    "zh-Hant": "操作"
+  },
+  "UI.Pad.Interact": {
+    "zh-Hans": "交互",
+    "en": "Interact",
+    "zh-Hant": "互動"
+  },
+  "UI.Pad.Drill": {
+    "zh-Hans": "钻机",
+    "en": "Drill",
+    "zh-Hant": "鑽機"
+  },
+  "UI.Pad.Bomb": {
+    "zh-Hans": "炸弹",
+    "en": "Bomb",
+    "zh-Hant": "炸彈"
+  },
+  "UI.Pad.Catalogue": {
+    "zh-Hans": "图鉴",
+    "en": "Collection",
+    "zh-Hant": "圖鑑"
+  },
+  "UI.Pad.Upgrade": {
+    "zh-Hans": "升级",
+    "en": "Upgrade",
+    "zh-Hant": "升級"
+  },
+  "UI.Pad.Play": {
+    "zh-Hans": "出牌 {0}/{1}",
+    "en": "Play {0}/{1}",
+    "zh-Hant": "出牌 {0}/{1}"
+  },
+  "UI.Pad.ResetProgress": {
+    "zh-Hans": "重置：{0}% · 松开取消",
+    "en": "Reset: {0}% · release to cancel",
+    "zh-Hant": "重置：{0}% · 鬆開取消"
+  },
+  "UI.Mobile.Sensitivity": {
+    "zh-Hans": "视角灵敏度",
+    "en": "Look sensitivity",
+    "zh-Hant": "視角靈敏度"
+  },
+  "UI.Mobile.Comfort": {
+    "zh-Hans": "舒适镜头（减少结局旋转与震动）",
+    "en": "Comfort camera (less rotation and shaking in the finale)",
+    "zh-Hant": "舒適鏡頭（減少結局旋轉與震動）"
+  },
+  "UI.Mobile.Upscaling": {
+    "zh-Hans": "画面超分辨率",
+    "en": "Upscaling",
+    "zh-Hant": "畫面超解析度"
+  },
+  "UI.Mobile.Unsupported": {
+    "zh-Hans": "当前设备暂不支持超分辨率，自动保留原画质。",
+    "en": "Upscaling is unavailable on this device. Original quality is retained.",
+    "zh-Hant": "目前裝置不支援超解析度，將保留原畫質。"
+  },
+  "UI.Mobile.OffHint": {
+    "zh-Hans": "已关闭超分辨率，使用原有画面设置。",
+    "en": "Upscaling is off. Original graphics settings are used.",
+    "zh-Hant": "已關閉超解析度，使用原有畫面設定。"
+  },
+  "UI.Mobile.QualityHint": {
+    "zh-Hans": "优先保留画面细节，同时减轻渲染负担。",
+    "en": "Preserves more detail while reducing rendering work.",
+    "zh-Hant": "優先保留畫面細節，同時減輕渲染負擔。"
+  },
+  "UI.Mobile.BalancedHint": {
+    "zh-Hans": "进一步减轻渲染负担，画面细节略有降低。",
+    "en": "Reduces rendering work further, with slightly less detail.",
+    "zh-Hant": "進一步減輕渲染負擔，畫面細節略有降低。"
+  },
+  "UI.Mobile.PerformanceHint": {
+    "zh-Hans": "优先减轻渲染负担，画面会更柔和。",
+    "en": "Prioritizes performance with a softer image.",
+    "zh-Hant": "優先減輕渲染負擔，畫面會更柔和。"
+  },
+  "UI.Mobile.AutoHint": {
+    "zh-Hans": "当前自动使用画质模式。设置立即生效并保存。",
+    "en": "Auto uses Quality mode. Changes apply and save immediately.",
+    "zh-Hant": "目前自動使用畫質模式。設定立即生效並儲存。"
+  },
+  "UI.Mobile.Auto": {
+    "zh-Hans": "自动",
+    "en": "Auto",
+    "zh-Hant": "自動"
+  },
+  "UI.Mobile.Off": {
+    "zh-Hans": "关闭",
+    "en": "Off",
+    "zh-Hant": "關閉"
+  },
+  "UI.Mobile.Quality": {
+    "zh-Hans": "画质",
+    "en": "Quality",
+    "zh-Hant": "畫質"
+  },
+  "UI.Mobile.Balanced": {
+    "zh-Hans": "均衡",
+    "en": "Balanced",
+    "zh-Hant": "均衡"
+  },
+  "UI.Mobile.Performance": {
+    "zh-Hans": "性能",
+    "en": "Performance",
+    "zh-Hant": "效能"
+  },
+  "Subtitle.Interaction.Computer": {
+    "zh-Hans": "时间到了，该出门干活了……",
+    "en": "It’s time. Better head out and get to work…",
+    "zh-Hant": "時間到了，該出門幹活了……"
+  },
+  "Subtitle.Interaction.Book": {
+    "zh-Hans": "遇到好点子就收下来吧！",
+    "en": "Keep any good ideas you find!",
+    "zh-Hant": "遇到好點子就收下來吧！"
+  },
+  "Subtitle.Interaction.BookLeft": {
+    "zh-Hans": "纸上得来终觉浅",
+    "en": "What you learn on paper only goes so far.",
+    "zh-Hant": "紙上得來終覺淺"
+  },
+  "Subtitle.Interaction.BookRight": {
+    "zh-Hans": "绝知此事要躬行！",
+    "en": "To truly understand, you must try it yourself!",
+    "zh-Hant": "絕知此事要躬行！"
+  },
+  "Subtitle.Interaction.Plant": {
+    "zh-Hans": "祝我有好收获。",
+    "en": "Here’s hoping I find something good.",
+    "zh-Hant": "祝我有好收穫。"
+  },
+  "Subtitle.Interaction.Toilet": {
+    "zh-Hans": "谢谢你。",
+    "en": "Thank you.",
+    "zh-Hant": "謝謝你。"
+  },
+  "Subtitle.Interaction.Robot": {
+    "zh-Hans": "你好。",
+    "en": "Hello.",
+    "zh-Hant": "你好。"
+  },
+  "Subtitle.Interaction.Pear": {
+    "zh-Hans": "哦！美味被你发现~",
+    "en": "Oh! You found something delicious!",
+    "zh-Hant": "哦！美味被你發現～"
+  },
+  "UI.Action.Inspect": {
+    "zh-Hans": "查看",
+    "en": "Inspect",
+    "zh-Hant": "查看"
+  },
+  "UI.Ending.Thanks": {
+    "zh-Hans": "恭喜你挖出来了！《挖哦》也因此诞生！感谢游玩！",
+    "en": "You dug it out! And WOoOW! was born. Thank you for playing!",
+    "zh-Hant": "恭喜你挖出來了！《挖哦》也因此誕生！感謝遊玩！"
+  },
+  "Card.Laser": {
+    "zh-Hans": "激光",
+    "en": "Laser",
+    "zh-Hant": "雷射"
+  },
+  "Card.LaserCompact": {
+    "zh-Hans": "激\n光",
+    "en": "Laser",
+    "zh-Hant": "雷\n射"
+  },
+  "Card.Poison": {
+    "zh-Hans": "毒",
+    "en": "Poison",
+    "zh-Hant": "毒"
+  },
+  "Card.Fire": {
+    "zh-Hans": "火",
+    "en": "Fire",
+    "zh-Hant": "火"
+  },
+  "Card.Matching": {
+    "zh-Hans": "*正在匹配中*",
+    "en": "*Finding an opponent*",
+    "zh-Hant": "*正在配對中*"
+  },
+  "Card.Matched": {
+    "zh-Hans": "*匹配成功！*",
+    "en": "*Opponent found!*",
+    "zh-Hant": "*配對成功！*"
+  },
+  "Card.Stink": {
+    "zh-Hans": "*呕——好臭臭*",
+    "en": "*Ugh—that stinks!*",
+    "zh-Hant": "*嘔——好臭臭*"
+  },
+  "Card.Eyebrows": {
+    "zh-Hans": "*啊啊啊！我的眉毛！*",
+    "en": "*Aaaah! My eyebrows!*",
+    "zh-Hant": "*啊啊啊！我的眉毛！*"
+  },
+  "Card.Return": {
+    "zh-Hans": "*我一定会回来的！——*",
+    "en": "*I’ll be baaaack!*",
+    "zh-Hant": "*我一定會回來的！——*"
+  },
+  "UI.Ending.Enter": {
+    "zh-Hans": "涌入",
+    "en": "Flow in",
+    "zh-Hant": "湧入"
+  },
+  "UI.Ending.DrillTouch": {
+    "zh-Hans": "自动钻进 · 上推加速 · 左右微调",
+    "en": "Auto-drill · push up to accelerate · steer left/right",
+    "zh-Hant": "自動鑽進 · 上推加速 · 左右微調"
+  },
+  "UI.Ending.DrillKey": {
+    "zh-Hans": "W-加速前进",
+    "en": "W — accelerate",
+    "zh-Hant": "W — 加速前進"
+  },
+  "UI.Ending.PulseTouch": {
+    "zh-Hans": "跃迁键-传导",
+    "en": "Jump button — transmit",
+    "zh-Hant": "躍遷鍵 — 傳導"
+  },
+  "UI.Ending.PulseKey": {
+    "zh-Hans": "空格-传导",
+    "en": "Space — transmit",
+    "zh-Hant": "空白鍵 — 傳導"
+  },
+  "UI.Ending.Back": {
+    "zh-Hans": "按S可加速后退",
+    "en": "Hold S to move back faster",
+    "zh-Hant": "按 S 可加速後退"
+  },
+  "UI.Ending.Forward": {
+    "zh-Hans": "按W可加速前进",
+    "en": "Hold W to move forward faster",
+    "zh-Hant": "按 W 可加速前進"
+  },
+  "UI.Ending.Meal": {
+    "zh-Hans": "唉算了，涌现不出来了，我们去吃饭吧。",
+    "en": "Forget it. Nothing’s emerging. Let’s get something to eat.",
+    "zh-Hant": "唉，算了，湧現不出來了，我們去吃飯吧。"
+  },
+  "UI.Ending.Wait": {
+    "zh-Hans": "等一下！",
+    "en": "Wait!",
+    "zh-Hant": "等一下！"
+  },
+  "UI.Ending.Prompt": {
+    "zh-Hans": "[C] 收集界面     [ESC] 退出游戏",
+    "en": "[C] Collection     [ESC] Quit game",
+    "zh-Hant": "[C] 收藏品介面     [ESC] 離開遊戲"
+  },
+  "UI.Ending.Paper.Toilet": {
+    "zh-Hans": "马桶",
+    "en": "Toilet",
+    "zh-Hant": "馬桶"
+  },
+  "UI.Ending.Paper.Warning": {
+    "zh-Hans": "警告",
+    "en": "Warning",
+    "zh-Hant": "警告"
+  },
+  "UI.Ending.Paper.Glasses": {
+    "zh-Hans": "眼镜",
+    "en": "Glasses",
+    "zh-Hant": "眼鏡"
+  },
+  "UI.Ending.Paper.Cards": {
+    "zh-Hans": "卡牌",
+    "en": "Cards",
+    "zh-Hant": "卡牌"
+  },
+  "UI.Ending.Paper.Fountain": {
+    "zh-Hans": "喷泉",
+    "en": "Fountain",
+    "zh-Hant": "噴泉"
+  },
+  "UI.Ending.Paper.Thought": {
+    "zh-Hans": "思考",
+    "en": "Thought",
+    "zh-Hant": "思考"
+  },
+  "UI.Ending.Paper.Computer": {
+    "zh-Hans": "电脑",
+    "en": "Computer",
+    "zh-Hant": "電腦"
+  },
+  "UI.Ending.Paper.Brain": {
+    "zh-Hans": "大脑",
+    "en": "Brain",
+    "zh-Hant": "大腦"
+  },
+  "UI.Ending.Paper.Solar": {
+    "zh-Hans": "太阳系",
+    "en": "Solar system",
+    "zh-Hant": "太陽系"
+  },
+  "UI.Ending.Paper.Ants": {
+    "zh-Hans": "蚂蚁",
+    "en": "Ants",
+    "zh-Hant": "螞蟻"
+  },
+  "UI.Ending.Paper.Roguelike": {
+    "zh-Hans": "肉鸽",
+    "en": "Roguelike",
+    "zh-Hant": "肉鴿"
+  },
+  "UI.Loading": {
+    "zh-Hans": "加载中",
+    "en": "Loading",
+    "zh-Hant": "載入中"
+  },
+  "UI.Saving": {
+    "zh-Hans": "保存中",
+    "en": "Saving",
+    "zh-Hant": "儲存中"
+  },
+  "UI.Collection.Title": {
+    "zh-Hans": "奇物收藏",
+    "en": "Collection",
+    "zh-Hant": "奇物收藏"
+  },
+  "UI.World.Ride": {
+    "zh-Hans": "乘车",
+    "en": "Ride",
+    "zh-Hant": "乘車"
+  },
+  "UI.Mining.BombWall": {
+    "zh-Hans": "这堵墙很硬，用炸弹试试",
+    "en": "This wall is too hard. Try a bomb.",
+    "zh-Hant": "這堵牆很硬，用炸彈試試"
+  },
+  "UI.Mining.Hardness": {
+    "zh-Hans": "破坏等级不足：矿镐 {0} / 岩层硬度 {1}，无法破坏",
+    "en": "Too hard to break: pickaxe {0} / rock hardness {1}.",
+    "zh-Hant": "破壞等級不足：礦鎬 {0} / 岩層硬度 {1}，無法破壞"
+  },
+  "UI.World.VoidRecovery": {
+    "zh-Hans": "呼，刚才想到什么来着？",
+    "en": "Phew... what was I thinking about?",
+    "zh-Hant": "呼，剛才想到什麼來著？"
+  },
+  "UI.Tutorial.UpgradeReady": {
+    "zh-Hans": "材料充足！按[Tab]升级矿镐",
+    "en": "Materials ready! Press [Tab] to upgrade your pickaxe.",
+    "zh-Hant": "材料充足！按[Tab]升級礦鎬"
+  },
+  "UI.Tutorial.SoftSoil": {
+    "zh-Hans": "哦！软软的泥土，这边一定是路",
+    "en": "Oh! Soft soil. This must be the way.",
+    "zh-Hant": "哦！軟軟的泥土，這邊一定是路"
+  },
+  "UI.Tutorial.GuideHint": {
+    "zh-Hans": "没思路的话就看看左侧引导栏吧",
+    "en": "Not sure what to do? Check the guide on the left.",
+    "zh-Hant": "沒思路的話就看看左側引導欄吧"
+  },
+  "UI.Museum.PaintingHint": {
+    "zh-Hans": "这画上好像有个奇怪的圆圈",
+    "en": "There seems to be a strange circle in this painting.",
+    "zh-Hant": "這畫上好像有個奇怪的圓圈"
+  },
+  "UI.Museum.LifeHint": {
+    "zh-Hans": "再想想，比如说生命的涌现呢？",
+    "en": "Think again. What about the emergence of life?",
+    "zh-Hant": "再想想，比如說生命的湧現呢？"
+  },
+  "Museum.Swap.NoSpace": {
+    "zh-Hans": "空间不足 调整站位再试试吧",
+    "en": "Not enough space. Try moving to another position.",
+    "zh-Hant": "空間不足 調整站位再試試吧"
+  }
+}

@@ -34,6 +34,7 @@ public:
     void SuppressForWorld(UWorld* World);
 
 	virtual void Deinitialize() override;
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 private:
 	USubtitleSegment* FindSegment(FName SegmentId) const;
@@ -42,6 +43,7 @@ private:
 	void Advance();
 	void FinishCurrent();
 	void EnsureWidget();
+	void RefreshLanguage(const FString& Culture);
 
 	UPROPERTY()
 	TObjectPtr<USubtitleSegment> ActiveSegment;
@@ -59,5 +61,7 @@ private:
 	int32 LineIndex = 0;
 	FTimerHandle LineTimer;
 	bool bPlaying = false;
+	bool bInLineGap = false;
+	float StatusDuration = 0;
     TWeakObjectPtr<UWorld> SuppressedWorld;
 };

@@ -1,4 +1,5 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "MiningGamepadSubsystem.h"
 #include "BrainMiningFonts.h"
@@ -78,8 +79,8 @@ namespace
  }
  FString WordText(EWenSiMirrorWord Word)
  {
-  static const TCHAR* Names[]={TEXT("普通"),TEXT("沉重"),TEXT("悬浮"),TEXT("可穿过"),TEXT("导电"),TEXT("大"),TEXT("小")};
-  return Names[int32(Word)];
+  static const TCHAR* Names[]={TEXT("WenSi.Word.Normal"),TEXT("WenSi.Word.Heavy"),TEXT("WenSi.Word.Floating"),TEXT("WenSi.Word.Passable"),TEXT("WenSi.Word.Conductive"),TEXT("WenSi.Word.Big"),TEXT("WenSi.Word.Small")};
+  return MiningText::Get(Names[FMath::Clamp(int32(Word),0,6)]).ToString();
  }
  float WordScale(EWenSiMirrorWord Word){return Word==EWenSiMirrorWord::Small?.38f:Word==EWenSiMirrorWord::Big?1.45f:1.f;}
  bool IsSelf(const AWenSiMirrorExhibit* Exhibit){return Exhibit && (Exhibit->Kind==10 || Exhibit->Kind==11);}
@@ -152,8 +153,9 @@ AWenSiMirrorExhibit::AWenSiMirrorExhibit()
 }
 FString AWenSiMirrorExhibit::Noun() const
 {
- static const TCHAR* Names[]={TEXT("石块"),TEXT("罩子"),TEXT("雕像"),TEXT("气球"),TEXT("烟雾"),TEXT("屏风"),TEXT("压块"),TEXT("罩子"),TEXT("金属块"),TEXT("陶瓷球"),TEXT("矿工"),TEXT("矿工"),TEXT("摆件")};
- return DisplayNoun.IsEmpty()?FString(Names[FMath::Clamp(Kind,0,12)]):DisplayNoun;
+ static const TCHAR* Names[]={TEXT("WenSi.Noun.Rock"),TEXT("WenSi.Noun.Cover"),TEXT("WenSi.Noun.Statue"),TEXT("WenSi.Noun.Balloon"),TEXT("WenSi.Noun.Smoke"),TEXT("WenSi.Noun.Screen"),TEXT("WenSi.Noun.Weight"),TEXT("WenSi.Noun.Cover"),TEXT("WenSi.Noun.Metal"),TEXT("WenSi.Noun.Ball"),TEXT("WenSi.Noun.Miner"),TEXT("WenSi.Noun.Miner"),TEXT("WenSi.Noun.Ornament")};
+ if(DisplayNoun==TEXT("雕塑"))return MiningText::Get(TEXT("WenSi.Noun.Sculpture")).ToString();
+ return DisplayNoun.IsEmpty()?MiningText::Get(Names[FMath::Clamp(Kind,0,12)]).ToString():DisplayNoun;
 }
 FString AWenSiMirrorExhibit::Adjective() const{return WordText(Word);}
 void AWenSiMirrorExhibit::RefreshArtModel(){Configure();}
@@ -731,7 +733,7 @@ bool AWenSiMirrorPuzzle::SwapWords(int32 From,int32 To)
   UMiningHapticsSubsystem::Emit(this,EMiningHapticCue::PuzzleRejected);
   UMiningRoomAudioSubsystem::Emit(this,TEXT("S_Reject"),.35f);
   if(auto Subtitles=USubtitleSubsystem::Get(this))
-   Subtitles->PlayInteractionLines(TEXT("MuseumSwapNoSpace"),{FText::FromString(TEXT("空间不足 调整站位再试试吧"))});
+   Subtitles->PlayInteractionLines(TEXT("MuseumSwapNoSpace"),{MiningText::Get(TEXT("Museum.Swap.NoSpace"))});
   return false;
  };
  for(auto Pair:{TPair<AWenSiMirrorExhibit*,EWenSiMirrorWord>(A,B->Word),TPair<AWenSiMirrorExhibit*,EWenSiMirrorWord>(B,A->Word)})

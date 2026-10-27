@@ -10,13 +10,13 @@ namespace MiningWaypoint
 class SMiningWaypoint : public SLeafWidget
 {
 public:
-    SLATE_BEGIN_ARGS(SMiningWaypoint){} SLATE_ATTRIBUTE(TOptional<FVector>,Target) SLATE_ARGUMENT(APlayerController*,Player) SLATE_ARGUMENT(FString,Label) SLATE_END_ARGS()
+    SLATE_BEGIN_ARGS(SMiningWaypoint){} SLATE_ATTRIBUTE(TOptional<FVector>,Target) SLATE_ARGUMENT(APlayerController*,Player) SLATE_ATTRIBUTE(FString,Label) SLATE_END_ARGS()
     void Construct(const FArguments& Args){Target=Args._Target;Player=Args._Player;Label=Args._Label;SetVisibility(EVisibility::HitTestInvisible);}
     virtual FVector2D ComputeDesiredSize(float) const override{return FVector2D(1600,900);}
     virtual int32 OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRect&,FSlateWindowElementList& Out,int32 L,const FWidgetStyle&,bool) const override
-    {const auto P=Target.Get();return P.IsSet()&&Player.IsValid()?MiningWaypoint::Paint(G,Out,L,Player.Get(),P.GetValue(),Label):L;}
+    {const auto P=Target.Get();return P.IsSet()&&Player.IsValid()?MiningWaypoint::Paint(G,Out,L,Player.Get(),P.GetValue(),Label.Get()):L;}
 private:
     TAttribute<TOptional<FVector>> Target;
     TWeakObjectPtr<APlayerController> Player;
-    FString Label;
+    TAttribute<FString> Label;
 };

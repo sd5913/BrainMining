@@ -1,4 +1,5 @@
 #include "MiningPickaxeSettings.h"
+#include "MiningLocalizationSubsystem.h"
 
 FString FMiningPickaxeLevel::GetMaterialCostText() const
 {
@@ -51,10 +52,11 @@ bool FMiningPickaxeLevel::Validate(FString& Error) const
 FText FMiningPickaxeLevel::GetDescription() const
 {
     if (!Description.IsEmpty()) return FText::FromString(Description);
-    if (bUseHardness) return FText::FromString(FString::Printf(TEXT("破坏等级 %d · 范围边长 %.0f cm · 每击基础深度 %.0f cm（按岩层硬度修正）· 间隔 %.3f 秒"),
-        DestructionLevel, Width, Depth, Interval));
-    return FText::FromString(FString::Printf(TEXT("%d 击挖开 · 基础边长 %.0f cm · 基础深度 %.0f cm · 间隔 %.3f 秒"),
-        Stages.Num(), Width, Depth, Interval));
+    FNumberFormattingOptions WholeNumbers;WholeNumbers.SetMaximumFractionalDigits(0);
+    FNumberFormattingOptions Seconds;Seconds.SetMinimumFractionalDigits(3).SetMaximumFractionalDigits(3);
+    return FText::Format(MiningText::Get(bUseHardness?TEXT("UI.Pickaxe.Hardness"):TEXT("UI.Pickaxe.Stages")),FFormatNamedArguments{
+        {TEXT("Level"),DestructionLevel},{TEXT("Hits"),Stages.Num()},{TEXT("Width"),FText::AsNumber(Width,&WholeNumbers)},
+        {TEXT("Depth"),FText::AsNumber(Depth,&WholeNumbers)},{TEXT("Interval"),FText::AsNumber(Interval,&Seconds)}});
 }
 
 UMiningPickaxeSettings::UMiningPickaxeSettings()

@@ -1,4 +1,6 @@
 #include "Subtitles/MainGameSubtitleDirector.h"
+#include "MiningAchievementSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Subtitles/SubtitleSubsystem.h"
 #include "Subtitles/SubtitleTrigger.h"
 #include "CardRoomStage.h"
@@ -36,6 +38,7 @@ void AMainGameSubtitleDirector::PlayOnce(FName SegmentId)
 
 void AMainGameSubtitleDirector::OnCardsCompleted(FName RoomId)
 {
+    if(auto* Instance=GetGameInstance())Instance->GetSubsystem<UMiningAchievementSubsystem>()->RecordMilestone(TEXT("ACH_CARD_ROOM_CLEAR"));
     PlayOnce(TEXT("卡牌胜利提示"));
 }
 

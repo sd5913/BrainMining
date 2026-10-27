@@ -1,4 +1,5 @@
 #include "PopupClose/PopupOfficeExit.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "Subtitles/SubtitleLibrary.h"
 #include "MiningRoomAudioSubsystem.h"
@@ -54,14 +55,14 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
 {
  if(GEngine && GEngine->GameViewport)
  {
-  PickupGuide=SNew(SMiningWaypoint).Player(Owner.GetWorld()->GetFirstPlayerController()).Label(TEXT("拾取炸弹"))
+  PickupGuide=SNew(SMiningWaypoint).Player(Owner.GetWorld()->GetFirstPlayerController()).Label_Lambda([](){return MiningText::Get(TEXT("Office.Hint.PickupBomb")).ToString();})
    .Target_Lambda([this]()->TOptional<FVector>
    {
     if(Owner.bAreaActive && !Owner.IsHidden() && (Phase==1||Phase==2) && Owner.View==APopupCloseStage::EView::Free && Pickup.IsValid())return PickupPosition();
     return {};
    });
   GEngine->GameViewport->AddViewportWidgetContent(PickupGuide.ToSharedRef(),9);
-  ExitGuide=SNew(SMiningWaypoint).Player(Owner.GetWorld()->GetFirstPlayerController()).Label(TEXT("按G使用炸弹炸开出口"))
+  ExitGuide=SNew(SMiningWaypoint).Player(Owner.GetWorld()->GetFirstPlayerController()).Label_Lambda([](){return MiningText::Get(TEXT("Office.Hint.BombExit")).ToString();})
    .Target_Lambda([this]()->TOptional<FVector>
    {
     if(Owner.bAreaActive && !Owner.IsHidden() && Phase==3 && Owner.View==APopupCloseStage::EView::Free && Door.IsValid())return Door->Bounds.Origin;
@@ -314,7 +315,7 @@ void FPopupOfficeExit::Tick()
  }
  if(Phase==2 && Owner.bAreaActive && Owner.View==APopupCloseStage::EView::Free)
  {
-  if(CanCollect(PC))Owner.ShowPrompt(PC,TEXT("E 获取炸弹技能"));
+  if(CanCollect(PC))Owner.ShowPrompt(PC,MiningText::Get(TEXT("Office.Hint.BombAbility")).ToString());
  }
  if(Pawn && Phase<5)
  {

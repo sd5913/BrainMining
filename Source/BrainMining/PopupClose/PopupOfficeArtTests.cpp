@@ -159,7 +159,7 @@ namespace PopupOfficeArtTests
     Test->TestTrue(TEXT("Save narrative page capture"),FFileHelper::SaveArrayToFile(PNG,*(Folder/FString::Printf(TEXT("desktop-%d%s.png"),Skin,(PopupCloseContent::ArtVariant(Skin)==4 && Desktop->GetFrontUnreadCount()==0)?TEXT("-message"):TEXT("")))));
    }
    const int32 Before=Desktop->GetOpenCount();
-   Test->TestEqual(TEXT("Each staged copy reaches the real desktop"),Desktop->GetFrontPopupBody(),FString(PopupCloseContent::Get(Skin).Body));
+   Test->TestEqual(TEXT("Each staged copy reaches the real desktop"),Desktop->GetFrontPopupBody(),PopupCloseContent::Get(Skin).Body.ToString());
    if(Desktop->GetFrontUnreadCount()>0)
    {
     Test->TestTrue(TEXT("Click one-message alert"),Device->ClickReplyForValidation());
@@ -168,7 +168,7 @@ namespace PopupOfficeArtTests
     Test->TestTrue(TEXT("Follow-up cannot award coins or lose pending work"),Device->AccountingValid());
     Deadline=FPlatformTime::Seconds()+.2;return false;
    }
-   Test->TestTrue(PopupCloseContent::Get(Skin).Title,Device->ClickReplyForValidation());
+   Test->TestTrue(PopupCloseContent::Get(Skin).Title.ToString(),Device->ClickReplyForValidation());
    Test->TestEqual(TEXT("Exactly one real button reply removes one popup"),Desktop->GetOpenCount(),Before-1);
    Test->TestEqual(TEXT("Each art skin keeps independent close accounting"),Desktop->GetManuallyClosedCount(),Skin+1);
    Test->TestTrue(TEXT("Narrative pages preserve device problem accounting"),Device->AccountingValid());

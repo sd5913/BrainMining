@@ -60,12 +60,13 @@ namespace MiningMenuStyle
         }();
         return &Style;
     }
-    inline TSharedRef<SWidget> Section(const TCHAR* Label)
+    inline TSharedRef<SWidget> Section(const FText& Label)
     {
         return SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(Gold).Padding(FMargin(2,0,0,0))
             [SNew(SBorder).BorderImage(Brush(1)).Padding(FMargin(14,8))
-                [SNew(STextBlock).Text(FText::FromString(Label)).Font(BrainMiningFonts::Title(19)).ColorAndOpacity(Gold)]];
+                [SNew(STextBlock).Text(Label).Font(BrainMiningFonts::Title(19)).ColorAndOpacity(Gold)]];
     }
+    inline TSharedRef<SWidget> Section(const TCHAR* Label) { return Section(FText::FromString(Label)); }
     inline TSharedRef<SWidget> Frame(TSharedRef<SWidget> Content,float Width,float Height)
     {
         return SNew(SOverlay)

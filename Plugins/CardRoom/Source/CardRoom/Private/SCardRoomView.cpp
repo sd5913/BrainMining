@@ -1,4 +1,6 @@
 #include "SCardRoomView.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Fonts/FontMeasure.h"
 #include "CardRoomPlayer.h"
 #include "CardRoomStage.h"
 #include "Engine/Font.h"
@@ -137,7 +139,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
         auto& CachedFont=Resources.FindOrAdd(TEXT("CardFont"));
         if(!CachedFont.IsValid()) CachedFont.Reset(LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_SourceHanSansCN_Medium.F_SourceHanSansCN_Medium")));
         UObject* Font=CachedFont.Get();
-        const TCHAR* Names[]={TEXT("激光"),TEXT("毒"),TEXT("火")};
+        const TCHAR* Names[]={TEXT("Card.Laser"),TEXT("Card.Poison"),TEXT("Card.Fire")};
         const TCHAR* Materials[]={TEXT("M_Card_Laser"),TEXT("M_Card_Poison"),TEXT("M_Card_Fire")};
         int32 Focused = Owner->bGamepadInput ? Owner->GetFocusedCardIndex() : INDEX_NONE;
         if(!Owner->bGamepadInput)
@@ -157,7 +159,10 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
             const int32 N=static_cast<int32>(R.Hand[I]);
             FSlateFontInfo F(Font,FMath::Max(9,FMath::RoundToInt((R.Hand.Num()>5?18:22)*S)),TEXT("Medium"));
             F.OutlineSettings.OutlineSize=1;F.OutlineSettings.OutlineColor=FLinearColor(.12f,.1f,.08f,.8f);
-            const FString Name=R.Hand.Num()>5 && N==0 ? TEXT("激\n光") : Names[N];
+            const FString Name=FText::FromStringTable(TEXT("BrainMining.Game"),R.Hand.Num()>5 && N==0?TEXT("Card.LaserCompact"):Names[N]).ToString();
+            const float TextWidth=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Name,F).X;
+            const float AllowedWidth=(R.Hand.Num()>5?34.f:W-18.f)*S;
+            if(TextWidth>AllowedWidth)F.Size=FMath::Max(9,FMath::RoundToInt(F.Size*AllowedWidth/TextWidth));
             FSlateDrawElement::MakeText(Out,++L,Geo(B.Left+9,B.Top+12,W-18,50),Name,F,ESlateDrawEffect::None,FLinearColor(.98f,.94f,.83f));
         }
     }

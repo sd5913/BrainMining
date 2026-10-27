@@ -1,0 +1,25 @@
+api_name,language,name,description,hidden
+ACH_FIRST_COLLECTION,schinese,第一件灵感,获得第一件藏品。,0
+ACH_FIRST_COLLECTION,english,A Spark of Inspiration,Find your first collectible.,0
+ACH_FIRST_COLLECTION,tchinese,第一件靈感,獲得第一件收藏品。,0
+ACH_COLLECTION_5,schinese,灵感正在聚集,获得五种不同藏品。,0
+ACH_COLLECTION_5,english,Ideas Are Gathering,Find five different collectibles.,0
+ACH_COLLECTION_5,tchinese,靈感正在聚集,獲得五種不同收藏品。,0
+ACH_COLLECTION_COMPLETE,schinese,灵感收藏家,收齐首发版本的全部藏品。,0
+ACH_COLLECTION_COMPLETE,english,Collector of Ideas,Find every collectible in the original collection.,0
+ACH_COLLECTION_COMPLETE,tchinese,靈感收藏家,收齊首發版本的全部收藏品。,0
+ACH_PICKAXE_UPGRADE,schinese,再锋利一点,首次升级矿镐。,0
+ACH_PICKAXE_UPGRADE,english,A Sharper Idea,Upgrade your pickaxe for the first time.,0
+ACH_PICKAXE_UPGRADE,tchinese,再鋒利一點,首次升級礦鎬。,0
+ACH_PICKAXE_MAX,schinese,挖到底,将矿镐升级至最高等级。,0
+ACH_PICKAXE_MAX,english,Dig Deep,Fully upgrade your pickaxe.,0
+ACH_PICKAXE_MAX,tchinese,挖到底,將礦鎬升級至最高等級。,0
+ACH_CARD_ROOM_CLEAR,schinese,组合的力量,赢得卡牌房挑战。,0
+ACH_CARD_ROOM_CLEAR,english,More Than the Sum,Win the card room challenge.,0
+ACH_CARD_ROOM_CLEAR,tchinese,組合的力量,贏得卡牌房挑戰。,0
+ACH_MUSEUM_CLEAR,schinese,换个想法,完成博物馆并进入结局。,0
+ACH_MUSEUM_CLEAR,english,A Change of Mind,Finish the museum and enter the finale.,0
+ACH_MUSEUM_CLEAR,tchinese,換個想法,完成博物館並進入結局。,0
+ACH_CAMPAIGN_COMPLETE,schinese,挖哦！,完成游戏。,0
+ACH_CAMPAIGN_COMPLETE,english,WOoOW!,Complete the game.,0
+ACH_CAMPAIGN_COMPLETE,tchinese,挖哦！,完成遊戲。,0

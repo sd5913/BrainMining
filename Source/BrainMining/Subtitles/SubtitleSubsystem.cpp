@@ -1,4 +1,5 @@
 #include "Subtitles/SubtitleSubsystem.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningAudioSettings.h"
 
 #include "Subtitles/SubtitleSegment.h"
@@ -35,14 +36,33 @@ USubtitleSubsystem* USubtitleSubsystem::Get(const UObject* WorldContext)
 
 void USubtitleSubsystem::Deinitialize()
 {
+	if (auto* Localization = GetGameInstance()->GetSubsystem<UMiningLocalizationSubsystem>())
+		Localization->OnLanguageChanged.RemoveAll(this);
 	StopAll();
 	Super::Deinitialize();
+}
+
+void USubtitleSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+	Collection.InitializeDependency<UMiningLocalizationSubsystem>();
+	GetGameInstance()->GetSubsystem<UMiningLocalizationSubsystem>()->OnLanguageChanged.AddUObject(this, &USubtitleSubsystem::RefreshLanguage);
+}
+
+void USubtitleSubsystem::RefreshLanguage(const FString& Culture)
+{
+	if (!bPlaying || bInLineGap || !GetWorld()) return;
+	const bool WasPaused = GetWorld()->GetTimerManager().IsTimerPaused(LineTimer);
+	ShowCurrentLine();
+	if (WasPaused) GetWorld()->GetTimerManager().PauseTimer(LineTimer);
 }
 void USubtitleSubsystem::SuppressForWorld(UWorld* World) { StopAll(); SuppressedWorld=World; }
 
 void USubtitleSubsystem::StopAll()
 {
 	Queue.Reset();
+	bInLineGap = false;
+	StatusDuration = 0;
 	bPlaying = false;
 	ActiveSegment = nullptr;
 	LineIndex = 0;
@@ -115,6 +135,7 @@ void USubtitleSubsystem::PlayStatusLine(FText Text, float Duration)
 	Segment->Lines.AddDefaulted_GetRef().Text=Text;
 	StartSegment(Segment);
 	GetWorld()->GetTimerManager().SetTimer(LineTimer,this,&USubtitleSubsystem::Advance,FMath::Max(.1f,Duration),false);
+	StatusDuration = FMath::Max(.1f, Duration);
 }
 
 USubtitleSegment* USubtitleSubsystem::FindSegment(FName SegmentId) const
@@ -155,6 +176,7 @@ void USubtitleSubsystem::StartSegment(USubtitleSegment* Segment)
 	}
 
 	ActiveSegment = Segment;
+	StatusDuration = 0;
 	LineIndex = 0;
 	bPlaying = true;
 	EnsureWidget();
@@ -196,6 +218,7 @@ void USubtitleSubsystem::ShowCurrentLine()
 	}
 
 	const FSubtitleLine& Line = ActiveSegment->Lines[LineIndex];
+	bInLineGap = false;
 	StopLineAudio(ActiveAudio);
 	ActiveGeneratedVoice = nullptr;
 	EnsureWidget();
@@ -242,6 +265,7 @@ void USubtitleSubsystem::ShowCurrentLine()
 	}
 
 	World->GetTimerManager().SetTimer(LineTimer, this, &USubtitleSubsystem::Advance, Duration, false);
+	if (StatusDuration > 0) World->GetTimerManager().SetTimer(LineTimer, this, &USubtitleSubsystem::Advance, StatusDuration, false);
 }
 
 void USubtitleSubsystem::Advance()
@@ -258,6 +282,7 @@ void USubtitleSubsystem::Advance()
 	const float Gap = FMath::Clamp(GetDefault<USubtitleSettings>()->LineGap, 0.f, 2.f);
 	if (Gap > 0.f)
 	{
+		bInLineGap = true;
 		GetWorld()->GetTimerManager().SetTimer(LineTimer, this, &USubtitleSubsystem::ShowCurrentLine, Gap, false);
 	}
 	else ShowCurrentLine();
@@ -265,6 +290,8 @@ void USubtitleSubsystem::Advance()
 
 void USubtitleSubsystem::FinishCurrent()
 {
+	bInLineGap = false;
+	StatusDuration = 0;
 	StopLineAudio(ActiveAudio);
 	ActiveGeneratedVoice = nullptr;
 	bPlaying = false;

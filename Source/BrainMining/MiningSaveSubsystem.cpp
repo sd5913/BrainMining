@@ -1,4 +1,6 @@
 #include "MiningSaveSubsystem.h"
+#include "MiningLocalizationSubsystem.h"
+#include "MiningAchievementSubsystem.h"
 #include "Showcase/MiningExhibitHall.h"
 #include "Showcase/MiningTreasure.h"
 #include "MiningExperienceSubsystem.h"
@@ -100,6 +102,7 @@ bool UMiningSaveSubsystem::HasCollectionProgress() const
 }
 void UMiningSaveSubsystem::StartNewGame(bool bKeepCollection)
 {
+    GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->BeginRun();
     FinishPendingWrite();MeshTask=TFuture<FMiningSavedMesh>();MeshCache.Reset();TutorialSoil.Reset();
     bSessionStarted=true;bLoadedProgress=false;SessionWorld=GetWorld();SaveAge=0;PreviousArea=INDEX_NONE;
     FallingSeconds=0;UpgradeHintLevel=INDEX_NONE;RestoredMinerals.Reset();
@@ -141,6 +144,10 @@ void UMiningSaveSubsystem::MarkCampaignComplete()
 {
     FinishPendingWrite();
     auto* End=NewObject<UMiningSaveGame>(this);End->Version=5;End->Upgrades={0,0,0,0};End->CampaignComplete=true;
+    auto* Achievements=GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>();
+    End->AchievementEligible=Achievements->IsRunEligible();End->AchievementOwner=Achievements->GetOwnerId();
+    End->HasVerifiedAchievementCollection=true;End->AchievementCollectionIds=Achievements->GetProgress().CollectionIds.Array();
+    Achievements->RecordMilestone(TEXT("ACH_CAMPAIGN_COMPLETE"));
     End->Collection=GetCollectionProgress();
     if(UGameplayStatics::SaveGameToSlot(End,GetSaveSlot()+TEXT("_completion"),0))CachedHasSave=false;
     bSessionStarted=false;
@@ -199,6 +206,11 @@ bool UMiningSaveSubsystem::SaveProgressInternal(bool bAsync)
     Data->Version=5;
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     Data->Area=Hall->ActiveArea;Data->UnlockedArea=Hall->UnlockedArea;Data->CompletedAreas=Hall->GetCompletedAreas();
+    if(auto* Achievements=GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>())
+    {
+        Data->AchievementEligible=Achievements->IsRunEligible();Data->AchievementOwner=Achievements->GetOwnerId();
+        Data->HasVerifiedAchievementCollection=true;Data->AchievementCollectionIds=Achievements->GetProgress().CollectionIds.Array();
+    }
     Data->PlayerTransform=Character->GetActorTransform();Data->ViewRotation=PC->GetControlRotation();
     // Room minigames restart at their entrance; inventory and finished sections persist.
     if(Hall->AreaKind(Data->Area)!=EMiningExperienceKind::Mining)
@@ -279,6 +291,8 @@ bool UMiningSaveSubsystem::LoadProgress()
         if(Valid){Data=Candidate;break;}
     }
     if(!Data)return false;
+    auto* Achievements=GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>();
+    Achievements->BeginRun(false);
     bRestoring=true;
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     Wallet->Balance=Data->Balance;Wallet->Minerals=Data->Minerals;Wallet->CollectedMineralTotals=Data->CollectedMineralTotals;Wallet->UpgradeLevels=Data->Upgrades;
@@ -340,6 +354,8 @@ bool UMiningSaveSubsystem::LoadProgress()
             }
     if(Hall->Collection)Hall->Collection->CheckMineralRewards(Data->Version<5);
     bRestoring=false;bLoadedProgress=true;bSessionStarted=true;SessionWorld=GetWorld();SaveAge=0;PreviousArea=Data->Area;
+    Achievements->BeginRun(Data->AchievementEligible && UMiningAchievementSubsystem::IsSaveOwnerCompatible(Data->AchievementOwner,Achievements->GetOwnerId()));
+    Achievements->ReconcileSave(Data->Collection,Data->Upgrades.IsValidIndex(0)?Data->Upgrades[0]:0,Data->CampaignComplete,Data->AchievementOwner,Data->HasVerifiedAchievementCollection?&Data->AchievementCollectionIds:nullptr);
     return true;
 }
 
@@ -376,7 +392,7 @@ void UMiningSaveSubsystem::Tick(float Dt)
         if(!World->LineTraceSingleByChannel(Ground,Character->GetActorLocation(),Character->GetActorLocation()-FVector(0,0,2500),ECC_WorldStatic,Query))
         {
             Hall->ReturnToLobby();Movement->StopMovementImmediately();FallingSeconds=0;
-            if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayInteractionLines(TEXT("VoidRecovery"),{FText::FromString(TEXT("呼，刚才想到什么来着？"))});
+            if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayInteractionLines(TEXT("VoidRecovery"),{MiningText::Get(TEXT("UI.World.VoidRecovery"))});
         }
     }
     ProbeAge+=Dt;SaveAge+=Dt;
@@ -388,12 +404,13 @@ void UMiningSaveSubsystem::Tick(float Dt)
     UpdateTutorial();
     if(auto* Progression=Character->FindComponentByClass<UMiningProgressionComponent>();Progression && Progression->CanUpgradePickaxe() && UpgradeHintLevel!=Progression->GetLevel(0))
         if(auto* Subtitles=USubtitleSubsystem::Get(this);Subtitles && !Subtitles->IsPlaying() && !PC->bShowMouseCursor)
-        {Subtitles->PlayStatusLine(FText::FromString(TEXT("材料充足！按[Tab]升级矿镐")),4.f);UpgradeHintLevel=Progression->GetLevel(0);}
+        {Subtitles->PlayStatusLine(MiningText::Get(TEXT("UI.Tutorial.UpgradeReady")),4.f);UpgradeHintLevel=Progression->GetLevel(0);}
 
 }
 
 void UMiningSaveSubsystem::RecordCollectible(int32 Id)
 {
+    if(!bRestoring)GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->RecordCollection(Id);
     // Preserve the legacy save bit without presenting the retired collectible objective.
     RunCollectedItems.Add(Id);TutorialCompleted|=8;
 }
@@ -429,7 +446,7 @@ void UMiningSaveSubsystem::UpdateTutorial()
         if(Hall->ActiveArea>0)TutorialActive=true;
         if(TutorialActive)
             if(auto* Subtitles=USubtitleSubsystem::Get(this))
-                Subtitles->PlayInteractionLines(TEXT("TutorialIntro"),{FText::FromString(TEXT("哦！软软的泥土，这边一定是路")),FText::FromString(TEXT("没思路的话就看看左侧引导栏吧"))});
+                Subtitles->PlayInteractionLines(TEXT("TutorialIntro"),{MiningText::Get(TEXT("UI.Tutorial.SoftSoil")),MiningText::Get(TEXT("UI.Tutorial.GuideHint"))});
     }
     if(TutorialActive && !TutorialSoilPassed && Soil && Soil->SuccessfulCuts>0 && !Soil->IsTerrainCutPending())
     {

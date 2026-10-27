@@ -1,4 +1,5 @@
 #include "MiningGUIWidgets.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningCollection.h"
 #include "BrainMiningFonts.h"
 #include "Blueprint/WidgetTree.h"
@@ -43,7 +44,7 @@ void UMiningGUIHUDWidget::TickCollectionPickup(const FGeometry& Geometry,float D
         }
         PickupImage->SetBrushFromMaterial(PickupField->PickupMaterial);
         PickupImage->SetVisibility(ESlateVisibility::HitTestInvisible);PickupLabel->SetVisibility(ESlateVisibility::HitTestInvisible);
-        PickupLabel->SetText(FText::FromString(TEXT("已收集 · ")+AMiningCollectible::ItemName(ActivePickupId)));
+        PickupLabel->SetText(FText::Format(MiningText::Get(TEXT("UI.Collection.Pickup")),FFormatNamedArguments{{TEXT("Name"),AMiningCollectible::ItemNameText(ActivePickupId)}}));
     }
     if(!PickupField.IsValid())
     {ActivePickupId=INDEX_NONE;PickupImage->SetVisibility(ESlateVisibility::Collapsed);PickupLabel->SetVisibility(ESlateVisibility::Collapsed);return;}

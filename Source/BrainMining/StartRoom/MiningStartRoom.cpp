@@ -1,4 +1,5 @@
 #include "StartRoom/MiningStartRoom.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "MiningInteractionTrace.h"
 #include "MiningAudioComponent.h"
@@ -204,8 +205,8 @@ AMiningStarterPickup* AMiningStartRoom::GetTarget(APlayerController* Controller)
 FString AMiningStartRoom::GetInteractionAction(APlayerController* Controller) const
 {
     if (const auto* Pickup = GetTarget(Controller))
-        return Pickup->Equipment == EMiningStarterEquipment::Pickaxe ? TEXT("镐子") : TEXT("喷气背包");
-    if(!GetViewedProp(Controller).IsNone())return TEXT("查看");
+        return MiningText::Get(Pickup->Equipment == EMiningStarterEquipment::Pickaxe ? TEXT("UI.Tool.Pickaxe") : TEXT("UI.Tool.Jetpack")).ToString();
+    if(!GetViewedProp(Controller).IsNone())return MiningText::Get(TEXT("UI.Action.Inspect")).ToString();
     return FString();
 }
 
@@ -218,15 +219,15 @@ bool AMiningStartRoom::Interact(APlayerController* Controller)
         if(!Segment.IsNone())
         {
             TArray<FText> Lines;
-            const auto Add=[&](const TCHAR* Text){Lines.Add(FText::FromString(Text));};
-            if(Segment==TEXT("StartRoomView_Computer"))Add(TEXT("时间到了，该出门干活了……"));
-            else if(Segment==TEXT("StartRoomView_Book"))Add(TEXT("遇到好点子就收下来吧！"));
-            else if(Segment==TEXT("StartRoomView_BookLeft"))Add(TEXT("纸上得来终觉浅"));
-            else if(Segment==TEXT("StartRoomView_BookRight"))Add(TEXT("绝知此事要躬行！"));
-            else if(Segment==TEXT("StartRoomView_Plant"))Add(TEXT("祝我有好收获。"));
-            else if(Segment==TEXT("StartRoomView_Toilet"))Add(TEXT("谢谢你。"));
-            else if(Segment==TEXT("StartRoomView_Robot"))Add(TEXT("你好。"));
-            else if(Segment==TEXT("StartRoomView_Pear"))Add(TEXT("哦！美味被你发现~"));
+            const auto Add=[&](const TCHAR* Text){Lines.Add(MiningText::Get(Text));};
+            if(Segment==TEXT("StartRoomView_Computer"))Add(TEXT("Subtitle.Interaction.Computer"));
+            else if(Segment==TEXT("StartRoomView_Book"))Add(TEXT("Subtitle.Interaction.Book"));
+            else if(Segment==TEXT("StartRoomView_BookLeft"))Add(TEXT("Subtitle.Interaction.BookLeft"));
+            else if(Segment==TEXT("StartRoomView_BookRight"))Add(TEXT("Subtitle.Interaction.BookRight"));
+            else if(Segment==TEXT("StartRoomView_Plant"))Add(TEXT("Subtitle.Interaction.Plant"));
+            else if(Segment==TEXT("StartRoomView_Toilet"))Add(TEXT("Subtitle.Interaction.Toilet"));
+            else if(Segment==TEXT("StartRoomView_Robot"))Add(TEXT("Subtitle.Interaction.Robot"));
+            else if(Segment==TEXT("StartRoomView_Pear"))Add(TEXT("Subtitle.Interaction.Pear"));
             if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayInteractionLines(Segment,Lines);
             return true;
         }

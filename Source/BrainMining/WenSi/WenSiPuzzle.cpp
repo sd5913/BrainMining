@@ -1,4 +1,5 @@
 #include "WenSi/WenSiPuzzle.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningHapticsSubsystem.h"
 #include "MiningGamepadSubsystem.h"
 #include "MiningInteractionTrace.h"
@@ -108,17 +109,17 @@ void AWenSiObject::Configure(int32 Kind)
 
 FString AWenSiObject::Noun() const
 {
- static const TCHAR* Names[]={TEXT("石块"),TEXT("罩子"),TEXT("雕像"),TEXT("屏风"),TEXT("木板"),TEXT("压块"),TEXT("陶瓷球"),TEXT("罩子"),TEXT("金属块")};
- return ObjectKind>=0 && ObjectKind<UE_ARRAY_COUNT(Names) ? Names[ObjectKind] : TEXT("物体");
+ static const TCHAR* Names[]={TEXT("WenSi.Noun.Rock"),TEXT("WenSi.Noun.Cover"),TEXT("WenSi.Noun.Statue"),TEXT("WenSi.Noun.Screen"),TEXT("WenSi.Noun.Board"),TEXT("WenSi.Noun.Weight"),TEXT("WenSi.Noun.Ball"),TEXT("WenSi.Noun.Cover"),TEXT("WenSi.Noun.Metal")};
+ return MiningText::Get(ObjectKind>=0 && ObjectKind<UE_ARRAY_COUNT(Names) ? Names[ObjectKind] : TEXT("WenSi.Noun.Object")).ToString();
 }
 FString AWenSiObject::Adjective() const
 {
  switch(Rule)
  {
-  case EWenSiRule::Heavy:return TEXT("沉重");
-  case EWenSiRule::Light:return TEXT("轻盈");
-  case EWenSiRule::Intangible:return TEXT("虚无");
-  case EWenSiRule::Conductive:return TEXT("导电");
+  case EWenSiRule::Heavy:return MiningText::Get(TEXT("WenSi.Word.Heavy")).ToString();
+  case EWenSiRule::Light:return MiningText::Get(TEXT("WenSi.Word.Light")).ToString();
+  case EWenSiRule::Intangible:return MiningText::Get(TEXT("WenSi.Word.Intangible")).ToString();
+  case EWenSiRule::Conductive:return MiningText::Get(TEXT("WenSi.Word.Conductive")).ToString();
  }
  return FString();
 }

@@ -2,7 +2,7 @@ param(
     [string]$EngineRoot = '',
     [string]$OutputDirectory = '',
     [string]$ZenServer = '',
-    [ValidateSet('', 'PCSize')][string]$CustomConfig = '',
+    [ValidateSet('', 'PCSize', 'SteamPC')][string]$CustomConfig = '',
     [string]$ReportDirectory = '',
     [string]$CookOutputDirectory = '',
     [string]$StagingDirectory = '',
@@ -35,8 +35,17 @@ if (-not $dotnet) { throw 'Bundled .NET runtime not found.' }
 # since the finale's 8K crowd textures can each require several GB of temporary memory.
 $nativeMaterials = @()
 $cookOptions = "-LocalDataCachePath=$projectRoot/Saved/DerivedDataCache -corelimit=4 -asyncassetcompilationmaxconcurrency=1 -asynctexturecompilationmaxconcurrency=1 -ini:Engine:[DevOptions.Shaders]:NumUnusedShaderCompilingThreads=2 -ini:Editor:[CookSettings]:MemoryMinFreePhysical=4096"
-if ($CustomConfig) {
-    if ($SkipCook) { throw 'CustomConfig requires a fresh cook.' }
+if ($CustomConfig -and $SkipCook) { throw 'CustomConfig requires a fresh cook.' }
+if ($CustomConfig) { $cookOptions += " -CustomConfig=$CustomConfig" }
+if ($CustomConfig -eq 'SteamPC') {
+    if ($SkipBuild) { throw 'SteamPC requires a build so the Steam adapter matches the staged config.' }
+    $steamConfigPath = Join-Path $projectRoot 'Config/Custom/SteamPC/DefaultEngine.ini'
+    $steamConfig = Get-Content -LiteralPath $steamConfigPath -Raw
+    $appIdMatch = [regex]::Match($steamConfig, '(?m)^ExpectedAppId=(\d+)\r?$')
+    $steamAppId = if ($appIdMatch.Success) { [long]$appIdMatch.Groups[1].Value } else { 0 }
+    if (-not $PlanOnly -and ($steamAppId -le 0 -or $steamAppId -eq 480)) { throw 'Configure your real AppID first: python Scripts/configure_steam.py --app-id YOUR_APP_ID' }
+}
+if ($CustomConfig -eq 'PCSize') {
     $nativeMaterials = @(Get-ChildItem -LiteralPath "$projectRoot/Source", "$projectRoot/Plugins" -Recurse -File -Include '*.cpp', '*.h' | ForEach-Object {
         [regex]::Matches([IO.File]::ReadAllText($_.FullName), '/Game/MainGame/Materials/[A-Za-z0-9_./]+') | ForEach-Object { $_.Value.Split('.')[0] }
     } | Sort-Object -Unique)
@@ -46,7 +55,7 @@ if ($CustomConfig) {
             throw "Native material cook root does not exist: $material"
         }
     }
-    $cookOptions += " -CustomConfig=$CustomConfig -PACKAGE=" + ($nativeMaterials -join '+')
+    $cookOptions += " -PACKAGE=" + ($nativeMaterials -join '+')
 }
 $argsUat = @(
     "$EngineRoot/Engine/Binaries/DotNET/AutomationTool/AutomationTool.dll",
@@ -56,7 +65,7 @@ $argsUat = @(
     '-stage', '-pak', '-iostore', '-compressed',
     '-prereqs', '-nodebuginfo', '-archive', "-archivedirectory=$OutputDirectory",
     '-map=/Game/MainGame/Maps/Lvl_MainGame+/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo',
-    '-UbtArgs=-MaxParallelActions=2 -NoUBA -NoXGE -NoFASTBuild -NoSNDBS',
+    '-UbtArgs=-MaxParallelActions=1 -NoUBA -NoXGE -NoFASTBuild -NoSNDBS',
     "-AdditionalCookerOptions=$cookOptions"
 )
 if ($CustomConfig) { $argsUat += "-CustomConfig=$CustomConfig" }
@@ -67,6 +76,8 @@ if ($SkipBuild) { $argsUat += '-skipbuild' } else { $argsUat += '-build' }
 if ($SkipCook) { $argsUat += '-skipcook' } else { $argsUat += '-cook' }
 @{output=$OutputDirectory;started=(Get-Date).ToString('o');configuration='Shipping';custom_config=$CustomConfig;plan_only=[bool]$PlanOnly;native_materials=$nativeMaterials;arguments=$argsUat} | ConvertTo-Json -Depth 4 | Set-Content "$report/request.json" -Encoding UTF8
 if ($PlanOnly) { Write-Host "Packaging plan: $report/request.json"; return }
+& (Join-Path $PSScriptRoot 'build_localization.ps1') -EngineRoot $EngineRoot
+& (Join-Path $PSScriptRoot 'run_subtitle_localization.ps1') -EngineRoot $EngineRoot -Mode verify
 Assert-MiningLaunchResources -MinimumPhysicalGB 6 -MinimumCommitGB 8
 # Audit actual saved references, since replaced editable scenery can leave unused
 # source assets on disk that are intentionally absent from the cooked game.
@@ -217,12 +228,17 @@ foreach ($asset in $requiredAssets) {
     }
 }
 $requiredAssets | ConvertTo-Json | Set-Content "$report/required-container-assets.json" -Encoding UTF8
-if ($CustomConfig -and $containerText -match '(?i)/HDRIBackdrop/') {
+if ($CustomConfig -eq 'PCSize' -and $containerText -match '(?i)/HDRIBackdrop/') {
     throw 'PCSize unexpectedly contains HDRIBackdrop assets.'
 }
 $movie = 'Content/Movies/EndingEmergence/EndingFinale.mp4'
 $stagedMovie = Join-Path $OutputDirectory "Windows/BrainMining/$movie"
 if (-not (Test-Path -LiteralPath $stagedMovie) -or (Get-FileHash -LiteralPath $stagedMovie).Hash -ne (Get-FileHash -LiteralPath (Join-Path $projectRoot $movie)).Hash) {
     throw 'The staged ending movie is missing or differs from the current silent source.'
+}
+if ($CustomConfig -eq 'SteamPC') {
+    $steamLibraries = @(Get-ChildItem -LiteralPath "$OutputDirectory/Windows" -Filter steam_api64.dll -Recurse -File)
+    if (-not $steamLibraries.Count) { throw 'SteamPC package is missing steam_api64.dll.' }
+    if (@(Get-ChildItem -LiteralPath "$OutputDirectory/Windows" -Filter steam_appid.txt -Recurse -File).Count) { throw 'Do not distribute the development steam_appid.txt with a Steam depot.' }
 }
 Write-Host "MainGame Shipping package: $OutputDirectory/Windows/WOoOW.exe"

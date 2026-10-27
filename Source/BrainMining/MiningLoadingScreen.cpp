@@ -1,4 +1,5 @@
 #include "MiningLoadingScreen.h"
+#include "MiningLocalizationSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "MoviePlayer.h"
 #include "Framework/Application/SlateApplication.h"
@@ -10,12 +11,12 @@
 #include "Styling/CoreStyle.h"
 #include "UObject/UObjectGlobals.h"
 
-FMiningLoadingScreen::FMiningLoadingScreen(const TCHAR* Label)
+FMiningLoadingScreen::FMiningLoadingScreen(const FText& Label)
 {
     if(!IsMoviePlayerEnabled() || !GetMoviePlayer())return;
     const auto Font=BrainMiningFonts::Body(32);
     const double Started=FPlatformTime::Seconds();
-    const FString Caption(Label);
+    const FString Caption=(Label.IsEmpty()?MiningText::Get(TEXT("UI.Loading")):Label).ToString();
     const float Width=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Caption+TEXT("..."),Font).X;
     FLoadingScreenAttributes Screen;
     Screen.MinimumLoadingScreenDisplayTime=1.2f;

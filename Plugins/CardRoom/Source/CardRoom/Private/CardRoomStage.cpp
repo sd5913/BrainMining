@@ -302,8 +302,8 @@ void ACardRoomStage::Tick(float DeltaSeconds)
                 if(It->ActorHasTag(TEXT("CardSeatGuide")) && FVector::DistSquared(It->GetActorLocation(),GetActorLocation())<FMath::Square(6000.f))
                 {It->SetActorHiddenInGame(true);It->SetActorEnableCollision(false);}
         PreviousAudioTime=0;
-        if(SubtitleOverride.IsBound() && Phase==ECardRoomPhase::Matching)SubtitleOverride.Execute(TEXT("*正在匹配中*"),2.2f);
-        if(SubtitleOverride.IsBound() && Phase==ECardRoomPhase::Arrival)SubtitleOverride.Execute(TEXT("*匹配成功！*"),1.4f);
+        if(SubtitleOverride.IsBound() && Phase==ECardRoomPhase::Matching)SubtitleOverride.Execute(FText::FromStringTable(TEXT("BrainMining.Game"),TEXT("Card.Matching")).ToString(),2.2f);
+        if(SubtitleOverride.IsBound() && Phase==ECardRoomPhase::Arrival)SubtitleOverride.Execute(FText::FromStringTable(TEXT("BrainMining.Game"),TEXT("Card.Matched")).ToString(),1.4f);
         if(Phase==ECardRoomPhase::Arrival) Sound(TEXT("S_Arrival"));
         if(Phase==ECardRoomPhase::Choosing) Sound(TEXT("S_Draw"),.3f);
         if(Phase==ECardRoomPhase::Seated && AudioOverride.IsBound()) Sound(TEXT("S_Seat"),.4f);
@@ -321,9 +321,9 @@ void ACardRoomStage::Tick(float DeltaSeconds)
         if(auto* Robot=Cast<ACardRoomRobot>(RobotOpponent->GetChildActor()))Robot->SetEyebrowSinged(true);
     if(SubtitleOverride.IsBound() && bResolve && PreviousAudioTime<1.f && T>=1.f)
     {
-        if(Run.Round==2) SubtitleOverride.Execute(TEXT("*呕——好臭臭*"),2.4f);
-        if(Run.Round==3) SubtitleOverride.Execute(TEXT("*啊啊啊！我的眉毛！*"),2.4f);
-        if(Run.Round==4) SubtitleOverride.Execute(TEXT("*我一定会回来的！——*"),3.f);
+        if(Run.Round==2) SubtitleOverride.Execute(FText::FromStringTable(TEXT("BrainMining.Game"),TEXT("Card.Stink")).ToString(),2.4f);
+        if(Run.Round==3) SubtitleOverride.Execute(FText::FromStringTable(TEXT("BrainMining.Game"),TEXT("Card.Eyebrows")).ToString(),2.4f);
+        if(Run.Round==4) SubtitleOverride.Execute(FText::FromStringTable(TEXT("BrainMining.Game"),TEXT("Card.Return")).ToString(),3.f);
     }
     PreviousAudioTime=T;
     const bool bGhost=Phase==ECardRoomPhase::Seated;

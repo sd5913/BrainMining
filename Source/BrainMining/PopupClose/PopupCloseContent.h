@@ -1,13 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MiningLocalizationSubsystem.h"
 
 namespace PopupCloseContent
 {
  struct FWorkPopup
  {
-  const TCHAR* Title;
-  const TCHAR* Body;
+  FText Title;
+  FText Body;
   const TCHAR* PhysicalTitle;
   FLinearColor Color;
   FVector2D Size;
@@ -17,44 +18,44 @@ namespace PopupCloseContent
  inline const FWorkPopup& Get(int32 Index)
  {
   static const FWorkPopup Introduction[] = {
-   {TEXT("Game Jam · 主题公布"),TEXT("21天gamejam游戏创作主题公布！"),TEXT("GAME JAM STARTS"),FLinearColor(.91f,.95f,1.f),FVector2D(720,440)},
-   {TEXT("21天 GAME JAM · 主题发布页"),TEXT("【涌现】"),TEXT("EMERGENCE"),FLinearColor(.96f,.96f,.91f),FVector2D(900,550)}
+   {MiningText::Get(TEXT("Office.Popup.00.Title")),MiningText::Get(TEXT("Office.Popup.00.Body")),TEXT("GAME JAM STARTS"),FLinearColor(.91f,.95f,1.f),FVector2D(720,440)},
+   {MiningText::Get(TEXT("Office.Popup.01.Title")),MiningText::Get(TEXT("Office.Popup.01.Body")),TEXT("EMERGENCE"),FLinearColor(.96f,.96f,.91f),FVector2D(900,550)}
   };
   if(Index>=0 && Index<2)return Introduction[Index];
   static const FWorkPopup Copies[] = {
-   {TEXT("组队群 · 新消息"),TEXT("题目出来了。\n「涌现」……你们有什么想法？"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),4},
-   {TEXT("Git · 新建仓库"),TEXT("仓库 gamejam-21 已建立。\n邀请已发送给另外3位成员。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
-   {TEXT("会议提醒"),TEXT("主题讨论会将在5分钟后开始。\n3位成员已加入。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
-   {TEXT("企划草案.docx"),TEXT("检测到较新的云端版本。\n是否加载其他成员的修改？"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
-   {TEXT("Git · 正在克隆"),TEXT("正在克隆 gamejam-21…"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),5},
-   {TEXT("账号验证"),TEXT("请完成验证后继续登录。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),3},
-   {TEXT("共享文档 · 有人提到了你"),TEXT("@你 核心循环那页改好了。\n这一版先不做多人模式了。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
-   {TEXT("会议时间已更新"),TEXT("玩法讨论会延长30分钟。\n下一场：分工与排期。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
-   {TEXT("策划案_v07.docx"),TEXT("有2条批注尚未解决。\n「这里能不能再简单一点？」"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
-   {TEXT("任务已分配给你"),TEXT("任务「角色移动」已指派给你。\n截止时间：明天18:00。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
-   {TEXT("To-do List · 今日到期"),TEXT("角色移动、物品交互、新手引导。\n还有3项任务未完成。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
-   {TEXT("会议提醒"),TEXT("进度同步会已开始。\n主持人正在等待你加入。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
-   {TEXT("资源导入"),TEXT("正在导入场景素材…"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),5},
-   {TEXT("组队群 · 新消息"),TEXT("先把灰盒跑通，素材还在改。\n今晚再同步一下进度。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),4},
-   {TEXT("引擎崩溃报告"),TEXT("游戏引擎意外退出。\n是否恢复上次自动保存的项目？"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2},
-   {TEXT("版本控制 · 合并失败"),TEXT("关卡文件存在冲突。\n请解决冲突后重试。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2},
-   {TEXT("连接已断开"),TEXT("正在重新连接5/5"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
-   {TEXT("组队群 · @你"),TEXT("音效发群文件了。\n按钮和脚步声记得接一下。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
-   {TEXT("资源同步完成"),TEXT("场景素材.zip 已下载。\n新增24个文件，替换6个文件。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
-   {TEXT("着色器编译"),TEXT("正在编译着色器…"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),5},
-   {TEXT("试玩群 · 新消息"),TEXT("我进游戏了。\n开头这里是要往哪边走？"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),4},
-   {TEXT("收到新的反馈"),TEXT("「跳过对话以后动不了了。」\n附件：录屏_02.mp4"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
-   {TEXT("问题追踪 · 新增3项"),TEXT("存档无法读取、角色穿墙、音效丢失。\n其中2项被标记为阻塞。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2},
-   {TEXT("组队群 · @你"),TEXT("跳跃参数调过了，再试下？\n我把新包传上去了。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
-   {TEXT("性能分析 · 警告"),TEXT("检测到帧耗时峰值：86 ms。\n记录已保存至性能报告。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2},
-   {TEXT("回归测试提醒"),TEXT("今天修复了12个问题。\n还有3项等待确认。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
-   {TEXT("打包失败"),TEXT("缺少资源：开始按钮音效。\n构建已终止，查看日志。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2},
-   {TEXT("测试群 · 新消息"),TEXT("新包打开是黑屏。\n等等……好了，能进了。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),4},
-   {TEXT("Game Jam · 草稿已保存"),TEXT("作品页面尚未发布。\n待填写：操作说明、封面。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
-   {TEXT("组队群 · @所有人"),TEXT("最后这个包谁测过了？\n没问题我就上传了。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
-   {TEXT("上传中"),TEXT("game_final_final.zip — 99%\n请勿关闭此窗口。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),5},
-   {TEXT("提交验证"),TEXT("请完成验证后提交作品。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),3},
-   {TEXT("Game Jam · 提交提醒"),TEXT("距离截止还有10分钟。\n你的作品仍处于草稿状态。"),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2}
+   {MiningText::Get(TEXT("Office.Popup.02.Title")),MiningText::Get(TEXT("Office.Popup.02.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),4},
+   {MiningText::Get(TEXT("Office.Popup.Repository.Title")),MiningText::Get(TEXT("Office.Popup.Repository.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
+   {MiningText::Get(TEXT("Office.Popup.09.Title")),MiningText::Get(TEXT("Office.Popup.04.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
+   {MiningText::Get(TEXT("Office.Popup.05.Title")),MiningText::Get(TEXT("Office.Popup.05.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
+   {MiningText::Get(TEXT("Office.Popup.Clone.Title")),MiningText::Get(TEXT("Office.Popup.Clone.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),5},
+   {MiningText::Get(TEXT("Office.Popup.Verification.Title")),MiningText::Get(TEXT("Office.Popup.Verification.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),3},
+   {MiningText::Get(TEXT("Office.Popup.03.Title")),MiningText::Get(TEXT("Office.Popup.CoreLoop.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
+   {MiningText::Get(TEXT("Office.Popup.MeetingUpdate.Title")),MiningText::Get(TEXT("Office.Popup.MeetingUpdate.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
+   {MiningText::Get(TEXT("Office.Popup.DesignRevision.Title")),MiningText::Get(TEXT("Office.Popup.DesignRevision.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
+   {MiningText::Get(TEXT("Office.Popup.07.Title")),MiningText::Get(TEXT("Office.Popup.07.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
+   {MiningText::Get(TEXT("Office.Popup.08.Title")),MiningText::Get(TEXT("Office.Popup.08.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
+   {MiningText::Get(TEXT("Office.Popup.09.Title")),MiningText::Get(TEXT("Office.Popup.09.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
+   {MiningText::Get(TEXT("Office.Popup.AssetImport.Title")),MiningText::Get(TEXT("Office.Popup.AssetImport.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),5},
+   {MiningText::Get(TEXT("Office.Popup.11.Title")),MiningText::Get(TEXT("Office.Popup.Greybox.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),4},
+   {MiningText::Get(TEXT("Office.Popup.12.Title")),MiningText::Get(TEXT("Office.Popup.12.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2},
+   {MiningText::Get(TEXT("Office.Popup.13.Title")),MiningText::Get(TEXT("Office.Popup.13.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2},
+   {MiningText::Get(TEXT("Office.Popup.14.Title")),MiningText::Get(TEXT("Office.Popup.14.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
+   {MiningText::Get(TEXT("Office.Popup.18.Title")),MiningText::Get(TEXT("Office.Popup.11.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
+   {MiningText::Get(TEXT("Office.Popup.10.Title")),MiningText::Get(TEXT("Office.Popup.10.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
+   {MiningText::Get(TEXT("Office.Popup.Shaders.Title")),MiningText::Get(TEXT("Office.Popup.Shaders.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),5},
+   {MiningText::Get(TEXT("Office.Popup.15.Title")),MiningText::Get(TEXT("Office.Popup.15.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),4},
+   {MiningText::Get(TEXT("Office.Popup.16.Title")),MiningText::Get(TEXT("Office.Popup.16.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
+   {MiningText::Get(TEXT("Office.Popup.17.Title")),MiningText::Get(TEXT("Office.Popup.17.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2},
+   {MiningText::Get(TEXT("Office.Popup.18.Title")),MiningText::Get(TEXT("Office.Popup.18.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
+   {MiningText::Get(TEXT("Office.Popup.19.Title")),MiningText::Get(TEXT("Office.Popup.19.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2},
+   {MiningText::Get(TEXT("Office.Popup.20.Title")),MiningText::Get(TEXT("Office.Popup.20.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
+   {MiningText::Get(TEXT("Office.Popup.21.Title")),MiningText::Get(TEXT("Office.Popup.21.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2},
+   {MiningText::Get(TEXT("Office.Popup.22.Title")),MiningText::Get(TEXT("Office.Popup.22.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),4},
+   {MiningText::Get(TEXT("Office.Popup.23.Title")),MiningText::Get(TEXT("Office.Popup.23.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),1},
+   {MiningText::Get(TEXT("Office.Popup.24.Title")),MiningText::Get(TEXT("Office.Popup.24.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),0},
+   {MiningText::Get(TEXT("Office.Popup.25.Title")),MiningText::Get(TEXT("Office.Popup.25.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),5},
+   {MiningText::Get(TEXT("Office.Popup.SubmissionVerification.Title")),MiningText::Get(TEXT("Office.Popup.SubmissionVerification.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),3},
+   {MiningText::Get(TEXT("Office.Popup.26.Title")),MiningText::Get(TEXT("Office.Popup.26.Body")),TEXT("GAME JAM"),FLinearColor(.91f,.95f,1.f),FVector2D(420,257),2}
   };
   return Copies[FMath::Clamp(Index-2,0,int32(UE_ARRAY_COUNT(Copies))-1)];
  }

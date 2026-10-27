@@ -1,0 +1,516 @@
+Key,SourceString,Comment
+Achievement.Campaign.Description,完成游戏。,Achievement.Campaign.Description
+Achievement.Campaign.Name,挖哦！,Achievement.Campaign.Name
+Achievement.CardRoom.Description,赢得卡牌房挑战。,Achievement.CardRoom.Description
+Achievement.CardRoom.Name,组合的力量,Achievement.CardRoom.Name
+Achievement.Collection5.Description,获得五种不同藏品。,Achievement.Collection5.Description
+Achievement.Collection5.Name,灵感正在聚集,Achievement.Collection5.Name
+Achievement.CollectionComplete.Description,收齐首发版本的全部藏品。,Achievement.CollectionComplete.Description
+Achievement.CollectionComplete.Name,灵感收藏家,Achievement.CollectionComplete.Name
+Achievement.FirstCollection.Description,获得第一件藏品。,Achievement.FirstCollection.Description
+Achievement.FirstCollection.Name,第一件灵感,Achievement.FirstCollection.Name
+Achievement.Museum.Description,完成博物馆并进入结局。,Achievement.Museum.Description
+Achievement.Museum.Name,换个想法,Achievement.Museum.Name
+Achievement.PickaxeMax.Description,将矿镐升级至最高等级。,Achievement.PickaxeMax.Description
+Achievement.PickaxeMax.Name,挖到底,Achievement.PickaxeMax.Name
+Achievement.PickaxeUpgrade.Description,首次升级矿镐。,Achievement.PickaxeUpgrade.Description
+Achievement.PickaxeUpgrade.Name,再锋利一点,Achievement.PickaxeUpgrade.Name
+Card.Eyebrows,*啊啊啊！我的眉毛！*,Card.Eyebrows
+Card.Fire,火,Card.Fire
+Card.Laser,激光,Card.Laser
+Card.LaserCompact,"激
+光",Card.LaserCompact
+Card.Matched,*匹配成功！*,Card.Matched
+Card.Matching,*正在匹配中*,Card.Matching
+Card.Poison,毒,Card.Poison
+Card.Return,*我一定会回来的！——*,Card.Return
+Card.Stink,*呕——好臭臭*,Card.Stink
+Collection.00.Clue,滴水的管道,Collection.00.Clue
+Collection.00.Description,这也许是一场令人措手不及的涌现。,Collection.00.Description
+Collection.00.Name,来自天堂的马桶,Collection.00.Name
+Collection.00.Quote,不觉得这很神圣吗？,Collection.00.Quote
+Collection.01.Clue,沿土层爬向蚁穴的蚂蚁,Collection.01.Clue
+Collection.01.Description,每只蚂蚁只顾着挖掘、搬运，再循着同伴留下的气味前进。没有谁拿着整个巢穴的设计图，复杂的通路却在无数次微小的行动中逐渐成形。也许，宏大的结构就藏在这些简单规则里。,Collection.01.Description
+Collection.01.Name,电脑里的蚂蚁窝,Collection.01.Name
+Collection.01.Quote,一台正在运行一个游戏的电脑……这是什么游戏？,Collection.01.Quote
+Collection.02.Clue,彩色液滴,Collection.02.Clue
+Collection.02.Description,单独看，每一种试剂都有自己的性质。混合之后，分子之间的相互作用却可能带来新的颜色、气味，甚至一种全新的物质。把简单的东西放在一起，有时会得到超出直觉的结果——试管里似乎藏着更多可能。,Collection.02.Description
+Collection.02.Name,化学试剂,Collection.02.Name
+Collection.02.Quote,加点这个……再加点那个……,Collection.02.Quote
+Collection.03.Clue,高处的鸟巢,Collection.03.Clue
+Collection.03.Description,一件道具增加弹射，另一件让命中产生爆炸，再来一件，让爆炸也能触发弹射。原本普通的效果开始相互放大，最后形成连设计者都未必预料到的打法。许多肉鸽游戏（roguelike）都会做这种设计。,Collection.03.Description
+Collection.03.Name,肉鸽,Collection.03.Name
+Collection.03.Quote,好肥的鸟！,Collection.03.Quote
+Collection.04.Clue,土里错落埋藏的数字 1,Collection.04.Clue
+Collection.04.Description,把两个东西放在一起，它们之间便多了一种关系；当关系足够丰富，整体就可能表现出单个部分所没有的能力。,Collection.04.Description
+Collection.04.Name,奇怪的计算器,Collection.04.Name
+Collection.04.Quote,这个年代计算器也有自我意识了吗？,Collection.04.Quote
+Collection.05.Description,把磁带扯出来……大概只会让桌上涌现一团乱麻。,Collection.05.Description
+Collection.05.Name,损坏的磁带,Collection.05.Name
+Collection.05.Quote,小时候最喜欢的一集。,Collection.05.Quote
+Collection.06.Description,音符之间有了先后、间隔与重复，旋律和情绪便逐渐浮现。同样几个音，换一种关系，就能涌现出完全不同的世界。,Collection.06.Description
+Collection.06.Name,音符,Collection.06.Name
+Collection.06.Quote,长得很像蝌蚪，它会变成青蛙吗？,Collection.06.Quote
+Collection.07.Description,相片只留住了一个瞬间，却能牵出当时的声音、气味，以及早已忘记的人。一个细节唤醒另一个细节，零散的记忆彼此连接，往事便重新变得鲜活。,Collection.07.Description
+Collection.07.Name,老旧的相片,Collection.07.Name
+Collection.07.Quote,记忆是很宝贵的。,Collection.07.Quote
+Collection.08.Clue,连通地下空腔、持续向上冒泡的孔洞,Collection.08.Clue
+Collection.08.Description,无数气泡迅速生长，推动液体一起冲出瓶口，涌现出一次剧烈的喷发。,Collection.08.Description
+Collection.08.Name,喷发中的可乐,Collection.08.Name
+Collection.08.Quote,曼妥思VS可乐，你们知道吗？,Collection.08.Quote
+Collection.09.Clue,土面上的一簇微光小花,Collection.09.Clue
+Collection.09.Description,大量简单的计算单元经过训练与连接，逐渐表现出组织语言、关联概念的复杂能力。,Collection.09.Description
+Collection.09.Name,「GPT」之花,Collection.09.Name
+Collection.09.Quote,好牛#的花。,Collection.09.Quote
+Collection.10.Clue,沿土层延伸的闪烁光点,Collection.10.Clue
+Collection.10.Description,每只萤火虫都按自己的节奏闪烁，也会根据附近同伴的闪光调整时机。局部的微小调整不断传递，原本零散的亮点便可能逐渐同步。没有统一指挥，秩序依然能从彼此回应中涌现。,Collection.10.Description
+Collection.10.Name,罐子里的萤火虫,Collection.10.Name
+Collection.10.Quote,萤火虫萤火虫慢慢飞 夏夜里夏夜里风轻吹,Collection.10.Quote
+Collection.11.Clue,红幕布后的庆祝舞台,Collection.11.Clue
+Collection.11.Description,成千上万根彩带喷涌而出，一起旋转、荡漾、飘落。,Collection.11.Description
+Collection.11.Name,散落的彩带,Collection.11.Name
+Collection.11.Quote,恭喜！,Collection.11.Quote
+Collection.12.Description,散乱的铜线看起来很普通。直到电流沿着回路涌动，灯泡亮了！,Collection.12.Description
+Collection.12.Name,发光的灯泡,Collection.12.Name
+Collection.12.Quote,我有一个想法！,Collection.12.Quote
+Collection.13.Description,铁针内部有许多微小的磁畴。磁化让更多磁畴的方向趋于一致，整根针便显出磁性。能够自由转动的磁针在地磁场作用下偏转，指向磁南北。微小的排列，汇成了看得见的方向。,Collection.13.Description
+Collection.13.Name,指南针,Collection.13.Name
+Collection.13.Quote,海的那边是什么？,Collection.13.Quote
+Collection.14.Description,层层绿色纹带藏在一小块孔雀石里。换个角度，起伏成了远山，留白成了河流，一条小路穿过山间。无意的纹理，在人眼中形成了有情的诗意。,Collection.14.Description
+Collection.14.Name,石间山水,Collection.14.Name
+Collection.14.Quote,山在石头里，又或者，山在心里。,Collection.14.Quote
+Collection.15.Description,一束白光进入钻石，经折射与色散显出不同的颜色。这些色彩再由镜筒内的镜片反复映照，随着转动，组合成不断变化的花朵与星芒。,Collection.15.Description
+Collection.15.Name,光之万花筒,Collection.15.Name
+Collection.15.Quote,复杂的美，可以来自简单的重复。,Collection.15.Quote
+Collection.16.Description,牛肉、盐和香料原本各有滋味。遇上火候，褐变反应让新的香气与颜色逐渐出现，几样食材竟变成让人垂涎的美味。,Collection.16.Description
+Collection.16.Name,碳烤牛肉串,Collection.16.Name
+Collection.16.Quote,高端的食材往往只需要最朴素的烹饪方式,Collection.16.Quote
+Collection.17.Description,鱼、水草与微生物住进同一片水里。呼吸、光合作用与分解彼此衔接，在光照、换水和照料下，小小的鱼缸形成了一张相互依存的生命网络。,Collection.17.Description
+Collection.17.Name,水世界,Collection.17.Name
+Collection.17.Quote,小小鱼缸，大大世界！,Collection.17.Quote
+Collection.18.Description,一枚金币的回报再投入下一轮，新的回报又加入其中。一次次积累，让增长逐渐加快；不过，袋子里也藏着风险，财富并不会凭空出现。,Collection.18.Description
+Collection.18.Name,沉甸甸的金币袋,Collection.18.Name
+Collection.18.Quote,假如给你一个亿，代价是……先给我我就愿意！,Collection.18.Quote
+Collection.19.Description,酸、甜、苦与酒香各有棱角。经过比例、摇和与冰的稀释，它们在杯中相互衬托，涌现出单独品尝时没有的层次。,Collection.19.Description
+Collection.19.Name,一杯鸡尾酒,Collection.19.Name
+Collection.19.Quote,嗯～恰到好处,Collection.19.Quote
+Collection.20.Description,无极而太极，以至万物化生。,Collection.20.Description
+Collection.20.Name,太极,Collection.20.Name
+Collection.20.Quote,道生一，一生二，二生三，三生万物,Collection.20.Quote
+Collection.21.Description,"车门一开，人潮涌现。
+每个人都有自己的目的地。",Collection.21.Description
+Collection.21.Name,晚高峰,Collection.21.Name
+Collection.21.Quote,宁等一辆车，不抢一扇门。,Collection.21.Quote
+Collection.22.Description,众口铄金，积毁销骨。,Collection.22.Description
+Collection.22.Name,满屏消息的手机,Collection.22.Name
+Collection.22.Quote,其实很多话根本不重要,Collection.22.Quote
+Mineral.Copper,铜矿,Mineral.Copper
+Mineral.Diamond,钻石,Mineral.Diamond
+Mineral.Iron,铁矿,Mineral.Iron
+Mineral.Malachite,孔雀石,Mineral.Malachite
+Mineral.Unknown,未知矿石,Mineral.Unknown
+Museum.Swap.NoSpace,空间不足 调整站位再试试吧,Museum.Swap.NoSpace
+Office.Hint.BombAbility,E 获取炸弹技能,Office.Hint.BombAbility
+Office.Hint.BombExit,按G使用炸弹炸开出口,Office.Hint.BombExit
+Office.Hint.Computer,使用电脑,Office.Hint.Computer
+Office.Hint.ComputerKey,按 E 使用电脑,Office.Hint.ComputerKey
+Office.Hint.Create,开始创作,Office.Hint.Create
+Office.Hint.Leave,按 E 退出电脑,Office.Hint.Leave
+Office.Hint.PickupBomb,拾取炸弹,Office.Hint.PickupBomb
+Office.Hint.Printed,处理文件 · {0} 张,Office.Hint.Printed
+Office.Hint.PrintedKey,按 E 处理文件 · {0} 张,Office.Hint.PrintedKey
+Office.Hint.Reply,回复,Office.Hint.Reply
+Office.Hint.Theme,本届创作主题,Office.Hint.Theme
+Office.Hint.ViewTheme,查看主题,Office.Hint.ViewTheme
+Office.Physical.0.Body,"今日 18:00 前提交项目汇报。
+附件、数据和演示稿仍待确认。",Office.Physical.0.Body
+Office.Physical.0.Title,DDL 提醒,Office.Physical.0.Title
+Office.Physical.1.Body,"项目群：刚才的方案需要再调整一下。
+请尽快回复并同步最新进度。",Office.Physical.1.Body
+Office.Physical.1.Title,有新的工作消息,Office.Physical.1.Title
+Office.Physical.2.Body,"你收到一项新的紧急任务。
+优先级：高。交付时间：今天。",Office.Physical.2.Body
+Office.Physical.2.Title,新增待办,Office.Physical.2.Title
+Office.Popup.00.Body,21天gamejam游戏创作主题公布！,Office.Popup.00.Body
+Office.Popup.00.Title,Game Jam · 主题公布,Office.Popup.00.Title
+Office.Popup.01.Body,【涌现】,Office.Popup.01.Body
+Office.Popup.01.Title,21天 GAME JAM · 主题发布页,Office.Popup.01.Title
+Office.Popup.02.Body,"题目出来了。
+「涌现」……你们有什么想法？",Office.Popup.02.Body
+Office.Popup.02.Title,组队群 · 新消息,Office.Popup.02.Title
+Office.Popup.03.Body,"@你 玩法草案放文档里了。
+有空看下，晚上一起定。",Office.Popup.03.Body
+Office.Popup.03.Title,共享文档 · 有人提到了你,Office.Popup.03.Title
+Office.Popup.04.Body,"主题讨论会将在5分钟后开始。
+3位成员已加入。",Office.Popup.04.Body
+Office.Popup.04.Title,会议提醒,Office.Popup.04.Title
+Office.Popup.05.Body,"检测到较新的云端版本。
+是否加载其他成员的修改？",Office.Popup.05.Body
+Office.Popup.05.Title,企划草案.docx,Office.Popup.05.Title
+Office.Popup.06.Body,"先做一个能玩的版本吧。
+剩下几个点子放备选。",Office.Popup.06.Body
+Office.Popup.06.Title,组队群 · 新消息,Office.Popup.06.Title
+Office.Popup.07.Body,"任务「角色移动」已指派给你。
+截止时间：明天18:00。",Office.Popup.07.Body
+Office.Popup.07.Title,任务已分配给你,Office.Popup.07.Title
+Office.Popup.08.Body,"角色移动、物品交互、新手引导。
+还有3项任务未完成。",Office.Popup.08.Body
+Office.Popup.08.Title,To-do List · 今日到期,Office.Popup.08.Title
+Office.Popup.09.Body,"进度同步会已开始。
+主持人正在等待你加入。",Office.Popup.09.Body
+Office.Popup.09.Title,会议提醒,Office.Popup.09.Title
+Office.Popup.10.Body,"场景素材.zip 已下载。
+新增24个文件，替换6个文件。",Office.Popup.10.Body
+Office.Popup.10.Title,资源同步完成,Office.Popup.10.Title
+Office.Popup.11.Body,"音效发群文件了。
+按钮和脚步声记得接一下。",Office.Popup.11.Body
+Office.Popup.11.Title,组队群 · 新消息,Office.Popup.11.Title
+Office.Popup.12.Body,"游戏引擎意外退出。
+是否恢复上次自动保存的项目？",Office.Popup.12.Body
+Office.Popup.12.Title,引擎崩溃报告,Office.Popup.12.Title
+Office.Popup.13.Body,"关卡文件存在冲突。
+请解决冲突后重试。",Office.Popup.13.Body
+Office.Popup.13.Title,版本控制 · 合并失败,Office.Popup.13.Title
+Office.Popup.14.Body,正在重新连接5/5,Office.Popup.14.Body
+Office.Popup.14.Title,连接已断开,Office.Popup.14.Title
+Office.Popup.15.Body,"我进游戏了。
+开头这里是要往哪边走？",Office.Popup.15.Body
+Office.Popup.15.Title,试玩群 · 新消息,Office.Popup.15.Title
+Office.Popup.16.Body,"「跳过对话以后动不了了。」
+附件：录屏_02.mp4",Office.Popup.16.Body
+Office.Popup.16.Title,收到新的反馈,Office.Popup.16.Title
+Office.Popup.17.Body,"存档无法读取、角色穿墙、音效丢失。
+其中2项被标记为阻塞。",Office.Popup.17.Body
+Office.Popup.17.Title,问题追踪 · 新增3项,Office.Popup.17.Title
+Office.Popup.18.Body,"跳跃参数调过了，再试下？
+我把新包传上去了。",Office.Popup.18.Body
+Office.Popup.18.Title,组队群 · @你,Office.Popup.18.Title
+Office.Popup.19.Body,"检测到帧耗时峰值：86 ms。
+记录已保存至性能报告。",Office.Popup.19.Body
+Office.Popup.19.Title,性能分析 · 警告,Office.Popup.19.Title
+Office.Popup.20.Body,"今天修复了12个问题。
+还有3项等待确认。",Office.Popup.20.Body
+Office.Popup.20.Title,回归测试提醒,Office.Popup.20.Title
+Office.Popup.21.Body,"缺少资源：开始按钮音效。
+构建已终止，查看日志。",Office.Popup.21.Body
+Office.Popup.21.Title,打包失败,Office.Popup.21.Title
+Office.Popup.22.Body,"新包打开是黑屏。
+等等……好了，能进了。",Office.Popup.22.Body
+Office.Popup.22.Title,测试群 · 新消息,Office.Popup.22.Title
+Office.Popup.23.Body,"作品页面尚未发布。
+待填写：操作说明、封面。",Office.Popup.23.Body
+Office.Popup.23.Title,Game Jam · 草稿已保存,Office.Popup.23.Title
+Office.Popup.24.Body,"最后这个包谁测过了？
+没问题我就上传了。",Office.Popup.24.Body
+Office.Popup.24.Title,组队群 · @所有人,Office.Popup.24.Title
+Office.Popup.25.Body,"game_final_final.zip — 99%
+请勿关闭此窗口。",Office.Popup.25.Body
+Office.Popup.25.Title,上传中,Office.Popup.25.Title
+Office.Popup.26.Body,"距离截止还有10分钟。
+你的作品仍处于草稿状态。",Office.Popup.26.Body
+Office.Popup.26.Title,Game Jam · 提交提醒,Office.Popup.26.Title
+Office.Popup.AssetImport.Body,正在导入场景素材…,Office.Popup.AssetImport.Body
+Office.Popup.AssetImport.Title,资源导入,Office.Popup.AssetImport.Title
+Office.Popup.Clone.Body,正在克隆 gamejam-21…,Office.Popup.Clone.Body
+Office.Popup.Clone.Title,Git · 正在克隆,Office.Popup.Clone.Title
+Office.Popup.CoreLoop.Body,"@你 核心循环那页改好了。
+这一版先不做多人模式了。",Office.Popup.CoreLoop.Body
+Office.Popup.DesignRevision.Body,"有2条批注尚未解决。
+「这里能不能再简单一点？」",Office.Popup.DesignRevision.Body
+Office.Popup.DesignRevision.Title,策划案_v07.docx,Office.Popup.DesignRevision.Title
+Office.Popup.Greybox.Body,"先把灰盒跑通，素材还在改。
+今晚再同步一下进度。",Office.Popup.Greybox.Body
+Office.Popup.MeetingUpdate.Body,"玩法讨论会延长30分钟。
+下一场：分工与排期。",Office.Popup.MeetingUpdate.Body
+Office.Popup.MeetingUpdate.Title,会议时间已更新,Office.Popup.MeetingUpdate.Title
+Office.Popup.Repository.Body,"仓库 gamejam-21 已建立。
+邀请已发送给另外3位成员。",Office.Popup.Repository.Body
+Office.Popup.Repository.Title,Git · 新建仓库,Office.Popup.Repository.Title
+Office.Popup.Shaders.Body,正在编译着色器…,Office.Popup.Shaders.Body
+Office.Popup.Shaders.Title,着色器编译,Office.Popup.Shaders.Title
+Office.Popup.SubmissionVerification.Body,请完成验证后提交作品。,Office.Popup.SubmissionVerification.Body
+Office.Popup.SubmissionVerification.Title,提交验证,Office.Popup.SubmissionVerification.Title
+Office.Popup.Unread,"你有 {Count} 条
+未读消息",Office.Popup.Unread
+Office.Popup.Verification.Body,请完成验证后继续登录。,Office.Popup.Verification.Body
+Office.Popup.Verification.Title,账号验证,Office.Popup.Verification.Title
+Subtitle.Cards1.001,卡牌之间的连携可以打出强大的效果,Subtitle.Cards1.001
+Subtitle.Cards1.002,比如元素之间的反应 涌现出新的效果,Subtitle.Cards1.002
+Subtitle.Cards2.001,这种卡牌玩法会不会太常见了呢？,Subtitle.Cards2.001
+Subtitle.CardsVictory.001,*恭喜你获得钻机！按V可切换使用*,Subtitle.CardsVictory.001
+Subtitle.CollectiblePickup_00.001,马桶堵住了然后上涌……有点味道的想法,Subtitle.CollectiblePickup_00.001
+Subtitle.CollectiblePickup_01.001,蚂蚁一直挖掘 涌现出了复杂的通路,Subtitle.CollectiblePickup_01.001
+Subtitle.CollectiblePickup_02.001,化学元素通过反应产生新的物质 进而形成大千世界,Subtitle.CollectiblePickup_02.001
+Subtitle.CollectiblePickup_03.001,"肉鸽游戏很适合做连携 算是""1+1>2""的涌现吧",Subtitle.CollectiblePickup_03.001
+Subtitle.CollectiblePickup_04.001,“1+1>2” 从这个点出发想想“涌现”吧,Subtitle.CollectiblePickup_04.001
+Subtitle.CollectiblePickup_05.001,把磁带扯出来……这算一种涌现吗,Subtitle.CollectiblePickup_05.001
+Subtitle.CollectiblePickup_06.001,简单的几个音符能涌现出复杂的旋律,Subtitle.CollectiblePickup_06.001
+Subtitle.CollectiblePickup_07.001,回忆涌上心头……这也是一种涌现,Subtitle.CollectiblePickup_07.001
+Subtitle.CollectiblePickup_08.001,将曼妥思投入可乐的话 可乐就会“涌现”出来,Subtitle.CollectiblePickup_08.001
+Subtitle.CollectiblePickup_09.001,AI的思考不断涌现 就如同不断向下延伸的根,Subtitle.CollectiblePickup_09.001
+Subtitle.CollectiblePickup_10.001,萤火虫的同步闪烁：随机中怎样涌现出秩序？,Subtitle.CollectiblePickup_10.001
+Subtitle.CollectiblePickup_11.001,大量的彩带喷涌而出 也很涌现,Subtitle.CollectiblePickup_11.001
+Subtitle.CollectiblePickup_11.002,继续往前走走,Subtitle.CollectiblePickup_11.002
+Subtitle.CollectiblePickup_12.001,收集到了25个铜矿！灵感涌现！,Subtitle.CollectiblePickup_12.001
+Subtitle.CollectiblePickup_13.001,收集到了15个铁矿！灵感涌现！,Subtitle.CollectiblePickup_13.001
+Subtitle.CollectiblePickup_14.001,收集到了10个孔雀石！灵感涌现！,Subtitle.CollectiblePickup_14.001
+Subtitle.CollectiblePickup_15.001,收集到了5个钻石！灵感涌现！,Subtitle.CollectiblePickup_15.001
+Subtitle.CollectiblePickup_16.001,火候让食材涌现出新的香气 真香！,Subtitle.CollectiblePickup_16.001
+Subtitle.CollectiblePickup_17.001,小小鱼缸里也有复杂生态,Subtitle.CollectiblePickup_17.001
+Subtitle.CollectiblePickup_18.001,钱生钱~财富涌现！,Subtitle.CollectiblePickup_18.001
+Subtitle.CollectiblePickup_19.001,几种滋味碰在一起 口感也有了新的层次,Subtitle.CollectiblePickup_19.001
+Subtitle.CollectiblePickup_20.001,一生二 二生三 三生万物……,Subtitle.CollectiblePickup_20.001
+Subtitle.CollectiblePickup_21.001,车门一开 人潮就涌出来了！,Subtitle.CollectiblePickup_21.001
+Subtitle.CollectiblePickup_22.001,一句话很轻 无数句话堆在一起 却能改变世界 也能压垮一个人,Subtitle.CollectiblePickup_22.001
+Subtitle.EchoMaze.001,通过敲击产生的声音 让前方的道路涌现出来,Subtitle.EchoMaze.001
+Subtitle.FirstCollectionHint.001,按C打开藏品界面吧,Subtitle.FirstCollectionHint.001
+Subtitle.Interaction.Book,遇到好点子就收下来吧！,Subtitle.Interaction.Book
+Subtitle.Interaction.BookLeft,纸上得来终觉浅,Subtitle.Interaction.BookLeft
+Subtitle.Interaction.BookRight,绝知此事要躬行！,Subtitle.Interaction.BookRight
+Subtitle.Interaction.Computer,时间到了，该出门干活了……,Subtitle.Interaction.Computer
+Subtitle.Interaction.Pear,哦！美味被你发现~,Subtitle.Interaction.Pear
+Subtitle.Interaction.Plant,祝我有好收获。,Subtitle.Interaction.Plant
+Subtitle.Interaction.Robot,你好。,Subtitle.Interaction.Robot
+Subtitle.Interaction.Toilet,谢谢你。,Subtitle.Interaction.Toilet
+Subtitle.LeaveStartRoom.001,亮晶晶的地方说明一定有矿石 赶紧挖挖看,Subtitle.LeaveStartRoom.001
+Subtitle.Museum1.001,当你看到一个东西 一句话就会”涌现”在你的脑海里,Subtitle.Museum1.001
+Subtitle.Museum1.002,如果有两个这样的东西 就可以交换他们的描述,Subtitle.Museum1.002
+Subtitle.Museum2.001,会不会太难了,Subtitle.Museum2.001
+Subtitle.Museum2.002,也许需要设计一个方法跳过这一部分,Subtitle.Museum2.002
+Subtitle.Museum2.003,比如长按P键持续3秒，就可以跳过这一关,Subtitle.Museum2.003
+Subtitle.Museum3.001,真的不是很喜欢解谜啊 算了吧,Subtitle.Museum3.001
+Subtitle.OfficeGameplay1.001,工作是一个能引发共鸣的话题,Subtitle.OfficeGameplay1.001
+Subtitle.OfficeGameplay1.002,DDL不断从电脑和打印机里“涌现”出来,Subtitle.OfficeGameplay1.002
+Subtitle.OfficeGameplay1.003,玩家要一直处理它们……,Subtitle.OfficeGameplay1.003
+Subtitle.OfficeGameplay2.001,感觉有点太辛苦了,Subtitle.OfficeGameplay2.001
+Subtitle.OfficeGameplay3.001,炸弹能不能涌现呢……,Subtitle.OfficeGameplay3.001
+Subtitle.OfficeGameplay4.001,还是想想别的吧……,Subtitle.OfficeGameplay4.001
+Subtitle.PickaxeUpgrade1.001,矿镐升级可以让挖掘更轻松,Subtitle.PickaxeUpgrade1.001
+Subtitle.PickaxeUpgrade2.001,似乎有点感觉了……,Subtitle.PickaxeUpgrade2.001
+Subtitle.PickaxeUpgrade3.001,这样也许可以……,Subtitle.PickaxeUpgrade3.001
+Subtitle.PickaxeUpgrade4.001,我快要想到了……,Subtitle.PickaxeUpgrade4.001
+Subtitle.RisingWater.001,水？上涌的水…不断地跳,Subtitle.RisingWater.001
+Subtitle.StartRoom.001,12点了，是时候了,Subtitle.StartRoom.001
+Subtitle.StartRoomBook.001,有新东西的话就记录下吧,Subtitle.StartRoomBook.001
+Subtitle.StartRoomComputer.001,12点了，是时候了……,Subtitle.StartRoomComputer.001
+Subtitle.StartRoomPear.001,哦！美味被你发现~,Subtitle.StartRoomPear.001
+Subtitle.StartRoomPlant.001,祝我好运,Subtitle.StartRoomPlant.001
+Subtitle.StartRoomRobot.001,你好。,Subtitle.StartRoomRobot.001
+UI.Action.Door,开门,UI.Action.Door
+UI.Action.Drill,钻机,UI.Action.Drill
+UI.Action.Enter,进入 · {Name},UI.Action.Enter
+UI.Action.HoldE,长按E,UI.Action.HoldE
+UI.Action.HoldX,长按X,UI.Action.HoldX
+UI.Action.Inspect,查看,UI.Action.Inspect
+UI.Action.Play,出牌,UI.Action.Play
+UI.Action.Portal,进入画中的圆圈,UI.Action.Portal
+UI.Action.Reset,重置谜题,UI.Action.Reset
+UI.Action.SelectAll,全选,UI.Action.SelectAll
+UI.Action.Sit,入座,UI.Action.Sit
+UI.Action.SkipKey,长按 P 跳过,UI.Action.SkipKey
+UI.Action.SkipTouch,继续按住以跳过,UI.Action.SkipTouch
+UI.Action.Space,空格,UI.Action.Space
+UI.Action.Think,思考,UI.Action.Think
+UI.Action.ThinkAbout,思考 · {Name},UI.Action.ThinkAbout
+UI.Collection.Count,已收集{Count}/{Total},UI.Collection.Count
+UI.Collection.DescriptionFormat,"{0}
+
+“{1}”",UI.Collection.DescriptionFormat
+UI.Collection.Locked,"尚未解锁
+
+继续探索，寻找潜藏的灵感吧！",UI.Collection.Locked
+UI.Collection.MineralCondition,"尚未解锁
+
+解锁条件：累计收集{Target}个{Mineral}
+当前进度：{Count} / {Target}",UI.Collection.MineralCondition
+UI.Collection.MineralGoal,收集{Target}个{Mineral},UI.Collection.MineralGoal
+UI.Collection.MineralGoalComplete,已收集{Target}个{Mineral},UI.Collection.MineralGoalComplete
+UI.Collection.Pickup,已收集 · {Name},UI.Collection.Pickup
+UI.Collection.Shortcut,[C]查看藏品,UI.Collection.Shortcut
+UI.Collection.Title,奇物收藏,UI.Collection.Title
+UI.Collection.Undiscovered,尚未发现,UI.Collection.Undiscovered
+UI.Collection.Unknown,未知藏品,UI.Collection.Unknown
+UI.Ending.Back,按S可加速后退,UI.Ending.Back
+UI.Ending.DrillKey,W-加速前进,UI.Ending.DrillKey
+UI.Ending.DrillTouch,自动钻进 · 上推加速 · 左右微调,UI.Ending.DrillTouch
+UI.Ending.Enter,涌入,UI.Ending.Enter
+UI.Ending.Forward,按W可加速前进,UI.Ending.Forward
+UI.Ending.Meal,唉算了，涌现不出来了，我们去吃饭吧。,UI.Ending.Meal
+UI.Ending.Paper.Ants,蚂蚁,UI.Ending.Paper.Ants
+UI.Ending.Paper.Brain,大脑,UI.Ending.Paper.Brain
+UI.Ending.Paper.Cards,卡牌,UI.Ending.Paper.Cards
+UI.Ending.Paper.Computer,电脑,UI.Ending.Paper.Computer
+UI.Ending.Paper.Fountain,喷泉,UI.Ending.Paper.Fountain
+UI.Ending.Paper.Glasses,眼镜,UI.Ending.Paper.Glasses
+UI.Ending.Paper.Roguelike,肉鸽,UI.Ending.Paper.Roguelike
+UI.Ending.Paper.Solar,太阳系,UI.Ending.Paper.Solar
+UI.Ending.Paper.Thought,思考,UI.Ending.Paper.Thought
+UI.Ending.Paper.Toilet,马桶,UI.Ending.Paper.Toilet
+UI.Ending.Paper.Warning,警告,UI.Ending.Paper.Warning
+UI.Ending.Prompt,[C] 收集界面     [ESC] 退出游戏,UI.Ending.Prompt
+UI.Ending.PulseKey,空格-传导,UI.Ending.PulseKey
+UI.Ending.PulseTouch,跃迁键-传导,UI.Ending.PulseTouch
+UI.Ending.Thanks,恭喜你挖出来了！《挖哦》也因此诞生！感谢游玩！,UI.Ending.Thanks
+UI.Ending.Wait,等一下！,UI.Ending.Wait
+UI.Language.Auto,自动,UI.Language.Auto
+UI.Language.English,English,UI.Language.English
+UI.Language.Simplified,简体中文,UI.Language.Simplified
+UI.Language.Traditional,繁體中文,UI.Language.Traditional
+UI.Loading,加载中,UI.Loading
+UI.MainMenu.Clear,清除,UI.MainMenu.Clear
+UI.MainMenu.Continue,继续游戏,UI.MainMenu.Continue
+UI.MainMenu.Keep,保留,UI.MainMenu.Keep
+UI.MainMenu.KeepCollectionQuestion,发现有藏品进度，是否要保留藏品进度,UI.MainMenu.KeepCollectionQuestion
+UI.MainMenu.Quit,退出游戏,UI.MainMenu.Quit
+UI.MainMenu.Start,开始游戏,UI.MainMenu.Start
+UI.Mining.BombWall,这堵墙很硬，用炸弹试试,UI.Mining.BombWall
+UI.Mining.Hardness,破坏等级不足：矿镐 {0} / 岩层硬度 {1}，无法破坏,UI.Mining.Hardness
+UI.Mobile.Auto,自动,UI.Mobile.Auto
+UI.Mobile.AutoHint,当前自动使用画质模式。设置立即生效并保存。,UI.Mobile.AutoHint
+UI.Mobile.Balanced,均衡,UI.Mobile.Balanced
+UI.Mobile.BalancedHint,进一步减轻渲染负担，画面细节略有降低。,UI.Mobile.BalancedHint
+UI.Mobile.Comfort,舒适镜头（减少结局旋转与震动）,UI.Mobile.Comfort
+UI.Mobile.Off,关闭,UI.Mobile.Off
+UI.Mobile.OffHint,已关闭超分辨率，使用原有画面设置。,UI.Mobile.OffHint
+UI.Mobile.Performance,性能,UI.Mobile.Performance
+UI.Mobile.PerformanceHint,优先减轻渲染负担，画面会更柔和。,UI.Mobile.PerformanceHint
+UI.Mobile.Quality,画质,UI.Mobile.Quality
+UI.Mobile.QualityHint,优先保留画面细节，同时减轻渲染负担。,UI.Mobile.QualityHint
+UI.Mobile.Sensitivity,视角灵敏度,UI.Mobile.Sensitivity
+UI.Mobile.Unsupported,当前设备暂不支持超分辨率，自动保留原画质。,UI.Mobile.Unsupported
+UI.Mobile.Upscaling,画面超分辨率,UI.Mobile.Upscaling
+UI.Museum.LifeHint,再想想，比如说生命的涌现呢？,UI.Museum.LifeHint
+UI.Museum.PaintingHint,这画上好像有个奇怪的圆圈,UI.Museum.PaintingHint
+UI.Pad.Back,返回,UI.Pad.Back
+UI.Pad.Bomb,炸弹,UI.Pad.Bomb
+UI.Pad.Catalogue,图鉴,UI.Pad.Catalogue
+UI.Pad.Choose,左右选牌,UI.Pad.Choose
+UI.Pad.Clear,清空,UI.Pad.Clear
+UI.Pad.ClearThoughts,清空思维,UI.Pad.ClearThoughts
+UI.Pad.Click,点击,UI.Pad.Click
+UI.Pad.CloseThoughts,关闭左右思维,UI.Pad.CloseThoughts
+UI.Pad.Collection,切换藏品,UI.Pad.Collection
+UI.Pad.Confirm,确认,UI.Pad.Confirm
+UI.Pad.Cursor,光标,UI.Pad.Cursor
+UI.Pad.Drag,按住拖拽,UI.Pad.Drag
+UI.Pad.Drill,钻机,UI.Pad.Drill
+UI.Pad.Edit,编辑,UI.Pad.Edit
+UI.Pad.Fine,精调,UI.Pad.Fine
+UI.Pad.Fly,跳跃/飞行,UI.Pad.Fly
+UI.Pad.HoldFly,跳跃/按住飞行,UI.Pad.HoldFly
+UI.Pad.Interact,交互,UI.Pad.Interact
+UI.Pad.LeaveComputer,离开电脑,UI.Pad.LeaveComputer
+UI.Pad.Navigate,导航,UI.Pad.Navigate
+UI.Pad.Pause,暂停,UI.Pad.Pause
+UI.Pad.Play,出牌 {0}/{1},UI.Pad.Play
+UI.Pad.Purchased,升级成功,UI.Pad.Purchased
+UI.Pad.Rejected,暂时无法升级：资源不足或已满级,UI.Pad.Rejected
+UI.Pad.Reset,复位,UI.Pad.Reset
+UI.Pad.ResetProgress,重置：{0}% · 松开取消,UI.Pad.ResetProgress
+UI.Pad.Reward,领取钻机,UI.Pad.Reward
+UI.Pad.Rotate,旋转,UI.Pad.Rotate
+UI.Pad.SelectAll,全选,UI.Pad.SelectAll
+UI.Pad.Swap,交换,UI.Pad.Swap
+UI.Pad.SwapProperties,交换属性,UI.Pad.SwapProperties
+UI.Pad.Think,思考/交互,UI.Pad.Think
+UI.Pad.Thoughts,思维操作,UI.Pad.Thoughts
+UI.Pad.Toggle,选中/取消,UI.Pad.Toggle
+UI.Pad.ToggleAll,全选/清空,UI.Pad.ToggleAll
+UI.Pad.Upgrade,升级,UI.Pad.Upgrade
+UI.Pad.Use,操作,UI.Pad.Use
+UI.Pad.Waiting,暂停 · 等待牌局演出,UI.Pad.Waiting
+UI.Pad.Zoom,缩放,UI.Pad.Zoom
+UI.Pause.Collection,查看藏品,UI.Pause.Collection
+UI.Pause.MainMenu,返回主界面,UI.Pause.MainMenu
+UI.Pause.Resume,继续游戏,UI.Pause.Resume
+UI.Pause.Save,保存进度,UI.Pause.Save
+UI.Pause.Title,暂停,UI.Pause.Title
+UI.Pickaxe.Hardness,破坏等级 {Level} · 范围边长 {Width} cm · 每击基础深度 {Depth} cm（按岩层硬度修正）· 间隔 {Interval} 秒,UI.Pickaxe.Hardness
+UI.Pickaxe.Stages,{Hits} 击挖开 · 基础边长 {Width} cm · 基础深度 {Depth} cm · 间隔 {Interval} 秒,UI.Pickaxe.Stages
+UI.Quit.Cancel,取消,UI.Quit.Cancel
+UI.Quit.Confirm,确认退出,UI.Quit.Confirm
+UI.Quit.Question,确定退出游戏？,UI.Quit.Question
+UI.Save.Success,进度已保存,UI.Save.Success
+UI.Save.TerrainBusy,地形还在更新，稍等片刻后再返回主界面吧,UI.Save.TerrainBusy
+UI.Save.Unavailable,当前暂时无法保存，请回到探索状态后重试,UI.Save.Unavailable
+UI.Saving,保存中,UI.Saving
+UI.Settings.Ambience,环境声,UI.Settings.Ambience
+UI.Settings.Audio,音频,UI.Settings.Audio
+UI.Settings.Back,返回游戏,UI.Settings.Back
+UI.Settings.Effects,音效,UI.Settings.Effects
+UI.Settings.FOV,视野 FOV,UI.Settings.FOV
+UI.Settings.Haptics,手柄震动,UI.Settings.Haptics
+UI.Settings.HapticsContinuous,钻机与喷气持续震动,UI.Settings.HapticsContinuous
+UI.Settings.HapticsEnabled,震动总开关,UI.Settings.HapticsEnabled
+UI.Settings.HapticsOptional,轻微交互与演出提示,UI.Settings.HapticsOptional
+UI.Settings.HapticsStrength,震动强度   {Strength},UI.Settings.HapticsStrength
+UI.Settings.Language,语言,UI.Settings.Language
+UI.Settings.Look,镜头移动,UI.Settings.Look
+UI.Settings.Master,总音量,UI.Settings.Master
+UI.Settings.Music,音乐,UI.Settings.Music
+UI.Settings.Reset,恢复默认,UI.Settings.Reset
+UI.Settings.Sensitivity,灵敏度,UI.Settings.Sensitivity
+UI.Settings.Title,设置,UI.Settings.Title
+UI.Settings.Voice,语音,UI.Settings.Voice
+UI.Tool.Bomb,炸弹,UI.Tool.Bomb
+UI.Tool.Drill,钻机,UI.Tool.Drill
+UI.Tool.Jetpack,喷气背包,UI.Tool.Jetpack
+UI.Tool.Pickaxe,矿镐,UI.Tool.Pickaxe
+UI.Tutorial.Copper,收集1个铜矿,UI.Tutorial.Copper
+UI.Tutorial.Explore,继续前进探索,UI.Tutorial.Explore
+UI.Tutorial.GuideHint,没思路的话就看看左侧引导栏吧,UI.Tutorial.GuideHint
+UI.Tutorial.Iron,收集1个铁矿,UI.Tutorial.Iron
+UI.Tutorial.Prototype,发现第{0}个灵感原型,UI.Tutorial.Prototype
+UI.Tutorial.SoftSoil,哦！软软的泥土，这边一定是路,UI.Tutorial.SoftSoil
+UI.Tutorial.Soil,穿过1个泥土层,UI.Tutorial.Soil
+UI.Tutorial.Upgrade1,升级1次矿镐,UI.Tutorial.Upgrade1
+UI.Tutorial.Upgrade2,将矿镐升至2级,UI.Tutorial.Upgrade2
+UI.Tutorial.UpgradeReady,材料充足！按[Tab]升级矿镐,UI.Tutorial.UpgradeReady
+UI.Upgrade.BombCapacity,炸弹最大容量 ×2,UI.Upgrade.BombCapacity
+UI.Upgrade.BombCapacityAndFuse,最大容量再 ×2，引爆时间 ×0.5,UI.Upgrade.BombCapacityAndFuse
+UI.Upgrade.BombRadius,炸弹破坏范围 ×2,UI.Upgrade.BombRadius
+UI.Upgrade.BombRecharge,自动补充时间 ×0.8,UI.Upgrade.BombRecharge
+UI.Upgrade.CoolingDelay,开始自然散热的等待时间 ×0.5,UI.Upgrade.CoolingDelay
+UI.Upgrade.CoolingRate,自然散热速度 ×2,UI.Upgrade.CoolingRate
+UI.Upgrade.CreativeFlight,创造飞行：松手悬停，空格上升，左Ctrl下降,UI.Upgrade.CreativeFlight
+UI.Upgrade.DrillCapacity,最大能量储量 ×1.5,UI.Upgrade.DrillCapacity
+UI.Upgrade.DrillConsumption,能量消耗速度 ×0.75,UI.Upgrade.DrillConsumption
+UI.Upgrade.DrillRecovery,自然能量恢复速度 ×1.5,UI.Upgrade.DrillRecovery
+UI.Upgrade.Enough,✓ 已足够,UI.Upgrade.Enough
+UI.Upgrade.HeatCapacity,最大热量 ×2,UI.Upgrade.HeatCapacity
+UI.Upgrade.InfiniteDrill,无限钻机能量,UI.Upgrade.InfiniteDrill
+UI.Upgrade.Key,[ {0} ] 升级,UI.Upgrade.Key
+UI.Upgrade.Level,等级 {0},UI.Upgrade.Level
+UI.Upgrade.Max,已满级,UI.Upgrade.Max
+UI.Upgrade.Need,还需{0}个,UI.Upgrade.Need
+UI.World.Ride,乘车,UI.World.Ride
+UI.World.VoidRecovery,呼，刚才想到什么来着？,UI.World.VoidRecovery
+WenSi.Hint.Edit,拖动红词交换    G 返回    Q 放下思考,WenSi.Hint.Edit
+WenSi.Hint.Rearrange,G 重组    Q 放下左侧    R 放下右侧,WenSi.Hint.Rearrange
+WenSi.Hint.Reset,长按E-重置谜题,WenSi.Hint.Reset
+WenSi.Hint.Swap,R-交换词组    Q-关闭思考,WenSi.Hint.Swap
+WenSi.Hint.Think,E 思考    ,WenSi.Hint.Think
+WenSi.Noun.Ball,陶瓷球,WenSi.Noun.Ball
+WenSi.Noun.Balloon,气球,WenSi.Noun.Balloon
+WenSi.Noun.Board,木板,WenSi.Noun.Board
+WenSi.Noun.Cover,罩子,WenSi.Noun.Cover
+WenSi.Noun.Metal,金属块,WenSi.Noun.Metal
+WenSi.Noun.Miner,矿工,WenSi.Noun.Miner
+WenSi.Noun.Object,物体,WenSi.Noun.Object
+WenSi.Noun.Ornament,摆件,WenSi.Noun.Ornament
+WenSi.Noun.Rock,石块,WenSi.Noun.Rock
+WenSi.Noun.Screen,屏风,WenSi.Noun.Screen
+WenSi.Noun.Sculpture,雕塑,WenSi.Noun.Sculpture
+WenSi.Noun.Smoke,烟雾,WenSi.Noun.Smoke
+WenSi.Noun.Statue,雕像,WenSi.Noun.Statue
+WenSi.Noun.Weight,压块,WenSi.Noun.Weight
+WenSi.Statement,这是一个{Property}的{Noun},WenSi.Statement
+WenSi.Word.Big,大,WenSi.Word.Big
+WenSi.Word.Conductive,导电,WenSi.Word.Conductive
+WenSi.Word.Floating,悬浮,WenSi.Word.Floating
+WenSi.Word.Heavy,沉重,WenSi.Word.Heavy
+WenSi.Word.Intangible,虚无,WenSi.Word.Intangible
+WenSi.Word.Light,轻盈,WenSi.Word.Light
+WenSi.Word.Normal,普通,WenSi.Word.Normal
+WenSi.Word.Passable,可穿过,WenSi.Word.Passable
+WenSi.Word.Small,小,WenSi.Word.Small

@@ -1,4 +1,5 @@
 #include "MiningCollectionWidget.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningCollection.h"
 #include "MiningMineralRewards.h"
 #include "MiningMenuStyle.h"
@@ -19,6 +20,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Fonts/FontMeasure.h"
 #include "Styling/CoreStyle.h"
+#include "Internationalization/TextLocalizationManager.h"
 
 namespace
 {
@@ -63,6 +65,7 @@ void UMiningCollectionWidget::NativeConstruct()
     if(auto* Title=Cast<UTextBlock>(GetWidgetFromName(TEXT("CollectionTitle"))))
     {
         Title->SetFont(BrainMiningFonts::Title(36));
+        Title->SetText(MiningText::Get(TEXT("UI.Collection.Title")));
         if(auto* TitleSlot=Cast<UCanvasPanelSlot>(Title->Slot))
         {
             TitleSlot->SetSize(FVector2D(300,60));
@@ -198,6 +201,7 @@ void UMiningCollectionWidget::RevealCollection()
 void UMiningCollectionWidget::NativeTick(const FGeometry& G,float Dt)
 {
     Super::NativeTick(G,Dt);
+    if(TextRevision!=FTextLocalizationManager::Get().GetTextRevision())RefreshCollection();
     if(auto* Back=Cast<UButton>(GetWidgetFromName(TEXT("CloseButton"))))
         Back->SetRenderScale(FVector2D(Back->IsPressed()?.96f:Back->IsHovered()||Back->HasKeyboardFocus()?1.16f:1.f));
     for(const TCHAR* Name:{TEXT("PreviousButton"),TEXT("NextButton")})
@@ -225,8 +229,9 @@ void UMiningCollectionWidget::NativeTick(const FGeometry& G,float Dt)
 void UMiningCollectionWidget::RefreshCollection()
 {
     if(!IsValid(Collection))return;
+    TextRevision=FTextLocalizationManager::Get().GetTextRevision();
     if(auto* Count=Cast<UTextBlock>(GetWidgetFromName(TEXT("CollectionCount"))))
-        Count->SetText(FText::FromString(FString::Printf(TEXT("已收集%d/%d"),Collection->UniqueCount(),AMiningCollectible::ItemTypeCount)));
+        Count->SetText(FText::Format(MiningText::Get(TEXT("UI.Collection.Count")),FFormatNamedArguments{{TEXT("Count"),Collection->UniqueCount()},{TEXT("Total"),AMiningCollectible::ItemTypeCount}}));
     const int32 Id=Collection->SelectedId;
     const bool Owned=Collection->Inventory.IsValidIndex(Id)&&Collection->Inventory[Id]>0;
     if(auto* I=Cast<UImage>(GetWidgetFromName(TEXT("PreviewImage"))))
@@ -234,7 +239,7 @@ void UMiningCollectionWidget::RefreshCollection()
         if(Collection->PreviewMaterial)I->SetBrushFromMaterial(Collection->PreviewMaterial);
         I->SetVisibility(Owned?ESlateVisibility::HitTestInvisible:ESlateVisibility::Hidden);
     }
-    if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemName"))))T->SetText(FText::FromString(Owned?AMiningCollectible::ItemName(Id):TEXT("尚未发现")));
+    if(auto* T=Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemName"))))T->SetText(Owned?AMiningCollectible::ItemNameText(Id):MiningText::Get(TEXT("UI.Collection.Undiscovered")));
     const FString Description=Owned?AMiningCollectible::Description(Id):Collection->UnlockCondition(Id);
     if(auto* T=Cast<URichTextBlock>(GetWidgetFromName(TEXT("ItemDescription"))))
     {
@@ -272,13 +277,13 @@ void UMiningCollectionWidget::RefreshCollection()
             // The card is 222 units wide. Auto-wrap on an auto-sized canvas
             // label can reuse a collapsed width and stack a short name vertically.
             T->SetAutoWrapText(false);T->SetWrapTextAt(208.f);T->SetJustification(ETextJustify::Center);
-            T->SetText(FText::FromString(Has?AMiningCollectible::ItemName(Item):TEXT("尚未发现")));
+            T->SetText(Has?AMiningCollectible::ItemNameText(Item):MiningText::Get(TEXT("UI.Collection.Undiscovered")));
             T->SetRenderTranslation(FVector2D(0,AMiningCollectible::IsMineralReward(Item)?-14:0));
         }
         if(auto* Condition=Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemCondition%d"),I)))))
         {
             const bool Show=AMiningCollectible::IsMineralReward(Item);
-            Condition->SetText(FText::FromString(Show?FString::Printf(TEXT("%s收集%d个%s"),Has?TEXT("已"):TEXT(""),AMiningCollectible::UnlockThreshold(Item),*FMiningMineralCost::Name(MineralRewardType(Item))):FString()));
+            Condition->SetText(Show?FText::Format(MiningText::Get(Has?TEXT("UI.Collection.MineralGoalComplete"):TEXT("UI.Collection.MineralGoal")),FFormatNamedArguments{{TEXT("Target"),AMiningCollectible::UnlockThreshold(Item)},{TEXT("Mineral"),FMiningMineralCost::NameText(MineralRewardType(Item))}}):FText::GetEmpty());
             Condition->SetColorAndOpacity(Id==Item?FLinearColor(.12f,.10f,.025f):FLinearColor(.62f,.62f,.58f));
         }
         if(auto* W=Cast<UImage>(GetWidgetFromName(FName(*FString::Printf(TEXT("ItemSelected%d"),I)))))

@@ -48,6 +48,10 @@ public:
     UPROPERTY() int32 TutorialCompleted=0;
     UPROPERTY() int32 PrototypesFound=0;
     UPROPERTY() bool CampaignComplete=false;
+    UPROPERTY() bool AchievementEligible=true;
+    UPROPERTY() FString AchievementOwner;
+    UPROPERTY() bool HasVerifiedAchievementCollection=false;
+    UPROPERTY() TArray<int32> AchievementCollectionIds;
 };
 
 UCLASS()

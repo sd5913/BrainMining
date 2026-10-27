@@ -1,0 +1,154 @@
+[
+  {
+    "api_name": "ACH_FIRST_COLLECTION",
+    "hidden": false,
+    "stat": null,
+    "languages": {
+      "schinese": {
+        "name": "第一件灵感",
+        "description": "获得第一件藏品。"
+      },
+      "english": {
+        "name": "A Spark of Inspiration",
+        "description": "Find your first collectible."
+      },
+      "tchinese": {
+        "name": "第一件靈感",
+        "description": "獲得第一件收藏品。"
+      }
+    }
+  },
+  {
+    "api_name": "ACH_COLLECTION_5",
+    "hidden": false,
+    "stat": null,
+    "languages": {
+      "schinese": {
+        "name": "灵感正在聚集",
+        "description": "获得五种不同藏品。"
+      },
+      "english": {
+        "name": "Ideas Are Gathering",
+        "description": "Find five different collectibles."
+      },
+      "tchinese": {
+        "name": "靈感正在聚集",
+        "description": "獲得五種不同收藏品。"
+      }
+    }
+  },
+  {
+    "api_name": "ACH_COLLECTION_COMPLETE",
+    "hidden": false,
+    "stat": null,
+    "languages": {
+      "schinese": {
+        "name": "灵感收藏家",
+        "description": "收齐首发版本的全部藏品。"
+      },
+      "english": {
+        "name": "Collector of Ideas",
+        "description": "Find every collectible in the original collection."
+      },
+      "tchinese": {
+        "name": "靈感收藏家",
+        "description": "收齊首發版本的全部收藏品。"
+      }
+    }
+  },
+  {
+    "api_name": "ACH_PICKAXE_UPGRADE",
+    "hidden": false,
+    "stat": null,
+    "languages": {
+      "schinese": {
+        "name": "再锋利一点",
+        "description": "首次升级矿镐。"
+      },
+      "english": {
+        "name": "A Sharper Idea",
+        "description": "Upgrade your pickaxe for the first time."
+      },
+      "tchinese": {
+        "name": "再鋒利一點",
+        "description": "首次升級礦鎬。"
+      }
+    }
+  },
+  {
+    "api_name": "ACH_PICKAXE_MAX",
+    "hidden": false,
+    "stat": null,
+    "languages": {
+      "schinese": {
+        "name": "挖到底",
+        "description": "将矿镐升级至最高等级。"
+      },
+      "english": {
+        "name": "Dig Deep",
+        "description": "Fully upgrade your pickaxe."
+      },
+      "tchinese": {
+        "name": "挖到底",
+        "description": "將礦鎬升級至最高等級。"
+      }
+    }
+  },
+  {
+    "api_name": "ACH_CARD_ROOM_CLEAR",
+    "hidden": false,
+    "stat": null,
+    "languages": {
+      "schinese": {
+        "name": "组合的力量",
+        "description": "赢得卡牌房挑战。"
+      },
+      "english": {
+        "name": "More Than the Sum",
+        "description": "Win the card room challenge."
+      },
+      "tchinese": {
+        "name": "組合的力量",
+        "description": "贏得卡牌房挑戰。"
+      }
+    }
+  },
+  {
+    "api_name": "ACH_MUSEUM_CLEAR",
+    "hidden": false,
+    "stat": null,
+    "languages": {
+      "schinese": {
+        "name": "换个想法",
+        "description": "完成博物馆并进入结局。"
+      },
+      "english": {
+        "name": "A Change of Mind",
+        "description": "Finish the museum and enter the finale."
+      },
+      "tchinese": {
+        "name": "換個想法",
+        "description": "完成博物館並進入結局。"
+      }
+    }
+  },
+  {
+    "api_name": "ACH_CAMPAIGN_COMPLETE",
+    "hidden": false,
+    "stat": null,
+    "languages": {
+      "schinese": {
+        "name": "挖哦！",
+        "description": "完成游戏。"
+      },
+      "english": {
+        "name": "WOoOW!",
+        "description": "Complete the game."
+      },
+      "tchinese": {
+        "name": "挖哦！",
+        "description": "完成遊戲。"
+      }
+    }
+  }
+]

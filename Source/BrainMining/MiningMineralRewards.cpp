@@ -1,4 +1,5 @@
 #include "MiningMineralRewards.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningCollection.h"
 #include "MiningWalletSubsystem.h"
 #include "MiningSaveSubsystem.h"
@@ -23,11 +24,11 @@ int32 AMiningCollectible::UnlockThreshold(int32 Id)
 
 FString AMiningCollectionField::UnlockCondition(int32 Id) const
 {
-    if(!AMiningCollectible::IsMineralReward(Id))return TEXT("尚未解锁\n\n继续探索，寻找潜藏的灵感吧！");
+    if(!AMiningCollectible::IsMineralReward(Id))return MiningText::Get(TEXT("UI.Collection.Locked")).ToString();
     const auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     const int32 Count=Wallet->CollectedMineralTotals.FindRef(MineralRewardType(Id));
-    return FString::Printf(TEXT("尚未解锁\n\n解锁条件：累计收集%d个%s\n当前进度：%d / %d"),
-        AMiningCollectible::UnlockThreshold(Id),*FMiningMineralCost::Name(MineralRewardType(Id)),Count,AMiningCollectible::UnlockThreshold(Id));
+    return FText::Format(MiningText::Get(TEXT("UI.Collection.MineralCondition")),FFormatNamedArguments{
+        {TEXT("Target"),AMiningCollectible::UnlockThreshold(Id)},{TEXT("Mineral"),FMiningMineralCost::NameText(MineralRewardType(Id))},{TEXT("Count"),Count}}).ToString();
 }
 
 void AMiningCollectionField::CheckMineralRewards(bool bAnimate)

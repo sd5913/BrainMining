@@ -1,0 +1,402 @@
+{
+  "Collection.00.Name": {
+    "zh-Hans": "来自天堂的马桶",
+    "en": "The Heavenly Toilet",
+    "zh-Hant": "來自天堂的馬桶"
+  },
+  "Collection.01.Name": {
+    "zh-Hans": "电脑里的蚂蚁窝",
+    "en": "An Anthill in a Computer",
+    "zh-Hant": "電腦裡的蟻窩"
+  },
+  "Collection.02.Name": {
+    "zh-Hans": "化学试剂",
+    "en": "Chemical Reagents",
+    "zh-Hant": "化學試劑"
+  },
+  "Collection.03.Name": {
+    "zh-Hans": "肉鸽",
+    "en": "Rogue Pigeon",
+    "zh-Hant": "肉鴿"
+  },
+  "Collection.04.Name": {
+    "zh-Hans": "奇怪的计算器",
+    "en": "A Strange Calculator",
+    "zh-Hant": "奇怪的計算機"
+  },
+  "Collection.05.Name": {
+    "zh-Hans": "损坏的磁带",
+    "en": "A Damaged Cassette",
+    "zh-Hant": "損壞的錄音帶"
+  },
+  "Collection.06.Name": {
+    "zh-Hans": "音符",
+    "en": "Musical Notes",
+    "zh-Hant": "音符"
+  },
+  "Collection.07.Name": {
+    "zh-Hans": "老旧的相片",
+    "en": "An Old Photograph",
+    "zh-Hant": "老舊的相片"
+  },
+  "Collection.08.Name": {
+    "zh-Hans": "喷发中的可乐",
+    "en": "Erupting Cola",
+    "zh-Hant": "噴發中的可樂"
+  },
+  "Collection.09.Name": {
+    "zh-Hans": "「GPT」之花",
+    "en": "The GPT Flower",
+    "zh-Hant": "「GPT」之花"
+  },
+  "Collection.10.Name": {
+    "zh-Hans": "罐子里的萤火虫",
+    "en": "Fireflies in a Jar",
+    "zh-Hant": "罐子裡的螢火蟲"
+  },
+  "Collection.11.Name": {
+    "zh-Hans": "散落的彩带",
+    "en": "Scattered Streamers",
+    "zh-Hant": "散落的彩帶"
+  },
+  "Collection.12.Name": {
+    "zh-Hans": "发光的灯泡",
+    "en": "A Glowing Light Bulb",
+    "zh-Hant": "發光的燈泡"
+  },
+  "Collection.13.Name": {
+    "zh-Hans": "指南针",
+    "en": "A Compass",
+    "zh-Hant": "指南針"
+  },
+  "Collection.14.Name": {
+    "zh-Hans": "石间山水",
+    "en": "A Landscape in Stone",
+    "zh-Hant": "石間山水"
+  },
+  "Collection.15.Name": {
+    "zh-Hans": "光之万花筒",
+    "en": "A Kaleidoscope of Light",
+    "zh-Hant": "光之萬花筒"
+  },
+  "Collection.16.Name": {
+    "zh-Hans": "碳烤牛肉串",
+    "en": "Charcoal-Grilled Beef Skewers",
+    "zh-Hant": "炭烤牛肉串"
+  },
+  "Collection.17.Name": {
+    "zh-Hans": "水世界",
+    "en": "Water World",
+    "zh-Hant": "水世界"
+  },
+  "Collection.18.Name": {
+    "zh-Hans": "沉甸甸的金币袋",
+    "en": "A Heavy Bag of Gold",
+    "zh-Hant": "沉甸甸的金幣袋"
+  },
+  "Collection.19.Name": {
+    "zh-Hans": "一杯鸡尾酒",
+    "en": "A Cocktail",
+    "zh-Hant": "一杯調酒"
+  },
+  "Collection.20.Name": {
+    "zh-Hans": "太极",
+    "en": "Taiji",
+    "zh-Hant": "太極"
+  },
+  "Collection.21.Name": {
+    "zh-Hans": "晚高峰",
+    "en": "Rush Hour",
+    "zh-Hant": "晚間尖峰"
+  },
+  "Collection.22.Name": {
+    "zh-Hans": "满屏消息的手机",
+    "en": "A Phone Full of Messages",
+    "zh-Hant": "滿螢幕訊息的手機"
+  },
+  "Collection.00.Description": {
+    "zh-Hans": "这也许是一场令人措手不及的涌现。",
+    "en": "This might be a rather unexpected case of emergence.",
+    "zh-Hant": "這也許是一場令人措手不及的湧現。"
+  },
+  "Collection.01.Description": {
+    "zh-Hans": "每只蚂蚁只顾着挖掘、搬运，再循着同伴留下的气味前进。没有谁拿着整个巢穴的设计图，复杂的通路却在无数次微小的行动中逐渐成形。也许，宏大的结构就藏在这些简单规则里。",
+    "en": "Each ant digs, carries, and follows the scent left by its companions. No ant holds a blueprint of the whole colony, yet countless small actions gradually form an intricate network of tunnels. Perhaps grand structures are hidden in simple rules.",
+    "zh-Hant": "每隻螞蟻只顧著挖掘、搬運，再循著同伴留下的氣味前進。沒有誰拿著整個巢穴的設計圖，複雜的通路卻在無數次微小的行動中逐漸成形。也許，宏大的結構就藏在這些簡單規則裡。"
+  },
+  "Collection.02.Description": {
+    "zh-Hans": "单独看，每一种试剂都有自己的性质。混合之后，分子之间的相互作用却可能带来新的颜色、气味，甚至一种全新的物质。把简单的东西放在一起，有时会得到超出直觉的结果——试管里似乎藏着更多可能。",
+    "en": "Each reagent has its own properties. Mix them, and interactions between molecules may produce new colors, smells, or even a new substance. Simple ingredients can lead to surprising results. There may be more possibilities hiding in these test tubes.",
+    "zh-Hant": "單獨看，每一種試劑都有自己的性質。混合之後，分子之間的相互作用卻可能帶來新的顏色、氣味，甚至一種全新的物質。把簡單的東西放在一起，有時會得到超出直覺的結果——試管裡似乎藏著更多可能。"
+  },
+  "Collection.03.Description": {
+    "zh-Hans": "一件道具增加弹射，另一件让命中产生爆炸，再来一件，让爆炸也能触发弹射。原本普通的效果开始相互放大，最后形成连设计者都未必预料到的打法。许多肉鸽游戏（roguelike）都会做这种设计。",
+    "en": "One item adds ricochets. Another makes each hit explode. Add one more, and explosions trigger ricochets too. Ordinary effects begin amplifying one another, creating strategies even their designers may not have anticipated. Many roguelike games work this way.",
+    "zh-Hant": "一件道具增加彈射，另一件讓命中產生爆炸，再來一件，讓爆炸也能觸發彈射。原本普通的效果開始相互放大，最後形成連設計者都未必預料到的打法。許多 Roguelike 遊戲都會做這種設計。"
+  },
+  "Collection.04.Description": {
+    "zh-Hans": "把两个东西放在一起，它们之间便多了一种关系；当关系足够丰富，整体就可能表现出单个部分所没有的能力。",
+    "en": "Put two things together and a relationship forms between them. With enough relationships, the whole may develop abilities that none of its parts possess alone.",
+    "zh-Hant": "把兩個東西放在一起，它們之間便多了一種關係；當關係足夠豐富，整體就可能表現出單個部分所沒有的能力。"
+  },
+  "Collection.05.Description": {
+    "zh-Hans": "把磁带扯出来……大概只会让桌上涌现一团乱麻。",
+    "en": "Pull the tape out... and all that will emerge is probably a tangled mess on the desk.",
+    "zh-Hant": "把錄音帶扯出來……大概只會讓桌上湧現一團亂麻。"
+  },
+  "Collection.06.Description": {
+    "zh-Hans": "音符之间有了先后、间隔与重复，旋律和情绪便逐渐浮现。同样几个音，换一种关系，就能涌现出完全不同的世界。",
+    "en": "Arrange notes in a sequence, give them pauses and repetition, and melody and emotion begin to emerge. The same few notes can create completely different worlds through different relationships.",
+    "zh-Hant": "音符之間有了先後、間隔與重複，旋律和情緒便逐漸浮現。同樣幾個音，換一種關係，就能湧現出完全不同的世界。"
+  },
+  "Collection.07.Description": {
+    "zh-Hans": "相片只留住了一个瞬间，却能牵出当时的声音、气味，以及早已忘记的人。一个细节唤醒另一个细节，零散的记忆彼此连接，往事便重新变得鲜活。",
+    "en": "A photograph preserves only an instant, yet it can bring back sounds, smells, and people long forgotten. One detail awakens another. Scattered memories connect, and the past comes alive again.",
+    "zh-Hant": "相片只留住了一個瞬間，卻能牽出當時的聲音、氣味，以及早已忘記的人。一個細節喚醒另一個細節，零散的記憶彼此連接，往事便重新變得鮮活。"
+  },
+  "Collection.08.Description": {
+    "zh-Hans": "无数气泡迅速生长，推动液体一起冲出瓶口，涌现出一次剧烈的喷发。",
+    "en": "Countless bubbles expand rapidly, pushing the liquid out of the bottle in a spectacular eruption.",
+    "zh-Hant": "無數氣泡迅速生長，推動液體一起衝出瓶口，湧現出一次劇烈的噴發。"
+  },
+  "Collection.09.Description": {
+    "zh-Hans": "大量简单的计算单元经过训练与连接，逐渐表现出组织语言、关联概念的复杂能力。",
+    "en": "Through training and connections, vast numbers of simple computational units gradually develop complex abilities to organize language and link concepts.",
+    "zh-Hant": "大量簡單的計算單元經過訓練與連接，逐漸表現出組織語言、關聯概念的複雜能力。"
+  },
+  "Collection.10.Description": {
+    "zh-Hans": "每只萤火虫都按自己的节奏闪烁，也会根据附近同伴的闪光调整时机。局部的微小调整不断传递，原本零散的亮点便可能逐渐同步。没有统一指挥，秩序依然能从彼此回应中涌现。",
+    "en": "Each firefly flashes to its own rhythm, adjusting its timing in response to nearby flashes. Small local adjustments spread, and scattered lights may gradually synchronize. Even without a conductor, order can emerge from responding to one another.",
+    "zh-Hant": "每隻螢火蟲都按自己的節奏閃爍，也會根據附近同伴的閃光調整時機。局部的微小調整不斷傳遞，原本零散的亮點便可能逐漸同步。沒有統一指揮，秩序依然能從彼此回應中湧現。"
+  },
+  "Collection.11.Description": {
+    "zh-Hans": "成千上万根彩带喷涌而出，一起旋转、荡漾、飘落。",
+    "en": "Thousands upon thousands of streamers burst out, swirling, swaying, and drifting down together.",
+    "zh-Hant": "成千上萬根彩帶噴湧而出，一起旋轉、蕩漾、飄落。"
+  },
+  "Collection.12.Description": {
+    "zh-Hans": "散乱的铜线看起来很普通。直到电流沿着回路涌动，灯泡亮了！",
+    "en": "A tangle of copper wire looks quite ordinary. Then current flows through the circuit, and the bulb lights up!",
+    "zh-Hant": "散亂的銅線看起來很普通。直到電流沿著迴路湧動，燈泡亮了！"
+  },
+  "Collection.13.Description": {
+    "zh-Hans": "铁针内部有许多微小的磁畴。磁化让更多磁畴的方向趋于一致，整根针便显出磁性。能够自由转动的磁针在地磁场作用下偏转，指向磁南北。微小的排列，汇成了看得见的方向。",
+    "en": "Inside the iron needle are many tiny magnetic domains. Magnetization aligns more of them, giving the whole needle its magnetism. Free to turn, it responds to Earth’s magnetic field and points along magnetic north and south. Tiny alignments become a visible direction.",
+    "zh-Hant": "鐵針內部有許多微小的磁域。磁化讓更多磁域的方向趨於一致，整根針便顯出磁性。能夠自由轉動的磁針在地磁場作用下偏轉，指向磁南北。微小的排列，匯成了看得見的方向。"
+  },
+  "Collection.14.Description": {
+    "zh-Hans": "层层绿色纹带藏在一小块孔雀石里。换个角度，起伏成了远山，留白成了河流，一条小路穿过山间。无意的纹理，在人眼中形成了有情的诗意。",
+    "en": "Bands of green lie within a small piece of malachite. From another angle, the ridges become distant mountains, the open spaces become rivers, and a path winds between the peaks. Accidental patterns become poetry in the beholder’s eye.",
+    "zh-Hant": "層層綠色紋帶藏在一小塊孔雀石裡。換個角度，起伏成了遠山，留白成了河流，一條小路穿過山間。無意的紋理，在人眼中形成了有情的詩意。"
+  },
+  "Collection.15.Description": {
+    "zh-Hans": "一束白光进入钻石，经折射与色散显出不同的颜色。这些色彩再由镜筒内的镜片反复映照，随着转动，组合成不断变化的花朵与星芒。",
+    "en": "A beam of white light enters a diamond. Refraction and dispersion reveal its colors. Mirrors inside the tube reflect them again and again. As it turns, they form ever-changing flowers and starbursts.",
+    "zh-Hant": "一束白光進入鑽石，經折射與色散顯出不同的顏色。這些色彩再由鏡筒內的鏡片反覆映照，隨著轉動，組合成不斷變化的花朵與星芒。"
+  },
+  "Collection.16.Description": {
+    "zh-Hans": "牛肉、盐和香料原本各有滋味。遇上火候，褐变反应让新的香气与颜色逐渐出现，几样食材竟变成让人垂涎的美味。",
+    "en": "Beef, salt, and spices each have their own flavors. Add heat, and browning reactions gradually produce new aromas and colors. A few ingredients become something mouthwatering.",
+    "zh-Hant": "牛肉、鹽和香料原本各有滋味。遇上火候，褐變反應讓新的香氣與顏色逐漸出現，幾樣食材竟變成讓人垂涎的美味。"
+  },
+  "Collection.17.Description": {
+    "zh-Hans": "鱼、水草与微生物住进同一片水里。呼吸、光合作用与分解彼此衔接，在光照、换水和照料下，小小的鱼缸形成了一张相互依存的生命网络。",
+    "en": "Fish, plants, and microorganisms share the same water. Respiration, photosynthesis, and decomposition connect. With light, fresh water, and care, a tiny aquarium becomes an interdependent web of life.",
+    "zh-Hant": "魚、水草與微生物住進同一片水裡。呼吸、光合作用與分解彼此銜接，在光照、換水和照料下，小小的魚缸形成了一張相互依存的生命網絡。"
+  },
+  "Collection.18.Description": {
+    "zh-Hans": "一枚金币的回报再投入下一轮，新的回报又加入其中。一次次积累，让增长逐渐加快；不过，袋子里也藏着风险，财富并不会凭空出现。",
+    "en": "The return on one gold coin is reinvested, and new returns join it. Repeated accumulation can accelerate growth. But there is risk in the bag too: wealth does not appear from nothing.",
+    "zh-Hant": "一枚金幣的回報再投入下一輪，新的回報又加入其中。一次次累積，讓增長逐漸加快；不過，袋子裡也藏著風險，財富並不會憑空出現。"
+  },
+  "Collection.19.Description": {
+    "zh-Hans": "酸、甜、苦与酒香各有棱角。经过比例、摇和与冰的稀释，它们在杯中相互衬托，涌现出单独品尝时没有的层次。",
+    "en": "Sourness, sweetness, bitterness, and the aroma of spirits each have sharp edges. Proportion, shaking, and dilution with ice bring them together, creating layers that none has on its own.",
+    "zh-Hant": "酸、甜、苦與酒香各有稜角。經過比例、搖盪與冰的稀釋，它們在杯中相互襯托，湧現出單獨品嚐時沒有的層次。"
+  },
+  "Collection.20.Description": {
+    "zh-Hans": "无极而太极，以至万物化生。",
+    "en": "From the boundless arises Taiji, and from it, the transformation of all things.",
+    "zh-Hant": "無極而太極，以至萬物化生。"
+  },
+  "Collection.21.Description": {
+    "zh-Hans": "车门一开，人潮涌现。\n每个人都有自己的目的地。",
+    "en": "The doors open, and a crowd emerges.\nEveryone has somewhere to go.",
+    "zh-Hant": "車門一開，人潮湧現。\n每個人都有自己的目的地。"
+  },
+  "Collection.22.Description": {
+    "zh-Hans": "众口铄金，积毁销骨。",
+    "en": "Repeated accusations can melt metal; relentless slander can wear away bone.",
+    "zh-Hant": "眾口鑠金，積毀銷骨。"
+  },
+  "Collection.00.Quote": {
+    "zh-Hans": "不觉得这很神圣吗？",
+    "en": "Doesn’t this feel sacred?",
+    "zh-Hant": "不覺得這很神聖嗎？"
+  },
+  "Collection.01.Quote": {
+    "zh-Hans": "一台正在运行一个游戏的电脑……这是什么游戏？",
+    "en": "A computer running a game... What game is this?",
+    "zh-Hant": "一台正在執行遊戲的電腦……這是什麼遊戲？"
+  },
+  "Collection.02.Quote": {
+    "zh-Hans": "加点这个……再加点那个……",
+    "en": "A little of this... and a little of that...",
+    "zh-Hant": "加點這個……再加點那個……"
+  },
+  "Collection.03.Quote": {
+    "zh-Hans": "好肥的鸟！",
+    "en": "What a plump bird!",
+    "zh-Hant": "好肥的鳥！"
+  },
+  "Collection.04.Quote": {
+    "zh-Hans": "这个年代计算器也有自我意识了吗？",
+    "en": "Even calculators are self-aware these days?",
+    "zh-Hant": "這個年代計算機也有自我意識了嗎？"
+  },
+  "Collection.05.Quote": {
+    "zh-Hans": "小时候最喜欢的一集。",
+    "en": "My favorite episode as a kid.",
+    "zh-Hant": "小時候最喜歡的一集。"
+  },
+  "Collection.06.Quote": {
+    "zh-Hans": "长得很像蝌蚪，它会变成青蛙吗？",
+    "en": "It looks like a tadpole. Will it become a frog?",
+    "zh-Hant": "長得很像蝌蚪，牠會變成青蛙嗎？"
+  },
+  "Collection.07.Quote": {
+    "zh-Hans": "记忆是很宝贵的。",
+    "en": "Memories are precious.",
+    "zh-Hant": "記憶是很寶貴的。"
+  },
+  "Collection.08.Quote": {
+    "zh-Hans": "曼妥思VS可乐，你们知道吗？",
+    "en": "Mentos versus cola. Heard of that one?",
+    "zh-Hant": "曼陀珠 VS 可樂，你們知道嗎？"
+  },
+  "Collection.09.Quote": {
+    "zh-Hans": "好牛#的花。",
+    "en": "That is one heck of a flower.",
+    "zh-Hant": "好牛#的花。"
+  },
+  "Collection.10.Quote": {
+    "zh-Hans": "萤火虫萤火虫慢慢飞 夏夜里夏夜里风轻吹",
+    "en": "Fireflies drift slowly through a summer night’s gentle breeze.",
+    "zh-Hant": "螢火蟲螢火蟲慢慢飛 夏夜裡夏夜裡風輕吹"
+  },
+  "Collection.11.Quote": {
+    "zh-Hans": "恭喜！",
+    "en": "Congratulations!",
+    "zh-Hant": "恭喜！"
+  },
+  "Collection.12.Quote": {
+    "zh-Hans": "我有一个想法！",
+    "en": "I have an idea!",
+    "zh-Hant": "我有一個想法！"
+  },
+  "Collection.13.Quote": {
+    "zh-Hans": "海的那边是什么？",
+    "en": "What lies beyond the sea?",
+    "zh-Hant": "海的那邊是什麼？"
+  },
+  "Collection.14.Quote": {
+    "zh-Hans": "山在石头里，又或者，山在心里。",
+    "en": "Mountains in the stone, or mountains in the mind?",
+    "zh-Hant": "山在石頭裡，又或者，山在心裡。"
+  },
+  "Collection.15.Quote": {
+    "zh-Hans": "复杂的美，可以来自简单的重复。",
+    "en": "Complex beauty can come from simple repetition.",
+    "zh-Hant": "複雜的美，可以來自簡單的重複。"
+  },
+  "Collection.16.Quote": {
+    "zh-Hans": "高端的食材往往只需要最朴素的烹饪方式",
+    "en": "The finest ingredients often need only the simplest cooking.",
+    "zh-Hant": "高級的食材往往只需要最樸素的烹飪方式"
+  },
+  "Collection.17.Quote": {
+    "zh-Hans": "小小鱼缸，大大世界！",
+    "en": "A tiny aquarium, a whole wide world!",
+    "zh-Hant": "小小魚缸，大大世界！"
+  },
+  "Collection.18.Quote": {
+    "zh-Hans": "假如给你一个亿，代价是……先给我我就愿意！",
+    "en": "A hundred million, but at a price... Give me the money first. I’m in!",
+    "zh-Hant": "假如給你一個億，代價是……先給我我就願意！"
+  },
+  "Collection.19.Quote": {
+    "zh-Hans": "嗯～恰到好处",
+    "en": "Mmm... just right.",
+    "zh-Hant": "嗯～恰到好處"
+  },
+  "Collection.20.Quote": {
+    "zh-Hans": "道生一，一生二，二生三，三生万物",
+    "en": "The Dao gives rise to one, one to two, two to three, and three to all things.",
+    "zh-Hant": "道生一，一生二，二生三，三生萬物"
+  },
+  "Collection.21.Quote": {
+    "zh-Hans": "宁等一辆车，不抢一扇门。",
+    "en": "Wait for the next train. Don’t fight for the doors.",
+    "zh-Hant": "寧等一班車，不搶一扇門。"
+  },
+  "Collection.22.Quote": {
+    "zh-Hans": "其实很多话根本不重要",
+    "en": "Most of those words don’t really matter.",
+    "zh-Hant": "其實很多話根本不重要"
+  },
+  "Collection.00.Clue": {
+    "zh-Hans": "滴水的管道",
+    "en": "A dripping pipe",
+    "zh-Hant": "滴水的管道"
+  },
+  "Collection.01.Clue": {
+    "zh-Hans": "沿土层爬向蚁穴的蚂蚁",
+    "en": "Ants climbing through the earth toward their nest",
+    "zh-Hant": "沿土層爬向蟻穴的螞蟻"
+  },
+  "Collection.02.Clue": {
+    "zh-Hans": "彩色液滴",
+    "en": "Colorful droplets",
+    "zh-Hant": "彩色液滴"
+  },
+  "Collection.03.Clue": {
+    "zh-Hans": "高处的鸟巢",
+    "en": "A bird’s nest high above",
+    "zh-Hant": "高處的鳥巢"
+  },
+  "Collection.04.Clue": {
+    "zh-Hans": "土里错落埋藏的数字 1",
+    "en": "The number 1, scattered through the soil",
+    "zh-Hant": "土裡錯落埋藏的數字 1"
+  },
+  "Collection.08.Clue": {
+    "zh-Hans": "连通地下空腔、持续向上冒泡的孔洞",
+    "en": "A bubbling opening into an underground hollow",
+    "zh-Hant": "連通地下空腔、持續向上冒泡的孔洞"
+  },
+  "Collection.09.Clue": {
+    "zh-Hans": "土面上的一簇微光小花",
+    "en": "A cluster of softly glowing flowers",
+    "zh-Hant": "土面上的一簇微光小花"
+  },
+  "Collection.10.Clue": {
+    "zh-Hans": "沿土层延伸的闪烁光点",
+    "en": "Flickering lights stretching through the earth",
+    "zh-Hant": "沿土層延伸的閃爍光點"
+  },
+  "Collection.11.Clue": {
+    "zh-Hans": "红幕布后的庆祝舞台",
+    "en": "A celebration stage behind a red curtain",
+    "zh-Hant": "紅幕布後的慶祝舞臺"
+  },
+  "UI.Collection.DescriptionFormat": {
+    "zh-Hans": "{0}\n\n“{1}”",
+    "en": "{0}\n\n“{1}”",
+    "zh-Hant": "{0}\n\n「{1}」"
+  },
+  "Mineral.Unknown": {
+    "zh-Hans": "未知矿石",
+    "en": "unknown mineral",
+    "zh-Hant": "未知礦石"
+  }
+}

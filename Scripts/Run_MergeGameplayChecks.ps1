@@ -22,7 +22,11 @@ if($Mode -in @('Native','Office','P2')) {
         Office {'BrainMining.Office.ExitFlow'}
         P2 {'BrainMining.Encounters.PIE.P2CardEscapeCheckpoints'}
     }
-    $repairArgs+=@('-nullrhi',"-ExecCmds=Automation RunTests $repairTests", '-TestExit=Automation Test Queue Empty',"-ReportExportPath=$repairOut/$Mode")
+    # Office flood readiness now includes localized render-target textures.
+    # A NullRHI run can exercise bombs but cannot produce those flying windows.
+    if($Mode -eq 'Office'){$repairArgs+=@('-RenderOffscreen','-windowed','-ResX=1280','-ResY=800')}
+    else{$repairArgs+='-nullrhi'}
+    $repairArgs+=@("-ExecCmds=Automation RunTests $repairTests", '-TestExit=Automation Test Queue Empty',"-ReportExportPath=$repairOut/$Mode")
     $repairReport="$repairOut/$Mode/index.json"
 } elseif($Mode -eq 'HUD') {
     $repairArgs+=@("-ExecutePythonScript=$repairRoot/Scripts/verify_material_hud.py",'-RenderOffscreen','-windowed','-ResX=1600','-ResY=900')

@@ -21,6 +21,11 @@
 		}
 	],
 	"Plugins": [
+        {
+            "Name": "OnlineSubsystemSteam",
+            "Enabled": true,
+            "PlatformAllowList": ["Win64"]
+        },
 		{
 			"Name": "ArmASR",
 			"Enabled": true,

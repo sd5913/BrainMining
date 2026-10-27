@@ -1,5 +1,6 @@
 #include "MiningLoadingScreen.h"
 #include "MiningExperienceSubsystem.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningSaveSubsystem.h"
 #include "Subtitles/SubtitleSubsystem.h"
 #include "BrainMiningFonts.h"
@@ -72,34 +73,35 @@ bool UMiningExperienceSubsystem::TogglePauseMenu(bool bFromCredits)
     if(auto* Move=PC->GetPawn()->FindComponentByClass<UMiningCharacterMovementComponent>()){Move->ResetFlightInput();Move->StopMovementImmediately();}
     auto Choices=SNew(SVerticalBox);
     Choices->AddSlot().AutoHeight().Padding(0,0,0,32)[SNew(STextBlock).Justification(ETextJustify::Center)
-        .Text(FText::FromString(TEXT("暂停"))).Font(BrainMiningFonts::Title(32)).ColorAndOpacity(MiningMenuStyle::Gold)];
+        .Text(MiningText::Get(TEXT("UI.Pause.Title"))).Font(BrainMiningFonts::Title(32)).ColorAndOpacity(MiningMenuStyle::Gold)];
     TSharedPtr<SButton> FirstButton;
     auto Button=[&](const TCHAR* Text,TFunction<void()> Action)
     {
         auto Choice=SNew(SMiningPauseButton).Tag(FName(*(FString(TEXT("PauseAction_"))+Text))).ButtonStyle(MiningMenuStyle::Button()).HAlign(HAlign_Left).ContentPadding(FMargin(28,16))
             .OnClicked_Lambda([Action](){Action();return FReply::Handled();})
-            [SNew(STextBlock).Text(FText::FromString(Text)).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())];
+            [SNew(STextBlock).Text(MiningText::Get(Text)).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())];
         Choices->AddSlot().AutoHeight().Padding(0,7)[Choice];
         if(!FirstButton)FirstButton=Choice;
         return Choice;
     };
-    ResumeButton=Button(TEXT("继续游戏"),[this](){CloseMenu();});
-    auto CollectionButton=Button(TEXT("查看藏品"),[this](){OpenPauseCollection();});
+    ResumeButton=Button(TEXT("UI.Pause.Resume"),[this](){CloseMenu();});
+    auto CollectionButton=Button(TEXT("UI.Pause.Collection"),[this](){OpenPauseCollection();});
     CollectionButton->SetEnabled(bFromGameplay);
-    auto AudioButton=Button(TEXT("设置"),[this]()
+    auto AudioButton=Button(TEXT("UI.Settings.Title"),[this]()
     {
         auto* Controller=Cast<ABrainMiningPlayerController>(MenuController.Get());
         CloseMenu();
         if(Controller)Controller->ToggleAudioSettings();
     });
     AudioButton->SetEnabled(bFromGameplay&&Cast<ABrainMiningPlayerController>(PC)!=nullptr);
-    auto SaveButton=Button(TEXT("保存进度"),[this](){
+    auto SaveButton=Button(TEXT("UI.Pause.Save"),[this](){
         const bool Saved=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->SaveProgress();
         CloseMenu();
-        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayInteractionLines(TEXT("SaveResult"),{FText::FromString(Saved?TEXT("进度已保存"):TEXT("当前暂时无法保存，请回到探索状态后重试"))});
+        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayInteractionLines(TEXT("SaveResult"),{MiningText::Get(Saved?TEXT("UI.Save.Success"):TEXT("UI.Save.Unavailable"))});
     });
     SaveButton->SetEnabled(bFromGameplay && GetWorld()->GetMapName().EndsWith(TEXT("Lvl_MainGame")));
-    Button(TEXT("返回主界面"),[this](){ReturnToMainMenu();});
+    Button(TEXT("UI.Pause.MainMenu"),[this](){ReturnToMainMenu();});
+    Choices->AddSlot().AutoHeight()[GetGameInstance()->GetSubsystem<UMiningLocalizationSubsystem>()->MakeLanguageSelector()];
     Menu=MiningMenuStyle::Frame(Choices,650,0);
     PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);bPausedByMenu=!PC->IsPaused()&&PC->SetPause(true);
     Viewport->AddViewportWidgetContent(Menu.ToSharedRef(),1500);
@@ -116,16 +118,16 @@ void UMiningExperienceSubsystem::RequestQuitConfirmation()
     PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);
     auto Choices=SNew(SVerticalBox);
     Choices->AddSlot().AutoHeight().Padding(0,0,0,28)
-        [SNew(STextBlock).Text(FText::FromString(TEXT("确定退出游戏？"))).Justification(ETextJustify::Center)
+        [SNew(STextBlock).Text(MiningText::Get(TEXT("UI.Quit.Question"))).Justification(ETextJustify::Center)
             .Font(BrainMiningFonts::Title(32)).ColorAndOpacity(MiningMenuStyle::Gold)];
     Choices->AddSlot().AutoHeight().Padding(0,7)
         [SAssignNew(CancelQuitButton,SMiningPauseButton).Tag(TEXT("OpeningQuitCancel")).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(FMargin(28,16))
             .OnClicked_Lambda([this](){CancelQuitConfirmation();return FReply::Handled();})
-            [SNew(STextBlock).Text(FText::FromString(TEXT("取消"))).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())]];
+            [SNew(STextBlock).Text(MiningText::Get(TEXT("UI.Quit.Cancel"))).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())]];
     Choices->AddSlot().AutoHeight().Padding(0,7)
         [SNew(SMiningPauseButton).Tag(TEXT("OpeningQuitConfirm")).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(FMargin(28,16))
             .OnClicked_Lambda([this](){auto* Controller=MenuController.Get();CloseMenu();UKismetSystemLibrary::QuitGame(this,Controller,EQuitPreference::Quit,false);return FReply::Handled();})
-            [SNew(STextBlock).Text(FText::FromString(TEXT("确认退出"))).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())]];
+            [SNew(STextBlock).Text(MiningText::Get(TEXT("UI.Quit.Confirm"))).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())]];
     Menu=MiningMenuStyle::Frame(Choices,560,0);Viewport->AddViewportWidgetContent(Menu.ToSharedRef(),2000);
     FInputModeUIOnly Mode;Mode.SetWidgetToFocus(CancelQuitButton);PC->SetInputMode(Mode);PC->bShowMouseCursor=true;
 }
@@ -210,12 +212,12 @@ bool UMiningExperienceSubsystem::JumpToCollectible(int32 Id)
 
 void UMiningExperienceSubsystem::ReturnToMainMenu()
 {
-    FMiningLoadingScreen Saving(TEXT("保存中"));
+    FMiningLoadingScreen Saving(MiningText::Get(TEXT("UI.Saving")));
     auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();
     if(GetWorld()->GetMapName().EndsWith(TEXT("Lvl_MainGame")) && !Saves->SaveProgress())
     {
         CloseMenu();
-        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayStatusLine(FText::FromString(TEXT("地形还在更新，稍等片刻后再返回主界面吧")),4.f);
+        if(auto* Subtitles=USubtitleSubsystem::Get(this))Subtitles->PlayStatusLine(MiningText::Get(TEXT("UI.Save.TerrainBusy")),4.f);
         return;
     }
     CloseMenu();bAllUIHidden=false;Saves->EndSession();

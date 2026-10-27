@@ -1,5 +1,7 @@
 #include "WenSi/WenSiPuzzle.h"
+#include "MiningLocalizationSubsystem.h"
 #include "BrainMiningFonts.h"
+#include "Internationalization/TextLocalizationManager.h"
 #include "WenSi/WenSiThoughtBubble.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Engine/Texture2D.h"
@@ -126,7 +128,7 @@ void UWenSiPuzzleWidget::NativeTick(const FGeometry& MyGeometry,float InDeltaTim
 void UWenSiPuzzleWidget::Refresh()
 {
  if (!Puzzle.IsValid() || !Hint.IsValid()) return;
- FString NewSignature=Puzzle->bEditing ? TEXT("edit") : TEXT("walk");
+ FString NewSignature=FString::FromInt(FTextLocalizationManager::Get().GetTextRevision())+(Puzzle->bEditing ? TEXT("edit") : TEXT("walk"));
  for (int32 I=0;I<2;++I)
  {
   auto Obj=Puzzle->Thoughts[I].Get();
@@ -146,21 +148,20 @@ void UWenSiPuzzleWidget::Refresh()
    }
    Cards[I]->SetVisibility(Obj ? (Puzzle->bEditing ? EVisibility::Visible:EVisibility::HitTestInvisible) : EVisibility::Collapsed);
    Rows[I]->ClearChildren(); if (!Obj) continue;
-   WenSiThoughtBubble::AddText(Rows[I],TEXT("这是一个"),PuzzleThoughtFont(26));
-   Rows[I]->AddSlot().AutoWidth().VAlign(VAlign_Center)[SNew(SPuzzleThoughtWord).ThoughtIndex(I).Word(Obj->Adjective()).Puzzle(Puzzle)];
-   WenSiThoughtBubble::AddText(Rows[I],TEXT("的")+Obj->Noun(),PuzzleThoughtFont(26));
+   WenSiThoughtBubble::AddStatement(Rows[I],Obj->Noun(),
+    SNew(SPuzzleThoughtWord).ThoughtIndex(I).Word(Obj->Adjective()).Puzzle(Puzzle),PuzzleThoughtFont(26));
   }
  }
  FString Message;
  const bool SharedHUD = UMiningInteractionHUDWidget::IsActiveFor(GetOwningPlayer());
- if(Puzzle->bAimReset && !Puzzle->bEditing) { if (!SharedHUD) Message=TEXT("长按E-重置谜题"); }
+ if(Puzzle->bAimReset && !Puzzle->bEditing) { if (!SharedHUD) Message=MiningText::Get(TEXT("WenSi.Hint.Reset")).ToString(); }
  else if (!Puzzle->bComplete)
  {
-  if (Puzzle->bEditing) Message=TEXT("拖动红词交换    G 返回    Q 放下思考");
+  if (Puzzle->bEditing) Message=MiningText::Get(TEXT("WenSi.Hint.Edit")).ToString();
   else
   {
-   if (Puzzle->Aim!=INDEX_NONE && !SharedHUD) Message=TEXT("E 思考    ");
-   if(Puzzle->Thoughts[0].IsValid() || Puzzle->Thoughts[1].IsValid()) Message+=TEXT("G 重组    Q 放下左侧    R 放下右侧");
+   if (Puzzle->Aim!=INDEX_NONE && !SharedHUD) Message=MiningText::Get(TEXT("WenSi.Hint.Think")).ToString();
+   if(Puzzle->Thoughts[0].IsValid() || Puzzle->Thoughts[1].IsValid()) Message+=MiningText::Get(TEXT("WenSi.Hint.Rearrange")).ToString();
   }
  }
  Hint->SetText(FText::FromString(Message));

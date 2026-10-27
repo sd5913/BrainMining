@@ -2,7 +2,18 @@
 
 #include "BrainMining.h"
 #include "Modules/ModuleManager.h"
+#include "MiningLocalizationSubsystem.h"
 
-IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, BrainMining, "BrainMining" );
+class FBrainMiningModule : public FDefaultGameModuleImpl
+{
+public:
+    virtual void StartupModule() override
+    {
+        FDefaultGameModuleImpl::StartupModule();
+        MiningText::RegisterTables();
+    }
+};
+
+IMPLEMENT_PRIMARY_GAME_MODULE(FBrainMiningModule, BrainMining, "BrainMining");
 
 DEFINE_LOG_CATEGORY(LogBrainMining)

@@ -1,0 +1,18 @@
+﻿建议顺序：
+1. 01_gameplay_trailer_1920x1080_30fps.mp4
+   中文标题：实机玩法预告
+   English title: Gameplay Trailer
+   类别建议：Gameplay（已抽查开头及多处内容，主要为真实玩法剪辑；请最终通看确认）
+   时长约 1:44。来源为“宣传片.mp4”，H.264 + AAC、1080p、30 fps，保留原编码文件。
+   封面：01_trailer_poster_1920x1080.png，直接来自该视频 3 秒处。
+
+2. 02_extended_gameplay_1920x1080_30fps.mp4
+   中文标题：流程实机演示
+   English title: Extended Gameplay
+   类别建议：Gameplay
+   时长约 1:30。来源为“实机.mp4”，由 HEVC 50 fps 转为 H.264 30 fps / AAC 双声道，未改内容顺序或另配声音。
+   封面：02_extended_poster_1920x1080.png，来自该源视频 65 秒处。
+
+视频中的中文 UI/字幕没有被替换成英文。不要把现有中文内容标成专门重新制作的英文配音/英文 UI 预告片。
+上传后等待 Steam 转码，并检查画面、声音、缩略图和顺序。自定义预告片封面必须使用对应视频本身的帧，本包已按此方式制作。
+本包不包含“开始购买”“虚假下载”等营销按钮。

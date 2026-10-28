@@ -14,6 +14,7 @@
 #include "BrainMiningCharacter.h"
 #include "EchoPassagePlayer.h"
 #include "EchoPassageStage.h"
+#include "CardRoomPlayer.h"
 #include "GameFramework/Controller.h"
 #include "Materials/MaterialInterface.h"
 #include "Camera/CameraComponent.h"
@@ -219,13 +220,15 @@ void UMiningToolEffectsComponent::UpdateToolMode(bool bDrillMode)
 
 bool UMiningToolEffectsComponent::CanShowEffects() const
 {
+    const APawn* Pawn = Cast<APawn>(GetOwner());
+    if(const auto* Controller=Pawn?Pawn->GetController():nullptr)
+        if(const auto* Cards=Controller->FindComponentByClass<UCardRoomInteractionComponent>();Cards && Cards->IsSeated())return false;
     for(TActorIterator<AWenSiMirrorPuzzle> It(GetWorld());It;++It)if(It->bAreaActive)return false;
     for(TActorIterator<AWenSiPuzzle> It(GetWorld());It;++It)if(It->bAreaActive)return false;
     if(auto* PC=GetWorld()->GetFirstPlayerController())
         if(auto* Ending=AEndingEmergence::FindForPlayer(PC);Ending && Ending->Shot<0)return false;
     for(TActorIterator<APopupCloseStage> It(GetWorld());It;++It)
         if(It->bAreaActive && It->GetCompletedSessions()==0)return false;
-	const APawn* Pawn = Cast<APawn>(GetOwner());
 	return bEnabled && IsValid(PickaxePivot) && IsValid(Mining) && Pawn && Pawn->IsLocallyControlled();
 }
 

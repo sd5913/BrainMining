@@ -7,6 +7,7 @@
 
 class USoundClass;
 class USoundMix;
+class UAudioComponent;
 
 UCLASS()
 class BRAINMINING_API UMiningAudioSettings : public UGameInstanceSubsystem, public FTickableGameObject
@@ -31,7 +32,15 @@ public:
     void SetFieldOfView(float Value) { if(FMath::IsFinite(Value)) FieldOfView=FMath::Clamp(Value,80.f,115.f); }
     void SetLookSensitivity(float Value) { if (FMath::IsFinite(Value)) LookSensitivity=FMath::Clamp(Value,.2f,3.f); }
     USoundClass* GetClass(int32 Channel) const;
+    void HoldMuseumMusicForEnding(UAudioComponent* Music);
+    void FadeMuseumMusicIntoEnding();
+    UAudioComponent* RestoreMuseumMusic();
+    UAudioComponent* GetMuseumMusicBridge() const { return MuseumMusicBridge; }
 private:
+    void StopMuseumMusicBridge();
+    UPROPERTY(Transient) TObjectPtr<UAudioComponent> MuseumMusicBridge;
+    TWeakObjectPtr<UWorld> MuseumMusicWorld;
+    bool bMuseumMusicFading=false;
     float LookSensitivity=1.f;
     float FieldOfView=100.f;
     void Apply();

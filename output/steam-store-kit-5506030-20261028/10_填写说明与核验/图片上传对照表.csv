@@ -1,0 +1,12 @@
+﻿Steam字段,相对路径,尺寸
+Header Capsule,02_商店图片/header_capsule_920x430.png,920×430
+Small Capsule,02_商店图片/small_capsule_462x174.png,462×174
+Main Capsule,02_商店图片/main_capsule_1232x706.png,1232×706
+Vertical Capsule,02_商店图片/vertical_capsule_748x896.png,748×896
+Page Background（可选）,02_商店图片/page_background_1438x810.png,1438×810
+Library Capsule,03_游戏库图片/library_capsule_600x900.png,600×900
+Library Header,03_游戏库图片/library_header_920x430.png,920×430
+Library Hero,03_游戏库图片/library_hero_3840x1240.png,3840×1240
+Library Logo,03_游戏库图片/library_logo_1040x720.png,1040×720，透明 PNG
+Shortcut Icon,04_图标/shortcut_icon_256x256.png,256×256 PNG；另附 512 版
+App Icon,04_图标/app_icon_184x184.jpg,184×184 JPG

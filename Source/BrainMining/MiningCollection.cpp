@@ -132,6 +132,15 @@ bool AMiningCollectionField::InitializePlayer()
         ToiletPreviewCenter=ToiletBounds.IsValid?ToiletBounds.GetCenter():FVector::ZeroVector;
         PreviewToilet->SetActorEnableCollision(false);PreviewToilet->SetActorTickEnabled(false);
         PreviewToilet->WaterJet->DeactivateImmediate();PreviewToilet->OpeningSplash->DeactivateImmediate();
+        // The catalogue is a still life: the spray animation is disabled, so
+        // explicitly keep one duck in the bowl instead of hiding the whole pool.
+        if(auto* Duck=PreviewToilet->SprayDuck.Get();Duck && Duck->GetStaticMesh())
+        {
+            FVector Position=PreviewToilet->WaterOutlet->GetRelativeLocation();
+            Position.Z-=Duck->GetStaticMesh()->GetBoundingBox().Min.Z*Duck->GetRelativeScale3D().Z;
+            Duck->SetRelativeLocationAndRotation(Position,FRotator(0,-25,0));
+            Duck->SetVisibility(true);
+        }
         PreviewToilet->SetActorHiddenInGame(true);Capture->ShowOnlyActors.Add(PreviewToilet);
     }
     for(int i=0;i<2;++i)

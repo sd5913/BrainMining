@@ -8,6 +8,7 @@
 #include "HAL/FileManager.h"
 #include "Sound/SoundClass.h"
 #include "Sound/SoundMix.h"
+#include "Components/AudioComponent.h"
 
 namespace
 {
@@ -96,10 +97,43 @@ void UMiningAudioSettings::Tick(float DeltaTime)
     const auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();
     const bool Duck=GetWorld() && UGameplayStatics::IsGamePaused(this) && Session && Session->IsMenuOpen();
     if (AppliedWorld != GetWorld() || Duck!=bAppliedPauseDuck) Apply();
+    if(MuseumMusicBridge)
+    {
+        if(bMuseumMusicFading && !MuseumMusicBridge->IsPlaying()) StopMuseumMusicBridge();
+        else if(!bMuseumMusicFading && GetWorld()!=MuseumMusicWorld.Get() && GetWorld() && GetWorld()->HasBegunPlay()
+            && UGameplayStatics::GetCurrentLevelName(this,true)!=TEXT("Lvl_EndingEmergence_Demo")) StopMuseumMusicBridge();
+    }
+}
+
+void UMiningAudioSettings::HoldMuseumMusicForEnding(UAudioComponent* Music)
+{
+    StopMuseumMusicBridge();
+    MuseumMusicBridge=Music;MuseumMusicWorld=GetWorld();bMuseumMusicFading=false;
+}
+
+void UMiningAudioSettings::FadeMuseumMusicIntoEnding()
+{
+    if(MuseumMusicBridge && !bMuseumMusicFading)
+    {
+        // Match the ending's existing entrance fade, without restarting either track.
+        MuseumMusicBridge->FadeOut(4.35f,0.f);bMuseumMusicFading=true;
+    }
+}
+
+UAudioComponent* UMiningAudioSettings::RestoreMuseumMusic()
+{
+    auto* Music=MuseumMusicBridge.Get();MuseumMusicBridge=nullptr;
+    MuseumMusicWorld.Reset();bMuseumMusicFading=false;return Music;
+}
+
+void UMiningAudioSettings::StopMuseumMusicBridge()
+{
+    if(auto* Music=RestoreMuseumMusic()){Music->Stop();Music->DestroyComponent();}
 }
 
 void UMiningAudioSettings::Deinitialize()
 {
+    StopMuseumMusicBridge();
     Save();
     if (AppliedWorld.IsValid() && Mix) UGameplayStatics::PopSoundMixModifier(AppliedWorld.Get(), Mix);
     Super::Deinitialize();

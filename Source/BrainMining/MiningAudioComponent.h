@@ -42,6 +42,8 @@ public:
 	int32 GetAudioRegion() const { return AudioRegion; }
 	bool UsesMainGameAudio() const { return bMainGameAudio; }
 	int32 GetSoundscapeCount() const { return Soundscape.Num(); }
+    void BeginEndingMusicTransition();
+    void CancelEndingMusicTransition();
 	FName GetLastPlayedSound() const { return LastPlayedSound; }
 	EMiningAudioSurface GetLastContactSurface() const { return LastContactSurface; }
 	int32 GetContactCount() const { return ContactCount; }
@@ -95,6 +97,7 @@ private:
 	int32 PendingAudioRegion = INDEX_NONE;
 	float RegionStableSeconds = 0;
 	bool bMainGameAudio = false;
+    bool bMuseumMusicTransferred = false;
 	FName LastPlayedSound;
 	int32 ContactCount = 0;
 	EMiningAudioSurface LastContactSurface = EMiningAudioSurface::Stone;

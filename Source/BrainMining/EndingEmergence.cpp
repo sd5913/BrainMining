@@ -1161,6 +1161,7 @@ void AEndingEmergence::SetMusic(const TCHAR* Name,float Volume)
             Music->bIsUISound=true;
             MusicFadeAge=0;MusicTargetVolume=Volume;
             Music->SetVolumeMultiplier(0.f);Music->Play();
+            if(auto* Settings=GetGameInstance()->GetSubsystem<UMiningAudioSettings>())Settings->FadeMuseumMusicIntoEnding();
             UE_LOG(LogTemp,Display,TEXT("ENDING_MUSIC_PLAY %s volume=%.2f duration=%.2f"),*Path,Volume,S->GetDuration());
         }
     }

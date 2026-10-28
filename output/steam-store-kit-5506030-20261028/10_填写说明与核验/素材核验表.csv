@@ -1,0 +1,24 @@
+﻿file,dimensions,bytes,status
+02_商店图片/header_capsule_920x430.png,920x430,655263,PASS
+02_商店图片/small_capsule_462x174.png,462x174,159438,PASS
+02_商店图片/main_capsule_1232x706.png,1232x706,1478672,PASS
+02_商店图片/vertical_capsule_748x896.png,748x896,1114865,PASS
+02_商店图片/page_background_1438x810.png,1438x810,1409232,PASS
+03_游戏库图片/library_capsule_600x900.png,600x900,904005,PASS
+03_游戏库图片/library_header_920x430.png,920x430,655263,PASS
+03_游戏库图片/library_hero_3840x1240.png,3840x1240,3975465,PASS
+03_游戏库图片/library_logo_1040x720.png,1040x720,517438,PASS
+04_图标/app_icon_184x184.jpg,184x184,9502,PASS
+04_图标/shortcut_icon_256x256.png,256x256,93912,PASS
+04_图标/shortcut_icon_512x512.png,512x512,281642,PASS
+05_视频/01_trailer_poster_1920x1080.png,1920x1080,814374,PASS
+05_视频/02_extended_poster_1920x1080.png,1920x1080,1306078,PASS
+07_实机截图/01_mining_gold_2560x1440.png,2560x1440,1225649,PASS; original pixels preserved
+07_实机截图/02_mushroom_cavern_2560x1440.png,2560x1440,1311386,PASS; original pixels preserved
+07_实机截图/03_office_2560x1440.png,2560x1440,2949232,PASS; original pixels preserved
+07_实机截图/04_echo_passage_2560x1440.png,2560x1440,727315,PASS; original pixels preserved
+07_实机截图/05_giant_room_2560x1440.png,2560x1440,1951550,PASS; original pixels preserved
+07_实机截图/06_museum_2560x1440.png,2560x1440,1847190,PASS; original pixels preserved
+07_实机截图/07_red_cavern_2560x1440.png,2560x1440,776934,PASS; original pixels preserved
+06_介绍配图\01_digging.gif,616x346; 32 frames,3191218,PASS
+06_介绍配图\02_office.gif,616x346; 32 frames,2390861,PASS

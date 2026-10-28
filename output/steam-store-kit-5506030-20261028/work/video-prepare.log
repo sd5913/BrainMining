@@ -1,0 +1,297 @@
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\Users\abao\Desktop\挖哦素材\实机.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2mp41
+    encoder         : Lavf58.20.100
+  Duration: 00:01:30.00, start: 0.000000, bitrate: 19177 kb/s
+  Stream #0:0[0x1](und): Video: hevc (Main) (hvc1 / 0x31637668), yuv420p(tv), 1920x1080, 18978 kb/s, 50 fps, 50 tbr, 90k tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 189 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+Stream mapping:
+  Stream #0:0 -> #0:0 (hevc (native) -> h264 (libx264))
+  Stream #0:1 -> #0:1 (aac (native) -> aac (native))
+[libx264 @ 000002cb34a54140] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 000002cb34a54140] profile High, level 4.1, 4:2:0, 8-bit
+[libx264 @ 000002cb34a54140] 264 - core 164 r3192 c24e06c - H.264/MPEG-4 AVC codec - Copyleft 2003-2024 - http://www.videolan.org/x264.html - options: cabac=1 ref=2 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=6 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=18 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=1 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=30 rc=crf mbtree=1 crf=18.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 vbv_maxrate=16000 vbv_bufsize=32000 crf_max=0.0 nal_hrd=none filler=0 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\05_视频\02_extended_gameplay_1920x1080_30fps.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2mp41
+    encoder         : Lavf61.7.100
+  Stream #0:0(und): Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 1920x1080, q=2-31, 30 fps, 15360 tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.100 libx264
+      Side data:
+        cpb: bitrate max/min/avg: 16000000/0/0 buffer size: 32000000 vbv_delay: N/A
+  Stream #0:1(und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 192 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.100 aac
+frame=   25 fps=0.0 q=24.0 size=     256KiB time=00:00:00.76 bitrate=2735.9kbits/s dup=0 drop=55 speed=1.47x    frame=   71 fps= 67 q=24.0 size=     768KiB time=00:00:02.30 bitrate=2735.6kbits/s dup=0 drop=86 speed=2.17x    frame=  105 fps= 67 q=24.0 size=    1536KiB time=00:00:03.43 bitrate=3665.0kbits/s dup=0 drop=108 speed=2.18x    frame=  145 fps= 68 q=24.0 size=    2560KiB time=00:00:04.76 bitrate=4399.7kbits/s dup=0 drop=135 speed=2.24x    frame=  179 fps= 68 q=24.0 size=    3328KiB time=00:00:05.90 bitrate=4620.9kbits/s dup=0 drop=158 speed=2.24x    frame=  213 fps= 68 q=24.0 size=    4352KiB time=00:00:07.00 bitrate=5093.1kbits/s dup=0 drop=180 speed=2.22x    frame=  248 fps= 68 q=24.0 size=    5376KiB time=00:00:08.20 bitrate=5370.8kbits/s dup=0 drop=204 speed=2.24x    frame=  282 fps= 67 q=24.0 size=    6400KiB time=00:00:09.33 bitrate=5617.4kbits/s dup=0 drop=226 speed=2.23x    frame=  310 fps= 66 q=24.0 size=    7168KiB time=00:00:10.26 bitrate=5719.5kbits/s dup=0 drop=245 speed=2.18x    frame=  339 fps= 64 q=24.0 size=    8192KiB time=00:00:11.23 bitrate=5974.1kbits/s dup=0 drop=264 speed=2.14x    frame=  371 fps= 64 q=24.0 size=    9216KiB time=00:00:12.30 bitrate=6138.0kbits/s dup=0 drop=286 speed=2.13x    frame=  398 fps= 63 q=24.0 size=   10496KiB time=00:00:13.20 bitrate=6513.9kbits/s dup=0 drop=304 speed=2.09x    frame=  423 fps= 62 q=24.0 size=   11776KiB time=00:00:14.03 bitrate=6874.3kbits/s dup=0 drop=320 speed=2.06x    frame=  451 fps= 61 q=24.0 size=   13056KiB time=00:00:14.93 bitrate=7162.2kbits/s dup=0 drop=339 speed=2.03x    frame=  478 fps= 61 q=21.0 size=   14080KiB time=00:00:15.86 bitrate=7269.6kbits/s dup=0 drop=357 speed=2.01x    frame=  507 fps= 60 q=24.0 size=   15616KiB time=00:00:16.83 bitrate=7599.6kbits/s dup=0 drop=376 speed=2.01x    frame=  543 fps= 61 q=24.0 size=   16640KiB time=00:00:18.03 bitrate=7559.1kbits/s dup=0 drop=400 speed=2.02x    frame=  571 fps= 60 q=24.0 size=   17664KiB time=00:00:18.96 bitrate=7629.4kbits/s dup=0 drop=419 speed=2.01x    frame=  609 fps= 61 q=24.0 size=   18688KiB time=00:00:20.23 bitrate=7566.4kbits/s dup=0 drop=444 speed=2.03x    frame=  642 fps= 61 q=24.0 size=   19712KiB time=00:00:21.33 bitrate=7569.4kbits/s dup=0 drop=466 speed=2.04x    frame=  678 fps= 62 q=24.0 size=   20736KiB time=00:00:22.53 bitrate=7538.6kbits/s dup=0 drop=490 speed=2.05x    frame=  713 fps= 62 q=24.0 size=   21760KiB time=00:00:23.70 bitrate=7521.4kbits/s dup=0 drop=514 speed=2.06x    frame=  749 fps= 62 q=24.0 size=   22784KiB time=00:00:24.90 bitrate=7495.9kbits/s dup=0 drop=538 speed=2.07x    frame=  784 fps= 62 q=24.0 size=   23808KiB time=00:00:26.06 bitrate=7482.2kbits/s dup=0 drop=561 speed=2.07x    frame=  824 fps= 63 q=24.0 size=   25088KiB time=00:00:27.40 bitrate=7500.8kbits/s dup=0 drop=588 speed=2.09x    frame=  854 fps= 63 q=24.0 size=   26112KiB time=00:00:28.40 bitrate=7532.0kbits/s dup=0 drop=608 speed=2.09x    frame=  883 fps= 63 q=24.0 size=   26880KiB time=00:00:29.36 bitrate=7498.3kbits/s dup=0 drop=627 speed=2.08x    frame=  909 fps= 62 q=24.0 size=   28672KiB time=00:00:30.23 bitrate=7769.0kbits/s dup=0 drop=644 speed=2.07x    frame=  942 fps= 62 q=24.0 size=   29952KiB time=00:00:31.33 bitrate=7830.9kbits/s dup=0 drop=666 speed=2.07x    frame=  970 fps= 62 q=24.0 size=   31232KiB time=00:00:32.26 bitrate=7929.3kbits/s dup=0 drop=685 speed=2.06x    frame= 1006 fps= 62 q=24.0 size=   32768KiB time=00:00:33.46 bitrate=8021.0kbits/s dup=0 drop=709 speed=2.07x    frame= 1045 fps= 63 q=24.0 size=   34048KiB time=00:00:34.76 bitrate=8022.7kbits/s dup=0 drop=734 speed=2.08x    frame= 1083 fps= 63 q=24.0 size=   34560KiB time=00:00:36.03 bitrate=7857.1kbits/s dup=0 drop=760 speed=2.09x    frame= 1123 fps= 63 q=24.0 size=   35328KiB time=00:00:37.36 bitrate=7745.1kbits/s dup=0 drop=787 speed=2.11x    frame= 1161 fps= 64 q=24.0 size=   35584KiB time=00:00:38.63 bitrate=7545.4kbits/s dup=0 drop=812 speed=2.12x    frame= 1194 fps= 64 q=24.0 size=   36608KiB time=00:00:39.73 bitrate=7547.6kbits/s dup=0 drop=834 speed=2.12x    frame= 1226 fps= 64 q=24.0 size=   37632KiB time=00:00:40.80 bitrate=7555.9kbits/s dup=0 drop=856 speed=2.12x    frame= 1259 fps= 63 q=24.0 size=   38656KiB time=00:00:41.90 bitrate=7557.8kbits/s dup=0 drop=878 speed=2.11x    frame= 1289 fps= 63 q=24.0 size=   39680KiB time=00:00:42.90 bitrate=7577.1kbits/s dup=0 drop=898 speed=2.11x    frame= 1321 fps= 63 q=24.0 size=   40960KiB time=00:00:43.96 bitrate=7631.8kbits/s dup=0 drop=919 speed=2.11x    frame= 1350 fps= 63 q=24.0 size=   41984KiB time=00:00:44.93 bitrate=7654.3kbits/s dup=0 drop=938 speed= 2.1x    frame= 1387 fps= 63 q=24.0 size=   42752KiB time=00:00:46.16 bitrate=7586.1kbits/s dup=0 drop=963 speed=2.11x    frame= 1427 fps= 64 q=24.0 size=   43520KiB time=00:00:47.50 bitrate=7505.6kbits/s dup=0 drop=990 speed=2.12x    frame= 1464 fps= 64 q=24.0 size=   44288KiB time=00:00:48.70 bitrate=7449.8kbits/s dup=0 drop=1014 speed=2.12x    frame= 1496 fps= 64 q=24.0 size=   45568KiB time=00:00:49.80 bitrate=7495.9kbits/s dup=0 drop=1036 speed=2.13x    frame= 1525 fps= 64 q=24.0 size=   46592KiB time=00:00:50.76 bitrate=7518.4kbits/s dup=0 drop=1055 speed=2.12x    frame= 1558 fps= 64 q=24.0 size=   47616KiB time=00:00:51.86 bitrate=7520.6kbits/s dup=0 drop=1077 speed=2.12x    frame= 1621 fps= 65 q=24.0 size=   48384KiB time=00:00:53.96 bitrate=7344.6kbits/s dup=0 drop=1119 speed=2.16x    frame= 1663 fps= 65 q=24.0 size=   48896KiB time=00:00:55.36 bitrate=7234.6kbits/s dup=0 drop=1147 speed=2.17x    frame= 1697 fps= 65 q=24.0 size=   50432KiB time=00:00:56.50 bitrate=7312.2kbits/s dup=0 drop=1170 speed=2.17x    frame= 1725 fps= 65 q=24.0 size=   51456KiB time=00:00:57.43 bitrate=7339.4kbits/s dup=0 drop=1188 speed=2.16x    frame= 1762 fps= 65 q=24.0 size=   52224KiB time=00:00:58.66 bitrate=7292.4kbits/s dup=0 drop=1213 speed=2.17x    frame= 1801 fps= 65 q=24.0 size=   52736KiB time=00:00:59.96 bitrate=7204.2kbits/s dup=0 drop=1239 speed=2.17x    frame= 1830 fps= 65 q=24.0 size=   53760KiB time=00:01:00.93 bitrate=7227.6kbits/s dup=0 drop=1258 speed=2.17x    frame= 1856 fps= 65 q=24.0 size=   55040KiB time=00:01:01.80 bitrate=7295.9kbits/s dup=0 drop=1276 speed=2.16x    frame= 1884 fps= 65 q=24.0 size=   56576KiB time=00:01:02.73 bitrate=7388.0kbits/s dup=0 drop=1294 speed=2.15x    frame= 1911 fps= 64 q=24.0 size=   58112KiB time=00:01:03.63 bitrate=7481.2kbits/s dup=0 drop=1312 speed=2.15x    frame= 1947 fps= 65 q=24.0 size=   59136KiB time=00:01:04.83 bitrate=7472.1kbits/s dup=0 drop=1336 speed=2.15x    frame= 1976 fps= 64 q=24.0 size=   60160KiB time=00:01:05.80 bitrate=7489.8kbits/s dup=0 drop=1356 speed=2.14x    frame= 2011 fps= 64 q=24.0 size=   61440KiB time=00:01:06.96 bitrate=7515.9kbits/s dup=0 drop=1379 speed=2.15x    frame= 2045 fps= 64 q=24.0 size=   62464KiB time=00:01:08.10 bitrate=7514.0kbits/s dup=0 drop=1402 speed=2.15x    frame= 2077 fps= 64 q=24.0 size=   63232KiB time=00:01:09.16 bitrate=7489.1kbits/s dup=0 drop=1422 speed=2.15x    frame= 2112 fps= 64 q=24.0 size=   64256KiB time=00:01:10.33 bitrate=7484.2kbits/s dup=0 drop=1446 speed=2.15x    frame= 2146 fps= 65 q=24.0 size=   65024KiB time=00:01:11.46 bitrate=7453.5kbits/s dup=0 drop=1469 speed=2.15x    frame= 2181 fps= 65 q=24.0 size=   65792KiB time=00:01:12.63 bitrate=7420.4kbits/s dup=0 drop=1492 speed=2.15x    frame= 2233 fps= 65 q=24.0 size=   66560KiB time=00:01:14.36 bitrate=7332.0kbits/s dup=0 drop=1527 speed=2.17x    frame= 2279 fps= 65 q=24.0 size=   67328KiB time=00:01:15.90 bitrate=7266.8kbits/s dup=0 drop=1558 speed=2.18x    frame= 2319 fps= 66 q=24.0 size=   68096KiB time=00:01:17.23 bitrate=7222.8kbits/s dup=0 drop=1584 speed=2.19x    frame= 2353 fps= 66 q=24.0 size=   69376KiB time=00:01:18.36 bitrate=7252.2kbits/s dup=0 drop=1607 speed=2.19x    frame= 2388 fps= 66 q=24.0 size=   70656KiB time=00:01:19.53 bitrate=7277.6kbits/s dup=0 drop=1630 speed=2.19x    frame= 2421 fps= 66 q=24.0 size=   71936KiB time=00:01:20.63 bitrate=7308.4kbits/s dup=0 drop=1652 speed=2.18x    frame= 2446 fps= 65 q=24.0 size=   73216KiB time=00:01:21.46 bitrate=7362.3kbits/s dup=0 drop=1669 speed=2.18x    frame= 2476 fps= 65 q=24.0 size=   75264KiB time=00:01:22.46 bitrate=7476.5kbits/s dup=0 drop=1689 speed=2.17x    frame= 2500 fps= 65 q=24.0 size=   77056KiB time=00:01:23.26 bitrate=7581.0kbits/s dup=0 drop=1705 speed=2.17x    frame= 2527 fps= 65 q=24.0 size=   79616KiB time=00:01:24.16 bitrate=7749.1kbits/s dup=0 drop=1723 speed=2.16x    frame= 2560 fps= 65 q=24.0 size=   82176KiB time=00:01:25.26 bitrate=7895.1kbits/s dup=0 drop=1745 speed=2.16x    frame= 2618 fps= 65 q=24.0 size=   84480KiB time=00:01:27.20 bitrate=7936.5kbits/s dup=0 drop=1784 speed=2.18x    [mp4 @ 000002cb34abeb40] Starting second pass: moving the moov atom to the beginning of the file
+[out#0/mp4 @ 000002cb349f1940] video:83568KiB audio:2127KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.112069%
+frame= 2702 fps= 67 q=-1.0 Lsize=   85790KiB time=00:01:29.98 bitrate=7810.2kbits/s dup=0 drop=1798 speed=2.23x    
+[libx264 @ 000002cb34a54140] frame I:23    Avg QP:13.69  size: 70533
+[libx264 @ 000002cb34a54140] frame P:1017  Avg QP:18.06  size: 40212
+[libx264 @ 000002cb34a54140] frame B:1662  Avg QP:18.52  size: 25905
+[libx264 @ 000002cb34a54140] consecutive B-frames: 12.8% 12.2%  9.7% 65.3%
+[libx264 @ 000002cb34a54140] mb I  I16..4: 21.1% 66.8% 12.1%
+[libx264 @ 000002cb34a54140] mb P  I16..4: 13.0% 27.8%  4.3%  P16..4: 22.8%  6.1%  2.8%  0.0%  0.0%    skip:23.2%
+[libx264 @ 000002cb34a54140] mb B  I16..4:  8.0% 17.6%  1.6%  B16..8: 14.9%  5.8%  0.6%  direct:11.8%  skip:39.8%  L0:46.5% L1:43.6% BI: 9.9%
+[libx264 @ 000002cb34a54140] 8x8 transform intra:63.2% inter:60.2%
+[libx264 @ 000002cb34a54140] coded y,uvDC,uvAC intra: 45.4% 48.7% 18.7% inter: 17.1% 23.7% 1.6%
+[libx264 @ 000002cb34a54140] i16 v,h,dc,p: 39% 25% 16% 19%
+[libx264 @ 000002cb34a54140] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 26% 20% 27%  4%  5%  5%  5%  4%  4%
+[libx264 @ 000002cb34a54140] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 28% 21% 16%  5%  8%  7%  6%  4%  4%
+[libx264 @ 000002cb34a54140] i8c dc,h,v,p: 54% 20% 21%  5%
+[libx264 @ 000002cb34a54140] Weighted P-Frames: Y:24.8% UV:20.6%
+[libx264 @ 000002cb34a54140] ref P L0: 65.3% 34.7%
+[libx264 @ 000002cb34a54140] ref B L0: 77.7% 22.3%
+[libx264 @ 000002cb34a54140] ref B L1: 93.1%  6.9%
+[libx264 @ 000002cb34a54140] kb/s:7600.81
+[aac @ 000002cb34abb480] Qavg: 945.123
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0000011d16ec58c0] Unknown cover type: 0x1.
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\Users\abao\Desktop\挖哦素材\宣传片.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    creation_time   : 2026-10-19T11:46:11.000000Z
+    Hw              : 1
+    bitrate         : 12000000
+    maxrate         : 0
+    te_is_reencode  : 1
+    encoder         : Lavf61.1.100
+  Duration: 00:01:44.21, start: 0.000000, bitrate: 10107 kb/s
+  Stream #0:0[0x1](und): Video: h264 (Main) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 9908 kb/s, 30 fps, 30 tbr, 30 tbn (default)
+      Metadata:
+        creation_time   : 2026-10-19T11:46:11.000000Z
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, stereo, fltp, 193 kb/s (default)
+      Metadata:
+        creation_time   : 2026-10-19T11:46:11.000000Z
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> png (native))
+Output #0, image2, to 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\05_视频\01_trailer_poster_1920x1080.png':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    te_is_reencode  : 1
+    Hw              : 1
+    bitrate         : 12000000
+    maxrate         : 0
+    encoder         : Lavf61.7.100
+  Stream #0:0(und): Video: png, rgb24(pc, gbr/bt709/bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 30 fps, 30 tbn (default)
+      Metadata:
+        creation_time   : 2026-10-19T11:46:11.000000Z
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.100 png
+[image2 @ 0000011d18cd1040] The specified filename 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\05_视频\01_trailer_poster_1920x1080.png' does not contain an image sequence pattern or a pattern is invalid.
+[image2 @ 0000011d18cd1040] Use a pattern such as %03d for an image sequence or use the -update option (with -frames:v 1 if needed) to write a single image.
+[out#0/image2 @ 0000011d16ecd9c0] video:795KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=    1 fps=0.0 q=-0.0 Lsize=N/A time=00:00:00.03 bitrate=N/A speed=0.163x    
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\Users\abao\Desktop\挖哦素材\实机.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2mp41
+    encoder         : Lavf58.20.100
+  Duration: 00:01:30.00, start: 0.000000, bitrate: 19177 kb/s
+  Stream #0:0[0x1](und): Video: hevc (Main) (hvc1 / 0x31637668), yuv420p(tv), 1920x1080, 18978 kb/s, 50 fps, 50 tbr, 90k tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 189 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+Stream mapping:
+  Stream #0:0 -> #0:0 (hevc (native) -> png (native))
+Output #0, image2, to 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\05_视频\02_extended_poster_1920x1080.png':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2mp41
+    encoder         : Lavf61.7.100
+  Stream #0:0(und): Video: png, rgb24(pc, gbr/unknown/unknown, progressive), 1920x1080, q=2-31, 200 kb/s, 50 fps, 50 tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.100 png
+[image2 @ 0000020c951f7cc0] The specified filename 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\05_视频\02_extended_poster_1920x1080.png' does not contain an image sequence pattern or a pattern is invalid.
+[image2 @ 0000020c951f7cc0] Use a pattern such as %03d for an image sequence or use the -update option (with -frames:v 1 if needed) to write a single image.
+[out#0/image2 @ 0000020c94e61e40] video:1275KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=    1 fps=0.0 q=-0.0 Lsize=N/A time=00:00:00.02 bitrate=N/A speed=0.11x    
+[mov,mp4,m4a,3gp,3g2,mj2 @ 000002588a8f5a00] Unknown cover type: 0x1.
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\Users\abao\Desktop\挖哦素材\宣传片.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    creation_time   : 2026-10-19T11:46:11.000000Z
+    Hw              : 1
+    bitrate         : 12000000
+    maxrate         : 0
+    te_is_reencode  : 1
+    encoder         : Lavf61.1.100
+  Duration: 00:01:44.21, start: 0.000000, bitrate: 10107 kb/s
+  Stream #0:0[0x1](und): Video: h264 (Main) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 9908 kb/s, 30 fps, 30 tbr, 30 tbn (default)
+      Metadata:
+        creation_time   : 2026-10-19T11:46:11.000000Z
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, stereo, fltp, 193 kb/s (default)
+      Metadata:
+        creation_time   : 2026-10-19T11:46:11.000000Z
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> png (native))
+[Parsed_palettegen_2 @ 000002588f955c00] The input frame is not in sRGB, colors may be off
+    Last message repeated 31 times
+[Parsed_palettegen_2 @ 000002588f955c00] 127(+1) colors generated out of 175908 colors; ratio=0.000722
+Output #0, image2, to 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\work\01_digging-palette.png':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    te_is_reencode  : 1
+    Hw              : 1
+    bitrate         : 12000000
+    maxrate         : 0
+    encoder         : Lavf61.7.100
+  Stream #0:0(und): Video: png, rgba(pc, gbr/unknown/unknown, progressive), 16x16 [SAR 1:1 DAR 1:1], q=2-31, 200 kb/s, 8 fps, 8 tbn (default)
+      Metadata:
+        creation_time   : 2026-10-19T11:46:11.000000Z
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.100 png
+[image2 @ 000002588a8f2180] The specified filename 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\work\01_digging-palette.png' does not contain an image sequence pattern or a pattern is invalid.
+[image2 @ 000002588a8f2180] Use a pattern such as %03d for an image sequence or use the -update option (with -frames:v 1 if needed) to write a single image.
+[out#0/image2 @ 000002588a8f2080] video:1KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=    1 fps=0.0 q=-0.0 Lsize=N/A time=00:00:00.12 bitrate=N/A speed=0.311x    
+[mov,mp4,m4a,3gp,3g2,mj2 @ 00000211057f6b80] Unknown cover type: 0x1.
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\Users\abao\Desktop\挖哦素材\宣传片.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    creation_time   : 2026-10-19T11:46:11.000000Z
+    Hw              : 1
+    bitrate         : 12000000
+    maxrate         : 0
+    te_is_reencode  : 1
+    encoder         : Lavf61.1.100
+  Duration: 00:01:44.21, start: 0.000000, bitrate: 10107 kb/s
+  Stream #0:0[0x1](und): Video: h264 (Main) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 9908 kb/s, 30 fps, 30 tbr, 30 tbn (default)
+      Metadata:
+        creation_time   : 2026-10-19T11:46:11.000000Z
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, stereo, fltp, 193 kb/s (default)
+      Metadata:
+        creation_time   : 2026-10-19T11:46:11.000000Z
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+Input #1, png_pipe, from 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\work\01_digging-palette.png':
+  Duration: N/A, bitrate: N/A
+  Stream #1:0: Video: png, rgba(pc, gbr/unknown/unknown), 16x16 [SAR 1:1 DAR 1:1], 25 fps, 25 tbr, 25 tbn
+Stream mapping:
+  Stream #0:0 (h264) -> fps:default
+  Stream #1:0 (png) -> paletteuse
+  paletteuse:default -> Stream #0:0 (gif)
+Output #0, gif, to 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\06_介绍配图\01_digging.gif':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    te_is_reencode  : 1
+    Hw              : 1
+    bitrate         : 12000000
+    maxrate         : 0
+    encoder         : Lavf61.7.100
+  Stream #0:0: Video: gif, pal8(pc, gbr/bt709/bt709, progressive), 616x346 [SAR 692:693 DAR 16:9], q=2-31, 200 kb/s, 8 fps, 100 tbn
+      Metadata:
+        encoder         : Lavc61.19.100 gif
+[out#0/gif @ 0000021105e5edc0] video:3116KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.000627%
+frame=   32 fps=0.0 q=-0.0 Lsize=    3116KiB time=00:00:04.00 bitrate=6382.4kbits/s speed=7.92x    
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\Users\abao\Desktop\挖哦素材\实机.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2mp41
+    encoder         : Lavf58.20.100
+  Duration: 00:01:30.00, start: 0.000000, bitrate: 19177 kb/s
+  Stream #0:0[0x1](und): Video: hevc (Main) (hvc1 / 0x31637668), yuv420p(tv), 1920x1080, 18978 kb/s, 50 fps, 50 tbr, 90k tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 189 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+Stream mapping:
+  Stream #0:0 -> #0:0 (hevc (native) -> png (native))
+[Parsed_palettegen_2 @ 000001e003ec3280] 127(+1) colors generated out of 367475 colors; ratio=0.000346
+Output #0, image2, to 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\work\02_office-palette.png':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2mp41
+    encoder         : Lavf61.7.100
+  Stream #0:0(und): Video: png, rgba(pc, gbr/unknown/unknown, progressive), 16x16 [SAR 1:1 DAR 1:1], q=2-31, 200 kb/s, 8 fps, 8 tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.100 png
+[image2 @ 000001e003c0e0c0] The specified filename 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\work\02_office-palette.png' does not contain an image sequence pattern or a pattern is invalid.
+[image2 @ 000001e003c0e0c0] Use a pattern such as %03d for an image sequence or use the -update option (with -frames:v 1 if needed) to write a single image.
+[out#0/image2 @ 000001e003c01e80] video:1KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=    1 fps=0.0 q=-0.0 Lsize=N/A time=00:00:00.12 bitrate=N/A speed=0.128x    
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\Users\abao\Desktop\挖哦素材\实机.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2mp41
+    encoder         : Lavf58.20.100
+  Duration: 00:01:30.00, start: 0.000000, bitrate: 19177 kb/s
+  Stream #0:0[0x1](und): Video: hevc (Main) (hvc1 / 0x31637668), yuv420p(tv), 1920x1080, 18978 kb/s, 50 fps, 50 tbr, 90k tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 189 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+Input #1, png_pipe, from 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\work\02_office-palette.png':
+  Duration: N/A, bitrate: N/A
+  Stream #1:0: Video: png, rgba(pc, gbr/unknown/unknown), 16x16 [SAR 1:1 DAR 1:1], 25 fps, 25 tbr, 25 tbn
+Stream mapping:
+  Stream #0:0 (hevc) -> fps:default
+  Stream #1:0 (png) -> paletteuse
+  paletteuse:default -> Stream #0:0 (gif)
+Output #0, gif, to 'C:\Users\abao\Desktop\UE-Projects\BrainMining\output\steam-store-kit-5506030-20261028\06_介绍配图\02_office.gif':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2mp41
+    encoder         : Lavf61.7.100
+  Stream #0:0: Video: gif, pal8(pc, gbr/unknown/unknown, progressive), 616x346, q=2-31, 200 kb/s, 8 fps, 100 tbn
+      Metadata:
+        encoder         : Lavc61.19.100 gif
+frame=   27 fps=0.0 q=-0.0 size=    1792KiB time=00:00:03.37 bitrate=4349.6kbits/s speed= 6.6x    [out#0/gif @ 0000024b07b89cc0] video:2335KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.000837%
+frame=   32 fps=0.0 q=-0.0 Lsize=    2335KiB time=00:00:04.00 bitrate=4781.7kbits/s speed=6.75x    

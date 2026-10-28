@@ -1,0 +1,10 @@
+﻿本包没有登录、修改、保存或上传 Steamworks 后台；是供团队手动填写的本地资料包。
+所有公开文案均为建议稿，未擅自设置价格、日期、开发者信息或硬件配置。
+玩法依据：用户在本聊天中的介绍、“介绍.png”、七张实机截图、两段视频，以及项目中的 README_Collection.md、Docs/MainGameCollections.md、README_CardRoom.md、README_EchoPassage.md 和 Docs/LocalizationAndAchievements.md。
+不宣传无限随机世界、生存建造、肉鸽构筑、多人、真人三语配音或未经验收的 Steam 功能。
+采用素材文件夹当前 logo2.png，不改字形/笔画/纹理。只裁去外围透明空白并等比缩放、合成。
+已有背景与当前 Steam 竖版背景使用内置 image_gen 制作；Steam 竖版补图为无字背景，LOGO 由原 PNG 后期合成。
+电脑正面右/下边缘使用之前确认的局部修正，避免将选中白描边当作实际材质；游戏库壁纸同样处理。
+七张实机截图保持原像素；预告片封面直接提取对应视频原帧；图文展示动画只由原视频截取。
+GIF 为优化页面加载做了尺寸/帧率调整，未生成玩法。
+本地 index.html 是内部预览和复制工具，不是 Steam 后台或已经发布的网页。

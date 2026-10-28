@@ -1,0 +1,128 @@
+[
+  {
+    "File": "02_商店图片/header_capsule_920x430.png",
+    "Slot": "Header Capsule",
+    "Width": 920,
+    "Height": 430,
+    "Source": "C:\\Users\\abao\\.codex\\generated_images\\01a1537f-2b03-7b31-9e60-395ef3da0243\\exec-13f01ba7-cc2b-4f63-be45-a7bfb31c6ca5.png",
+    "LogoSHA256": "B45E7716A82391F8185BED8D968B672553B063F3C4B726D9A2A515282BA47D04",
+    "Bytes": 655263
+  },
+  {
+    "File": "02_商店图片/small_capsule_462x174.png",
+    "Slot": "Small Capsule",
+    "Width": 462,
+    "Height": 174,
+    "Source": "C:\\Users\\abao\\.codex\\generated_images\\01a1537f-2b03-7b31-9e60-395ef3da0243\\exec-13f01ba7-cc2b-4f63-be45-a7bfb31c6ca5.png",
+    "LogoSHA256": "B45E7716A82391F8185BED8D968B672553B063F3C4B726D9A2A515282BA47D04",
+    "Bytes": 159438
+  },
+  {
+    "File": "02_商店图片/main_capsule_1232x706.png",
+    "Slot": "Main Capsule",
+    "Width": 1232,
+    "Height": 706,
+    "Source": "C:\\Users\\abao\\.codex\\generated_images\\01a1537f-2b03-7b31-9e60-395ef3da0243\\exec-c824d94e-dfce-4b71-8f76-8022f97a32bf.png",
+    "LogoSHA256": "B45E7716A82391F8185BED8D968B672553B063F3C4B726D9A2A515282BA47D04",
+    "Bytes": 1478672
+  },
+  {
+    "File": "02_商店图片/vertical_capsule_748x896.png",
+    "Slot": "Vertical Capsule",
+    "Width": 748,
+    "Height": 896,
+    "Source": "C:\\Users\\abao\\.codex\\generated_images\\01a1537f-2b03-7b31-9e60-395ef3da0243\\exec-3101201b-5841-4cba-8756-6265b29c91f8.png",
+    "LogoSHA256": "B45E7716A82391F8185BED8D968B672553B063F3C4B726D9A2A515282BA47D04",
+    "Bytes": 1114865
+  },
+  {
+    "File": "03_游戏库图片/library_capsule_600x900.png",
+    "Slot": "Library Capsule",
+    "Width": 600,
+    "Height": 900,
+    "Source": "C:\\Users\\abao\\.codex\\generated_images\\01a1537f-2b03-7b31-9e60-395ef3da0243\\exec-6cff89e0-a784-4d91-81b9-f5022d013e0e.png",
+    "LogoSHA256": "B45E7716A82391F8185BED8D968B672553B063F3C4B726D9A2A515282BA47D04",
+    "Bytes": 904005
+  },
+  {
+    "File": "08_备用推广图/event_cover_800x450.png",
+    "Slot": "Optional Event Cover",
+    "Width": 800,
+    "Height": 450,
+    "Source": "C:\\Users\\abao\\.codex\\generated_images\\01a1537f-2b03-7b31-9e60-395ef3da0243\\exec-c824d94e-dfce-4b71-8f76-8022f97a32bf.png",
+    "LogoSHA256": "B45E7716A82391F8185BED8D968B672553B063F3C4B726D9A2A515282BA47D04",
+    "Bytes": 648908
+  },
+  {
+    "File": "08_备用推广图/event_header_1920x622.png",
+    "Slot": "Optional Event Header",
+    "Width": 1920,
+    "Height": 622,
+    "Source": "C:\\Users\\abao\\.codex\\generated_images\\01a1537f-2b03-7b31-9e60-395ef3da0243\\exec-13f01ba7-cc2b-4f63-be45-a7bfb31c6ca5.png",
+    "LogoSHA256": "B45E7716A82391F8185BED8D968B672553B063F3C4B726D9A2A515282BA47D04",
+    "Bytes": 1759653
+  },
+  {
+    "File": "07_实机截图/01_mining_gold_2560x1440.png",
+    "Slot": "Gameplay Screenshot",
+    "Width": 2560,
+    "Height": 1440,
+    "Source": "C:\\Users\\abao\\Desktop\\挖哦素材\\微信图片_20261021092440_4474_743.png",
+    "OriginalSHA256": "70698D3D7EAE99AED922A52CFD2AF68C69467AC49811DE5AB515B4A4A78BC1E1",
+    "Bytes": 1225649
+  },
+  {
+    "File": "07_实机截图/02_mushroom_cavern_2560x1440.png",
+    "Slot": "Gameplay Screenshot",
+    "Width": 2560,
+    "Height": 1440,
+    "Source": "C:\\Users\\abao\\Desktop\\挖哦素材\\微信图片_20261021092440_4475_743.png",
+    "OriginalSHA256": "7014FCEAB4CC58936161073363DEACE262121367365C3B0513F2ABD960048B86",
+    "Bytes": 1311386
+  },
+  {
+    "File": "07_实机截图/03_office_2560x1440.png",
+    "Slot": "Gameplay Screenshot",
+    "Width": 2560,
+    "Height": 1440,
+    "Source": "C:\\Users\\abao\\Desktop\\挖哦素材\\微信图片_20261021092440_4479_743.png",
+    "OriginalSHA256": "32ED2FD03EF953480373189D04A7D49099730F0DFC170F6722D34984745E5337",
+    "Bytes": 2949232
+  },
+  {
+    "File": "07_实机截图/04_echo_passage_2560x1440.png",
+    "Slot": "Gameplay Screenshot",
+    "Width": 2560,
+    "Height": 1440,
+    "Source": "C:\\Users\\abao\\Desktop\\挖哦素材\\微信图片_20261021092440_4476_743.png",
+    "OriginalSHA256": "CF660CCCF60DB3B1C849F7FAF10CD114384A08823987185EC52759E3C2B08764",
+    "Bytes": 727315
+  },
+  {
+    "File": "07_实机截图/05_giant_room_2560x1440.png",
+    "Slot": "Gameplay Screenshot",
+    "Width": 2560,
+    "Height": 1440,
+    "Source": "C:\\Users\\abao\\Desktop\\挖哦素材\\微信图片_20261021092440_4477_743.png",
+    "OriginalSHA256": "837FA96A741E72CE5DA2F8FACC07AD75F39863AE37C8408230DC816318CC1103",
+    "Bytes": 1951550
+  },
+  {
+    "File": "07_实机截图/06_museum_2560x1440.png",
+    "Slot": "Gameplay Screenshot",
+    "Width": 2560,
+    "Height": 1440,
+    "Source": "C:\\Users\\abao\\Desktop\\挖哦素材\\微信图片_20261021092440_4480_743.png",
+    "OriginalSHA256": "F51B4C3F1C3028F5C982624422707CB206C15CA09FE40B92EB6066A4E50B19A4",
+    "Bytes": 1847190
+  },
+  {
+    "File": "07_实机截图/07_red_cavern_2560x1440.png",
+    "Slot": "Gameplay Screenshot",
+    "Width": 2560,
+    "Height": 1440,
+    "Source": "C:\\Users\\abao\\Desktop\\挖哦素材\\微信图片_20261021092440_4478_743.png",
+    "OriginalSHA256": "E9DC22E3285A155D5AC5E91D2C92831A5D6CC38BF3D5FDD3550904520EBCAE1A",
+    "Bytes": 776934
+  }
+]

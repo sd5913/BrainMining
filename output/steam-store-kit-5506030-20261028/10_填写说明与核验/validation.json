@@ -1,0 +1,18 @@
+{
+  "validated_at": "2026-10-28",
+  "checks_passed": 23,
+  "original_logo_sha256": "b45e7716a82391f8185bed8d968b672553b063f3c4b726d9a2a515282ba47d04",
+  "screenshot_originals_preserved": 7,
+  "short_description_characters": {
+    "schinese": 84,
+    "english": 226,
+    "tchinese": 84
+  },
+  "gif_total_bytes": 5582079,
+  "backend_modified": false,
+  "pending": [
+    "final visual review",
+    "team factual fields",
+    "final Steam build feature/language validation"
+  ]
+}

@@ -1,0 +1,22 @@
+﻿建议顺序（英文名称方便在 Tag Wizard 中检索；中文标签名称以后台实际显示为准）：
+
+1. Exploration / 探索：核心活动是推进、观察、发现不同空间
+2. Mining / 采矿：挖掘岩层、矿物及工具成长是主要玩法
+3. First-Person / 第一人称：游戏的实际观察与操作视角
+4. Surreal / 超现实：身处脑海、尺度变化和跨空间奇遇
+5. Puzzle / 解谜：房间交互与想法相关谜题
+6. Adventure / 冒险：以连续场景和奇遇串联体验
+7. Collectathon / 收集马拉松：沿环境线索发现藏品并收入图鉴；若团队不希望突出收集可后移
+8. 3D / 3D：三维场景
+9. Stylized / 风格化：明确的简洁低多边形视觉
+10. Atmospheric / 氛围：矿道、房间及声音反馈塑造空间氛围
+11. Funny / 欢乐：无厘头藏品及反常识房间带来幽默感
+12. Destruction / 破坏：玩家实际挖开、改变岩体
+13. Singleplayer / 单人：当前为单人本地体验
+14. Indie / 独立：独立游戏定位
+15. Casual / 休闲：作为较低优先级定位；不承诺所有段落都无难度
+
+优先保证前五项准确，再根据 Tag Wizard 的实际可选项调整。
+没有必要凑满 20 个。本包推荐 15 项，避免弱相关标签稀释定位。
+不建议：Open World、Survival、Crafting、Roguelike、Deckbuilding、Multiplayer、Psychological Horror。
+原因：现有主流程为手工设计的连续探索；卡牌房是遭遇玩法，不能据此宣传为随机肉鸽牌组构筑游戏；截图较暗也不等于恐怖游戏。

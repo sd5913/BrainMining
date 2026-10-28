@@ -40,6 +40,7 @@ public:
 	FVector2D GetLatestClosePoint() const;
 	bool HasVariedWindowSizes() const;
     float GetScreenCoverage() const;
+    bool AreWindowsInsideScreen() const;
 	UFUNCTION(BlueprintPure, Category="Office") FString GetFrontPopupTitle() const;
 	UFUNCTION(BlueprintPure, Category="Office") FString GetFrontPopupBody() const;
 	UFUNCTION(BlueprintPure, Category="Office") int32 GetFrontPopupPhase() const;
@@ -79,7 +80,6 @@ private:
 	bool bIntroductionFallback=false;
 	float WorkElapsed=-1.f;
 	bool bReconnectShown=false;
-    int32 FloodPlacement=0;
 };
 
 UCLASS()

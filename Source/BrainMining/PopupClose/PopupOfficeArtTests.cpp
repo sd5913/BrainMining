@@ -43,6 +43,10 @@ namespace PopupOfficeArtTests
     Device=World->SpawnActor<APopupOfficeDevice>(FVector(0,1000,0),FRotator::ZeroRotator,Params);
     if(!Device.IsValid()){Test->AddError(TEXT("Could not spawn isolated live desktop"));return true;}
     Device->GetSurface()->SetTickWhenOffscreen(true);Device->SetScreenInteractive(true);
+    Test->TestEqual(TEXT("Physical eruption retains all six legacy styles"),PopupCloseContent::ArtCount,6);
+    TSet<int32> EmittedStyles;
+    for(int32 I=0;I<12;++I)EmittedStyles.Add(PopupCloseContent::FloodArtVariant(I));
+    Test->TestEqual(TEXT("Legacy emission cycle includes every style"),EmittedStyles.Num(),6);
     for(int32 I=0;I<PopupCloseContent::ArtCount;++I)
     {
      auto Slab=World->SpawnActor<APopupCloseFlyingWindow>(FVector(0,0,-5000-I*100),FRotator::ZeroRotator,Params);
@@ -70,6 +74,7 @@ namespace PopupOfficeArtTests
     if(Desktop->GetFrontUnreadCount()>0)
     {
      Test->TestTrue(TEXT("First message acknowledgement stays interactive"),Device->ClickReplyForValidation());
+     Test->TestTrue(TEXT("Expanded messages retain their complete frame within the CRT"),Desktop->AreWindowsInsideScreen());
      Test->TestEqual(TEXT("Unread notification immediately opens its message contents"),Desktop->GetFrontUnreadCount(),0);
      Deadline=FPlatformTime::Seconds()+.3;return false;
     }
@@ -95,7 +100,8 @@ namespace PopupOfficeArtTests
     Desktop->ClearPopups();Desktop->SpawnPopup();Desktop->SpawnPopup();
     Desktop->SetWorkElapsed(64.f);
     for(int32 I=0;I<64;++I)Desktop->SpawnPopup();
-    Test->TestTrue(TEXT("Late traffic covers at least 99 percent of the full desktop including edges"),Desktop->GetScreenCoverage()>=.99f);
+    Test->TestTrue(TEXT("Dense overlapping traffic keeps complete windows within the CRT safe area"),Desktop->AreWindowsInsideScreen());
+    Test->TestTrue(TEXT("Late traffic retains visible desktop margins"),Desktop->GetScreenCoverage()<.8f);
     for(auto Slab:Slabs)if(Slab.IsValid())
     {
      auto Mesh=Slab->FindComponentByClass<UStaticMeshComponent>();auto Material=Mesh->GetMaterial(0);
@@ -106,6 +112,14 @@ namespace PopupOfficeArtTests
     // along the platform, and rebuilding a preview must reset the departure.
     auto Train=Device->GetWorld()->SpawnActor<AMiningCollectible>();
     Train->BuildModel(21);Train->Exposure=.4f;Train->AnimateEmergence(100.f);
+    TArray<FLinearColor> TrouserColors;
+    for(int32 I=2;I<108;I+=3)
+    {
+     auto* Part=Cast<UStaticMeshComponent>(Train->EmergenceParts[I]);FLinearColor Color;
+     Test->TestTrue(TEXT("Commuter trousers keep a shared color material"),Part && Part->GetMaterial(0) && Part->GetMaterial(0)->GetVectorParameterValue(FMaterialParameterInfo(TEXT("Tint")),Color));
+     TrouserColors.AddUnique(Color);
+    }
+    Test->TestEqual(TEXT("Crowd trousers include black, grey and off-white"),TrouserColors.Num(),3);
     Test->TestFalse(TEXT("Opening starts with no crowd outside"),Train->EmergenceParts[0]->IsVisible());
     Train->AnimateEmergence(101.f);
     int Visible=0;for(int I=0;I<108;I+=3)Visible+=Train->EmergenceParts[I]->IsVisible()?1:0;

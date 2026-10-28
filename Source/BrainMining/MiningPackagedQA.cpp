@@ -708,6 +708,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Item->SetNumberField(TEXT("phase"),Desktop->GetFrontPopupPhase());Item->SetNumberField(TEXT("unread"),Desktop->GetFrontUnreadCount());
         Item->SetNumberField(TEXT("pending"),It->Pending());Item->SetNumberField(TEXT("handled"),It->Handled());
         Item->SetNumberField(TEXT("coverage"),Desktop->GetScreenCoverage());
+        Item->SetBoolField(TEXT("windows_inside_screen"),Desktop->AreWindowsInsideScreen());
         Item->SetBoolField(TEXT("accounting_valid"),It->AccountingValid());Desktops.Add(MakeShared<FJsonValueObject>(Item));
     }
     Result->SetArrayField(TEXT("office_desktops"),Desktops);

@@ -87,7 +87,8 @@ try:
     state = wait(lambda s: elapsed(s) >= 64.5)
     report['office_samples'].append(state)
     desktops = state['office_desktops']
-    check(len(desktops)==2 and all(d['coverage'] >= .99 for d in desktops), 'Late desktop traffic covers at least 99 percent of both screens')
+    check(len(desktops)==2 and all(d['windows_inside_screen'] for d in desktops), 'Every late popup stays completely inside the CRT safe area')
+    check(all(d['pending'] >= 45 and d['coverage'] < .8 for d in desktops), 'Late traffic builds a dense backlog while retaining desktop margins')
     check(all(d['accounting_valid'] for d in desktops), 'Denser traffic preserves issue accounting')
     report['late_desktop_performance'] = metrics('late-desktop')
     shot('office-filled')

@@ -58,7 +58,7 @@ void AMiningCollectible::BuildEmergenceParts()
         else
         {
             auto* Solid=NewObject<UStaticMeshComponent>(this);Part=Solid;
-            Solid->SetStaticMesh((ItemId==12||ItemId==2||ItemId==8||ItemId==10||ItemId==16||ItemId==17||ItemId==18||ItemId==19||(ItemId==21 && I<108 && I%3==0))?Sphere:Cube);Solid->SetMaterial(0,Mats[ItemId==21?(I>=108?4+(I-108)%4:(I%3==0?0:I%3==2?1:1+(I/3)%3)):ItemId==22?(I%6==0?1+(I/6)%3:0):I%4]);Solid->SetCollisionEnabled(ECollisionEnabled::NoCollision);Solid->SetCastShadow(false);
+            Solid->SetStaticMesh((ItemId==12||ItemId==2||ItemId==8||ItemId==10||ItemId==16||ItemId==17||ItemId==18||ItemId==19||(ItemId==21 && I<108 && I%3==0))?Sphere:Cube);Solid->SetMaterial(0,Mats[ItemId==21?(I>=108?4+(I-108)%4:(I%3==0?0:I%3==2?1+((I/3)*2+(I/9))%3:1+(I/3)%3)):ItemId==22?(I%6==0?1+(I/6)%3:0):I%4]);Solid->SetCollisionEnabled(ECollisionEnabled::NoCollision);Solid->SetCastShadow(false);
         }
         AddInstanceComponent(Part);Part->SetupAttachment(Model);
         FVector P,Scale;FRotator R=FRotator::ZeroRotator;

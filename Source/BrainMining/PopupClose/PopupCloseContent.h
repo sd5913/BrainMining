@@ -118,4 +118,13 @@ namespace PopupCloseContent
  }
  constexpr int32 DesktopWidth=1280;
  constexpr int32 DesktopHeight=800;
+ // Keep complete frames inside the curved CRT aperture, clear of its bezel.
+ constexpr float PopupMarginX=64.f;
+ constexpr float PopupMarginTop=56.f;
+ constexpr float PopupMarginBottom=80.f;
+ inline FVector2D FitPopupPosition(FVector2D Position,FVector2D Size)
+ {
+  return FVector2D(FMath::Clamp(Position.X,PopupMarginX,DesktopWidth-Size.X-PopupMarginX),
+   FMath::Clamp(Position.Y,PopupMarginTop,DesktopHeight-Size.Y-PopupMarginBottom));
+ }
 }

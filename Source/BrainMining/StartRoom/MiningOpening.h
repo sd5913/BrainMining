@@ -29,16 +29,19 @@ public:
     TWeakObjectPtr<AMiningOpening> Opening;
     virtual TSharedRef<SWidget> RebuildWidget() override;
     UFUNCTION() void StartGame();
+    UFUNCTION() void OpenSettings();
     UFUNCTION() void QuitGame();
     UFUNCTION() void ContinueGame();
     UPROPERTY(Transient) TObjectPtr<UButton> ContinueButton;
     UPROPERTY(Transient) TObjectPtr<UButton> StartButton;
+    UPROPERTY(Transient) TObjectPtr<UButton> SettingsButton;
     UPROPERTY(Transient) TObjectPtr<UButton> ExitButton;
     UPROPERTY(Transient) TObjectPtr<UImage> TitleImage;
 protected:
     virtual void NativeTick(const FGeometry& Geometry,float DeltaSeconds) override;
     float TitleFade=1.f;
     float StartScale=1.f;
+    float SettingsScale=1.f;
     float ContinueScale=1.f;
     float ExitScale=1.f;
 };

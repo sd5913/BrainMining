@@ -976,7 +976,7 @@
   },
   "Subtitle.Interaction.Computer": {
     "zh-Hans": "时间到了，该出门干活了……",
-    "en": "It’s time. Better head out and get to work…",
+    "en": "It's time. Better head out and get to work…",
     "zh-Hant": "時間到了，該出門幹活了……"
   },
   "Subtitle.Interaction.Book": {
@@ -996,7 +996,7 @@
   },
   "Subtitle.Interaction.Plant": {
     "zh-Hans": "祝我有好收获。",
-    "en": "Here’s hoping I find something good.",
+    "en": "Here's hoping I find something good.",
     "zh-Hant": "祝我有好收穫。"
   },
   "Subtitle.Interaction.Toilet": {
@@ -1066,7 +1066,7 @@
   },
   "Card.Return": {
     "zh-Hans": "*我一定会回来的！——*",
-    "en": "*I’ll be baaaack!*",
+    "en": "*I'll be baaaack!*",
     "zh-Hant": "*我一定會回來的！——*"
   },
   "UI.Ending.Enter": {
@@ -1106,7 +1106,7 @@
   },
   "UI.Ending.Meal": {
     "zh-Hans": "唉算了，涌现不出来了，我们去吃饭吧。",
-    "en": "Forget it. Nothing’s emerging. Let’s get something to eat.",
+    "en": "Forget it. Nothing's emerging. Let's get something to eat.",
     "zh-Hant": "唉，算了，湧現不出來了，我們去吃飯吧。"
   },
   "UI.Ending.Wait": {

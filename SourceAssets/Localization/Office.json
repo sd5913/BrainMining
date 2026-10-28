@@ -36,7 +36,7 @@
   },
   "Office.Popup.03.Body": {
     "zh-Hans": "@你 玩法草案放文档里了。\n有空看下，晚上一起定。",
-    "en": "@You The gameplay draft is in the doc.\nTake a look; let’s decide tonight.",
+    "en": "@You The gameplay draft is in the doc.\nTake a look; let's decide tonight.",
     "zh-Hant": "@你 玩法草案放文件裡了。\n有空看一下，晚上一起定。"
   },
   "Office.Popup.04.Title": {
@@ -66,7 +66,7 @@
   },
   "Office.Popup.06.Body": {
     "zh-Hans": "先做一个能玩的版本吧。\n剩下几个点子放备选。",
-    "en": "Let’s get a playable version first.\nKeep the other ideas for later.",
+    "en": "Let's get a playable version first.\nKeep the other ideas for later.",
     "zh-Hant": "先做一個能玩的版本吧。\n剩下幾個點子放備選。"
   },
   "Office.Popup.07.Title": {
@@ -116,7 +116,7 @@
   },
   "Office.Popup.11.Body": {
     "zh-Hans": "音效发群文件了。\n按钮和脚步声记得接一下。",
-    "en": "Sound effects are in the shared files.\nDon’t forget buttons and footsteps.",
+    "en": "Sound effects are in the shared files.\nDon't forget buttons and footsteps.",
     "zh-Hant": "音效放群組檔案了。\n按鈕和腳步聲記得接一下。"
   },
   "Office.Popup.12.Title": {
@@ -156,7 +156,7 @@
   },
   "Office.Popup.15.Body": {
     "zh-Hans": "我进游戏了。\n开头这里是要往哪边走？",
-    "en": "I’m in the game.\nWhich way do I go at the start?",
+    "en": "I'm in the game.\nWhich way do I go at the start?",
     "zh-Hant": "我進遊戲了。\n開頭這裡是要往哪邊走？"
   },
   "Office.Popup.16.Title": {
@@ -166,7 +166,7 @@
   },
   "Office.Popup.16.Body": {
     "zh-Hans": "「跳过对话以后动不了了。」\n附件：录屏_02.mp4",
-    "en": "“I can’t move after skipping dialogue.”\nAttachment: recording_02.mp4",
+    "en": "“I can't move after skipping dialogue.”\nAttachment: recording_02.mp4",
     "zh-Hant": "「跳過對話以後動不了了。」\n附件：錄影_02.mp4"
   },
   "Office.Popup.17.Title": {
@@ -176,7 +176,7 @@
   },
   "Office.Popup.17.Body": {
     "zh-Hans": "存档无法读取、角色穿墙、音效丢失。\n其中2项被标记为阻塞。",
-    "en": "Save won’t load, clipping, missing audio.\n2 issues marked as blockers.",
+    "en": "Save won't load, clipping, missing audio.\n2 issues marked as blockers.",
     "zh-Hant": "存檔無法讀取、角色穿牆、音效遺失。\n其中 2 項被標記為阻塞。"
   },
   "Office.Popup.18.Title": {
@@ -186,7 +186,7 @@
   },
   "Office.Popup.18.Body": {
     "zh-Hans": "跳跃参数调过了，再试下？\n我把新包传上去了。",
-    "en": "Jumping has been tweaked. Try again?\nI’ve uploaded a new build.",
+    "en": "Jumping has been tweaked. Try again?\nI've uploaded a new build.",
     "zh-Hant": "跳躍參數調過了，再試一下？\n我把新版本傳上去了。"
   },
   "Office.Popup.19.Title": {
@@ -226,7 +226,7 @@
   },
   "Office.Popup.22.Body": {
     "zh-Hans": "新包打开是黑屏。\n等等……好了，能进了。",
-    "en": "The new build opens to a black screen.\nWait… okay, it’s working now.",
+    "en": "The new build opens to a black screen.\nWait… okay, it's working now.",
     "zh-Hant": "新版本打開是黑畫面。\n等等……好了，能進了。"
   },
   "Office.Popup.23.Title": {
@@ -246,7 +246,7 @@
   },
   "Office.Popup.24.Body": {
     "zh-Hans": "最后这个包谁测过了？\n没问题我就上传了。",
-    "en": "Has anyone tested this final build?\nI’ll upload it if it’s ready.",
+    "en": "Has anyone tested this final build?\nI'll upload it if it's ready.",
     "zh-Hant": "最後這個版本誰測過了？\n沒問題我就上傳了。"
   },
   "Office.Popup.25.Title": {
@@ -276,7 +276,7 @@
   },
   "Office.Hint.Theme": {
     "zh-Hans": "本届创作主题",
-    "en": "This jam’s theme",
+    "en": "This jam's theme",
     "zh-Hant": "本屆創作主題"
   },
   "Office.Hint.Create": {

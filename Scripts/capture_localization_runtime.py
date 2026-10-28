@@ -1,4 +1,5 @@
 import json
+import re
 import time
 import traceback
 from pathlib import Path
@@ -22,7 +23,7 @@ def press(name, focused=True):
 
 
 def finish(error=None):
-    (output / 'report.json').write_text(json.dumps({'passed': error is None, 'error': error, 'images': state['images']}, ensure_ascii=False, indent=2), encoding='utf-8')
+    (output / 'report.json').write_text(json.dumps({'passed': error is None, 'error': error, 'initial_language': state.get('initial_language'), 'areas': state.get('areas', {}), 'images': state['images']}, ensure_ascii=False, indent=2), encoding='utf-8')
     levels.editor_request_end_play()
     state.update(phase='cleanup', next=time.monotonic() + 2)
 
@@ -66,6 +67,7 @@ def tick(delta):
                 return
             instance = unreal.GameplayStatics.get_game_instance(world)
             state['localization'] = next(item for item in unreal.ObjectIterator(unreal.MiningLocalizationSubsystem) if item.get_outer() == instance)
+            state['initial_language'] = {'preference': state['localization'].get_language_preference(), 'resolved': state['localization'].get_language()}
             state['menu'] = menu
             begin_screen('opening')
         elif state['phase'] == 'language':
@@ -74,6 +76,12 @@ def tick(delta):
         elif state['phase'] == 'capture':
             culture = cultures[state['culture']]
             assert state['localization'].get_language() == culture
+            if state['screen'] == 'map':
+                hall = unreal.GameplayStatics.get_all_actors_of_class(world, unreal.MiningExhibitHall)[0]
+                texts = [{'tag': str(area.tag), 'title': str(area.title), 'instructions': str(area.instructions)} for area in hall.areas]
+                state.setdefault('areas', {})[culture] = texts
+                if culture == 'en':
+                    assert not any(re.search(r'[\u3400-\u9fff]', item['title'] + item['instructions']) for item in texts), 'English map contains untranslated area text'
             name = state['screen'] + '-' + culture + '.png'
             assert helper.capture_preview(controller, str(output / name)), name
             state['images'].append(name)
@@ -82,10 +90,17 @@ def tick(delta):
                 state['phase'] = 'language'
                 return
             if state['screen'] == 'opening':
-                button = helper.read_preview_object(state['menu'], 'StartButton')
-                helper.simulate_preview_button(button, True)
-                helper.simulate_preview_button(button, False)
-                state.update(phase='settings', next=time.monotonic() + 5)
+                button = helper.read_preview_object(state['menu'], 'SettingsButton')
+                assert button, 'Main menu settings button is missing'
+                assert helper.simulate_preview_button(button, True)
+                assert helper.simulate_preview_button(button, False)
+                assert unreal.GameplayStatics.is_game_paused(world), 'Opening settings did not open'
+                begin_screen('opening-settings')
+            elif state['screen'] == 'opening-settings':
+                press('Escape')
+                assert not unreal.GameplayStatics.is_game_paused(world), 'Opening settings did not close'
+                assert controller.get_editor_property('show_mouse_cursor'), 'Opening cursor was not restored'
+                state.update(phase='start_game', next=time.monotonic() + 0.5)
             elif state['screen'] == 'settings':
                 press('Escape')
                 state.update(phase='pause', next=time.monotonic() + 0.5)
@@ -93,12 +108,29 @@ def tick(delta):
                 press('Escape')
                 fields = unreal.GameplayStatics.get_all_actors_of_class(world, unreal.MiningCollectionField)
                 field = next(item for item in fields if item.use_authored_placements)
+                state['collection'] = field
                 field.set_editor_property('area_managed', False)
                 helper.write_preview_state(field, 'Inventory', '(' + ','.join(['1'] * 23) + ')')
                 field.toggle_catalogue()
                 begin_screen('collection')
+            elif state['screen'] == 'collection':
+                state['collection'].toggle_catalogue()
+                hall = unreal.GameplayStatics.get_all_actors_of_class(world, unreal.MiningExhibitHall)[0]
+                assert hall.enter_area(0, True), 'Could not enter the first mine for map validation'
+                state.update(phase='map', next=time.monotonic() + 2)
+            elif state['screen'] == 'map':
+                press('Escape')
+                assert helper.prepare_collection_preview_area(controller, 1, False)
+                hall = unreal.GameplayStatics.get_all_actors_of_class(world, unreal.MiningExhibitHall)[0]
+                assert hall.enter_area(1, True), 'Could not enter the office for room-map validation'
+                state.update(phase='map-room', next=time.monotonic() + 2)
             else:
                 finish()
+        elif state['phase'] == 'start_game':
+            button = helper.read_preview_object(state['menu'], 'StartButton')
+            assert helper.simulate_preview_button(button, True)
+            assert helper.simulate_preview_button(button, False)
+            state.update(phase='settings', next=time.monotonic() + 5)
         elif state['phase'] == 'settings':
             press('F8', False)
             assert unreal.GameplayStatics.is_game_paused(world), 'Settings did not open'
@@ -107,6 +139,10 @@ def tick(delta):
             press('Escape')
             assert unreal.GameplayStatics.is_game_paused(world), 'Pause menu did not open'
             begin_screen('pause')
+        elif state['phase'] in ('map', 'map-room'):
+            press('M', False)
+            assert unreal.GameplayStatics.is_game_paused(world), 'Campaign map did not open'
+            begin_screen(state['phase'])
     except Exception:
         finish(traceback.format_exc())
     finally:

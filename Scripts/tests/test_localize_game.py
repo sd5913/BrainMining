@@ -1,5 +1,7 @@
 import importlib.util
+import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location("localize_game", Path(__file__).resolve().parents[1] / "localize_game.py")
@@ -36,6 +38,17 @@ class LocalizationTests(unittest.TestCase):
 
     def test_fuzzy_translation_is_not_imported(self):
         self.assertEqual(list(localize.parse_po('#, fuzzy\nmsgctxt "BrainMining.Game,UI.Test"\nmsgid "测试"\nmsgstr "Wrong"\n')), [])
+
+    def test_conditional_ui_references_are_checked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'Source/BrainMining/Menu.cpp'
+            source.parent.mkdir(parents=True)
+            source.write_text('MiningText::Get(opening ? TEXT("UI.Settings.BackToMenu") : TEXT("UI.Settings.Back"));', encoding='utf-8')
+            with patch.object(localize, 'ROOT', root):
+                with self.assertRaisesRegex(ValueError, 'UI.Settings.BackToMenu'):
+                    localize.validate_references({'UI.Settings.Back': {}})
+                localize.validate_references({'UI.Settings.Back': {}, 'UI.Settings.BackToMenu': {}})
 
 
 if __name__ == "__main__":

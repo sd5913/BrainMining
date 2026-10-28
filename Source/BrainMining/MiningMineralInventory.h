@@ -37,4 +37,15 @@ struct BRAINMINING_API FMiningMineralCost
         }
     }
     static FString Name(EMiningMineral Type) { return NameText(Type).ToString(); }
+    static FText LabelText(EMiningMineral Type)
+    {
+        switch (Type)
+        {
+        case EMiningMineral::Copper: return MiningText::Get(TEXT("UI.Mineral.Copper"));
+        case EMiningMineral::Iron: return MiningText::Get(TEXT("UI.Mineral.Iron"));
+        case EMiningMineral::Malachite: return MiningText::Get(TEXT("UI.Mineral.Malachite"));
+        case EMiningMineral::Diamond: return MiningText::Get(TEXT("UI.Mineral.Diamond"));
+        default: return NameText(Type);
+        }
+    }
 };

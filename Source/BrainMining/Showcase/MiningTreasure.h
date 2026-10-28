@@ -34,6 +34,7 @@ struct FMiningTreasureDefinition
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<int32> ValuesBySize;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<float> SizeMultipliers = {.55f, .7f, .85f, 1.f};
     static TArray<int32> DefaultValues(FName TreasureId);
+    FText GetDisplayName() const;
     bool HasValidSizeRules() const;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0")) float Weight = 1;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FName> Regions;
@@ -169,7 +170,7 @@ public:
 private:
     bool bAreaActive = false;
     float ToastRemaining = 0;
-    FString Toast;
+    FText Toast;
     TArray<int32> ObservedCuts;
     TMap<TWeakObjectPtr<AMiningTreasure>, uint32> ObservedTerrain;
     int32 TerrainUpdateCursor = 0;

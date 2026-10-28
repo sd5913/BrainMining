@@ -1,4 +1,5 @@
 #include "MiningCollection.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningSaveSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "DiggableRock.h"
@@ -269,7 +270,7 @@ void AMiningCollectionField::TickAmbient(float Dt)
                     FCollectionBird Flight; Flight.Actor=Bird; Flight.Delay=i*.16f;
                     Birds.Add(Flight);
                 }
-                Toast=TEXT("鸟群飞出了洞穴，巢里还留着一只歪头的小家伙"); ToastRemaining=6;
+                Toast=MiningText::Get(TEXT("UI.Collection.BirdsDeparted")); ToastRemaining=6;
             }
         }
     }

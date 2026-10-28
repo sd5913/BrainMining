@@ -1,4 +1,5 @@
 #include "StartRoom/MiningOpening.h"
+#include "BrainMiningPlayerController.h"
 #include "MiningLocalizationSubsystem.h"
 #include "MiningLoadingScreen.h"
 #include "MiningMenuStyle.h"
@@ -102,7 +103,7 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
     const bool bHasSave=Saves && Saves->HasSave();
     // Keep the labels clear of the chair. Rows stagger toward the left while
     // sharing the room's perspective direction, rather than opposing tilts.
-    CanvasSlot->SetAnchors(FAnchors(.865f,.65f-(bHasSave?86.f/900.f:0.f)));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
+    CanvasSlot->SetAnchors(FAnchors(.865f,.65f-86.f/900.f-(bHasSave?86.f/900.f:0.f)));CanvasSlot->SetAlignment(FVector2D(.5f,0));CanvasSlot->SetAutoSize(true);
     Column->SetRenderShear(FVector2D(0,0));
     auto AddButton=[&](const TCHAR* Name,const TCHAR* Label,float Angle,float Shear,float Offset)
     {
@@ -131,12 +132,10 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
     }
     StartButton=AddButton(TEXT("OpeningStartButton"),TEXT("UI.MainMenu.Start"),7.f,10.f,4.f);
     StartButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::StartGame);
-    ExitButton=AddButton(TEXT("OpeningExitButton"),TEXT("UI.MainMenu.Quit"),7.f,10.f,-12.f);
+    SettingsButton=AddButton(TEXT("OpeningSettingsButton"),TEXT("UI.Settings.Title"),7.f,10.f,-12.f);
+    SettingsButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::OpenSettings);
+    ExitButton=AddButton(TEXT("OpeningExitButton"),TEXT("UI.MainMenu.Quit"),7.f,10.f,-28.f);
     ExitButton->OnClicked.AddDynamic(this,&UMiningOpeningMenu::QuitGame);
-    auto* Language=WidgetTree->ConstructWidget<UMiningLanguageWidget>();
-    auto* LanguageSlot=Canvas->AddChildToCanvas(Language);
-    LanguageSlot->SetAnchors(FAnchors(.045f,.83f));
-    LanguageSlot->SetOffsets(FMargin(0,0,530,125));
     auto* DesignSize=WidgetTree->ConstructWidget<USizeBox>();
     DesignSize->SetWidthOverride(1600);DesignSize->SetHeightOverride(900);DesignSize->AddChild(Canvas);
     auto* Responsive=WidgetTree->ConstructWidget<UScaleBox>();Responsive->SetStretch(EStretch::ScaleToFit);
@@ -164,17 +163,28 @@ void UMiningOpeningMenu::NativeTick(const FGeometry& Geometry,float Dt)
     };
     AnimateButton(ContinueButton,ContinueScale);
     AnimateButton(StartButton,StartScale);
+    AnimateButton(SettingsButton,SettingsScale);
     AnimateButton(ExitButton,ExitScale);
     if(bStarting)
     {
         if(ContinueButton)ContinueButton->SetVisibility(ESlateVisibility::Collapsed);
         if(StartButton)StartButton->SetVisibility(ESlateVisibility::Collapsed);
+        if(SettingsButton)SettingsButton->SetVisibility(ESlateVisibility::Collapsed);
         if(ExitButton)ExitButton->SetVisibility(ESlateVisibility::Collapsed);
         TitleFade=FMath::Max(0.f,TitleFade-Dt/.75f);
         if(TitleImage)TitleImage->SetRenderOpacity(FMath::SmoothStep(0.f,1.f,TitleFade));
     }
 }
 void UMiningOpeningMenu::StartGame(){if(Opening.IsValid())Opening->StartGame();}
+void UMiningOpeningMenu::OpenSettings()
+{
+    if(!Opening.IsValid() || Opening->bStarted)return;
+    if(auto* Controller=Cast<ABrainMiningPlayerController>(GetOwningPlayer()))
+    {
+        if(SettingsButton)SettingsButton->SetUserFocus(Controller);
+        Controller->ToggleAudioSettings();
+    }
+}
 void UMiningOpeningMenu::QuitGame(){GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->RequestQuitConfirmation();}
 
 AMiningOpening::AMiningOpening()

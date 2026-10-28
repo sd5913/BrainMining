@@ -312,10 +312,26 @@ UI.Action.SkipTouch,继续按住以跳过,UI.Action.SkipTouch
 UI.Action.Space,空格,UI.Action.Space
 UI.Action.Think,思考,UI.Action.Think
 UI.Action.ThinkAbout,思考 · {Name},UI.Action.ThinkAbout
+UI.Area.Journey,房间二 · 回声、牌局与电视逃生,UI.Area.Journey
+UI.Area.JourneyInstructions,"敲击探路，挖开暖光洞口进入巨人房间；
+完成牌局与电视逃生后，前往石笋岩区。",UI.Area.JourneyInstructions
+UI.Area.Mine1,1. 硅质岩区,UI.Area.Mine1
+UI.Area.Mine2,2. 溶洞岩区,UI.Area.Mine2
+UI.Area.Mine3,3. 石笋岩区,UI.Area.Mine3
+UI.Area.MiningInstructions,"沿碎晶线索挖出矿石，瞄准后按 E 收入背包；
+按 Tab 消耗材料升级矿镐。",UI.Area.MiningInstructions
+UI.Area.Museum,房间三 · 文思镜像博物馆,UI.Area.Museum
+UI.Area.MuseumInstructions,完成镜像博物馆的谜题，即完成本次旅程。,UI.Area.MuseumInstructions
+UI.Area.Office,房间一 · 电脑弹窗,UI.Area.Office
+UI.Area.OfficeInstructions,"完成电脑与打印机流程，拾取炸弹并炸开出口；
+离开办公室后挖开连接土层。",UI.Area.OfficeInstructions
+UI.Collection.BirdsDeparted,鸟群飞出了洞穴，巢里还留着一只歪头的小家伙,UI.Collection.BirdsDeparted
 UI.Collection.Count,已收集{Count}/{Total},UI.Collection.Count
 UI.Collection.DescriptionFormat,"{0}
 
 “{1}”",UI.Collection.DescriptionFormat
+UI.Collection.ExpandedHint,右侧通道通往新展区：陈列藏品、四种挖掘线索和红幕布舞台,UI.Collection.ExpandedHint
+UI.Collection.FirstHint,先试试左侧已露出的试管架：瞄准它，按 E 收集,UI.Collection.FirstHint
 UI.Collection.Locked,"尚未解锁
 
 继续探索，寻找潜藏的灵感吧！",UI.Collection.Locked
@@ -325,7 +341,11 @@ UI.Collection.MineralCondition,"尚未解锁
 当前进度：{Count} / {Target}",UI.Collection.MineralCondition
 UI.Collection.MineralGoal,收集{Target}个{Mineral},UI.Collection.MineralGoal
 UI.Collection.MineralGoalComplete,已收集{Target}个{Mineral},UI.Collection.MineralGoalComplete
+UI.Collection.NewRound,已开始新一轮，收集进度清空；寻找墙面线索与新展区,UI.Collection.NewRound
 UI.Collection.Pickup,已收集 · {Name},UI.Collection.Pickup
+UI.Collection.PickupHint,已收集 · {0}     [ {1} ] 打开图鉴,UI.Collection.PickupHint
+UI.Collection.Released,{0} 已松动掉落，瞄准后按 E 收集,UI.Collection.Released
+UI.Collection.SearchHint,沿水管或矿道寻找藏品，挖开覆盖层后瞄准按 E 收集；{0} 打开图鉴。,UI.Collection.SearchHint
 UI.Collection.Shortcut,[C]查看藏品,UI.Collection.Shortcut
 UI.Collection.Title,奇物收藏,UI.Collection.Title
 UI.Collection.Undiscovered,尚未发现,UI.Collection.Undiscovered
@@ -363,6 +383,42 @@ UI.MainMenu.Keep,保留,UI.MainMenu.Keep
 UI.MainMenu.KeepCollectionQuestion,发现有藏品进度，是否要保留藏品进度,UI.MainMenu.KeepCollectionQuestion
 UI.MainMenu.Quit,退出游戏,UI.MainMenu.Quit
 UI.MainMenu.Start,开始游戏,UI.MainMenu.Start
+UI.Map.AfterCompletion,完成当前玩法后,UI.Map.AfterCompletion
+UI.Map.Back,已暂停  ·  M / Esc 返回,UI.Map.Back
+UI.Map.BelowEntrance,低于入口 {0} 米,UI.Map.BelowEntrance
+UI.Map.Clues,本段挖掘线索,UI.Map.Clues
+UI.Map.Collected,已收集,UI.Map.Collected
+UI.Map.Collectibles,本段藏品,UI.Map.Collectibles
+UI.Map.EchoCards,回声 / 卡牌,UI.Map.EchoCards
+UI.Map.Elevation,高度图  ·  左入口 → 右出口,UI.Map.Elevation
+UI.Map.EndpointsLegend,白点 = 入口   绿点 = 出口,UI.Map.EndpointsLegend
+UI.Map.EnterNext,即可进入下一房间。,UI.Map.EnterNext
+UI.Map.Entrance,入口,UI.Map.Entrance
+UI.Map.Exit,出口,UI.Map.Exit
+UI.Map.FollowExit,向绿点前进，到出口,UI.Map.FollowExit
+UI.Map.Mine1,挖掘 01,UI.Map.Mine1
+UI.Map.Mine2,挖掘 02,UI.Map.Mine2
+UI.Map.Mine3,挖掘 03,UI.Map.Mine3
+UI.Map.Museum,博物馆,UI.Map.Museum
+UI.Map.NextArea,自动进入下一段。,UI.Map.NextArea
+UI.Map.NoFloorPlan,本页显示全流程位置；此房间暂无内部平面图。,UI.Map.NoFloorPlan
+UI.Map.Office,电脑房,UI.Map.Office
+UI.Map.Plan,俯视  ·  上方为 +Y,UI.Map.Plan
+UI.Map.PlayerLegend,黄色箭头 = 位置与朝向,UI.Map.PlayerLegend
+UI.Map.Recover,卡住可在 GM 窗口返回起点,UI.Map.Recover
+UI.Map.Remaining,沿主路剩余约 {0} 米,UI.Map.Remaining
+UI.Map.Room,当前为玩法房间,UI.Map.Room
+UI.Map.RouteLegend,青线 = 通往出口的主路,UI.Map.RouteLegend
+UI.Map.SchematicHint,路线示意，不显示挖开的洞形；矿道会向下延伸，请同时参考高度图。,UI.Map.SchematicHint
+UI.Map.Title,矿道地图,UI.Map.Title
+UI.Map.Universe,宇宙细胞,UI.Map.Universe
+UI.Map.WalkOn,出口打开，步行继续。,UI.Map.WalkOn
+UI.Map.You,你,UI.Map.You
+UI.Map.YouAreHere,你在这里,UI.Map.YouAreHere
+UI.Mineral.Copper,铜矿,UI.Mineral.Copper
+UI.Mineral.Diamond,钻石,UI.Mineral.Diamond
+UI.Mineral.Iron,铁矿,UI.Mineral.Iron
+UI.Mineral.Malachite,孔雀石,UI.Mineral.Malachite
 UI.Mining.BombWall,这堵墙很硬，用炸弹试试,UI.Mining.BombWall
 UI.Mining.Hardness,破坏等级不足：矿镐 {0} / 岩层硬度 {1}，无法破坏,UI.Mining.Hardness
 UI.Mobile.Auto,自动,UI.Mobile.Auto
@@ -437,6 +493,7 @@ UI.Saving,保存中,UI.Saving
 UI.Settings.Ambience,环境声,UI.Settings.Ambience
 UI.Settings.Audio,音频,UI.Settings.Audio
 UI.Settings.Back,返回游戏,UI.Settings.Back
+UI.Settings.BackToMenu,返回主菜单,UI.Settings.BackToMenu
 UI.Settings.Effects,音效,UI.Settings.Effects
 UI.Settings.FOV,视野 FOV,UI.Settings.FOV
 UI.Settings.Haptics,手柄震动,UI.Settings.Haptics
@@ -456,6 +513,21 @@ UI.Tool.Bomb,炸弹,UI.Tool.Bomb
 UI.Tool.Drill,钻机,UI.Tool.Drill
 UI.Tool.Jetpack,喷气背包,UI.Tool.Jetpack
 UI.Tool.Pickaxe,矿镐,UI.Tool.Pickaxe
+UI.Treasure.CoinReward,{0}  +{1} 金币{2},UI.Treasure.CoinReward
+UI.Treasure.Collect,[ E ] 领取宝物,UI.Treasure.Collect
+UI.Treasure.CollectMineral,[ E ] 收入背包,UI.Treasure.CollectMineral
+UI.Treasure.DemoProgress,"左键挖掘 · 瞄准宝物按 E 领取 · 已领取 {0} / {1}
+F5 重开本展区并清空展示金币；R 只恢复岩石，不补发宝物",UI.Treasure.DemoProgress
+UI.Treasure.DoubleReward, · 养成奖励翻倍！,UI.Treasure.DoubleReward
+UI.Treasure.InventoryReward,{0} ×1  已收入背包,UI.Treasure.InventoryReward
+UI.Treasure.KeepDigging,继续挖掘，暴露超过 50% 后可领取,UI.Treasure.KeepDigging
+UI.Treasure.MineralProgress,矿石收入背包 · 已领取 {0} / {1} · Tab 升级矿镐,UI.Treasure.MineralProgress
+UI.Treasure.MineralTarget,"{0} ×1 · 暴露 {1}%
+{2}",UI.Treasure.MineralTarget
+UI.Treasure.SharedProgress,"左键挖掘 · 瞄准宝物按 E 领取 · 已领取 {0} / {1}
+金币供全部体验区共用；Tab 打开升级面板",UI.Treasure.SharedProgress
+UI.Treasure.Target,"{0} · 大小 {1}/4 · 基础 {2} 金币 · 暴露 {3}%
+{4}",UI.Treasure.Target
 UI.Tutorial.Copper,收集1个铜矿,UI.Tutorial.Copper
 UI.Tutorial.Explore,继续前进探索,UI.Tutorial.Explore
 UI.Tutorial.GuideHint,没思路的话就看看左侧引导栏吧,UI.Tutorial.GuideHint
@@ -466,6 +538,12 @@ UI.Tutorial.Soil,穿过1个泥土层,UI.Tutorial.Soil
 UI.Tutorial.Upgrade1,升级1次矿镐,UI.Tutorial.Upgrade1
 UI.Tutorial.Upgrade2,将矿镐升至2级,UI.Tutorial.Upgrade2
 UI.Tutorial.UpgradeReady,材料充足！按[Tab]升级矿镐,UI.Tutorial.UpgradeReady
+UI.Upgrade.AudioCredits,"音乐：Dreamy Flashback — Kevin MacLeod (incompetech.com)
+CC BY 4.0 — creativecommons.org/licenses/by/4.0/
+来源：incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532
+编辑：48 kHz 转换、循环交叉淡化和音量调整。
+音效：Kenney / rubberduck — CC0；项目合成工具音效
+音量设置：松开 Tab 后按 F8；关闭时自动保存",UI.Upgrade.AudioCredits
 UI.Upgrade.BombCapacity,炸弹最大容量 ×2,UI.Upgrade.BombCapacity
 UI.Upgrade.BombCapacityAndFuse,最大容量再 ×2，引爆时间 ×0.5,UI.Upgrade.BombCapacityAndFuse
 UI.Upgrade.BombRadius,炸弹破坏范围 ×2,UI.Upgrade.BombRadius
@@ -483,7 +561,9 @@ UI.Upgrade.Key,[ {0} ] 升级,UI.Upgrade.Key
 UI.Upgrade.Level,等级 {0},UI.Upgrade.Level
 UI.Upgrade.Max,已满级,UI.Upgrade.Max
 UI.Upgrade.Need,还需{0}个,UI.Upgrade.Need
+UI.World.HoldSpaceToFly,按住空格键起飞,UI.World.HoldSpaceToFly
 UI.World.Ride,乘车,UI.World.Ride
+UI.World.ToTrain,前往列车,UI.World.ToTrain
 UI.World.VoidRecovery,呼，刚才想到什么来着？,UI.World.VoidRecovery
 WenSi.Hint.Edit,拖动红词交换    G 返回    Q 放下思考,WenSi.Hint.Edit
 WenSi.Hint.Rearrange,G 重组    Q 放下左侧    R 放下右侧,WenSi.Hint.Rearrange

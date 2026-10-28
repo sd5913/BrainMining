@@ -75,7 +75,7 @@ public:
     int32 AutosavesCompleted=0;
     double LastSnapshotMilliseconds=0;
     void RecordCollectible(int32 Id);
-    TArray<FString> CompletionNotices;
+    TArray<FText> CompletionNotices;
     bool WasCollectedThisRun(int32 Id) const { return RunCollectedItems.Contains(Id); }
     UPROPERTY(BlueprintReadOnly) bool TutorialActive=false;
     UPROPERTY(BlueprintReadOnly) bool TutorialSoilPassed=false;

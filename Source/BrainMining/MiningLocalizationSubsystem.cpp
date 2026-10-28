@@ -135,8 +135,8 @@ bool UMiningLocalizationSubsystem::SetLanguagePreference(const FString& Preferen
 TSharedRef<SWidget> UMiningLocalizationSubsystem::MakeLanguageSelector()
 {
     auto Choices = SNew(SHorizontalBox);
-    const TCHAR* Preferences[] = {TEXT("auto"), TEXT("zh-Hans"), TEXT("en"), TEXT("zh-Hant")};
-    const TCHAR* Labels[] = {TEXT("UI.Language.Auto"), TEXT("UI.Language.Simplified"), TEXT("UI.Language.English"), TEXT("UI.Language.Traditional")};
+    const TCHAR* Preferences[] = {TEXT("zh-Hans"), TEXT("en"), TEXT("zh-Hant")};
+    const TCHAR* Labels[] = {TEXT("UI.Language.Simplified"), TEXT("UI.Language.English"), TEXT("UI.Language.Traditional")};
     TWeakObjectPtr<UMiningLocalizationSubsystem> WeakThis(this);
     for (int32 Index = 0; Index < UE_ARRAY_COUNT(Preferences); ++Index)
     {
@@ -155,7 +155,7 @@ TSharedRef<SWidget> UMiningLocalizationSubsystem::MakeLanguageSelector()
                 {
                     const auto Button = WeakButton.Pin();
                     if (Button.IsValid() && (Button->IsHovered() || Button->IsPressed())) return FSlateColor::UseForeground();
-                    return FSlateColor(WeakThis.IsValid() && WeakThis->GetLanguagePreference() == Preference ?
+                    return FSlateColor(WeakThis.IsValid() && WeakThis->GetLanguage() == Preference ?
                         MiningMenuStyle::Gold : MiningMenuStyle::Cream);
                 })]);
         Choices->AddSlot().FillWidth(1).Padding(3, 0)[ChoiceButton];

@@ -181,11 +181,20 @@ float AMiningTreasure::ValueScale(const FMiningTreasureDefinition& Definition, i
     return Definition.SizeMultipliers.IsValidIndex(Tier)?Definition.SizeMultipliers[Tier]:1.f;
 }
 
+FText FMiningTreasureDefinition::GetDisplayName() const
+{
+    if(Id==TEXT("2"))return FMiningMineralCost::NameText(EMiningMineral::Copper);
+    if(Id==TEXT("4"))return FMiningMineralCost::NameText(EMiningMineral::Iron);
+    if(Id==TEXT("6"))return FMiningMineralCost::NameText(EMiningMineral::Malachite);
+    if(Id==TEXT("9"))return FMiningMineralCost::NameText(EMiningMineral::Diamond);
+    return Name;
+}
+
 bool AMiningTreasure::Configure(const FMiningTreasureDefinition& Definition, int32 InSizeTier, UMaterialInterface* Material)
 {
     if (!Definition.HasValidSizeRules() || !Definition.ValuesBySize.IsValidIndex(InSizeTier)) return false;
     TreasureId = Definition.Id;
-    TreasureName = Definition.Name;
+    TreasureName = Definition.GetDisplayName();
     SizeTier = InSizeTier;
     Value = Definition.ValuesBySize[SizeTier];
     const FVector ModelScale = Definition.Scale * Definition.SizeMultipliers[SizeTier];
@@ -833,10 +842,10 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
             MiningController->InteractionHUD->ShowCoinGain(Item->Value);
     }
     ++CollectedCount;
-    Toast = FString::Printf(TEXT("%s  +%lld 金币%s"), *Item->TreasureName.ToString(), Item->CollectedValue,
-        Item->CollectedValue > Item->Value ? TEXT(" · 养成奖励翻倍！") : TEXT(""));
+    Toast = FText::Format(MiningText::Get(TEXT("UI.Treasure.CoinReward")),Item->TreasureName,Item->CollectedValue,
+        Item->CollectedValue>Item->Value?MiningText::Get(TEXT("UI.Treasure.DoubleReward")):FText::GetEmpty());
     ToastRemaining = 3;
-    if (bMaterials) Toast = FString::Printf(TEXT("%s ×1  已收入背包"), *Item->TreasureName.ToString());
+    if (bMaterials) Toast = FText::Format(MiningText::Get(TEXT("UI.Treasure.InventoryReward")),Item->TreasureName);
     Item->SetActorEnableCollision(false);
     // Hide only the reward. Terrain inclusions survive collection in every field.
     Item->Model->SetVisibility(false,false);
@@ -847,18 +856,17 @@ bool AMiningTreasureField::CollectTarget(APlayerController* Controller)
 
 FString AMiningTreasureField::GetPrompt() const
 {
-    if (ToastRemaining > 0) return Toast;
+    if (ToastRemaining > 0) return Toast.ToString();
     if (GetGameInstance() && GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>()->UsesMineralInventory())
     {
-        if (IsValid(Target)) return FString::Printf(TEXT("%s ×1 · 暴露 %.0f%%\n%s"), *Target->TreasureName.ToString(), Target->Exposure * 100,
-            AMiningTreasure::IsExposureEligible(Target->Exposure) ? TEXT("[ E ] 收入背包") : TEXT("继续挖掘，暴露超过 50% 后可领取"));
-        return FString::Printf(TEXT("矿石收入背包 · 已领取 %d / %d · Tab 升级矿镐"), CollectedCount, Items.Num());
+        if (IsValid(Target)) return FText::Format(MiningText::Get(TEXT("UI.Treasure.MineralTarget")),Target->TreasureName,FMath::RoundToInt(Target->Exposure*100),
+            MiningText::Get(AMiningTreasure::IsExposureEligible(Target->Exposure)?TEXT("UI.Treasure.CollectMineral"):TEXT("UI.Treasure.KeepDigging"))).ToString();
+        return FText::Format(MiningText::Get(TEXT("UI.Treasure.MineralProgress")),CollectedCount,Items.Num()).ToString();
     }
-    if (IsValid(Target)) return FString::Printf(TEXT("%s · 大小 %d/4 · 基础 %d 金币 · 暴露 %.0f%%\n%s"), *Target->TreasureName.ToString(), Target->SizeTier+1, Target->Value, Target->Exposure * 100,
-        AMiningTreasure::IsExposureEligible(Target->Exposure) ? TEXT("[ E ] 领取宝物") : TEXT("继续挖掘，暴露超过 50% 后可领取"));
+    if (IsValid(Target)) return FText::Format(MiningText::Get(TEXT("UI.Treasure.Target")),Target->TreasureName,Target->SizeTier+1,Target->Value,FMath::RoundToInt(Target->Exposure*100),
+        MiningText::Get(AMiningTreasure::IsExposureEligible(Target->Exposure)?TEXT("UI.Treasure.Collect"):TEXT("UI.Treasure.KeepDigging"))).ToString();
     if (Items.IsEmpty()) return GenerationStatus;
-    if (bUseSharedWallet) return FString::Printf(TEXT("左键挖掘 · 瞄准宝物按 E 领取 · 已领取 %d / %d\n金币供全部体验区共用；Tab 打开升级面板"), CollectedCount, Items.Num());
-    return FString::Printf(TEXT("左键挖掘 · 瞄准宝物按 E 领取 · 已领取 %d / %d\nF5 重开本展区并清空展示金币；R 只恢复岩石，不补发宝物"), CollectedCount, Items.Num());
+    return FText::Format(MiningText::Get(bUseSharedWallet?TEXT("UI.Treasure.SharedProgress"):TEXT("UI.Treasure.DemoProgress")),CollectedCount,Items.Num()).ToString();
 }
 
 void AMiningTreasureField::EndPlay(const EEndPlayReason::Type Reason)

@@ -55,7 +55,7 @@ void AMiningTreasureField::SpawnAuthored()
         if(bDeferAreas)
         {
             Item->TreasureId=Definition->Id;
-            Item->TreasureName=Definition->Name;
+            Item->TreasureName=Definition->GetDisplayName();
             Item->Value=Placement.Value;
             Item->SizeTier=Definition->ValuesBySize.IndexOfByKey(Placement.Value);
             Item->SetActorHiddenInGame(true);

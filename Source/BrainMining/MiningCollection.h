@@ -185,7 +185,7 @@ public:
     int32 PickupPreviewId=INDEX_NONE;
     float PreviewAnimationTime=0, PreviewCaptureAge=0;
     float WorldAnimationTime=0,WorldAnimationAge=0;
-    FString Toast;
+    FText Toast;
     float ToastRemaining = 0;
 private:
     bool InitializePlayer();

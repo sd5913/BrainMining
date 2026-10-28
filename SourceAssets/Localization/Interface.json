@@ -1,0 +1,342 @@
+{
+  "UI.Mineral.Copper": {
+    "zh-Hans": "铜矿",
+    "en": "Copper",
+    "zh-Hant": "銅礦"
+  },
+  "UI.Mineral.Iron": {
+    "zh-Hans": "铁矿",
+    "en": "Iron",
+    "zh-Hant": "鐵礦"
+  },
+  "UI.Mineral.Malachite": {
+    "zh-Hans": "孔雀石",
+    "en": "Malachite",
+    "zh-Hant": "孔雀石"
+  },
+  "UI.Mineral.Diamond": {
+    "zh-Hans": "钻石",
+    "en": "Diamond",
+    "zh-Hant": "鑽石"
+  },
+  "UI.World.HoldSpaceToFly": {
+    "zh-Hans": "按住空格键起飞",
+    "en": "Hold Space to fly",
+    "zh-Hant": "按住空白鍵起飛"
+  },
+  "UI.Area.Mine1": {
+    "zh-Hans": "1. 硅质岩区",
+    "en": "1. Silica rock mine",
+    "zh-Hant": "1. 矽質岩區"
+  },
+  "UI.Area.Mine2": {
+    "zh-Hans": "2. 溶洞岩区",
+    "en": "2. Limestone cave mine",
+    "zh-Hant": "2. 溶洞岩區"
+  },
+  "UI.Area.Mine3": {
+    "zh-Hans": "3. 石笋岩区",
+    "en": "3. Stalagmite mine",
+    "zh-Hant": "3. 石筍岩區"
+  },
+  "UI.Area.Office": {
+    "zh-Hans": "房间一 · 电脑弹窗",
+    "en": "Room 1 · Computer pop-ups",
+    "zh-Hant": "房間一 · 電腦彈出視窗"
+  },
+  "UI.Area.Journey": {
+    "zh-Hans": "房间二 · 回声、牌局与电视逃生",
+    "en": "Room 2 · Echoes, cards and a TV escape",
+    "zh-Hant": "房間二 · 回聲、牌局與電視逃生"
+  },
+  "UI.Area.Museum": {
+    "zh-Hans": "房间三 · 文思镜像博物馆",
+    "en": "Room 3 · Museum of mirrored thoughts",
+    "zh-Hant": "房間三 · 文思鏡像博物館"
+  },
+  "UI.Area.MiningInstructions": {
+    "zh-Hans": "沿碎晶线索挖出矿石，瞄准后按 E 收入背包；\n按 Tab 消耗材料升级矿镐。",
+    "en": "Follow crystal fragments to uncover ore. Aim and press E to collect it.\nPress Tab to spend minerals on pickaxe upgrades.",
+    "zh-Hant": "沿碎晶線索挖出礦石，瞄準後按 E 收入背包；\n按 Tab 消耗材料升級礦鎬。"
+  },
+  "UI.Area.OfficeInstructions": {
+    "zh-Hans": "完成电脑与打印机流程，拾取炸弹并炸开出口；\n离开办公室后挖开连接土层。",
+    "en": "Complete the computer and printer tasks.\nCollect the bomb and blast open the exit.\nDig through the connecting soil after leaving the office.",
+    "zh-Hant": "完成電腦與印表機流程，拾取炸彈並炸開出口；\n離開辦公室後挖開連接土層。"
+  },
+  "UI.Area.JourneyInstructions": {
+    "zh-Hans": "敲击探路，挖开暖光洞口进入巨人房间；\n完成牌局与电视逃生后，前往石笋岩区。",
+    "en": "Tap to find your way, then dig toward the warm light to enter the giant room.\nFinish the card game and TV escape to reach the stalagmite mine.",
+    "zh-Hant": "敲擊探路，挖開暖光洞口進入巨人房間；\n完成牌局與電視逃生後，前往石筍岩區。"
+  },
+  "UI.Area.MuseumInstructions": {
+    "zh-Hans": "完成镜像博物馆的谜题，即完成本次旅程。",
+    "en": "Solve the mirrored museum puzzles to complete your journey.",
+    "zh-Hant": "完成鏡像博物館的謎題，即完成本次旅程。"
+  },
+  "UI.Treasure.CoinReward": {
+    "zh-Hans": "{0}  +{1} 金币{2}",
+    "en": "{0}  +{1} coins{2}",
+    "zh-Hant": "{0}  +{1} 金幣{2}"
+  },
+  "UI.Treasure.DoubleReward": {
+    "zh-Hans": " · 养成奖励翻倍！",
+    "en": " · Upgrade bonus: double reward!",
+    "zh-Hant": " · 養成獎勵加倍！"
+  },
+  "UI.Treasure.InventoryReward": {
+    "zh-Hans": "{0} ×1  已收入背包",
+    "en": "{0} ×1 added to inventory",
+    "zh-Hant": "{0} ×1  已收入背包"
+  },
+  "UI.Treasure.MineralTarget": {
+    "zh-Hans": "{0} ×1 · 暴露 {1}%\n{2}",
+    "en": "{0} ×1 · {1}% exposed\n{2}",
+    "zh-Hant": "{0} ×1 · 暴露 {1}%\n{2}"
+  },
+  "UI.Treasure.CollectMineral": {
+    "zh-Hans": "[ E ] 收入背包",
+    "en": "[ E ] Add to inventory",
+    "zh-Hant": "[ E ] 收入背包"
+  },
+  "UI.Treasure.KeepDigging": {
+    "zh-Hans": "继续挖掘，暴露超过 50% 后可领取",
+    "en": "Keep digging. Expose more than 50% to collect.",
+    "zh-Hant": "繼續挖掘，暴露超過 50% 後可領取"
+  },
+  "UI.Treasure.MineralProgress": {
+    "zh-Hans": "矿石收入背包 · 已领取 {0} / {1} · Tab 升级矿镐",
+    "en": "Mineral inventory · Collected {0} / {1} · Tab to upgrade pickaxe",
+    "zh-Hant": "礦石收入背包 · 已領取 {0} / {1} · Tab 升級礦鎬"
+  },
+  "UI.Treasure.Target": {
+    "zh-Hans": "{0} · 大小 {1}/4 · 基础 {2} 金币 · 暴露 {3}%\n{4}",
+    "en": "{0} · Size {1}/4 · Base value {2} coins · {3}% exposed\n{4}",
+    "zh-Hant": "{0} · 大小 {1}/4 · 基礎 {2} 金幣 · 暴露 {3}%\n{4}"
+  },
+  "UI.Treasure.Collect": {
+    "zh-Hans": "[ E ] 领取宝物",
+    "en": "[ E ] Collect treasure",
+    "zh-Hant": "[ E ] 領取寶物"
+  },
+  "UI.Treasure.SharedProgress": {
+    "zh-Hans": "左键挖掘 · 瞄准宝物按 E 领取 · 已领取 {0} / {1}\n金币供全部体验区共用；Tab 打开升级面板",
+    "en": "Left click to dig · Aim and press E to collect · {0} / {1} collected\nCoins are shared across areas; Tab opens upgrades.",
+    "zh-Hant": "左鍵挖掘 · 瞄準寶物按 E 領取 · 已領取 {0} / {1}\n金幣供全部體驗區共用；Tab 開啟升級面板"
+  },
+  "UI.Treasure.DemoProgress": {
+    "zh-Hans": "左键挖掘 · 瞄准宝物按 E 领取 · 已领取 {0} / {1}\nF5 重开本展区并清空展示金币；R 只恢复岩石，不补发宝物",
+    "en": "Left click to dig · Aim and press E to collect · {0} / {1} collected\nF5 restarts and clears demo coins; R restores only rocks, not treasure.",
+    "zh-Hant": "左鍵挖掘 · 瞄準寶物按 E 領取 · 已領取 {0} / {1}\nF5 重開本展區並清空展示金幣；R 只恢復岩石，不補發寶物"
+  },
+  "UI.Collection.BirdsDeparted": {
+    "zh-Hans": "鸟群飞出了洞穴，巢里还留着一只歪头的小家伙",
+    "en": "The flock has flown out of the cave. One little bird remains in the nest, tilting its head.",
+    "zh-Hant": "鳥群飛出了洞穴，巢裡還留著一隻歪頭的小傢伙"
+  },
+  "UI.Settings.BackToMenu": {
+    "zh-Hans": "返回主菜单",
+    "en": "Back to main menu",
+    "zh-Hant": "返回主選單"
+  },
+  "UI.World.ToTrain": {
+    "zh-Hans": "前往列车",
+    "en": "To Train",
+    "zh-Hant": "前往列車"
+  },
+  "UI.Map.Title": {
+    "zh-Hans": "矿道地图",
+    "en": "Mine map",
+    "zh-Hant": "礦道地圖"
+  },
+  "UI.Map.Back": {
+    "zh-Hans": "已暂停  ·  M / Esc 返回",
+    "en": "Paused · M / Esc to return",
+    "zh-Hant": "已暫停  ·  M / Esc 返回"
+  },
+  "UI.Map.Mine1": {
+    "zh-Hans": "挖掘 01",
+    "en": "Mine 01",
+    "zh-Hant": "挖掘 01"
+  },
+  "UI.Map.Office": {
+    "zh-Hans": "电脑房",
+    "en": "Computer room",
+    "zh-Hant": "電腦房"
+  },
+  "UI.Map.Mine2": {
+    "zh-Hans": "挖掘 02",
+    "en": "Mine 02",
+    "zh-Hant": "挖掘 02"
+  },
+  "UI.Map.EchoCards": {
+    "zh-Hans": "回声 / 卡牌",
+    "en": "Echo / Cards",
+    "zh-Hant": "回聲 / 卡牌"
+  },
+  "UI.Map.Mine3": {
+    "zh-Hans": "挖掘 03",
+    "en": "Mine 03",
+    "zh-Hant": "挖掘 03"
+  },
+  "UI.Map.Museum": {
+    "zh-Hans": "博物馆",
+    "en": "Museum",
+    "zh-Hant": "博物館"
+  },
+  "UI.Map.Universe": {
+    "zh-Hans": "宇宙细胞",
+    "en": "Cosmic cell",
+    "zh-Hant": "宇宙細胞"
+  },
+  "UI.Map.YouAreHere": {
+    "zh-Hans": "你在这里",
+    "en": "You are here",
+    "zh-Hant": "你在這裡"
+  },
+  "UI.Map.PlayerLegend": {
+    "zh-Hans": "黄色箭头 = 位置与朝向",
+    "en": "Yellow arrow = position and direction",
+    "zh-Hant": "黃色箭頭 = 位置與朝向"
+  },
+  "UI.Map.RouteLegend": {
+    "zh-Hans": "青线 = 通往出口的主路",
+    "en": "Cyan line = route to the exit",
+    "zh-Hant": "青線 = 通往出口的主路"
+  },
+  "UI.Map.EndpointsLegend": {
+    "zh-Hans": "白点 = 入口   绿点 = 出口",
+    "en": "White = entrance · Green = exit",
+    "zh-Hant": "白點 = 入口   綠點 = 出口"
+  },
+  "UI.Map.Clues": {
+    "zh-Hans": "本段挖掘线索",
+    "en": "Clues in this area",
+    "zh-Hant": "本段挖掘線索"
+  },
+  "UI.Map.Collectibles": {
+    "zh-Hans": "本段藏品",
+    "en": "Collectibles in this area",
+    "zh-Hant": "本段收藏品"
+  },
+  "UI.Map.Collected": {
+    "zh-Hans": "已收集",
+    "en": "Collected",
+    "zh-Hant": "已收集"
+  },
+  "UI.Map.SchematicHint": {
+    "zh-Hans": "路线示意，不显示挖开的洞形；矿道会向下延伸，请同时参考高度图。",
+    "en": "Route overview; excavated tunnels are not shown. Check the elevation view as the mine descends.",
+    "zh-Hant": "路線示意，不顯示挖開的洞形；礦道會向下延伸，請同時參考高度圖。"
+  },
+  "UI.Map.Room": {
+    "zh-Hans": "当前为玩法房间",
+    "en": "Inside a challenge room",
+    "zh-Hant": "目前為玩法房間"
+  },
+  "UI.Map.NoFloorPlan": {
+    "zh-Hans": "本页显示全流程位置；此房间暂无内部平面图。",
+    "en": "This shows your place in the journey. No floor plan is available for this room.",
+    "zh-Hant": "本頁顯示全流程位置；此房間暫無內部平面圖。"
+  },
+  "UI.Map.AfterCompletion": {
+    "zh-Hans": "完成当前玩法后",
+    "en": "When you finish this challenge,",
+    "zh-Hant": "完成目前玩法後"
+  },
+  "UI.Map.WalkOn": {
+    "zh-Hans": "出口打开，步行继续。",
+    "en": "the exit opens. Walk on to continue.",
+    "zh-Hant": "出口開啟，步行繼續。"
+  },
+  "UI.Map.NextArea": {
+    "zh-Hans": "自动进入下一段。",
+    "en": "you move to the next area automatically.",
+    "zh-Hant": "自動進入下一段。"
+  },
+  "UI.Map.Plan": {
+    "zh-Hans": "俯视  ·  上方为 +Y",
+    "en": "Top view · +Y points up",
+    "zh-Hant": "俯視  ·  上方為 +Y"
+  },
+  "UI.Map.Elevation": {
+    "zh-Hans": "高度图  ·  左入口 → 右出口",
+    "en": "Elevation · Entrance on left → Exit on right",
+    "zh-Hant": "高度圖  ·  左入口 → 右出口"
+  },
+  "UI.Map.Entrance": {
+    "zh-Hans": "入口",
+    "en": "Entrance",
+    "zh-Hant": "入口"
+  },
+  "UI.Map.Exit": {
+    "zh-Hans": "出口",
+    "en": "Exit",
+    "zh-Hant": "出口"
+  },
+  "UI.Map.You": {
+    "zh-Hans": "你",
+    "en": "You",
+    "zh-Hant": "你"
+  },
+  "UI.Map.Remaining": {
+    "zh-Hans": "沿主路剩余约 {0} 米",
+    "en": "About {0} m left along the route",
+    "zh-Hant": "沿主路剩餘約 {0} 公尺"
+  },
+  "UI.Map.BelowEntrance": {
+    "zh-Hans": "低于入口 {0} 米",
+    "en": "{0} m below the entrance",
+    "zh-Hant": "低於入口 {0} 公尺"
+  },
+  "UI.Map.FollowExit": {
+    "zh-Hans": "向绿点前进，到出口",
+    "en": "Head toward the green exit marker",
+    "zh-Hant": "向綠點前進，到出口"
+  },
+  "UI.Map.EnterNext": {
+    "zh-Hans": "即可进入下一房间。",
+    "en": "to reach the next room.",
+    "zh-Hant": "即可進入下一房間。"
+  },
+  "UI.Map.Recover": {
+    "zh-Hans": "卡住可在 GM 窗口返回起点",
+    "en": "Stuck? Use the GM menu to return to the start.",
+    "zh-Hant": "卡住可在 GM 視窗返回起點"
+  },
+  "UI.Collection.SearchHint": {
+    "zh-Hans": "沿水管或矿道寻找藏品，挖开覆盖层后瞄准按 E 收集；{0} 打开图鉴。",
+    "en": "Follow pipes and tunnels to find collectibles. Dig them out and press E to collect; {0} opens the collection.",
+    "zh-Hant": "沿水管或礦道尋找收藏品，挖開覆蓋層後瞄準按 E 收集；{0} 開啟圖鑑。"
+  },
+  "UI.Collection.FirstHint": {
+    "zh-Hans": "先试试左侧已露出的试管架：瞄准它，按 E 收集",
+    "en": "Try the exposed test tube rack on the left: aim at it and press E to collect.",
+    "zh-Hant": "先試試左側已露出的試管架：瞄準它，按 E 收集"
+  },
+  "UI.Collection.ExpandedHint": {
+    "zh-Hans": "右侧通道通往新展区：陈列藏品、四种挖掘线索和红幕布舞台",
+    "en": "The passage on the right leads to more collectibles, four digging clues and a red-curtain stage.",
+    "zh-Hant": "右側通道通往新展區：陳列收藏品、四種挖掘線索和紅幕布舞台"
+  },
+  "UI.Collection.Released": {
+    "zh-Hans": "{0} 已松动掉落，瞄准后按 E 收集",
+    "en": "{0} has come loose. Aim at it and press E to collect.",
+    "zh-Hant": "{0} 已鬆動掉落，瞄準後按 E 收集"
+  },
+  "UI.Collection.PickupHint": {
+    "zh-Hans": "已收集 · {0}     [ {1} ] 打开图鉴",
+    "en": "Collected · {0}     [ {1} ] Open collection",
+    "zh-Hant": "已收集 · {0}     [ {1} ] 開啟圖鑑"
+  },
+  "UI.Collection.NewRound": {
+    "zh-Hans": "已开始新一轮，收集进度清空；寻找墙面线索与新展区",
+    "en": "New round started; collection progress cleared. Look for wall clues and new exhibits.",
+    "zh-Hant": "已開始新一輪，收集進度清空；尋找牆面線索與新展區"
+  },
+  "UI.Upgrade.AudioCredits": {
+    "zh-Hans": "音乐：Dreamy Flashback — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — creativecommons.org/licenses/by/4.0/\n来源：incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532\n编辑：48 kHz 转换、循环交叉淡化和音量调整。\n音效：Kenney / rubberduck — CC0；项目合成工具音效\n音量设置：松开 Tab 后按 F8；关闭时自动保存",
+    "en": "Music: Dreamy Flashback — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — creativecommons.org/licenses/by/4.0/\nSource: incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532\nEdited: 48 kHz conversion, loop crossfade and volume adjustment.\nSound effects: Kenney / rubberduck — CC0; project-synthesized tool sounds\nVolume: release Tab, then press F8. Settings save when closed.",
+    "zh-Hant": "音樂：Dreamy Flashback — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — creativecommons.org/licenses/by/4.0/\n來源：incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532\n編輯：48 kHz 轉換、循環交叉淡化和音量調整。\n音效：Kenney / rubberduck — CC0；專案合成工具音效\n音量設定：鬆開 Tab 後按 F8；關閉時自動儲存"
+  }
+}

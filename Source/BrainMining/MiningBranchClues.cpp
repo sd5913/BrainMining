@@ -183,7 +183,7 @@ void AMiningCollectionField::SpawnBranchClues(const FMiningCollectionPlacement& 
             +SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center).HAlign(HAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("↑"))).Font(BrainMiningFonts::Body(150)).ColorAndOpacity(FLinearColor::White)]
             +SHorizontalBox::Slot().FillWidth(2).VAlign(VAlign_Center)[SNew(SVerticalBox)
                 +SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[SNew(STextBlock).Text(MiningText::Get(TEXT("UI.World.Ride"))).Font(BrainMiningFonts::Body(86)).ColorAndOpacity(FLinearColor::White)]
-                +SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("To Train"))).Font(BrainMiningFonts::Body(42)).ColorAndOpacity(FLinearColor::White)]]);
+                +SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[SNew(STextBlock).Text(MiningText::Get(TEXT("UI.World.ToTrain"))).Font(BrainMiningFonts::Body(42)).ColorAndOpacity(FLinearColor::White)]]);
         Sign->RegisterComponent();
     }
     else if(P.ItemId==22)

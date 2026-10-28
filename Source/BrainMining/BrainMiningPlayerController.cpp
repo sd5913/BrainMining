@@ -43,6 +43,7 @@
 #include "MiningProgressionComponent.h"
 #include "MiningWalletSubsystem.h"
 #include "StartRoom/MiningStartRoom.h"
+#include "StartRoom/MiningOpening.h"
 #include "Engine/GameInstance.h"
 #include "MiningBombToolComponent.h"
 #include "PopupClose/PopupCloseStage.h"
@@ -765,13 +766,36 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
 		SetIgnoreMoveInput(false);
 		SetIgnoreLookInput(false);
 		if (Mining) Mining->SetInputSuspended(bAudioPreviousMiningSuspended);
-		bShowMouseCursor = false;
-		FInputModeGameOnly Mode;
-		Mode.SetConsumeCaptureMouseDown(false);
-		SetInputMode(Mode);
+		const bool bReturnToOpening = bAudioFromOpening && AMiningOpening::IsOpening(GetWorld());
+		bShowMouseCursor = bReturnToOpening;
+		if (bReturnToOpening)
+		{
+			FInputModeUIOnly Mode;
+			Mode.SetWidgetToFocus(PreviousAudioFocus.Pin()).SetLockMouseToViewportBehavior(PreviousAudioLockMode);
+			SetInputMode(Mode);
+		}
+		else
+		{
+			FInputModeGameOnly Mode;
+			Mode.SetConsumeCaptureMouseDown(false);
+			SetInputMode(Mode);
+		}
+		Viewport->SetMouseCaptureMode(PreviousAudioCaptureMode);
+		Viewport->SetMouseLockMode(PreviousAudioLockMode);
+		Viewport->SetHideCursorDuringCapture(bAudioPreviousHideCursor);
+		PreviousAudioFocus.Reset();
+		bAudioFromOpening = false;
 		return;
 	}
-	if (bShowMouseCursor || IsPaused()) return;
+	const bool bOpening = AMiningOpening::IsOpening(GetWorld());
+	if ((bShowMouseCursor && !bOpening) || IsPaused()) return;
+	bAudioFromOpening = bOpening;
+	PreviousAudioFocus.Reset();
+	if (FSlateApplication::IsInitialized() && GetLocalPlayer())
+		PreviousAudioFocus = FSlateApplication::Get().GetUserFocusedWidget(GetLocalPlayer()->GetControllerId());
+	PreviousAudioCaptureMode = Viewport->GetMouseCaptureMode();
+	PreviousAudioLockMode = Viewport->GetMouseLockMode();
+	bAudioPreviousHideCursor = Viewport->HideCursorDuringCapture();
 	bAudioPreviousMiningSuspended = Mining && Mining->IsInputSuspended();
 	if (Mining) Mining->SetInputSuspended(true);
 	if (auto* Audio = GetPawn() ? GetPawn()->FindComponentByClass<UMiningAudioComponent>() : nullptr) Audio->StopTools();
@@ -817,7 +841,7 @@ void ABrainMiningPlayerController::ToggleAudioSettings()
                 {if(WeakSettings.IsValid())WeakSettings->RestoreDefaults();return FReply::Handled();})
                 [SNew(STextBlock).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(FSlateColor::UseForeground()).Text(MiningText::Get(TEXT("UI.Settings.Reset")))]]
             +SHorizontalBox::Slot().FillWidth(1).Padding(8,0,0,0)[SNew(SButton).ButtonStyle(MiningMenuStyle::Button()).HAlign(HAlign_Center).OnClicked_Lambda([this](){ToggleAudioSettings();return FReply::Handled();})
-                [SNew(STextBlock).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(FSlateColor::UseForeground()).Text_Lambda([this](){return FText::Format(FText::AsCultureInvariant(TEXT("[ {0} ] {1}")),FText::AsCultureInvariant(UMiningGamepadSubsystem::UsesGamepad(this)?TEXT("B"):TEXT("ESC")),MiningText::Get(TEXT("UI.Settings.Back")));})]]];
+                [SNew(STextBlock).Font(BrainMiningFonts::Body(18)).ColorAndOpacity(FSlateColor::UseForeground()).Text_Lambda([this](){return FText::Format(FText::AsCultureInvariant(TEXT("[ {0} ] {1}")),FText::AsCultureInvariant(UMiningGamepadSubsystem::UsesGamepad(this)?TEXT("B"):TEXT("ESC")),MiningText::Get(bAudioFromOpening?TEXT("UI.Settings.BackToMenu"):TEXT("UI.Settings.Back")));})]]];
     AudioSettingsPanel=MiningMenuStyle::Frame(Page,1060,820);
     Viewport->AddViewportWidgetContent(AudioSettingsPanel.ToSharedRef(),1000);
     bShowMouseCursor=true;

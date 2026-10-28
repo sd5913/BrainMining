@@ -1,12 +1,26 @@
 # 三语本地化与 Steam 成就实施方案
 
-更新日期：2026-10-27。工程为 BrainMining，游戏目标为 WOoOW，当前引擎为安装版 UE 5.8。
+更新日期：2026-10-29。工程为 BrainMining，游戏目标为 WOoOW，当前引擎为安装版 UE 5.8。
 
 ## 实现边界
 
 简中 `zh-Hans`、英文 `en`、繁中 `zh-Hant` 共用正式游戏内容和存档。显示文案进入 UE FText 字符串表；藏品 ID、房间 ID、字幕段 ID 和成就 API 名称保持不变。普通 PC、Android 和 SteamPC 共用成就规则，只有 SteamPC 游戏构建启用 Steam 适配器。
 
-已迁移 473 条三语文案，包括菜单/设置/暂停、交互提示、矿镐升级、图鉴、卡牌、办公室弹窗、文思谜题、结局提示和 47 个正式字幕资产中的 54 条字幕。数量代表已进入目录的词条，不能替代整个游戏的逐屏验收。
+已迁移 541 条三语文案，包括菜单/设置/暂停、地图及正式区域说明、交互提示、矿镐升级、图鉴、卡牌、办公室弹窗、文思谜题、结局提示和 47 个正式字幕资产中的 54 条字幕。数量代表已进入目录的词条，不能替代整个游戏的逐屏验收。
+
+## 2026-10-29 HUD 与起飞标语修复
+
+左上角库存名称创建时曾将 FText 转成 FString，再转换成普通文本，导致切换语言后保留创建时的中文；现在直接保存字符串表 FText。四种矿石的独立 HUD 标签使用首字母大写的 Copper、Iron、Malachite、Diamond，句子中使用的原有小写矿石名保持正常英文语法。
+
+右上角升级摘要保留原有外观，增加材料区宽度；名称与需求数量之间留出 16 单位空隙，两个文本区分别按可用尺寸缩小并裁剪，避免英文名称和 Need N more 相互覆盖。左上角名称和计数也各自限制在分配区域，适应长矿石名与大数值。
+
+墙面 MiningWallSign 支持显式 LocalizationKey；现有地图中保存的“按住空格起飞”和“按住空格键起飞”自动对应三语词条，无需重写地图。英文为 Hold Space to fly，繁中为“按住空白鍵起飛”。显示绑定实时本地化文本，并按标牌范围缩放；其他自定义标牌保留原文。
+
+新增 BrainMining.Localization.MineralHUDAndFlightSign 回归：创建实际 WBP_MiningHUD 后依次切简中、英文、繁中，检查原有库存标签更新、升级材料名称与既有墙面文案。启用渲染时还导出两种分辨率、初始和高级升级需求，以及三语标牌预览。
+
+本轮最终 Editor 编译通过（`hud-sign-build-final.log`），541 条三语目录与 8 项 Python 测试通过，三语 locres 已重新编译。NullRHI 回归 10 项通过、0 失败、0 未运行，其中 2 项含预期的隔离存档警告（`HUDSignFinalTests/index.json`）。D3D11 独立 HUD/标牌渲染回归 1 项通过、0 警告，导出并核对 15 张新鲜图片（`HUDSignRenderTests/index.json`、`HUDSignRenderUser/Saved/Validation/LocalizationAchievements/HUDRenders`）。英文 720p 四材料列表、繁中 1080p 列表、简中初始列表及英文/繁中标牌已查看，文字完整且名称与数量分离。
+
+上述图片用于独立控件文本排版验证，不代表正式关卡中的灯光、墙面位置或所有 HUD 材质效果。早期把开场测试放入离屏渲染环境时遇到硬件光标加载错误；最终按渲染与 NullRHI 分开验收，以两个最终报告为准。本轮未重新打包发布版本，原有 OverCrowd DLL/PDB 哈希保持不变。
 
 推送前合并了远端截至 `496a44fe` 的博物馆及办公室更新，保留其弹窗内容顺序、六种样式和未读消息计数规则，并为新增内容补充 20 条三语文本。下文原有打包、截图及字体证据对应合并前的 453 条文本；新增文案和合并后的界面仍需再次进行完整视觉验收。
 
@@ -24,7 +38,33 @@
 | 编译资源 | `Config/Localization/Game.ini`、`Content/Localization/Game` | GatherText、导入 PO、编译 locres；随包分发 |
 | 语言服务 | `UMiningLocalizationSubsystem` | 自动检测、用户选择、保存、切换与变更事件 |
 
-自动模式优先读取 Steam 的游戏语言，随后使用系统语言；未支持的语言回退英文。玩家手动选择最高优先，保存到 GameUserSettings。`schinese` 对应简中，`tchinese` 对应繁中，台湾/香港/澳门中文归入繁中。菜单、暂停和设置均提供切换入口。
+首次进入且没有手动偏好时，自动模式优先读取 Steam 的游戏语言，随后使用系统语言；未支持的语言回退英文。玩家手动选择最高优先，保存到 GameUserSettings。`schinese` 对应简中，`tchinese` 对应繁中，台湾/香港/澳门中文归入繁中。界面仅展示简中、英文、繁中三个选项，自动模式下高亮实际检测到的语言；内部继续兼容 `auto` 偏好。主菜单在开始与退出之间提供同样式的“设置”按钮，复用游戏内 Esc 菜单的设置面板，语言切换统一放在设置内。关闭主菜单设置后恢复主菜单焦点、光标与开场输入锁。
+
+主菜单设置调整于 2026-10-27 完成完整 Editor 编译与链接（80 项构建操作成功，日志 `Saved/Validation/LocalizationAchievements/opening-settings-build-repaired.log`）。当时内存不足，未运行生命周期测试和截图；2026-10-28 已补跑通过生命周期测试，以及主菜单、主菜单设置、游戏内设置、暂停、图鉴三语共 15 张截图。首次隔离用户目录记录为 `preference:auto`、`resolved:zh-Hans`，截图中仅出现三个具体语言选项。该结果不代替 Steam 客户端语言检测验收。
+
+## 2026-10-28 本地化补漏
+
+新增 `SourceAssets/Localization/Interface.json`，增加 63 条三语词条，目录从 473 条增至 536 条。主要修复：
+
+- 地图标题、图例、流程标签、距离和返回提示改用本地化文本；六个正式区域按稳定 Tag 绑定三语标题和说明，避免地图资产保存的中文在英文模式继续显示。自定义区域保留作者原文。
+- 地图按文本宽度缩放，并支持显式换行；右栏根据藏品数量调整行距，距离信息下移，修复第五条藏品与距离提示重叠。
+- 铜、铁、孔雀石、钻石统一从本地化文本取名，覆盖正式地图延迟创建矿石的路径；自定义矿石名保留。拾取奖励、收集提示、鸟群离场和列车方向提示接入三语。
+- 教学完成提示和收集提示保留 FText 格式历史；提示生成后再切语言，已排队或正在显示的内容随语言更新。
+- 主菜单设置的返回提示明确为“返回主菜单”；音频说明及署名补齐三语。修正 31 处英文词内弯引号，避免中文字形使英文缩写出现异常间距。
+- 目录校验覆盖条件表达式和数组中的 UI 文本键；新增回归测试检查遗漏键，以及跨语言切换时已有任务提示和矿石名称更新。
+
+本轮证据位于 `Saved/Validation/LocalizationAchievements`：
+
+| 验证项 | 结果与证据 |
+| --- | --- |
+| 三语目录与生成文件 | 536 条通过 `localize_game.py --check`；三语 CSV、PO、manifest、archive、locres 已重新生成，GatherText 成功，`gather.log` |
+| Editor 编译 | 完整构建和最终地图修复后的增量构建均成功，`interface-build.log`、`interface-build-final.log` |
+| Python 回归 | 8 项通过，包含条件表达式引用校验 |
+| 最终 UE 回归 | 9 项全部通过，0 失败、0 未运行；其中 2 项包含隔离测试存档缺失的预期警告，`InterfaceTestsFinal/index.json`、`interface-tests-final.log` |
+| 运行画面 | 主菜单、两种设置入口、暂停、图鉴三语 15 张流程通过；增加地图后的 18 张流程也曾通过，并据此发现和修复区域标题与右栏重叠问题 |
+| 最终地图视觉复验 | 21 张流程加入房间地图与区域文本检查；两次完整编辑器运行及一次独立游戏运行均被内存保护终止，尚未取得最终地图成功截图。`RuntimeScreens/report.json` 中旧的 18 张成功结果不代表最终修复通过；必须同时核对报告时间与图片时间 |
+
+最新主菜单设置英文返回提示、英文图鉴缩写已查看实际画面。最终地图修复已编译且最终自动化回归通过，但地图视觉复验仍待内存允许后完成。本轮未重新生成 Shipping/Android 发布包，也未进行 Steam 后台操作。旧原型 `SMiningCollectionView` 的其他展示文案及部分演示场景文本仍需单独迁移；不宣称全工程所有字符串已完成本地化。
 
 普通游戏切换语言和数字区域格式。PIE 使用游戏本地化预览，最后一个本地化实例退出时恢复编辑器原有预览设置。PIE 的语言预览是进程共享状态，多窗口 PIE 不用于验证不同窗口的独立语言。
 
@@ -84,10 +124,10 @@ PIE、commandlet、自动化测试、试玩地图不计成就。GM 物品授予�
 
 同步顺序为：校验 AppID 和 SteamID → 查询八项定义/远端缓存 → 计算本地已解锁且远端未完成的差集 → 写入 → 再次查询确认。失败时保留本地记录，按退避重试；超时/过期回调忽略，回调阶段再次校验账号。Steam 本身也有离线缓存，本地账本只增加解锁，不对远端执行清除或回退。
 
-当前 `Config/Custom/SteamPC/DefaultEngine.ini` 使用 AppID 0 明确表示未配置。禁止用 Spacewar 480 作为正式验证。没有真实配置时正常 PC/Android 运行不依赖 Steam。
+用户已提供正式 AppID `5506030`，`Config/Custom/SteamPC/DefaultEngine.ini` 中的 `SteamDevAppId` 与 `ExpectedAppId` 均已配置为该值。普通 PC/Android 运行仍不依赖 Steam；SteamPC 运行时会校验实际 AppID 与该值一致。配置完成不代表 Steam 后台定义已发布或真实解锁已验证。禁止用 Spacewar 480 作为正式验证。
 
 ```powershell
-python Scripts/configure_steam.py --app-id YOUR_REAL_APP_ID
+python Scripts/configure_steam.py --app-id 5506030
 python Scripts/configure_steam.py --check
 powershell -File Scripts/package_main_game.ps1 -CustomConfig SteamPC -PlanOnly
 powershell -File Scripts/package_main_game.ps1 -CustomConfig SteamPC
@@ -118,7 +158,7 @@ SteamPC 必须重新编译并 Cook，打包检查 steam_api64.dll 且拒绝分�
 | 最终按钮修复 | 中文标签按可用空间缩放，悬停/按下使用按钮样式前景色；Editor 与普通 PC Shipping 重新编译通过；`final-selector-build.log` |
 | 普通 PC 完整包 | Cook、IoStore 封装、归档及包内资源检查成功；`PCPackageFinalReport`、`pc-package-final-run.log` |
 | 发布包运行观察 | 已实际启动、切换简中/英文/繁中、进入正式起始房间，并确认重启保留英文/繁中偏好；最终通过窗口关闭退出，进程返回 0；`pc-package-runtime-close-resources.csv` |
-| SteamPC Windows Shipping | 编译及链接成功；`win64-steampc-shipping-build.log`；AppID 仍为 0，仅证明可编译 |
+| SteamPC Windows Shipping | 编译及链接成功；`win64-steampc-shipping-build.log`；该历史构建使用 AppID 0，仅证明可编译；配置为 5506030 后尚未重新构建验收 |
 | Android arm64 Shipping | 使用 NDK r27c 完成编译检查，因两处已有 Clang 错误失败，未生成本次发布包；`android-shipping-build.log` |
 
 两种 Windows 配置使用同一输出文件名，会相互覆盖。当前最终输出为普通 PC 配置，测试包入口为 `Saved/Validation/LocalizationAchievements/PCPackage/Windows/WOoOW.exe`；复制测试包时必须复制整个 Windows 目录。
@@ -137,7 +177,7 @@ Android 的两个阻塞点为 `Source/BrainMining/StartRoom/MiningStartRoom.cpp:
 - 开场保留用户提供的“挖哦 / WOoOW”品牌 Logo；署名保持原名。办公室实体弹窗改用三张共享的 Slate 渲染目标，把三语正文绘制到原有空白窗口皮肤；飞散窗口和地面实例共用材质，切语言时重绘一次。原 PhysicalPopup 资产保留但正常游戏用本地化材质覆盖。其余旧式窗口皮肤中的英文是原画的一部分。需检查实际灯光下的颜色与可读性。
 - `Scripts/audit_achievement_collectibles.py` 已验证正式保存地图：18件静态放置、4件矿石奖励、1件逃生庆典动态生成，首发集合无缺项。这只证明配置来源存在，矿石产量和每条路线的可达性仍需游玩验收。
 - 普通 PC 包已生成并启动，仍需完整关卡验收；SteamPC 自有 AppID 构建、真实解锁与 Android 包尚未完成。
-- 自有 Steam AppID、已发布的后台定义、图标与测试账号/分支访问。无需在聊天中提供账号密码或 API 密钥。
+- AppID `5506030` 已配置；仍需确认已发布的后台定义、图标与测试账号/分支访问。无需在聊天中提供账号密码或 API 密钥。
 
 资源守卫拒绝或终止的运行只记为未通过，不调整安全阈值绕过，不终止无关应用。已有 OverCrowd DLL/PDB 用户修改保持不动。
 
@@ -145,7 +185,7 @@ Android 的两个阻塞点为 `Source/BrainMining/StartRoom/MiningStartRoom.cpp:
 
 | 场景 | 操作与通过条件 |
 | --- | --- |
-| 手动语言偏好 | 依次选择三种语言，退出重启后仍保持选择；设为自动后分别验证系统语言和 Steam 游戏语言 |
+| 手动语言偏好 | 依次选择三种语言，退出重启后仍保持选择；使用无语言偏好的独立用户目录分别验证系统语言和 Steam 游戏语言，自动模式不作为玩家可选项显示 |
 | 活动界面切换 | 打开设置、图鉴、升级和暂停界面后切语言，已显示文字同步更新；重进房间仍使用当前语言 |
 | 排版与谜题 | 在 1080p、720p 和 Android 横屏检查英文最长文案、繁中缺字；文思可拖动属性与英文语序均正确；卡牌数值和点击区域未被遮挡 |
 | 字幕与结局 | 播放中、手动暂停时和句间切语言，检查当前行计时、队列、音效与完成回调；走完结局并核对署名和退出入口 |
@@ -156,7 +196,7 @@ Android 的两个阻塞点为 `Source/BrainMining/StartRoom/MiningStartRoom.cpp:
 | 全收集与关卡 | 实际走完 23 件藏品来源及矿石兑换，验证矿石产量充足；卡牌、博物馆、结局成就在正式完成事件触发 |
 | 发布包 | 从空安装目录启动对应版本，检查三语资源、字幕和办公室实体窗口；普通 PC 无 Steam 客户端仍可运行；Android 真机启动并验证触控 |
 
-真实 Steam 验收需要项目 AppID、已发布的八项后台定义，以及可用测试分支/测试账号权限。只需提供 AppID 和准备状态，不需要密码或密钥。完整场景截图及 cook 在资源守卫允许后执行；没有新鲜成功报告的检查保持未通过状态。
+真实 Steam 验收将使用 AppID `5506030`，仍需已发布的八项后台定义，以及可用测试分支/测试账号权限。只需确认准备状态，不需要密码或密钥。完整场景截图及 cook 在资源守卫允许后执行；没有新鲜成功报告的检查保持未通过状态。
 
 ## 官方参考与本地核对
 

@@ -101,7 +101,6 @@ bool UMiningExperienceSubsystem::TogglePauseMenu(bool bFromCredits)
     });
     SaveButton->SetEnabled(bFromGameplay && GetWorld()->GetMapName().EndsWith(TEXT("Lvl_MainGame")));
     Button(TEXT("UI.Pause.MainMenu"),[this](){ReturnToMainMenu();});
-    Choices->AddSlot().AutoHeight()[GetGameInstance()->GetSubsystem<UMiningLocalizationSubsystem>()->MakeLanguageSelector()];
     Menu=MiningMenuStyle::Frame(Choices,650,0);
     PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);bPausedByMenu=!PC->IsPaused()&&PC->SetPause(true);
     Viewport->AddViewportWidgetContent(Menu.ToSharedRef(),1500);

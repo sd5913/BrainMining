@@ -14,6 +14,8 @@ public:
     virtual void BeginPlay() override;
     virtual void OnConstruction(const FTransform& Transform) override;
     UPROPERTY(EditAnywhere) FText Words;
+    UPROPERTY(EditAnywhere) FName LocalizationKey;
+    UFUNCTION(BlueprintPure) FText GetDisplayText() const;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UWidgetComponent> Surface;
 private:
     void Refresh();

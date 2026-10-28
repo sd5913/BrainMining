@@ -1113,6 +1113,50 @@ msgctxt "BrainMining.Game,UI.Action.ThinkAbout"
 msgid "思考 · {Name}"
 msgstr "思考 · {Name}"
 
+msgctxt "BrainMining.Game,UI.Area.Journey"
+msgid "房间二 · 回声、牌局与电视逃生"
+msgstr "房间二 · 回声、牌局与电视逃生"
+
+msgctxt "BrainMining.Game,UI.Area.JourneyInstructions"
+msgid "敲击探路，挖开暖光洞口进入巨人房间；\n完成牌局与电视逃生后，前往石笋岩区。"
+msgstr "敲击探路，挖开暖光洞口进入巨人房间；\n完成牌局与电视逃生后，前往石笋岩区。"
+
+msgctxt "BrainMining.Game,UI.Area.Mine1"
+msgid "1. 硅质岩区"
+msgstr "1. 硅质岩区"
+
+msgctxt "BrainMining.Game,UI.Area.Mine2"
+msgid "2. 溶洞岩区"
+msgstr "2. 溶洞岩区"
+
+msgctxt "BrainMining.Game,UI.Area.Mine3"
+msgid "3. 石笋岩区"
+msgstr "3. 石笋岩区"
+
+msgctxt "BrainMining.Game,UI.Area.MiningInstructions"
+msgid "沿碎晶线索挖出矿石，瞄准后按 E 收入背包；\n按 Tab 消耗材料升级矿镐。"
+msgstr "沿碎晶线索挖出矿石，瞄准后按 E 收入背包；\n按 Tab 消耗材料升级矿镐。"
+
+msgctxt "BrainMining.Game,UI.Area.Museum"
+msgid "房间三 · 文思镜像博物馆"
+msgstr "房间三 · 文思镜像博物馆"
+
+msgctxt "BrainMining.Game,UI.Area.MuseumInstructions"
+msgid "完成镜像博物馆的谜题，即完成本次旅程。"
+msgstr "完成镜像博物馆的谜题，即完成本次旅程。"
+
+msgctxt "BrainMining.Game,UI.Area.Office"
+msgid "房间一 · 电脑弹窗"
+msgstr "房间一 · 电脑弹窗"
+
+msgctxt "BrainMining.Game,UI.Area.OfficeInstructions"
+msgid "完成电脑与打印机流程，拾取炸弹并炸开出口；\n离开办公室后挖开连接土层。"
+msgstr "完成电脑与打印机流程，拾取炸弹并炸开出口；\n离开办公室后挖开连接土层。"
+
+msgctxt "BrainMining.Game,UI.Collection.BirdsDeparted"
+msgid "鸟群飞出了洞穴，巢里还留着一只歪头的小家伙"
+msgstr "鸟群飞出了洞穴，巢里还留着一只歪头的小家伙"
+
 msgctxt "BrainMining.Game,UI.Collection.Count"
 msgid "已收集{Count}/{Total}"
 msgstr "已收集{Count}/{Total}"
@@ -1120,6 +1164,14 @@ msgstr "已收集{Count}/{Total}"
 msgctxt "BrainMining.Game,UI.Collection.DescriptionFormat"
 msgid "{0}\n\n“{1}”"
 msgstr "{0}\n\n“{1}”"
+
+msgctxt "BrainMining.Game,UI.Collection.ExpandedHint"
+msgid "右侧通道通往新展区：陈列藏品、四种挖掘线索和红幕布舞台"
+msgstr "右侧通道通往新展区：陈列藏品、四种挖掘线索和红幕布舞台"
+
+msgctxt "BrainMining.Game,UI.Collection.FirstHint"
+msgid "先试试左侧已露出的试管架：瞄准它，按 E 收集"
+msgstr "先试试左侧已露出的试管架：瞄准它，按 E 收集"
 
 msgctxt "BrainMining.Game,UI.Collection.Locked"
 msgid "尚未解锁\n\n继续探索，寻找潜藏的灵感吧！"
@@ -1137,9 +1189,25 @@ msgctxt "BrainMining.Game,UI.Collection.MineralGoalComplete"
 msgid "已收集{Target}个{Mineral}"
 msgstr "已收集{Target}个{Mineral}"
 
+msgctxt "BrainMining.Game,UI.Collection.NewRound"
+msgid "已开始新一轮，收集进度清空；寻找墙面线索与新展区"
+msgstr "已开始新一轮，收集进度清空；寻找墙面线索与新展区"
+
 msgctxt "BrainMining.Game,UI.Collection.Pickup"
 msgid "已收集 · {Name}"
 msgstr "已收集 · {Name}"
+
+msgctxt "BrainMining.Game,UI.Collection.PickupHint"
+msgid "已收集 · {0}     [ {1} ] 打开图鉴"
+msgstr "已收集 · {0}     [ {1} ] 打开图鉴"
+
+msgctxt "BrainMining.Game,UI.Collection.Released"
+msgid "{0} 已松动掉落，瞄准后按 E 收集"
+msgstr "{0} 已松动掉落，瞄准后按 E 收集"
+
+msgctxt "BrainMining.Game,UI.Collection.SearchHint"
+msgid "沿水管或矿道寻找藏品，挖开覆盖层后瞄准按 E 收集；{0} 打开图鉴。"
+msgstr "沿水管或矿道寻找藏品，挖开覆盖层后瞄准按 E 收集；{0} 打开图鉴。"
 
 msgctxt "BrainMining.Game,UI.Collection.Shortcut"
 msgid "[C]查看藏品"
@@ -1288,6 +1356,150 @@ msgstr "退出游戏"
 msgctxt "BrainMining.Game,UI.MainMenu.Start"
 msgid "开始游戏"
 msgstr "开始游戏"
+
+msgctxt "BrainMining.Game,UI.Map.AfterCompletion"
+msgid "完成当前玩法后"
+msgstr "完成当前玩法后"
+
+msgctxt "BrainMining.Game,UI.Map.Back"
+msgid "已暂停  ·  M / Esc 返回"
+msgstr "已暂停  ·  M / Esc 返回"
+
+msgctxt "BrainMining.Game,UI.Map.BelowEntrance"
+msgid "低于入口 {0} 米"
+msgstr "低于入口 {0} 米"
+
+msgctxt "BrainMining.Game,UI.Map.Clues"
+msgid "本段挖掘线索"
+msgstr "本段挖掘线索"
+
+msgctxt "BrainMining.Game,UI.Map.Collected"
+msgid "已收集"
+msgstr "已收集"
+
+msgctxt "BrainMining.Game,UI.Map.Collectibles"
+msgid "本段藏品"
+msgstr "本段藏品"
+
+msgctxt "BrainMining.Game,UI.Map.EchoCards"
+msgid "回声 / 卡牌"
+msgstr "回声 / 卡牌"
+
+msgctxt "BrainMining.Game,UI.Map.Elevation"
+msgid "高度图  ·  左入口 → 右出口"
+msgstr "高度图  ·  左入口 → 右出口"
+
+msgctxt "BrainMining.Game,UI.Map.EndpointsLegend"
+msgid "白点 = 入口   绿点 = 出口"
+msgstr "白点 = 入口   绿点 = 出口"
+
+msgctxt "BrainMining.Game,UI.Map.EnterNext"
+msgid "即可进入下一房间。"
+msgstr "即可进入下一房间。"
+
+msgctxt "BrainMining.Game,UI.Map.Entrance"
+msgid "入口"
+msgstr "入口"
+
+msgctxt "BrainMining.Game,UI.Map.Exit"
+msgid "出口"
+msgstr "出口"
+
+msgctxt "BrainMining.Game,UI.Map.FollowExit"
+msgid "向绿点前进，到出口"
+msgstr "向绿点前进，到出口"
+
+msgctxt "BrainMining.Game,UI.Map.Mine1"
+msgid "挖掘 01"
+msgstr "挖掘 01"
+
+msgctxt "BrainMining.Game,UI.Map.Mine2"
+msgid "挖掘 02"
+msgstr "挖掘 02"
+
+msgctxt "BrainMining.Game,UI.Map.Mine3"
+msgid "挖掘 03"
+msgstr "挖掘 03"
+
+msgctxt "BrainMining.Game,UI.Map.Museum"
+msgid "博物馆"
+msgstr "博物馆"
+
+msgctxt "BrainMining.Game,UI.Map.NextArea"
+msgid "自动进入下一段。"
+msgstr "自动进入下一段。"
+
+msgctxt "BrainMining.Game,UI.Map.NoFloorPlan"
+msgid "本页显示全流程位置；此房间暂无内部平面图。"
+msgstr "本页显示全流程位置；此房间暂无内部平面图。"
+
+msgctxt "BrainMining.Game,UI.Map.Office"
+msgid "电脑房"
+msgstr "电脑房"
+
+msgctxt "BrainMining.Game,UI.Map.Plan"
+msgid "俯视  ·  上方为 +Y"
+msgstr "俯视  ·  上方为 +Y"
+
+msgctxt "BrainMining.Game,UI.Map.PlayerLegend"
+msgid "黄色箭头 = 位置与朝向"
+msgstr "黄色箭头 = 位置与朝向"
+
+msgctxt "BrainMining.Game,UI.Map.Recover"
+msgid "卡住可在 GM 窗口返回起点"
+msgstr "卡住可在 GM 窗口返回起点"
+
+msgctxt "BrainMining.Game,UI.Map.Remaining"
+msgid "沿主路剩余约 {0} 米"
+msgstr "沿主路剩余约 {0} 米"
+
+msgctxt "BrainMining.Game,UI.Map.Room"
+msgid "当前为玩法房间"
+msgstr "当前为玩法房间"
+
+msgctxt "BrainMining.Game,UI.Map.RouteLegend"
+msgid "青线 = 通往出口的主路"
+msgstr "青线 = 通往出口的主路"
+
+msgctxt "BrainMining.Game,UI.Map.SchematicHint"
+msgid "路线示意，不显示挖开的洞形；矿道会向下延伸，请同时参考高度图。"
+msgstr "路线示意，不显示挖开的洞形；矿道会向下延伸，请同时参考高度图。"
+
+msgctxt "BrainMining.Game,UI.Map.Title"
+msgid "矿道地图"
+msgstr "矿道地图"
+
+msgctxt "BrainMining.Game,UI.Map.Universe"
+msgid "宇宙细胞"
+msgstr "宇宙细胞"
+
+msgctxt "BrainMining.Game,UI.Map.WalkOn"
+msgid "出口打开，步行继续。"
+msgstr "出口打开，步行继续。"
+
+msgctxt "BrainMining.Game,UI.Map.You"
+msgid "你"
+msgstr "你"
+
+msgctxt "BrainMining.Game,UI.Map.YouAreHere"
+msgid "你在这里"
+msgstr "你在这里"
+
+msgctxt "BrainMining.Game,UI.Mineral.Copper"
+msgid "铜矿"
+msgstr "铜矿"
+
+msgctxt "BrainMining.Game,UI.Mineral.Diamond"
+msgid "钻石"
+msgstr "钻石"
+
+msgctxt "BrainMining.Game,UI.Mineral.Iron"
+msgid "铁矿"
+msgstr "铁矿"
+
+msgctxt "BrainMining.Game,UI.Mineral.Malachite"
+msgid "孔雀石"
+msgstr "孔雀石"
 
 msgctxt "BrainMining.Game,UI.Mining.BombWall"
 msgid "这堵墙很硬，用炸弹试试"
@@ -1585,6 +1797,10 @@ msgctxt "BrainMining.Game,UI.Settings.Back"
 msgid "返回游戏"
 msgstr "返回游戏"
 
+msgctxt "BrainMining.Game,UI.Settings.BackToMenu"
+msgid "返回主菜单"
+msgstr "返回主菜单"
+
 msgctxt "BrainMining.Game,UI.Settings.Effects"
 msgid "音效"
 msgstr "音效"
@@ -1661,6 +1877,50 @@ msgctxt "BrainMining.Game,UI.Tool.Pickaxe"
 msgid "矿镐"
 msgstr "矿镐"
 
+msgctxt "BrainMining.Game,UI.Treasure.CoinReward"
+msgid "{0}  +{1} 金币{2}"
+msgstr "{0}  +{1} 金币{2}"
+
+msgctxt "BrainMining.Game,UI.Treasure.Collect"
+msgid "[ E ] 领取宝物"
+msgstr "[ E ] 领取宝物"
+
+msgctxt "BrainMining.Game,UI.Treasure.CollectMineral"
+msgid "[ E ] 收入背包"
+msgstr "[ E ] 收入背包"
+
+msgctxt "BrainMining.Game,UI.Treasure.DemoProgress"
+msgid "左键挖掘 · 瞄准宝物按 E 领取 · 已领取 {0} / {1}\nF5 重开本展区并清空展示金币；R 只恢复岩石，不补发宝物"
+msgstr "左键挖掘 · 瞄准宝物按 E 领取 · 已领取 {0} / {1}\nF5 重开本展区并清空展示金币；R 只恢复岩石，不补发宝物"
+
+msgctxt "BrainMining.Game,UI.Treasure.DoubleReward"
+msgid " · 养成奖励翻倍！"
+msgstr " · 养成奖励翻倍！"
+
+msgctxt "BrainMining.Game,UI.Treasure.InventoryReward"
+msgid "{0} ×1  已收入背包"
+msgstr "{0} ×1  已收入背包"
+
+msgctxt "BrainMining.Game,UI.Treasure.KeepDigging"
+msgid "继续挖掘，暴露超过 50% 后可领取"
+msgstr "继续挖掘，暴露超过 50% 后可领取"
+
+msgctxt "BrainMining.Game,UI.Treasure.MineralProgress"
+msgid "矿石收入背包 · 已领取 {0} / {1} · Tab 升级矿镐"
+msgstr "矿石收入背包 · 已领取 {0} / {1} · Tab 升级矿镐"
+
+msgctxt "BrainMining.Game,UI.Treasure.MineralTarget"
+msgid "{0} ×1 · 暴露 {1}%\n{2}"
+msgstr "{0} ×1 · 暴露 {1}%\n{2}"
+
+msgctxt "BrainMining.Game,UI.Treasure.SharedProgress"
+msgid "左键挖掘 · 瞄准宝物按 E 领取 · 已领取 {0} / {1}\n金币供全部体验区共用；Tab 打开升级面板"
+msgstr "左键挖掘 · 瞄准宝物按 E 领取 · 已领取 {0} / {1}\n金币供全部体验区共用；Tab 打开升级面板"
+
+msgctxt "BrainMining.Game,UI.Treasure.Target"
+msgid "{0} · 大小 {1}/4 · 基础 {2} 金币 · 暴露 {3}%\n{4}"
+msgstr "{0} · 大小 {1}/4 · 基础 {2} 金币 · 暴露 {3}%\n{4}"
+
 msgctxt "BrainMining.Game,UI.Tutorial.Copper"
 msgid "收集1个铜矿"
 msgstr "收集1个铜矿"
@@ -1700,6 +1960,10 @@ msgstr "将矿镐升至2级"
 msgctxt "BrainMining.Game,UI.Tutorial.UpgradeReady"
 msgid "材料充足！按[Tab]升级矿镐"
 msgstr "材料充足！按[Tab]升级矿镐"
+
+msgctxt "BrainMining.Game,UI.Upgrade.AudioCredits"
+msgid "音乐：Dreamy Flashback — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — creativecommons.org/licenses/by/4.0/\n来源：incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532\n编辑：48 kHz 转换、循环交叉淡化和音量调整。\n音效：Kenney / rubberduck — CC0；项目合成工具音效\n音量设置：松开 Tab 后按 F8；关闭时自动保存"
+msgstr "音乐：Dreamy Flashback — Kevin MacLeod (incompetech.com)\nCC BY 4.0 — creativecommons.org/licenses/by/4.0/\n来源：incompetech.com/music/royalty-free/index.html?isrc=USUAN1100532\n编辑：48 kHz 转换、循环交叉淡化和音量调整。\n音效：Kenney / rubberduck — CC0；项目合成工具音效\n音量设置：松开 Tab 后按 F8；关闭时自动保存"
 
 msgctxt "BrainMining.Game,UI.Upgrade.BombCapacity"
 msgid "炸弹最大容量 ×2"
@@ -1769,9 +2033,17 @@ msgctxt "BrainMining.Game,UI.Upgrade.Need"
 msgid "还需{0}个"
 msgstr "还需{0}个"
 
+msgctxt "BrainMining.Game,UI.World.HoldSpaceToFly"
+msgid "按住空格键起飞"
+msgstr "按住空格键起飞"
+
 msgctxt "BrainMining.Game,UI.World.Ride"
 msgid "乘车"
 msgstr "乘车"
+
+msgctxt "BrainMining.Game,UI.World.ToTrain"
+msgid "前往列车"
+msgstr "前往列车"
 
 msgctxt "BrainMining.Game,UI.World.VoidRecovery"
 msgid "呼，刚才想到什么来着？"

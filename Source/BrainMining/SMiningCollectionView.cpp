@@ -44,7 +44,7 @@ int32 SMiningCollectionView::OnPaint(const FPaintArgs&,const FGeometry& G,const 
         {
             Box(570,568,460,58,Ink); Text(TEXT("[ E ]  收集  ")+AMiningCollectible::ItemName(F->Target->ItemId),600,580,23,Gold);
         }
-        if(F->ToastRemaining>0) { Box(320,665,960,61,Panel); Text(F->Toast,343,681,18,Cream); }
+        if(F->ToastRemaining>0) { Box(320,665,960,61,Panel); Text(F->Toast.ToString(),343,681,18,Cream); }
         if(!HeavenRoom && Total>0 && F->UniqueCount()==Total) { Text(TEXT("本区奇物已集齐 · 打开图鉴，看看它们的另一面"),470,169,22,Gold); }
         if(HeavenRoom && F->UniqueCount()==1) { Text(TEXT("已找到")+AMiningCollectible::ItemName(0)+TEXT(" · Tab 打开图鉴检视"),525,169,22,Gold); }
         return L;

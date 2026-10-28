@@ -1,4 +1,5 @@
 #include "Showcase/MiningExhibitHall.h"
+#include "MiningLocalizationSubsystem.h"
 #include "MiningAchievementSubsystem.h"
 #include "MiningAudioComponent.h"
 #include "BrainMiningCharacter.h"
@@ -105,12 +106,13 @@ void AMiningExhibitController::OnPossess(APawn* InPawn)
 
 bool AMiningExhibitController::InputKey(const FInputKeyEventArgs& Params)
 {
+    if (IsAudioSettingsOpen()) return Super::InputKey(Params);
     if(AMiningOpening::IsOpening(GetWorld()))
     {
         if(Params.Key==EKeys::F10 || Params.Key==EKeys::LeftControl || Params.Key==EKeys::RightControl)return Super::InputKey(Params);
         return true;
     }
-    if (IsAudioSettingsOpen() || Params.Key == EKeys::F8) return Super::InputKey(Params);
+    if (Params.Key == EKeys::F8) return Super::InputKey(Params);
     if (auto* Room = AMiningStartRoom::Find(GetWorld()))
     {
         if (Params.Key == EKeys::E && Params.Event == IE_Pressed && !bUpgradeMenuHeld)
@@ -201,6 +203,22 @@ bool AMiningExhibitHall::InitializeAreas()
     auto* Progression=Controller->GetPawn()->FindComponentByClass<UMiningProgressionComponent>();
     if(!Progression || !Progression->InitializeProgression()) return false;
     ResumePoints.SetNum(Areas.Num());
+    const struct { const TCHAR* Tag; const TCHAR* Title; const TCHAR* Instructions; } LocalizedAreas[]={
+        {TEXT("BM_Campaign_MainGame01"),TEXT("UI.Area.Mine1"),TEXT("UI.Area.MiningInstructions")},
+        {TEXT("BM_Campaign_MainGame02"),TEXT("UI.Area.Mine2"),TEXT("UI.Area.MiningInstructions")},
+        {TEXT("BM_Campaign_MainGame03"),TEXT("UI.Area.Mine3"),TEXT("UI.Area.MiningInstructions")},
+        {TEXT("BM_Campaign_MainGameOffice"),TEXT("UI.Area.Office"),TEXT("UI.Area.OfficeInstructions")},
+        {TEXT("BM_Campaign_MainGameJourney"),TEXT("UI.Area.Journey"),TEXT("UI.Area.JourneyInstructions")},
+        {TEXT("BM_Campaign_MainGameMuseum"),TEXT("UI.Area.Museum"),TEXT("UI.Area.MuseumInstructions")}
+    };
+    for(auto& Area:Areas)
+        for(const auto& Localized:LocalizedAreas)
+            if(Area.Tag==Localized.Tag)
+            {
+                Area.Title=MiningText::Get(Localized.Title);
+                Area.Instructions=MiningText::Get(Localized.Instructions);
+                break;
+            }
     for(int32 Index=0; Index<Areas.Num(); ++Index) ResumePoints[Index]=Areas[Index].Entry;
     for(TActorIterator<AActor> Actor(GetWorld()); Actor; ++Actor) RegisterActor(*Actor);
     PendingActors.Reset();

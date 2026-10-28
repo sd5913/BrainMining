@@ -154,8 +154,8 @@ bool AMiningCollectionField::InitializePlayer()
             CatalogueWidget->SetVisibility(ESlateVisibility::Collapsed);
         }
     }
-    Toast=bUseAuthoredPlacements?FString::Printf(TEXT("沿水管或矿道寻找藏品，挖开覆盖层后瞄准按 E 收集；%s 打开图鉴。"),*CatalogueKey.GetDisplayName().ToString()):TEXT("先试试左侧已露出的试管架：瞄准它，按 E 收集"); ToastRemaining=10;
-    if(bExpandedCollection && !bUseAuthoredPlacements) { Toast=TEXT("右侧通道通往新展区：陈列藏品、四种挖掘线索和红幕布舞台"); ToastRemaining=12; }
+    Toast=bUseAuthoredPlacements?FText::Format(MiningText::Get(TEXT("UI.Collection.SearchHint")),CatalogueKey.GetDisplayName()):MiningText::Get(TEXT("UI.Collection.FirstHint")); ToastRemaining=10;
+    if(bExpandedCollection && !bUseAuthoredPlacements) { Toast=MiningText::Get(TEXT("UI.Collection.ExpandedHint")); ToastRemaining=12; }
     if(bAreaManaged) SetAreaActive(false);
     return true;
 }
@@ -335,7 +335,7 @@ void AMiningCollectionField::Tick(float Dt)
         if(Item->CanRelease(AMiningCollectible::PickupExposure))
         {
             Item->Release();
-            if(Item->bReleased) { Toast=AMiningCollectible::ItemName(Item->ItemId)+TEXT(" 已松动掉落，瞄准后按 E 收集"); ToastRemaining=5; }
+            if(Item->bReleased) { Toast=FText::Format(MiningText::Get(TEXT("UI.Collection.Released")),AMiningCollectible::ItemNameText(Item->ItemId)); ToastRemaining=5; }
         }
     }
 }
@@ -394,7 +394,7 @@ bool AMiningCollectionField::TryCollectTarget()
     if(bFirstCollection)USubtitleLibrary::PlaySubtitleSegment(this,TEXT("首次收藏提示"));
     if(ActorHasTag(TEXT("BM_MainGame_Collections")) || ActorHasTag(TEXT("BM_MainGame_SystemIntegration")))if(auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>())Session->CampaignCollection=Inventory;
     SelectedId=Item->ItemId; Target=nullptr;
-    Toast=FString::Printf(TEXT("已收集 · %s     [ %s ] 打开图鉴"),*AMiningCollectible::ItemName(Item->ItemId),*CatalogueKey.GetDisplayName().ToString()); ToastRemaining=5;
+    Toast=FText::Format(MiningText::Get(TEXT("UI.Collection.PickupHint")),AMiningCollectible::ItemNameText(Item->ItemId),CatalogueKey.GetDisplayName()); ToastRemaining=5;
     return true;
 }
 int32 AMiningCollectionField::UniqueCount() const { int32 N=0; for(int32 Count:Inventory) N+=Count>0; return N; }
@@ -508,7 +508,7 @@ void AMiningCollectionField::ResetCollection()
     for(AActor* A:Spawned) if(IsValid(A)) A->Destroy();
     Spawned.Reset(); Items.Reset(); Inventory.Init(0,FMath::Max(4,CatalogueIds().IsEmpty()?4:CatalogueIds().Last()+1)); SelectedId=INDEX_NONE;
     SpawnField();
-    Toast=TEXT("已开始新一轮，收集进度清空；寻找墙面线索与新展区"); ToastRemaining=6;
+    Toast=MiningText::Get(TEXT("UI.Collection.NewRound")); ToastRemaining=6;
 }
 void AMiningCollectionField::EndPlay(const EEndPlayReason::Type Reason)
 {

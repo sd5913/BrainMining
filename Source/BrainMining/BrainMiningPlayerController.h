@@ -131,6 +131,11 @@ protected:
     TSharedPtr<SWidget> MobileTouchLayer;
 	bool bAudioPausedWorld = false;
 	bool bAudioPreviousMiningSuspended = false;
+	bool bAudioFromOpening = false;
+	TWeakPtr<SWidget> PreviousAudioFocus;
+	EMouseCaptureMode PreviousAudioCaptureMode = EMouseCaptureMode::NoCapture;
+	EMouseLockMode PreviousAudioLockMode = EMouseLockMode::DoNotLock;
+	bool bAudioPreviousHideCursor = false;
 	EMouseCaptureMode PreviousMouseCaptureMode = EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown;
 	EMouseLockMode PreviousMouseLockMode = EMouseLockMode::LockOnCapture;
 

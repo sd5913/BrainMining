@@ -5,6 +5,8 @@
 #include "Editor.h"
 #include "EngineUtils.h"
 #include "StartRoom/MiningOpening.h"
+#include "BrainMiningPlayerController.h"
+#include "Framework/Application/SlateApplication.h"
 #include "MainGameDoor.h"
 #include "MiningGamepadSubsystem.h"
 #include "Engine/LocalPlayer.h"
@@ -85,10 +87,33 @@ public:
             Test->TestTrue(TEXT("Camera starts on the bed"),PC->GetViewTarget()!=PC->GetPawn());
             TArray<UUserWidget*> Widgets;UWidgetBlueprintLibrary::GetAllWidgetsOfClass(W,Widgets,UMiningOpeningMenu::StaticClass(),true);
             if(!Test->TestEqual(TEXT("Exactly one visible opening menu"),Widgets.Num(),1))return true;
-            UButton* StartButton=nullptr;int32 Buttons=0;
-            Widgets[0]->WidgetTree->ForEachWidget([&](UWidget* Widget){if(auto* B=Cast<UButton>(Widget)){if(!StartButton)StartButton=B;++Buttons;}});
-            Test->TestEqual(TEXT("Start and Quit are built and visible"),Buttons,2);
+            auto* OpeningMenu=Cast<UMiningOpeningMenu>(Widgets[0]);
+            UButton* StartButton=OpeningMenu->StartButton;int32 Buttons=0;
+            Widgets[0]->WidgetTree->ForEachWidget([&](UWidget* Widget){if(Cast<UButton>(Widget))++Buttons;});
+            Test->TestEqual(TEXT("Start, Settings and Quit share the opening menu"),Buttons,OpeningMenu->ContinueButton?4:3);
             if(!Test->TestNotNull(TEXT("Actual Start button exists"),StartButton))return true;
+            if(!Test->TestNotNull(TEXT("Actual Settings button exists"),OpeningMenu->SettingsButton.Get()))return true;
+            auto* SettingsController=Cast<ABrainMiningPlayerController>(PC);
+            if(!Test->TestNotNull(TEXT("Opening uses the gameplay settings controller"),SettingsController))return true;
+            const auto* OpeningCamera=PC->GetViewTarget();
+            for(int32 SettingsVisit=0;SettingsVisit<2;++SettingsVisit)
+            {
+                OpeningMenu->SettingsButton->OnClicked.Broadcast();
+                Test->TestTrue(TEXT("Main menu opens the shared settings panel"),SettingsController->IsAudioSettingsOpen());
+                Test->TestTrue(TEXT("Settings pauses the opening"),PC->IsPaused());
+                Test->TestFalse(TEXT("Opening settings does not start the game"),Opening->bStarted);
+                if(SettingsVisit==0)
+                    PC->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::Escape,IE_Pressed,1.f));
+                else
+                    SettingsController->ToggleAudioSettings();
+                Test->TestFalse(TEXT("Closing settings removes the shared panel"),SettingsController->IsAudioSettingsOpen());
+                Test->TestFalse(TEXT("Closing settings releases its pause"),PC->IsPaused());
+                Test->TestTrue(TEXT("Closing settings preserves opening movement lock"),PC->IsMoveInputIgnored());
+                Test->TestTrue(TEXT("Closing settings preserves opening look lock"),PC->IsLookInputIgnored());
+                Test->TestTrue(TEXT("Closing settings preserves opening camera"),PC->GetViewTarget()==OpeningCamera);
+                Test->TestTrue(TEXT("Closing settings restores the visible cursor"),PC->bShowMouseCursor);
+                Test->TestTrue(TEXT("Closing settings restores focus to Settings"),FSlateApplication::Get().GetUserFocusedWidget(PC->GetLocalPlayer()->GetControllerId())==OpeningMenu->SettingsButton->GetCachedWidget());
+            }
             if (bUseAlternateMenu)
             {
                 auto* AlternateMenu = CreateWidget<UMainGameStartMenuWidget>(PC);

@@ -422,8 +422,8 @@ void UMiningSaveSubsystem::RecordMineral(EMiningMineral Mineral)
     if(auto* Hall=AMiningExhibitHall::Find(GetWorld());Hall && Hall->Collection)Hall->Collection->CheckMineralRewards();
     if(TutorialActive && TutorialSoilPassed)
     {
-        if(Mineral==EMiningMineral::Copper && !(TutorialCompleted&1))CompletionNotices.Add(TEXT("收集1个铜矿"));
-        if(Mineral==EMiningMineral::Iron && !(TutorialCompleted&2))CompletionNotices.Add(TEXT("收集1个铁矿"));
+        if(Mineral==EMiningMineral::Copper && !(TutorialCompleted&1))CompletionNotices.Add(MiningText::Get(TEXT("UI.Tutorial.Copper")));
+        if(Mineral==EMiningMineral::Iron && !(TutorialCompleted&2))CompletionNotices.Add(MiningText::Get(TEXT("UI.Tutorial.Iron")));
     }
     if(Mineral==EMiningMineral::Copper)TutorialCompleted|=1;
     if(Mineral==EMiningMineral::Iron)TutorialCompleted|=2;
@@ -460,7 +460,7 @@ void UMiningSaveSubsystem::UpdateTutorial()
         const float LocalRadius=Radius/FMath::Max(FMath::Abs(Soil->GetActorScale3D().X),.01f);
         if(Local.X>Half.X+LocalRadius && Local.X<Half.X+2000.f && FMath::Abs(Local.Y)<Half.Y && FMath::Abs(Local.Z)<Half.Z)
         {
-            TutorialSoilPassed=true;CompletionNotices.Add(TEXT("穿过1个泥土层"));
+            TutorialSoilPassed=true;CompletionNotices.Add(MiningText::Get(TEXT("UI.Tutorial.Soil")));
         }
     }
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
@@ -481,9 +481,8 @@ void UMiningSaveSubsystem::UpdateTutorial()
     if(Kind==EMiningExperienceKind::Museum)PrototypesFound=4;
     if(TutorialActive && TutorialSoilPassed)
     {
-        if(!(Before&4) && (TutorialCompleted&4) && (TutorialCompleted&3)==3)CompletionNotices.Add(TEXT("升级1次矿镐"));
-        if(!(Before&16) && (TutorialCompleted&16) && (TutorialCompleted&3)==3)CompletionNotices.Add(TEXT("将矿镐升至2级"));
-        const TCHAR* Names[]={TEXT("发现1个灵感原型"),TEXT("发现第2个灵感原型"),TEXT("发现第3个灵感原型"),TEXT("发现第4个灵感原型")};
-        for(int32 I=BeforePrototypes;I<PrototypesFound && I<4;++I)CompletionNotices.Add(Names[I]);
+        if(!(Before&4) && (TutorialCompleted&4) && (TutorialCompleted&3)==3)CompletionNotices.Add(MiningText::Get(TEXT("UI.Tutorial.Upgrade1")));
+        if(!(Before&16) && (TutorialCompleted&16) && (TutorialCompleted&3)==3)CompletionNotices.Add(MiningText::Get(TEXT("UI.Tutorial.Upgrade2")));
+        for(int32 I=BeforePrototypes;I<PrototypesFound && I<4;++I)CompletionNotices.Add(FText::Format(MiningText::Get(TEXT("UI.Tutorial.Prototype")),I+1));
     }
 }

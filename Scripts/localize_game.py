@@ -36,6 +36,7 @@ def validate(entries):
 
 def validate_references(entries):
     patterns = (
+        r'TEXT\("(UI\.[^"\n]+)"\)',
         r'MiningText::Get\(\s*TEXT\("([^"\n]+)"\)',
         r'FText::FromStringTable\(TEXT\("BrainMining.Game"\),\s*TEXT\("([^"\n]+)"\)',
     )

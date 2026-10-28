@@ -1,5 +1,10 @@
 #include "MiningLocalizationSubsystem.h"
 #include "MiningCollection.h"
+#include "MiningSaveSubsystem.h"
+#include "Showcase/MiningTreasure.h"
+#include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 #include "WenSi/WenSiThoughtBubble.h"
 #include "Subtitles/SubtitleVoice.h"
 #include "Internationalization/Internationalization.h"
@@ -85,6 +90,50 @@ bool FMiningLanguageContentTest::RunTest(const FString&)
         TestTrue(TEXT("The same interactive widget is preserved"),Row->GetChildren()->GetChildAt(1)==Property);
         TestFalse(TEXT("Narrative subtitle is available"),MiningText::Get(TEXT("Subtitle.StartRoom.001")).IsEmpty());
     }
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningQueuedLanguageTest,"BrainMining.Localization.QueuedNoticesAndAuthoredMinerals",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningQueuedLanguageTest::RunTest(const FString&)
+{
+    const FString PreviousLanguage=FInternationalization::Get().GetCurrentLanguage()->GetName();
+    const FString PreviousLocale=FInternationalization::Get().GetCurrentLocale()->GetName();
+    UWorld* World=UWorld::CreateWorld(EWorldType::Game,false);
+    auto* Instance=NewObject<UGameInstance>(GEngine);
+    auto& Context=GEngine->CreateNewWorldContext(EWorldType::Game);
+    Context.SetCurrentWorld(World);Context.OwningGameInstance=Instance;
+    World->SetGameInstance(Instance);Instance->Init();
+    ON_SCOPE_EXIT
+    {
+        Instance->Shutdown();GEngine->DestroyWorldContext(World);World->DestroyWorld(false);
+        UKismetInternationalizationLibrary::SetCurrentLanguageAndLocale(PreviousLanguage,false);
+        UKismetInternationalizationLibrary::SetCurrentLocale(PreviousLocale,false);
+    };
+    auto* Saves=Instance->GetSubsystem<UMiningSaveSubsystem>();
+    Saves->TutorialActive=true;Saves->TutorialSoilPassed=true;
+    Saves->RecordMineral(EMiningMineral::Copper);
+    Saves->RecordMineral(EMiningMineral::Iron);
+    if(!TestEqual(TEXT("Actual mineral pickups queue two tutorial notices"),Saves->CompletionNotices.Num(),2))return false;
+    const FText VisibleNotice=FText::Format(FText::AsCultureInvariant(TEXT("✓  {0}")),Saves->CompletionNotices[0]);
+    FMiningTreasureDefinition Authored;
+    Authored.Id=TEXT("2");Authored.Name=FText::FromString(TEXT("铜矿"));
+    const FText ExistingMineral=Authored.GetDisplayName();
+    const FText ExistingMapTitle=MiningText::Get(TEXT("UI.Map.Title"));
+    const TCHAR* Cultures[]={TEXT("en"),TEXT("zh-Hant"),TEXT("zh-Hans")};
+    const TCHAR* ExpectedMinerals[]={TEXT("copper"),TEXT("銅礦"),TEXT("铜矿")};
+    const TCHAR* ExpectedNotices[]={TEXT("✓  Collect 1 copper deposit"),TEXT("✓  收集 1 個銅礦"),TEXT("✓  收集1个铜矿")};
+    const TCHAR* ExpectedMaps[]={TEXT("Mine map"),TEXT("礦道地圖"),TEXT("矿道地图")};
+    for(int32 CultureIndex=0;CultureIndex<UE_ARRAY_COUNT(Cultures);++CultureIndex)
+    {
+        UKismetInternationalizationLibrary::SetCurrentLanguageAndLocale(Cultures[CultureIndex],false);
+        FTextLocalizationManager::Get().EnableGameLocalizationPreview(Cultures[CultureIndex]);
+        FTextLocalizationManager::Get().WaitForAsyncTasks();
+        TestEqual(TEXT("Already displayed completion notice changes language"),VisibleNotice.ToString(),FString(ExpectedNotices[CultureIndex]));
+        TestEqual(TEXT("Authored Chinese mineral name uses live translation"),ExistingMineral.ToString(),FString(ExpectedMinerals[CultureIndex]));
+        TestEqual(TEXT("Map resource changes language"),ExistingMapTitle.ToString(),FString(ExpectedMaps[CultureIndex]));
+    }
+    Authored.Id=TEXT("custom");Authored.Name=FText::FromString(TEXT("Custom collectible"));
+    TestEqual(TEXT("Custom definitions retain their authored name"),Authored.GetDisplayName().ToString(),Authored.Name.ToString());
     return true;
 }
 

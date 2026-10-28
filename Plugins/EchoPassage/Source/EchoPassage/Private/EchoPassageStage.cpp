@@ -138,8 +138,10 @@ void AEchoPassageStage::OnConstruction(const FTransform& Transform)
     {
         Box(WarmWood,FVector(-760,0,1050),FVector(30,440,300));
         Box(WarmGlow,FVector(-747,0,1040),FVector(3,130,85));
+        // These warm entrance trims belong to the standalone wooden vestibule.
+        // The campaign's purple approach must not expose yellow strips along its walls.
+        for(int Side:{-1,1}) Box(WarmGlow,FVector(-500,Side*200,927),FVector(470,3,3));
     }
-    for(int Side:{-1,1}) Box(WarmGlow,FVector(-500,Side*200,927),FVector(470,3,3));
     if(bRoomInSameLevel)
     {
         const FVector ExitShift=EchoPassageLayout::ExitOffset(bUseMaze);

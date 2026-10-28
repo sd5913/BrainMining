@@ -266,7 +266,7 @@ void ACardRoomStage::TickRabbitExpression(float Time,float DeltaSeconds)
     // larger readable gesture so the character still works if a target is stripped by import.
     const float Breath=FMath::Sin(Time*2.25f);
     const bool Angry=Run.Round>=3 && (Run.Phase==ECardRoomPhase::Resolving || Run.Phase==ECardRoomPhase::Victory);
-    const bool Hurt=Run.Phase==ECardRoomPhase::Resolving && Run.PhaseTime>=1.f && Run.PhaseTime<1.75f;
+    const bool Hurt=Run.Phase==ECardRoomPhase::Resolving && Run.PresentationTime()>=1.f && Run.PresentationTime()<1.75f;
     const float Blink=(FMath::Fmod(Time,4.1f)<.14f)?1.f:0.f;
     RabbitVisual->SetMorphTarget(TEXT("Blink"),Blink);
     RabbitVisual->SetMorphTarget(TEXT("MouthOpen"),(Angry||Hurt)?1.f:0.f);
@@ -308,13 +308,16 @@ void ACardRoomStage::Tick(float DeltaSeconds)
         if(Phase==ECardRoomPhase::Choosing) Sound(TEXT("S_Draw"),.3f);
         if(Phase==ECardRoomPhase::Seated && AudioOverride.IsBound()) Sound(TEXT("S_Seat"),.4f);
         if(Phase==ECardRoomPhase::Matching && AudioOverride.IsBound()) Sound(TEXT("S_Confirm"),.35f);
-        if(Phase==ECardRoomPhase::Resolving) { Sound(Run.Round==2?TEXT("S_Poison"):Run.Round==4?TEXT("S_Finale"):TEXT("S_Laser")); if(AudioOverride.IsBound())Sound(TEXT("S_CardPlace"),.35f); bReplySound=false; }
+        if(Phase==ECardRoomPhase::Resolving) { Sound(Run.Round==2?TEXT("S_Poison"):Run.Round==4?TEXT("S_Confirm"):TEXT("S_Laser")); if(AudioOverride.IsBound())Sound(TEXT("S_CardPlace"),.35f); bReplySound=false;
+            if(Run.Round==4 && SubtitleOverride.IsBound())SubtitleOverride.Execute(FText::FromStringTable(TEXT("BrainMining.Game"),TEXT("Card.FusionName")).ToString(),6.5f);
+        }
         if(Phase==ECardRoomPhase::Victory && !bWinSent) { bWinSent=true; Sound(TEXT("S_Victory")); OnRoomCompleted.Broadcast(RoomId); }
         LastPhase=Phase;
     }
-    const float T=Run.PhaseTime;
+    const float T=Run.PresentationTime();
     const bool bBattle=Phase==ECardRoomPhase::Choosing || Phase==ECardRoomPhase::Resolving;
     const bool bResolve=Phase==ECardRoomPhase::Resolving;
+    if(bResolve && Run.Round==4 && PreviousAudioTime<0.f && T>=0.f)Sound(TEXT("S_Finale"));
     if(AudioOverride.IsBound() && bResolve && PreviousAudioTime<1.f && T>=1.f)
         Sound(Run.Round==3?TEXT("S_CardFire"):Run.Round==2?TEXT("S_CardPoison"):TEXT("S_Impact"),Run.Round==3?.7f:.3f);
     if(bResolve && Run.Round==3 && PreviousAudioTime<1.f && T>=1.f)
@@ -323,7 +326,6 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     {
         if(Run.Round==2) SubtitleOverride.Execute(FText::FromStringTable(TEXT("BrainMining.Game"),TEXT("Card.Stink")).ToString(),2.4f);
         if(Run.Round==3) SubtitleOverride.Execute(FText::FromStringTable(TEXT("BrainMining.Game"),TEXT("Card.Eyebrows")).ToString(),2.4f);
-        if(Run.Round==4) SubtitleOverride.Execute(FText::FromStringTable(TEXT("BrainMining.Game"),TEXT("Card.Return")).ToString(),3.f);
     }
     PreviousAudioTime=T;
     const bool bGhost=Phase==ECardRoomPhase::Seated;
@@ -371,27 +373,49 @@ void ACardRoomStage::Tick(float DeltaSeconds)
     // Selected cards become physical cards and arc onto the table on confirm.
     for(int32 i=0;i<PlayedCards.Num();++i)
     {
-        const bool Visible=bResolve && Run.Hand.IsValidIndex(i) && T<2.2f;
+        const float CardTime=Run.PhaseTime;
+        const bool Fusion=Run.Round==4;
+        const bool Visible=bResolve && Run.Hand.IsValidIndex(i) && CardTime<(Fusion?2.95f:2.2f);
         PlayedCards[i]->SetVisibility(Visible,true);
         if(!Visible) continue;
-        const float A=FMath::Clamp((T-i*.008f)/.62f,0.f,1.f);
+        const float A=FMath::Clamp((CardTime-i*.008f)/.62f,0.f,1.f);
         const float Centered=i-(Run.Hand.Num()-1)*.5f;
         const FVector From(-220,Centered*6.f,138.f);
         const FVector To=GetCardLanding(i,Run.Hand.Num());
         FVector Pos=FMath::Lerp(From,To,A); Pos.Z+=FMath::Sin(A*PI)*CardThrowHeight;
+        if(Fusion && CardTime>.7f)
+        {
+            const float Gather=FMath::SmoothStep(.7f,2.8f,CardTime),Angle=i*2*PI/17+CardTime*3.8f;
+            const FVector Center=GetFusionCenterLocal();
+            const FVector Orbit=Center+FVector(FMath::Sin(Angle)*90,FMath::Cos(Angle)*240,FMath::Sin(Angle)*120)*(1-Gather);
+            Pos=FMath::Lerp(To,Orbit,FMath::SmoothStep(.7f,1.4f,CardTime));
+        }
         PlayedCards[i]->SetRelativeLocation(Pos);
         // Present the illustrated face during the arc, then flatten only near touchdown.
         const float AirPitch=75.f+FMath::Sin(A*PI)*8.f;
         const float LandingBlend=FMath::SmoothStep(.70f,1.f,A);
         PlayedCards[i]->SetRelativeRotation(FRotator(FMath::Lerp(AirPitch,CardLandingPitch,LandingBlend),(1-A)*(Centered*3.f-35.f),0));
-        const float Fade=T>1.9f?FMath::Max(.01f,(2.2f-T)/.3f):1.f;
+        if(Fusion && CardTime>.7f)
+        {
+            // Keep every element readable while the fan spirals into the camera's view centre.
+            const FVector Normal=(FVector(-270,0,188)-Pos).GetSafeNormal();
+            const FQuat Face=FRotationMatrix::MakeFromZ(Normal).ToQuat();
+            const FQuat Twist(Normal,FMath::DegreesToRadians(15.f*FMath::Sin(CardTime*3+i)));
+            PlayedCards[i]->SetRelativeRotation(Twist*Face);
+        }
+        const float Fade=Fusion?1-FMath::SmoothStep(2.4f,2.95f,CardTime):T>1.9f?FMath::Max(.01f,(2.2f-T)/.3f):1.f;
         PlayedCards[i]->SetRelativeScale3D(FVector(.38,.26,.006)*CardVisualScale*Fade);
         const auto Type=Run.Hand[i];
         // Symbol meshes carry their own layered palette, matching the hand icons.
         if(CardFaceMaterials.IsValidIndex(static_cast<int32>(Type)))
+        {
             CardMarks[i]->SetMaterial(0,CardFaceMaterials[static_cast<int32>(Type)]);
-        else
+        }
+        else if(CardMarks[i]->GetStaticMesh()!=SymbolMeshes[static_cast<int32>(Type)])
+        {
+            CardMarks[i]->EmptyOverrideMaterials();
             CardMarks[i]->SetStaticMesh(SymbolMeshes[static_cast<int32>(Type)]);
+        }
     }
     if(Phase==ECardRoomPhase::Arrival) Offset.Z+=FMath::Square(1-FMath::Clamp(T/1.0f,0.f,1.f))*430;
     if(bResolve && T>=1 && T<1.7f) { Offset.Y+=FMath::Sin(T*60)*7; Spin.Pitch=FMath::Sin(T*45)*8; }

@@ -5,6 +5,7 @@
 #include "CardRoomRobot.h"
 #include "Components/ChildActorComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
 #include "SCardRoomView.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
@@ -78,7 +79,7 @@ bool FCardRoomTouchTest::RunTest(const FString& Parameters)
             Run.Tick(.5f);
             Touch(FVector2D(1322,762));
             TestEqual(TEXT("Repeated confirm does not restart resolution"),Run.PhaseTime,.5f);
-            Run.Tick(5.f);
+            Run.Tick(8.f);
         }
         TestTrue(TEXT("Touch-only battle reaches victory"),Run.Phase == ECardRoomPhase::Victory);
         const int32 BeforeReward = RewardCount;
@@ -165,6 +166,11 @@ bool FCardRoomFlowTest::RunTest(const FString& Parameters)
     {
         const int32 Expected=Turn==3?2:Turn==4?17:1;
         TestEqual(TEXT("Correct hand size"),R.Hand.Num(),Expected);
+        if(Turn==4)
+        {
+            TSet<ERoomCard> Unique;for(auto Type:R.Hand)Unique.Add(Type);
+            TestEqual(TEXT("Final hand contains seventeen different elements"),Unique.Num(),17);
+        }
         TestFalse(TEXT("Empty play rejected"),R.Confirm());
         TestFalse(TEXT("Invalid card index rejected"),R.Stage(99));
         if(Turn==3) { TestTrue(TEXT("Poison persists into combo turn"),R.bPoisoned); R.Stage(0); TestFalse(TEXT("Single card cannot trigger combination"),R.Confirm()); }
@@ -174,13 +180,14 @@ bool FCardRoomFlowTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Complete hand accepted"),R.Confirm()); TestFalse(TEXT("Duplicate confirm blocked"),R.Confirm());
         TestFalse(TEXT("Input locked during resolution"),R.Stage(0));
         R.Tick(1.1f);
+        if(Turn==4)TestEqual(TEXT("Opponent survives the opening fusion animation"),R.RivalHP,28);
         if(Turn==2) TestTrue(TEXT("Poison applied"),R.bPoisoned);
         if(Turn==3) TestFalse(TEXT("Fire consumes poison"),R.bPoisoned);
         R.Tick(1.3f);
         if(Turn==1) TestEqual(TEXT("Fireball deals 20"),R.PlayerHP,80);
         if(Turn==2) TestEqual(TEXT("Stunned enemy does not damage player"),R.PlayerHP,80);
         if(Turn==3) TestEqual(TEXT("Counterattack leaves one HP"),R.PlayerHP,1);
-        R.Tick(3.f);
+        R.Tick(Turn==4?5.f:3.f);
     }
     TestTrue(TEXT("Victory after fourth round"),R.Phase==ECardRoomPhase::Victory);
     TestEqual(TEXT("Rival defeated"),R.RivalHP,0); TestTrue(TEXT("Collectible claim works"),R.Collect()); TestFalse(TEXT("Collectible cannot be claimed twice"),R.Collect());
@@ -198,7 +205,7 @@ bool FCardRoomTimingTest::RunTest(const FString& Parameters)
         {
             for(int32 i=0;i<R.Hand.Num();++i) R.Stage(i);
             TestTrue(TEXT("Turn ready"),R.Confirm());
-            for(int32 i=0;i<FPS*5;++i) R.Tick(1.f/FPS);
+            for(int32 i=0;i<FPS*(Round==4?7:5);++i) R.Tick(1.f/FPS);
         }
         TestTrue(TEXT("Victory independent of frame rate"),R.Phase==ECardRoomPhase::Victory); TestEqual(TEXT("Stable final HP"),R.PlayerHP,1);
     }
@@ -250,5 +257,22 @@ bool FCardRoomSingedBrowTest::RunTest(const FString&)
     TestFalse(TEXT("A new encounter restores the brow"),Robot->bEyebrowSinged);
     World->DestroyWorld(false);
     return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCardRoomFloorCollisionTest,"CardRoom.Presentation.FloorToyCollision",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FCardRoomFloorCollisionTest::RunTest(const FString&)
+{
+    auto* World=UWorld::CreateWorld(EWorldType::Game,false);
+    auto* Robot=World->SpawnActor<ACardRoomRobot>();Robot->SetActorScale3D(FVector(14));
+    TArray<UBoxComponent*> Hulls;Robot->GetComponents(Hulls);
+    TestEqual(TEXT("Floor robot uses six simple body and limb hulls"),Hulls.Num(),6);
+    for(auto* Hull:Hulls)
+    {
+        TestEqual(TEXT("Hull blocks player capsules"),Hull->GetCollisionResponseToChannel(ECC_Pawn),ECR_Block);
+        TestFalse(TEXT("Hull never starts physics simulation"),Hull->IsSimulatingPhysics());
+        const FVector Center=Hull->Bounds.Origin,Extent=Hull->Bounds.BoxExtent;
+        FHitResult Hit;
+        TestTrue(TEXT("Player capsule cannot pass through the toy part"),Hull->SweepComponent(Hit,Center-FVector(Extent.X+200,0,0),Center+FVector(Extent.X+200,0,0),FQuat::Identity,FCollisionShape::MakeCapsule(42,96),false));
+    }
+    World->DestroyWorld(false);return true;
 }
 #endif

@@ -2,6 +2,7 @@
 #include "BrainMiningFonts.h"
 #include "MiningLocalizationSubsystem.h"
 #include "Components/WidgetComponent.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScaleBox.h"
@@ -18,6 +19,9 @@ AMiningWallSign::AMiningWallSign()
 }
 void AMiningWallSign::Refresh()
 {
+    // Cooking reconstructs map actors without a Slate application. BeginPlay
+    // creates the localized sign when the packaged world is actually displayed.
+    if(!FSlateApplication::IsInitialized())return;
     Surface->SetSlateWidget(SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Center)
         [SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
         [SNew(STextBlock).Text(TAttribute<FText>::Create(TAttribute<FText>::FGetter::CreateUObject(this,&AMiningWallSign::GetDisplayText))).Font(BrainMiningFonts::Body(64))

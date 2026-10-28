@@ -43,7 +43,7 @@ void ACardRoomStage::InitializeStyledEffects()
 void ACardRoomStage::TickStyledEffects()
 {
     const bool Resolve=Run.Phase==ECardRoomPhase::Resolving;
-    const float T=Run.PhaseTime,S=FMath::Clamp(SpellPresentationScale,1.f,4.f);
+    const float T=Run.PresentationTime(),S=FMath::Clamp(SpellPresentationScale,1.f,4.f);
     const FVector Target=GetSpellTargetLocal();
     const FVector Impact=Target+FVector(-14*OpponentScale,0,0);
     const FVector Muzzle=GetSpellSourceLocal();
@@ -197,7 +197,7 @@ void ACardRoomStage::TickStyledEffects()
     }
     if(Resolve && Run.Round==4)
     {
-        const FVector Source=CardLandingLocal+FVector(0,0,400);
+        const FVector Source=GetFusionCenterLocal();
         const float Charge=FMath::SmoothStep(.15f,.65f,T);
         if(T>.15f && T<1.f)
         {
@@ -210,7 +210,7 @@ void ACardRoomStage::TickStyledEffects()
                 const float Angle=I*2.39996f+T*10;
                 FVector W=T<.65f?FMath::Lerp(Start,Source,Charge):P-(Target-Source).GetSafeNormal()*(I*28*S);
                 W+=FVector(0,FMath::Cos(Angle),FMath::Sin(Angle))*(T<.65f?FMath::Sin(Charge*PI)*180*S:45*S);
-                const FLinearColor CardColor=I%3==0?Cyan:I%3==1?FLinearColor(.24f,.85f,.06f):Amber;
+                const FLinearColor CardColor=FCardRoomRun::CardColor(static_cast<ERoomCard>(I));
                 Energy(Trails[I],W,FVector((T<.65f?.32f:.55f)*(1-I/25.f)*S),CardColor,.85f);
             }
         }

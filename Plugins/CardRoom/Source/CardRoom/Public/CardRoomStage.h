@@ -66,6 +66,7 @@ public:
     UPROPERTY(EditAnywhere, Category="Card Room|Presentation|Rabbit") bool bRabbitPhysicsDrop=true;
     UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Card Room|Presentation") FVector RewardLocal=FVector(-30,0,143);
     FVector GetCardLanding(int32 Index,int32 Count) const;
+    FVector GetFusionCenterLocal() const { return FVector(-270,0,188)+FRotator(SeatPitch,0,0).Vector()*500.f; }
     FVector GetSeatEyeLocation() const {return GetActorTransform().TransformPosition(FVector(-270,0,188));}
     UFUNCTION(BlueprintPure,Category="Card Room|Presentation") FVector GetSpellSourceLocal() const;
     UFUNCTION(BlueprintPure,Category="Card Room|Presentation") FVector GetSpellTargetLocal() const;

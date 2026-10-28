@@ -34,10 +34,12 @@ void AMiningCollectible::BuildEmergenceParts()
     // never rebuild dynamic meshes or allocate materials every frame.
     TArray<UMaterialInstanceDynamic*> Mats;
     const FLinearColor Colors[]={FLinearColor(.28,.82,1),FLinearColor(.83,.36,1),FLinearColor(1,.72,.18),FLinearColor(.22,1,.66)};
-    for(int32 I=0;I<4;++I)
+    const FLinearColor CommuterColors[]={{.68f,.45f,.3f},{.025f,.028f,.03f},{.30f,.31f,.32f},{.85f,.86f,.84f},
+        {.88f,.91f,.88f},{.045f,.075f,.07f},{.24f,.65f,.055f},{.4f,.42f,.41f}};
+    for(int32 I=0;I<(ItemId==21?8:4);++I)
     {
         auto* M=UMaterialInstanceDynamic::Create(Base,this);
-        M->SetVectorParameterValue(TEXT("Tint"),ItemId==10?FLinearColor(.3f,1,.06f):ItemId==16?FLinearColor(.62,.57,.48):ItemId==18?FLinearColor(1,.64,.11):ItemId==21?(I==0?FLinearColor(.68,.45,.3):Colors[I]):ItemId==22?(I==0?FLinearColor(.82,.91,.95):Colors[I]):ItemId==13?FLinearColor(.62,.70,.76):ItemId==12?FLinearColor(1,.69,.15):Colors[I]);
+        M->SetVectorParameterValue(TEXT("Tint"),ItemId==10?FLinearColor(.3f,1,.06f):ItemId==16?FLinearColor(.62,.57,.48):ItemId==18?FLinearColor(1,.64,.11):ItemId==21?CommuterColors[I]:ItemId==22?(I==0?FLinearColor(.82,.91,.95):Colors[I]):ItemId==13?FLinearColor(.62,.70,.76):ItemId==12?FLinearColor(1,.69,.15):Colors[I]);
         M->SetScalarParameterValue(TEXT("Glow"),ItemId==10?2.5f:ItemId==2?1.8f:ItemId==13?.45f:ItemId==12?1.3f:ItemId==21?0.f:.45f);M->SetScalarParameterValue(TEXT("Metallic"),ItemId==21?0.f:.7f);M->SetScalarParameterValue(TEXT("Roughness"),ItemId==21?.85f:.25f);Mats.Add(M);
     }
     for(int32 I=0;I<Count;++I)
@@ -56,7 +58,7 @@ void AMiningCollectible::BuildEmergenceParts()
         else
         {
             auto* Solid=NewObject<UStaticMeshComponent>(this);Part=Solid;
-            Solid->SetStaticMesh((ItemId==12||ItemId==2||ItemId==8||ItemId==10||ItemId==16||ItemId==17||ItemId==18||ItemId==19||(ItemId==21 && I<108 && I%3==0))?Sphere:Cube);Solid->SetMaterial(0,Mats[ItemId==21?(I>=108?(I%4==1?0:2):(I%3==0?0:1+(I/3)%3)):ItemId==22?(I%6==0?1+(I/6)%3:0):I%4]);Solid->SetCollisionEnabled(ECollisionEnabled::NoCollision);Solid->SetCastShadow(false);
+            Solid->SetStaticMesh((ItemId==12||ItemId==2||ItemId==8||ItemId==10||ItemId==16||ItemId==17||ItemId==18||ItemId==19||(ItemId==21 && I<108 && I%3==0))?Sphere:Cube);Solid->SetMaterial(0,Mats[ItemId==21?(I>=108?4+(I-108)%4:(I%3==0?0:I%3==2?1:1+(I/3)%3)):ItemId==22?(I%6==0?1+(I/6)%3:0):I%4]);Solid->SetCollisionEnabled(ECollisionEnabled::NoCollision);Solid->SetCastShadow(false);
         }
         AddInstanceComponent(Part);Part->SetupAttachment(Model);
         FVector P,Scale;FRotator R=FRotator::ZeroRotator;

@@ -65,6 +65,18 @@ msgctxt "BrainMining.Game,Achievement.PickaxeUpgrade.Name"
 msgid "再锋利一点"
 msgstr "再锋利一点"
 
+msgctxt "BrainMining.Game,Card.Dragon"
+msgid "巨龙"
+msgstr "巨龙"
+
+msgctxt "BrainMining.Game,Card.Earth"
+msgid "磐岩"
+msgstr "磐岩"
+
+msgctxt "BrainMining.Game,Card.Echo"
+msgid "回响"
+msgstr "回响"
+
 msgctxt "BrainMining.Game,Card.Eyebrows"
 msgid "*啊啊啊！我的眉毛！*"
 msgstr "*啊啊啊！我的眉毛！*"
@@ -72,6 +84,22 @@ msgstr "*啊啊啊！我的眉毛！*"
 msgctxt "BrainMining.Game,Card.Fire"
 msgid "火"
 msgstr "火"
+
+msgctxt "BrainMining.Game,Card.FusionName"
+msgid "激光剧毒烈焰雷霆冰川森罗狂风洪流磐岩钢铁圣光暗影星陨引力时空回响巨龙——十七重终焉爆裂波！"
+msgstr "激光剧毒烈焰雷霆冰川森罗狂风洪流磐岩钢铁圣光暗影星陨引力时空回响巨龙——十七重终焉爆裂波！"
+
+msgctxt "BrainMining.Game,Card.Grass"
+msgid "草木"
+msgstr "草木"
+
+msgctxt "BrainMining.Game,Card.Gravity"
+msgid "引力"
+msgstr "引力"
+
+msgctxt "BrainMining.Game,Card.Ice"
+msgid "寒冰"
+msgstr "寒冰"
 
 msgctxt "BrainMining.Game,Card.Laser"
 msgid "激光"
@@ -81,6 +109,14 @@ msgctxt "BrainMining.Game,Card.LaserCompact"
 msgid "激\n光"
 msgstr "激\n光"
 
+msgctxt "BrainMining.Game,Card.Light"
+msgid "圣光"
+msgstr "圣光"
+
+msgctxt "BrainMining.Game,Card.Lightning"
+msgid "雷电"
+msgstr "雷电"
+
 msgctxt "BrainMining.Game,Card.Matched"
 msgid "*匹配成功！*"
 msgstr "*匹配成功！*"
@@ -88,6 +124,10 @@ msgstr "*匹配成功！*"
 msgctxt "BrainMining.Game,Card.Matching"
 msgid "*正在匹配中*"
 msgstr "*正在匹配中*"
+
+msgctxt "BrainMining.Game,Card.Metal"
+msgid "钢铁"
+msgstr "钢铁"
 
 msgctxt "BrainMining.Game,Card.Poison"
 msgid "毒"
@@ -97,9 +137,29 @@ msgctxt "BrainMining.Game,Card.Return"
 msgid "*我一定会回来的！——*"
 msgstr "*我一定会回来的！——*"
 
+msgctxt "BrainMining.Game,Card.Shadow"
+msgid "暗影"
+msgstr "暗影"
+
+msgctxt "BrainMining.Game,Card.Star"
+msgid "星陨"
+msgstr "星陨"
+
 msgctxt "BrainMining.Game,Card.Stink"
 msgid "*呕——好臭臭*"
 msgstr "*呕——好臭臭*"
+
+msgctxt "BrainMining.Game,Card.Time"
+msgid "时空"
+msgstr "时空"
+
+msgctxt "BrainMining.Game,Card.Water"
+msgid "洪流"
+msgstr "洪流"
+
+msgctxt "BrainMining.Game,Card.Wind"
+msgid "狂风"
+msgstr "狂风"
 
 msgctxt "BrainMining.Game,Collection.00.Clue"
 msgid "滴水的管道"
@@ -486,28 +546,28 @@ msgid "查看主题"
 msgstr "查看主题"
 
 msgctxt "BrainMining.Game,Office.Physical.0.Body"
-msgid "今日 18:00 前提交项目汇报。\n附件、数据和演示稿仍待确认。"
-msgstr "今日 18:00 前提交项目汇报。\n附件、数据和演示稿仍待确认。"
+msgid "距离截止还有10分钟。\n你的作品仍处于草稿状态。"
+msgstr "距离截止还有10分钟。\n你的作品仍处于草稿状态。"
 
 msgctxt "BrainMining.Game,Office.Physical.0.Title"
-msgid "DDL 提醒"
-msgstr "DDL 提醒"
+msgid "Game Jam · 提交提醒"
+msgstr "Game Jam · 提交提醒"
 
 msgctxt "BrainMining.Game,Office.Physical.1.Body"
-msgid "项目群：刚才的方案需要再调整一下。\n请尽快回复并同步最新进度。"
-msgstr "项目群：刚才的方案需要再调整一下。\n请尽快回复并同步最新进度。"
+msgid "game_final_final.zip — 99%\n请勿关闭此窗口。"
+msgstr "game_final_final.zip — 99%\n请勿关闭此窗口。"
 
 msgctxt "BrainMining.Game,Office.Physical.1.Title"
-msgid "有新的工作消息"
-msgstr "有新的工作消息"
+msgid "上传中"
+msgstr "上传中"
 
 msgctxt "BrainMining.Game,Office.Physical.2.Body"
-msgid "你收到一项新的紧急任务。\n优先级：高。交付时间：今天。"
-msgstr "你收到一项新的紧急任务。\n优先级：高。交付时间：今天。"
+msgid "最后这个包谁测过了？\n没问题我就上传了。"
+msgstr "最后这个包谁测过了？\n没问题我就上传了。"
 
 msgctxt "BrainMining.Game,Office.Physical.2.Title"
-msgid "新增待办"
-msgstr "新增待办"
+msgid "组队群 · @所有人"
+msgstr "组队群 · @所有人"
 
 msgctxt "BrainMining.Game,Office.Popup.00.Body"
 msgid "21天gamejam游戏创作主题公布！"

@@ -226,11 +226,13 @@ public:
                 UTexture* Texture=nullptr;
                 const bool HasArt=Face->GetMaterial(0) && Face->GetMaterial(0)->GetTextureParameterValue(FMaterialParameterInfo(TEXT("CardArt")),Texture);
                 const UTexture2D* Art[]={Stage->UISettings->CardLaserArt.Get(),Stage->UISettings->CardPoisonArt.Get(),Stage->UISettings->CardFireArt.Get()};
-                Test->TestTrue(TEXT("Played face uses the current hand artwork for its card type"),HasArt && Texture==Art[static_cast<int32>(Stage->Run.Hand[Index])]);
+                const int32 Type=int32(Stage->Run.Hand[Index]);
+                if(Type<3)Test->TestTrue(TEXT("Played face uses the current hand artwork for its card type"),HasArt && Texture==Art[Type]);
+                else Test->TestTrue(TEXT("New elemental card uses its own colored symbol mesh"),Face->GetStaticMesh() && Face->GetStaticMesh()->GetName()!=TEXT("Plane") && Face->GetMaterial(0));
                 ++FaceCount;
             }
             Test->TestEqual(TEXT("Every played card has the updated face"),FaceCount,Stage->Run.Hand.Num());
-            Stage->Tick(2.8f);
+            Stage->Tick(2.8f+(Round==3?FCardRoomRun::FusionSeconds:0.f));
             if(Round==3)
             {
                 TArray<USceneComponent*> Parts;Stage->GetComponents(Parts);

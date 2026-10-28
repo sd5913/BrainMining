@@ -2,7 +2,7 @@
 #include "CoreMinimal.h"
 
 enum class ECardRoomPhase : uint8 { Exploring, Seated, Matching, Arrival, Choosing, Resolving, Victory, Collected };
-enum class ERoomCard : uint8 { Laser, Poison, Fire };
+enum class ERoomCard : uint8 { Laser, Poison, Fire, Lightning, Ice, Grass, Wind, Water, Earth, Metal, Light, Shadow, Star, Gravity, Time, Echo, Dragon, Count };
 
 // Engine-independent encounter rules. No timers, actors, input, rewards or mining dependencies.
 struct CARDROOM_API FCardRoomRun
@@ -29,6 +29,10 @@ struct CARDROOM_API FCardRoomRun
     int32 Remaining() const { return Hand.Num() - Staged.Num(); }
     static FString CardName(ERoomCard Card);
     static FString CardDescription(ERoomCard Card);
+    static const TCHAR* CardKey(ERoomCard Card);
+    static FLinearColor CardColor(ERoomCard Card);
+    static constexpr float FusionSeconds=2.4f;
+    float PresentationTime() const { return PhaseTime-(Phase==ECardRoomPhase::Resolving && Round==4?FusionSeconds:0.f); }
 private:
     void Deal(int32 NewRound);
     void SetPhase(ECardRoomPhase NewPhase);

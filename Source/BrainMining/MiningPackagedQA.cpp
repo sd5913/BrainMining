@@ -707,12 +707,18 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Item->SetStringField(TEXT("title"),Desktop->GetFrontPopupTitle());Item->SetStringField(TEXT("body"),Desktop->GetFrontPopupBody());
         Item->SetNumberField(TEXT("phase"),Desktop->GetFrontPopupPhase());Item->SetNumberField(TEXT("unread"),Desktop->GetFrontUnreadCount());
         Item->SetNumberField(TEXT("pending"),It->Pending());Item->SetNumberField(TEXT("handled"),It->Handled());
+        Item->SetNumberField(TEXT("coverage"),Desktop->GetScreenCoverage());
         Item->SetBoolField(TEXT("accounting_valid"),It->AccountingValid());Desktops.Add(MakeShared<FJsonValueObject>(Item));
     }
     Result->SetArrayField(TEXT("office_desktops"),Desktops);
     if(auto* Cards=First<ACardRoomStage>(W))
     {
         Result->SetNumberField(TEXT("card_phase"),int32(Cards->Run.Phase));Result->SetNumberField(TEXT("card_round"),Cards->Run.Round);
+        Result->SetNumberField(TEXT("card_time"),Cards->Run.PhaseTime);
+        Result->SetNumberField(TEXT("card_rival_hp"),Cards->Run.RivalHP);
+        TArray<TSharedPtr<FJsonValue>> Hand;
+        for(auto Type:Cards->Run.Hand)Hand.Add(MakeShared<FJsonValueString>(FCardRoomRun::CardKey(Type)));
+        Result->SetArrayField(TEXT("card_hand"),Hand);
         TArray<UNiagaraComponent*> FX;Cards->GetComponents(FX);
         for(auto* Part:FX)if(Part->GetFName()==TEXT("P2Fx_PoisonHit"))
         {Result->SetBoolField(TEXT("poison_paused"),Part->IsPaused());Result->SetArrayField(TEXT("poison_scale"),Vec(Part->GetRelativeScale3D()));}

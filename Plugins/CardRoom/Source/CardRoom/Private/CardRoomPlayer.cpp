@@ -53,7 +53,7 @@ void UCardRoomInteractionComponent::TickComponent(float DeltaSeconds,ELevelTick 
         float Kick=0;
         if(Stage->Run.Phase==ECardRoomPhase::Resolving)
         {
-            const float T=Stage->Run.PhaseTime;
+            const float T=Stage->Run.PresentationTime();
             if(T>=1 && T<1.25f) Kick=(1-(T-1)/.25f)*(Stage->Run.Round==4?2.f:.35f);
             if((Stage->Run.Round==1||Stage->Run.Round==3)&&T>=2.35f&&T<2.65f) Kick=(1-(T-2.35f)/.3f)*(Stage->Run.Round==3?1.5f:.6f);
             Player()->SetControlRotation(FRotator(Stage->SeatPitch+FMath::Sin(T*70)*Kick,Stage->GetActorRotation().Yaw+FMath::Sin(T*49)*Kick*.6f,0));

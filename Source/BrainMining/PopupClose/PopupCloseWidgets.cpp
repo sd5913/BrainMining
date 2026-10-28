@@ -134,8 +134,16 @@ void UPopupCloseDesktopWidget::SpawnPopup()
  const FVector2D Size=bHasArt && !bIntroduction?Skin.Size:Copy.Size;
 	const float Width = Size.X;
 	const float Height = Size.Y;
-	const float X = bIntroduction?(ViewportSize.X-Width)*.5f:FMath::FRandRange(24.f, FMath::Max(24.f, ViewportSize.X - Width - 24.f));
-	const float Y = bIntroduction?(ViewportSize.Y-Height)*.5f:FMath::FRandRange(24.f, FMath::Max(24.f, ViewportSize.Y - Height - 80.f));
+	float X = bIntroduction?(ViewportSize.X-Width)*.5f:FMath::FRandRange(24.f, FMath::Max(24.f, ViewportSize.X - Width - 24.f));
+	float Y = bIntroduction?(ViewportSize.Y-Height)*.5f:FMath::FRandRange(24.f, FMath::Max(24.f, ViewportSize.Y - Height - 80.f));
+    if(!bIntroduction && WorkElapsed>=48.f)
+    {
+        // Cycle through all 8 x 8 coverage cells, including the four edges.
+        // Each skin covers at least one cell; coprime ordering avoids a visible row sweep.
+        const int32 Cell=(FloodPlacement++*29)%64;
+        X=FMath::Clamp((Cell%8+.5f)*ViewportSize.X/8-Width*.5f,0.f,ViewportSize.X-Width);
+        Y=FMath::Clamp((Cell/8+.5f)*ViewportSize.Y/8-Height*.5f,0.f,ViewportSize.Y-Height);
+    }
 	const int32 Id = NextId++;
 
 	TWeakObjectPtr<UPopupCloseDesktopWidget> WeakThis(this);
@@ -321,6 +329,19 @@ bool UPopupCloseDesktopWidget::ClosePopup(int32 Id,bool bAcknowledge)
  return true;
 }
 
+float UPopupCloseDesktopWidget::GetScreenCoverage() const
+{
+    // Read-only QA metric; never evaluated by the gameplay tick.
+    int32 Covered=0;
+    for(int32 Y=0;Y<80;++Y)for(int32 X=0;X<128;++X)
+    {
+        const FVector2D P(X*10+5,Y*10+5);
+        for(const auto& Window:Windows)
+            if(P.X>=Window.Position.X && P.Y>=Window.Position.Y && P.X<Window.Position.X+Window.Size.X && P.Y<Window.Position.Y+Window.Size.Y){++Covered;break;}
+    }
+    return Covered/10240.f;
+}
+
 void UPopupCloseDesktopWidget::ClearOldestPopup()
 {
  if(Windows.Num())ClosePopup(Windows[0].Id);
@@ -329,7 +350,7 @@ void UPopupCloseDesktopWidget::ClearOldestPopup()
 void UPopupCloseDesktopWidget::ClearPopups()
 {
  while(Windows.Num())ClearOldestPopup();
- ManuallyClosedCount=0;NextId=1;IntroductionPriority=1;IntroductionAge=0.f;bIntroductionFallback=false;WorkElapsed=-1.f;bReconnectShown=false;
+ ManuallyClosedCount=0;NextId=1;IntroductionPriority=1;IntroductionAge=0.f;bIntroductionFallback=false;WorkElapsed=-1.f;bReconnectShown=false;FloodPlacement=0;
 }
 
 void UPopupCloseDesktopWidget::AdvanceIntroduction(float DeltaSeconds)

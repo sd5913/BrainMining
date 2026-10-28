@@ -3,6 +3,7 @@
 #include "Fonts/FontMeasure.h"
 #include "CardRoomPlayer.h"
 #include "CardRoomStage.h"
+#include "CardRoomSymbols.h"
 #include "Engine/Font.h"
 #include "Materials/MaterialInterface.h"
 #include "Rendering/DrawElements.h"
@@ -139,7 +140,6 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
         auto& CachedFont=Resources.FindOrAdd(TEXT("CardFont"));
         if(!CachedFont.IsValid()) CachedFont.Reset(LoadObject<UFont>(nullptr,TEXT("/Game/Fonts/F_SourceHanSansCN_Medium.F_SourceHanSansCN_Medium")));
         UObject* Font=CachedFont.Get();
-        const TCHAR* Names[]={TEXT("Card.Laser"),TEXT("Card.Poison"),TEXT("Card.Fire")};
         const TCHAR* Materials[]={TEXT("M_Card_Laser"),TEXT("M_Card_Poison"),TEXT("M_Card_Fire")};
         int32 Focused = Owner->bGamepadInput ? Owner->GetFocusedCardIndex() : INDEX_NONE;
         if(!Owner->bGamepadInput)
@@ -154,12 +154,28 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
             Box(B.Left+4,B.Top+7,W,H,FLinearColor(0,0,0,.4f),9.f);
             const float Border = I == Focused ? 4.f : 2.f;
             Box(B.Left-Border,B.Top-Border,W+Border*2,H+Border*2,I == Focused ? FLinearColor::White : (Selected?FLinearColor(.95f,.78f,.4f):FLinearColor(.55f,.5f,.4f)),10.f);
-            Art(Materials[static_cast<int32>(R.Hand[I])],B.Left,B.Top,W,H);
+            const int32 Type=int32(R.Hand[I]);
+            if(Type<3)Art(Materials[Type],B.Left,B.Top,W,H);
+            else
+            {
+                const auto Color=FCardRoomRun::CardColor(R.Hand[I]);
+                Box(B.Left,B.Top,W,H,FLinearColor(.045f,.038f,.032f),8);
+                Box(B.Left+5,B.Top+5,W-10,H-10,Color*.28f,5);
+                Box(B.Left+8,B.Top+40,W-16,H-54,FLinearColor(.055f,.05f,.045f),4);
+                TArray<FSlateVertex> V;TArray<SlateIndex> Indices;
+                for(const auto& Triangle:CardRoomSymbols::Make(R.Hand[I]))for(auto P:{Triangle.A,Triangle.B,Triangle.C})
+                {
+                    Indices.Add(V.Num());
+                    const FVector2f Position(Origin+FVector2D(B.Left+15+P.X*(W-30),B.Top+53+P.Y*(H-78))*S);
+                    V.Add(FSlateVertex::Make<ESlateVertexRounding::Disabled>(G.GetAccumulatedRenderTransform(),Position,FVector2f(.5f,.5f),Triangle.Color.ToFColor(true)));
+                }
+                FSlateDrawElement::MakeCustomVerts(Out,++L,FSlateApplication::Get().GetRenderer()->GetResourceHandle(*FCoreStyle::Get().GetBrush("WhiteBrush")),V,Indices,nullptr,0,0);
+            }
             // The name sits at the exposed upper-left edge even in the 17-card fan.
             const int32 N=static_cast<int32>(R.Hand[I]);
             FSlateFontInfo F(Font,FMath::Max(9,FMath::RoundToInt((R.Hand.Num()>5?18:22)*S)),TEXT("Medium"));
             F.OutlineSettings.OutlineSize=1;F.OutlineSettings.OutlineColor=FLinearColor(.12f,.1f,.08f,.8f);
-            const FString Name=FText::FromStringTable(TEXT("BrainMining.Game"),R.Hand.Num()>5 && N==0?TEXT("Card.LaserCompact"):Names[N]).ToString();
+            const FString Name=FText::FromStringTable(TEXT("BrainMining.Game"),R.Hand.Num()>5 && N==0?TEXT("Card.LaserCompact"):FCardRoomRun::CardKey(R.Hand[I])).ToString();
             const float TextWidth=FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Name,F).X;
             const float AllowedWidth=(R.Hand.Num()>5?34.f:W-18.f)*S;
             if(TextWidth>AllowedWidth)F.Size=FMath::Max(9,FMath::RoundToInt(F.Size*AllowedWidth/TextWidth));

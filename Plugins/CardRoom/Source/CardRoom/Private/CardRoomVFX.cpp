@@ -78,7 +78,7 @@ void ACardRoomStage::InitializeEffectMeshes()
     for(const auto& P:FxShards) { P->SetStaticMesh(Plane); P->SetTranslucentSortPriority(1); }
     for(const auto& P:Puffs) P->SetStaticMesh(Plane);
     SymbolMeshes.Reset();
-    for(int32 Type=0;Type<3;++Type)
+    for(int32 Type=0;Type<int32(ERoomCard::Count);++Type)
     {
         Faces.Reset(); int32 Layer=0;
         for(const auto& Tri:CardRoomSymbols::Make(static_cast<ERoomCard>(Type)))
@@ -126,7 +126,7 @@ void ACardRoomStage::TickEffects()
         RewardOutline->RegisterComponent();
     }
     RewardOutline->bEnabled=RewardVisible;
-    const float T=Run.PhaseTime,Time=GetWorld()->GetTimeSeconds();
+    const float T=Run.PresentationTime(),Time=GetWorld()->GetTimeSeconds();
     Reward->SetVisibility(RewardVisible);
     Reward->SetRelativeLocation(RewardLocal+FVector(0,0,FMath::Sin(Time*2)*8));
     Reward->SetRelativeRotation(FRotator(0,Time*25,15));Reward->SetRelativeScale3D(FVector(2.5f));

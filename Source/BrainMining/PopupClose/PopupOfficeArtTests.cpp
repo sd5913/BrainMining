@@ -48,9 +48,10 @@ namespace PopupOfficeArtTests
      auto Slab=World->SpawnActor<APopupCloseFlyingWindow>(FVector(0,0,-5000-I*100),FRotator::ZeroRotator,Params);
      Slab->PrepareForPool(I);Slabs.Add(Slab);
     }
-    Deadline=FPlatformTime::Seconds()+.35;return false;
+    VisualWarmupDeadline=FPlatformTime::Seconds()+90.;Deadline=FPlatformTime::Seconds()+.35;return false;
    }
-   for(auto Slab:Slabs)if(Slab.IsValid())Slab->IsReadyForLaunch();
+   bool Ready=true;for(auto Slab:Slabs)if(Slab.IsValid())Ready &= Slab->IsReadyForLaunch();
+   if(!Ready && FPlatformTime::Seconds()<VisualWarmupDeadline)return false;
    if(FPlatformTime::Seconds()<Deadline)return false;
    auto Desktop=Device->GetDesktop();
    if(EdgePhase==1)
@@ -91,6 +92,10 @@ namespace PopupOfficeArtTests
     Test->TestEqual(TEXT("Theme receives its own reading interval after a click"),Desktop->GetFrontPopupBody(),FString(TEXT("【涌现】")));
     Desktop->AdvanceIntroduction(13.1f);
     Test->TestTrue(TEXT("Theme cannot block the desktop forever after an early click"),Desktop->GetFrontPopupPhase()==0);
+    Desktop->ClearPopups();Desktop->SpawnPopup();Desktop->SpawnPopup();
+    Desktop->SetWorkElapsed(64.f);
+    for(int32 I=0;I<64;++I)Desktop->SpawnPopup();
+    Test->TestTrue(TEXT("Late traffic covers at least 99 percent of the full desktop including edges"),Desktop->GetScreenCoverage()>=.99f);
     for(auto Slab:Slabs)if(Slab.IsValid())
     {
      auto Mesh=Slab->FindComponentByClass<UStaticMeshComponent>();auto Material=Mesh->GetMaterial(0);
@@ -183,6 +188,7 @@ namespace PopupOfficeArtTests
   TWeakObjectPtr<APopupOfficeDevice> Device;
   TArray<TWeakObjectPtr<APopupCloseFlyingWindow>> Slabs;
   double Deadline=0;
+  double VisualWarmupDeadline=0;
   int32 Skin=0,EdgePhase=0;
   bool bSpawned=false;
   double StartupTime=FPlatformTime::Seconds();

@@ -120,7 +120,7 @@ void AMouseMuseumPortal::RefreshFocus()
  if(!bInsideGallery)GalleryEnteredAt=-1;
  if(Painting)
  {
-  Painting->SetScalarParameterValue(TEXT("Highlight"),bFocused?1.f:0.f);
+  Painting->SetScalarParameterValue(TEXT("Highlight"),bFocused?1.f:bInsideGallery?.65f:.35f);
  }
 }
 

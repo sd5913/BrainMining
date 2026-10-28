@@ -34,6 +34,58 @@ namespace CardRoomSymbols
             Fan({.56f,.81f},{{.54f,.76f},{.58f,.76f},{.58f,.85f},{.54f,.85f}},Ink);
             Out.Add({{.27f,.4f},{.43f,.22f},{.36f,.45f},White});
         }
+        else if(Type!=ERoomCard::Laser)
+        {
+            const auto Color=FCardRoomRun::CardColor(Type);
+            auto Line=[&](FVector2f A,FVector2f B,float Width=.04f)
+            {
+                const FVector2f D=(B-A).GetSafeNormal(),N(-D.Y*Width,D.X*Width);
+                Out.Add({A+N,A-N,B+N,Color});Out.Add({B+N,A-N,B-N,Color});
+            };
+            auto Ring=[&](FVector2f C,float R,float Begin=0.f,float End=2*PI)
+            {
+                for(int I=0;I<24;++I){float A=FMath::Lerp(Begin,End,I/24.f),B=FMath::Lerp(Begin,End,(I+1)/24.f);
+                    Line(C+FVector2f(FMath::Cos(A),FMath::Sin(A))*R,C+FVector2f(FMath::Cos(B),FMath::Sin(B))*R,.025f);}
+            };
+            switch(Type)
+            {
+            case ERoomCard::Lightning:
+                Fan({.5f,.48f},{{.62f,.04f},{.22f,.54f},{.48f,.54f},{.36f,.96f},{.81f,.39f},{.55f,.39f}},Color);break;
+            case ERoomCard::Ice:
+                for(int I=0;I<6;++I){const float A=I*PI/3;const FVector2f D(FMath::Cos(A),FMath::Sin(A)),N(-D.Y,D.X),C(.5f,.5f);
+                    Line(C,C+D*.43f,.025f);Line(C+D*.27f,C+D*.39f+N*.1f,.02f);Line(C+D*.27f,C+D*.39f-N*.1f,.02f);}break;
+            case ERoomCard::Grass:
+                Fan({.5f,.5f},{{.15f,.82f},{.19f,.39f},{.45f,.16f},{.88f,.1f},{.81f,.58f},{.55f,.84f}},Color);
+                Fan({.48f,.51f},{{.22f,.78f},{.68f,.3f},{.55f,.66f}},White);break;
+            case ERoomCard::Wind:
+                for(int I=0;I<3;++I){Line({.08f,.3f+I*.2f},{.63f,.3f+I*.2f},.025f);Ring({.63f,.2f+I*.2f},.1f,-PI,PI/2);}break;
+            case ERoomCard::Water:
+                Fan({.5f,.65f},{{.5f,.04f},{.82f,.55f},{.84f,.75f},{.67f,.93f},{.34f,.93f},{.16f,.75f},{.18f,.55f}},Color);Ring({.48f,.66f},.18f,.2f,2.5f);break;
+            case ERoomCard::Earth:
+                Out.Add({{.04f,.88f},{.38f,.14f},{.72f,.88f},Color});Out.Add({{.35f,.88f},{.72f,.3f},{.97f,.88f},Color*.7f});
+                Out.Add({{.28f,.36f},{.38f,.14f},{.48f,.36f},White});break;
+            case ERoomCard::Metal:
+                Fan({.5f,.4f},{{.5f,.03f},{.65f,.22f},{.57f,.7f},{.43f,.7f},{.35f,.22f}},Color);Line({.25f,.7f},{.75f,.7f});Line({.5f,.7f},{.5f,.95f});break;
+            case ERoomCard::Light:
+                Ring({.5f,.5f},.22f);for(int I=0;I<8;++I){float A=I*PI/4;FVector2f D(FMath::Cos(A),FMath::Sin(A));Line(FVector2f(.5f)+D*.32f,FVector2f(.5f)+D*.45f,.025f);}break;
+            case ERoomCard::Shadow:
+                Fan({.35f,.5f},{{.64f,.07f},{.3f,.13f},{.13f,.4f},{.17f,.71f},{.42f,.9f},{.75f,.87f},{.52f,.7f},{.42f,.4f}},Color);break;
+            case ERoomCard::Star:
+                for(int I=0;I<10;++I){float A=I*PI/5-PI/2,B=(I+1)*PI/5-PI/2;
+                    Out.Add({{.5f,.5f},FVector2f(.5f)+FVector2f(FMath::Cos(A),FMath::Sin(A))*(I%2?.2f:.46f),FVector2f(.5f)+FVector2f(FMath::Cos(B),FMath::Sin(B))*(I%2?.46f:.2f),Color});}break;
+            case ERoomCard::Gravity:
+                Ring({.5f,.5f},.13f);Ring({.5f,.5f},.31f);Line({.06f,.73f},{.94f,.27f},.025f);break;
+            case ERoomCard::Time:
+                Line({.22f,.1f},{.78f,.1f});Line({.22f,.9f},{.78f,.9f});Line({.25f,.15f},{.75f,.85f});Line({.75f,.15f},{.25f,.85f});
+                Out.Add({{.5f,.55f},{.3f,.82f},{.7f,.82f},Color});break;
+            case ERoomCard::Echo:
+                for(int I=0;I<3;++I)Ring({.22f,.5f},.2f+I*.18f,-1.2f,1.2f);Line({.16f,.4f},{.16f,.6f});break;
+            case ERoomCard::Dragon:
+                Fan({.5f,.5f},{{.13f,.12f},{.42f,.31f},{.48f,.06f},{.63f,.28f},{.88f,.18f},{.79f,.55f},{.57f,.94f},{.38f,.72f},{.12f,.65f},{.29f,.45f}},Color);
+                Out.Add({{.48f,.4f},{.72f,.36f},{.61f,.48f},White});break;
+            default:break;
+            }
+        }
         else
         {
             // Three explicit facets form a zigzag energy bolt.

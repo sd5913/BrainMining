@@ -61,9 +61,9 @@ namespace
  float IssueInterval(float Seconds,int32 Index)
  {
   const float InitialInterval=Index>=2?10.f:9.f;
-  const float ManageableInterval=Index>=2?7.f:6.f;
+  const float ManageableInterval=Index>=2?5.5f:4.f;
   if(Seconds<PanicSeconds)return FMath::Lerp(InitialInterval,ManageableInterval,FMath::Clamp(Seconds/PanicSeconds,0.f,1.f));
-  return ManageableInterval*FMath::Pow(.12f/ManageableInterval,FMath::Clamp((Seconds-PanicSeconds)/(WorkSeconds-PanicSeconds),0.f,1.f));
+  return ManageableInterval*FMath::Pow(.055f/ManageableInterval,FMath::Clamp((Seconds-PanicSeconds)/(WorkSeconds-PanicSeconds),0.f,1.f));
  }
  const FVector DeviceLocations[]={PopupCloseLayout::DevicePosition(0),PopupCloseLayout::DevicePosition(1),PopupCloseLayout::DevicePosition(2),PopupCloseLayout::DevicePosition(3)};
  const float DeviceYaws[]={0,180,0,180};
@@ -701,7 +701,7 @@ FString APopupCloseStage::ValidateOffice()
  // The second computer remains active so the end-of-round test exercises forced ejection.
  bool Faster=true;for(int32 I=1;I<=100;++I)Faster &= IssueInterval(WorkSeconds*I/100.f,0)<IssueInterval(WorkSeconds*(I-1)/100.f,0);
  Check(Faster,TEXT("problem frequency continuously accelerates with no peak hold"));
- Check(PanicSeconds==45.f && IssueInterval(0.f,0)==9.f && IssueInterval(PanicSeconds,0)==6.f && IssueInterval(PanicSeconds,2)==7.f,TEXT("first 45 seconds produce more problems with manageable independent gaps"));
+ Check(PanicSeconds==45.f && IssueInterval(0.f,0)==9.f && IssueInterval(PanicSeconds,0)==4.f && IssueInterval(PanicSeconds,2)==5.5f,TEXT("first 45 seconds produce more problems with manageable independent gaps"));
  Check(IssueInterval(55.f,0)<IssueInterval(45.f,0)*.2f && IssueInterval(WorkSeconds,0)<=.121f,TEXT("acceleration becomes much faster after 45 seconds"));
  Check(bIndependentTimersValid,TEXT("every device maintains its own randomized countdown"));
  Check(bAccountingValid && bWarningsValid,TEXT("pending counts and warning icons stay consistent"));

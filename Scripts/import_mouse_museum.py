@@ -29,15 +29,16 @@ tex=lib.create_material_expression(mat,unreal.MaterialExpressionTextureSample)
 tex.set_editor_property('texture',texture)
 strength=lib.create_material_expression(mat,unreal.MaterialExpressionScalarParameter)
 strength.set_editor_property('parameter_name','Highlight')
-strength.set_editor_property('default_value',0.)
+strength.set_editor_property('default_value',.35)
+clock=lib.create_material_expression(mat,unreal.MaterialExpressionTime)
 custom=lib.create_material_expression(mat,unreal.MaterialExpressionCustom)
 custom.set_editor_property('output_type',unreal.CustomMaterialOutputType.CMOT_FLOAT3)
-bindings={'UV':(uv,''),'Image':(tex,'RGB'),'Highlight':(strength,'')}
+bindings={'UV':(uv,''),'Image':(tex,'RGB'),'Highlight':(strength,''),'Time':(clock,'')}
 inputs=[]
 for name in bindings:
     i=unreal.CustomInput();i.set_editor_property('input_name',name);inputs.append(i)
 custom.set_editor_property('inputs',inputs)
-custom.set_editor_property('code','float r=length((UV-float2(.6374,.5656))*float2(126,168)); float ring=(1-smoothstep(.12,.4,abs(r-2.9))); return Image*.82+float3(1,1,1)*ring*Highlight*2;')
+custom.set_editor_property('code','float breath=.5+.5*sin(Time*2.4); float r=length((UV-float2(.6374,.5656))*float2(126,168)); float radius=3.6+breath*.8; float ring=1-smoothstep(.16,.48,abs(r-radius)); float halo=exp(-abs(r-radius)*1.4)*.15; return Image*.82+float3(1,.91,.65)*(ring+halo)*Highlight*(1.1+breath*.5);')
 for name,(node,output) in bindings.items(): assert lib.connect_material_expressions(node,output,custom,name)
 assert lib.connect_material_property(custom,'',unreal.MaterialProperty.MP_EMISSIVE_COLOR)
 lib.recompile_material(mat)

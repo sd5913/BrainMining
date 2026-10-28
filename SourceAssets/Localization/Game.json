@@ -1238,5 +1238,80 @@
     "zh-Hans": "空间不足 调整站位再试试吧",
     "en": "Not enough space. Try moving to another position.",
     "zh-Hant": "空間不足 調整站位再試試吧"
+  },
+  "Card.Lightning": {
+    "zh-Hans": "雷电",
+    "en": "Lightning",
+    "zh-Hant": "雷電"
+  },
+  "Card.Ice": {
+    "zh-Hans": "寒冰",
+    "en": "Ice",
+    "zh-Hant": "寒冰"
+  },
+  "Card.Grass": {
+    "zh-Hans": "草木",
+    "en": "Nature",
+    "zh-Hant": "草木"
+  },
+  "Card.Wind": {
+    "zh-Hans": "狂风",
+    "en": "Wind",
+    "zh-Hant": "狂風"
+  },
+  "Card.Water": {
+    "zh-Hans": "洪流",
+    "en": "Water",
+    "zh-Hant": "洪流"
+  },
+  "Card.Earth": {
+    "zh-Hans": "磐岩",
+    "en": "Earth",
+    "zh-Hant": "磐岩"
+  },
+  "Card.Metal": {
+    "zh-Hans": "钢铁",
+    "en": "Steel",
+    "zh-Hant": "鋼鐵"
+  },
+  "Card.Light": {
+    "zh-Hans": "圣光",
+    "en": "Light",
+    "zh-Hant": "聖光"
+  },
+  "Card.Shadow": {
+    "zh-Hans": "暗影",
+    "en": "Shadow",
+    "zh-Hant": "暗影"
+  },
+  "Card.Star": {
+    "zh-Hans": "星陨",
+    "en": "Meteor",
+    "zh-Hant": "星隕"
+  },
+  "Card.Gravity": {
+    "zh-Hans": "引力",
+    "en": "Gravity",
+    "zh-Hant": "引力"
+  },
+  "Card.Time": {
+    "zh-Hans": "时空",
+    "en": "Time",
+    "zh-Hant": "時空"
+  },
+  "Card.Echo": {
+    "zh-Hans": "回响",
+    "en": "Echo",
+    "zh-Hant": "迴響"
+  },
+  "Card.Dragon": {
+    "zh-Hans": "巨龙",
+    "en": "Dragon",
+    "zh-Hant": "巨龍"
+  },
+  "Card.FusionName": {
+    "zh-Hans": "激光剧毒烈焰雷霆冰川森罗狂风洪流磐岩钢铁圣光暗影星陨引力时空回响巨龙——十七重终焉爆裂波！",
+    "en": "Laser-Venom-Flame-Thunder-Frost-Nature-Wind-Tide-Stone-Steel-Light-Shadow-Meteor-Gravity-Time-Echo-Dragon: Seventeenfold Final Burst!",
+    "zh-Hant": "激光劇毒烈焰雷霆冰川森羅狂風洪流磐岩鋼鐵聖光暗影星隕引力時空迴響巨龍——十七重終焉爆裂波！"
   }
 }

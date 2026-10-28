@@ -1,5 +1,7 @@
 #include "CardRoomRobot.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
+#include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/World.h"
 
@@ -17,6 +19,18 @@ ACardRoomRobot::ACardRoomRobot()
         Part->SetRelativeLocation(Pivots[I]-(OnHead?FVector(0,0,90):FVector::ZeroVector));
         Part->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,*FString::Printf(TEXT("/Game/Rooms/CardDuel/Robot/SM_Robot_%s.SM_Robot_%s"),Names[I],Names[I])));
         Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);Part->SetGenerateOverlapEvents(false);Parts.Add(Part);
+        if(I<6 && Part->GetStaticMesh())
+        {
+            // Six simple shapes follow the body, head and limbs of the floor toy.
+            // The stage disables actor collision for its animated opponent.
+            auto* Hull=CreateDefaultSubobject<UBoxComponent>(*FString::Printf(TEXT("%sHull"),Names[I]));
+            Hull->SetupAttachment(Part);
+            const FBox Bounds=Part->GetStaticMesh()->GetBoundingBox();
+            Hull->SetRelativeLocation(Bounds.GetCenter());Hull->SetBoxExtent(Bounds.GetExtent()*.94f);
+            Hull->SetCollisionEnabled(ECollisionEnabled::QueryOnly);Hull->SetCollisionObjectType(ECC_WorldStatic);
+            Hull->SetCollisionResponseToAllChannels(ECR_Ignore);Hull->SetCollisionResponseToChannel(ECC_Pawn,ECR_Block);
+            Hull->SetGenerateOverlapEvents(false);Hull->SetCanEverAffectNavigation(false);
+        }
     }
     Mouth=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ExpressionMouth"));Mouth->SetupAttachment(Head);
     Mouth->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube")));

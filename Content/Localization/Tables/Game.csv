@@ -15,16 +15,31 @@ Achievement.PickaxeMax.Description,将矿镐升级至最高等级。,Achievement
 Achievement.PickaxeMax.Name,挖到底,Achievement.PickaxeMax.Name
 Achievement.PickaxeUpgrade.Description,首次升级矿镐。,Achievement.PickaxeUpgrade.Description
 Achievement.PickaxeUpgrade.Name,再锋利一点,Achievement.PickaxeUpgrade.Name
+Card.Dragon,巨龙,Card.Dragon
+Card.Earth,磐岩,Card.Earth
+Card.Echo,回响,Card.Echo
 Card.Eyebrows,*啊啊啊！我的眉毛！*,Card.Eyebrows
 Card.Fire,火,Card.Fire
+Card.FusionName,激光剧毒烈焰雷霆冰川森罗狂风洪流磐岩钢铁圣光暗影星陨引力时空回响巨龙——十七重终焉爆裂波！,Card.FusionName
+Card.Grass,草木,Card.Grass
+Card.Gravity,引力,Card.Gravity
+Card.Ice,寒冰,Card.Ice
 Card.Laser,激光,Card.Laser
 Card.LaserCompact,"激
 光",Card.LaserCompact
+Card.Light,圣光,Card.Light
+Card.Lightning,雷电,Card.Lightning
 Card.Matched,*匹配成功！*,Card.Matched
 Card.Matching,*正在匹配中*,Card.Matching
+Card.Metal,钢铁,Card.Metal
 Card.Poison,毒,Card.Poison
 Card.Return,*我一定会回来的！——*,Card.Return
+Card.Shadow,暗影,Card.Shadow
+Card.Star,星陨,Card.Star
 Card.Stink,*呕——好臭臭*,Card.Stink
+Card.Time,时空,Card.Time
+Card.Water,洪流,Card.Water
+Card.Wind,狂风,Card.Wind
 Collection.00.Clue,滴水的管道,Collection.00.Clue
 Collection.00.Description,这也许是一场令人措手不及的涌现。,Collection.00.Description
 Collection.00.Name,来自天堂的马桶,Collection.00.Name
@@ -122,15 +137,15 @@ Office.Hint.PrintedKey,按 E 处理文件 · {0} 张,Office.Hint.PrintedKey
 Office.Hint.Reply,回复,Office.Hint.Reply
 Office.Hint.Theme,本届创作主题,Office.Hint.Theme
 Office.Hint.ViewTheme,查看主题,Office.Hint.ViewTheme
-Office.Physical.0.Body,"今日 18:00 前提交项目汇报。
-附件、数据和演示稿仍待确认。",Office.Physical.0.Body
-Office.Physical.0.Title,DDL 提醒,Office.Physical.0.Title
-Office.Physical.1.Body,"项目群：刚才的方案需要再调整一下。
-请尽快回复并同步最新进度。",Office.Physical.1.Body
-Office.Physical.1.Title,有新的工作消息,Office.Physical.1.Title
-Office.Physical.2.Body,"你收到一项新的紧急任务。
-优先级：高。交付时间：今天。",Office.Physical.2.Body
-Office.Physical.2.Title,新增待办,Office.Physical.2.Title
+Office.Physical.0.Body,"距离截止还有10分钟。
+你的作品仍处于草稿状态。",Office.Physical.0.Body
+Office.Physical.0.Title,Game Jam · 提交提醒,Office.Physical.0.Title
+Office.Physical.1.Body,"game_final_final.zip — 99%
+请勿关闭此窗口。",Office.Physical.1.Body
+Office.Physical.1.Title,上传中,Office.Physical.1.Title
+Office.Physical.2.Body,"最后这个包谁测过了？
+没问题我就上传了。",Office.Physical.2.Body
+Office.Physical.2.Title,组队群 · @所有人,Office.Physical.2.Title
 Office.Popup.00.Body,21天gamejam游戏创作主题公布！,Office.Popup.00.Body
 Office.Popup.00.Title,Game Jam · 主题公布,Office.Popup.00.Title
 Office.Popup.01.Body,【涌现】,Office.Popup.01.Body

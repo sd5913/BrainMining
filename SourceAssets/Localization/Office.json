@@ -330,34 +330,34 @@
     "zh-Hant": "按 E 處理文件 · {0} 張"
   },
   "Office.Physical.0.Title": {
-    "zh-Hans": "DDL 提醒",
-    "en": "Deadline reminder",
-    "zh-Hant": "DDL 提醒"
+    "zh-Hans": "Game Jam · 提交提醒",
+    "en": "Game Jam · Submission reminder",
+    "zh-Hant": "Game Jam · 提交提醒"
   },
   "Office.Physical.0.Body": {
-    "zh-Hans": "今日 18:00 前提交项目汇报。\n附件、数据和演示稿仍待确认。",
-    "en": "Project report due today at 18:00.\nAttachments, data and slides still need review.",
-    "zh-Hant": "今日 18:00 前提交專案報告。\n附件、資料與簡報仍待確認。"
+    "zh-Hans": "距离截止还有10分钟。\n你的作品仍处于草稿状态。",
+    "en": "10 minutes until the deadline.\nYour entry is still a draft.",
+    "zh-Hant": "距離截止還有 10 分鐘。\n你的作品仍處於草稿狀態。"
   },
   "Office.Physical.1.Title": {
-    "zh-Hans": "有新的工作消息",
-    "en": "New work message",
-    "zh-Hant": "有新的工作訊息"
+    "zh-Hans": "上传中",
+    "en": "Uploading",
+    "zh-Hant": "上傳中"
   },
   "Office.Physical.1.Body": {
-    "zh-Hans": "项目群：刚才的方案需要再调整一下。\n请尽快回复并同步最新进度。",
-    "en": "Project chat: the plan needs another revision.\nPlease reply and share an update soon.",
-    "zh-Hant": "專案群組：剛才的方案需要再調整一下。\n請儘快回覆並同步最新進度。"
+    "zh-Hans": "game_final_final.zip — 99%\n请勿关闭此窗口。",
+    "en": "game_final_final.zip — 99%\nPlease do not close this window.",
+    "zh-Hant": "game_final_final.zip — 99%\n請勿關閉此視窗。"
   },
   "Office.Physical.2.Title": {
-    "zh-Hans": "新增待办",
-    "en": "New task",
-    "zh-Hant": "新增待辦"
+    "zh-Hans": "组队群 · @所有人",
+    "en": "Team chat · @Everyone",
+    "zh-Hant": "組隊群 · @所有人"
   },
   "Office.Physical.2.Body": {
-    "zh-Hans": "你收到一项新的紧急任务。\n优先级：高。交付时间：今天。",
-    "en": "You have a new urgent task.\nPriority: high. Due: today.",
-    "zh-Hant": "你收到一項新的緊急任務。\n優先順序：高。交付時間：今天。"
+    "zh-Hans": "最后这个包谁测过了？\n没问题我就上传了。",
+    "en": "Has anyone tested this final build?\nI'll upload it if it's ready.",
+    "zh-Hant": "最後這個版本誰測過了？\n沒問題我就上傳了。"
   },
   "Office.Popup.Repository.Title": {
     "zh-Hans": "Git · 新建仓库",

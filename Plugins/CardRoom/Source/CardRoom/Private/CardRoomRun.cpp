@@ -34,7 +34,7 @@ void FCardRoomRun::Deal(int32 NewRound)
     if (Round == 1) { Hand.Add(ERoomCard::Laser); Message = TEXT("第一回合 · 先来一发激光弹。"); }
     if (Round == 2) { Hand.Add(ERoomCard::Poison); Message = TEXT("第二回合 · 对手看起来毫无防备。"); }
     if (Round == 3) { Hand = { ERoomCard::Fire, ERoomCard::Laser }; Message = TEXT("第三回合 · 把火和激光弹一起打出，触发组合技。"); }
-    if (Round == 4) { for (int32 i=0;i<17;++i) Hand.Add(static_cast<ERoomCard>(i%3)); Message = TEXT("只剩 1 点生命！把 17 张牌全部混合，破釜沉舟。"); }
+    if (Round == 4) { for (int32 i=0;i<static_cast<int32>(ERoomCard::Count);++i) Hand.Add(static_cast<ERoomCard>(i)); Message = TEXT("只剩 1 点生命！把 17 张牌全部混合，破釜沉舟。"); }
 }
 bool FCardRoomRun::Collect()
 {
@@ -52,7 +52,7 @@ void FCardRoomRun::Tick(float DeltaSeconds)
     }
     if (Phase == ECardRoomPhase::Arrival && PhaseTime >= 1.4f) { Deal(1); return; }
     if (Phase != ECardRoomPhase::Resolving) return;
-    if (!bPlayerResolved && PhaseTime >= 1.0f)
+    if (!bPlayerResolved && PresentationTime() >= 1.0f)
     {
         bPlayerResolved = true;
         if (Round == 1) { RivalHP = 84; Message = TEXT("命中！对手捏起了一张「火」……"); }
@@ -60,14 +60,14 @@ void FCardRoomRun::Tick(float DeltaSeconds)
         if (Round == 3) { RivalHP = 28; bPoisoned = false; Message = TEXT("毒气 + 火激光 = 爆燃！对手生气了。"); }
         if (Round == 4) { RivalHP = 0; Message = TEXT("彗尾法球！超级人机，退场！"); }
     }
-    if (!bRivalResolved && PhaseTime >= 2.35f)
+    if (!bRivalResolved && PresentationTime() >= 2.35f)
     {
         bRivalResolved = true;
         if (Round == 1) { PlayerHP = 80; Message = TEXT("对手打出「火」：小心火球！  -20"); }
         if (Round == 2) Message = TEXT("对手被臭晕了，本回合无法行动。毒气仍在。");
         if (Round == 3) { PlayerHP = 1; Message = TEXT("愤怒重击！你还剩 1 点生命……但还有最后一手。"); }
     }
-    if (PhaseTime >= (Round == 4 ? 4.1f : 4.6f))
+    if (PresentationTime() >= (Round == 4 ? 4.1f : 4.6f))
     {
         if (Round < 4) Deal(Round + 1);
         else { SetPhase(ECardRoomPhase::Victory); Hand.Reset(); Staged.Reset(); Message = TEXT("恭喜你获得胜利！拾取钻机以获得钻机能力。"); }
@@ -75,9 +75,21 @@ void FCardRoomRun::Tick(float DeltaSeconds)
 }
 FString FCardRoomRun::CardName(ERoomCard Card)
 {
-    switch(Card) { case ERoomCard::Laser: return TEXT("激光弹"); case ERoomCard::Poison: return TEXT("毒"); default: return TEXT("火"); }
+    return FText::FromStringTable(TEXT("BrainMining.Game"),CardKey(Card)).ToString();
 }
 FString FCardRoomRun::CardDescription(ERoomCard Card)
 {
     switch(Card) { case ERoomCard::Laser: return TEXT("一束精准的能量"); case ERoomCard::Poison: return TEXT("让对手无法行动"); default: return TEXT("与激光、毒气共鸣"); }
+}
+
+const TCHAR* FCardRoomRun::CardKey(ERoomCard Card)
+{
+    static const TCHAR* Keys[]={TEXT("Card.Laser"),TEXT("Card.Poison"),TEXT("Card.Fire"),TEXT("Card.Lightning"),TEXT("Card.Ice"),TEXT("Card.Grass"),TEXT("Card.Wind"),TEXT("Card.Water"),TEXT("Card.Earth"),TEXT("Card.Metal"),TEXT("Card.Light"),TEXT("Card.Shadow"),TEXT("Card.Star"),TEXT("Card.Gravity"),TEXT("Card.Time"),TEXT("Card.Echo"),TEXT("Card.Dragon")};
+    return Keys[FMath::Clamp(int32(Card),0,UE_ARRAY_COUNT(Keys)-1)];
+}
+
+FLinearColor FCardRoomRun::CardColor(ERoomCard Card)
+{
+    static const FLinearColor Colors[]={{.1f,.8f,1},{.45f,.8f,.1f},{1,.23f,.06f},{1,.8f,.12f},{.5f,.9f,1},{.2f,.7f,.3f},{.55f,1,.8f},{.12f,.4f,1},{.65f,.4f,.18f},{.65f,.7f,.8f},{1,.95f,.6f},{.55f,.3f,.8f},{1,.5f,.8f},{.6f,.4f,1},{.3f,.8f,.7f},{.65f,.85f,1},{1,.35f,.2f}};
+    return Colors[FMath::Clamp(int32(Card),0,UE_ARRAY_COUNT(Colors)-1)];
 }

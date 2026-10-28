@@ -165,6 +165,13 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
         Colors[7]=FLinearColor(.63f,.018f,.035f);
     }
     if(ItemId==11){Colors[4]=FLinearColor(1,.045f,.35f);Colors[7]=FLinearColor(1,.35f,.65f);}
+    if(ItemId==21)
+    {
+        // White enamel, charcoal glass and the fresh green waist stripe of Line 2.
+        Colors[0]=FLinearColor(.88f,.91f,.88f);Colors[1]=FLinearColor(.025f,.03f,.028f);
+        Colors[2]=FLinearColor(.24f,.65f,.055f);Colors[3]=FLinearColor(.045f,.075f,.07f);
+        Colors[4]=FLinearColor(.68f,.71f,.68f);Colors[6]=FLinearColor(.72f,.76f,.72f);
+    }
     if(ItemId==0)
     {
         B.Box(FVector(13,0,-44),FVector(23,24,10),0);

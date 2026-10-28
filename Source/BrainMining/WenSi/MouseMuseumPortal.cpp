@@ -1,4 +1,5 @@
 #include "WenSi/MouseMuseumPortal.h"
+#include "MiningAudioComponent.h"
 #include "MiningLocalizationSubsystem.h"
 #include "MiningAchievementSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -156,11 +157,16 @@ bool AMouseMuseumPortal::Advance(float Dt)
   bTravelRequested=true;
   bool Campaign=false;
   if(auto Hall=AMiningExhibitHall::Find(GetWorld());Hall && Hall->Areas.IsValidIndex(Hall->ActiveArea))Campaign=Puzzle->bAreaManaged && Hall->Areas[Hall->ActiveArea].Tag==TEXT("BM_Campaign_MainGameMuseum");
-  if(Campaign){Puzzle->bComplete=true;GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->RecordMilestone(TEXT("ACH_MUSEUM_CLEAR"));UGameplayStatics::OpenLevel(this,TEXT("/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo"),true);}
+  if(Campaign)
+  {
+   if(EntryPawn.IsValid())if(auto* Audio=EntryPawn->FindComponentByClass<UMiningAudioComponent>())Audio->BeginEndingMusicTransition();
+   Puzzle->bComplete=true;GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->RecordMilestone(TEXT("ACH_MUSEUM_CLEAR"));
+   UGameplayStatics::OpenLevel(this,TEXT("/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo"),true);
+  }
   else {Puzzle->bComplete=true;Cancel();}
  }
  // A missing packaged destination must not leave the player permanently locked.
- if(EntryAge>8.f){if(Puzzle)Puzzle->bComplete=false;Cancel();}
+ if(EntryAge>8.f){if(Puzzle)Puzzle->bComplete=false;bTravelRequested=false;Cancel();}
  return true;
 }
 
@@ -174,6 +180,7 @@ void AMouseMuseumPortal::Cancel()
   }
  if(EntryPawn.IsValid())
  {
+  if(!bTravelRequested)if(auto* Audio=EntryPawn->FindComponentByClass<UMiningAudioComponent>())Audio->CancelEndingMusicTransition();
   EntryPawn->SetActorHiddenInGame(bPawnWasHidden);
   EntryPawn->GetCharacterMovement()->SetMovementMode(EMovementMode(PreviousMovementMode),PreviousCustomMode);
  }

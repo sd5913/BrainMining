@@ -5,6 +5,9 @@
 #include "EchoPassageStage.h"
 #include "EngineUtils.h"
 #include "Sound/SoundBase.h"
+#include "MiningAudioSettings.h"
+#include "Components/AudioComponent.h"
+#include "Engine/GameInstance.h"
 
 TArray<FName> UMiningAudioComponent::RoomMusicAssetNames()
 {
@@ -56,9 +59,27 @@ void UMiningAudioComponent::UpdateRoomMusic(float DeltaTime, float Gain)
 	}
 	for (const FName Name : RoomMusicAssetNames())
 	{
+        if(Name==TEXT("M_Room_Museum_Loop") && bMuseumMusicTransferred)continue;
 		const bool bAvailable = Sounds.FindRef(Name) != nullptr;
 		const float Balance = Name == TEXT("M_Room_CardExplore_Loop") ? 1.8f :
 			Name == TEXT("M_Room_Museum_Loop") ? 2.5f : 1.f;
 		SetSoundscapeLayer(Name, Name == Selected && bAvailable ? Gain * Balance : 0.f, DeltaTime);
 	}
+}
+
+void UMiningAudioComponent::BeginEndingMusicTransition()
+{
+    auto* Settings=GetWorld()->GetGameInstance()->GetSubsystem<UMiningAudioSettings>();
+    auto* MuseumTrack=Soundscape.FindRef(TEXT("M_Room_Museum_Loop")).Get();
+    if(!Settings || !MuseumTrack || !MuseumTrack->IsPlaying())return;
+    Settings->HoldMuseumMusicForEnding(MuseumTrack);
+    Soundscape.Remove(TEXT("M_Room_Museum_Loop"));bMuseumMusicTransferred=true;
+}
+
+void UMiningAudioComponent::CancelEndingMusicTransition()
+{
+    if(!bMuseumMusicTransferred)return;
+    if(auto* Settings=GetWorld()->GetGameInstance()->GetSubsystem<UMiningAudioSettings>())
+        if(auto* MuseumTrack=Settings->RestoreMuseumMusic())Soundscape.Add(TEXT("M_Room_Museum_Loop"),MuseumTrack);
+    bMuseumMusicTransferred=false;
 }

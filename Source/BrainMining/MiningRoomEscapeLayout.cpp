@@ -253,13 +253,8 @@ void AMiningRoomEscape::BuildStudyLayout()
     const FVector Deck(31900+SourceLevelOffset.X,ComputerEntry.Y,9850+SourceLevelOffset.Z);
     Shape(Deck+FVector(60,0,0),FVector(1920,2000,100),Wood);
     if(!bWalkThroughConnections) Shape(Deck+FVector(950,0,500),FVector(100,2200,1100),Plaster);
-    else
-    {
-        // Match the authored cave mouth (490 x 350 cm) and overlap its
-        // rock collar in depth. The old 560 x 750 opening exposed the shell.
-        for(float Side:{-1.f,1.f}) Shape(Deck+FVector(900,Side*672.5f,500),FVector(180,855,1100),Plaster);
-        Shape(Deck+FVector(900,0,725),FVector(180,490,650),Plaster);
-    }
+    // In the campaign the red enclosure and authored cave already form the
+    // doorway. The old plaster frame cut through both and exposed white strips.
     for(float Side:{-1.f,1.f})
     {
         Shape(Deck+FVector(0,Side*950,260),FVector(1800,60,400),Wood);
@@ -285,13 +280,19 @@ void AMiningRoomEscape::BuildStudyLayout()
         // The authored cave collar begins at X=32650. Put the red face in
         // front of it as well, so its exposed grey upper edge is covered.
         const float RearFace=bBacking?33030.f:32630.f;
+        // The authored natural collar owns the visible passage from X=32650.
+        // End the red throat there; bury the permanent backing outside the
+        // collar's visible profile instead of laying both on its floor/walls.
+        const float ThroatEnd=bWalkThroughConnections&&!bBacking?32650.f:33050.f+Back;
+        const float DoorHalfWidth=bWalkThroughConnections&&bBacking?600.f:245.f;
+        const float DoorHalfHeight=bWalkThroughConnections&&bBacking?500.f:175.f;
         Ring(TunnelPoint(FVector(Start,0,0)),W,H,Rotation);
         Ring(TunnelPoint(FVector(7100,0,0)),W+Back,H+Back,Rotation);
         Ring(StagePoint(30800,10625),1700+Back,1125+Back);
         Ring(StagePoint(RearFace,10625),1700+Back,1125+Back);
-        Ring(StagePoint(RearFace,10075),245,175); // Preserve the 490 x 350 doorway.
-        Ring(StagePoint(33050+Back,10075),245,175);
-        Ring(StagePoint(33050+Back,10625),1900+Back,1325+Back);
+        Ring(StagePoint(RearFace,10075),DoorHalfWidth,DoorHalfHeight);
+        Ring(StagePoint(ThroatEnd,10075),DoorHalfWidth,DoorHalfHeight);
+        Ring(StagePoint(ThroatEnd,10625),1900+Back,1325+Back);
         Ring(StagePoint(30800,10625),1900+Back,1325+Back);
         Ring(TunnelPoint(FVector(7100,0,0)),W+200+Back,H+200+Back,Rotation);
         Ring(TunnelPoint(FVector(Start,0,0)),W+200,H+200,Rotation);

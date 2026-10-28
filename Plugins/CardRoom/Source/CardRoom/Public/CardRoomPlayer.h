@@ -20,6 +20,7 @@ public:
     void SetRoomActive(bool bActive);
     void ReleaseForExploration();
     bool bRoomActive=true;
+    bool IsSeated() const { return bSeated; }
     bool bUseSharedInteractionHUD=false;
     FString ExplorationHint;
     UFUNCTION(BlueprintCallable) void Interact();

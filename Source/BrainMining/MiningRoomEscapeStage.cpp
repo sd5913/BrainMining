@@ -61,7 +61,7 @@ void AMiningRoomEscape::BuildExitStage()
             Shape(Curtain+FVector(-20,Side*450-420+J*64,0),FVector(35,25,1120),Pleat,TEXT("EscapeStageCurtain"))->AttachToComponent(LeafRoot,FAttachmentTransformRules::KeepWorldTransform);
         Shape(Curtain+FVector(0,Side*930,0),FVector(65,65,1200),Gold,TEXT("EscapeStageFrame"));
         const FVector LampPosition=Deck+FVector(250,Side*580,1050);
-        Shape(LampPosition,FVector(100,90,65),Dark,TEXT("CollectionStageLight"));
+        // Keep the stage lighting without the floating placeholder lamp boxes.
         auto* Spot=NewObject<USpotLightComponent>(this);AddInstanceComponent(Spot);Spot->SetupAttachment(RootComponent);
         Spot->SetIntensityUnits(ELightUnits::Candelas);Spot->SetIntensity(1200);
         Spot->SetAttenuationRadius(2500);Spot->SetOuterConeAngle(44);Spot->SetInnerConeAngle(25);

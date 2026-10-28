@@ -124,7 +124,11 @@ void UMiningAudioComponent::SetSoundscapeLayer(FName Name, float Target, float D
 	{
 		const auto* Sound = Sounds.Find(Name);
 		if (!Sound) return;
-		auto* Layer = NewObject<UAudioComponent>(GetOwner());
+		// The museum voice may be handed to the game instance during portal travel.
+		auto* Layer = Name==TEXT("M_Room_Museum_Loop")
+            ? UGameplayStatics::CreateSound2D(this,Sound->Get(),0.f,1.f,0.f,nullptr,true,false) : nullptr;
+        const bool bPersistentVoice=Layer!=nullptr;
+        if(!Layer) Layer=NewObject<UAudioComponent>(GetOwner());
 		Layer->bAutoActivate = false;
 		Layer->bAutoDestroy = false;
 		Layer->bAllowSpatialization = false;
@@ -132,7 +136,7 @@ void UMiningAudioComponent::SetSoundscapeLayer(FName Name, float Target, float D
 		Layer->bAlwaysPlay = Layer->bIsUISound;
 		Layer->SetSound(Sound->Get());
 		Layer->SetVolumeMultiplier(0.f);
-		Layer->RegisterComponent();
+		if(!bPersistentVoice)Layer->RegisterComponent();
 		Soundscape.Add(Name, Layer);
 		Existing = Soundscape.Find(Name);
 	}

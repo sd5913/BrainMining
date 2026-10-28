@@ -7,6 +7,8 @@
 #include "MiningWalletSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Components/PrimitiveComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -78,6 +80,7 @@ void APopupOfficeDevice::EndPlay(const EEndPlayReason::Type Reason)
 }
 void APopupOfficeDevice::ResetSession()
 {
+ EndCameraTransition();
  SetScreenInteractive(false);
  if (Desktop)
  {
@@ -308,6 +311,39 @@ void APopupOfficeDevice::FitCamera()
  const float ViewWidth=FMath::Max(ScreenWidth/.66f,ScreenHeight*Aspect/.78f);
  Camera->SetFieldOfView(FMath::RadiansToDegrees(2.f*FMath::Atan(ViewWidth/(2.f*Distance))));
 }
+void APopupOfficeDevice::BeginCameraTransition(APlayerController* PC,float Duration,bool bEntering)
+{
+ if(!PC || !PC->PlayerCameraManager || !PC->GetPawn())return;
+ CameraFrom=PC->PlayerCameraManager->GetCameraCacheView();
+ if(bEntering)Camera->GetCameraView(0.f,CameraTo);else PC->GetPawn()->CalcCamera(0.f,CameraTo);
+ CameraTransitionStart=GetWorld()->GetTimeSeconds();CameraTransitionDuration=FMath::Max(.01f,Duration);
+ FCollisionQueryParams Query(SCENE_QUERY_STAT(OfficeCameraRoute),true,PC->GetPawn());Query.AddIgnoredActor(this);
+ FHitResult Hit;
+ const bool bBlocked=GetWorld()->SweepSingleByChannel(Hit,CameraFrom.Location,CameraTo.Location,FQuat::Identity,ECC_Visibility,FCollisionShape::MakeSphere(10.f),Query);
+ // Decorative chair meshes may have no visibility collision. Take the raised
+ // approach for normal travel even when the collision trace reports clear.
+ bRaisedCameraPath=bBlocked || FVector::Dist2D(CameraFrom.Location,CameraTo.Location)>30.f;
+ CameraClearanceZ=12.f;
+ if(bBlocked && Hit.GetComponent())
+  CameraClearanceZ=FMath::Clamp(float(Hit.GetComponent()->Bounds.GetBox().Max.Z)+10.f-float(FMath::Lerp(CameraFrom.Location.Z,CameraTo.Location.Z,.5)),12.f,28.f);
+ // A small continuous bow clears chair backs without a separate lift phase.
+ bCameraTransition=true;
+}
+void APopupOfficeDevice::CalcCamera(float DeltaTime,FMinimalViewInfo& OutResult)
+{
+ if(!bCameraTransition){Super::CalcCamera(DeltaTime,OutResult);return;}
+ const float T=FMath::Clamp(float(GetWorld()->GetTimeSeconds()-CameraTransitionStart)/CameraTransitionDuration,0.f,1.f);
+ const auto Ease=[](float V){return FMath::SmoothStep(0.f,1.f,V);};
+ const float Alpha=Ease(T);
+ OutResult=CameraFrom;OutResult.BlendViewInfo(CameraTo,Alpha);
+ OutResult.Rotation=FQuat::Slerp(CameraFrom.Rotation.Quaternion(),CameraTo.Rotation.Quaternion(),Alpha).Rotator();
+ if(bRaisedCameraPath)
+ {
+  OutResult.Location=FMath::Lerp(CameraFrom.Location,CameraTo.Location,Alpha);
+  OutResult.Location.Z+=CameraClearanceZ*4.f*Alpha*(1.f-Alpha);
+ }
+}
+
 void APopupOfficeDevice::WarmPool(float Dt)
 {
  for(auto Item:Pool)if(IsValid(Item))Item->IsReadyForLaunch();
@@ -315,7 +351,7 @@ void APopupOfficeDevice::WarmPool(float Dt)
  WarmDebt+=Dt;if(WarmDebt<.06f)return;WarmDebt=0;
  FActorSpawnParameters Params;Params.Owner=this;Params.SpawnCollisionHandlingOverride=ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
  auto Item=GetWorld()->SpawnActor<APopupCloseFlyingWindow>(FVector(DeviceIndex*100,0,-10000-Pool.Num()*80),FRotator::ZeroRotator,Params);
- if(Item){Item->PrepareForPool(Pool.Num(),IsPrinter());Pool.Add(Item);}
+ if(Item){Item->PrepareForPool(PopupCloseContent::FloodArtVariant(Pool.Num()),IsPrinter());Pool.Add(Item);}
 }
 void APopupOfficeDevice::Emit()
 {
@@ -349,12 +385,12 @@ bool APopupOfficeDevice::ClickReplyForMobile()
   }
   if(!TraceDesktopGlass(Origin,(ArtShell->GetComponentTransform().TransformPosition(TargetLocal)-Origin).GetSafeNormal(),Hit))return false;
  }
- const int32 Before=Pending();Pointer->InteractionSource=EWidgetInteractionSource::Custom;
+ const int32 Before=Pending(),UnreadBefore=Desktop->GetFrontUnreadCount();Pointer->InteractionSource=EWidgetInteractionSource::Custom;
  Pointer->SetCustomHitResult(Hit);Pointer->TickComponent(0,LEVELTICK_All,nullptr);
  UMiningRoomAudioSubsystem::Emit(this,TEXT("S_OfficeMouseClick"),.65f,false,0.f);
  Pointer->PressPointerKey(EKeys::LeftMouseButton);Pointer->ReleasePointerKey(EKeys::LeftMouseButton);
  Pointer->InteractionSource=EWidgetInteractionSource::Mouse;
- return Pending()==Before-1;
+ return Pending()==Before-1 || (UnreadBefore>0 && Desktop->GetFrontUnreadCount()==0);
 }
 bool APopupOfficeDevice::ClickReplyForValidation()
 {

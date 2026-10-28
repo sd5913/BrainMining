@@ -333,7 +333,9 @@ void AWenSiMirrorExhibit::Apply()
    Smoke->SetVariableFloat(TEXT("SpawnRate"),20.f);
    Smoke->SetVariableFloat(TEXT("Sprite Size"),42.f);
    Smoke->SetVariableLinearColor(TEXT("Smoke Color"),FLinearColor(.48f,.52f,.56f,Word==EWenSiMirrorWord::Passable?.35f:.8f));
-   Smoke->SetVisibility(true);Smoke->Activate(true);
+   Smoke->SetVisibility(true);Smoke->Activate(false);
+   // The Niagara asset prewarms five seconds before its first visible frame.
+   // Word changes retain the live plume instead of restarting low particles.
   }
  }
  if(ConductiveFX)
@@ -345,21 +347,25 @@ void AWenSiMirrorExhibit::Apply()
  ConductiveClock=0;
  Highlight(false);
 }
-void AWenSiMirrorExhibit::Highlight(bool bAimed)
+void AWenSiMirrorExhibit::Highlight(bool bAimed,bool bShowOutline)
 {
- WenSiExhibitArt::Highlight(ArtVisual,bThinkingEnabled ? (bAimed ? 2.2f:.8f):0.f,bAimed ? 4.0f:1.8f,FLinearColor(1.f,.89f,.7f));
+ // Distinct IDs retain internal boundaries where exhibits overlap (stone/cover).
+ // 250 is reserved for the aimed exhibit's thicker warm-white focus outline.
+ const int32 Stencil=bAimed?250:20+Kind;
+ ArtVisual->SetCustomDepthStencilValue(Stencil);
+ WenSiExhibitArt::Highlight(ArtVisual,bThinkingEnabled && bShowOutline ? 1.f:0.f,1.f,FLinearColor::White);
  // All exhibits use the same visible silhouette. Hidden art/collision proxies
  // must not contribute depth, otherwise they outline their old blockout shapes.
  for(auto Part:Parts)
  {
   Part->SetOverlayMaterial(nullptr);
-  Part->SetCustomDepthStencilValue(1);
-  Part->SetRenderCustomDepth(bThinkingEnabled && Part->GetStaticMesh() && Part->IsVisible() && Part->bRenderInMainPass);
+  Part->SetCustomDepthStencilValue(Stencil);
+  Part->SetRenderCustomDepth(bThinkingEnabled && bShowOutline && Part->GetStaticMesh() && Part->IsVisible() && Part->bRenderInMainPass);
  }
  if(auto Smoke=FindObjectFast<UNiagaraComponent>(this,TEXT("MuseumSmoke")))
  {
-  Smoke->SetCustomDepthStencilValue(1);
-  Smoke->SetRenderCustomDepth(bThinkingEnabled && Smoke->IsVisible());
+  Smoke->SetCustomDepthStencilValue(Stencil);
+  Smoke->SetRenderCustomDepth(bThinkingEnabled && bShowOutline && Smoke->IsVisible());
  }
 }
 void AWenSiMirrorExhibit::BeginPlay()
@@ -615,7 +621,7 @@ void AWenSiMirrorPuzzle::BeginPlay()
  Super::BeginPlay();
  auto Outline=NewObject<UPostProcessComponent>(this,TEXT("MuseumSilhouette"));AddInstanceComponent(Outline);
  Outline->SetupAttachment(RootComponent);Outline->bUnbound=true;Outline->Priority=100;
- if(auto Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/CollectionPrototype/Materials/M_CollectionSilhouette.M_CollectionSilhouette")))Outline->Settings.AddBlendable(Material,1);
+ if(auto Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/M_MuseumFocusOutline.M_MuseumFocusOutline")))Outline->Settings.AddBlendable(Material,1);
  Outline->RegisterComponent();
  TuneCampaignMirrorGeometry(GetWorld(),GetActorTransform(),bAreaManaged);
  for(TActorIterator<AWenSiMirrorExhibit> It(GetWorld());It;++It){Exhibits.Add(*It);InitialTransforms.Add(It->GetActorTransform());InitialWords.Add(It->Word);}
@@ -820,7 +826,10 @@ void AWenSiMirrorPuzzle::Tick(float Dt)
  if(ResetHold.Update(bAimReset && !bEditing,PC->IsInputKeyDown(EKeys::E) || UMiningGamepadSubsystem::ReadResetInteractionHeld(PC),Dt))ResetPuzzle();
  if(PC->WasInputKeyJustPressed(EKeys::R))SwapThoughts();
  if(PC->GetPawn() && PC->GetPawn()->GetActorLocation().X>RoomPoint(FVector(1000,0,0)).X)bSecondRoom=true;
- for(auto Exhibit:Exhibits)Exhibit->Highlight(Exhibit==Aim.Get());if(UI)UI->Refresh();
+ // Keep idle outlines stable when another exhibit gains or loses focus.
+ for(auto Exhibit:Exhibits)
+  Exhibit->Highlight(Exhibit==Aim.Get());
+ if(UI)UI->Refresh();
 }
 void AWenSiMirrorPuzzle::ResetPuzzle()
 {

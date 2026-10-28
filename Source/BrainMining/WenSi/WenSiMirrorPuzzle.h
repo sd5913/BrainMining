@@ -49,7 +49,7 @@ public:
  UPROPERTY(Transient) TArray<TObjectPtr<UStaticMeshComponent>> ConductiveArcs;
  void Configure();
  void Apply();
- void Highlight(bool bAimed);
+ void Highlight(bool bAimed,bool bShowOutline=true);
  FString Noun() const;
  FString Adjective() const;
  float SizeSupportOffset() const;

@@ -530,8 +530,8 @@ msgid "题目出来了。\n「涌现」……你们有什么想法？"
 msgstr "题目出来了。\n「涌现」……你们有什么想法？"
 
 msgctxt "BrainMining.Game,Office.Popup.02.Title"
-msgid "组队群 · 2条新消息"
-msgstr "组队群 · 2条新消息"
+msgid "组队群 · 新消息"
+msgstr "组队群 · 新消息"
 
 msgctxt "BrainMining.Game,Office.Popup.03.Body"
 msgid "@你 玩法草案放文档里了。\n有空看下，晚上一起定。"
@@ -554,8 +554,8 @@ msgid "检测到较新的云端版本。\n是否加载其他成员的修改？"
 msgstr "检测到较新的云端版本。\n是否加载其他成员的修改？"
 
 msgctxt "BrainMining.Game,Office.Popup.05.Title"
-msgid "企划草案.docx"
-msgstr "企划草案.docx"
+msgid "策划案1.0"
+msgstr "策划案1.0"
 
 msgctxt "BrainMining.Game,Office.Popup.06.Body"
 msgid "先做一个能玩的版本吧。\n剩下几个点子放备选。"

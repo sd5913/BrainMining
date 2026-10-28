@@ -60,12 +60,18 @@ namespace PopupOfficeArtTests
     Desktop->AdvanceIntroduction(15.1f);
     Test->TestEqual(TEXT("Long-idle fallback opens the theme first"),Desktop->GetFrontPopupBody(),FString(TEXT("【涌现】")));
     Desktop->AdvanceIntroduction(20.1f);
-    Test->TestEqual(TEXT("Later work cannot remain blocked forever"),Desktop->GetFrontPopupTitle(),FString(TEXT("组队群 · 2条新消息")));
+    Test->TestEqual(TEXT("Later work cannot remain blocked forever"),Desktop->GetFrontPopupTitle(),FString(TEXT("组队群 · 新消息")));
     Test->TestTrue(TEXT("Timeout never rewards or deletes unresolved work"),Device->AccountingValid() && Device->Handled()==0 && Device->Pending()==3);
     EdgePhase=2;Deadline=FPlatformTime::Seconds()+.3;return false;
    }
    if(EdgePhase==2)
    {
+    if(Desktop->GetFrontUnreadCount()>0)
+    {
+     Test->TestTrue(TEXT("First message acknowledgement stays interactive"),Device->ClickReplyForValidation());
+     Test->TestEqual(TEXT("Unread notification immediately opens its message contents"),Desktop->GetFrontUnreadCount(),0);
+     Deadline=FPlatformTime::Seconds()+.3;return false;
+    }
     Test->TestTrue(TEXT("Visible top window remains clickable after timeouts"),Device->ClickReplyForValidation());
     Test->TestEqual(TEXT("Fallback theme remains readable below later work"),Desktop->GetFrontPopupBody(),FString(TEXT("【涌现】")));
     for(float Seconds:{0.f,25.f,36.f,52.f,65.f})
@@ -143,17 +149,25 @@ namespace PopupOfficeArtTests
    }
    if(Skin==0)Test->TestEqual(TEXT("Announcement remains in front of queued work"),Desktop->GetFrontPopupBody(),FString(TEXT("21天gamejam游戏创作主题公布！")));
    if(Skin==1)Test->TestEqual(TEXT("Large theme page comes before ordinary issues"),Desktop->GetFrontPopupBody(),FString(TEXT("【涌现】")));
-   if(Skin==2)Test->TestEqual(TEXT("First ordinary popup starts with design"),Desktop->GetFrontPopupTitle(),FString(TEXT("组队群 · 2条新消息")));
+   if(Skin==2)Test->TestEqual(TEXT("First ordinary popup starts with design"),Desktop->GetFrontPopupTitle(),FString(TEXT("组队群 · 新消息")));
    if(Skin<PopupCloseContent::Count)
    {
     const FString Folder=FPaths::ProjectSavedDir()/TEXT("Validation/CollectibleIteration/Popups");
     IFileManager::Get().MakeDirectory(*Folder,true);
     FBufferArchive PNG;
     Test->TestTrue(TEXT("Render the visible desktop page"),FImageUtils::ExportRenderTarget2DAsPNG(Device->GetSurface()->GetRenderTarget(),PNG));
-    Test->TestTrue(TEXT("Save narrative page capture"),FFileHelper::SaveArrayToFile(PNG,*(Folder/FString::Printf(TEXT("desktop-%d.png"),Skin))));
+    Test->TestTrue(TEXT("Save narrative page capture"),FFileHelper::SaveArrayToFile(PNG,*(Folder/FString::Printf(TEXT("desktop-%d%s.png"),Skin,(PopupCloseContent::ArtVariant(Skin)==4 && Desktop->GetFrontUnreadCount()==0)?TEXT("-message"):TEXT("")))));
    }
    const int32 Before=Desktop->GetOpenCount();
    Test->TestEqual(TEXT("Each staged copy reaches the real desktop"),Desktop->GetFrontPopupBody(),PopupCloseContent::Get(Skin).Body.ToString());
+   if(Desktop->GetFrontUnreadCount()>0)
+   {
+    Test->TestTrue(TEXT("Click one-message alert"),Device->ClickReplyForValidation());
+    Test->TestEqual(TEXT("No empty desktop between notification and actual message"),Desktop->GetFrontUnreadCount(),0);
+    Test->TestEqual(TEXT("Follow-up preserves the visible popup"),Desktop->GetOpenCount(),Before);
+    Test->TestTrue(TEXT("Follow-up cannot award coins or lose pending work"),Device->AccountingValid());
+    Deadline=FPlatformTime::Seconds()+.2;return false;
+   }
    Test->TestTrue(PopupCloseContent::Get(Skin).Title.ToString(),Device->ClickReplyForValidation());
    Test->TestEqual(TEXT("Exactly one real button reply removes one popup"),Desktop->GetOpenCount(),Before-1);
    Test->TestEqual(TEXT("Each art skin keeps independent close accounting"),Desktop->GetManuallyClosedCount(),Skin+1);
@@ -180,10 +194,18 @@ bool FOfficePopupArtInputTest::RunTest(const FString& Parameters)
  TestEqual(TEXT("First alert has one unread message"),PopupCloseContent::UnreadCount(0,3,2),1);
  TestEqual(TEXT("Early counts can grow to three"),PopupCloseContent::UnreadCount(10,4,2),3);
  TestEqual(TEXT("Late alerts can show 999 unread messages"),PopupCloseContent::UnreadCount(62,25,29),999);
+ int32 WarningCount=0,FloodSkinMask=0;
+ for(int32 I=0;I<192;++I){const int32 V=PopupCloseContent::FloodArtVariant(I);WarningCount+=V==2;FloodSkinMask|=1<<V;}
+ TestEqual(TEXT("Physical warning windows reduced from 32 to 16"),WarningCount,16);
+ TestEqual(TEXT("The quieter eruption still includes all six window forms"),FloodSkinMask,63);
  int32 SkinMask=0;
  for(int32 I=0;I<PopupCloseContent::Count;++I)SkinMask|=1<<PopupCloseContent::ArtVariant(I);
  TestEqual(TEXT("All six supplied popup forms are reachable"),SkinMask,63);
  TestEqual(TEXT("Slow opening preserves the planning revision before production"),PopupCloseContent::ForProgress(39.f,3),5);
+ TestEqual(TEXT("Initial design document uses version 1.0"),PopupCloseContent::Get(5).Title.ToString(),FString(TEXT("策划案1.0")));
+ for(int32 I=4;I<150;++I)
+  for(float Seconds:{5.f,20.f,35.f,50.f,70.f})
+   TestTrue(TEXT("The initial design document is not repeated in later traffic"),PopupCloseContent::ForProgress(Seconds,I)!=5);
  for(int32 I=0;I<100;++I)
   TestTrue(TEXT("Asset completion cannot appear during planning or early production"),PopupCloseContent::ForProgress(35.f,I)!=20 && PopupCloseContent::ForProgress(12.f,I)!=20);
  ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));

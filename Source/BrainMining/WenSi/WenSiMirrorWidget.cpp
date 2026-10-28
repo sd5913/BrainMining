@@ -1,4 +1,5 @@
 #include "WenSi/WenSiMirrorPuzzle.h"
+#include "MiningInteractionHUDWidget.h"
 #include "MiningLocalizationSubsystem.h"
 #include "BrainMiningFonts.h"
 #include "Internationalization/TextLocalizationManager.h"
@@ -215,11 +216,16 @@ void UWenSiMirrorWidget::Refresh()
  }
  FString Message;
  if(Puzzle->MousePortal && Puzzle->MousePortal->IsEntering()) Message=TEXT("");
- else if(Puzzle->MousePortal && Puzzle->MousePortal->IsFocused()) Message=FString();
+ else if(Puzzle->MousePortal && Puzzle->MousePortal->IsInsideGallery()) Message=FString();
  else if(Puzzle->bAimReset && !Puzzle->bEditing) Message=MiningText::Get(TEXT("WenSi.Hint.Reset")).ToString();
  else if (!Puzzle->bComplete)
  {
   Message=MiningText::Get(TEXT("WenSi.Hint.Swap")).ToString();
+  // Standalone museum previews do not have the campaign interaction HUD.
+  if(!UMiningInteractionHUDWidget::IsActiveFor(GetOwningPlayer()) && Puzzle->Aim.IsValid()
+     && Puzzle->Thoughts[0]!=Puzzle->Aim && Puzzle->Thoughts[1]!=Puzzle->Aim
+     && (!Puzzle->Thoughts[0].IsValid() || !Puzzle->Thoughts[1].IsValid()))
+   Message=MiningText::Get(TEXT("WenSi.Hint.Think")).ToString()+Message;
  }
  Hint->SetText(FText::FromString(Message));
 }

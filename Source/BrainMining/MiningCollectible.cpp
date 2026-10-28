@@ -87,6 +87,27 @@ namespace
             FVector Prev=A;
             for(int I=1;I<=Steps;++I) { const float T=float(I)/Steps,S=1-T; const FVector P=S*S*S*A+3*S*S*T*ControlA+3*S*T*T*ControlB+T*T*T*End; Rod(Prev,P,FMath::Lerp(Radius,.22f,T),Mat); Prev=P; }
         }
+        // Revolved radius/height profiles give glass a rounded base and real
+        // wall thickness, and liquids a closed meniscus visible from every side.
+        void ReagentProfile(float Y,const TArray<FVector2D>& Profile,int Mat)
+        {
+            constexpr int Sides=32;TArray<int> Previous;
+            for(const auto& P:Profile)
+            {
+                TArray<int> Current;
+                if(P.X<.001)Current.Add(Mesh.AppendVertex(FVector(0,Y,P.Y)));
+                else for(int S=0;S<Sides;++S)
+                {const double A=S*2*PI/Sides;Current.Add(Mesh.AppendVertex(FVector(P.X*FMath::Cos(A),Y+P.X*FMath::Sin(A),P.Y)));}
+                if(!Previous.IsEmpty())for(int S=0;S<Sides;++S)
+                {
+                    const int N=(S+1)%Sides;
+                    if(Previous.Num()==1)Tri(Previous[0],Current[N],Current[S],Mat);
+                    else if(Current.Num()==1)Tri(Previous[S],Previous[N],Current[0],Mat);
+                    else {Tri(Previous[S],Previous[N],Current[N],Mat);Tri(Previous[S],Current[N],Current[S],Mat);}
+                }
+                Previous=MoveTemp(Current);
+            }
+        }
         #include "MiningCollectibleDetails.inl"
         #include "MiningMineralModels.inl"
         #include "MiningBranchModels.inl"
@@ -162,16 +183,23 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
     }
     else if(ItemId==2)
     {
+        Colors[6]=FLinearColor(.48f,.25f,.09f);
+        Colors[7]=FLinearColor(.025f,.37f,.8f);
         B.Box(FVector(0,0,-45),FVector(23,44,6),5);
         for(int S:{-1,1}) B.Box(FVector(0,S*40,-8),FVector(20,4,36),5);
         B.Box(FVector(0,0,10),FVector(21,43,4),5);
         for(int i=0;i<4;++i)
         {
             const float Y=-29+i*19;
-            B.Ellipsoid(FVector(0,Y,-14),FVector(9,8,18),2+i%3,8,4);
-            B.Box(FVector(0,Y,18),FVector(6,6,25),0);
-            B.Box(FVector(-7,Y,5),FVector(1,5,21),2+i%3);
-            B.Box(FVector(0,Y,46),FVector(8,8,5),5);
+            B.ReagentProfile(Y,{{0,-38},{3,-37.4},{5.5,-36},{7.2,-32.8},{7.6,-29},
+                {7.6,39},{8,40},{8,41},{7.1,41},{6.8,40},{6.8,-29},{6.4,-32},{4.9,-34.2},{2.6,-35.5},{0,-35.8}},8);
+            const float Fill[]={7.f,24.f,16.f,30.f};const int Liquid[]={2,3,4,7};
+            const float Z=Fill[i];
+            B.ReagentProfile(Y,{{0,-35.1},{2.5,-34.8},{4.7,-33.4},{6.1,-30.8},{6.25,-28},
+                {6.25,Z+.25},{5.7,Z},{0,Z}},Liquid[i]);
+            B.Cylinder(FVector(0,Y,43.7),6.7f,7.4f,6,32);
+            B.Cylinder(FVector(0,Y,48),7.3f,3.f,6,32);
+            B.Ring(FVector(0,Y,40.5),FVector(7.6,7.6,0),.45f,8);
         }
     }
     else if(ItemId==3)
@@ -354,6 +382,14 @@ void AMiningCollectible::BuildModel(int32 Id,bool Flying)
             if(ItemId==12 && i==4)Mat->SetScalarParameterValue(TEXT("Glow"),2.f);
             Model->SetMaterial(i,Mat); }
         if(Edge) Outline->SetMaterial(i,Edge);
+    }
+    if(ItemId==2)
+    {
+        if(auto* Glass=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/M_ReagentGlass")))Model->SetMaterial(8,Glass);
+        if(Edge)Outline->SetMaterial(8,Edge);
+        if(auto* Liquid=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/M_ReagentLiquid")))
+            for(int Slot:{2,3,4,7})
+            {auto* Mat=UMaterialInstanceDynamic::Create(Liquid,this);Mat->SetVectorParameterValue(TEXT("Tint"),Colors[Slot]);Model->SetMaterial(Slot,Mat);}
     }
     if(ItemId==9 || ItemId==10)
     {

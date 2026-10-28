@@ -193,7 +193,7 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 					.IsEnabled_Lambda([WeakThis] { return WeakThis.IsValid() && WeakThis->bRepliesEnabled; })
 					.OnClicked_Lambda([WeakThis,Id]()
 					{
-						if(auto Self=WeakThis.Get();Self && Self->bRepliesEnabled && Self->ClosePopup(Id))
+						if(auto Self=WeakThis.Get();Self && Self->bRepliesEnabled && Self->ClosePopup(Id,true))
 						{
 							++Self->ManuallyClosedCount;
 							if(Self->OnReply)Self->OnReply();
@@ -233,7 +233,7 @@ void UPopupCloseDesktopWidget::SpawnPopup()
 
  const FVector4 Rect=Skin.CloseRect;
  const FVector2D ClosePoint=bHasArt?FVector2D((Rect.X+Rect.Z*.5f)*Width,(Rect.Y+Rect.W*.5f)*Height):FVector2D(Width-92.f,Height-32.f);
-	Windows.Add({ Id, ContentIndex, Window, FVector2D(X,Y), Size, ClosePoint });
+	Windows.Add({ Id, ContentIndex, Window, FVector2D(X,Y), Size, ClosePoint, Variant==4?PopupCloseContent::UnreadCount(WorkElapsed,Id,ContentIndex):0 });
 }
 
 TSharedRef<SWidget> UPopupCloseDesktopWidget::MakeArtPopup(int32 Id,int32 Variant,FVector2D Size,int32 ContentIndex)
@@ -277,7 +277,7 @@ TSharedRef<SWidget> UPopupCloseDesktopWidget::MakeArtPopup(int32 Id,int32 Varian
  [SNew(SButton).ButtonStyle(&HitStyle).ContentPadding(0).IsEnabled_Lambda([WeakThis]{return WeakThis.IsValid() && WeakThis->bRepliesEnabled;})
   .OnClicked_Lambda([WeakThis,Id]
   {
-   if(auto Self=WeakThis.Get();Self && Self->bRepliesEnabled && Self->ClosePopup(Id))
+   if(auto Self=WeakThis.Get();Self && Self->bRepliesEnabled && Self->ClosePopup(Id,true))
    {++Self->ManuallyClosedCount;if(Self->OnReply)Self->OnReply();}
    return FReply::Handled();
   })];
@@ -291,7 +291,7 @@ TSharedRef<SWidget> UPopupCloseDesktopWidget::MakeArtPopup(int32 Id,int32 Varian
  return Panel;
 }
 
-bool UPopupCloseDesktopWidget::ClosePopup(int32 Id)
+bool UPopupCloseDesktopWidget::ClosePopup(int32 Id,bool bAcknowledge)
 {
 	const int32 Index = Windows.IndexOfByPredicate([Id](const FWindow& Window) { return Window.Id == Id; });
 	if (Index == INDEX_NONE || !Canvas.IsValid() || !Windows[Index].Root.IsValid())
@@ -299,6 +299,22 @@ bool UPopupCloseDesktopWidget::ClosePopup(int32 Id)
 		return false;
 	}
 
+ // A notification opens its actual message immediately. It remains one
+ // unresolved task until the player acknowledges the message contents.
+ if(bAcknowledge && Windows[Index].UnreadMessages>0)
+ {
+  auto& Window=Windows[Index];Canvas->RemoveSlot(Window.Root.ToSharedRef());
+  Window.UnreadMessages=0;
+  Window.Size=PopupCloseContent::GetArt(1).Size;
+  Window.Position.X=FMath::Min(Window.Position.X,PopupCloseContent::DesktopWidth-Window.Size.X-16.f);
+  Window.Position.Y=FMath::Min(Window.Position.Y,PopupCloseContent::DesktopHeight-Window.Size.Y-56.f);
+  Window.Root=MakeArtPopup(Id,1,Window.Size,Window.ContentIndex);
+  const auto R=PopupCloseContent::GetArt(1).CloseRect;
+  Window.ClosePoint=FVector2D((R.X+R.Z*.5f)*Window.Size.X,(R.Y+R.W*.5f)*Window.Size.Y);
+  Canvas->AddSlot().Offset(FMargin(Window.Position.X,Window.Position.Y,Window.Size.X,Window.Size.Y))
+   .Alignment(FVector2D(0,0)).ZOrder(float(Id))[Window.Root.ToSharedRef()];
+  return false;
+ }
 	Canvas->RemoveSlot(Windows[Index].Root.ToSharedRef());
 	Windows.RemoveAt(Index);
  if(Id==IntroductionPriority){++IntroductionPriority;IntroductionAge=0.f;bIntroductionFallback=false;}
@@ -335,6 +351,12 @@ int32 UPopupCloseDesktopWidget::FrontWindowIndex() const
  const bool bAnnouncementOpen=IntroductionPriority==1;
  for(int32 I=Windows.Num()-1;I>=0;--I)if(Windows[I].Id!=2 || !bAnnouncementOpen)return I;
  return INDEX_NONE;
+}
+
+int32 UPopupCloseDesktopWidget::GetFrontUnreadCount() const
+{
+ const int32 Index=FrontWindowIndex();
+ return Windows.IsValidIndex(Index)?Windows[Index].UnreadMessages:0;
 }
 
 int32 UPopupCloseDesktopWidget::GetFrontPopupPhase() const

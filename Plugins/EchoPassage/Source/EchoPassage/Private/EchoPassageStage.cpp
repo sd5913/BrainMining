@@ -132,14 +132,20 @@ void AEchoPassageStage::OnConstruction(const FTransform& Transform)
     // MainGame's generated approach ends at -700. The old slab began at
     // -760, leaving sixty centimetres of coplanar floor under that terrain.
     const float FloorStart=bWalkThroughConnections?-700.f:-760.f;
-    Box(EntranceRock,FVector((FloorStart-200.f)*.5f,0,888),FVector(-200.f-FloorStart,400,24));
+    // The side walls start at Y=+/-202. Extend both upper slabs into them
+    // so the old 400cm floor cannot expose a 2cm black gap on either side.
+    const float FloorWidth=bWalkThroughConnections?408.f:400.f;
+    Box(EntranceRock,FVector((FloorStart-200.f)*.5f,0,888),FVector(-200.f-FloorStart,FloorWidth,24));
+    TrapFloor->SetRelativeScale3D(FVector(4.2f,FloorWidth/100.f,.24f));
     for(int Side:{-1,1}) Box(EntranceRock,FVector(-310,Side*222,1050),FVector(920,40,300));
     if(!bWalkThroughConnections)
     {
         Box(WarmWood,FVector(-760,0,1050),FVector(30,440,300));
         Box(WarmGlow,FVector(-747,0,1040),FVector(3,130,85));
+        // These warm entrance trims belong to the standalone wooden vestibule.
+        // The campaign's purple approach must not expose yellow strips along its walls.
+        for(int Side:{-1,1}) Box(WarmGlow,FVector(-500,Side*200,927),FVector(470,3,3));
     }
-    for(int Side:{-1,1}) Box(WarmGlow,FVector(-500,Side*200,927),FVector(470,3,3));
     if(bRoomInSameLevel)
     {
         const FVector ExitShift=EchoPassageLayout::ExitOffset(bUseMaze);

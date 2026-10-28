@@ -71,6 +71,9 @@ namespace PopupCloseContent
   const int32 Start=Seconds<30.f?2:Seconds<48.f?12:Seconds<60.f?22:28;
   const int32 Length=Seconds<30.f?10:Seconds<48.f?10:Seconds<60.f?6:7;
   const int32 Candidate=Start+FMath::Max(0,Ordinal)%Length;
+  // The initial design document appears once in the sparse opening; later
+  // planning traffic uses meetings and revisions instead of repeating it.
+  if(Candidate==5)return 9;
   // Asset completion belongs to late production, after planning and setup.
   if(Candidate==ReconnectIndex)return 13; // the widget schedules this interruption once
   return Candidate==20 && Seconds<40.f?14:Candidate;
@@ -106,6 +109,12 @@ namespace PopupCloseContent
    {TEXT("Loading"),FVector2D(440,274),FVector4(.54,.745,.305,.125),FVector4(0,0,0,0),false}
   };
   return Skins[(Index%ArtCount+ArtCount)%ArtCount];
+ }
+ // One warning per twelve emitted windows, previously two per twelve.
+ inline int32 FloodArtVariant(int32 Ordinal)
+ {
+  static constexpr int32 Sequence[]={0,1,2,3,4,5,0,1,4,3,4,5};
+  return Sequence[FMath::Max(0,Ordinal)%UE_ARRAY_COUNT(Sequence)];
  }
  constexpr int32 DesktopWidth=1280;
  constexpr int32 DesktopHeight=800;

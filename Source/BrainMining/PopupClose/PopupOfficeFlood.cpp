@@ -130,7 +130,7 @@ void FPopupOfficeFlood::Warm(float Dt)
  while(WarmDebt>=.02f && Slots.Num()<WindowBudget+PaperBudget && Added++<3)
  {
   WarmDebt-=.02f;
-  FSlot Slot;Slot.bPaper=Slots.Num()>=WindowBudget;Slot.Variant=Slots.Num()%PopupCloseContent::ArtCount;
+  FSlot Slot;Slot.bPaper=Slots.Num()>=WindowBudget;Slot.Variant=PopupCloseContent::FloodArtVariant(Slots.Num());
   FActorSpawnParameters Params;Params.Owner=&Owner;Params.SpawnCollisionHandlingOverride=ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
   auto Actor=Owner.GetWorld()->SpawnActor<APopupCloseFlyingWindow>(Owner.GetActorLocation()+FVector(0,0,-10000-Slots.Num()*30),FRotator::ZeroRotator,Params);
   if(!Actor)break;
@@ -284,7 +284,7 @@ void FPopupOfficeFlood::Deposit(const FSlot& Slot)
  P.Z=BaseZ+FMath::FRandRange(0.f,.6f);
  for(int32 Layer=0;Layer<Layers;++Layer)
  {
-  const int32 Variant=(Slot.Variant+Layer)%PopupCloseContent::ArtCount;
+  const int32 Variant=PopupCloseContent::FloodArtVariant(Slot.Cell+Layer);
   const auto& Copy=PopupCloseContent::Get(Variant);
   const auto& Skin=PopupCloseContent::GetArt(Variant);
   const bool bArtwork=Ground[Variant]->GetMaterial(0) && Ground[Variant]->GetMaterial(0)->GetName().StartsWith(TEXT("M_Popup"));

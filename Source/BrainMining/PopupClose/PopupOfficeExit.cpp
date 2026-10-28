@@ -15,6 +15,7 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/DecalComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Engine/StaticMesh.h"
@@ -85,6 +86,19 @@ FPopupOfficeExit::FPopupOfficeExit(APopupCloseStage& Stage):Owner(Stage)
  // Restore it at runtime too: cooked maps retain those component overrides.
  Door->SetHiddenInGame(false);Door->SetVisibility(true);
  Door->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+ // Reuse the same worn bomb stencil as the mine's bomb-only barriers.
+ // Attach it to the live door so blasting/resetting the door also hides/restores
+ // the mark. Absolute scale keeps the thin door mesh from flattening projection.
+ auto* Mark=NewObject<UDecalComponent>(&Owner,TEXT("OfficeExitBombStencil"));
+ Owner.AddInstanceComponent(Mark);Mark->SetupAttachment(Door.Get());
+ Mark->SetUsingAbsoluteScale(true);Mark->SetMobility(EComponentMobility::Movable);
+ Mark->SetDecalMaterial(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/M_BombWallIcon.M_BombWallIcon")));
+ Mark->DecalSize=FVector(8,90,90);Mark->SetFadeScreenSize(.001f);
+ Mark->RegisterComponent();
+ const FVector DoorFront=Door->GetComponentTransform().TransformPosition(FVector(-50,0,0));
+ Mark->SetWorldLocation(DoorFront-Door->GetForwardVector()*3);
+ Mark->SetWorldRotation(FRotationMatrix::MakeFromXY(Door->GetForwardVector(),-Door->GetUpVector()).Rotator());
+ Door->SetReceivesDecals(true);DoorBombMark=Mark;
  // The imported meeting-room leaf overlaps the authored grey exit door and
  // leaves a brown panel across its left half. Keep the live blast door only.
  bool bConnected=false;for(TActorIterator<APopupCloseOffice> It(Owner.GetWorld());It;++It)
@@ -209,6 +223,7 @@ FPopupOfficeExit::~FPopupOfficeExit()
  if(Owner.GetWorld())Owner.GetWorld()->GetTimerManager().ClearTimer(Timer);
  if(auto Tool=BoundTool.Get())Tool->OnBombExploded.RemoveDynamic(&Owner,&APopupCloseStage::OnPlayerBombExploded);
  for(auto Effect:Effects)if(Effect.IsValid())Effect->Destroy();
+ if(DoorBombMark.IsValid())DoorBombMark->DestroyComponent();
  auto PickupBody=Pickup.IsValid()?Cast<USphereComponent>(Pickup->GetAttachParent()):nullptr;
  for(auto Mesh:{Pickup.Get(),Shutter.Get()})if(Mesh)Mesh->DestroyComponent();
  if(PickupBody)if(auto PickupActor=PickupBody->GetOwner())PickupActor->Destroy();

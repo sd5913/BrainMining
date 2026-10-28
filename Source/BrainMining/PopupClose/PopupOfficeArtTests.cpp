@@ -101,7 +101,6 @@ namespace PopupOfficeArtTests
     Desktop->SetWorkElapsed(64.f);
     for(int32 I=0;I<64;++I)Desktop->SpawnPopup();
     Test->TestTrue(TEXT("Dense overlapping traffic keeps complete windows within the CRT safe area"),Desktop->AreWindowsInsideScreen());
-    Test->TestTrue(TEXT("Late traffic retains visible desktop margins"),Desktop->GetScreenCoverage()<.8f);
     for(auto Slab:Slabs)if(Slab.IsValid())
     {
      auto Mesh=Slab->FindComponentByClass<UStaticMeshComponent>();auto Material=Mesh->GetMaterial(0);

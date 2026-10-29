@@ -89,6 +89,21 @@ void CheckStageEnclosure(FAutomationTestBase* Test,AMiningRoomEscape* E)
         Test->TestTrue(TEXT("Mineable facing is a closed solid"),Mesh.IsClosed());
         Test->TestTrue(TEXT("Red facing winding encloses positive solid volume"),UE::Geometry::TMeshQueries<UE::Geometry::FDynamicMesh3>::GetVolumeArea(Mesh).X>0);
     });
+    // A closed mesh can still intersect itself: test wall thickness at the
+    // tilted TV-to-stage join from both sides, including the reported pocket.
+    for(float X:{30000.f,30200.f,30400.f,30600.f})
+        for(float Z:{10000.f,10300.f,10600.f})
+            for(float Side:{-1.f,1.f})
+            {
+                const FVector Inside=Point(X,0,Z),Outside=Point(X,Side*4000,Z);
+                FHitResult Inner,Outer;
+                FCollisionQueryParams Query(SCENE_QUERY_STAT(StageJoinThickness),true);
+                const bool Both=Facing->RockMesh->LineTraceComponent(Inner,Inside,Outside,Query)
+                    && Facing->RockMesh->LineTraceComponent(Outer,Outside,Inside,Query);
+                Test->TestTrue(TEXT("TV join has inner and outer wall faces"),Both);
+                if(Both)Test->TestTrue(TEXT("TV join outer face stays behind its inner face"),
+                    Side*(Outer.ImpactPoint.Y-Inner.ImpactPoint.Y)>80.f);
+            }
     for(int32 I=1;I<Route.Num();++I)
     {
         FHitResult Hit;

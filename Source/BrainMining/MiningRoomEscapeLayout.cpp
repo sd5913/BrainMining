@@ -302,7 +302,13 @@ void AMiningRoomEscape::BuildStudyLayout()
             const int32 C=((R+1)%Rings)*Sides+S,D=((R+1)%Rings)*Sides+(S+1)%Sides;
             // GeometryCore uses clockwise winding; normals face out of the
             // solid, so the inner surfaces face the player and cut correctly.
-            Mesh.AppendTriangle(A,B,C);Mesh.AppendTriangle(B,D,C);
+            // The return rings run in reverse. Match their physical diagonal to
+            // the inner loft: a different split makes the tilted transition's
+            // non-planar quads cross each other and expose a walkable black pocket.
+            if(R==7 || R==8)
+            {Mesh.AppendTriangle(A,B,D);Mesh.AppendTriangle(A,D,C);}
+            else
+            {Mesh.AppendTriangle(A,B,C);Mesh.AppendTriangle(B,D,C);}
         }
         FMeshNormals::QuickComputeVertexNormals(Mesh);Mesh.EnableAttributes();
         FMeshNormals::InitializeOverlayToPerTriangleNormals(Mesh.Attributes()->PrimaryNormals());

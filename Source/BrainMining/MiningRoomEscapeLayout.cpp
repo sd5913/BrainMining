@@ -310,7 +310,9 @@ void AMiningRoomEscape::BuildStudyLayout()
         {
             auto* Facing=GetWorld()->SpawnActorDeferred<AGeneratedMiningRock>(AGeneratedMiningRock::StaticClass(),
                 GetActorTransform(),this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-            Facing->RockMaterial=Red; // A clean stage finish; no cave-noise band across the doorway.
+            // Continue the third passage's existing world-space rock grain through the doorway.
+            auto* PassageRed=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/RoutesV5/M_DarkRed.M_DarkRed"));
+            Facing->RockMaterial=PassageRed?PassageRed:Red;
             Facing->RockSize=FVector(Mesh.GetBounds().Extents()*2);
             Facing->Tags.Add(TEXT("EscapeStageRedFacing"));Facing->Tags.Add(TEXT("BM_SaveId_StageFacing"));
             Facing->SetGeneratedMesh(MoveTemp(Mesh));Facing->FinishSpawning(GetActorTransform());

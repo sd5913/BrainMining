@@ -83,7 +83,7 @@ void CheckStageEnclosure(FAutomationTestBase* Test,AMiningRoomEscape* E)
     for(TActorIterator<AGeneratedMiningRock> It(E->GetWorld());It;++It)
         if(It->GetOwner()==E && It->ActorHasTag(TEXT("EscapeStageRedFacing")))Facing=*It;
     if(!Test->TestNotNull(TEXT("Visible stage enclosure uses real mineable red rock"),Facing))return;
-    Test->TestNotNull(TEXT("Stage facing has its clean red surface material"),Facing->RockMaterial.Get());
+    Test->TestTrue(TEXT("Stage facing shares the third passage's textured red material"),Facing->RockMaterial && Facing->RockMaterial->GetName()==TEXT("M_DarkRed"));
     Facing->RockMesh->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh)
     {
         Test->TestTrue(TEXT("Mineable facing is a closed solid"),Mesh.IsClosed());

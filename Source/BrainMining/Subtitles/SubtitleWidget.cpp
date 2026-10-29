@@ -46,6 +46,7 @@ namespace
 					.Font(Font)
 					.Justification(ETextJustify::Center)
 					.AutoWrapText(false)
+                    .WrapTextAt(1000.f)
 					.ColorAndOpacity(FLinearColor(1.f, 0.12f, 0.12f, 0.2f))
 				]
 				+ SOverlay::Slot()
@@ -55,6 +56,7 @@ namespace
 					.Font(Font)
 					.Justification(ETextJustify::Center)
 					.AutoWrapText(false)
+                    .WrapTextAt(1000.f)
 					.ColorAndOpacity(FLinearColor(0.12f, 0.85f, 1.f, 0.2f))
 				]
 				+ SOverlay::Slot()
@@ -64,6 +66,7 @@ namespace
 					.Font(Font)
 					.Justification(ETextJustify::Center)
 					.AutoWrapText(false)
+                    .WrapTextAt(1000.f)
 					.ColorAndOpacity(FLinearColor::White)
 					.ShadowOffset(FVector2D(1.f, 1.f))
 					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.72f))
@@ -84,6 +87,7 @@ namespace
 		{
 			SCompoundWidget::Tick(AllottedGeometry, CurrentTime, InDeltaTime);
 			AnimationTime += FMath::Max(0.f, InDeltaTime);
+
 			const auto* Settings = GetDefault<USubtitleSettings>();
 			const int32 Size = FMath::Clamp(Settings->FontSize, 12, 72);
 			if (Font.Size != Size)

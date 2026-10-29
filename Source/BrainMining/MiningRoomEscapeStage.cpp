@@ -88,9 +88,10 @@ void AMiningRoomEscape::BuildExitStage()
     for(int I=0;I<6;++I)
     {
         auto* ExitLight=NewObject<UPointLightComponent>(this);AddInstanceComponent(ExitLight);ExitLight->SetupAttachment(RootComponent);
-        ExitLight->SetIntensityUnits(ELightUnits::Candelas);ExitLight->SetIntensity(650);ExitLight->SetAttenuationRadius(1700);
+        ExitLight->SetIntensityUnits(ELightUnits::Candelas);ExitLight->SetIntensity(I==1?220.f:400.f);ExitLight->SetAttenuationRadius(1700);
         ExitLight->SetLightColor(FLinearColor(.84f,.88f,1));ExitLight->SetCastShadows(false);ExitLight->RegisterComponent();
-        ExitLight->SetWorldLocation(Deck+FVector(500+I*750,0,650));
+        ExitLight->SourceRadius=60;ExitLight->SoftSourceRadius=90;
+        ExitLight->SetWorldLocation(Deck+FVector(I==1?1050.f:500.f+I*750.f,0,230));
     }
     // The collectible leaves the middle cannon in the opening salvo.
     StageRibbon=GetWorld()->SpawnActor<AMiningCollectible>(Deck+FVector(0,0,14),FRotator(0,30,0));

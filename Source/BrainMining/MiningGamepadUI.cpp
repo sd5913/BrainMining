@@ -186,7 +186,7 @@ TArray<FMiningGamepadHint> UMiningGamepadSubsystem::GetHintEntries() const
     {
         const auto* Cards = Controller()->FindComponentByClass<UCardRoomInteractionComponent>();
         if (Cards && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing)
-            return {{Glyph::DPad, MiningText::Get(TEXT("UI.Pad.Choose")).ToString()}, {Glyph::A, MiningText::Get(TEXT("UI.Pad.Toggle")).ToString()}, {Glyph::Y, MiningText::Get(TEXT("UI.Pad.ToggleAll")).ToString()}, {Glyph::B, MiningText::Get(TEXT("UI.Pad.Clear")).ToString()}, {Glyph::X, Cards->Stage->Run.Round == 4 && !Cards->Stage->Run.CanConfirm() ? MiningText::Get(TEXT("UI.Pad.SelectAll")).ToString() : FText::Format(MiningText::Get(TEXT("UI.Pad.Play")),Cards->Stage->Run.Staged.Num(),Cards->Stage->Run.Hand.Num()).ToString()}, {Glyph::Menu, MiningText::Get(TEXT("UI.Pad.Pause")).ToString()}};
+            return {{Glyph::DPad, MiningText::Get(TEXT("UI.Pad.Choose")).ToString()}, {Glyph::A, MiningText::Get(TEXT("UI.Pad.Toggle")).ToString()}, {Glyph::Y, MiningText::Get(TEXT("UI.Pad.ToggleAll")).ToString()}, {Glyph::B, MiningText::Get(TEXT("UI.Pad.Clear")).ToString()}, {Glyph::X, !Cards->Stage->Run.CanConfirm() ? MiningText::Get(TEXT("UI.Pad.SelectAll")).ToString() : FText::Format(MiningText::Get(TEXT("UI.Pad.Play")),Cards->Stage->Run.Staged.Num(),Cards->Stage->Run.Hand.Num()).ToString()}, {Glyph::Menu, MiningText::Get(TEXT("UI.Pad.Pause")).ToString()}};
         if (Cards && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Victory)
             return {{Glyph::X, MiningText::Get(TEXT("UI.Pad.Reward")).ToString(), Glyph::A}, {Glyph::Menu, MiningText::Get(TEXT("UI.Pad.Pause")).ToString()}};
         return {{Glyph::Menu, MiningText::Get(TEXT("UI.Pad.Waiting")).ToString()}};

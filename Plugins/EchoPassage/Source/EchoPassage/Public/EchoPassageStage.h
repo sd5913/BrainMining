@@ -35,6 +35,7 @@ public:
     UFUNCTION(BlueprintCallable,Category="Echo") void EmitEcho(FVector WorldLocation,bool bLanding=false);
     UFUNCTION(BlueprintCallable,Category="Echo") void ResetPassage();
     void Collapse();
+    void RestoreProgress(bool Collapsed,bool Landed,bool Completed,int32 Knocks);
     void Complete();
     bool bCollapsed=false,bLanded=false,bCompleted=false;
     int32 KnockCount=0;

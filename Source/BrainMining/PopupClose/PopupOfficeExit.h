@@ -22,6 +22,7 @@ public:
  void OfferBomb();
  void HandleExplosion(const FVector& Position);
  void Reset();
+ void RestoreEscaped();
  bool DoorIsOpen() const { return Phase>=4; }
  bool HasEscaped() const { return Phase>=5; }
  bool IsRuined() const { return Phase==6 && bDestructionSignaled; }

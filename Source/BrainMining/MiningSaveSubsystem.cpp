@@ -55,7 +55,7 @@ namespace
     }
     bool ValidSnapshot(const UMiningSaveGame* Data)
     {
-        return Data && Data->Version>=1 && Data->Version<=5 && Data->Upgrades.Num()==4 && Data->Area>=0 &&
+        return Data && Data->Version>=1 && Data->Version<=6 && Data->Upgrades.Num()==4 && Data->Area>=0 &&
             !Data->PlayerTransform.ContainsNaN() && !Data->ViewRotation.ContainsNaN();
     }
     bool IsLegacyTransientTVMesh(const UMiningSaveGame* Data,const FMiningSavedMesh& Mesh)
@@ -104,6 +104,7 @@ void UMiningSaveSubsystem::StartNewGame(bool bKeepCollection)
 {
     GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->BeginRun();
     FinishPendingWrite();MeshTask=TFuture<FMiningSavedMesh>();MeshCache.Reset();TutorialSoil.Reset();
+    FrozenCheckpoint=nullptr;PendingRoomRestore=nullptr;
     bSessionStarted=true;bLoadedProgress=false;SessionWorld=GetWorld();SaveAge=0;PreviousArea=INDEX_NONE;
     FallingSeconds=0;UpgradeHintLevel=INDEX_NONE;RestoredMinerals.Reset();
     CompletionNotices.Reset();TutorialActive=false;TutorialSoilPassed=false;TutorialCompleted=0;PrototypesFound=0;
@@ -136,7 +137,7 @@ void UMiningSaveSubsystem::FinishPendingWrite()
 }
 void UMiningSaveSubsystem::EndSession()
 {
-    FinishPendingWrite();bSessionStarted=false;bLoadedProgress=false;RunCollectedItems.Reset();RestoredMinerals.Reset();CompletionNotices.Reset();
+    FinishPendingWrite();FrozenCheckpoint=nullptr;PendingRoomRestore=nullptr;bSessionStarted=false;bLoadedProgress=false;RunCollectedItems.Reset();RestoredMinerals.Reset();CompletionNotices.Reset();
     MeshTask=TFuture<FMiningSavedMesh>();MeshCache.Reset();TutorialSoil.Reset();
 }
 void UMiningSaveSubsystem::Deinitialize(){FinishPendingWrite();Super::Deinitialize();}
@@ -195,7 +196,10 @@ bool UMiningSaveSubsystem::SaveProgressInternal(bool bAsync)
     auto* Character=PC?Cast<ACharacter>(PC->GetPawn()):nullptr;
     if(!bSessionStarted || bRestoring || !World || !World->GetMapName().EndsWith(TEXT("Lvl_MainGame")) ||
        !Hall || !Hall->bReady || !Hall->Areas.IsValidIndex(Hall->ActiveArea) || !Character ||
-       AMiningOpening::IsOpening(World) || FallingSeconds>.1f)return false;
+       AMiningOpening::IsOpening(World))return false;
+    if(FrozenCheckpoint && FrozenCheckpoint->Checkpoint==CheckpointMode() && FrozenCheckpoint->Area==Hall->ActiveArea)
+        return true; // Preserve inventory, terrain and position together until the next checkpoint.
+    if(FallingSeconds>.1f && CheckpointMode()==0)return false;
     // Never capture a half-committed boolean mesh or an in-flight simplification.
     for(TActorIterator<ADiggableRock> It(World);It;++It)
     {
@@ -203,7 +207,7 @@ bool UMiningSaveSubsystem::SaveProgressInternal(bool bAsync)
         if(auto* Generated=Cast<AGeneratedMiningRock>(*It);Generated && Generated->bSimplificationPending)return false;
     }
     auto* Data=Cast<UMiningSaveGame>(UGameplayStatics::CreateSaveGameObject(UMiningSaveGame::StaticClass()));
-    Data->Version=5;
+    Data->Version=6;
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     Data->Area=Hall->ActiveArea;Data->UnlockedArea=Hall->UnlockedArea;Data->CompletedAreas=Hall->GetCompletedAreas();
     if(auto* Achievements=GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>())
@@ -212,9 +216,6 @@ bool UMiningSaveSubsystem::SaveProgressInternal(bool bAsync)
         Data->HasVerifiedAchievementCollection=true;Data->AchievementCollectionIds=Achievements->GetProgress().CollectionIds.Array();
     }
     Data->PlayerTransform=Character->GetActorTransform();Data->ViewRotation=PC->GetControlRotation();
-    // Room minigames restart at their entrance; inventory and finished sections persist.
-    if(Hall->AreaKind(Data->Area)!=EMiningExperienceKind::Mining)
-    {Data->PlayerTransform=Hall->Areas[Data->Area].Entry;Data->ViewRotation=Data->PlayerTransform.Rotator();}
     Data->Balance=Wallet->Balance;Data->Minerals=Wallet->Minerals;Data->CollectedMineralTotals=Wallet->CollectedMineralTotals;Data->Upgrades=Wallet->UpgradeLevels;
     Data->TutorialActive=TutorialActive;Data->TutorialCompleted=TutorialCompleted;Data->PrototypesFound=PrototypesFound;
     Data->TutorialSoilPassed=TutorialSoilPassed;
@@ -223,6 +224,7 @@ bool UMiningSaveSubsystem::SaveProgressInternal(bool bAsync)
     if(Hall->Collection)Data->Collection=Hall->Collection->Inventory;
     if(auto* Room=AMiningStartRoom::Find(World))
     {Data->Pickaxe=Room->bPickaxeUnlocked;Data->Jetpack=Room->bJetpackUnlocked;Data->Headlamp=Room->bHeadlampUnlocked;}
+    CaptureRoomState(Data);
     Data->RunCollectedItems=RunCollectedItems;
     Data->CollectedMinerals=RestoredMinerals;
     for(TActorIterator<AMiningTreasure> It(World);It;++It)
@@ -258,9 +260,10 @@ bool UMiningSaveSubsystem::SaveProgressInternal(bool bAsync)
     };
     LastSnapshotMilliseconds=(FPlatformTime::Seconds()-Started)*1000;
     UE_LOG(LogTemp,Display,TEXT("Progress snapshot: area %d, %d meshes, game thread %.2f ms, async=%d"),Data->Area,Data->Meshes.Num(),LastSnapshotMilliseconds,bAsync);
-    if(bAsync){WriteTask=Async(EAsyncExecution::ThreadPool,MoveTemp(Write));return true;}
+    if(Data->Checkpoint)bAsync=false; // Milestones must reach disk before play can advance.
+    if(bAsync){FrozenCheckpoint=nullptr;WriteTask=Async(EAsyncExecution::ThreadPool,MoveTemp(Write));return true;}
     const bool Saved=Write();
-    if(Saved){SaveAge=0;CachedHasSave=true;UE_LOG(LogTemp,Display,TEXT("Progress saved: area %d, %d edited meshes"),Data->Area,Data->Meshes.Num());}
+    if(Saved){FrozenCheckpoint=Data->Checkpoint?Data:nullptr;SaveAge=0;CachedHasSave=true;UE_LOG(LogTemp,Display,TEXT("Progress saved: area %d, %d edited meshes"),Data->Area,Data->Meshes.Num());}
     return Saved;
 }
 
@@ -280,17 +283,63 @@ bool UMiningSaveSubsystem::LoadProgress()
         if(!UGameplayStatics::DoesSaveGameExist(Slot,0))continue;
         auto* Candidate=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(Slot,0));
         if(!ValidSnapshot(Candidate) || !Hall->Areas.IsValidIndex(Candidate->Area))continue;
+        // The two runtime escape walls formerly used UObject sequence numbers.
+        // Recover those old keys only when class and full local bounds identify
+        // exactly one known wall; never discard an arbitrary missing terrain edit.
+        if(Candidate->Version<=5)for(const auto& Saved:Candidate->Meshes)
+        {
+            if(Rocks.Contains(Saved.ActorKey) || Saved.Chunk!=INDEX_NONE ||
+                (!Saved.ActorKey.Contains(TEXT(":DiggableRock_")) && !Saved.ActorKey.Contains(TEXT(":GeneratedMiningRock_"))))continue;
+            FMemoryReader Reader(Saved.Data,true);UE::Geometry::FDynamicMesh3 Geometry;Geometry.Serialize(Reader);
+            const auto Bounds=Geometry.GetBounds();ADiggableRock* Match=nullptr;int32 Matches=0;
+            for(TActorIterator<ADiggableRock> It(GetWorld());It;++It)
+            {
+                if(!It->ActorHasTag(TEXT("BM_SaveId_CardBreach")) && !It->ActorHasTag(TEXT("BM_SaveId_StageFacing")))continue;
+                It->RockMesh->GetDynamicMesh()->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Current)
+                {
+                    const auto B=Current.GetBounds();
+                    if((B.Min-Bounds.Min).Length()<2 && (B.Max-Bounds.Max).Length()<2){Match=*It;++Matches;}
+                });
+            }
+            if(Matches==1){Rocks.Add(Saved.ActorKey,Match);UE_LOG(LogTemp,Display,TEXT("Migrated runtime terrain %s to %s"),*Saved.ActorKey,*RockKey(Match));}
+        }
         bool Valid=true;
         for(const auto& Saved:Candidate->Meshes)
         {
             if(IsLegacyTransientTVMesh(Candidate,Saved))continue;
-            auto* Rock=Rocks.FindRef(Saved.ActorKey);if(!Rock){Valid=false;break;}
+            auto* Rock=Rocks.FindRef(Saved.ActorKey);if(!Rock){UE_LOG(LogTemp,Warning,TEXT("Save reference missing: %s"),*Saved.ActorKey);Valid=false;break;}
             if(Saved.Chunk!=INDEX_NONE)
             {auto* Generated=Cast<AGeneratedMiningRock>(Rock);if(!Generated || !Generated->Chunks.IsValidIndex(Saved.Chunk)){Valid=false;break;}}
         }
         if(Valid){Data=Candidate;break;}
     }
     if(!Data)return false;
+    if(Data->Version<6)
+    {
+        // Old files saved equipment but not room phases. Resume a completed duel
+        // at the safe reward milestone instead of putting an unlocked drill into
+        // a fresh encounter. Completed campaign areas remain completed.
+        int32 JourneyArea=INDEX_NONE,OfficeArea=INDEX_NONE;
+        for(int32 I=0;I<Hall->Areas.Num();++I)
+        {
+            if(Hall->AreaKind(I)==EMiningExperienceKind::Journey)JourneyArea=I;
+            if(Hall->AreaKind(I)==EMiningExperienceKind::Office)OfficeArea=I;
+        }
+        if(Data->CompletedAreas.Contains(JourneyArea))Data->CardState=3;
+        else if(Data->Area==JourneyArea && Data->Drill)
+        {
+            Data->CardState=2;Data->Checkpoint=4;Data->Drill=false;
+            for(TActorIterator<ACardRoomStage> It(GetWorld());It;++It)
+            {
+                Data->PlayerTransform=FTransform(It->GetActorRotation(),It->GetActorTransform().TransformPosition(FVector(-75,0,51)));
+                Data->ViewRotation=It->GetActorRotation();break;
+            }
+        }
+        if(Data->CompletedAreas.Contains(OfficeArea))Data->OfficeState=3;
+        else if(Data->Area==OfficeArea && Data->Bomb){Data->OfficeState=2;Data->Checkpoint=2;Data->Bomb=false;}
+        if(Hall->AreaKind(Data->Area)==EMiningExperienceKind::Ending)Data->Checkpoint=5;
+        if(Data->CardState>0)Data->EchoCollapsed=Data->EchoLanded=Data->EchoCompleted=true;
+    }
     auto* Achievements=GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>();
     Achievements->BeginRun(false);
     bRestoring=true;
@@ -353,6 +402,7 @@ bool UMiningSaveSubsystem::LoadProgress()
                 if(FMiningMineralCost::IsSupported(M))++Wallet->CollectedMineralTotals.FindOrAdd(M);
             }
     if(Hall->Collection)Hall->Collection->CheckMineralRewards(Data->Version<5);
+    FrozenCheckpoint=Data->Checkpoint?Data:nullptr;PendingRoomRestore=Data;
     bRestoring=false;bLoadedProgress=true;bSessionStarted=true;SessionWorld=GetWorld();SaveAge=0;PreviousArea=Data->Area;
     Achievements->BeginRun(Data->AchievementEligible && UMiningAchievementSubsystem::IsSaveOwnerCompatible(Data->AchievementOwner,Achievements->GetOwnerId()));
     Achievements->ReconcileSave(Data->Collection,Data->Upgrades.IsValidIndex(0)?Data->Upgrades[0]:0,Data->CampaignComplete,Data->AchievementOwner,Data->HasVerifiedAchievementCollection?&Data->AchievementCollectionIds:nullptr);
@@ -381,6 +431,7 @@ void UMiningSaveSubsystem::Tick(float Dt)
     if(!Hall || !Hall->bReady || !Character || PC->IsPaused() || AMiningOpening::IsOpening(World))return;
     if(SessionWorld.Get()!=World){bSessionStarted=false;FallingSeconds=0;SessionWorld=World;}
     if(!bSessionStarted)return;
+    if(PendingRoomRestore){RestoreRoomState();return;}
     auto* Movement=Character->GetCharacterMovement();
     // Only ordinary player-controlled falls qualify. Scripted room/camera travel is excluded.
     const bool Falling=PC->GetViewTarget()==Character && !PC->IsMoveInputIgnored() && !PC->bShowMouseCursor &&
@@ -396,8 +447,10 @@ void UMiningSaveSubsystem::Tick(float Dt)
         }
     }
     ProbeAge+=Dt;SaveAge+=Dt;
-    const bool WantsSave=Hall->ActiveArea!=PreviousArea || SaveAge>=60.f;
-    if(WantsSave && !WriteTask.IsValid() && !PC->IsMoveInputIgnored() && !PC->bShowMouseCursor && Movement->IsMovingOnGround())
+    const int32 Mode=CheckpointMode();
+    const bool NewCheckpoint=Mode!=(FrozenCheckpoint?FrozenCheckpoint->Checkpoint:0);
+    const bool WantsSave=NewCheckpoint || (!FrozenCheckpoint && (Hall->ActiveArea!=PreviousArea || SaveAge>=10.f));
+    if(WantsSave && !WriteTask.IsValid() && (NewCheckpoint || (!PC->IsMoveInputIgnored() && !PC->bShowMouseCursor && Movement->IsMovingOnGround())))
         if(PrepareMeshCache() && SaveProgressInternal(true))PreviousArea=Hall->ActiveArea;
     if(ProbeAge<.5f)return;ProbeAge=0;
     if(bLoadedProgress)RestoreCollectedItems();

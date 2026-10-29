@@ -280,6 +280,17 @@ void APopupCloseStage::ResetCompletedSessions()
  bPanic = bForcedExit = false;
  bAccountingValid = bWarningsValid = bIndependentTimersValid = true;
 }
+void APopupCloseStage::RestoreSaveState(int32 State)
+{
+ ResetCompletedSessions();
+ if(State==1)StartOfficeRound();
+ else if(State>=2)
+ {
+  Phase=EPhase::Complete;SprayTime=16.f;
+  if(State==2 && Exit)Exit->OfferBomb();
+  if(State==3 && Exit)Exit->RestoreEscaped();
+ }
+}
 void APopupCloseStage::EndPlay(const EEndPlayReason::Type Reason)
 {
  ConfigureArtRendering(false);

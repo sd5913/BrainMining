@@ -56,6 +56,7 @@
 #include "PopupClose/PopupCloseWidgets.h"
 #include "CardRoomStage.h"
 #include "CardRoomPlayer.h"
+#include "EchoPassageStage.h"
 #include "NiagaraComponent.h"
 #include "HeavenToilet.h"
 #include "HeavenToiletWater.h"
@@ -78,6 +79,7 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "UnrealClient.h"
+#include "GameFramework/GameUserSettings.h"
 
 namespace
 {
@@ -328,7 +330,34 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     }
     else if(Op==TEXT("collect") && Hall){Ok=Hall->Collection->TryCollectTarget();}
     else if(Op==TEXT("treasure") && Hall){Ok=Hall->Treasure->CollectTarget(PC);}
+    else if(Op==TEXT("viewport"))
+    {
+        auto* Settings=GEngine->GetGameUserSettings();
+        Settings->SetFullscreenMode(EWindowMode::Windowed);
+        Settings->SetScreenResolution(FIntPoint(int32(C->GetNumberField(TEXT("width"))),int32(C->GetNumberField(TEXT("height")))));
+        Settings->ApplyResolutionSettings(false);
+    }
+    else if(Op==TEXT("ending_entry_fixture"))
+    {Ok=Save->BeginEndingCheckpoint();if(Ok)UGameplayStatics::OpenLevel(this,TEXT("/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo"),true);}
     else if(Op==TEXT("office")){if(auto* Office=First<APopupCloseStage>(W))Office->StartOfficeRound();else Ok=false;}
+    else if(Op==TEXT("escape_complete_fixture"))
+    {if(auto* Escape=First<AMiningRoomEscape>(W))Escape->RestoreSaveState(3);else Ok=false;}
+    else if(Op==TEXT("echo_progress_fixture"))
+    {if(auto* Echo=First<AEchoPassageStage>(W)){Echo->Collapse();Echo->EmitEcho(Pawn->GetActorLocation(),true);Echo->KnockCount=7;}else Ok=false;}
+    else if(Op==TEXT("legacy_duel_save_fixture"))
+    {
+        auto* Data=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("BrainMiningProgress_v1"),0));
+        Ok=Data && Data->Checkpoint==4;
+        if(Ok)
+        {
+            bool Migrated=false;
+            for(auto& Mesh:Data->Meshes)if(Mesh.ActorKey.EndsWith(TEXT(":BM_SaveId_CardBreach")))
+            {Mesh.ActorKey=Mesh.ActorKey.Left(Mesh.ActorKey.Find(TEXT(":")))+TEXT(":DiggableRock_2146999999");Migrated=true;}
+            Data->Version=5;Data->Checkpoint=0;Data->CardState=0;Data->Drill=true;
+            Data->PlayerTransform=Hall->Areas[Data->Area].Entry;
+            Ok=Migrated && UGameplayStatics::SaveGameToSlot(Data,TEXT("BrainMiningProgress_v1"),0);
+        }
+    }
     else if(Op==TEXT("card"))
     {
         auto* Cards=PC->FindComponentByClass<UCardRoomInteractionComponent>();Ok=Cards!=nullptr;
@@ -630,6 +659,19 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     Result->SetArrayField(TEXT("areas"),Areas);
     if(auto* Room=AMiningStartRoom::Find(W)){Result->SetBoolField(TEXT("pickaxe"),Room->bPickaxeUnlocked);Result->SetBoolField(TEXT("jetpack"),Room->bJetpackUnlocked);}
     Result->SetBoolField(TEXT("bomb"),Wallet->bBombSkillUnlocked);Result->SetBoolField(TEXT("drill"),Wallet->bDrillSkillUnlocked);
+    if(auto* Snapshot=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("BrainMiningProgress_v1"),0)))
+    {
+        Result->SetNumberField(TEXT("saved_checkpoint"),Snapshot->Checkpoint);
+        Result->SetNumberField(TEXT("saved_card_state"),Snapshot->CardState);
+        Result->SetNumberField(TEXT("saved_office_state"),Snapshot->OfficeState);
+        Result->SetArrayField(TEXT("saved_position"),Vec(Snapshot->PlayerTransform.GetLocation()));
+    }
+    if(auto* Echo=First<AEchoPassageStage>(W))
+    {
+        Result->SetBoolField(TEXT("echo_landed"),Echo->bLanded);
+        Result->SetBoolField(TEXT("echo_collapsed"),Echo->bCollapsed);
+        Result->SetNumberField(TEXT("echo_knocks"),Echo->KnockCount);
+    }
     if(auto* Journey=Hall?Hall->Journey.Get():nullptr)
     {
         Result->SetNumberField(TEXT("journey_phase"),int32(Journey->Phase));Result->SetNumberField(TEXT("nodes"),Journey->ClearedNodes);
@@ -717,6 +759,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         Result->SetNumberField(TEXT("card_phase"),int32(Cards->Run.Phase));Result->SetNumberField(TEXT("card_round"),Cards->Run.Round);
         Result->SetNumberField(TEXT("card_time"),Cards->Run.PhaseTime);
         Result->SetNumberField(TEXT("card_rival_hp"),Cards->Run.RivalHP);
+        Result->SetNumberField(TEXT("card_selected"),Cards->Run.Staged.Num());
         TArray<TSharedPtr<FJsonValue>> Hand;
         for(auto Type:Cards->Run.Hand)Hand.Add(MakeShared<FJsonValueString>(FCardRoomRun::CardKey(Type)));
         Result->SetArrayField(TEXT("card_hand"),Hand);

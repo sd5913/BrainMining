@@ -100,7 +100,7 @@ void UCardRoomInteractionComponent::ConfirmCards()
 {
     if(bRoomActive && Stage && Stage->Run.Phase==ECardRoomPhase::Choosing)
     {
-        if(Stage->Run.Round==4 && !Stage->Run.CanConfirm())
+        if(!Stage->Run.CanConfirm())
         {
             for(int32 Index=0;Index<Stage->Run.Hand.Num();++Index) Stage->Run.Stage(Index);
             return;
@@ -177,3 +177,6 @@ void UCardRoomInteractionComponent::ClearCardSelection()
     Stage->Run.Staged.Reset();
     if (Stage->AudioOverride.IsBound()) Stage->Sound(TEXT("S_CardSelect"), .3f);
 }
+
+FTransform UCardRoomInteractionComponent::GetResumeTransform() const
+{ return bSeated ? FTransform(EntryRotation,EntryLocation) : (GetPawn()?GetPawn()->GetActorTransform():FTransform::Identity); }

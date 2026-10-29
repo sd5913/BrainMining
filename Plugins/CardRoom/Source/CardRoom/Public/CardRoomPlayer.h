@@ -12,6 +12,7 @@ class CARDROOM_API UCardRoomInteractionComponent : public UActorComponent
 {
     GENERATED_BODY()
 public:
+    FTransform GetResumeTransform() const;
     UCardRoomInteractionComponent();
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;

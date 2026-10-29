@@ -1,4 +1,5 @@
 #include "WenSi/MouseMuseumPortal.h"
+#include "MiningSaveSubsystem.h"
 #include "MiningAudioComponent.h"
 #include "MiningLocalizationSubsystem.h"
 #include "MiningAchievementSubsystem.h"
@@ -159,6 +160,8 @@ bool AMouseMuseumPortal::Advance(float Dt)
   if(auto Hall=AMiningExhibitHall::Find(GetWorld());Hall && Hall->Areas.IsValidIndex(Hall->ActiveArea))Campaign=Puzzle->bAreaManaged && Hall->Areas[Hall->ActiveArea].Tag==TEXT("BM_Campaign_MainGameMuseum");
   if(Campaign)
   {
+   if(!GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->BeginEndingCheckpoint())
+   {bTravelRequested=false;return true;}
    if(EntryPawn.IsValid())if(auto* Audio=EntryPawn->FindComponentByClass<UMiningAudioComponent>())Audio->BeginEndingMusicTransition();
    Puzzle->bComplete=true;GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->RecordMilestone(TEXT("ACH_MUSEUM_CLEAR"));
    UGameplayStatics::OpenLevel(this,TEXT("/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo"),true);

@@ -105,6 +105,22 @@ void AMiningRoomEscape::ApplyExploration()
     Player->EchoInteraction->SetExplorationActive(false);
     Player->EncounterPolicy->SetMiningAllowed(true);
 }
+void AMiningRoomEscape::RestoreSaveState(int32 State)
+{
+    if(!CardStage || State<2)return;
+    bWallBroken=BreachWall && BreachWall->SuccessfulCuts>0;
+    CardStage->Run=FCardRoomRun();CardStage->Run.Round=4;CardStage->Run.RivalHP=0;
+    CardStage->Run.Phase=State==2?ECardRoomPhase::Victory:ECardRoomPhase::Collected;
+    CardStage->Run.PhaseTime=10.f;
+    for(TActorIterator<AActor> It(GetWorld());It;++It)
+        if(It->ActorHasTag(TEXT("CardSeatGuide"))){It->SetActorHiddenInGame(true);It->SetActorEnableCollision(false);}
+    if(State==3)
+    {
+        Phase=EMiningEscapePhase::Escaped;bEnteredComputer=bComputerCheckpoint=bExitGuidance=true;
+        ClearedNodes=ComputerRocks.Num();WaterZ=WaterStartZ;
+        if(bAreaActive)ApplyExploration();SetTelevisionMining(false);UpdateWater();
+    }
+}
 void AMiningRoomEscape::StartFlood()
 {
     SetTelevisionMining(false);

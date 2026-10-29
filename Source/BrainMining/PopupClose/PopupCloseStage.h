@@ -49,6 +49,8 @@ public:
  void SetAreaActive(bool bActive);
  void CancelSession();
  void ResetCompletedSessions();
+ int32 SaveState() const { return Exit && Exit->HasEscaped()?3:(Exit && Exit->HasOfferedBomb()?2:(Phase!=EPhase::Idle?1:0)); }
+ void RestoreSaveState(int32 State);
  int32 GetCompletedSessions() const { return Exit && Exit->DoorIsOpen() ? 1 : 0; }
  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PopupClose|Exit", meta=(ClampMin="15", ClampMax="15", Units="s")) float EruptionBeforeBombSeconds=15.f;
  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PopupClose|Exit", meta=(ClampMin="2", Units="s")) float EvacuationBombSeconds=5.f;

@@ -88,6 +88,7 @@ void AMiningRoomEscape::BuildStudyLayout()
         Shape(FVector(WallCenter.X,Y,Z),FVector(WallExtent.X*2,Ys[y+1]-Ys[y],ZCuts[z+1]-ZCuts[z]),Plaster);
     }
     BreachWall=Rock(Impact,FVector(WallExtent.X*2,2800,2800),Plaster,FRotator::ZeroRotator);
+    BreachWall->Tags.AddUnique(TEXT("BM_SaveId_CardBreach"));
     CardStage->OpponentExitLocal=CardStage->GetActorTransform().InverseTransformPosition(Impact);
     CardStage->OpponentExitCenterOffset=FVector(0,0,70);
     // A dark cavity behind the real opening makes its depth legible.
@@ -251,7 +252,7 @@ void AMiningRoomEscape::BuildStudyLayout()
     const FVector RampStart=TunnelPoint(FVector(7100,0,-H)),RampEnd(31100+SourceLevelOffset.X,ComputerEntry.Y,9900+SourceLevelOffset.Z);
     ExitRamp=Shape((RampStart+RampEnd)*.5f-FVector(0,0,20),FVector(FVector::Distance(RampStart,RampEnd)+80,W*2,40),Wood,true,(RampEnd-RampStart).Rotation());
     const FVector Deck(31900+SourceLevelOffset.X,ComputerEntry.Y,9850+SourceLevelOffset.Z);
-    Shape(Deck+FVector(60,0,0),FVector(1920,2000,100),Wood);
+    Shape(Deck+FVector(-85,0,0),FVector(1630,2000,100),Wood);
     if(!bWalkThroughConnections) Shape(Deck+FVector(950,0,500),FVector(100,2200,1100),Plaster);
     // In the campaign the red enclosure and authored cave already form the
     // doorway. The old plaster frame cut through both and exposed white strips.
@@ -277,13 +278,11 @@ void AMiningRoomEscape::BuildStudyLayout()
         // Keep the narrow first section aligned with the tilted TV tunnel.
         // Widen before the curtains: their fully open leaves reach Y +/-1430.
         const float Back=bBacking?180.f:0.f,Start=bBacking?6880.f:6900.f;
-        // The authored cave collar begins at X=32650. Put the red face in
-        // front of it as well, so its exposed grey upper edge is covered.
+        // The clean rectangular doorway joins the natural cave behind the soil barrier at X=33360.
         const float RearFace=bBacking?33030.f:32630.f;
-        // The authored natural collar owns the visible passage from X=32650.
-        // End the red throat there; bury the permanent backing outside the
-        // collar's visible profile instead of laying both on its floor/walls.
-        const float ThroatEnd=bWalkThroughConnections&&!bBacking?32650.f:33050.f+Back;
+        // Keep the deck, throat and natural collar in separate spans. The backing
+        // remains outside the walking aperture and overlaps only buried solids.
+        const float ThroatEnd=bWalkThroughConnections&&!bBacking?33360.f:33050.f+Back;
         const float DoorHalfWidth=bWalkThroughConnections&&bBacking?600.f:245.f;
         const float DoorHalfHeight=bWalkThroughConnections&&bBacking?500.f:175.f;
         Ring(TunnelPoint(FVector(Start,0,0)),W,H,Rotation);
@@ -306,14 +305,14 @@ void AMiningRoomEscape::BuildStudyLayout()
             Mesh.AppendTriangle(A,B,C);Mesh.AppendTriangle(B,D,C);
         }
         FMeshNormals::QuickComputeVertexNormals(Mesh);Mesh.EnableAttributes();
-        FMeshNormals::InitializeOverlayToPerVertexNormals(Mesh.Attributes()->PrimaryNormals());
+        FMeshNormals::InitializeOverlayToPerTriangleNormals(Mesh.Attributes()->PrimaryNormals());
         if(!bBacking)
         {
             auto* Facing=GetWorld()->SpawnActorDeferred<AGeneratedMiningRock>(AGeneratedMiningRock::StaticClass(),
                 GetActorTransform(),this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-            Facing->RockMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/MainGame/Materials/RoutesV5/M_DarkRed.M_DarkRed"));
+            Facing->RockMaterial=Red; // A clean stage finish; no cave-noise band across the doorway.
             Facing->RockSize=FVector(Mesh.GetBounds().Extents()*2);
-            Facing->Tags.Add(TEXT("EscapeStageRedFacing"));
+            Facing->Tags.Add(TEXT("EscapeStageRedFacing"));Facing->Tags.Add(TEXT("BM_SaveId_StageFacing"));
             Facing->SetGeneratedMesh(MoveTemp(Mesh));Facing->FinishSpawning(GetActorTransform());
             GeneratedActors.Add(Facing);
             continue;
@@ -426,7 +425,7 @@ void AMiningRoomEscape::BuildTelevisionModel(bool bEditorPreview)
             Mesh.AppendTriangle(A,C,B);Mesh.AppendTriangle(B,C,D);
         }
         FMeshNormals::QuickComputeVertexNormals(Mesh);Mesh.EnableAttributes();
-        FMeshNormals::InitializeOverlayToPerVertexNormals(Mesh.Attributes()->PrimaryNormals());
+        FMeshNormals::InitializeOverlayToPerTriangleNormals(Mesh.Attributes()->PrimaryNormals());
         auto* Bezel=NewObject<UDynamicMeshComponent>(this);AddInstanceComponent(Bezel);Bezel->SetupAttachment(RootComponent);
         Bezel->SetMaterial(0,Dark);Bezel->SetCollisionEnabled(ECollisionEnabled::NoCollision);Bezel->SetCastShadow(false);
         Bezel->SetMesh(MoveTemp(Mesh));Bezel->RegisterComponent();MarkPreview(Bezel);
@@ -511,7 +510,7 @@ void AMiningRoomEscape::TickPresentation(float DeltaSeconds)
             Mesh.AppendTriangle(A,B,C);Mesh.AppendTriangle(B,D,C);
         }
         FMeshNormals::QuickComputeVertexNormals(Mesh);Mesh.EnableAttributes();
-        FMeshNormals::InitializeOverlayToPerVertexNormals(Mesh.Attributes()->PrimaryNormals());
+        FMeshNormals::InitializeOverlayToPerTriangleNormals(Mesh.Attributes()->PrimaryNormals());
         JetStream->SetMesh(MoveTemp(Mesh));
     }
     for(int32 i=0;i<Foam.Num();++i)

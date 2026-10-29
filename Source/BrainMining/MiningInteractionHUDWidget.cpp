@@ -88,7 +88,7 @@ FString UMiningInteractionHUDWidget::ResolveInteractionAction() const
         Cards && Cards->bRoomActive && Cards->Stage && Cards->Stage->Run.Phase == ECardRoomPhase::Choosing)
     {
         const auto& Run = Cards->Stage->Run;
-        if (Run.Round == 4 && !Run.CanConfirm()) return MiningText::Get(TEXT("UI.Action.SelectAll")).ToString();
+        if (!Run.CanConfirm()) return MiningText::Get(TEXT("UI.Action.SelectAll")).ToString();
         return Run.CanConfirm() ? MiningText::Get(TEXT("UI.Action.Play")).ToString() : FString();
     }
     if (auto* Room = AMiningStartRoom::Find(GetWorld()))

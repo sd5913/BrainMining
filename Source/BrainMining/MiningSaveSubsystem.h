@@ -26,6 +26,18 @@ class BRAINMINING_API UMiningSaveGame : public USaveGame
 public:
     UPROPERTY() int32 Version=1;
     UPROPERTY() int32 Area=0;
+    // 0: free progress, 1: office start, 2: bomb, 3: cards start, 4: drill, 5: ending.
+    UPROPERTY() int32 Checkpoint=0;
+    UPROPERTY() int32 OfficeState=0;
+    UPROPERTY() int32 CardState=0;
+    UPROPERTY() bool EchoCollapsed=false;
+    UPROPERTY() bool EchoLanded=false;
+    UPROPERTY() bool EchoCompleted=false;
+    UPROPERTY() int32 EchoKnocks=0;
+    UPROPERTY() TMap<int32,int32> MuseumWords;
+    UPROPERTY() TSet<int32> MuseumLandedExhibits;
+    UPROPERTY() int32 MuseumPlayerWord=0;
+    UPROPERTY() bool MuseumRewardUnlocked=false;
     UPROPERTY() int32 UnlockedArea=0;
     UPROPERTY() TSet<int32> CompletedAreas;
     UPROPERTY() FTransform PlayerTransform;
@@ -65,6 +77,7 @@ public:
     UFUNCTION(BlueprintPure) bool HasSave() const;
     UFUNCTION(BlueprintCallable) bool SaveProgress();
     UFUNCTION(BlueprintCallable) bool LoadProgress();
+    bool BeginEndingCheckpoint();
     void StartNewGame(bool bKeepCollection=false);
     TArray<int32> GetCollectionProgress() const;
     bool HasCollectionProgress() const;
@@ -83,6 +96,11 @@ public:
     UPROPERTY(BlueprintReadOnly) int32 PrototypesFound=0;
     void RecordMineral(EMiningMineral Mineral);
 private:
+    int32 CheckpointMode() const;
+    void CaptureRoomState(UMiningSaveGame* Data);
+    void RestoreRoomState();
+    UPROPERTY(Transient) TObjectPtr<UMiningSaveGame> FrozenCheckpoint;
+    UPROPERTY(Transient) TObjectPtr<UMiningSaveGame> PendingRoomRestore;
     void UpdateTutorial();
     bool bSessionStarted=false;
     bool bRestoring=false;

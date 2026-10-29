@@ -469,6 +469,16 @@ void FPopupOfficeExit::Reset()
  Rubble->AddInstances(HiddenRubble,false,false,false);
  DoorFragments->ClearInstances();BombVisuals.Reset();SetInteriorVisible(true);StartTimer();
 }
+void FPopupOfficeExit::RestoreEscaped()
+{
+ FinishExitTurn();Phase=6;Age=100; bDestructionSignaled=true;
+ Owner.GetWorld()->GetTimerManager().ClearTimer(Timer);
+ Door->SetVisibility(false,true);Door->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+ RuinBlocker->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+ SetInteriorVisible(false);Rubble->ClearInstances();
+ for(const auto& R:RubblePieces)Rubble->AddInstance(FTransform(R.Rotation,R.Position,R.Size/100.f));
+ Rubble->SetVisibility(true);
+}
 FString FPopupOfficeExit::Describe() const
 {
  return FString::Printf(TEXT("Exit phase=%d bomb_visible=%d skill_unlocked=%d door_open=%d escaped=%d ruined=%d bombs_emitted=%d bomb_instances=%d/%d rubble=%d return_blocked=%d"),

@@ -86,6 +86,7 @@ public:
     bool IsInsideComputer(const FVector& Position) const;
     float SecondsLeft() const {return FMath::Max(0.f,FloodSeconds-Elapsed);}
     UFUNCTION(BlueprintCallable,Category="Escape") void RetryEscape();
+    void RestoreSaveState(int32 State);
 private:
     UFUNCTION() void OnWallImpact(FName RoomId);
     UFUNCTION() void OnRewardClaimed(FName RoomId);

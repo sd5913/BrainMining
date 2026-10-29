@@ -104,7 +104,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
     {
         const auto Confirm = ConfirmRect();
         const bool Reward = R.Phase == ECardRoomPhase::Victory;
-        const bool Ready = Reward || R.CanConfirm() || R.Round == 4;
+        const bool Ready = true;
         const FLinearColor Ink(.12f,.10f,.08f,1.f);
         const FLinearColor Accent = Ready ? FLinearColor(.95f,.78f,.40f) : FLinearColor(.42f,.37f,.28f);
         Box(Confirm.Left,Confirm.Top,144,144,Accent,36);
@@ -120,7 +120,7 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
             for(auto& Point : Points) Point = (FVector2D(Confirm.Left,Confirm.Top)+Point)*S+Origin;
             FSlateDrawElement::MakeLines(Out,++L,G.ToPaintGeometry(),Points,ESlateDrawEffect::None,Accent,true,6*S);
         }
-        else if(R.Round == 4 && !R.CanConfirm())
+        else if(!R.CanConfirm())
         {
             for(int32 Card = 0; Card < 3; ++Card)
             {
@@ -155,22 +155,8 @@ int32 SCardRoomView::OnPaint(const FPaintArgs&,const FGeometry& G,const FSlateRe
             const float Border = I == Focused ? 4.f : 2.f;
             Box(B.Left-Border,B.Top-Border,W+Border*2,H+Border*2,I == Focused ? FLinearColor::White : (Selected?FLinearColor(.95f,.78f,.4f):FLinearColor(.55f,.5f,.4f)),10.f);
             const int32 Type=int32(R.Hand[I]);
-            if(Type<3)Art(Materials[Type],B.Left,B.Top,W,H);
-            else
-            {
-                const auto Color=FCardRoomRun::CardColor(R.Hand[I]);
-                Box(B.Left,B.Top,W,H,FLinearColor(.045f,.038f,.032f),8);
-                Box(B.Left+5,B.Top+5,W-10,H-10,Color*.28f,5);
-                Box(B.Left+8,B.Top+40,W-16,H-54,FLinearColor(.055f,.05f,.045f),4);
-                TArray<FSlateVertex> V;TArray<SlateIndex> Indices;
-                for(const auto& Triangle:CardRoomSymbols::Make(R.Hand[I]))for(auto P:{Triangle.A,Triangle.B,Triangle.C})
-                {
-                    Indices.Add(V.Num());
-                    const FVector2f Position(Origin+FVector2D(B.Left+15+P.X*(W-30),B.Top+53+P.Y*(H-78))*S);
-                    V.Add(FSlateVertex::Make<ESlateVertexRounding::Disabled>(G.GetAccumulatedRenderTransform(),Position,FVector2f(.5f,.5f),Triangle.Color.ToFColor(true)));
-                }
-                FSlateDrawElement::MakeCustomVerts(Out,++L,FSlateApplication::Get().GetRenderer()->GetResourceHandle(*FCoreStyle::Get().GetBrush("WhiteBrush")),V,Indices,nullptr,0,0);
-            }
+            const FString Material=Type<3?FString(Materials[Type]):TEXT("M_Card_")+FString(FCardRoomRun::CardKey(R.Hand[I])).RightChop(5);
+            Art(Material,B.Left,B.Top,W,H);
             // The name sits at the exposed upper-left edge even in the 17-card fan.
             const int32 N=static_cast<int32>(R.Hand[I]);
             FSlateFontInfo F(Font,FMath::Max(9,FMath::RoundToInt((R.Hand.Num()>5?18:22)*S)),TEXT("Medium"));

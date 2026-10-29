@@ -226,6 +226,13 @@ void AEchoPassageStage::Collapse()
     if(AudioOverride.IsBound()) AudioOverride.Execute(TEXT("S_Crumble"),GetActorLocation(),.65f);
     else if(auto* S=LoadObject<USoundBase>(nullptr,TEXT("/Game/Passages/Echo/Audio/S_Crumble.S_Crumble"))) UGameplayStatics::PlaySound2D(this,S,.65f);
 }
+void AEchoPassageStage::RestoreProgress(bool Collapsed,bool Landed,bool Completed,int32 Knocks)
+{
+    bCollapsed=Collapsed;bLanded=Landed;bCompleted=Completed;KnockCount=Knocks;
+    LastEcho=-100;LandingTime=Landed?GetWorld()->GetTimeSeconds()-10.f:-100.f;
+    TrapFloor->SetVisibility(!Collapsed);
+    TrapFloor->SetCollisionEnabled(Collapsed?ECollisionEnabled::NoCollision:ECollisionEnabled::QueryAndPhysics);
+}
 void AEchoPassageStage::EmitEcho(FVector Location,bool Landing)
 {
     const float Now=GetWorld()->GetTimeSeconds();

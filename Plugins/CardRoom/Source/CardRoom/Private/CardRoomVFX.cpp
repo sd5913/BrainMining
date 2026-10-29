@@ -104,6 +104,14 @@ void ACardRoomStage::InitializeEffectMeshes()
             Face->SetTextureParameterValue(TEXT("CardArt"),Art);
             CardFaceMaterials.Add(Face);
         }
+        for(int32 Type=3;Type<int32(ERoomCard::Count);++Type)
+        {
+            const FString Name=TEXT("T_Element_")+FString(FCardRoomRun::CardKey(ERoomCard(Type))).RightChop(5);
+            auto* Art=LoadObject<UTexture2D>(nullptr,*(TEXT("/Game/Rooms/CardDuel/UI/Refined/")+Name+TEXT(".")+Name));
+            auto* Face=UMaterialInstanceDynamic::Create(FaceBase,this);
+            Face->SetTextureParameterValue(TEXT("CardArt"),Art);
+            CardFaceMaterials.Add(Face);
+        }
         for(const auto& Mark:CardMarks)
         {
             Mark->SetStaticMesh(Plane);

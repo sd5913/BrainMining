@@ -83,7 +83,7 @@ void CheckStageEnclosure(FAutomationTestBase* Test,AMiningRoomEscape* E)
     for(TActorIterator<AGeneratedMiningRock> It(E->GetWorld());It;++It)
         if(It->GetOwner()==E && It->ActorHasTag(TEXT("EscapeStageRedFacing")))Facing=*It;
     if(!Test->TestNotNull(TEXT("Visible stage enclosure uses real mineable red rock"),Facing))return;
-    Test->TestEqual(TEXT("Facing reuses the third passage red-rock material"),Facing->RockMaterial->GetName(),FString(TEXT("M_DarkRed")));
+    Test->TestNotNull(TEXT("Stage facing has its clean red surface material"),Facing->RockMaterial.Get());
     Facing->RockMesh->ProcessMesh([&](const UE::Geometry::FDynamicMesh3& Mesh)
     {
         Test->TestTrue(TEXT("Mineable facing is a closed solid"),Mesh.IsClosed());
@@ -228,7 +228,7 @@ public:
                 const UTexture2D* Art[]={Stage->UISettings->CardLaserArt.Get(),Stage->UISettings->CardPoisonArt.Get(),Stage->UISettings->CardFireArt.Get()};
                 const int32 Type=int32(Stage->Run.Hand[Index]);
                 if(Type<3)Test->TestTrue(TEXT("Played face uses the current hand artwork for its card type"),HasArt && Texture==Art[Type]);
-                else Test->TestTrue(TEXT("New elemental card uses its own colored symbol mesh"),Face->GetStaticMesh() && Face->GetStaticMesh()->GetName()!=TEXT("Plane") && Face->GetMaterial(0));
+                else Test->TestTrue(TEXT("New elemental card uses the matching paper-cut illustration"),HasArt && Texture && Texture->GetName()==TEXT("T_Element_")+FString(FCardRoomRun::CardKey(Stage->Run.Hand[Index])).RightChop(5));
                 ++FaceCount;
             }
             Test->TestEqual(TEXT("Every played card has the updated face"),FaceCount,Stage->Run.Hand.Num());

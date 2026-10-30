@@ -107,6 +107,17 @@ powershell -File Scripts/verify_localized_popup_art.ps1
 | ACH_CARD_ROOM_CLEAR | 组合的力量 | 卡牌房完成事件 |
 | ACH_MUSEUM_CLEAR | 换个想法 | 正常通过博物馆出口进入结局 |
 | ACH_CAMPAIGN_COMPLETE | 挖哦！ | 正式结局完成事件 |
+| ACH_FIRST_DIAMOND | 亮闪闪！ | 成功拾取一颗钻石（不计算直接改背包、GM授予或读档还原） |
+| ACH_OFFICE_CLEAR | 工位爆破！ | 正常炸开办公室出口后越过出口平面，触发房间封闭 |
+| ACH_HEAVEN_ROOM_ENTER | 这里是天堂？ | 进入天堂马桶房内部，支持地面入口和穹顶路线 |
+
+2026-10-29 新增三项沿用账户成就档案、去重和正常游玩资格检查，无需修改 MainGame 的关卡资产。首次钻石在 `MiningSaveSubsystem::RecordMineral` 的真实拾取路径记录；办公室在 `FPopupOfficeExit::SealRoom` 记录；天堂在 `AHeavenToiletWater::Tick` 的内部区域检查记录，上限覆盖 43m 穹顶。既有 v1 账户档案继续有效。旧流程存档不会猜测并补发这三个事件，下一次实际完成条件时记录。
+
+三项的客户端 API 名已固定为上述名称。Steamworks 后台仍需建立并发布同名成就、三语文本和图标，才能验证真实 Steam 弹出与联网同步；本次没有操作 Steamworks 后台。
+
+隐藏属性由 `Config/SteamAchievementVisibility.json` 维护，导出脚本会校验它覆盖全部已注册API。当前“组合的力量”“换个想法”“工位爆破！”“这里是天堂？”四项隐藏（Steam官方模板中的 `spoiler=true`），其余七项公开。此属性只影响Steam展示，不改变游戏内的解锁条件。
+
+2026-10-30 已完成 Editor Development 完整编译，以及最新测试源码的定向编译和模块链接。三语 locres 已重新生成。成就／本地化自动化共10项全部通过（8项无警告、2项包含隔离档案首次创建／恢复时的文件读取提示），报告为 `Saved/Validation/NewAchievements/TestsVerified/index.json`。新增用例覆盖真实钻石拾取、背包直接授予不计入、PIE／调试禁止解锁、穹顶外不触发、调试访问后正常重新进入穹顶可解锁、去重、存档重载。构建证据为 `editor-build-final.log`、`compile-test-final.log`、`editor-relink-verified.log`；三语资源生成记录为 `gather.log`，均位于同一验证目录。没有重新打包发行版本，也没有进行真实 Steam 账号解锁验收。
 
 `MiningAchievementState` 只负责规则；`MiningAchievementSubsystem` 接收游戏事件并保存；`MiningAchievementProvider` 对接平台。矿石兑换藏品 12–15 分别要求累计 25、15、10、5 个对应矿石。全收集要求固定为首发集合，未来加藏品不会使已发布成就失效。
 
@@ -124,16 +135,16 @@ PIE、commandlet、自动化测试、试玩地图不计成就。GM 物品授予�
 
 同步顺序为：校验 AppID 和 SteamID → 查询八项定义/远端缓存 → 计算本地已解锁且远端未完成的差集 → 写入 → 再次查询确认。失败时保留本地记录，按退避重试；超时/过期回调忽略，回调阶段再次校验账号。Steam 本身也有离线缓存，本地账本只增加解锁，不对远端执行清除或回退。
 
-用户已提供正式 AppID `5506030`，`Config/Custom/SteamPC/DefaultEngine.ini` 中的 `SteamDevAppId` 与 `ExpectedAppId` 均已配置为该值。普通 PC/Android 运行仍不依赖 Steam；SteamPC 运行时会校验实际 AppID 与该值一致。配置完成不代表 Steam 后台定义已发布或真实解锁已验证。禁止用 Spacewar 480 作为正式验证。
+2026-10-30 按用户要求切换到 Demo AppID `5524430`，`Config/Custom/SteamPC/DefaultEngine.ini` 中的 `SteamDevAppId` 与 `ExpectedAppId` 均已配置为该值。此前正式游戏 AppID 为 `5506030`。普通 PC/Android 运行仍不依赖 Steam；SteamPC 运行时会校验实际 AppID 与该值一致。配置完成不代表 Steam 后台定义已发布或真实解锁已验证。禁止用 Spacewar 480 作为正式验证。
 
 ```powershell
-python Scripts/configure_steam.py --app-id 5506030
+python Scripts/configure_steam.py --app-id 5524430
 python Scripts/configure_steam.py --check
 powershell -File Scripts/package_main_game.ps1 -CustomConfig SteamPC -PlanOnly
 powershell -File Scripts/package_main_game.ps1 -CustomConfig SteamPC
 ```
 
-`Docs/SteamAchievementDefinitions.csv` 与 `Config/SteamAchievementDefinitions.json` 是后台录入/核对材料，含八项 API 名和三语名称/描述；不是宣称 Steam 支持任意 CSV 自动导入。脚本不会操作后台或上传构建。
+`Docs/SteamAchievementDefinitions.csv` 与 `Config/SteamAchievementDefinitions.json` 是后台录入/核对材料，含十一项 API 名和三语名称/描述；不是宣称 Steam 支持任意 CSV 自动导入。脚本不会操作后台或上传构建。
 
 后台配置顺序：创建同名成就（客户端可设置）→ 录入三语显示文本 → 上传解锁/未解锁图标 → 保存并发布配置 → 上传测试分支构建 → 用有权限的测试账号从 Steam 库启动。API 名与代码必须完全一致。真实 Steam overlay、重启后的状态、离线后联网、重复触发以及两账号隔离需要在自己的 AppID 下验收。
 
@@ -177,7 +188,7 @@ Android 的两个阻塞点为 `Source/BrainMining/StartRoom/MiningStartRoom.cpp:
 - 开场保留用户提供的“挖哦 / WOoOW”品牌 Logo；署名保持原名。办公室实体弹窗改用三张共享的 Slate 渲染目标，把三语正文绘制到原有空白窗口皮肤；飞散窗口和地面实例共用材质，切语言时重绘一次。原 PhysicalPopup 资产保留但正常游戏用本地化材质覆盖。其余旧式窗口皮肤中的英文是原画的一部分。需检查实际灯光下的颜色与可读性。
 - `Scripts/audit_achievement_collectibles.py` 已验证正式保存地图：18件静态放置、4件矿石奖励、1件逃生庆典动态生成，首发集合无缺项。这只证明配置来源存在，矿石产量和每条路线的可达性仍需游玩验收。
 - 普通 PC 包已生成并启动，仍需完整关卡验收；SteamPC 自有 AppID 构建、真实解锁与 Android 包尚未完成。
-- AppID `5506030` 已配置；仍需确认已发布的后台定义、图标与测试账号/分支访问。无需在聊天中提供账号密码或 API 密钥。
+- Demo AppID `5524430` 已配置；需重新打包SteamPC版本，再确认已发布的后台定义、图标与测试账号/分支访问。无需在聊天中提供账号密码或 API 密钥。
 
 资源守卫拒绝或终止的运行只记为未通过，不调整安全阈值绕过，不终止无关应用。已有 OverCrowd DLL/PDB 用户修改保持不动。
 
@@ -196,7 +207,7 @@ Android 的两个阻塞点为 `Source/BrainMining/StartRoom/MiningStartRoom.cpp:
 | 全收集与关卡 | 实际走完 23 件藏品来源及矿石兑换，验证矿石产量充足；卡牌、博物馆、结局成就在正式完成事件触发 |
 | 发布包 | 从空安装目录启动对应版本，检查三语资源、字幕和办公室实体窗口；普通 PC 无 Steam 客户端仍可运行；Android 真机启动并验证触控 |
 
-真实 Steam 验收将使用 AppID `5506030`，仍需已发布的八项后台定义，以及可用测试分支/测试账号权限。只需确认准备状态，不需要密码或密钥。完整场景截图及 cook 在资源守卫允许后执行；没有新鲜成功报告的检查保持未通过状态。
+真实 Steam 验收将使用 Demo AppID `5524430`，仍需已发布的十一项后台定义，以及可用测试分支/测试账号权限。只需确认准备状态，不需要密码或密钥。完整场景截图及 cook 在资源守卫允许后执行；没有新鲜成功报告的检查保持未通过状态。
 
 ## 官方参考与本地核对
 

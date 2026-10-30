@@ -1,0 +1,13 @@
+{
+  "ACH_FIRST_COLLECTION": false,
+  "ACH_COLLECTION_5": false,
+  "ACH_COLLECTION_COMPLETE": false,
+  "ACH_PICKAXE_UPGRADE": false,
+  "ACH_PICKAXE_MAX": false,
+  "ACH_CARD_ROOM_CLEAR": true,
+  "ACH_MUSEUM_CLEAR": true,
+  "ACH_CAMPAIGN_COMPLETE": false,
+  "ACH_FIRST_DIAMOND": false,
+  "ACH_OFFICE_CLEAR": true,
+  "ACH_HEAVEN_ROOM_ENTER": true
+}

@@ -31,6 +31,7 @@ public:
 private:
     friend class FMiningAchievementSyncTest;
     friend class FMiningAchievementStorageTest;
+    friend class FMiningAchievementMilestonesTest;
     FMiningAchievementProgress Progress;
     TSharedPtr<IMiningAchievementProvider> Provider;
     FString OwnerId;

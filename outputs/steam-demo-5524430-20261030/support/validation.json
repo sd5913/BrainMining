@@ -1,0 +1,14 @@
+{
+  "app_id": 5524430,
+  "achievements": 11,
+  "hidden": 4,
+  "public": 7,
+  "hidden_api_names": [
+    "ACH_CARD_ROOM_CLEAR",
+    "ACH_MUSEUM_CLEAR",
+    "ACH_OFFICE_CLEAR",
+    "ACH_HEAVEN_ROOM_ENTER"
+  ],
+  "matches_latest_planning_sheet": true,
+  "template_headers_preserved": true
+}

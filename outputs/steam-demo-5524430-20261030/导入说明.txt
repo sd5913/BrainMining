@@ -1,0 +1,15 @@
+Steam Demo 成就导入包 — App ID 5524430
+2026-10-30
+
+1. 在 Demo 5524430 的 Steamworks 成就配置页面，先导入 achievements-definitions.csv（11项）。
+2. 再导入 achievements-localization.csv（22行，英／简中／繁中名称和描述）。
+3. achievement-sets-localization.csv 只有原始表头：目前11项不归属自定义集合，无集合ID，不需要导入此表。
+
+11项均由客户端解锁、未归档、不绑定统计数据或进度条。进度最小／最大值沿用模板的无统计数据示例：0／0。
+其中4项为隐藏成就（spoiler=true）：组合的力量、换个想法、工位爆破！、这里是天堂？；其余7项为非隐藏成就。
+成就API名称与游戏现有11项完全一致。简中文案采用最新成就规划表，英文和繁中同步对应。
+图标不在这三个模板的字段中，需要在Steamworks中按成就API名称另行上传。
+检查导入预览无误后保存并发布配置，再从Steam库启动Demo测试。
+
+项目 SteamPC 的 SteamDevAppId 和 ExpectedAppId 已改为5524430；此设置需重新打包SteamPC版本后生效。
+本次没有启动UE、重新打包或操作Steamworks后台。原始模板保留未覆盖。

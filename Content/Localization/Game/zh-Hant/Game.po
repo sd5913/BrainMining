@@ -41,6 +41,22 @@ msgctxt "BrainMining.Game,Achievement.FirstCollection.Name"
 msgid "第一件灵感"
 msgstr "第一件靈感"
 
+msgctxt "BrainMining.Game,Achievement.FirstDiamond.Description"
+msgid "获得钻石。"
+msgstr "獲得鑽石。"
+
+msgctxt "BrainMining.Game,Achievement.FirstDiamond.Name"
+msgid "亮闪闪！"
+msgstr "亮閃閃！"
+
+msgctxt "BrainMining.Game,Achievement.Heaven.Description"
+msgid "这里是天堂吗！等等……中间那是什么？"
+msgstr "這裡是天堂嗎！等等……中間那是什麼？"
+
+msgctxt "BrainMining.Game,Achievement.Heaven.Name"
+msgid "这里是天堂？"
+msgstr "這裡是天堂？"
+
 msgctxt "BrainMining.Game,Achievement.Museum.Description"
 msgid "完成博物馆并进入结局。"
 msgstr "完成博物館並進入結局。"
@@ -48,6 +64,14 @@ msgstr "完成博物館並進入結局。"
 msgctxt "BrainMining.Game,Achievement.Museum.Name"
 msgid "换个想法"
 msgstr "換個想法"
+
+msgctxt "BrainMining.Game,Achievement.Office.Description"
+msgid "离开办公室，留下了炸弹。"
+msgstr "離開辦公室，留下了炸彈。"
+
+msgctxt "BrainMining.Game,Achievement.Office.Name"
+msgid "工位爆破！"
+msgstr "工位爆破！"
 
 msgctxt "BrainMining.Game,Achievement.PickaxeMax.Description"
 msgid "将矿镐升级至最高等级。"

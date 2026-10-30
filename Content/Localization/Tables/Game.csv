@@ -9,8 +9,14 @@ Achievement.CollectionComplete.Description,收齐首发版本的全部藏品。,
 Achievement.CollectionComplete.Name,灵感收藏家,Achievement.CollectionComplete.Name
 Achievement.FirstCollection.Description,获得第一件藏品。,Achievement.FirstCollection.Description
 Achievement.FirstCollection.Name,第一件灵感,Achievement.FirstCollection.Name
+Achievement.FirstDiamond.Description,获得钻石。,Achievement.FirstDiamond.Description
+Achievement.FirstDiamond.Name,亮闪闪！,Achievement.FirstDiamond.Name
+Achievement.Heaven.Description,这里是天堂吗！等等……中间那是什么？,Achievement.Heaven.Description
+Achievement.Heaven.Name,这里是天堂？,Achievement.Heaven.Name
 Achievement.Museum.Description,完成博物馆并进入结局。,Achievement.Museum.Description
 Achievement.Museum.Name,换个想法,Achievement.Museum.Name
+Achievement.Office.Description,离开办公室，留下了炸弹。,Achievement.Office.Description
+Achievement.Office.Name,工位爆破！,Achievement.Office.Name
 Achievement.PickaxeMax.Description,将矿镐升级至最高等级。,Achievement.PickaxeMax.Description
 Achievement.PickaxeMax.Name,挖到底,Achievement.PickaxeMax.Name
 Achievement.PickaxeUpgrade.Description,首次升级矿镐。,Achievement.PickaxeUpgrade.Description

@@ -49,14 +49,17 @@ bool FMiningLanguageResourcesTest::RunTest(const FString&)
     FTextLocalizationManager::Get().EnableGameLocalizationPreview(TEXT("en"));
     FTextLocalizationManager::Get().WaitForAsyncTasks();
     TestEqual(TEXT("Existing text switches to English"),PersistentLabel.ToString(),FString(TEXT("Settings")));
+    TestEqual(TEXT("New diamond achievement is compiled in English"),MiningText::Get(TEXT("Achievement.FirstDiamond.Name")).ToString(),FString(TEXT("Shiny!")));
     UKismetInternationalizationLibrary::SetCurrentLanguageAndLocale(TEXT("zh-Hant"),false);
     FTextLocalizationManager::Get().EnableGameLocalizationPreview(TEXT("zh-Hant"));
     FTextLocalizationManager::Get().WaitForAsyncTasks();
     TestEqual(TEXT("Existing text switches to traditional Chinese"),PersistentLabel.ToString(),FString(TEXT("設定")));
+    TestEqual(TEXT("New heaven achievement is compiled in traditional Chinese"),MiningText::Get(TEXT("Achievement.Heaven.Name")).ToString(),FString(TEXT("這裡是天堂？")));
     UKismetInternationalizationLibrary::SetCurrentLanguageAndLocale(TEXT("zh-Hans"),false);
     FTextLocalizationManager::Get().EnableGameLocalizationPreview(TEXT("zh-Hans"));
     FTextLocalizationManager::Get().WaitForAsyncTasks();
     TestEqual(TEXT("Existing text switches to simplified Chinese"),PersistentLabel.ToString(),FString(TEXT("设置")));
+    TestEqual(TEXT("New office achievement is compiled in simplified Chinese"),MiningText::Get(TEXT("Achievement.Office.Description")).ToString(),FString(TEXT("离开办公室，留下了炸弹。")));
     return true;
 }
 

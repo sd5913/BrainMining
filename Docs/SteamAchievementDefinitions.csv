@@ -14,12 +14,21 @@ ACH_PICKAXE_UPGRADE,tchinese,再鋒利一點,首次升級礦鎬。,0
 ACH_PICKAXE_MAX,schinese,挖到底,将矿镐升级至最高等级。,0
 ACH_PICKAXE_MAX,english,Dig Deep,Fully upgrade your pickaxe.,0
 ACH_PICKAXE_MAX,tchinese,挖到底,將礦鎬升級至最高等級。,0
-ACH_CARD_ROOM_CLEAR,schinese,组合的力量,赢得卡牌房挑战。,0
-ACH_CARD_ROOM_CLEAR,english,More Than the Sum,Win the card room challenge.,0
-ACH_CARD_ROOM_CLEAR,tchinese,組合的力量,贏得卡牌房挑戰。,0
-ACH_MUSEUM_CLEAR,schinese,换个想法,完成博物馆并进入结局。,0
-ACH_MUSEUM_CLEAR,english,A Change of Mind,Finish the museum and enter the finale.,0
-ACH_MUSEUM_CLEAR,tchinese,換個想法,完成博物館並進入結局。,0
+ACH_CARD_ROOM_CLEAR,schinese,组合的力量,赢得卡牌房挑战。,1
+ACH_CARD_ROOM_CLEAR,english,More Than the Sum,Win the card room challenge.,1
+ACH_CARD_ROOM_CLEAR,tchinese,組合的力量,贏得卡牌房挑戰。,1
+ACH_MUSEUM_CLEAR,schinese,换个想法,完成博物馆并进入结局。,1
+ACH_MUSEUM_CLEAR,english,A Change of Mind,Finish the museum and enter the finale.,1
+ACH_MUSEUM_CLEAR,tchinese,換個想法,完成博物館並進入結局。,1
 ACH_CAMPAIGN_COMPLETE,schinese,挖哦！,完成游戏。,0
 ACH_CAMPAIGN_COMPLETE,english,WOoOW!,Complete the game.,0
 ACH_CAMPAIGN_COMPLETE,tchinese,挖哦！,完成遊戲。,0
+ACH_FIRST_DIAMOND,schinese,亮闪闪！,获得钻石。,0
+ACH_FIRST_DIAMOND,english,Shiny!,Obtain a diamond.,0
+ACH_FIRST_DIAMOND,tchinese,亮閃閃！,獲得鑽石。,0
+ACH_OFFICE_CLEAR,schinese,工位爆破！,离开办公室，留下了炸弹。,1
+ACH_OFFICE_CLEAR,english,Desk Demolition!,"Leave the office, leaving a bomb behind.",1
+ACH_OFFICE_CLEAR,tchinese,工位爆破！,離開辦公室，留下了炸彈。,1
+ACH_HEAVEN_ROOM_ENTER,schinese,这里是天堂？,这里是天堂吗！等等……中间那是什么？,1
+ACH_HEAVEN_ROOM_ENTER,english,Is This Heaven?,Is this heaven?! Wait... what's that in the middle?,1
+ACH_HEAVEN_ROOM_ENTER,tchinese,這裡是天堂？,這裡是天堂嗎！等等……中間那是什麼？,1

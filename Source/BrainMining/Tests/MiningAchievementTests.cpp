@@ -1,5 +1,12 @@
 #include "MiningAchievementState.h"
 #include "MiningAchievementSubsystem.h"
+#include "MiningSaveSubsystem.h"
+#include "MiningWalletSubsystem.h"
+#include "HeavenToiletWater.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/PlayerController.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
 #include "Engine/GameInstance.h"
 #include "HAL/PlatformTime.h"
 #include "Kismet/GameplayStatics.h"
@@ -7,6 +14,73 @@
 #include "Misc/ScopeExit.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAchievementMilestonesTest,"BrainMining.Achievements.NewMilestonesAndPickupEligibility",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningAchievementMilestonesTest::RunTest(const FString&)
+{
+    auto* Instance=NewObject<UGameInstance>(GEngine);
+    Instance->InitializeStandalone(NAME_None,CreatePackage(TEXT("/Game/MainGame/Maps/Lvl_MainGame")));
+    UWorld* World=Instance->GetWorld();
+    auto* System=Instance->GetSubsystem<UMiningAchievementSubsystem>();
+    const FString Slot=TEXT("BrainMining_Automation_Milestones_")+FGuid::NewGuid().ToString(EGuidFormats::Digits);
+    System->Slot=Slot;System->OwnerId=TEXT("qa");System->bInitialized=true;System->Provider.Reset();
+    ON_SCOPE_EXIT
+    {
+        Instance->Shutdown();GEngine->DestroyWorldContext(World);World->DestroyWorld(false);
+        for(const FString& Candidate:{Slot,Slot+TEXT("_pending"),Slot+TEXT("_backup")})UGameplayStatics::DeleteGameInSlot(Candidate,0);
+    };
+    TestEqual(TEXT("All eleven achievements registered"),MiningAchievements::Definitions().Num(),11);
+    for(const FName Id:{FName(TEXT("ACH_FIRST_DIAMOND")),FName(TEXT("ACH_OFFICE_CLEAR")),FName(TEXT("ACH_HEAVEN_ROOM_ENTER"))})
+    {
+        System->RecordMilestone(Id);
+        TestFalse(TEXT("Automation cannot award a real achievement"),System->Progress.Unlocked.Contains(Id));
+    }
+    // Isolated local profile, with no platform provider; exercise the normal recording gates.
+    TGuardValue<bool> NormalPlay(GIsAutomationTesting,false);
+    System->DisableForDebug();
+    System->RecordMilestone(TEXT("ACH_OFFICE_CLEAR"));
+    TestTrue(TEXT("Debug run cannot unlock milestones"),System->Progress.Unlocked.IsEmpty());
+    System->BeginRun();
+    World->WorldType=EWorldType::PIE;
+    System->RecordMilestone(TEXT("ACH_HEAVEN_ROOM_ENTER"));
+    TestTrue(TEXT("PIE cannot unlock milestones"),System->Progress.Unlocked.IsEmpty());
+    World->WorldType=EWorldType::Game;
+    auto* Wallet=Instance->GetSubsystem<UMiningWalletSubsystem>();
+    Wallet->AddMineral(TEXT("9"));
+    TestTrue(TEXT("Direct wallet grant is not a diamond pickup"),System->Progress.Unlocked.IsEmpty());
+    auto* Saves=Instance->GetSubsystem<UMiningSaveSubsystem>();
+    Saves->RecordMineral(EMiningMineral::Copper);
+    TestTrue(TEXT("Other minerals do not unlock the diamond achievement"),System->Progress.Unlocked.IsEmpty());
+    Saves->RecordMineral(EMiningMineral::Diamond);
+    TestTrue(TEXT("Actual diamond pickup unlocks"),System->Progress.Unlocked.Contains(TEXT("ACH_FIRST_DIAMOND")));
+    auto* Controller=World->SpawnActor<APlayerController>();
+    World->AddController(Controller);
+    auto* Pawn=World->SpawnActor<ACharacter>();
+    Controller->Possess(Pawn);
+    TestTrue(TEXT("Room entry observes the isolated test player"),UGameplayStatics::GetPlayerPawn(World,0)==Pawn);
+    auto* Heaven=World->SpawnActor<AHeavenToiletWater>();
+    Pawn->SetActorLocation(FVector(0,0,4400));Heaven->Tick(.01f);
+    TestFalse(TEXT("Standing above the dome is not entering heaven"),System->Progress.Unlocked.Contains(TEXT("ACH_HEAVEN_ROOM_ENTER")));
+    System->DisableForDebug();
+    Pawn->SetActorLocation(FVector(0,0,3000));Heaven->Tick(.01f);
+    TestFalse(TEXT("Debug entry into the real room is ignored"),System->Progress.Unlocked.Contains(TEXT("ACH_HEAVEN_ROOM_ENTER")));
+    Pawn->SetActorLocation(FVector(Heaven->Radius+100,0,3000));Heaven->Tick(.01f);
+    System->BeginRun();
+    Pawn->SetActorLocation(FVector(0,0,3000));Heaven->Tick(.01f);
+    TestTrue(TEXT("Normal reentry through the upper dome unlocks heaven"),System->Progress.Unlocked.Contains(TEXT("ACH_HEAVEN_ROOM_ENTER")));
+    TestFalse(TEXT("Upper-dome achievement detection does not change the ground-level choir trigger"),Heaven->bPlayerInHeaven);
+    System->RecordMilestone(TEXT("ACH_OFFICE_CLEAR"));
+    TestEqual(TEXT("All three new milestones unlock independently"),System->Progress.Unlocked.Num(),3);
+    const int64 Revision=System->Revision;
+    System->RecordMilestone(TEXT("ACH_OFFICE_CLEAR"));
+    Saves->RecordMineral(EMiningMineral::Diamond);
+    TestEqual(TEXT("Repeated milestones do not rewrite the ledger"),System->Revision,Revision);
+    auto* Reloaded=NewObject<UMiningAchievementSubsystem>(Instance);
+    Reloaded->Slot=Slot;Reloaded->OwnerId=System->OwnerId;Reloaded->LoadProfile();
+    TestEqual(TEXT("All new milestones survive profile reload"),Reloaded->Progress.Unlocked.Num(),3);
+    TestTrue(TEXT("Extended ledger remains compatible with v1 storage"),Reloaded->Progress.IsValid());
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAchievementRulesTest,"BrainMining.Achievements.RulesAndDeduplication",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FMiningAchievementRulesTest::RunTest(const FString&)
 {

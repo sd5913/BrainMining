@@ -41,6 +41,8 @@ Thumbs.db
 Desktop.ini
 __pycache__/
 *.py[cod]
+# Dependencies used only to generate exported documents.
+/outputs/**/support/node_modules/
 .env
 .env.*
 !.env.example

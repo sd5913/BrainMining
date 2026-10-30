@@ -1,0 +1,23 @@
+﻿api_name (必需；必须与定义 CSV 中的一个 api_name 匹配),field (名称或描述),english,schinese,tchinese
+ACH_FIRST_COLLECTION,name,A Spark of Inspiration,第一件灵感,第一件靈感
+ACH_FIRST_COLLECTION,description,Collect your first inspiration collectible.,收集1个灵感藏品。,收集1個靈感藏品。
+ACH_COLLECTION_5,name,Ideas Are Emerging,灵感正在涌现,靈感正在湧現
+ACH_COLLECTION_5,description,Collect 5 different inspiration collectibles.,收集5个灵感藏品。,收集5個靈感藏品。
+ACH_COLLECTION_COMPLETE,name,A Burst of Inspiration,灵感大爆发,靈感大爆發
+ACH_COLLECTION_COMPLETE,description,Collect all inspiration collectibles.,收集全部灵感藏品。,收集全部靈感藏品。
+ACH_PICKAXE_UPGRADE,name,A Sharper Idea,再锋利一点,再鋒利一點
+ACH_PICKAXE_UPGRADE,description,Upgrade your pickaxe for the first time.,首次升级矿镐。,首次升級礦鎬。
+ACH_PICKAXE_MAX,name,Dig Deep,挖到底,挖到底
+ACH_PICKAXE_MAX,description,Fully upgrade your pickaxe.,将矿镐升级至最高等级。,將礦鎬升級至最高等級。
+ACH_CARD_ROOM_CLEAR,name,More Than the Sum,组合的力量,組合的力量
+ACH_CARD_ROOM_CLEAR,description,Defeat the robot in the giant room using cards.,使用卡牌击败巨大房间的机器人。,使用卡牌擊敗巨大房間的機器人。
+ACH_MUSEUM_CLEAR,name,A Change of Mind,换个想法,換個想法
+ACH_MUSEUM_CLEAR,description,Escape the museum.,成功逃出了博物馆。,成功逃出了博物館。
+ACH_CAMPAIGN_COMPLETE,name,WOoOW!,挖哦！,挖哦！
+ACH_CAMPAIGN_COMPLETE,description,Complete the game!,通关游戏！,通關遊戲！
+ACH_FIRST_DIAMOND,name,Shiny!,亮闪闪！,亮閃閃！
+ACH_FIRST_DIAMOND,description,Obtain a diamond.,获得钻石。,獲得鑽石。
+ACH_OFFICE_CLEAR,name,Desk Demolition!,工位爆破！,工位爆破！
+ACH_OFFICE_CLEAR,description,"Leave the office, leaving a bomb behind.",离开办公室，留下了炸弹。,離開辦公室，留下了炸彈。
+ACH_HEAVEN_ROOM_ENTER,name,Is This Heaven?,这里是天堂？,這裡是天堂？
+ACH_HEAVEN_ROOM_ENTER,description,Is this heaven?! Wait... what's that in the middle?,这里是天堂吗！等等……中间那是什么？,這裡是天堂嗎！等等……中間那是什麼？

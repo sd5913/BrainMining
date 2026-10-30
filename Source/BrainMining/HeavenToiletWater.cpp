@@ -5,6 +5,8 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "MiningRoomAudioSubsystem.h"
+#include "MiningAchievementSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
 #include "DiggableRock.h"
@@ -212,6 +214,16 @@ void AHeavenToiletWater::Tick(float DeltaSeconds)
         const FVector P=Pawn->GetActorLocation(),Center=GetActorLocation();
         const float EntryRadius=FMath::Max(100.f,Radius-180.f)+(bPlayerInHeaven?60.f:0.f);
         const bool Inside=FVector::DistSquared2D(P,Center)<FMath::Square(EntryRadius) && P.Z>Center.Z-100 && P.Z<Center.Z+1800;
+        // Include the upper dome route as well as the ground-level doorway.
+        const bool InAchievementRoom=FVector::DistSquared2D(P,Center)<FMath::Square(FMath::Max(100.f,Radius-180.f))
+            && P.Z>Center.Z-100 && P.Z<Center.Z+4300;
+        if(InAchievementRoom && !bAchievementRoomEntered)
+        {
+            if(auto* Instance=GetGameInstance())
+                Instance->GetSubsystem<UMiningAchievementSubsystem>()->RecordMilestone(TEXT("ACH_HEAVEN_ROOM_ENTER"));
+        }
+        // A later normal run may revisit this actor after an ineligible/debug visit.
+        bAchievementRoomEntered=InAchievementRoom;
         if(Inside && !bPlayerInHeaven)
         {
             if(!EntranceChoir)

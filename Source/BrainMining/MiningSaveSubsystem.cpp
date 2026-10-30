@@ -472,6 +472,9 @@ void UMiningSaveSubsystem::RecordMineral(EMiningMineral Mineral)
     if(!FMiningMineralCost::IsSupported(Mineral) || bRestoring)return;
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     int32& Total=Wallet->CollectedMineralTotals.FindOrAdd(Mineral);Total=FMath::Min(Total,MAX_int32-1)+1;
+    // This path runs only after an actual pickup, never for wallet grants or save restoration.
+    if(Mineral==EMiningMineral::Diamond)
+        GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->RecordMilestone(TEXT("ACH_FIRST_DIAMOND"));
     if(auto* Hall=AMiningExhibitHall::Find(GetWorld());Hall && Hall->Collection)Hall->Collection->CheckMineralRewards();
     if(TutorialActive && TutorialSoilPassed)
     {

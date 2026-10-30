@@ -10,6 +10,7 @@
 #include "MiningBombToolComponent.h"
 #include "MiningBombActor.h"
 #include "MiningWalletSubsystem.h"
+#include "MiningAchievementSubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
@@ -388,6 +389,8 @@ void FPopupOfficeExit::TickExitTurn(float Dt)
 }
 void FPopupOfficeExit::SealRoom()
 {
+ if(auto* Instance=Owner.GetGameInstance())
+  Instance->GetSubsystem<UMiningAchievementSubsystem>()->RecordMilestone(TEXT("ACH_OFFICE_CLEAR"));
  Phase=5;Age=EmissionDebt=0;Shutter->SetVisibility(true);Shutter->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);ReturnGrille->SetVisibility(true);
  USubtitleLibrary::PlayMainGameSubtitle(&Owner,TEXT("电脑弹窗玩法4"));
  UMiningHapticsSubsystem::EmitAt(&Owner, EMiningHapticCue::Seal, Shutter->GetComponentLocation(), 3000.f);

@@ -12,7 +12,10 @@ namespace MiningAchievements
             {TEXT("ACH_PICKAXE_MAX"), TEXT("Achievement.PickaxeMax")},
             {TEXT("ACH_CARD_ROOM_CLEAR"), TEXT("Achievement.CardRoom")},
             {TEXT("ACH_MUSEUM_CLEAR"), TEXT("Achievement.Museum")},
-            {TEXT("ACH_CAMPAIGN_COMPLETE"), TEXT("Achievement.Campaign")}
+            {TEXT("ACH_CAMPAIGN_COMPLETE"), TEXT("Achievement.Campaign")},
+            {TEXT("ACH_FIRST_DIAMOND"), TEXT("Achievement.FirstDiamond")},
+            {TEXT("ACH_OFFICE_CLEAR"), TEXT("Achievement.Office")},
+            {TEXT("ACH_HEAVEN_ROOM_ENTER"), TEXT("Achievement.Heaven")}
         };
         return Entries;
     }

@@ -1,0 +1,239 @@
+{
+  "app_id": 5524430,
+  "definitions": [
+    {
+      "api_name": "ACH_FIRST_COLLECTION",
+      "hidden": false,
+      "stat": null,
+      "languages": {
+        "schinese": {
+          "name": "第一件灵感",
+          "description": "收集1个灵感藏品。"
+        },
+        "english": {
+          "name": "A Spark of Inspiration",
+          "description": "Collect your first inspiration collectible."
+        },
+        "tchinese": {
+          "name": "第一件靈感",
+          "description": "收集1個靈感藏品。"
+        }
+      }
+    },
+    {
+      "api_name": "ACH_COLLECTION_5",
+      "hidden": false,
+      "stat": null,
+      "languages": {
+        "schinese": {
+          "name": "灵感正在涌现",
+          "description": "收集5个灵感藏品。"
+        },
+        "english": {
+          "name": "Ideas Are Emerging",
+          "description": "Collect 5 different inspiration collectibles."
+        },
+        "tchinese": {
+          "name": "靈感正在湧現",
+          "description": "收集5個靈感藏品。"
+        }
+      }
+    },
+    {
+      "api_name": "ACH_COLLECTION_COMPLETE",
+      "hidden": false,
+      "stat": null,
+      "languages": {
+        "schinese": {
+          "name": "灵感大爆发",
+          "description": "收集全部灵感藏品。"
+        },
+        "english": {
+          "name": "A Burst of Inspiration",
+          "description": "Collect all inspiration collectibles."
+        },
+        "tchinese": {
+          "name": "靈感大爆發",
+          "description": "收集全部靈感藏品。"
+        }
+      }
+    },
+    {
+      "api_name": "ACH_PICKAXE_UPGRADE",
+      "hidden": false,
+      "stat": null,
+      "languages": {
+        "schinese": {
+          "name": "再锋利一点",
+          "description": "首次升级矿镐。"
+        },
+        "english": {
+          "name": "A Sharper Idea",
+          "description": "Upgrade your pickaxe for the first time."
+        },
+        "tchinese": {
+          "name": "再鋒利一點",
+          "description": "首次升級礦鎬。"
+        }
+      }
+    },
+    {
+      "api_name": "ACH_PICKAXE_MAX",
+      "hidden": false,
+      "stat": null,
+      "languages": {
+        "schinese": {
+          "name": "挖到底",
+          "description": "将矿镐升级至最高等级。"
+        },
+        "english": {
+          "name": "Dig Deep",
+          "description": "Fully upgrade your pickaxe."
+        },
+        "tchinese": {
+          "name": "挖到底",
+          "description": "將礦鎬升級至最高等級。"
+        }
+      }
+    },
+    {
+      "api_name": "ACH_CARD_ROOM_CLEAR",
+      "hidden": true,
+      "stat": null,
+      "languages": {
+        "schinese": {
+          "name": "组合的力量",
+          "description": "使用卡牌击败巨大房间的机器人。"
+        },
+        "english": {
+          "name": "More Than the Sum",
+          "description": "Defeat the robot in the giant room using cards."
+        },
+        "tchinese": {
+          "name": "組合的力量",
+          "description": "使用卡牌擊敗巨大房間的機器人。"
+        }
+      }
+    },
+    {
+      "api_name": "ACH_MUSEUM_CLEAR",
+      "hidden": true,
+      "stat": null,
+      "languages": {
+        "schinese": {
+          "name": "换个想法",
+          "description": "成功逃出了博物馆。"
+        },
+        "english": {
+          "name": "A Change of Mind",
+          "description": "Escape the museum."
+        },
+        "tchinese": {
+          "name": "換個想法",
+          "description": "成功逃出了博物館。"
+        }
+      }
+    },
+    {
+      "api_name": "ACH_CAMPAIGN_COMPLETE",
+      "hidden": false,
+      "stat": null,
+      "languages": {
+        "schinese": {
+          "name": "挖哦！",
+          "description": "通关游戏！"
+        },
+        "english": {
+          "name": "WOoOW!",
+          "description": "Complete the game!"
+        },
+        "tchinese": {
+          "name": "挖哦！",
+          "description": "通關遊戲！"
+        }
+      }
+    },
+    {
+      "api_name": "ACH_FIRST_DIAMOND",
+      "hidden": false,
+      "stat": null,
+      "languages": {
+        "schinese": {
+          "name": "亮闪闪！",
+          "description": "获得钻石。"
+        },
+        "english": {
+          "name": "Shiny!",
+          "description": "Obtain a diamond."
+        },
+        "tchinese": {
+          "name": "亮閃閃！",
+          "description": "獲得鑽石。"
+        }
+      }
+    },
+    {
+      "api_name": "ACH_OFFICE_CLEAR",
+      "hidden": true,
+      "stat": null,
+      "languages": {
+        "schinese": {
+          "name": "工位爆破！",
+          "description": "离开办公室，留下了炸弹。"
+        },
+        "english": {
+          "name": "Desk Demolition!",
+          "description": "Leave the office, leaving a bomb behind."
+        },
+        "tchinese": {
+          "name": "工位爆破！",
+          "description": "離開辦公室，留下了炸彈。"
+        }
+      }
+    },
+    {
+      "api_name": "ACH_HEAVEN_ROOM_ENTER",
+      "hidden": true,
+      "stat": null,
+      "languages": {
+        "schinese": {
+          "name": "这里是天堂？",
+          "description": "这里是天堂吗！等等……中间那是什么？"
+        },
+        "english": {
+          "name": "Is This Heaven?",
+          "description": "Is this heaven?! Wait... what's that in the middle?"
+        },
+        "tchinese": {
+          "name": "這裡是天堂？",
+          "description": "這裡是天堂嗎！等等……中間那是什麼？"
+        }
+      }
+    }
+  ],
+  "schemas": [
+    [
+      "api_name (必需、唯一；您游戏传递给 API 的名称)",
+      "setid (可选；现有的某个集合的 ID)",
+      "permission (Client, GameServer, OfficialGameServer中之一)",
+      "spoiler (true 或 false)",
+      "archived (true 或 false)",
+      "progress_stat_name (可选；现有的某项统计数据的名称，留空代表无进度条)",
+      "progress_stat_min (数值，不低于该统计数据自身的最小值)",
+      "progress_stat_max (数值，大于最小值且不高于该统计数据自身的最大值)"
+    ],
+    [
+      "setid (必需；现有的某个集合的 ID)",
+      "english",
+      "schinese",
+      "tchinese"
+    ],
+    [
+      "api_name (必需；必须与定义 CSV 中的一个 api_name 匹配)",
+      "field (名称或描述)",
+      "english",
+      "schinese",
+      "tchinese"
+    ]
+  ]
+}

@@ -55,4 +55,5 @@ private:
     TArray<int32> ObservedCuts;
     float CheckTime=0,SpillAge=0;
     FVector LastPawnPosition=FVector::ZeroVector;
+    bool bAchievementRoomEntered=false;
 };

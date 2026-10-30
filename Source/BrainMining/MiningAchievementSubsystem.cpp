@@ -98,7 +98,8 @@ void UMiningAchievementSubsystem::RecordPickaxe(int32 Level)
 
 void UMiningAchievementSubsystem::RecordMilestone(FName Id)
 {
-    if (Id != TEXT("ACH_CARD_ROOM_CLEAR") && Id != TEXT("ACH_MUSEUM_CLEAR") && Id != TEXT("ACH_CAMPAIGN_COMPLETE")) return;
+    if (Id != TEXT("ACH_CARD_ROOM_CLEAR") && Id != TEXT("ACH_MUSEUM_CLEAR") && Id != TEXT("ACH_CAMPAIGN_COMPLETE")
+        && Id != TEXT("ACH_FIRST_DIAMOND") && Id != TEXT("ACH_OFFICE_CLEAR") && Id != TEXT("ACH_HEAVEN_ROOM_ENTER")) return;
     if (CanRecord() && Progress.Unlock(Id)) Changed();
 }
 

@@ -12,14 +12,17 @@ CONFIG = ROOT / "Config/Custom/SteamPC/DefaultEngine.ini"
 def definitions():
     source = (ROOT / "Source/BrainMining/MiningAchievementState.cpp").read_text(encoding="utf-8")
     rows = re.findall(r'\{TEXT\("(ACH_[A-Z0-9_]+)"\), TEXT\("(Achievement\.[A-Za-z0-9]+)"\)\}', source)
-    if len(rows) != 8 or len({row[0] for row in rows}) != len(rows):
+    if len(rows) != 11 or len({row[0] for row in rows}) != len(rows):
         raise ValueError("Review the release achievement list before exporting a changed schema")
+    visibility = json.loads((ROOT / "Config/SteamAchievementVisibility.json").read_text(encoding="utf-8"))
+    if set(visibility) != {row[0] for row in rows} or any(type(value) is not bool for value in visibility.values()):
+        raise ValueError("Achievement visibility must specify a boolean for every registered API name")
     catalogue = {}
     for path in sorted((ROOT / "SourceAssets/Localization").glob("*.json")):
         catalogue.update(json.loads(path.read_text(encoding="utf-8")))
     result = []
     for identity, prefix in rows:
-        result.append({"api_name": identity, "hidden": False, "stat": None,
+        result.append({"api_name": identity, "hidden": visibility[identity], "stat": None,
                        "languages": {steam: {"name": catalogue[prefix + ".Name"][culture],
                                              "description": catalogue[prefix + ".Description"][culture]}
                                      for steam, culture in (("schinese", "zh-Hans"), ("english", "en"), ("tchinese", "zh-Hant"))}})
@@ -47,7 +50,7 @@ def main():
     writer.writerow(("api_name", "language", "name", "description", "hidden"))
     for entry in entries:
         for culture, text in entry["languages"].items():
-            writer.writerow((entry["api_name"], culture, text["name"], text["description"], "0"))
+            writer.writerow((entry["api_name"], culture, text["name"], text["description"], "1" if entry["hidden"] else "0"))
     outputs[ROOT / "Docs/SteamAchievementDefinitions.csv"] = table.getvalue()
     if args.app_id is not None:
         outputs[CONFIG] = steam_config(args.app_id, entries)

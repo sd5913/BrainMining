@@ -334,6 +334,36 @@
     "en": "Complete the game.",
     "zh-Hant": "完成遊戲。"
   },
+  "Achievement.FirstDiamond.Name": {
+    "zh-Hans": "亮闪闪！",
+    "en": "Shiny!",
+    "zh-Hant": "亮閃閃！"
+  },
+  "Achievement.FirstDiamond.Description": {
+    "zh-Hans": "获得钻石。",
+    "en": "Obtain a diamond.",
+    "zh-Hant": "獲得鑽石。"
+  },
+  "Achievement.Office.Name": {
+    "zh-Hans": "工位爆破！",
+    "en": "Desk Demolition!",
+    "zh-Hant": "工位爆破！"
+  },
+  "Achievement.Office.Description": {
+    "zh-Hans": "离开办公室，留下了炸弹。",
+    "en": "Leave the office, leaving a bomb behind.",
+    "zh-Hant": "離開辦公室，留下了炸彈。"
+  },
+  "Achievement.Heaven.Name": {
+    "zh-Hans": "这里是天堂？",
+    "en": "Is This Heaven?",
+    "zh-Hant": "這裡是天堂？"
+  },
+  "Achievement.Heaven.Description": {
+    "zh-Hans": "这里是天堂吗！等等……中间那是什么？",
+    "en": "Is this heaven?! Wait... what's that in the middle?",
+    "zh-Hant": "這裡是天堂嗎！等等……中間那是什麼？"
+  },
   "WenSi.Noun.Rock": {
     "zh-Hans": "石块",
     "en": "rock",

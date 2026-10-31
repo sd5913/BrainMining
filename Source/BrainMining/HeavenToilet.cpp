@@ -47,10 +47,11 @@ void AHeavenToilet::BeginPlay()
  Super::BeginPlay();LidOpenAmount=bContinuousSpray?1.f:0.f;bPlayerNearby=bWaterRunning=false;
  if(SprayDuck&&!SprayDuck->GetStaticMesh()) SprayDuck->SetStaticMesh(LoadObject<UStaticMesh>(nullptr,TEXT("/Game/MainGame/Meshes/SM_HeavenRubberDuck.SM_HeavenRubberDuck")));
  DuckPool.Add(SprayDuck);
- for(int32 I=1;I<64;++I)
+ for(int32 I=1;I<FMath::Clamp(MaxDucks,64,256);++I)
  {
   auto* Duck=NewObject<UStaticMeshComponent>(this);AddInstanceComponent(Duck);Duck->SetupAttachment(Body);
   Duck->SetStaticMesh(SprayDuck->GetStaticMesh());Duck->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  Duck->SetGenerateOverlapEvents(false);Duck->SetCanEverAffectNavigation(false);
   Duck->SetRelativeScale3D(FVector(DuckScale));Duck->RegisterComponent();DuckPool.Add(Duck);
  }
  DuckMotion.SetNum(DuckPool.Num());
@@ -60,31 +61,78 @@ void AHeavenToilet::BeginPlay()
 void AHeavenToilet::ResetDuck()
 {
  for(int32 I=0;I<DuckPool.Num();++I){DuckPool[I]->SetVisibility(false);DuckMotion[I]=FDuckMotion();}
- BurstAge=0.f;NextDuck=0;PendingDucks=0;NextDuckDelay=0;
+ BurstAge=0.f;PendingDucks=0;NextDuckDelay=0;
+ GushAge=0.f;bGushing=bGushNearby=false;
+ DucksLaunched=DucksRecycled=ActiveDucks=FlyingDucks=0;
 }
 void AHeavenToilet::StartDuckBurst()
 {
  PendingDucks=FMath::RandRange(5,7);NextDuckDelay=0;
 }
+void AHeavenToilet::StartGush(const FVector& PlayerLocation)
+{
+ UpdateGushAim(PlayerLocation,0.f,true);
+ GushAge=0.f;NextDuckDelay=0.f;PendingDucks=0;bGushing=true;
+ OpeningSplash->Activate(true);
+}
+void AHeavenToilet::UpdateGushAim(const FVector& PlayerLocation,float DeltaSeconds,bool bSnap)
+{
+ const FVector Offset=PlayerLocation-WaterOutlet->GetComponentLocation();
+ const FVector TargetDirection=Offset.GetSafeNormal2D();
+ if(GushDirection.IsNearlyZero())GushDirection=GetActorForwardVector().GetSafeNormal2D();
+ if(!TargetDirection.IsNearlyZero())
+ {
+  if(bSnap)GushDirection=TargetDirection;
+  else
+  {
+   const float Yaw=GushDirection.Rotation().Yaw;
+   const float Error=FMath::FindDeltaAngleDegrees(Yaw,TargetDirection.Rotation().Yaw);
+   const float MaxStep=FMath::Max(0.f,GushTurnSpeed)*DeltaSeconds;
+   // Ease into the target with a capped turn rate, including across the +/-180 seam.
+   const float Step=FMath::Clamp(Error*(1.f-FMath::Exp(-1.4f*DeltaSeconds)),-MaxStep,MaxStep);
+   GushDirection=FRotator(0,Yaw+Step,0).Vector();
+  }
+ }
+ const float Gravity=FMath::Max(1.f,DuckGravity);
+ const float Height=FMath::Max(0.f,WaterOutlet->GetComponentLocation().Z-PlayerLocation.Z+80.f);
+ const float FlightTime=(GushUpSpeed+FMath::Sqrt(FMath::Square(GushUpSpeed)+2.f*Gravity*Height))/Gravity;
+ const float TargetSpeed=FMath::Clamp(Offset.Size2D()/FMath::Max(.5f,FlightTime),140.f,620.f);
+ GushForwardSpeed=bSnap ? TargetSpeed : FMath::Lerp(GushForwardSpeed,TargetSpeed,1.f-FMath::Exp(-DeltaSeconds));
+}
+int32 AHeavenToilet::AcquireDuck()
+{
+ int32 Oldest=INDEX_NONE;
+ for(int32 I=0;I<DuckPool.Num();++I)
+ {
+  if(!DuckPool[I]->IsVisible())return I;
+  if(!DuckMotion[I].Flying && (Oldest==INDEX_NONE || DuckMotion[I].Age>DuckMotion[Oldest].Age))Oldest=I;
+ }
+ // Never steal an airborne duck. Only extreme edited settings can exhaust the flight budget.
+ if(Oldest!=INDEX_NONE)++DucksRecycled;
+ return Oldest;
+}
 void AHeavenToilet::LaunchDuck()
 {
  if(!SprayDuck||!SprayDuck->GetStaticMesh()||!WaterOutlet)return;
- if(DuckPool.IsEmpty())return;
- auto* Duck=DuckPool[NextDuck].Get();auto& Motion=DuckMotion[NextDuck];
+ const int32 Slot=AcquireDuck();if(Slot==INDEX_NONE)return;
+ auto* Duck=DuckPool[Slot].Get();auto& Motion=DuckMotion[Slot];Motion=FDuckMotion();
  Duck->SetRelativeScale3D(FVector(DuckScale*FMath::FRandRange(.88f,1.10f)));
+ Motion.Scale=Duck->GetRelativeScale3D();
  Duck->SetWorldLocation(WaterOutlet->GetComponentLocation()+FVector(FMath::FRandRange(-14.f,14.f),FMath::FRandRange(-14.f,14.f),FMath::FRandRange(0.f,10.f)));
  // Scatter each burst around the basin, with different ranges and flight arcs.
- const float Azimuth=FMath::FRandRange(-PI,PI);
+ const float Azimuth=bGushing ? FMath::Atan2(GushDirection.Y,GushDirection.X)+FMath::DegreesToRadians(FMath::FRandRange(-9.f,9.f)) : FMath::FRandRange(-PI,PI);
  const FVector Direction(FMath::Cos(Azimuth),FMath::Sin(Azimuth),0);
- Duck->SetWorldRotation(FRotator(0,FMath::RadiansToDegrees(Azimuth),0));Duck->SetVisibility(true);
- Motion.Velocity=Direction*DuckForwardSpeed*FMath::FRandRange(.75f,1.25f)
-     +FVector::UpVector*DuckUpSpeed*FMath::FRandRange(.85f,1.3f);
+ Duck->SetWorldRotation(FRotator(0,FMath::RadiansToDegrees(Azimuth)+90.f,0));Duck->SetVisibility(true);
+ Motion.Velocity=Direction*(bGushing ? GushForwardSpeed*FMath::FRandRange(.88f,1.12f) : DuckForwardSpeed*FMath::FRandRange(.75f,1.25f))
+     +FVector::UpVector*(bGushing ? GushUpSpeed*FMath::FRandRange(.92f,1.08f) : DuckUpSpeed*FMath::FRandRange(.85f,1.3f));
  Motion.Spin=FRotator(FMath::FRandRange(-100.f,100.f),FMath::FRandRange(-130.f,130.f),FMath::FRandRange(-65.f,65.f));
- Motion.Age=0;Motion.Flying=true;NextDuck=(NextDuck+1)%DuckPool.Num();
+ Motion.Flying=true;++DucksLaunched;
 }
 void AHeavenToilet::Tick(float DeltaSeconds)
 {
  Super::Tick(DeltaSeconds);
+ // A hitch must not release an entire overdue burst in one frame.
+ DeltaSeconds=FMath::Clamp(DeltaSeconds,0.f,.1f);
  const APawn* Player=UGameplayStatics::GetPlayerPawn(this,0);
  const float Distance=Player ? FVector::Distance(Player->GetActorLocation(),WaterOutlet->GetComponentLocation()) : BIG_NUMBER;
  bPlayerNearby=Player && Distance<(bPlayerNearby ? FMath::Max(OpenDistance,CloseDistance):OpenDistance);
@@ -94,6 +142,7 @@ void AHeavenToilet::Tick(float DeltaSeconds)
  const bool bStartWater=Open && LidOpenAmount>=.85f;
  if(bStartWater && !bWaterRunning)
  {
+  bGushNearby=false;
   WaterJet->Activate(true);OpeningSplash->Activate(true);bWaterRunning=true;StartDuckBurst();
  }
  else if(!Open && bWaterRunning)
@@ -101,21 +150,76 @@ void AHeavenToilet::Tick(float DeltaSeconds)
   // Finish the original droplets naturally instead of cutting the whole effect.
   WaterJet->Deactivate();OpeningSplash->Deactivate();bWaterRunning=false;PendingDucks=0;
  }
- if(bWaterRunning)
+ const bool WasGushNearby=bGushNearby;
+ const FVector BodyOffset=Player ? Player->GetActorLocation()-GetActorLocation() : FVector(BIG_NUMBER);
+ bGushNearby=Player && BodyOffset.Size2D()<(bGushNearby ? FMath::Max(GushEnterDistance,GushExitDistance):GushEnterDistance)
+     && FMath::Abs(BodyOffset.Z)<FMath::Max(GushEnterDistance,GushExitDistance);
+ if(bWaterRunning && bGushNearby)
  {
-  BurstAge+=DeltaSeconds;
-  if(BurstAge>=FMath::Max(1.f,DuckBurstInterval))
-  {BurstAge=0;OpeningSplash->Activate(true);StartDuckBurst();}
-  NextDuckDelay-=DeltaSeconds;
-  while(PendingDucks>0 && NextDuckDelay<=0)
-  {LaunchDuck();--PendingDucks;NextDuckDelay+=FMath::FRandRange(.035f,.085f);}
+  if(!WasGushNearby)StartGush(Player->GetActorLocation());
+  const float Duration=FMath::Max(.1f,GushSeconds),Pause=FMath::Max(.1f,GushPauseSeconds);
+  const float EmitTime=bGushing ? FMath::Min(DeltaSeconds,FMath::Max(0.f,Duration-GushAge)) : 0.f;
+  GushAge+=DeltaSeconds;
+  if(bGushing)
+  {
+   // Only new launches follow the player; airborne ducks keep their ballistic motion.
+   UpdateGushAim(Player->GetActorLocation(),DeltaSeconds);
+   NextDuckDelay-=EmitTime;
+   while(NextDuckDelay<=0.f)
+   {LaunchDuck();NextDuckDelay+=1.f/FMath::Clamp(GushDucksPerSecond,1.f,60.f);}
+   if(GushAge>=Duration){bGushing=false;GushAge=0.f;}
+  }
+  else if(GushAge>=Pause)StartGush(Player->GetActorLocation());
  }
+ else
+ {
+  if(WasGushNearby){bGushing=false;GushAge=0.f;BurstAge=0.f;PendingDucks=0;}
+  if(bWaterRunning)
+  {
+   BurstAge+=DeltaSeconds;
+   if(BurstAge>=FMath::Max(1.f,DuckBurstInterval))
+   {BurstAge=0;OpeningSplash->Activate(true);StartDuckBurst();}
+   NextDuckDelay-=DeltaSeconds;
+   while(PendingDucks>0 && NextDuckDelay<=0)
+   {LaunchDuck();--PendingDucks;NextDuckDelay+=FMath::FRandRange(.035f,.085f);}
+  }
+ }
+ // Reserve free slots by shrinking the oldest grounded ducks before the next emissions.
+ int32 Occupied=0,Retiring=0;
+ for(int32 I=0;I<DuckPool.Num();++I)if(DuckPool[I]->IsVisible()){++Occupied;if(DuckMotion[I].Recycling)++Retiring;}
+ int32 ToRetire=FMath::Max(0,Occupied-(DuckPool.Num()-20)-Retiring);
+ while(ToRetire-->0)
+ {
+  int32 Oldest=INDEX_NONE;
+  for(int32 I=0;I<DuckPool.Num();++I)
+   if(DuckPool[I]->IsVisible() && !DuckMotion[I].Flying && !DuckMotion[I].Recycling
+       && (Oldest==INDEX_NONE || DuckMotion[I].Age>DuckMotion[Oldest].Age))Oldest=I;
+  if(Oldest==INDEX_NONE)break;
+  DuckMotion[Oldest].Recycling=true;
+ }
+ ActiveDucks=FlyingDucks=0;
  for(int32 I=0;I<DuckPool.Num();++I)
  {
   auto* Duck=DuckPool[I].Get();auto& Motion=DuckMotion[I];if(!Duck->IsVisible())continue;
   Motion.Age+=DeltaSeconds;
-  if(Motion.Age>24){Duck->SetVisibility(false);Motion.Flying=false;continue;}
-  if(!Motion.Flying)continue;
+  if(!Motion.Flying)
+  {
+   Motion.RestAge+=DeltaSeconds;
+   if(Motion.RestAge>22.f)Motion.Recycling=true;
+   if(Motion.Recycling)
+   {
+    Motion.RecycleAge+=DeltaSeconds;
+    if(Motion.RecycleAge>=.35f){Duck->SetVisibility(false);++DucksRecycled;continue;}
+    // Keep the mesh's lowest point on the floor while it shrinks into the shallow water.
+    const float OldScale=Duck->GetComponentScale().Z;
+    Duck->SetRelativeScale3D(Motion.Scale*(1.f-FMath::SmoothStep(0.f,.35f,Motion.RecycleAge)));
+    Duck->AddWorldOffset(FVector(0,0,Duck->GetStaticMesh()->GetBoundingBox().Min.Z*(OldScale-Duck->GetComponentScale().Z)));
+   }
+   ++ActiveDucks;continue;
+  }
+  // Safety for a duck that escaped the authored floor; bounded even in an empty test map.
+  if(Motion.Age>12.f){Duck->SetVisibility(false);Motion.Flying=false;++DucksRecycled;continue;}
+  ++ActiveDucks;++FlyingDucks;
   Motion.Velocity.Z-=DuckGravity*DeltaSeconds;
   const FVector From=Duck->GetComponentLocation(),To=From+Motion.Velocity*DeltaSeconds;
   FHitResult Hit;FCollisionQueryParams Query(SCENE_QUERY_STAT(HeavenDuckLanding),false,this);

@@ -151,7 +151,7 @@ def build_report(archive, report, output, baseline=None):
     forbidden = [str(path.relative_to(archive)) for path in files if path.suffix.casefold() in (".pdb", ".obj", ".lib", ".exp")]
     if forbidden:
         raise ValueError(f"Unexpected development files in distribution: {forbidden}")
-    if request.get("custom_config") == "PCSize" and any("/hdribackdrop/" in name for name in filenames):
+    if request.get("custom_config") in ("PCSize", "SteamPC") and any("/hdribackdrop/" in name for name in filenames):
         raise ValueError("Excluded HDRIBackdrop content is still packaged")
     inventory = create_verified_zip(archive, output, files)
     folders = collections.Counter()

@@ -39,13 +39,15 @@ if ($CustomConfig -and $SkipCook) { throw 'CustomConfig requires a fresh cook.' 
 if ($CustomConfig) { $cookOptions += " -CustomConfig=$CustomConfig" }
 if ($CustomConfig -eq 'SteamPC') {
     if ($SkipBuild) { throw 'SteamPC requires a build so the Steam adapter matches the staged config.' }
+    & python (Join-Path $PSScriptRoot 'configure_steam.py') --check
+    if ($LASTEXITCODE -ne 0) { throw 'SteamPC config must include the current PCSize settings and achievement schema.' }
     $steamConfigPath = Join-Path $projectRoot 'Config/Custom/SteamPC/DefaultEngine.ini'
     $steamConfig = Get-Content -LiteralPath $steamConfigPath -Raw
     $appIdMatch = [regex]::Match($steamConfig, '(?m)^ExpectedAppId=(\d+)\r?$')
     $steamAppId = if ($appIdMatch.Success) { [long]$appIdMatch.Groups[1].Value } else { 0 }
     if (-not $PlanOnly -and ($steamAppId -le 0 -or $steamAppId -eq 480)) { throw 'Configure your real AppID first: python Scripts/configure_steam.py --app-id YOUR_APP_ID' }
 }
-if ($CustomConfig -eq 'PCSize') {
+if ($CustomConfig -in @('PCSize', 'SteamPC')) {
     $nativeMaterials = @(Get-ChildItem -LiteralPath "$projectRoot/Source", "$projectRoot/Plugins" -Recurse -File -Include '*.cpp', '*.h' | ForEach-Object {
         [regex]::Matches([IO.File]::ReadAllText($_.FullName), '/Game/MainGame/Materials/[A-Za-z0-9_./]+') | ForEach-Object { $_.Value.Split('.')[0] }
     } | Sort-Object -Unique)
@@ -57,6 +59,10 @@ if ($CustomConfig -eq 'PCSize') {
     }
     $cookOptions += " -PACKAGE=" + ($nativeMaterials -join '+')
 }
+$ubtOptions = '-MaxParallelActions=1 -NoUBA -NoXGE -NoFASTBuild -NoSNDBS'
+# UAT's CustomConfig controls staging/cooking, but is not forwarded to UBT.
+# BrainMining.Build.cs needs it to compile the Steam achievement adapter.
+if ($CustomConfig -eq 'SteamPC') { $ubtOptions += ' -CustomConfig=SteamPC' }
 $argsUat = @(
     "$EngineRoot/Engine/Binaries/DotNET/AutomationTool/AutomationTool.dll",
     "-ScriptsForProject=$projectRoot/BrainMining.uproject", '-NoCompile', '-Utf8Output',
@@ -65,7 +71,7 @@ $argsUat = @(
     '-stage', '-pak', '-iostore', '-compressed',
     '-prereqs', '-nodebuginfo', '-archive', "-archivedirectory=$OutputDirectory",
     '-map=/Game/MainGame/Maps/Lvl_MainGame+/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo',
-    '-UbtArgs=-MaxParallelActions=1 -NoUBA -NoXGE -NoFASTBuild -NoSNDBS',
+    "-UbtArgs=$ubtOptions",
     "-AdditionalCookerOptions=$cookOptions"
 )
 if ($CustomConfig) { $argsUat += "-CustomConfig=$CustomConfig" }
@@ -100,13 +106,18 @@ $endingDependencies = Get-Content -LiteralPath "$report/ending-dependencies.json
 # Keep derived data on the project drive in all child tools, without changing user settings.
 $previousCache = [Environment]::GetEnvironmentVariable('UE-LocalDataCachePath', 'Process')
 $previousLogs = [Environment]::GetEnvironmentVariable('uebp_LogFolder', 'Process')
+$previousNoProxy = [Environment]::GetEnvironmentVariable('NO_PROXY', 'Process')
 try {
     [Environment]::SetEnvironmentVariable('UE-LocalDataCachePath', "$projectRoot/Saved/DerivedDataCache", 'Process')
     [Environment]::SetEnvironmentVariable('uebp_LogFolder', "$report/UAT", 'Process')
+    # .NET matches the bracketed IPv6 host literally; ::1 alone does not bypass
+    # an HTTP proxy for Zen's http://[::1]:8558 endpoint.
+    [Environment]::SetEnvironmentVariable('NO_PROXY', "$previousNoProxy,localhost,127.0.0.1,::1,[::1]", 'Process')
     Start-MiningGuardedProcess -Executable $dotnet.FullName -Arguments $argsUat -ReportPath "$report/package-resources.csv" -BelowNormal -TrimCookWorkingSet -MaximumSeconds 14400
 } finally {
     [Environment]::SetEnvironmentVariable('UE-LocalDataCachePath', $previousCache, 'Process')
     [Environment]::SetEnvironmentVariable('uebp_LogFolder', $previousLogs, 'Process')
+    [Environment]::SetEnvironmentVariable('NO_PROXY', $previousNoProxy, 'Process')
 }
 if (-not (Test-Path "$OutputDirectory/Windows/WOoOW.exe")) { throw "Packaged launcher missing: $OutputDirectory" }
 # Verify the actual container, not just source dependencies: native string loads are
@@ -228,8 +239,8 @@ foreach ($asset in $requiredAssets) {
     }
 }
 $requiredAssets | ConvertTo-Json | Set-Content "$report/required-container-assets.json" -Encoding UTF8
-if ($CustomConfig -eq 'PCSize' -and $containerText -match '(?i)/HDRIBackdrop/') {
-    throw 'PCSize unexpectedly contains HDRIBackdrop assets.'
+if ($CustomConfig -in @('PCSize', 'SteamPC') -and $containerText -match '(?i)/HDRIBackdrop/') {
+    throw 'Size-optimized PC package unexpectedly contains HDRIBackdrop assets.'
 }
 $movie = 'Content/Movies/EndingEmergence/EndingFinale.mp4'
 $stagedMovie = Join-Path $OutputDirectory "Windows/BrainMining/$movie"
@@ -237,8 +248,24 @@ if (-not (Test-Path -LiteralPath $stagedMovie) -or (Get-FileHash -LiteralPath $s
     throw 'The staged ending movie is missing or differs from the current silent source.'
 }
 if ($CustomConfig -eq 'SteamPC') {
+    $steamDefinitions = Join-Path $projectRoot 'Intermediate/Build/Win64/x64/UnrealGame/Shipping/BrainMining/Definitions.BrainMining.h'
+    if (-not (Test-Path -LiteralPath $steamDefinitions) -or
+        (Get-Content -LiteralPath $steamDefinitions -Raw) -notmatch '(?m)^#define BRAINMINING_WITH_STEAM 1\s*$') {
+        throw 'SteamPC was built without the Steam achievement adapter. Verify CustomConfig is forwarded to UBT.'
+    }
+    Copy-Item -LiteralPath $steamDefinitions -Destination "$report/shipping-compiler-definitions.h"
     $steamLibraries = @(Get-ChildItem -LiteralPath "$OutputDirectory/Windows" -Filter steam_api64.dll -Recurse -File)
     if (-not $steamLibraries.Count) { throw 'SteamPC package is missing steam_api64.dll.' }
     if (@(Get-ChildItem -LiteralPath "$OutputDirectory/Windows" -Filter steam_appid.txt -Recurse -File).Count) { throw 'Do not distribute the development steam_appid.txt with a Steam depot.' }
+    # Installed engines share precompiled Core, so CUSTOM_CONFIG is not embedded
+    # even when UBT receives SteamPC. This standard generated config layer is read
+    # at runtime without command-line overrides; keep it out of the source tree.
+    $runtimeConfigDirectory = Join-Path $OutputDirectory 'Windows/BrainMining/Config'
+    New-Item -ItemType Directory -Path $runtimeConfigDirectory -Force | Out-Null
+    [IO.File]::WriteAllText((Join-Path $runtimeConfigDirectory 'GeneratedEngine.ini'), $steamConfig, [Text.UTF8Encoding]::new($false))
+    $deviceProfiles = Get-Content -LiteralPath "$projectRoot/Config/Custom/SteamPC/DefaultDeviceProfiles.ini" -Raw
+    [IO.File]::WriteAllText((Join-Path $runtimeConfigDirectory 'GeneratedDeviceProfiles.ini'), $deviceProfiles, [Text.UTF8Encoding]::new($false))
+    Copy-Item -LiteralPath (Join-Path $runtimeConfigDirectory 'GeneratedEngine.ini') -Destination "$report/runtime-steam-config.ini"
+    Copy-Item -LiteralPath (Join-Path $runtimeConfigDirectory 'GeneratedDeviceProfiles.ini') -Destination "$report/runtime-device-profiles.ini"
 }
 Write-Host "MainGame Shipping package: $OutputDirectory/Windows/WOoOW.exe"

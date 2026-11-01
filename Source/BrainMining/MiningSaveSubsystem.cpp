@@ -38,7 +38,10 @@ namespace
 {
     FString GetSaveSlot()
     {
-        FString Slot=TEXT("BrainMiningProgress_v1");
+        // QA already has an isolated UserDir. Real Steam apps must also isolate
+        // every save variant (main, pending, backup and completion) from the demo.
+        const uint32 AppId=FParse::Param(FCommandLine::Get(),TEXT("MiningQA"))?0:MiningPlatform::ConfiguredSteamAppId();
+        FString Slot=MiningPlatform::ProgressSaveSlot(AppId);
 #if !UE_BUILD_SHIPPING
         FParse::Value(FCommandLine::Get(),TEXT("MiningSaveSlot="),Slot);
 #endif

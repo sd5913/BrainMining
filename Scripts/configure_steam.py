@@ -30,7 +30,9 @@ def definitions():
 
 
 def steam_config(app_id, entries):
-    return ("[OnlineSubsystem]\nDefaultPlatformService=Steam\n\n[OnlineSubsystemSteam]\n"
+    # Steam is an addition to the proven PCSize profile, not a separate asset-quality preset.
+    size_config = (ROOT / "Config/Custom/PCSize/DefaultEngine.ini").read_text(encoding="utf-8").rstrip()
+    return (size_config + "\n\n[OnlineSubsystem]\nDefaultPlatformService=Steam\n\n[OnlineSubsystemSteam]\n"
             "bEnabled=True\nbRelaunchInSteam=True\nSteamDevAppId=" + str(app_id) + "\n" +
             "\n".join(f'Achievement_{index}_Id="{entry["api_name"]}"' for index, entry in enumerate(entries)) +
             '\nAchievement_' + str(len(entries)) + '_Id=""\n\n[BrainMining.Steam]\nExpectedAppId=' + str(app_id) + '\n')
@@ -45,6 +47,9 @@ def main():
         parser.error("Supply your own positive AppID (not 480); --check cannot change it")
     entries = definitions()
     outputs = {ROOT / "Config/SteamAchievementDefinitions.json": json.dumps(entries, ensure_ascii=False, indent=2) + "\n"}
+    for source in (ROOT / "Config/Custom/PCSize").glob("*.ini"):
+        if source.name != "DefaultEngine.ini":
+            outputs[ROOT / "Config/Custom/SteamPC" / source.name] = source.read_text(encoding="utf-8")
     table = io.StringIO(newline="")
     writer = csv.writer(table, lineterminator="\n")
     writer.writerow(("api_name", "language", "name", "description", "hidden"))

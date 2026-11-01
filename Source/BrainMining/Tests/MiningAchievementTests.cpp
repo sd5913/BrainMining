@@ -50,8 +50,16 @@ bool FMiningAchievementMilestonesTest::RunTest(const FString&)
     auto* Saves=Instance->GetSubsystem<UMiningSaveSubsystem>();
     Saves->RecordMineral(EMiningMineral::Copper);
     TestTrue(TEXT("Other minerals do not unlock the diamond achievement"),System->Progress.Unlocked.IsEmpty());
+    System->NextSyncTime=FPlatformTime::Seconds()+10;
     Saves->RecordMineral(EMiningMineral::Diamond);
     TestTrue(TEXT("Actual diamond pickup unlocks"),System->Progress.Unlocked.Contains(TEXT("ACH_FIRST_DIAMOND")));
+    TestEqual(TEXT("Newly earned achievement wakes synchronization immediately"),System->NextSyncTime,0.0);
+    System->FailureCount=1;
+    const double RetryAt=FPlatformTime::Seconds()+30;
+    System->NextSyncTime=RetryAt;
+    System->RecordCollection(16);
+    TestEqual(TEXT("New pickup preserves network-error backoff"),System->NextSyncTime,RetryAt);
+    System->FailureCount=0;
     auto* Controller=World->SpawnActor<APlayerController>();
     World->AddController(Controller);
     auto* Pawn=World->SpawnActor<ACharacter>();
@@ -69,14 +77,14 @@ bool FMiningAchievementMilestonesTest::RunTest(const FString&)
     TestTrue(TEXT("Normal reentry through the upper dome unlocks heaven"),System->Progress.Unlocked.Contains(TEXT("ACH_HEAVEN_ROOM_ENTER")));
     TestFalse(TEXT("Upper-dome achievement detection does not change the ground-level choir trigger"),Heaven->bPlayerInHeaven);
     System->RecordMilestone(TEXT("ACH_OFFICE_CLEAR"));
-    TestEqual(TEXT("All three new milestones unlock independently"),System->Progress.Unlocked.Num(),3);
+    TestEqual(TEXT("All three new milestones and the collection unlock independently"),System->Progress.Unlocked.Num(),4);
     const int64 Revision=System->Revision;
     System->RecordMilestone(TEXT("ACH_OFFICE_CLEAR"));
     Saves->RecordMineral(EMiningMineral::Diamond);
     TestEqual(TEXT("Repeated milestones do not rewrite the ledger"),System->Revision,Revision);
     auto* Reloaded=NewObject<UMiningAchievementSubsystem>(Instance);
     Reloaded->Slot=Slot;Reloaded->OwnerId=System->OwnerId;Reloaded->LoadProfile();
-    TestEqual(TEXT("All new milestones survive profile reload"),Reloaded->Progress.Unlocked.Num(),3);
+    TestEqual(TEXT("All new milestones survive profile reload"),Reloaded->Progress.Unlocked.Num(),4);
     TestTrue(TEXT("Extended ledger remains compatible with v1 storage"),Reloaded->Progress.IsValid());
     return true;
 }
@@ -171,6 +179,46 @@ bool FMiningAchievementSyncTest::RunTest(const FString&)
     Provider->User=TEXT("steam_test_b");Provider->WriteCallback(true);
     TestFalse(TEXT("Account switch during callback does not acknowledge delivery"),System->Confirmed.Contains(TEXT("ACH_CARD_ROOM_CLEAR")));
     System->bInitialized=false;
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAchievementAppIsolationTest,"BrainMining.Achievements.DemoAndFullAppIsolation",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningAchievementAppIsolationTest::RunTest(const FString&)
+{
+    const FString DemoOwner=MiningPlatform::SteamAccountKey(5524430,TEXT("test_account"));
+    const FString FullOwner=MiningPlatform::SteamAccountKey(5506030,TEXT("test_account"));
+    TestEqual(TEXT("Released demo keeps its existing ledger"),DemoOwner,FString(TEXT("steam_test_account")));
+    TestNotEqual(TEXT("Same account has independent app owners"),DemoOwner,FullOwner);
+    TestFalse(TEXT("Demo save cannot reconcile full achievements"),UMiningAchievementSubsystem::IsSaveOwnerCompatible(DemoOwner,FullOwner));
+    TestEqual(TEXT("Demo keeps its released progress slot"),MiningPlatform::ProgressSaveSlot(5524430),FString(TEXT("BrainMiningProgress_v1")));
+    for(const FString& Suffix:{FString(),FString(TEXT("_pending")),FString(TEXT("_backup")),FString(TEXT("_completion"))})
+        TestNotEqual(TEXT("All full progress variants are separate"),MiningPlatform::ProgressSaveSlot(5524430)+Suffix,MiningPlatform::ProgressSaveSlot(5506030)+Suffix);
+    const FString Prefix=TEXT("BrainMining_Automation_AppIsolation_")+FGuid::NewGuid().ToString(EGuidFormats::Digits)+TEXT("_");
+    auto* Instance=NewObject<UGameInstance>();
+    auto* Demo=NewObject<UMiningAchievementSubsystem>(Instance);
+    Demo->OwnerId=DemoOwner;Demo->Slot=Prefix+DemoOwner;Demo->Progress.RecordCollection(16);
+    auto* Full=NewObject<UMiningAchievementSubsystem>(Instance);
+    Full->OwnerId=FullOwner;Full->Slot=Prefix+FullOwner;
+    ON_SCOPE_EXIT
+    {
+        Full->bInitialized=false;
+        for(const FString& Base:{Demo->Slot,Full->Slot})
+            for(const FString& Suffix:{FString(),FString(TEXT("_pending")),FString(TEXT("_backup"))})UGameplayStatics::DeleteGameInSlot(Base+Suffix,0);
+    };
+    TestTrue(TEXT("Existing demo achievement saved"),Demo->SaveProfile());
+    Full->LoadProfile();
+    TestTrue(TEXT("Full starts with healthy empty progress"),Full->bStorageHealthy && Full->Progress.Unlocked.IsEmpty() && Full->Progress.CollectionIds.IsEmpty());
+    auto Provider=MakeShared<FTestAchievementProvider>();Provider->User=FullOwner;
+    Full->Provider=Provider;Full->bInitialized=true;
+    Full->Synchronize();Provider->QueryCallback(true,{});Full->Synchronize();
+    TestEqual(TEXT("Demo unlock is never submitted to full backend"),Provider->Writes,0);
+    Full->Progress.RecordCollection(16);TestTrue(TEXT("Full can independently earn same collectible"),Full->SaveProfile());Full->Synchronize();
+    TestEqual(TEXT("Full-earned achievement is submitted normally"),Provider->Writes,1);
+    TestTrue(TEXT("Full submission contains its own first collectible"),Provider->Submitted.Contains(TEXT("ACH_FIRST_COLLECTION")));
+    Provider->WriteCallback(true);
+    auto* ReloadedDemo=NewObject<UMiningAchievementSubsystem>(Instance);
+    ReloadedDemo->OwnerId=DemoOwner;ReloadedDemo->Slot=Demo->Slot;ReloadedDemo->LoadProfile();
+    TestTrue(TEXT("Full activity preserves demo progress"),ReloadedDemo->Progress.Unlocked.Contains(TEXT("ACH_FIRST_COLLECTION")));
     return true;
 }
 

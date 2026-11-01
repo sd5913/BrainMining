@@ -19,7 +19,7 @@ def verify(executable, output):
     started = time.monotonic()
     process = subprocess.Popen([
         str(executable.resolve()), "-windowed", "-ResX=1600", "-ResY=900",
-        "-RenderOffscreen", "-NoSplash", "-MiningQA", "-UserDir=" + str(profile),
+        "-RenderOffscreen", "-NoSplash", "-NoSteam", "-MiningQA", "-UserDir=" + str(profile),
     ], startupinfo=startup)
     client = Client(profile)
     checks = []
@@ -77,7 +77,7 @@ def verify(executable, output):
             command("gm_tool", tool=tool)
         state = command("state")
         check(state["bomb"] and state["drill"], "bomb and drill unlock through developer fixture")
-        for area, name in ((1, "office"), (3, "echo-cards"), (4, "third-mine"), (5, "museum")):
+        for area, name in ((1, "office"), (2, "second-mine"), (3, "echo-cards"), (4, "third-mine"), (5, "museum")):
             command("area_fixture", area=area)
             state = wait_state(lambda state: state["area"] == area)
             states[name] = state
@@ -92,6 +92,14 @@ def verify(executable, output):
                 target = stage["position"]
                 command("pose", eye=[target[0] - 75, target[1], target[2] + 115], target=target)
             capture(f"area-{area}-{name}")
+            if area == 4:
+                toilets = command("actors", filter="HeavenToilet")["actors"]
+                toilet = next(a for a in toilets if a["class"] == "HeavenToilet" and a["position"][2] > 0)
+                check(not toilet["hidden"] and toilet["ticking"], "campaign heaven toilet is loaded and active")
+                states["heaven-toilet"] = toilet
+                x, y, z = toilet["position"]
+                command("pose", eye=[x - 560, y + 280, z + 160], target=[x, y, z + 200])
+                capture("heaven-toilet")
         command("pause")
         state = wait_state(lambda state: state["menu_open"])
         check(state["menu_open"], "pause menu opens in packaged game")

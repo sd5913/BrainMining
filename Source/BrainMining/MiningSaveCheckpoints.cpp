@@ -13,11 +13,11 @@
 
 namespace
 {
-    template<class T> T* First(UWorld* W) { TActorIterator<T> It(W);return It?*It:nullptr; }
+    template<class T> T* FirstCheckpointActor(UWorld* W) { TActorIterator<T> It(W);return It?*It:nullptr; }
     int32 CardState(UWorld* W)
     {
-        if(auto* Escape=First<AMiningRoomEscape>(W);Escape && Escape->Phase==EMiningEscapePhase::Escaped)return 3;
-        if(auto* Stage=First<ACardRoomStage>(W))
+        if(auto* Escape=FirstCheckpointActor<AMiningRoomEscape>(W);Escape && Escape->Phase==EMiningEscapePhase::Escaped)return 3;
+        if(auto* Stage=FirstCheckpointActor<ACardRoomStage>(W))
         {
             if(Stage->Run.Phase>=ECardRoomPhase::Victory)return 2;
             if(Stage->Run.Phase!=ECardRoomPhase::Exploring)return 1;
@@ -34,7 +34,7 @@ int32 UMiningSaveSubsystem::CheckpointMode() const
     switch(Hall->AreaKind(Hall->ActiveArea))
     {
     case EMiningExperienceKind::Office:
-        if(auto* Office=First<APopupCloseStage>(W)){const int32 State=Office->SaveState();return State<3?State:0;}
+        if(auto* Office=FirstCheckpointActor<APopupCloseStage>(W)){const int32 State=Office->SaveState();return State<3?State:0;}
         break;
     case EMiningExperienceKind::Journey:
         {const int32 State=CardState(W);return State==1?3:(State==2?4:0);}
@@ -47,7 +47,7 @@ int32 UMiningSaveSubsystem::CheckpointMode() const
 void UMiningSaveSubsystem::CaptureRoomState(UMiningSaveGame* Data)
 {
     Data->Checkpoint=CheckpointMode();
-    if(auto* Office=First<APopupCloseStage>(GetWorld()))Data->OfficeState=Office->SaveState();
+    if(auto* Office=FirstCheckpointActor<APopupCloseStage>(GetWorld()))Data->OfficeState=Office->SaveState();
     Data->CardState=CardState(GetWorld());
     if(Data->Checkpoint==3 || Data->Checkpoint==4)
         if(auto* Interaction=GetWorld()->GetFirstPlayerController()->FindComponentByClass<UCardRoomInteractionComponent>())
@@ -59,12 +59,12 @@ void UMiningSaveSubsystem::CaptureRoomState(UMiningSaveGame* Data)
         auto* Hall=AMiningExhibitHall::Find(GetWorld());
         Data->PlayerTransform=Hall->Areas[Data->Area].Entry;Data->ViewRotation=Data->PlayerTransform.Rotator();
     }
-    if(auto* Echo=First<AEchoPassageStage>(GetWorld()))
+    if(auto* Echo=FirstCheckpointActor<AEchoPassageStage>(GetWorld()))
     {
         Data->EchoCollapsed=Echo->bCollapsed;Data->EchoLanded=Echo->bLanded;
         Data->EchoCompleted=Echo->bCompleted;Data->EchoKnocks=Echo->KnockCount;
     }
-    if(auto* Museum=First<AWenSiMirrorPuzzle>(GetWorld()))
+    if(auto* Museum=FirstCheckpointActor<AWenSiMirrorPuzzle>(GetWorld()))
     {
         Data->MuseumRewardUnlocked=Museum->bRewardUnlocked;
         Data->MuseumPlayerWord=int32(Museum->GetPlayerWord());
@@ -95,14 +95,14 @@ void UMiningSaveSubsystem::RestoreRoomState()
         return;
     }
     // Opening owns view/input until its release. Re-enter the encounter afterwards.
-    if(auto* Office=First<APopupCloseStage>(W))Office->RestoreSaveState(Data->OfficeState);
-    if(auto* Echo=First<AEchoPassageStage>(W))
+    if(auto* Office=FirstCheckpointActor<APopupCloseStage>(W))Office->RestoreSaveState(Data->OfficeState);
+    if(auto* Echo=FirstCheckpointActor<AEchoPassageStage>(W))
     {
         Echo->RestoreProgress(Data->EchoCollapsed,Data->EchoLanded,Data->EchoCompleted,Data->EchoKnocks);
     }
     if(Data->CardState>=2)
-        if(auto* Escape=First<AMiningRoomEscape>(W))Escape->RestoreSaveState(Data->CardState);
-    if(auto* Museum=First<AWenSiMirrorPuzzle>(W);Museum && !Data->MuseumWords.IsEmpty())
+        if(auto* Escape=FirstCheckpointActor<AMiningRoomEscape>(W))Escape->RestoreSaveState(Data->CardState);
+    if(auto* Museum=FirstCheckpointActor<AWenSiMirrorPuzzle>(W);Museum && !Data->MuseumWords.IsEmpty())
     {
         for(auto Exhibit:Museum->Exhibits)if(Exhibit)
             if(const auto* Word=Data->MuseumWords.Find(Exhibit->Kind))

@@ -1,5 +1,18 @@
 # MainGame Windows 打包
 
+## 先确认交付目标
+
+所有 AI 助手先读项目根目录 `AGENTS.md`。用户需明确“Demo”“正式版”或“两者”；当前对话已明确则直接继续，未明确时先确认，不能沿用上一次的 AppID。
+
+| 目标 | Steam AppID | DepotID | 存档与成就进度 |
+| --- | --- | --- | --- |
+| Demo | 5524430 | 5524431 | 保留已发布 Demo 的旧档兼容性 |
+| 正式版 Full | 5506030 | 5506031 | 独立新档，不继承 Demo 进度 |
+
+建议给其他 AI 的请求：`请先阅读 AGENTS.md，为正式版（或 Demo）制作含 Steam 成就和 PCSize 压缩的包；存档/成就按应用隔离，验证后用 SteamCMD 上传对应 Depot，并说明是否已设为 default。`
+
+这里的“PCSize”是压缩和纹理配置，不代表 Demo 或正式版。Steam 包使用 `SteamPC` 自定义配置，它包含 PCSize 全部设置及 Steam 功能。以下普通 PC 命令仅适用于明确要求的非 Steam 离线包。
+
 使用 UE 5.8 与 Windows 64 位 Shipping 配置。启动地图为 `/Game/MainGame/Maps/Lvl_MainGame`；博物馆结尾入口通往 `/Game/EndingEmergence/Maps/Lvl_EndingEmergence_Demo`。
 
 ## 重新打包
@@ -13,6 +26,22 @@
 默认交付为 `Builds/PCSize-时间戳/挖哦1.4.zip`；解压得到 Windows 文件夹，启动 `WOoOW.exe`。未压缩验证构建保留在 Saved/Validation 内。底层 `package_main_game.ps1` 仅用于生成内部未压缩构建。脚本优先使用 `UE_ENGINE_ROOT`，然后检查本机常用的 UE 5.8 安装路径；也可通过 `-EngineRoot` 指定引擎位置，通过 `-OutputDirectory` 指定输出目录。`-SkipBuild` 和 `-SkipCook` 仅用于已确认程序、配置和资源没有改变的续跑，正常发布不要使用。
 
 每次打包使用独立的时间戳目录，不覆盖先前交付。
+
+## Steam 成就版本
+
+上传 Steam 并启用成就时必须使用 `package_main_game.ps1 -CustomConfig SteamPC`，不能使用普通 `PCSize` 包。先用 `python Scripts/configure_steam.py --app-id APP_ID` 配置目标应用：Demo 为 `5524430`，正式版为 `5506030`，两个应用分别生成发布目录和 ZIP。
+
+SteamPC 会把 `-CustomConfig=SteamPC` 显式传给 UBT，并检查 Shipping 的 `BRAINMINING_WITH_STEAM=1`。只给 UAT/Cooker 传此参数不会启用游戏侧 Steam 成就适配器。
+
+SteamPC 同时继承 PCSize 的纹理 RDO、纹理组分辨率上限、Oodle Kraken 6、原生材质显式 cook 根和 HDRIBackdrop 排除规则。`configure_steam.py` 从 PCSize 的全部 INI 文件生成 SteamPC 配置；修改 PCSize 后重新生成，打包入口会检查两者一致，避免 Steam 版本意外恢复为大包。运行时另随包携带 `GeneratedDeviceProfiles.ini`，确保预编译 Core 下也能加载相同的纹理组设置。
+
+真实 Steam 同步排查可加 `-MiningAchievementDiagnostics`，日志位于 Saved/Diagnostics/SteamAchievements.log。该参数只增加日志，不启用 QA、作弊或重置成就。新增成就保存成功后在下一次 tick 提交；网络错误仍保留退避重试，重启可补同步同账号的已获得记录。
+
+正式版成就 owner 为 `steam_app_5506030_<SteamID>`，游戏存档基础槽为 `BrainMiningProgress_v1_app_5506030`（pending/backup/completion 一并隔离）。Demo 保留历史 `steam_<SteamID>` 与 `BrainMiningProgress_v1` 命名，避免破坏现有玩家进度。两者后台定义相同也不代表进度共享；禁止将旧 Demo owner 视为正式版 owner 的兼容别名。
+
+安装版引擎共享预编译 Core，不会内建运行时 `CUSTOM_CONFIG`。因此脚本将对应 Steam 设置写入成品的 `Windows/BrainMining/Config/GeneratedEngine.ini`；这是引擎自动读取的生成配置层，必须随整个 Windows 目录上传，不需要在 Steam 启动参数中额外填写 CustomConfig。只携带 `Config/Custom/SteamPC/DefaultEngine.ini` 不足以保证运行时启用 Steam。
+
+`-MiningQA` 的状态报告包含只读 `steam_config` 信息，可检查编译开关、实际加载的服务、AppID 和成就 API 名。使用 `-NoSteam -MiningQA` 的检查不会写入真实 Steam 成就，也不能代替匹配 AppID 的 Steam 库安装与真实账号解锁验收。
 
 ## 范围与易漏内容
 

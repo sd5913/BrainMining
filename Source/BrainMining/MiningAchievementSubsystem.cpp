@@ -1,4 +1,5 @@
 #include "MiningAchievementSubsystem.h"
+#include "MiningAchievementDiagnostics.h"
 #include "Engine/World.h"
 #include "HAL/PlatformTime.h"
 #include "Kismet/GameplayStatics.h"
@@ -19,6 +20,7 @@ void UMiningAchievementSubsystem::Initialize(FSubsystemCollectionBase& Collectio
     Slot = TEXT("BrainMiningAchievements_v1_") + OwnerId;
     LoadProfile();
     bInitialized = true;
+    MiningAchievementTrace(FString::Printf(TEXT("profile initialized app=%u provider=%d unlocked=%d healthy=%d"), MiningPlatform::ConfiguredSteamAppId(), Provider.IsValid(), Progress.Unlocked.Num(), bStorageHealthy));
 }
 
 void UMiningAchievementSubsystem::Deinitialize()
@@ -84,6 +86,9 @@ void UMiningAchievementSubsystem::Changed()
 {
     bDirty = true;
     if (!SaveProfile()) NextSaveTime = FPlatformTime::Seconds() + 5;
+    // A newly earned achievement should not wait for the idle polling interval.
+    // Keep network-error backoff intact; the durable ledger will retry safely.
+    if (FailureCount == 0) NextSyncTime = 0;
 }
 
 void UMiningAchievementSubsystem::RecordCollection(int32 ItemId)
@@ -146,6 +151,7 @@ void UMiningAchievementSubsystem::RequestFinished(bool Succeeded)
 
 void UMiningAchievementSubsystem::Synchronize()
 {
+    MiningAchievementTrace(FString::Printf(TEXT("sync queried=%d pending=%d"), bQueried, Progress.Unlocked.Difference(Confirmed).Num()));
     NextSyncTime = FPlatformTime::Seconds() + 10;
     if (!bStorageHealthy || !Provider.IsValid() || OwnerId == TEXT("local") || Provider->AccountId() != OwnerId) return;
     TWeakObjectPtr<UMiningAchievementSubsystem> WeakThis(this);

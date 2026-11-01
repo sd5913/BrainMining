@@ -123,6 +123,15 @@ class PackageReportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "development files"):
             pc_report.build_report(archive, report, self.root / "package.zip")
 
+    def test_steam_package_rejects_excluded_hdri_assets(self):
+        archive, report = self.make_package()
+        (report / "request.json").write_text('{"plan_only":false,"custom_config":"SteamPC"}', encoding="utf-8")
+        with (report / "container-files.csv").open("a", newline="", encoding="utf-8") as stream:
+            csv.writer(stream).writerow(["b", "Game", "../../../Engine/Plugins/HDRIBackdrop/Content/Unused.uasset", 10, 5])
+        with self.assertRaisesRegex(ValueError, "HDRIBackdrop"):
+            pc_report.build_report(archive, report, self.root / "package.zip")
+        self.assertFalse((self.root / "package.zip").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

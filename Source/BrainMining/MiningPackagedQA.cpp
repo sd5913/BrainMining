@@ -72,6 +72,7 @@
 #include "InputKeyEventArgs.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/CommandLine.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
@@ -508,6 +509,24 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     Result->SetBoolField(TEXT("save_in_flight"),Save->IsSaveInFlight());
     Result->SetNumberField(TEXT("snapshot_ms"),Save->LastSnapshotMilliseconds);
     Result->SetStringField(TEXT("map"),UGameplayStatics::GetCurrentLevelName(W));
+    auto SteamConfig=MakeShared<FJsonObject>();
+    FString PlatformService;bool SteamEnabled=false;int32 ExpectedSteamAppId=0;
+    GConfig->GetString(TEXT("OnlineSubsystem"),TEXT("DefaultPlatformService"),PlatformService,GEngineIni);
+    GConfig->GetBool(TEXT("OnlineSubsystemSteam"),TEXT("bEnabled"),SteamEnabled,GEngineIni);
+    GConfig->GetInt(TEXT("BrainMining.Steam"),TEXT("ExpectedAppId"),ExpectedSteamAppId,GEngineIni);
+    SteamConfig->SetBoolField(TEXT("adapter_compiled"),BRAINMINING_WITH_STEAM!=0);
+    SteamConfig->SetStringField(TEXT("service"),PlatformService);
+    SteamConfig->SetBoolField(TEXT("enabled"),SteamEnabled);
+    SteamConfig->SetNumberField(TEXT("expected_app_id"),ExpectedSteamAppId);
+    TArray<TSharedPtr<FJsonValue>> SteamAchievementIds;
+    for(int32 I=0;I<128;++I)
+    {
+        FString Id;
+        if(!GConfig->GetString(TEXT("OnlineSubsystemSteam"),*FString::Printf(TEXT("Achievement_%d_Id"),I),Id,GEngineIni)||Id.IsEmpty())break;
+        SteamAchievementIds.Add(MakeShared<FJsonValueString>(Id));
+    }
+    SteamConfig->SetArrayField(TEXT("achievement_ids"),SteamAchievementIds);
+    Result->SetObjectField(TEXT("steam_config"),SteamConfig);
     TArray<TSharedPtr<FJsonValue>> DebugMaps;
     for(const auto& Map:UMiningExperienceSubsystem::DeveloperMapPaths())DebugMaps.Add(MakeShared<FJsonValueString>(Map));
     Result->SetArrayField(TEXT("gm_maps"),DebugMaps);

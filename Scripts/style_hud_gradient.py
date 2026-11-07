@@ -20,7 +20,8 @@ def scalar(name,value):
     node.set_editor_property('parameter_name',name);node.set_editor_property('default_value',value)
     return node
 
-parameters=[('ChamferPixels',10.),('BorderPixels',1.2),('BorderOpacity',.68),('FadePower',.55)]
+parameters=[('ChamferPixels',10.),('BorderPixels',1.2),('BorderOpacity',.68),('FadePower',.55),
+            ('TopTaperPixels',2.),('BottomTaperPixels',2.)]
 pins=list(shader.get_editor_property('inputs'))
 for name,value in parameters:
     if not any(str(pin.get_editor_property('input_name'))==name for pin in pins):
@@ -34,8 +35,11 @@ float2 size=max(PanelSize.xy,float2(1,1));
 float outward=OuterSide>0.5?UV.x:1-UV.x;
 float x=outward*size.x;
 float y=UV.y*size.y;
-float top=1.0+(1-outward)*2.0;
-float bottom=size.y-top;
+// Independent caps let stacked cards taper only at the group's outer edges.
+// The two facing edges stay straight and keep their constant spacing.
+// Defaults preserve the existing two-sided taper on right-hand panels.
+float top=1.0+(1-outward)*TopTaperPixels;
+float bottom=size.y-1.0-(1-outward)*BottomTaperPixels;
 float outer=size.x-1.0-x;
 float topDistance=y-top;
 float bottomDistance=bottom-y;

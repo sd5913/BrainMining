@@ -134,6 +134,16 @@
     "en": "Main menu",
     "zh-Hant": "返回主選單"
   },
+  "UI.Feedback.Open": {
+    "zh-Hans": "填写反馈",
+    "en": "Send feedback",
+    "zh-Hant": "填寫回饋"
+  },
+  "UI.Quit.AutoSave": {
+    "zh-Hans": "进度将自动保存",
+    "en": "Your progress will be saved automatically.",
+    "zh-Hant": "進度將自動儲存"
+  },
   "UI.Quit.Question": {
     "zh-Hans": "确定退出游戏？",
     "en": "Quit the game?",

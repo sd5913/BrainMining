@@ -33,6 +33,15 @@
 
 namespace
 {
+    constexpr float LeftHUDWidth=300.f;
+    constexpr float LeftHUDGap=12.f;
+    void SizeHUDPlate(UImage* Plate,FVector2D Size)
+    {
+        if(!Plate)return;
+        CastChecked<UCanvasPanelSlot>(Plate->Slot)->SetSize(Size);
+        if(auto* Material=Plate->GetDynamicMaterial())
+            Material->SetVectorParameterValue(TEXT("PanelSize"),FLinearColor(Size.X,Size.Y,0,0));
+    }
 	void Visible(UWidget* Widget, bool bVisible)
 	{
 		if (Widget) Widget->SetVisibility(bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
@@ -506,20 +515,29 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
         PanelSlot->SetAnchors(FAnchors(0,0,1,1));
         PanelSlot->SetOffsets(FMargin(0));
 
+        // One shared shear preserves the inventory's original tilt and keeps
+        // the objectives and collection shortcut exactly parallel to it.
+        LeftHUDStack=WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("LeftHUDStack"));
+        LeftHUDStack->SetVisibility(ESlateVisibility::HitTestInvisible);
+        LeftHUDStack->SetRenderTransformPivot(FVector2D::ZeroVector);
+        LeftHUDStack->SetRenderShear(FVector2D(0,2));
+        auto* StackSlot=MineralPanel->AddChildToCanvas(LeftHUDStack);
+        StackSlot->SetPosition(FVector2D(24,24));StackSlot->SetSize(FVector2D(LeftHUDWidth,300));
+
         const auto AddPanel = [&](const TCHAR* Name, FVector2D Size, bool bLeft)
         {
             auto* Panel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), Name);
             Panel->SetVisibility(ESlateVisibility::HitTestInvisible);
             Panel->SetRenderTransformPivot(FVector2D(bLeft?0:1,0));
-            // The two outside edges mirror each other toward the screen centre.
-            Panel->SetRenderShear(FVector2D(0,bLeft?2.f:-2.f));
-            auto* Slot = MineralPanel->AddChildToCanvas(Panel);
+            // Left panels inherit their tilt once from the shared column.
+            Panel->SetRenderShear(FVector2D(0,bLeft?0.f:-2.f));
+            auto* Slot = (bLeft?LeftHUDStack.Get():MineralPanel.Get())->AddChildToCanvas(Panel);
             Slot->SetAnchors(FAnchors(bLeft?0:1,0));
             Slot->SetAlignment(FVector2D(bLeft?0:1,0));
-            Slot->SetPosition(FVector2D(bLeft?24:-24,24)); Slot->SetSize(Size);
+            Slot->SetPosition(bLeft?FVector2D::ZeroVector:FVector2D(-24,24)); Slot->SetSize(Size);
             return Panel;
         };
-        auto* Inventory = AddPanel(TEXT("MineralInventoryPanel"), FVector2D(248,140), true);
+        auto* Inventory = AddPanel(TEXT("MineralInventoryPanel"), FVector2D(LeftHUDWidth,140), true);
         auto* Pickaxe = AddPanel(TEXT("PickaxeSummaryPanel"), FVector2D(466,178), false);
         const auto AddImage = [&](UCanvasPanel* Parent, const TCHAR* Name, const TCHAR* Art, FVector2D Position, FVector2D Size, int32 Z = 0)
         {
@@ -530,7 +548,7 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
             return Image;
         };
         MineralBackplate = AddImage(Inventory, TEXT("MineralInventoryBackplate"), TEXT(""),
-            FVector2D::ZeroVector, FVector2D(248,140), -10);
+            FVector2D::ZeroVector, FVector2D(LeftHUDWidth,140), -10);
         PickaxeBackplate = AddImage(Pickaxe, TEXT("PickaxeSummaryBackplate"), TEXT(""),
             FVector2D::ZeroVector, FVector2D(466,178), -10);
         for (auto* Plate : {MineralBackplate.Get(), PickaxeBackplate.Get()})
@@ -539,8 +557,12 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
             if (auto* Material = Plate->GetDynamicMaterial())
             {
                 const bool bLeft=Plate==MineralBackplate;
-                Material->SetVectorParameterValue(TEXT("PanelSize"), bLeft?FLinearColor(248,140,0,0):FLinearColor(466,178,0,0));
+                Material->SetVectorParameterValue(TEXT("PanelSize"), bLeft?FLinearColor(LeftHUDWidth,140,0,0):FLinearColor(466,178,0,0));
                 Material->SetScalarParameterValue(TEXT("OuterSide"), bLeft?0.f:1.f);
+                // Upper card: taper its top only, keeping the facing bottom
+                // edge parallel to the objective card's top edge.
+                Material->SetScalarParameterValue(TEXT("TopTaperPixels"), 2.f);
+                Material->SetScalarParameterValue(TEXT("BottomTaperPixels"), bLeft?0.f:2.f);
                 Material->SetScalarParameterValue(TEXT("BackdropOpacity"), .58f);
             }
         }
@@ -584,7 +606,7 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
             AddLabel(Inventory, *FString::Printf(TEXT("InventoryMineralName%d"), I), FMiningMineralCost::LabelText(Types[I]),
                 FVector2D(46,12+I*28), FVector2D(108,26), 18, false, true);
             auto* Count = AddLabel(Inventory, *FString::Printf(TEXT("InventoryMineralCount%d"), I), FText::AsNumber(0),
-                FVector2D(164,12+I*28), FVector2D(68,26), 18, false, true, true);
+                FVector2D(LeftHUDWidth-84,12+I*28), FVector2D(68,26), 18, false, true, true);
             Count->SetJustification(ETextJustify::Right);
             MineralCounts.Add(Count);
         }
@@ -626,7 +648,10 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
     for (int32 I = 0; I < 4; ++I) SetText(MineralCounts[I], FText::AsNumber(Wallet->CollectedMineralTotals.FindRef(Types[I])));
     const int32 Level = FMath::Clamp(Progression->GetLevel(0), 0, 4);
     const bool bMaxLevel=Level>=4;
-    const FVector2D PanelSize=bMaxLevel?FVector2D(128,158):FVector2D(466,178);
+    const auto* Languages=GetGameInstance()->GetSubsystem<UMiningLocalizationSubsystem>();
+    const bool Compact=Languages && Languages->GetLanguage().StartsWith(TEXT("zh"));
+    const float SummaryWidth=Compact?382.f:466.f;
+    const FVector2D PanelSize=bMaxLevel?FVector2D(128,158):FVector2D(SummaryWidth,178);
     if(auto* Panel=GetWidgetFromName(TEXT("PickaxeSummaryPanel")))
         CastChecked<UCanvasPanelSlot>(Panel->Slot)->SetSize(PanelSize);
     CastChecked<UCanvasPanelSlot>(PickaxeBackplate->Slot)->SetSize(PanelSize);
@@ -637,7 +662,16 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
     Visible(PickaxeLevelLabel,!bMaxLevel);
     auto* HintSlot=CastChecked<UCanvasPanelSlot>(PickaxeUpgradeHint->Slot);
     HintSlot->SetPosition(bMaxLevel?FVector2D(8,122):FVector2D(146,138));
-    HintSlot->SetSize(bMaxLevel?FVector2D(112,26):FVector2D(304,26));
+    HintSlot->SetSize(bMaxLevel?FVector2D(112,26):FVector2D(SummaryWidth-162,26));
+    CastChecked<UCanvasPanelSlot>(GetWidgetFromName(TEXT("PickaxeTabRule"))->Slot)->SetSize(FVector2D(SummaryWidth-162,1));
+    for(int32 Row=0;Row<PickaxeRequirementRows.Num();++Row)
+    {
+        auto* NameSlot=CastChecked<UCanvasPanelSlot>(PickaxeRequirementRows[Row]->GetParent()->Slot);
+        NameSlot->SetSize(FVector2D(Compact?76:120,26));
+        auto* CountSlot=CastChecked<UCanvasPanelSlot>(PickaxeRequirementCounts[Row]->GetParent()->Slot);
+        CountSlot->SetPosition(FVector2D(Compact?248:308,14+Row*28));
+        CountSlot->SetSize(FVector2D(Compact?118:142,26));
+    }
     PickaxeUpgradeHint->SetJustification(bMaxLevel?ETextJustify::Center:ETextJustify::Left);
     PickaxeUpgrade->SetUpgradeLevel(Level, true);
     SetText(PickaxeLevelLabel, FText::Format(MiningText::Get(TEXT("UI.Upgrade.Level")),Level));
@@ -669,6 +703,37 @@ void UMiningGUIHUDWidget::RefreshMineralProgression()
     const bool bReady = Progression->CanUpgradePickaxe();
     SetText(PickaxeUpgradeHint, Level>=4?MiningText::Get(TEXT("UI.Upgrade.Max")):FText::Format(MiningText::Get(TEXT("UI.Upgrade.Key")),FText::AsCultureInvariant(UMiningGamepadSubsystem::UsesGamepad(GetOwningPlayer())?TEXT("LT"):TEXT("Tab"))));
     PickaxeUpgradeHint->SetColorAndOpacity(bReady ? FLinearColor(.42f,.95f,.65f) : FLinearColor(.82f,.85f,.83f));
+}
+
+void UMiningGUIHUDWidget::LayoutLeftHUD(float TaskHeight)
+{
+    const float TaskY=140+LeftHUDGap;
+    if(TutorialPanel)
+    {
+        auto* TaskSlot=CastChecked<UCanvasPanelSlot>(TutorialPanel->Slot);
+        TaskSlot->SetPosition(FVector2D(0,TaskY));TaskSlot->SetSize(FVector2D(LeftHUDWidth,TaskHeight));
+        TutorialPanel->SetVisibility(TaskHeight>0?ESlateVisibility::HitTestInvisible:ESlateVisibility::Collapsed);
+        SizeHUDPlate(TutorialBackplate,FVector2D(LeftHUDWidth,TaskHeight));
+    }
+    const float ShortcutY=TaskY+(TaskHeight>0?TaskHeight+LeftHUDGap:0);
+    CastChecked<UCanvasPanelSlot>(CollectionShortcutPanel->Slot)->SetPosition(FVector2D(0,ShortcutY));
+    const float Height=ShortcutY+40;
+    CastChecked<UCanvasPanelSlot>(LeftHUDStack->Slot)->SetSize(FVector2D(LeftHUDWidth,Height));
+}
+
+void UMiningGUIHUDWidget::LayoutTutorialRow(int32 Index,bool Completed,float& NextY)
+{
+    auto* Row=TutorialRows[Index].Get();
+    auto* Marker=TutorialMarkers[Index].Get();
+    Marker->SetText(FText::AsCultureInvariant(Completed?TEXT("✓"):TEXT("·")));
+    Marker->SetColorAndOpacity(Row->GetColorAndOpacity());Marker->SetRenderOpacity(Row->GetRenderOpacity());
+    Marker->SetVisibility(ESlateVisibility::HitTestInvisible);
+    Row->ForceLayoutPrepass();
+    const float RowHeight=FMath::Max(28.f,Row->GetDesiredSize().Y);
+    auto* RowSlot=CastChecked<UCanvasPanelSlot>(Row->Slot);
+    RowSlot->SetPosition(FVector2D(46,NextY));RowSlot->SetSize(FVector2D(LeftHUDWidth-62,RowHeight));
+    CastChecked<UCanvasPanelSlot>(Marker->Slot)->SetPosition(FVector2D(16,NextY));
+    NextY+=RowHeight+8;
 }
 
 void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
@@ -705,35 +770,48 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
     }
     if(!CollectionShortcut)
     {
+        CollectionShortcutPanel=WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("CollectionShortcutPanel"));
+        CollectionShortcutPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
+        auto* ShortcutPanelSlot=LeftHUDStack->AddChildToCanvas(CollectionShortcutPanel);
+        ShortcutPanelSlot->SetSize(FVector2D(LeftHUDWidth,40));
         CollectionShortcut=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("CollectionShortcut"));
         CollectionShortcut->SetText(MiningText::Get(TEXT("UI.Collection.Shortcut")));
         CollectionShortcut->SetFont(BrainMiningFonts::Body(18));
         CollectionShortcut->SetColorAndOpacity(FLinearColor(.94f,.95f,.92f));
         CollectionShortcut->SetShadowOffset(FVector2D(0,1));CollectionShortcut->SetShadowColorAndOpacity(FLinearColor(0,0,0,.65f));
         CollectionShortcut->SetVisibility(ESlateVisibility::HitTestInvisible);
-        auto* ShortcutSlot=MineralPanel->AddChildToCanvas(CollectionShortcut);ShortcutSlot->SetPosition(FVector2D(40,195));ShortcutSlot->SetSize(FVector2D(275,28));
-        CollectionShortcut->SetRenderShear(FVector2D(0,2));
+        auto* ShortcutSlot=CollectionShortcutPanel->AddChildToCanvas(CollectionShortcut);ShortcutSlot->SetPosition(FVector2D(16,7));ShortcutSlot->SetSize(FVector2D(LeftHUDWidth-32,28));
     }
-    if(!Saves->TutorialActive && !Saves->MuseumCircleTaskStarted)return;
+    if(!Saves->TutorialActive && !Saves->MuseumCircleTaskStarted){LayoutLeftHUD(0);return;}
     if(!TutorialPanel)
     {
         TutorialPanel=WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("GuidancePanel"));
         TutorialPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
-        auto* PanelSlot=MineralPanel->AddChildToCanvas(TutorialPanel);
-        PanelSlot->SetPosition(FVector2D(24,184));PanelSlot->SetSize(FVector2D(300,182));
-        TutorialPanel->SetRenderShear(FVector2D(0,2));
+        auto* PanelSlot=LeftHUDStack->AddChildToCanvas(TutorialPanel);
+        PanelSlot->SetPosition(FVector2D(0,152));PanelSlot->SetSize(FVector2D(LeftHUDWidth,182));
         TutorialBackplate=WidgetTree->ConstructWidget<UImage>();
         auto* PlateSlot=TutorialPanel->AddChildToCanvas(TutorialBackplate);
         PlateSlot->SetSize(FVector2D(300,182));PlateSlot->SetZOrder(-1);
         TutorialBackplate->SetBrushFromMaterial(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/UI/MiningGUI/Immersive/MI_UpgradeBackplate")));
         if(auto* M=TutorialBackplate->GetDynamicMaterial())
-        {M->SetVectorParameterValue(TEXT("PanelSize"),FLinearColor(300,182,0,0));M->SetScalarParameterValue(TEXT("OuterSide"),0);M->SetScalarParameterValue(TEXT("BackdropOpacity"),.58f);}
+        {
+            M->SetVectorParameterValue(TEXT("PanelSize"),FLinearColor(300,182,0,0));
+            M->SetScalarParameterValue(TEXT("OuterSide"),0);
+            M->SetScalarParameterValue(TEXT("BackdropOpacity"),.58f);
+            M->SetScalarParameterValue(TEXT("TopTaperPixels"),0);
+            M->SetScalarParameterValue(TEXT("BottomTaperPixels"),2);
+        }
         for(int32 I=0;I<6;++I)
         {
             auto* Label=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),*FString::Printf(TEXT("GuidanceRow%d"),I));
             Label->SetFont(BrainMiningFonts::Body(18));Label->SetShadowOffset(FVector2D(0,1));Label->SetShadowColorAndOpacity(FLinearColor(0,0,0,.45f));
-            auto* RowSlot=TutorialPanel->AddChildToCanvas(Label);RowSlot->SetSize(FVector2D(275,28));
+            Label->SetAutoWrapText(true);Label->SetWrapTextAt(LeftHUDWidth-62);
+            auto* RowSlot=TutorialPanel->AddChildToCanvas(Label);RowSlot->SetSize(FVector2D(LeftHUDWidth-62,28));
             TutorialRows.Add(Label);
+            auto* Marker=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),*FString::Printf(TEXT("GuidanceMarker%d"),I));
+            Marker->SetFont(BrainMiningFonts::Body(18));Marker->SetShadowOffset(FVector2D(0,1));Marker->SetShadowColorAndOpacity(FLinearColor(0,0,0,.45f));
+            auto* MarkerSlot=TutorialPanel->AddChildToCanvas(Marker);MarkerSlot->SetSize(FVector2D(24,28));
+            TutorialMarkers.Add(Marker);
         }
         // A continued game only displays the next outstanding prototype.
         DisplayedPrototype=FMath::Clamp(Saves->PrototypesFound+1,1,5);
@@ -742,6 +820,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
     }
     if(Saves->MuseumCircleTaskStarted && !bMuseumCircleTaskPresented)
     {bMuseumCircleTaskPresented=true;TutorialAge=0;}
+    for(auto& Marker:TutorialMarkers)Marker->SetVisibility(ESlateVisibility::Collapsed);
     if(Saves->TutorialActive && (!Saves->TutorialSoilPassed || bTutorialSoilPresented) && !Saves->MuseumCircleTaskStarted)
     {
         if(!Saves->TutorialSoilPassed){bTutorialSoilPresented=true;TutorialSoilDoneAge=0;}
@@ -751,15 +830,13 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
             TutorialAge+=Dt;
             for(int32 I=0;I<TutorialRows.Num();++I)TutorialRows[I]->SetVisibility(I==0?ESlateVisibility::HitTestInvisible:ESlateVisibility::Collapsed);
             auto* Row=TutorialRows[0].Get();
-            Row->SetText(FText::FromString(FString(Saves->TutorialSoilPassed?TEXT("✓  "):TEXT("·  "))+MiningText::Get(TEXT("UI.Tutorial.Soil")).ToString()));
+            Row->SetText(MiningText::Get(TEXT("UI.Tutorial.Soil")));
             Row->SetColorAndOpacity(Saves->TutorialSoilPassed?FLinearColor(.42f,.95f,.66f):FLinearColor(.94f,.95f,.92f));
             Row->SetRenderOpacity(Saves->TutorialSoilPassed?FMath::Clamp((1.4f-TutorialSoilDoneAge)/.4f,0.f,1.f):1.f);
-            CastChecked<UCanvasPanelSlot>(Row->Slot)->SetPosition(FVector2D(16,14));
+            float NextY=14;LayoutTutorialRow(0,Saves->TutorialSoilPassed,NextY);
             TutorialPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
             TutorialPanel->SetRenderOpacity(TutorialAge<2.4f?.70f+.30f*FMath::Cos(TutorialAge*2.f*PI/.8f):1.f);
-            CastChecked<UCanvasPanelSlot>(TutorialBackplate->Slot)->SetSize(FVector2D(300,59));
-            if(auto* M=TutorialBackplate->GetDynamicMaterial())M->SetVectorParameterValue(TEXT("PanelSize"),FLinearColor(300,59,0,0));
-            CastChecked<UCanvasPanelSlot>(CollectionShortcut->Slot)->SetPosition(FVector2D(40,254));
+            LayoutLeftHUD(NextY-8+14);
             return;
         }
         bTutorialSoilPresented=false;TutorialAge=0;
@@ -778,6 +855,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
     {DisplayedUpgrade=2;TutorialDoneAge[2]=0;TutorialAge=0;UpgradeAttentionAge=0;}
     const FText Basic[]={MiningText::Get(TEXT("UI.Tutorial.Copper")),MiningText::Get(TEXT("UI.Tutorial.Iron")),MiningText::Get(DisplayedUpgrade==1?TEXT("UI.Tutorial.Upgrade1"):TEXT("UI.Tutorial.Upgrade2")),FText::GetEmpty()};
     int32 VisibleRows=0;
+    float NextY=14;
     for(int32 I=0;I<5;++I)
     {
         auto* Row=TutorialRows[I].Get();
@@ -791,10 +869,10 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         const bool Checked=I<4?Done:Saves->PrototypesFound>=DisplayedPrototype;
         // Keep undiscovered prototypes a surprise; reveal their names only on completion.
         const FText Objective=I<4?Basic[I]:(Checked?FText::Format(MiningText::Get(TEXT("UI.Tutorial.Prototype")),DisplayedPrototype):MiningText::Get(TEXT("UI.Tutorial.Explore")));
-        Row->SetText(FText::FromString(FString(Checked?TEXT("✓  "):TEXT("·  "))+Objective.ToString()));
+        Row->SetText(Objective);
         Row->SetColorAndOpacity(Checked?FLinearColor(.42f,.95f,.66f):FLinearColor(.94f,.95f,.92f));
         Row->SetRenderOpacity(Checked?FMath::Clamp((1.4f-TutorialDoneAge[I])/.4f,0.f,1.f):1.f);
-        CastChecked<UCanvasPanelSlot>(Row->Slot)->SetPosition(FVector2D(16,14+VisibleRows*31));++VisibleRows;
+        LayoutTutorialRow(I,Checked,NextY);++VisibleRows;
     }
     auto* CircleRow=TutorialRows[5].Get();
     if(Saves->MuseumCircleTaskCompleted)TutorialDoneAge[5]+=Dt;
@@ -803,19 +881,13 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
     if(ShowCircle)
     {
         const bool Done=Saves->MuseumCircleTaskCompleted;
-        CircleRow->SetText(FText::Format(FText::AsCultureInvariant(Done?TEXT("✓  {0}"):TEXT("·  {0}")),MiningText::Get(TEXT("UI.Museum.CircleTask"))));
+        CircleRow->SetText(MiningText::Get(TEXT("UI.Museum.CircleTask")));
         CircleRow->SetColorAndOpacity(Done?FLinearColor(.42f,.95f,.66f):FLinearColor(.94f,.95f,.92f));
         CircleRow->SetRenderOpacity(Done?FMath::Clamp((1.4f-TutorialDoneAge[5])/.4f,0.f,1.f):1.f);
-        CircleRow->SetAutoWrapText(true);
-        CastChecked<UCanvasPanelSlot>(CircleRow->Slot)->SetPosition(FVector2D(16,14+VisibleRows*31));
-        CastChecked<UCanvasPanelSlot>(CircleRow->Slot)->SetSize(FVector2D(275,54));
-        VisibleRows+=2;
+        LayoutTutorialRow(5,Done,NextY);++VisibleRows;
     }
     TutorialPanel->SetVisibility(VisibleRows?ESlateVisibility::HitTestInvisible:ESlateVisibility::Collapsed);
     // Three gentle pulses draw attention without obscuring gameplay.
     TutorialPanel->SetRenderOpacity(TutorialAge<2.4f?.70f+.30f*FMath::Cos(TutorialAge*2.f*PI/.8f):1.f);
-    const float Height=28+VisibleRows*31;
-    CastChecked<UCanvasPanelSlot>(CollectionShortcut->Slot)->SetPosition(FVector2D(40,195+(VisibleRows?Height:0)));
-    CastChecked<UCanvasPanelSlot>(TutorialBackplate->Slot)->SetSize(FVector2D(300,Height));
-    if(auto* M=TutorialBackplate->GetDynamicMaterial())M->SetVectorParameterValue(TEXT("PanelSize"),FLinearColor(300,Height,0,0));
+    LayoutLeftHUD(VisibleRows?NextY-8+14:0);
 }

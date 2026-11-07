@@ -393,6 +393,7 @@ UI.Ending.PulseKey,空格-传导,UI.Ending.PulseKey
 UI.Ending.PulseTouch,跃迁键-传导,UI.Ending.PulseTouch
 UI.Ending.Thanks,恭喜你挖出来了！《挖哦》也因此诞生！感谢游玩！,UI.Ending.Thanks
 UI.Ending.Wait,等一下！,UI.Ending.Wait
+UI.Feedback.Open,填写反馈,UI.Feedback.Open
 UI.Language.Auto,自动,UI.Language.Auto
 UI.Language.English,English,UI.Language.English
 UI.Language.Simplified,简体中文,UI.Language.Simplified
@@ -505,6 +506,7 @@ UI.Pause.Save,保存进度,UI.Pause.Save
 UI.Pause.Title,暂停,UI.Pause.Title
 UI.Pickaxe.Hardness,破坏等级 {Level} · 范围边长 {Width} cm · 每击基础深度 {Depth} cm（按岩层硬度修正）· 间隔 {Interval} 秒,UI.Pickaxe.Hardness
 UI.Pickaxe.Stages,{Hits} 击挖开 · 基础边长 {Width} cm · 基础深度 {Depth} cm · 间隔 {Interval} 秒,UI.Pickaxe.Stages
+UI.Quit.AutoSave,进度将自动保存,UI.Quit.AutoSave
 UI.Quit.Cancel,取消,UI.Quit.Cancel
 UI.Quit.Confirm,确认退出,UI.Quit.Confirm
 UI.Quit.Question,确定退出游戏？,UI.Quit.Question

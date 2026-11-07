@@ -5,6 +5,7 @@
 #include "MiningWalletSubsystem.h"
 #include "StartRoom/MiningWallSign.h"
 #include "Components/TextBlock.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/WidgetComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
@@ -47,7 +48,9 @@ bool FMiningHUDLanguageTest::RunTest(const FString&)
         else Manager.DisableGameLocalizationPreview();
         Manager.WaitForAsyncTasks();
     };
-    Manager.EnableGameLocalizationPreview(TEXT("zh-Hans"));Manager.WaitForAsyncTasks();
+    auto* Languages=Instance->GetSubsystem<UMiningLocalizationSubsystem>();
+    if(!TestNotNull(TEXT("Game language subsystem exists"),Languages))return false;
+    TestTrue(TEXT("Initial game language applies"),Languages->SetLanguagePreference(TEXT("zh-Hans")));
     auto* Wallet=Instance->GetSubsystem<UMiningWalletSubsystem>();
     Wallet->bUseMineralInventory=true;
     auto* Controller=World->SpawnActor<APlayerController>();
@@ -81,9 +84,10 @@ bool FMiningHUDLanguageTest::RunTest(const FString&)
     const TCHAR* Cultures[]={TEXT("zh-Hans"),TEXT("en"),TEXT("zh-Hant")};
     const TCHAR* ExpectedNames[][4]={{TEXT("铜矿"),TEXT("铁矿"),TEXT("孔雀石"),TEXT("钻石")},{TEXT("Copper"),TEXT("Iron"),TEXT("Malachite"),TEXT("Diamond")},{TEXT("銅礦"),TEXT("鐵礦"),TEXT("孔雀石"),TEXT("鑽石")}};
     const TCHAR* ExpectedSigns[]={TEXT("按住空格键起飞"),TEXT("Hold Space to fly"),TEXT("按住空白鍵起飛")};
+    double ChineseSummaryWidth=0;
     for(int32 CultureIndex=0;CultureIndex<UE_ARRAY_COUNT(Cultures);++CultureIndex)
     {
-        Manager.EnableGameLocalizationPreview(Cultures[CultureIndex]);Manager.WaitForAsyncTasks();
+        TestTrue(TEXT("Player language preference applies"),Languages->SetLanguagePreference(Cultures[CultureIndex]));
         for(int32 MineralIndex=0;MineralIndex<4;++MineralIndex)
         {
             auto* Label=Cast<UTextBlock>(HUD->GetWidgetFromName(FName(*FString::Printf(TEXT("InventoryMineralName%d"),MineralIndex))));
@@ -91,13 +95,32 @@ bool FMiningHUDLanguageTest::RunTest(const FString&)
                 TestEqual(TEXT("Existing HUD label updates without rebuilding"),Label->GetText().ToString(),FString(ExpectedNames[CultureIndex][MineralIndex]));
         }
         TestEqual(TEXT("Authored wall sign changes language"),Sign->GetDisplayText().ToString(),FString(ExpectedSigns[CultureIndex]));
-        for(const int32 Level:{0,3})
+        for(const int32 Level:{0,3,4})
         {
             Wallet->UpgradeLevels[0]=Level;HUD->RefreshMineralProgression();
+            auto* Summary=HUD->GetWidgetFromName(TEXT("PickaxeSummaryPanel"));
+            if(TestNotNull(TEXT("Localized upgrade summary exists"),Summary))
+            {
+                const auto* SummarySlot=Cast<UCanvasPanelSlot>(Summary->Slot);
+                if(TestNotNull(TEXT("Upgrade summary retains a corner layout slot"),SummarySlot))
+                {
+                    const double Width=SummarySlot->GetSize().X;
+                    if(Level==0 && CultureIndex==0)ChineseSummaryWidth=Width;
+                    if(Level<4)
+                    {
+                        if(CultureIndex==1)TestTrue(TEXT("English has additional room for its longer requirements"),Width>ChineseSummaryWidth);
+                        else TestEqual(TEXT("Both Chinese variants restore the same compact width after language switching"),Width,ChineseSummaryWidth);
+                    }
+                    else TestTrue(TEXT("Max level retires the requirements and shrinks to the ring"),Width<ChineseSummaryWidth);
+                    TestTrue(TEXT("Width changes preserve the screen-right anchor"),FMath::IsNearlyEqual(SummarySlot->GetAnchors().Minimum.X,1.0));
+                    TestTrue(TEXT("Width changes preserve right alignment"),FMath::IsNearlyEqual(SummarySlot->GetAlignment().X,1.0));
+                }
+            }
             auto* Requirement=Cast<UTextBlock>(HUD->GetWidgetFromName(TEXT("PickaxeRequirementName0")));
             const auto Costs=UMiningPickaxeSettings::ResolveLevel(Level+1).MaterialCosts;
-            if(TestNotNull(TEXT("Upgrade requirement exists"),Requirement) && !Costs.IsEmpty())
+            if(TestNotNull(TEXT("Upgrade requirement exists"),Requirement) && Level<4 && !Costs.IsEmpty())
                 TestEqual(TEXT("Upgrade uses capitalized mineral label"),Requirement->GetText().ToString(),FMiningMineralCost::LabelText(Costs[0].Mineral).ToString());
+            if(Level==4 && Requirement)TestFalse(TEXT("Maximum level has no stale requirement labels"),Requirement->IsVisible());
             for(const FVector2D Size:{FVector2D(1280,720),FVector2D(1920,1080)})
                 Capture(HUDWidget,FString::Printf(TEXT("%s-level%d-%d"),Cultures[CultureIndex],Level,int32(Size.X)),Size);
         }

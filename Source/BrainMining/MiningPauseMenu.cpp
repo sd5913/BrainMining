@@ -34,6 +34,75 @@
 #include "Widgets/SBoxPanel.h"
 #include "Styling/CoreStyle.h"
 #include "Rendering/DrawElements.h"
+#include "HAL/PlatformProcess.h"
+#include "Misc/ConfigCacheIni.h"
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#include "Misc/AutomationTest.h"
+#endif
+
+namespace
+{
+    FString ResolvePlayerFeedbackUrl(FString Url)
+    {
+        Url.TrimStartAndEndInline();
+        const FString DiscussionRoot=TEXT("https://steamcommunity.com/app/5506030/discussions/");
+        // Old unquoted INI values can be parsed as just "https:". Always keep
+        // the shipped button usable, even with stale or missing configuration.
+        if(!Url.StartsWith(DiscussionRoot) || Url.Len()<=DiscussionRoot.Len())
+            return TEXT("https://steamcommunity.com/app/5506030/discussions/0/563672718159238289/");
+        return Url;
+    }
+
+    void OpenPlayerFeedback()
+    {
+        // Demo and Full share the base game's community hub.
+        // Keep the current menu open when the player returns from the browser.
+        FString Url;
+        GConfig->GetString(TEXT("BrainMining.Feedback"),TEXT("DiscussionUrl"),Url,GGameIni);
+        Url=ResolvePlayerFeedbackUrl(MoveTemp(Url));
+        FString Error;
+        FPlatformProcess::LaunchURL(*Url,nullptr,&Error);
+        if(!Error.IsEmpty())UE_LOG(LogTemp,Warning,TEXT("Could not open player feedback: %s"),*Error);
+    }
+
+    void AddFeedbackDivider(const TSharedRef<SVerticalBox>& Choices)
+    {
+        Choices->AddSlot().AutoHeight().Padding(0,18,0,12)
+            [SNew(SBox).HeightOverride(1)
+                [SNew(SBorder).Padding(0).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+                    .BorderBackgroundColor(FLinearColor(1.f,.64f,.015f,.3f))]];
+    }
+}
+
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningFeedbackUrlTest,"BrainMining.UI.FeedbackUrl",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningFeedbackUrlTest::RunTest(const FString&)
+{
+    const FString OfficialTopic=TEXT("https://steamcommunity.com/app/5506030/discussions/0/563672718159238289/");
+    FString Configured;
+    TestTrue(TEXT("Feedback URL exists in the loaded game configuration"),GConfig->GetString(TEXT("BrainMining.Feedback"),TEXT("DiscussionUrl"),Configured,GGameIni));
+    TestEqual(TEXT("Engine INI parsing preserves the entire official topic URL"),Configured,OfficialTopic);
+    FConfigFile LegacyConfig;
+    LegacyConfig.ProcessInputFileContents(TEXT("[BrainMining.Feedback]\nDiscussionUrl=")+OfficialTopic+TEXT("\n"),TEXT("LegacyFeedback.ini"));
+    FString LegacyUrl;
+    LegacyConfig.GetString(TEXT("BrainMining.Feedback"),TEXT("DiscussionUrl"),LegacyUrl);
+    TestEqual(TEXT("Reproduce the original unquoted INI truncation"),LegacyUrl,FString(TEXT("https:")));
+    TestEqual(TEXT("Missing configuration falls back to the pinned topic"),ResolvePlayerFeedbackUrl(TEXT("")),OfficialTopic);
+    TestEqual(TEXT("Legacy unquoted URL is repaired"),ResolvePlayerFeedbackUrl(TEXT("https:")),OfficialTopic);
+    TestEqual(TEXT("Old hub-only configuration uses the pinned topic"),ResolvePlayerFeedbackUrl(TEXT("https://steamcommunity.com/app/5506030/discussions/")),OfficialTopic);
+    const FString OtherTopic=TEXT("https://steamcommunity.com/app/5506030/discussions/0/123456789/");
+    TestEqual(TEXT("A future configured feedback topic is preserved"),ResolvePlayerFeedbackUrl(TEXT("  ")+OtherTopic+TEXT("  ")),OtherTopic);
+#if PLATFORM_WINDOWS
+    const auto PreviousLaunch=FPlatformProcess::LaunchURLOverrideDelegate;
+    FString LaunchedUrl;
+    FPlatformProcess::LaunchURLOverrideDelegate.BindLambda([&LaunchedUrl](const TCHAR* Url){LaunchedUrl=Url;});
+    OpenPlayerFeedback();
+    FPlatformProcess::LaunchURLOverrideDelegate=PreviousLaunch;
+    TestEqual(TEXT("The shared button action passes the full topic URL to the platform launcher"),LaunchedUrl,OfficialTopic);
+#endif
+    return true;
+}
+#endif
 
 // Preserve keyboard/gamepad focus, using the menu's gold outline instead of
 // Slate's default blue focus rectangle.
@@ -101,6 +170,8 @@ bool UMiningExperienceSubsystem::TogglePauseMenu(bool bFromCredits)
     });
     SaveButton->SetEnabled(bFromGameplay && GetWorld()->GetMapName().EndsWith(TEXT("Lvl_MainGame")));
     Button(TEXT("UI.Pause.MainMenu"),[this](){ReturnToMainMenu();});
+    AddFeedbackDivider(Choices);
+    Button(TEXT("UI.Feedback.Open"),[](){OpenPlayerFeedback();});
     Menu=MiningMenuStyle::Frame(Choices,650,0);
     PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);bPausedByMenu=!PC->IsPaused()&&PC->SetPause(true);
     Viewport->AddViewportWidgetContent(Menu.ToSharedRef(),1500);
@@ -116,9 +187,12 @@ void UMiningExperienceSubsystem::RequestQuitConfirmation()
     // Balance CloseMenu's input locks while preserving the opening's own locks.
     PC->SetIgnoreMoveInput(true);PC->SetIgnoreLookInput(true);
     auto Choices=SNew(SVerticalBox);
-    Choices->AddSlot().AutoHeight().Padding(0,0,0,28)
+    Choices->AddSlot().AutoHeight().Padding(0,0,0,12)
         [SNew(STextBlock).Text(MiningText::Get(TEXT("UI.Quit.Question"))).Justification(ETextJustify::Center)
             .Font(BrainMiningFonts::Title(32)).ColorAndOpacity(MiningMenuStyle::Gold)];
+    Choices->AddSlot().AutoHeight().Padding(0,0,0,28)
+        [SNew(STextBlock).Text(MiningText::Get(TEXT("UI.Quit.AutoSave"))).Justification(ETextJustify::Center)
+            .AutoWrapText(true).Font(BrainMiningFonts::Body(20)).ColorAndOpacity(MiningMenuStyle::Cream)];
     Choices->AddSlot().AutoHeight().Padding(0,7)
         [SAssignNew(CancelQuitButton,SMiningPauseButton).Tag(TEXT("OpeningQuitCancel")).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(FMargin(28,16))
             .OnClicked_Lambda([this](){CancelQuitConfirmation();return FReply::Handled();})
@@ -127,6 +201,11 @@ void UMiningExperienceSubsystem::RequestQuitConfirmation()
         [SNew(SMiningPauseButton).Tag(TEXT("OpeningQuitConfirm")).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(FMargin(28,16))
             .OnClicked_Lambda([this](){auto* Controller=MenuController.Get();CloseMenu();UKismetSystemLibrary::QuitGame(this,Controller,EQuitPreference::Quit,false);return FReply::Handled();})
             [SNew(STextBlock).Text(MiningText::Get(TEXT("UI.Quit.Confirm"))).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())]];
+    AddFeedbackDivider(Choices);
+    Choices->AddSlot().AutoHeight().Padding(0,7)
+        [SNew(SMiningPauseButton).Tag(TEXT("OpeningQuitFeedback")).ButtonStyle(MiningMenuStyle::Button()).ContentPadding(FMargin(28,16))
+            .OnClicked_Lambda([](){OpenPlayerFeedback();return FReply::Handled();})
+            [SNew(STextBlock).Text(MiningText::Get(TEXT("UI.Feedback.Open"))).Font(BrainMiningFonts::Body(22)).ColorAndOpacity(FSlateColor::UseForeground())]];
     Menu=MiningMenuStyle::Frame(Choices,560,0);Viewport->AddViewportWidgetContent(Menu.ToSharedRef(),2000);
     FInputModeUIOnly Mode;Mode.SetWidgetToFocus(CancelQuitButton);PC->SetInputMode(Mode);PC->bShowMouseCursor=true;
 }

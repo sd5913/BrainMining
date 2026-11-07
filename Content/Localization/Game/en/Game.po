@@ -1397,6 +1397,10 @@ msgctxt "BrainMining.Game,UI.Ending.Wait"
 msgid "等一下！"
 msgstr "Wait!"
 
+msgctxt "BrainMining.Game,UI.Feedback.Open"
+msgid "填写反馈"
+msgstr "Send feedback"
+
 msgctxt "BrainMining.Game,UI.Language.Auto"
 msgid "自动"
 msgstr "Auto"
@@ -1844,6 +1848,10 @@ msgstr "Mining tier {Level} · width {Width} cm · base depth per hit {Depth} cm
 msgctxt "BrainMining.Game,UI.Pickaxe.Stages"
 msgid "{Hits} 击挖开 · 基础边长 {Width} cm · 基础深度 {Depth} cm · 间隔 {Interval} 秒"
 msgstr "{Hits} hits to break · base width {Width} cm · base depth {Depth} cm · interval {Interval} s"
+
+msgctxt "BrainMining.Game,UI.Quit.AutoSave"
+msgid "进度将自动保存"
+msgstr "Your progress will be saved automatically."
 
 msgctxt "BrainMining.Game,UI.Quit.Cancel"
 msgid "取消"

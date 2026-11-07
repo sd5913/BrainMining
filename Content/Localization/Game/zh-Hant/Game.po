@@ -1397,6 +1397,10 @@ msgctxt "BrainMining.Game,UI.Ending.Wait"
 msgid "等一下！"
 msgstr "等一下！"
 
+msgctxt "BrainMining.Game,UI.Feedback.Open"
+msgid "填写反馈"
+msgstr "填寫回饋"
+
 msgctxt "BrainMining.Game,UI.Language.Auto"
 msgid "自动"
 msgstr "自動"
@@ -1844,6 +1848,10 @@ msgstr "破壞等級 {Level} · 範圍邊長 {Width} cm · 每擊基礎深度 {D
 msgctxt "BrainMining.Game,UI.Pickaxe.Stages"
 msgid "{Hits} 击挖开 · 基础边长 {Width} cm · 基础深度 {Depth} cm · 间隔 {Interval} 秒"
 msgstr "{Hits} 擊挖開 · 基礎邊長 {Width} cm · 基礎深度 {Depth} cm · 間隔 {Interval} 秒"
+
+msgctxt "BrainMining.Game,UI.Quit.AutoSave"
+msgid "进度将自动保存"
+msgstr "進度將自動儲存"
 
 msgctxt "BrainMining.Game,UI.Quit.Cancel"
 msgid "取消"

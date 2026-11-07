@@ -186,6 +186,8 @@ protected:
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> UpgradeNames;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> UpgradeDescriptions;
 	UPROPERTY(Transient) TObjectPtr<UCanvasPanel> MineralPanel;
+    UPROPERTY(Transient) TObjectPtr<UCanvasPanel> LeftHUDStack;
+    UPROPERTY(Transient) TObjectPtr<UCanvasPanel> CollectionShortcutPanel;
 	UPROPERTY(Transient) TObjectPtr<UImage> MineralBackplate;
 	UPROPERTY(Transient) TObjectPtr<UImage> PickaxeBackplate;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> MineralCounts;
@@ -196,9 +198,12 @@ protected:
 	UPROPERTY(Transient) TArray<TObjectPtr<UImage>> PickaxeRequirementIcons;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> PickaxeUpgradeHint;
     void RefreshTutorial(float DeltaSeconds);
+    void LayoutLeftHUD(float TaskHeight);
+    void LayoutTutorialRow(int32 Index, bool Completed, float& NextY);
     UPROPERTY(Transient) TObjectPtr<UCanvasPanel> TutorialPanel;
     UPROPERTY(Transient) TObjectPtr<UImage> TutorialBackplate;
     UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> TutorialRows;
+    UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> TutorialMarkers;
     float TutorialAge=0;
     float UpgradeAttentionAge=2.4f;
     bool bTutorialUpgradeRevealed=false;

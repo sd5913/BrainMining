@@ -260,6 +260,16 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     {auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->JumpToCollectible(int32(C->GetNumberField(TEXT("item"))));}
     else if(Op==TEXT("gm_map")){auto* Session=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>();Ok=Session->ToggleDeveloperMenu();if(Ok)Ok=Session->OpenDeveloperExperience(int32(C->GetNumberField(TEXT("index"))));}
     else if(Op==TEXT("throw_bomb")){auto* Bomb=Pawn->FindComponentByClass<UMiningBombToolComponent>();Ok=Bomb && Bomb->ThrowBomb();}
+    else if(Op==TEXT("subtitle_fixture"))
+    {
+        auto* Subtitles=USubtitleSubsystem::Get(this);
+        Ok=Subtitles!=nullptr;
+        if(Subtitles)
+        {
+            Subtitles->StopAll();
+            Subtitles->PlayStatusLine(FText::FromString(C->GetStringField(TEXT("text"))),C->GetNumberField(TEXT("duration")));
+        }
+    }
     else if(Op==TEXT("save"))Ok=Save->SaveProgress();
     else if(Op==TEXT("load"))Ok=Save->LoadProgress();
     else if(Op==TEXT("area_fixture") && Hall)
@@ -636,10 +646,14 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
     Result->SetArrayField(TEXT("run_items"),RunItems);
     Result->SetBoolField(TEXT("tutorial"),Save->TutorialActive);Result->SetNumberField(TEXT("completed"),Save->TutorialCompleted);
     Result->SetBoolField(TEXT("soil_passed"),Save->TutorialSoilPassed);
+    Result->SetBoolField(TEXT("museum_circle_task_started"),Save->MuseumCircleTaskStarted);
+    Result->SetBoolField(TEXT("museum_circle_task_completed"),Save->MuseumCircleTaskCompleted);
     Result->SetNumberField(TEXT("prototypes"),Save->PrototypesFound);Result->SetNumberField(TEXT("copper"),Wallet->GetMineralCount(EMiningMineral::Copper));
     Result->SetNumberField(TEXT("iron"),Wallet->GetMineralCount(EMiningMineral::Iron));Result->SetNumberField(TEXT("upgrade"),Wallet->GetUpgradeLevel(0));
     Result->SetBoolField(TEXT("has_save"),Save->HasSave());Result->SetArrayField(TEXT("position"),Vec(Pawn->GetActorLocation()));
     Result->SetNumberField(TEXT("collection"),Hall && Hall->Collection?Hall->Collection->UniqueCount():0);
+    Result->SetBoolField(TEXT("catalogue_open"),Hall && Hall->Collection && Hall->Collection->bCatalogueOpen);
+    Result->SetBoolField(TEXT("world_paused"),W->IsPaused());
     TArray<TSharedPtr<FJsonValue>> Totals,Owned,Conditions;
     for(auto M:{EMiningMineral::Copper,EMiningMineral::Iron,EMiningMineral::Malachite,EMiningMineral::Diamond})Totals.Add(MakeShared<FJsonValueNumber>(Wallet->CollectedMineralTotals.FindRef(M)));
     Result->SetArrayField(TEXT("mineral_totals"),Totals);
@@ -795,7 +809,7 @@ void UMiningPackagedQA::Execute(const TSharedPtr<FJsonObject>& C)
         if(auto* Panel=It->GetWidgetFromName(TEXT("GuidancePanel")))Result->SetNumberField(TEXT("guide_opacity"),Panel->GetRenderOpacity());
         if(auto* Panel=It->GetWidgetFromName(TEXT("PickaxeSummaryPanel")))Result->SetNumberField(TEXT("upgrade_opacity"),Panel->GetRenderOpacity());
         TArray<TSharedPtr<FJsonValue>> Rows;
-        for(int32 I=0;I<5;++I)
+        for(int32 I=0;I<6;++I)
             if(auto* Row=Cast<UTextBlock>(It->GetWidgetFromName(*FString::Printf(TEXT("GuidanceRow%d"),I))))
             {
                 auto Value=MakeShared<FJsonObject>();Value->SetNumberField(TEXT("index"),I);

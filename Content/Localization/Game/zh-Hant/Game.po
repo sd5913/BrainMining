@@ -1649,6 +1649,10 @@ msgctxt "BrainMining.Game,UI.Mobile.Upscaling"
 msgid "画面超分辨率"
 msgstr "畫面超解析度"
 
+msgctxt "BrainMining.Game,UI.Museum.CircleTask"
+msgid "找到画上奇怪的圆圈"
+msgstr "找到畫上奇怪的圓圈"
+
 msgctxt "BrainMining.Game,UI.Museum.LifeHint"
 msgid "再想想，比如说生命的涌现呢？"
 msgstr "再想想，比如說生命的湧現呢？"

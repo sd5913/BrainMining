@@ -49,6 +49,9 @@ void UMiningAchievementSubsystem::LoadProfile()
         }
     }
     bStorageHealthy = !FoundFile || FoundValid;
+    // Older/interrupted ledgers may contain every verified item without its
+    // derived unlock. Persist the repaired unlock before submitting it to Steam.
+    if (bStorageHealthy && Progress.ReconcileCollectionAchievements()) bDirty = true;
     if (!bStorageHealthy) UE_LOG(LogTemp, Error, TEXT("Achievement profile could not be recovered; preserving files for %s"), *OwnerId);
 }
 

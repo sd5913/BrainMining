@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Containers/Ticker.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "SubtitleSubsystem.generated.h"
 
@@ -37,6 +38,9 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 private:
+	friend class FMiningSubtitlePausedPlaybackTest;
+	bool TickPlayback(float DeltaSeconds);
+	void ScheduleLine(float Duration);
 	USubtitleSegment* FindSegment(FName SegmentId) const;
 	void StartSegment(USubtitleSegment* Segment);
 	void ShowCurrentLine();
@@ -59,7 +63,9 @@ private:
 
 	TArray<FName> Queue;
 	int32 LineIndex = 0;
-	FTimerHandle LineTimer;
+	FTSTicker::FDelegateHandle PlaybackTicker;
+	float LineSecondsRemaining = 0;
+	TWeakObjectPtr<UWorld> PlaybackWorld;
 	bool bPlaying = false;
 	bool bInLineGap = false;
 	float StatusDuration = 0;

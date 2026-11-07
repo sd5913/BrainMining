@@ -59,6 +59,8 @@ public:
     UPROPERTY() bool TutorialSoilPassed=false;
     UPROPERTY() int32 TutorialCompleted=0;
     UPROPERTY() int32 PrototypesFound=0;
+    UPROPERTY() bool MuseumCircleTaskStarted=false;
+    UPROPERTY() bool MuseumCircleTaskCompleted=false;
     UPROPERTY() bool CampaignComplete=false;
     UPROPERTY() bool AchievementEligible=true;
     UPROPERTY() FString AchievementOwner;
@@ -94,6 +96,10 @@ public:
     UPROPERTY(BlueprintReadOnly) bool TutorialSoilPassed=false;
     UPROPERTY(BlueprintReadOnly) int32 TutorialCompleted=0;
     UPROPERTY(BlueprintReadOnly) int32 PrototypesFound=0;
+    UPROPERTY(BlueprintReadOnly) bool MuseumCircleTaskStarted=false;
+    UPROPERTY(BlueprintReadOnly) bool MuseumCircleTaskCompleted=false;
+    void StartMuseumCircleTask();
+    void CompleteMuseumCircleTask();
     void RecordMineral(EMiningMineral Mineral);
 private:
     int32 CheckpointMode() const;

@@ -41,12 +41,19 @@ bool FMiningAchievementProgress::Unlock(FName Id)
 
 bool FMiningAchievementProgress::RecordCollection(int32 ItemId)
 {
-    if (!MiningAchievements::RequiredCollection().Contains(ItemId) || CollectionIds.Contains(ItemId)) return false;
+    if (!MiningAchievements::RequiredCollection().Contains(ItemId)) return false;
+    const bool Added = !CollectionIds.Contains(ItemId);
     CollectionIds.Add(ItemId);
-    Unlock(TEXT("ACH_FIRST_COLLECTION"));
-    if (CollectionIds.Num() >= 5) Unlock(TEXT("ACH_COLLECTION_5"));
-    if (MiningAchievements::RequiredCollection().Difference(CollectionIds).IsEmpty()) Unlock(TEXT("ACH_COLLECTION_COMPLETE"));
-    return true;
+    return ReconcileCollectionAchievements() || Added;
+}
+
+bool FMiningAchievementProgress::ReconcileCollectionAchievements()
+{
+    bool Updated = false;
+    if (!CollectionIds.IsEmpty()) Updated |= Unlock(TEXT("ACH_FIRST_COLLECTION"));
+    if (CollectionIds.Num() >= 5) Updated |= Unlock(TEXT("ACH_COLLECTION_5"));
+    if (MiningAchievements::RequiredCollection().Difference(CollectionIds).IsEmpty()) Updated |= Unlock(TEXT("ACH_COLLECTION_COMPLETE"));
+    return Updated;
 }
 
 bool FMiningAchievementProgress::RecordSavedCollections(const TArray<int32>& Inventory, const TArray<int32>* VerifiedIds)
@@ -61,7 +68,7 @@ bool FMiningAchievementProgress::RecordSavedCollections(const TArray<int32>& Inv
         for (int32 Index = 0; Index < Inventory.Num(); ++Index)
             if (Inventory[Index] > 0) Updated |= RecordCollection(Index);
     }
-    return Updated;
+    return ReconcileCollectionAchievements() || Updated;
 }
 
 bool FMiningAchievementProgress::RecordPickaxe(int32 Level)

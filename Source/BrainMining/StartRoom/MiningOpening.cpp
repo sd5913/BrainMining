@@ -89,8 +89,8 @@ TSharedRef<SWidget> UMiningOpeningMenu::RebuildWidget()
     auto* TitleSlot=Canvas->AddChildToCanvas(Fit);TitleSlot->SetAnchors(FAnchors(.045f,.08f,.47f,.53f));TitleSlot->SetOffsets(FMargin(0));
     TitleImage=WidgetTree->ConstructWidget<UImage>();Fit->AddChild(TitleImage);
     if(Opening.IsValid())TitleImage->SetBrushFromTexture(Opening->TitleTexture,true);
-    // Only the menu logo turns toward the screen centre. The same supplied
-    // artwork remains flat when projected onto the actual mineable wall.
+    // Only the menu logo turns toward the screen centre. The wall material
+    // uses its own cream/gold artwork, projected flat onto the mineable wall.
     if(auto* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/StartRoom/UI/M_OpeningTitlePerspective")))
     {
         auto* Perspective=UMaterialInstanceDynamic::Create(Base,TitleImage);
@@ -342,7 +342,8 @@ void AMiningOpening::EnsureTitleOnWall()
     // A shallow projection disappears locally with each removed piece of terrain.
     auto* Decal=NewObject<UDecalComponent>(this,TEXT("MineableWallTitle"));
     AddInstanceComponent(Decal);Decal->SetupAttachment(RootComponent);
-    Decal->SetDecalMaterial(Material);Decal->DecalSize=FVector(18.f,61.5f,104.96f);
+    // Preserve the supplied 1040 x 720 artwork's aspect ratio at the existing width.
+    Decal->SetDecalMaterial(Material);Decal->DecalSize=FVector(18.f,104.96f*720.f/1040.f,104.96f);
     Decal->SetFadeScreenSize(0.f);
     // Decal UVs use local Z for horizontal and local Y for vertical. Rotate
     // the projection frame from the widget frame so the projected bitmap is

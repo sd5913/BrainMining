@@ -25,6 +25,7 @@ struct BRAINMINING_API FMiningAchievementProgress
     UPROPERTY() TSet<int32> CollectionIds;
     UPROPERTY() int32 BestPickaxeLevel = 0;
     bool RecordCollection(int32 ItemId);
+    bool ReconcileCollectionAchievements();
     bool RecordSavedCollections(const TArray<int32>& Inventory, const TArray<int32>* VerifiedIds);
     bool RecordPickaxe(int32 Level);
     bool Unlock(FName Id);

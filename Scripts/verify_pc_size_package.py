@@ -77,6 +77,15 @@ def verify(executable, output):
             command("gm_tool", tool=tool)
         state = command("state")
         check(state["bomb"] and state["drill"], "bomb and drill unlock through developer fixture")
+        # Inspect the cooked opening artwork after granting the isolated QA tools.
+        # The regular pickaxe interaction is covered by verify_opening_logos.py.
+        room = next(a for a in command("actors", filter="StartRoom")["actors"]
+                    if a["class"] in ("MiningStartRoom", "BP_StartRoom_C"))
+        rx, ry, rz = room["position"]
+        fx, fy, _ = room["forward"]
+        command("pose", eye=[rx + 140 * fy, ry - 140 * fx, rz + 165],
+                target=[rx + 466 * fx, ry + 466 * fy, rz + 168])
+        capture("03-opening-wall-logo")
         for area, name in ((1, "office"), (2, "second-mine"), (3, "echo-cards"), (4, "third-mine"), (5, "museum")):
             command("area_fixture", area=area)
             state = wait_state(lambda state: state["area"] == area)

@@ -103,6 +103,7 @@ void AMouseMuseumPortal::RefreshFocus()
   if(Local.X>2210 && Local.X<2440 && FMath::Abs(Local.Y+350)<125 && Local.Z<200)
   {
    bInsideGallery=true;
+   if(auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>())Saves->StartMuseumCircleTask();
    if(GalleryEnteredAt<0)GalleryEnteredAt=GetWorld()->GetTimeSeconds();
    if(!bGalleryHintShown && GetWorld()->GetTimeSeconds()-GalleryEnteredAt>=3.f)
    {bGalleryHintShown=true;if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(MiningText::Get(TEXT("UI.Museum.PaintingHint")),4.f);}}
@@ -137,7 +138,9 @@ bool AMouseMuseumPortal::TryEnter()
  PreviousMovementMode=Pawn->GetCharacterMovement()->MovementMode;PreviousCustomMode=Pawn->GetCharacterMovement()->CustomMovementMode;
  Pawn->GetCharacterMovement()->StopMovementImmediately();Pawn->GetCharacterMovement()->DisableMovement();
  if(auto* Sub=USubtitleSubsystem::Get(this)){Sub->StopAll();Sub->PlayStatusLine(MiningText::Get(TEXT("UI.Museum.LifeHint")),5.f);}
- EntryAge=0;bFocused=false;bTravelRequested=false;return true;
+ EntryAge=0;bFocused=false;bTravelRequested=false;
+ if(auto* Saves=GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>())Saves->CompleteMuseumCircleTask();
+ return true;
 }
 
 bool AMouseMuseumPortal::Advance(float Dt)

@@ -75,6 +75,13 @@ namespace
         // A complete staging write can be newer than the backup after interruption.
         return {Slot,Slot+TEXT("_pending"),Slot+TEXT("_backup")};
     }
+    UMiningSaveGame* LoadCollectionSnapshot()
+    {
+        TArray<FString> Slots=RecoverySlots();Slots.Insert(GetSaveSlot()+TEXT("_completion"),0);
+        for(const FString& Slot:Slots)
+            if(auto* Data=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(Slot,0));ValidSnapshot(Data))return Data;
+        return nullptr;
+    }
 }
 
 bool UMiningSaveSubsystem::HasSave() const
@@ -89,14 +96,11 @@ bool UMiningSaveSubsystem::HasSave() const
 TArray<int32> UMiningSaveSubsystem::GetCollectionProgress() const
 {
     TArray<int32> Result=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection;
-    TArray<FString> Slots=RecoverySlots();Slots.Insert(GetSaveSlot()+TEXT("_completion"),0);
-    for(const FString& Slot:Slots)
-        if(auto* Data=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromSlot(Slot,0));ValidSnapshot(Data))
-        {
-            Result.SetNumZeroed(FMath::Max(Result.Num(),Data->Collection.Num()));
-            for(int32 I=0;I<Data->Collection.Num();++I)Result[I]=FMath::Max(Result[I],Data->Collection[I]);
-            break;
-        }
+    if(auto* Data=LoadCollectionSnapshot())
+    {
+        Result.SetNumZeroed(FMath::Max(Result.Num(),Data->Collection.Num()));
+        for(int32 I=0;I<Data->Collection.Num();++I)Result[I]=FMath::Max(Result[I],Data->Collection[I]);
+    }
     return Result;
 }
 bool UMiningSaveSubsystem::HasCollectionProgress() const
@@ -105,13 +109,22 @@ bool UMiningSaveSubsystem::HasCollectionProgress() const
 }
 void UMiningSaveSubsystem::StartNewGame(bool bKeepCollection)
 {
-    GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>()->BeginRun();
+    auto* Achievements=GetGameInstance()->GetSubsystem<UMiningAchievementSubsystem>();
+    Achievements->BeginRun();
     FinishPendingWrite();MeshTask=TFuture<FMiningSavedMesh>();MeshCache.Reset();TutorialSoil.Reset();
     FrozenCheckpoint=nullptr;PendingRoomRestore=nullptr;
     bSessionStarted=true;bLoadedProgress=false;SessionWorld=GetWorld();SaveAge=0;PreviousArea=INDEX_NONE;
     FallingSeconds=0;UpgradeHintLevel=INDEX_NONE;RestoredMinerals.Reset();
     CompletionNotices.Reset();TutorialActive=false;TutorialSoilPassed=false;TutorialCompleted=0;PrototypesFound=0;
+    MuseumCircleTaskStarted=false;MuseumCircleTaskCompleted=false;
     const TArray<int32> Collection=bKeepCollection?GetCollectionProgress():TArray<int32>();
+    // Steam Cloud restores the campaign save independently of the local achievement
+    // ledger. Recover its verified, same-owner collectibles before deleting the old
+    // run; otherwise the visible kept catalogue and achievement count can diverge.
+    if(bKeepCollection)
+        if(auto* Data=LoadCollectionSnapshot();Data && Data->AchievementEligible)
+            Achievements->ReconcileSave(Data->Collection,0,false,Data->AchievementOwner,
+                Data->HasVerifiedAchievementCollection?&Data->AchievementCollectionIds:nullptr);
     auto* Wallet=GetGameInstance()->GetSubsystem<UMiningWalletSubsystem>();
     Wallet->Balance=0;Wallet->Minerals.Reset();Wallet->CollectedMineralTotals.Reset();Wallet->UpgradeLevels={0,0,0,0};Wallet->MineralDoubleChance=0;
     Wallet->bBombSkillUnlocked=false;Wallet->bDrillSkillUnlocked=false;
@@ -140,6 +153,7 @@ void UMiningSaveSubsystem::FinishPendingWrite()
 }
 void UMiningSaveSubsystem::EndSession()
 {
+    MuseumCircleTaskStarted=false;MuseumCircleTaskCompleted=false;
     FinishPendingWrite();FrozenCheckpoint=nullptr;PendingRoomRestore=nullptr;bSessionStarted=false;bLoadedProgress=false;RunCollectedItems.Reset();RestoredMinerals.Reset();CompletionNotices.Reset();
     MeshTask=TFuture<FMiningSavedMesh>();MeshCache.Reset();TutorialSoil.Reset();
 }
@@ -222,6 +236,8 @@ bool UMiningSaveSubsystem::SaveProgressInternal(bool bAsync)
     Data->Balance=Wallet->Balance;Data->Minerals=Wallet->Minerals;Data->CollectedMineralTotals=Wallet->CollectedMineralTotals;Data->Upgrades=Wallet->UpgradeLevels;
     Data->TutorialActive=TutorialActive;Data->TutorialCompleted=TutorialCompleted;Data->PrototypesFound=PrototypesFound;
     Data->TutorialSoilPassed=TutorialSoilPassed;
+    Data->MuseumCircleTaskStarted=MuseumCircleTaskStarted;
+    Data->MuseumCircleTaskCompleted=MuseumCircleTaskCompleted;
     Data->Bomb=Wallet->bBombSkillUnlocked;Data->Drill=Wallet->bDrillSkillUnlocked;
     Data->Collection=GetGameInstance()->GetSubsystem<UMiningExperienceSubsystem>()->CampaignCollection;
     if(Hall->Collection)Data->Collection=Hall->Collection->Inventory;
@@ -350,6 +366,8 @@ bool UMiningSaveSubsystem::LoadProgress()
     Wallet->Balance=Data->Balance;Wallet->Minerals=Data->Minerals;Wallet->CollectedMineralTotals=Data->CollectedMineralTotals;Wallet->UpgradeLevels=Data->Upgrades;
     TutorialActive=Data->TutorialActive;TutorialCompleted=Data->TutorialCompleted;PrototypesFound=Data->PrototypesFound;
     TutorialSoilPassed=Data->TutorialSoilPassed;
+    MuseumCircleTaskCompleted=Data->MuseumCircleTaskCompleted || Data->Checkpoint==5;
+    MuseumCircleTaskStarted=Data->MuseumCircleTaskStarted || MuseumCircleTaskCompleted;
     // Older releases already showed the later objectives. Keep progressed saves
     // there, including players past this wall who have not collected anything yet.
     if(Data->Version==1)
@@ -486,6 +504,19 @@ void UMiningSaveSubsystem::RecordMineral(EMiningMineral Mineral)
     }
     if(Mineral==EMiningMineral::Copper)TutorialCompleted|=1;
     if(Mineral==EMiningMineral::Iron)TutorialCompleted|=2;
+}
+
+void UMiningSaveSubsystem::StartMuseumCircleTask()
+{
+    MuseumCircleTaskStarted=true;
+}
+
+void UMiningSaveSubsystem::CompleteMuseumCircleTask()
+{
+    if(!MuseumCircleTaskStarted || MuseumCircleTaskCompleted)return;
+    MuseumCircleTaskCompleted=true;
+    // Show this before travel, even if another objective's notice is queued.
+    CompletionNotices.Insert(MiningText::Get(TEXT("UI.Museum.CircleTask")),0);
 }
 
 void UMiningSaveSubsystem::UpdateTutorial()

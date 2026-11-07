@@ -3,6 +3,7 @@
 本项目有 **Demo** 和 **正式版 Full** 两个 Steam 应用。完整流程见 [Docs/MainGamePackaging.md](Docs/MainGamePackaging.md)。
 
 - 用户说“打包”“出包”“上传”时，先从本次对话确认目标是 **Demo / 正式版 / 两者**。对话已明确时继续执行，不重复询问；确实没说明时先问清楚，不能根据上一次配置或 ZIP 名猜测。非 Steam 离线包也需明确。
+- **用户不必每条消息重复版本目标。** 同一任务中的“继续”“重新打包”“再传一次”沿用本次对话已确认的目标；新对话若只说“打包”，应询问“这次打 Demo、正式版，还是两者？”。“打包”本身不代表授权上传、设为 default 或公开发售，按当前对话分别确认的范围执行。
 - Demo：AppID `5524430`，DepotID `5524431`。正式版：AppID `5506030`，DepotID `5506031`。新版本沿用对应 Depot，更新 BuildID / manifest；不要每次创建新 Depot。
 - Steam 发布包必须同时具备 **正常 Steam 成就 + 完整 PCSize 压缩**。运行 `python Scripts/configure_steam.py --app-id <目标AppID>`，然后 `package_main_game.ps1 -CustomConfig SteamPC`。普通 `PCSize` 包不包含 Steam 成就适配器，不能作为 Steam 交付包替代。
 - **正式版不继承 Demo 的游戏存档、收藏进度或成就进度。** 正式版从独立新档开始；成就定义、名称、说明及隐藏规则可相同，进度必须隔离。不得把 Demo 的本地成就档案或存档迁入正式版。保留已发布 Demo 的兼容性，不删除用户旧档。

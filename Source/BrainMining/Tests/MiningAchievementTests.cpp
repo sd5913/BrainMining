@@ -1,6 +1,7 @@
 #include "MiningAchievementState.h"
 #include "MiningAchievementSubsystem.h"
 #include "MiningSaveSubsystem.h"
+#include "MiningExperienceSubsystem.h"
 #include "MiningWalletSubsystem.h"
 #include "HeavenToiletWater.h"
 #include "GameFramework/Character.h"
@@ -11,6 +12,7 @@
 #include "HAL/PlatformTime.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/AutomationTest.h"
+#include "Misc/CommandLine.h"
 #include "Misc/ScopeExit.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -18,7 +20,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAchievementMilestonesTest,"BrainMining.A
 bool FMiningAchievementMilestonesTest::RunTest(const FString&)
 {
     auto* Instance=NewObject<UGameInstance>(GEngine);
-    Instance->InitializeStandalone(NAME_None,CreatePackage(TEXT("/Game/MainGame/Maps/Lvl_MainGame")));
+    Instance->InitializeStandalone(FName(*(TEXT("AchievementMilestones_")+FGuid::NewGuid().ToString(EGuidFormats::Digits))),CreatePackage(TEXT("/Game/MainGame/Maps/Lvl_MainGame")));
     UWorld* World=Instance->GetWorld();
     auto* System=Instance->GetSubsystem<UMiningAchievementSubsystem>();
     const FString Slot=TEXT("BrainMining_Automation_Milestones_")+FGuid::NewGuid().ToString(EGuidFormats::Digits);
@@ -222,6 +224,96 @@ bool FMiningAchievementAppIsolationTest::RunTest(const FString&)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAchievementKeptCollectionTest,"BrainMining.Achievements.KeptCollectionAcrossRuns",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMiningAchievementKeptCollectionTest::RunTest(const FString&)
+{
+    const FString Prefix=TEXT("BrainMining_Automation_KeptCollection_")+FGuid::NewGuid().ToString(EGuidFormats::Digits);
+    const FString CampaignSlot=Prefix+TEXT("_campaign");
+    const FString LedgerSlot=Prefix+TEXT("_ledger");
+    const FString OriginalCommandLine=FCommandLine::Get();
+    FCommandLine::Set(*FString::Printf(TEXT("-MiningSaveSlot=%s %s"),*CampaignSlot,*OriginalCommandLine));
+    auto* Instance=NewObject<UGameInstance>(GEngine);
+    // Keep the campaign package for production eligibility checks, but use a
+    // unique world name: DestroyWorld does not immediately GC its named children.
+    Instance->InitializeStandalone(FName(*Prefix),CreatePackage(TEXT("/Game/MainGame/Maps/Lvl_MainGame")));
+    UWorld* World=Instance->GetWorld();World->WorldType=EWorldType::Game;
+    auto* System=Instance->GetSubsystem<UMiningAchievementSubsystem>();
+    auto* Saves=Instance->GetSubsystem<UMiningSaveSubsystem>();
+    auto* Session=Instance->GetSubsystem<UMiningExperienceSubsystem>();
+    auto Provider=MakeShared<FTestAchievementProvider>();
+    Provider->User=MiningPlatform::SteamAccountKey(5506030,TEXT("kept_collection_test"));
+    System->Slot=LedgerSlot;System->OwnerId=Provider->User;System->Provider=Provider;System->bInitialized=true;
+    ON_SCOPE_EXIT
+    {
+        Instance->Shutdown();GEngine->DestroyWorldContext(World);World->DestroyWorld(false);
+        for(const FString& Base:{CampaignSlot,LedgerSlot})
+            for(const FString& Suffix:{FString(),FString(TEXT("_pending")),FString(TEXT("_backup")),FString(TEXT("_completion"))})
+                UGameplayStatics::DeleteGameInSlot(Base+Suffix,0);
+        FCommandLine::Set(*OriginalCommandLine);
+    };
+    // Only the in-memory fake provider is attached. All save slots are unique.
+    TGuardValue<bool> NormalPlay(GIsAutomationTesting,false);
+    auto Snapshot=[&](const FString& Owner,bool Eligible,const TArray<int32>& Verified,bool MarkVerified=true)
+    {
+        auto* Data=NewObject<UMiningSaveGame>();
+        Data->Version=6;Data->Upgrades={0,0,0,0};Data->CampaignComplete=true;
+        Data->AchievementOwner=Owner;Data->AchievementEligible=Eligible;
+        Data->HasVerifiedAchievementCollection=MarkVerified;Data->AchievementCollectionIds=Verified;
+        Data->Collection.Init(1,23); // Visible catalogue is deliberately not trusted.
+        TestTrue(TEXT("Isolated completion snapshot written"),UGameplayStatics::SaveGameToSlot(Data,CampaignSlot+TEXT("_completion"),0));
+        return Data;
+    };
+    TArray<int32> FirstRun;
+    for(int32 Id=0;Id<22;++Id)FirstRun.Add(Id);
+    auto* First=Snapshot(System->OwnerId,true,FirstRun);
+    First->Collection[22]=0;
+    TestTrue(TEXT("Incomplete first run persisted"),UGameplayStatics::SaveGameToSlot(First,CampaignSlot+TEXT("_completion"),0));
+    TestTrue(TEXT("Cloud-restored campaign starts without a local achievement ledger"),System->Progress.CollectionIds.IsEmpty());
+    Saves->StartNewGame(true);
+    TestEqual(TEXT("Keep restores all verified first-run achievements before deleting its save"),System->Progress.CollectionIds.Num(),22);
+    TestEqual(TEXT("The incomplete visible collection is retained"),Session->CampaignCollection[22],0);
+    TestFalse(TEXT("Partial first run does not unlock full collection"),System->Progress.Unlocked.Contains(TEXT("ACH_COLLECTION_COMPLETE")));
+    Saves->RecordCollectible(22);
+    TestTrue(TEXT("Collecting the missing item on the second run unlocks full collection"),System->Progress.Unlocked.Contains(TEXT("ACH_COLLECTION_COMPLETE")));
+    System->Synchronize();Provider->QueryCallback(true,{});System->Synchronize();
+    TestTrue(TEXT("Full-collection unlock reaches the Steam provider submission"),Provider->Submitted.Contains(TEXT("ACH_COLLECTION_COMPLETE")));
+    Provider->WriteCallback(true);
+    System->Synchronize();
+    TestEqual(TEXT("Confirmed full-collection batch is not repeated"),Provider->Writes,1);
+
+    System->Progress={};
+    for(int32 Id:FirstRun)System->Progress.RecordCollection(Id);
+    Snapshot(System->OwnerId,true,FirstRun);
+    Saves->StartNewGame(true);
+    TestEqual(TEXT("An intact same-machine ledger is preserved across runs"),System->Progress.CollectionIds.Num(),22);
+    TestFalse(TEXT("An intact partial ledger does not unlock before the final pickup"),System->Progress.Unlocked.Contains(TEXT("ACH_COLLECTION_COMPLETE")));
+    Saves->RecordCollectible(22);
+    TestTrue(TEXT("Same-machine second-run completion still unlocks"),System->Progress.Unlocked.Contains(TEXT("ACH_COLLECTION_COMPLETE")));
+
+    System->Progress={};Session->CampaignCollection.Reset();
+    Snapshot(System->OwnerId,true,MiningAchievements::RequiredCollection().Array());
+    Saves->StartNewGame(true);
+    TestTrue(TEXT("Previously completed verified collection is repaired without another pickup"),System->Progress.Unlocked.Contains(TEXT("ACH_COLLECTION_COMPLETE")));
+
+    System->Progress={};
+    Snapshot(System->OwnerId,true,{});
+    Saves->StartNewGame(true);
+    TestTrue(TEXT("Display-only collection cannot fabricate verified achievement progress"),System->Progress.CollectionIds.IsEmpty());
+    Snapshot(System->OwnerId,false,FirstRun);
+    Saves->StartNewGame(true);
+    TestTrue(TEXT("Debug completion snapshot cannot grant achievements"),System->Progress.CollectionIds.IsEmpty());
+    Snapshot(MiningPlatform::SteamAccountKey(5506030,TEXT("other_player")),true,FirstRun);
+    Saves->StartNewGame(true);
+    TestTrue(TEXT("Another account's retained catalogue cannot grant achievements"),System->Progress.CollectionIds.IsEmpty());
+    Snapshot(MiningPlatform::SteamAccountKey(5524430,TEXT("kept_collection_test")),true,FirstRun);
+    Saves->StartNewGame(true);
+    TestTrue(TEXT("Demo progress cannot transfer into full achievements"),System->Progress.CollectionIds.IsEmpty());
+    Snapshot(System->OwnerId,true,FirstRun);
+    Saves->StartNewGame(false);
+    TestTrue(TEXT("Clear collection does not import the previous catalogue"),System->Progress.CollectionIds.IsEmpty() && Session->CampaignCollection.IsEmpty());
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMiningAchievementStorageTest,"BrainMining.Achievements.RecoveryAndOwnerValidation",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FMiningAchievementStorageTest::RunTest(const FString&)
 {
@@ -253,6 +345,14 @@ bool FMiningAchievementStorageTest::RunTest(const FString&)
     DifferentUser->LoadProfile();
     TestFalse(TEXT("Wrong-owner files are preserved rather than overwritten"),DifferentUser->bStorageHealthy);
     TestTrue(TEXT("No cross-account achievement migration"),DifferentUser->Progress.Unlocked.IsEmpty());
+    Pending->Revision=3;Pending->Progress.CollectionIds=MiningAchievements::RequiredCollection();
+    Pending->Progress.Unlocked.Remove(TEXT("ACH_COLLECTION_COMPLETE"));
+    TestTrue(TEXT("Existing complete ledger missing its derived unlock is saved"),UGameplayStatics::SaveGameToSlot(Pending,Slot+TEXT("_pending"),0));
+    auto* Repaired=NewObject<UMiningAchievementSubsystem>(Instance);
+    Repaired->Slot=Slot;Repaired->OwnerId=System->OwnerId;Repaired->LoadProfile();
+    TestTrue(TEXT("Complete verified ledger repairs the missing unlock on load"),Repaired->Progress.Unlocked.Contains(TEXT("ACH_COLLECTION_COMPLETE")));
+    TestTrue(TEXT("Repair is persisted before Steam synchronization"),Repaired->bDirty && Repaired->SaveProfile());
+    TestFalse(TEXT("Repaired ledger stays idempotent"),Repaired->Progress.RecordCollection(0));
     return true;
 }
 #endif

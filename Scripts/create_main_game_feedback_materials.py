@@ -27,7 +27,7 @@ def custom(m,code,inputs,typ):
 updated=[]
 if '--glow-only' not in sys.argv:
     title=material('/Game/StartRoom/UI','M_OpeningTitleDecal')
-    tex=node(title,unreal.MaterialExpressionTextureSample,texture=unreal.load_asset('/Game/StartRoom/UI/T_OpeningTitle'))
+    tex=node(title,unreal.MaterialExpressionTextureSample,texture=unreal.load_asset('/Game/StartRoom/UI/T_OpeningWallTitle'))
     output(tex,'RGB',unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     output(tex,'RGB',unreal.MaterialProperty.MP_BASE_COLOR)
     output(tex,'A',unreal.MaterialProperty.MP_OPACITY)

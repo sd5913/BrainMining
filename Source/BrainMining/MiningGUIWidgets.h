@@ -204,7 +204,8 @@ protected:
     bool bTutorialUpgradeRevealed=false;
     bool bTutorialSoilPresented=false;
     float TutorialSoilDoneAge=0;
-    float TutorialDoneAge[5]={0,0,0,0,0};
+    float TutorialDoneAge[6]={0,0,0,0,0,0};
+    bool bMuseumCircleTaskPresented=false;
     int32 DisplayedPrototype=1;
     int32 DisplayedUpgrade=1;
     UPROPERTY(Transient) TObjectPtr<UTextBlock> CollectionShortcut;

@@ -3,6 +3,9 @@
 #include "Showcase/MiningExhibitHall.h"
 #include "WenSi/WenSiMirrorPuzzle.h"
 #include "WenSi/MouseMuseumPortal.h"
+#include "MiningSaveSubsystem.h"
+#include "Engine/GameInstance.h"
+#include "Kismet/GameplayStatics.h"
 #include "StartRoom/MiningOpening.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Camera/CameraComponent.h"
@@ -100,6 +103,7 @@ public:
    FVector Eye;FRotator Look;PC->GetPlayerViewPoint(Eye,Look);
    PC->SetControlRotation((Puzzle->MousePortal->CellCenter()-Eye).Rotation());PC->PlayerCameraManager->UpdateCamera(.016f);
    Test->TestFalse(TEXT("Locked mechanisms reject painting interaction"),Puzzle->MousePortal->TryEnter());
+   Test->TestFalse(TEXT("Locked gallery does not activate the circle task"),World->GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->MuseumCircleTaskStarted);
    Pawn->SetActorLocation(Puzzle->RoomPoint(FVector(1650,40,35)));
    auto* Block=Puzzle->Find(6);auto* Ball=Puzzle->Find(9);
    if(!Block || !Ball){Test->AddError(TEXT("Museum mechanisms missing"));return true;}
@@ -112,6 +116,7 @@ public:
   {
    if(!Test->TestTrue(TEXT("Unlocking both mechanisms alone does not travel"),Puzzle.IsValid() && Puzzle->bRewardUnlocked && !Puzzle->bComplete))return true;
    Test->TestFalse(TEXT("Interaction from outside the mouse hole is rejected"),Puzzle->MousePortal->TryEnter());
+   Test->TestFalse(TEXT("Unlocking the gallery does not start its task before entry"),World->GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->MuseumCircleTaskStarted);
    if(!Test->TestTrue(TEXT("Restore ordinary size outside alcove"),Puzzle->SetPlayerWord(EWenSiMirrorWord::Ordinary)))return true;
    Pawn->SetActorLocation(Puzzle->RoomPoint(FVector(2300,-350,89)));
   }
@@ -132,6 +137,10 @@ public:
   {
    if(HintCheckStarted<0)
    {
+    Puzzle->MousePortal->RefreshFocus();
+    auto* Saves=World->GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();
+    Test->TestTrue(TEXT("Entering the mouse gallery immediately starts the circle task"),Saves->MuseumCircleTaskStarted);
+    Test->TestFalse(TEXT("Seeing the circle does not complete its task"),Saves->MuseumCircleTaskCompleted);
     HintCheckStarted=World->GetTimeSeconds();
     Test->TestFalse(TEXT("Gallery hint does not appear immediately on entry"),Puzzle->MousePortal->HasShownGalleryHint());
    }
@@ -172,6 +181,7 @@ public:
    Blocker->GetStaticMeshComponent()->SetCollisionProfileName(TEXT("BlockAll"));
    Blocker->SetActorLocation((Eye+Puzzle->MousePortal->CellCenter())*.5f);Blocker->SetActorScale3D(FVector(.1f));
    Test->TestFalse(TEXT("An occluding object blocks the painted portal"),Puzzle->MousePortal->TryEnter());
+   Test->TestFalse(TEXT("Blocked interaction cannot complete the circle task"),World->GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>()->MuseumCircleTaskCompleted);
    Blocker->Destroy();Puzzle->MousePortal->RefreshFocus();
    if(FParse::Param(FCommandLine::Get(),TEXT("MouseMuseumScreenshots")))FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Validation/MouseMuseum/Gallery.png"),false,false);
   }
@@ -183,10 +193,16 @@ public:
    PC->SetControlRotation((Puzzle->MousePortal->CellCenter()-Eye).Rotation());
    PC->PlayerCameraManager->UpdateCamera(.016f);
    if(!Test->TestTrue(TEXT("E interaction starts the cell suction"),Puzzle->MousePortal->TryEnter()))return true;
+   auto* Saves=World->GetGameInstance()->GetSubsystem<UMiningSaveSubsystem>();
+   Test->TestTrue(TEXT("Successful circle interaction completes the task before travel"),Saves->MuseumCircleTaskCompleted);
+   const int32 Notices=Saves->CompletionNotices.Num();
    Test->TestTrue(TEXT("Suction locks movement and look"),PC->IsMoveInputIgnored() && PC->IsLookInputIgnored());
    Test->TestTrue(TEXT("Repeated E cannot start a second entry"),!Puzzle->MousePortal->TryEnter());
+   Test->TestEqual(TEXT("Repeated interaction does not duplicate task completion"),Saves->CompletionNotices.Num(),Notices);
    // Exercise cancellation before the real travel; it must release camera/input.
    Puzzle->MousePortal->Cancel();
+   Puzzle->MousePortal->RefreshFocus();
+   Test->TestTrue(TEXT("Cancelling travel and re-entering cannot reactivate a completed task"),Saves->MuseumCircleTaskCompleted);
    Test->TestFalse(TEXT("Cancelled suction restores movement"),PC->IsMoveInputIgnored());
    Test->TestFalse(TEXT("Cancelled suction restores look"),PC->IsLookInputIgnored());
    Test->TestFalse(TEXT("Cancelled suction restores the visible pawn"),Pawn->IsHidden());
@@ -259,7 +275,8 @@ public:
     if(Ending->GateIndex!=1)return false;
     auto BloodCamera=PC->GetViewTarget()->FindComponentByClass<UCameraComponent>();
     Test->TestTrue(TEXT("Blood handoff switches to the cinematic camera"),PC->GetViewTarget()!=Pawn);
-    Test->TestTrue(TEXT("Blood camera has no cell shader"),FMath::IsNearlyZero(PaintWeight(BloodCamera)));
+    Test->TestEqual(TEXT("Blood camera uses the authored vessel paint strength"),PaintWeight(BloodCamera),FMath::Clamp(Ending->BloodPaintWeight,0.f,1.f));
+    Test->TestEqual(TEXT("Blood handoff clears paint from the inactive pawn camera"),PaintWeight(Pawn->FindComponentByClass<UCameraComponent>()),0.f);
     Capture(TEXT("Blood"));
    }
    else if(Step==9)
@@ -269,13 +286,18 @@ public:
    }
    else if(Step==10)
    {
-    Test->TestEqual(TEXT("Leaving the vessel removes paint immediately"),Ending->ActivePaintWeight,0.f);
+    // The authored vessel-to-brain handoff fades paint over 1.25 seconds;
+    // it must be fully clear when the 1.45-second camera transition completes.
+    Test->TestTrue(TEXT("Vessel exit paint stays within the authored fade range"),FMath::IsFinite(Ending->ActivePaintWeight) && Ending->ActivePaintWeight>=0.f && Ending->ActivePaintWeight<=Ending->BloodPaintWeight);
     Test->TestEqual(TEXT("Pawn camera cannot leak paint into neurons"),PaintWeight(Pawn->FindComponentByClass<UCameraComponent>()),0.f);
-    Test->TestEqual(TEXT("Cinematic camera cannot leak paint into neurons"),PaintWeight(PC->GetViewTarget()->FindComponentByClass<UCameraComponent>()),0.f);
+    Test->TestEqual(TEXT("Cinematic camera follows the vessel exit fade"),PaintWeight(PC->GetViewTarget()->FindComponentByClass<UCameraComponent>()),Ending->ActivePaintWeight);
    }
    else if(Step==11)
    {
     if(Ending->GateIndex!=2)return false;
+    Test->TestEqual(TEXT("Entering neurons has fully removed the vessel paint"),Ending->ActivePaintWeight,0.f);
+    Test->TestEqual(TEXT("Pawn camera remains clear in neurons"),PaintWeight(Pawn->FindComponentByClass<UCameraComponent>()),0.f);
+    Test->TestEqual(TEXT("Cinematic camera cannot leak paint into neurons"),PaintWeight(PC->GetViewTarget()->FindComponentByClass<UCameraComponent>()),0.f);
     Capture(TEXT("Neurons"));
    }
    else if(Step==12)
@@ -310,6 +332,24 @@ bool FMiningMobileMuseumEndingTravel::RunTest(const FString&)
  FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FStartMuseumEndingPIE>());
  FAutomationTestFramework::Get().EnqueueLatentCommand(MakeShared<FMuseumRewardTravel>(this,true));
  ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
+ return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMuseumCircleTaskSave,"BrainMining.Campaign.MouseCircleTaskSave",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FMuseumCircleTaskSave::RunTest(const FString&)
+{
+ auto* Data=NewObject<UMiningSaveGame>();
+ TestFalse(TEXT("Old saves default to an undiscovered circle task"),Data->MuseumCircleTaskStarted || Data->MuseumCircleTaskCompleted);
+ for(const bool Completed:{false,true})
+ {
+  Data->MuseumCircleTaskStarted=true;Data->MuseumCircleTaskCompleted=Completed;
+  TArray<uint8> Bytes;
+  if(!TestTrue(TEXT("Serialize circle task without touching player files"),UGameplayStatics::SaveGameToMemory(Data,Bytes)))return false;
+  auto* Restored=Cast<UMiningSaveGame>(UGameplayStatics::LoadGameFromMemory(Bytes));
+  if(!TestNotNull(TEXT("Restore circle task snapshot"),Restored))return false;
+  TestTrue(TEXT("Started task survives a save round trip"),Restored->MuseumCircleTaskStarted);
+  TestEqual(TEXT("Completion state survives a save round trip"),Restored->MuseumCircleTaskCompleted,Completed);
+ }
  return true;
 }
 

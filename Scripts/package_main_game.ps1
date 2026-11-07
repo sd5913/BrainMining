@@ -217,6 +217,7 @@ $requiredAssets = @(
     'EndingEmergence/PaperFinale/MS_EndingFinale.uasset',
     'StartRoom/UI/M_OpeningTitlePerspective.uasset',
     'StartRoom/UI/T_OpeningTitle.uasset',
+    'StartRoom/UI/T_OpeningWallTitle.uasset',
     'BloodCirculation/Mesh/Cell/SM_RedBloodCell.uasset',
     'BloodCirculation/Materials/MaterialInstance/BloodVessel/MI_Vein.uasset',
     'BloodCirculation/Materials/MaterialInstance/Cell/MI_RedBloodCell.uasset',

@@ -1254,6 +1254,11 @@
     "en": "Not sure what to do? Check the guide on the left.",
     "zh-Hant": "沒思路的話就看看左側引導欄吧"
   },
+  "UI.Museum.CircleTask": {
+    "zh-Hans": "找到画上奇怪的圆圈",
+    "en": "Find the strange circle in the painting",
+    "zh-Hant": "找到畫上奇怪的圓圈"
+  },
   "UI.Museum.PaintingHint": {
     "zh-Hans": "这画上好像有个奇怪的圆圈",
     "en": "There seems to be a strange circle in this painting.",

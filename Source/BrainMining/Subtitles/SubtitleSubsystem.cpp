@@ -13,7 +13,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "Sound/SoundWaveProcedural.h"
-#include "TimerManager.h"
 #include "Components/AudioComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSubtitles, Log, All);
@@ -36,6 +35,7 @@ USubtitleSubsystem* USubtitleSubsystem::Get(const UObject* WorldContext)
 
 void USubtitleSubsystem::Deinitialize()
 {
+	FTSTicker::GetCoreTicker().RemoveTicker(PlaybackTicker);
 	if (auto* Localization = GetGameInstance()->GetSubsystem<UMiningLocalizationSubsystem>())
 		Localization->OnLanguageChanged.RemoveAll(this);
 	StopAll();
@@ -47,14 +47,38 @@ void USubtitleSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 	Collection.InitializeDependency<UMiningLocalizationSubsystem>();
 	GetGameInstance()->GetSubsystem<UMiningLocalizationSubsystem>()->OnLanguageChanged.AddUObject(this, &USubtitleSubsystem::RefreshLanguage);
+	// Collection and pause menus freeze world timers. Dialogue uses real time,
+	// like its 2D voice, so it can finish while the catalogue remains open.
+	PlaybackTicker = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &USubtitleSubsystem::TickPlayback));
+}
+
+void USubtitleSubsystem::ScheduleLine(float Duration)
+{
+	LineSecondsRemaining = FMath::Max(.001f, Duration);
+	PlaybackWorld = GetWorld();
+}
+
+bool USubtitleSubsystem::TickPlayback(float DeltaSeconds)
+{
+	if (!bPlaying) return true;
+	if (!PlaybackWorld.IsValid() || PlaybackWorld.Get() != GetWorld())
+	{
+		StopAll();
+		return true;
+	}
+	LineSecondsRemaining -= FMath::Max(0.f, DeltaSeconds);
+	if (LineSecondsRemaining <= 0)
+	{
+		if (bInLineGap) ShowCurrentLine();
+		else Advance();
+	}
+	return true;
 }
 
 void USubtitleSubsystem::RefreshLanguage(const FString& Culture)
 {
 	if (!bPlaying || bInLineGap || !GetWorld()) return;
-	const bool WasPaused = GetWorld()->GetTimerManager().IsTimerPaused(LineTimer);
 	ShowCurrentLine();
-	if (WasPaused) GetWorld()->GetTimerManager().PauseTimer(LineTimer);
 }
 void USubtitleSubsystem::SuppressForWorld(UWorld* World) { StopAll(); SuppressedWorld=World; }
 
@@ -68,10 +92,8 @@ void USubtitleSubsystem::StopAll()
 	LineIndex = 0;
 	StopLineAudio(ActiveAudio);
 	ActiveGeneratedVoice = nullptr;
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(LineTimer);
-	}
+	LineSecondsRemaining = 0;
+	PlaybackWorld.Reset();
 	if (Widget)
 	{
 		Widget->RemoveFromParent();
@@ -81,6 +103,7 @@ void USubtitleSubsystem::StopAll()
 
 void USubtitleSubsystem::PlaySegment(FName SegmentId)
 {
+    if(bPlaying && PlaybackWorld.Get()!=GetWorld())StopAll();
     if(GetWorld() && SuppressedWorld.Get()==GetWorld())return;
 	if (SegmentId.IsNone())
 	{
@@ -104,6 +127,7 @@ void USubtitleSubsystem::PlaySegment(FName SegmentId)
 
 void USubtitleSubsystem::PlayInteractionLines(FName Id, const TArray<FText>& Lines)
 {
+    if(bPlaying && PlaybackWorld.Get()!=GetWorld())StopAll();
     if (!GetWorld() || SuppressedWorld.Get()==GetWorld() || Lines.IsEmpty()) return;
     if (bPlaying && ActiveSegment && ActiveSegment->SegmentId==Id) return;
     StopAll();
@@ -125,6 +149,7 @@ FText USubtitleSubsystem::GetActiveText() const
 
 void USubtitleSubsystem::PlayStatusLine(FText Text, float Duration)
 {
+    if(bPlaying && PlaybackWorld.Get()!=GetWorld())StopAll();
     if(GetWorld() && SuppressedWorld.Get()==GetWorld())return;
 	if(Text.IsEmpty() || !GetWorld())return;
 	// Brief matching/status messages must not erase an authored narrative queue.
@@ -134,8 +159,8 @@ void USubtitleSubsystem::PlayStatusLine(FText Text, float Duration)
 	Segment->SegmentId=TEXT("GameplayStatus");
 	Segment->Lines.AddDefaulted_GetRef().Text=Text;
 	StartSegment(Segment);
-	GetWorld()->GetTimerManager().SetTimer(LineTimer,this,&USubtitleSubsystem::Advance,FMath::Max(.1f,Duration),false);
 	StatusDuration = FMath::Max(.1f, Duration);
+	ScheduleLine(StatusDuration);
 }
 
 USubtitleSegment* USubtitleSubsystem::FindSegment(FName SegmentId) const
@@ -264,8 +289,7 @@ void USubtitleSubsystem::ShowCurrentLine()
 		}
 	}
 
-	World->GetTimerManager().SetTimer(LineTimer, this, &USubtitleSubsystem::Advance, Duration, false);
-	if (StatusDuration > 0) World->GetTimerManager().SetTimer(LineTimer, this, &USubtitleSubsystem::Advance, StatusDuration, false);
+	ScheduleLine(StatusDuration > 0 ? StatusDuration : Duration);
 }
 
 void USubtitleSubsystem::Advance()
@@ -283,7 +307,7 @@ void USubtitleSubsystem::Advance()
 	if (Gap > 0.f)
 	{
 		bInLineGap = true;
-		GetWorld()->GetTimerManager().SetTimer(LineTimer, this, &USubtitleSubsystem::ShowCurrentLine, Gap, false);
+		ScheduleLine(Gap);
 	}
 	else ShowCurrentLine();
 }
@@ -297,10 +321,8 @@ void USubtitleSubsystem::FinishCurrent()
 	bPlaying = false;
 	ActiveSegment = nullptr;
 	LineIndex = 0;
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(LineTimer);
-	}
+	LineSecondsRemaining = 0;
+	PlaybackWorld.Reset();
 
 	// Always retire the finished line, even if a queued asset was not cooked or
 	// has been removed. A failed lookup must not leave its predecessor on screen.

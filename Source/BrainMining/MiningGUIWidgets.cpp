@@ -714,7 +714,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         auto* ShortcutSlot=MineralPanel->AddChildToCanvas(CollectionShortcut);ShortcutSlot->SetPosition(FVector2D(40,195));ShortcutSlot->SetSize(FVector2D(275,28));
         CollectionShortcut->SetRenderShear(FVector2D(0,2));
     }
-    if(!Saves->TutorialActive)return;
+    if(!Saves->TutorialActive && !Saves->MuseumCircleTaskStarted)return;
     if(!TutorialPanel)
     {
         TutorialPanel=WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("GuidancePanel"));
@@ -728,7 +728,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         TutorialBackplate->SetBrushFromMaterial(LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/UI/MiningGUI/Immersive/MI_UpgradeBackplate")));
         if(auto* M=TutorialBackplate->GetDynamicMaterial())
         {M->SetVectorParameterValue(TEXT("PanelSize"),FLinearColor(300,182,0,0));M->SetScalarParameterValue(TEXT("OuterSide"),0);M->SetScalarParameterValue(TEXT("BackdropOpacity"),.58f);}
-        for(int32 I=0;I<5;++I)
+        for(int32 I=0;I<6;++I)
         {
             auto* Label=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),*FString::Printf(TEXT("GuidanceRow%d"),I));
             Label->SetFont(BrainMiningFonts::Body(18));Label->SetShadowOffset(FVector2D(0,1));Label->SetShadowColorAndOpacity(FLinearColor(0,0,0,.45f));
@@ -738,15 +738,18 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         // A continued game only displays the next outstanding prototype.
         DisplayedPrototype=FMath::Clamp(Saves->PrototypesFound+1,1,5);
         DisplayedUpgrade=(Saves->TutorialCompleted&4)?2:1;
+        if(Saves->MuseumCircleTaskCompleted)TutorialDoneAge[5]=1.5f;
     }
-    if(!Saves->TutorialSoilPassed || bTutorialSoilPresented)
+    if(Saves->MuseumCircleTaskStarted && !bMuseumCircleTaskPresented)
+    {bMuseumCircleTaskPresented=true;TutorialAge=0;}
+    if(Saves->TutorialActive && (!Saves->TutorialSoilPassed || bTutorialSoilPresented) && !Saves->MuseumCircleTaskStarted)
     {
         if(!Saves->TutorialSoilPassed){bTutorialSoilPresented=true;TutorialSoilDoneAge=0;}
         else TutorialSoilDoneAge+=Dt;
         if(TutorialSoilDoneAge<1.4f)
         {
             TutorialAge+=Dt;
-            for(int32 I=0;I<5;++I)TutorialRows[I]->SetVisibility(I==0?ESlateVisibility::HitTestInvisible:ESlateVisibility::Collapsed);
+            for(int32 I=0;I<TutorialRows.Num();++I)TutorialRows[I]->SetVisibility(I==0?ESlateVisibility::HitTestInvisible:ESlateVisibility::Collapsed);
             auto* Row=TutorialRows[0].Get();
             Row->SetText(FText::FromString(FString(Saves->TutorialSoilPassed?TEXT("✓  "):TEXT("·  "))+MiningText::Get(TEXT("UI.Tutorial.Soil")).ToString()));
             Row->SetColorAndOpacity(Saves->TutorialSoilPassed?FLinearColor(.42f,.95f,.66f):FLinearColor(.94f,.95f,.92f));
@@ -782,7 +785,7 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         if(Done)TutorialDoneAge[I]+=Dt;
         if(I==4 && TutorialDoneAge[I]>1.4f && DisplayedPrototype<5)
         {++DisplayedPrototype;TutorialDoneAge[I]=0;TutorialAge=0;}
-        const bool Hidden=I==3 || (I==2 && !UpgradeUnlocked) || (I<4?TutorialDoneAge[I]>1.4f:DisplayedPrototype>4);
+        const bool Hidden=!Saves->TutorialActive || I==3 || (I==2 && !UpgradeUnlocked) || (I<4?TutorialDoneAge[I]>1.4f:DisplayedPrototype>4);
         Row->SetVisibility(Hidden?ESlateVisibility::Collapsed:ESlateVisibility::HitTestInvisible);
         if(Hidden)continue;
         const bool Checked=I<4?Done:Saves->PrototypesFound>=DisplayedPrototype;
@@ -792,6 +795,21 @@ void UMiningGUIHUDWidget::RefreshTutorial(float Dt)
         Row->SetColorAndOpacity(Checked?FLinearColor(.42f,.95f,.66f):FLinearColor(.94f,.95f,.92f));
         Row->SetRenderOpacity(Checked?FMath::Clamp((1.4f-TutorialDoneAge[I])/.4f,0.f,1.f):1.f);
         CastChecked<UCanvasPanelSlot>(Row->Slot)->SetPosition(FVector2D(16,14+VisibleRows*31));++VisibleRows;
+    }
+    auto* CircleRow=TutorialRows[5].Get();
+    if(Saves->MuseumCircleTaskCompleted)TutorialDoneAge[5]+=Dt;
+    const bool ShowCircle=Saves->MuseumCircleTaskStarted && TutorialDoneAge[5]<1.4f;
+    CircleRow->SetVisibility(ShowCircle?ESlateVisibility::HitTestInvisible:ESlateVisibility::Collapsed);
+    if(ShowCircle)
+    {
+        const bool Done=Saves->MuseumCircleTaskCompleted;
+        CircleRow->SetText(FText::Format(FText::AsCultureInvariant(Done?TEXT("✓  {0}"):TEXT("·  {0}")),MiningText::Get(TEXT("UI.Museum.CircleTask"))));
+        CircleRow->SetColorAndOpacity(Done?FLinearColor(.42f,.95f,.66f):FLinearColor(.94f,.95f,.92f));
+        CircleRow->SetRenderOpacity(Done?FMath::Clamp((1.4f-TutorialDoneAge[5])/.4f,0.f,1.f):1.f);
+        CircleRow->SetAutoWrapText(true);
+        CastChecked<UCanvasPanelSlot>(CircleRow->Slot)->SetPosition(FVector2D(16,14+VisibleRows*31));
+        CastChecked<UCanvasPanelSlot>(CircleRow->Slot)->SetSize(FVector2D(275,54));
+        VisibleRows+=2;
     }
     TutorialPanel->SetVisibility(VisibleRows?ESlateVisibility::HitTestInvisible:ESlateVisibility::Collapsed);
     // Three gentle pulses draw attention without obscuring gameplay.

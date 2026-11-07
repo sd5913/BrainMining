@@ -456,6 +456,7 @@ UI.Mobile.QualityHint,优先保留画面细节，同时减轻渲染负担。,UI.
 UI.Mobile.Sensitivity,视角灵敏度,UI.Mobile.Sensitivity
 UI.Mobile.Unsupported,当前设备暂不支持超分辨率，自动保留原画质。,UI.Mobile.Unsupported
 UI.Mobile.Upscaling,画面超分辨率,UI.Mobile.Upscaling
+UI.Museum.CircleTask,找到画上奇怪的圆圈,UI.Museum.CircleTask
 UI.Museum.LifeHint,再想想，比如说生命的涌现呢？,UI.Museum.LifeHint
 UI.Museum.PaintingHint,这画上好像有个奇怪的圆圈,UI.Museum.PaintingHint
 UI.Pad.Back,返回,UI.Pad.Back

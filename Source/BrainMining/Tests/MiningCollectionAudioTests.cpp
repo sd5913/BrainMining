@@ -91,9 +91,9 @@ bool FCollectionPickupAudioTest::RunTest(const FString&)
         Item->bReleased = true;
         if(ItemId==21)
         {
-            Item->AnimateEmergence(0);
-            TestFalse(TEXT("Train cannot be picked up before its doors open"),Field->TryCollectTarget());
-            Item->AnimateEmergence(1.4f);
+            Item->AnimateEmergence(.1f);
+            TestFalse(TEXT("Train cannot be picked up before its crowd presentation"),Field->TryCollectTarget());
+            Item->AnimateEmergence(.1f+AMiningCollectible::SubwayCrowdStartDelay+AMiningCollectible::SubwayPickupDelay+.01f);
         }
         Field->bCatalogueOpen = true;
         TestFalse(TEXT("Catalogue cannot collect in the background"), Field->TryCollectTarget());

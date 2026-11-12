@@ -140,11 +140,12 @@ void AMiningCollectible::AnimateEmergence(float Time)
         return;
     }
     const bool Preview=ActorHasTag(TEXT("CollectionPreview"));
-    // Reveal the train at 40%, independently of its 70% pickup/release gate.
+    // Reveal and release share the same exposure threshold; only the crowd's
+    // three-second presentation delays interaction with the stationary train.
     // BuildEmergenceParts requests a zero-time construction pose, not a real departure.
-    if(Time>0.f && ItemId==21 && (Exposure>=.40f || bReleased) && EmergenceDoorStartTime<0)EmergenceDoorStartTime=Time;
+    if(Time>0.f && ItemId==21 && (Exposure>=SubwayRevealExposure || bReleased) && EmergenceDoorStartTime<0)EmergenceDoorStartTime=Time;
     const float DoorAge=Preview?10.f:EmergenceDoorStartTime<0?-1.f:Time-EmergenceDoorStartTime;
-    if(ItemId==21)bSubwayPickupReady=DoorAge>=1.35f;
+    if(ItemId==21)bSubwayPickupReady=DoorAge>=SubwayCrowdStartDelay+SubwayPickupDelay;
     for(int32 I=0;I<EmergenceParts.Num();++I)
     {
         auto* Part=EmergenceParts[I].Get();const auto& Home=EmergenceHomes[I];
@@ -184,7 +185,7 @@ void AMiningCollectible::AnimateEmergence(float Time)
             }
             // Each passenger starts inside the carriage. No phase offset may put
             // a new passenger outside the doors on the very first reveal frame.
-            const float CrowdAge=Preview?Time:DoorAge-.95f;
+            const float CrowdAge=Preview?Time:DoorAge-SubwayCrowdStartDelay;
             const int Person=I/3;
             // Twelve rows fill the entire recycling period. The last-to-first
             // interval must equal every other interval, or a hole crosses the crowd.

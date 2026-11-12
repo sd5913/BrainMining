@@ -5,7 +5,7 @@ from packaged_qa_client import Client
 ap=argparse.ArgumentParser();ap.add_argument('output');ap.add_argument('--exe');a=ap.parse_args();root=Path(__file__).resolve().parents[1];out=Path(a.output).resolve();out.mkdir(parents=True);profile=out/'profile';assert not profile.exists();profile.mkdir()
 launch=[str(Path(a.exe).resolve())] if a.exe else ['C:/UE_5.8/Engine/Binaries/Win64/UnrealEditor.exe',str(root/'BrainMining.uproject'),'/Game/MainGame/Maps/Lvl_MainGame','-game','-NoLiveCoding','-EnablePlugins=GameFeatures','-DisablePlugins=AllToolsets,ModelContextProtocol']
 si=subprocess.STARTUPINFO();si.dwFlags|=subprocess.STARTF_USESHOWWINDOW;si.wShowWindow=0
-proc=subprocess.Popen(launch+['-windowed','-ResX=1280','-ResY=870','-MiningQA','-UserDir='+str(profile),'-abslog='+str(out/'game.log')],startupinfo=si);c=Client(profile);r={'checks':[],'passed':False}
+proc=subprocess.Popen(launch+['-windowed','-ResX=1280','-ResY=870','-NoSteam','-MiningQA','-UserDir='+str(profile),'-abslog='+str(out/'game.log')],startupinfo=si);c=Client(profile);r={'checks':[],'passed':False}
 def cmd(op,**kw):
  x=c.command(op,timeout=180,**kw);assert x['ok'],(op,kw);return x
 def check(ok,label):
@@ -40,21 +40,23 @@ try:
   if depth:cmd('mine',actor=obj['host'],point=[front[i]-n[i]*(depth-60) for i in range(3)],radius=110)
   cmd('pose',eye=[front[i]+n[i]*(200-depth) for i in range(3)],target=[front[i]-n[i]*(depth+80) for i in range(3)]);time.sleep(.5);counts.append(len(cmd('actors',filter='BranchClue_17')['actors']));shot('shell-layer-'+str(depth))
  check(counts[0]==42 and counts[-1]>=7 and counts[-1]<counts[0],'Shells remain in deeper layers; removed supports do not leave floating shells');r['shell_counts']=counts
- # Open doors once collectible, then show people. No crowd visible on the first chip.
+ # Reveal at 40%, keep the train fixed, and wait for three seconds of crowd before pickup.
  cmd('gm_jump',area=4);spec=next(x for x in specs if x['id']==21);front=spec['clue'];n=spec['normal'];obj=item(21)
  cmd('pose',eye=[front[i]+n[i]*250 for i in range(3)],target=obj['position']);time.sleep(.5)
  check(item(21)['crowd_parts']==0,'Subway crowd is hidden while buried')
  cmd('mine',actor=obj['host'],point=front,radius=65);time.sleep(.2);check(not item(21)['released'] and item(21)['crowd_parts']==0,'First soil chip does not reveal people before the train');shot('subway-first-chip')
- # Incremental real cuts expose the carriage without reaching its pickup gate.
+ # Incremental real cuts reach the shared reveal/release threshold.
  partial=None
  for radius in range(35,181,10):
   cmd('mine',actor=obj['host'],point=[obj['position'][i]+n[i]*50 for i in range(3)],radius=radius);time.sleep(.16);partial=item(21)
   if partial['exposure']>=.4:break
- check(.4<=partial['exposure']<.7 and not partial['released'],'Doors begin at partial exposure before train is collectible');r['subway_partial']=partial
+ check(.4<=partial['exposure']<.7 and partial['released'] and not partial['pickup_ready'],'Doors begin at 40 percent exposure while pickup waits');r['subway_partial']=partial
  time.sleep(1.5);after=item(21)
- check(after['crowd_parts']==108 and abs(after['door'][1])>=33 and not after['pickup_ready'],'Train doors and crowd appear below pickup exposure');shot('subway-partially-exposed')
- cmd('mine',actor=obj['host'],point=obj['position'],radius=340);time.sleep(.3);after=item(21)
- check(after['released'] and after['pickup_ready'],'Further excavation makes the already-open train collectible');shot('subway-crowd')
+ check(after['crowd_parts']==108 and abs(after['door'][1])>=33 and not after['pickup_ready'],'Train doors and crowd appear before the pickup delay expires');shot('subway-partially-exposed')
+ check(math.dist(after['position'],obj['position'])<.1,'Train stays steady while the crowd presentation is protected')
+ time.sleep(2.5);after=item(21)
+ check(after['released'] and after['pickup_ready'] and after['exposure']<.7,'Three seconds of crowd unlocks pickup without another cut')
+ check(math.dist(after['position'][:2],obj['position'][:2])<.1 and after['position'][2]<=obj['position'][2]+.1,'Train can settle downward but never pops outward');shot('subway-crowd')
  # The resident pigeon faces the player after a side/back excavation.
  cmd('gm_jump',area=2);obj=item(3);eye=plus(obj['position'],[300,350,80]);cmd('pose',eye=eye,target=obj['position']);cmd('mine',actor=obj['host'],point=obj['position'],radius=250);time.sleep(.3);bird=item(3)
  check(bird['released'] and dot([-x for x in bird['forward']],norm([eye[i]-bird['position'][i] for i in range(3)]))>.97,'Pigeon faces the side/back excavator');shot('pigeon-facing-player')

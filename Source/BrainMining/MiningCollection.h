@@ -83,8 +83,11 @@ public:
     static bool IsMineralReward(int32 Id) { return Id>=12 && Id<16; }
     static int32 UnlockThreshold(int32 Id);
     static constexpr float PickupExposure = .70f;
+    static constexpr float SubwayRevealExposure = .40f;
+    static constexpr float SubwayCrowdStartDelay = .95f;
+    static constexpr float SubwayPickupDelay = 3.f;
     static bool IsPickupEligible(float Value) { return FMath::IsFinite(Value) && Value >= PickupExposure; }
-    bool IsCollectible() const { return bReleased && !bCollected && (ItemId!=21 || bSubwayPickupReady); }
+    UFUNCTION(BlueprintPure, Category="Collection") bool IsCollectible() const { return bReleased && !bCollected && (ItemId!=21 || bSubwayPickupReady); }
     UPROPERTY(VisibleAnywhere) TObjectPtr<UBoxComponent> Body;
     UPROPERTY(VisibleAnywhere) TObjectPtr<UDynamicMeshComponent> Model;
     UPROPERTY() TObjectPtr<UDynamicMeshComponent> Outline;
@@ -108,12 +111,14 @@ public:
     static FString Description(int32 Id);
     static FString Clue(int32 Id);
     void AnimateEmergence(float Time);
+    void UpdateSubwaySupport(float DeltaSeconds);
     void BuildEmergenceParts();
     UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> EmergenceParts;
     TArray<FTransform> EmergenceHomes;
     bool bEchoPresentation=false;
     float EmergenceDoorStartTime=-1;
     bool bSubwayPickupReady=false;
+    float SubwayFallSpeed=0.f;
 };
 
 UCLASS()
@@ -146,6 +151,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection") FString DisplayVersion=TEXT("V0.2");
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collection|V02", meta=(ClampMin="650",ClampMax="1800",Units="cm")) float ExcavationDepth = 1100;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Collection|V02") int32 FlockBursts = 0;
+    UFUNCTION(BlueprintPure, Category="Collection") FVector GetBirdEmergenceOrigin() const;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Collection|V02") int32 AmbientAntCount = 0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Collection") int32 ActiveSeed = 0;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Collection") TArray<TObjectPtr<AMiningCollectible>> Items;

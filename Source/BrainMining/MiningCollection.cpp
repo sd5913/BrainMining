@@ -321,6 +321,8 @@ void AMiningCollectionField::Tick(float Dt)
                 Item->AnimateEmergence(WorldAnimationTime);
     }
     if(bDeepField || bBuriedWithClues) TickAmbient(Dt);
+    for(AMiningCollectible* Item:Items)
+        if(IsValid(Item)&&Item->ItemId==21)Item->UpdateSubwaySupport(Dt);
     if(!bUseAuthoredPlacements && Player->GetPawn()->GetActorLocation().Z<StartTransform.GetLocation().Z-2000) { ResetCollection(); return; }
     RefreshTarget();
     PollTime+=Dt; if(PollTime<.12f) return; PollTime=0;

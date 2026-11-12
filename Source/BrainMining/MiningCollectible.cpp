@@ -149,7 +149,7 @@ FString AMiningCollectible::Clue(int32 Id)
 void AMiningCollectible::BuildModel(int32 Id,bool Flying)
 {
     for(auto Part:EmergenceParts)if(IsValid(Part))Part->DestroyComponent();
-    EmergenceParts.Reset();EmergenceHomes.Reset();EmergenceDoorStartTime=-1;bSubwayPickupReady=false;
+    EmergenceParts.Reset();EmergenceHomes.Reset();EmergenceDoorStartTime=-1;bSubwayPickupReady=false;SubwayFallSpeed=0.f;
     Model->SetRelativeLocationAndRotation(FVector::ZeroVector,FRotator::ZeroRotator);
     Outline->SetRelativeLocationAndRotation(FVector::ZeroVector,FRotator::ZeroRotator);
     ItemId=FMath::Clamp(Id,0,ItemTypeCount-1);
@@ -498,13 +498,20 @@ float AMiningCollectible::MeasureExposure() const
 bool AMiningCollectible::CanRelease(float) const
 {
     if((ActorHasTag(TEXT("BM_BombGateReward")) || ActorHasTag(TEXT("BM_ExcavationReward"))) && IsValid(HostRock) && HostRock->SuccessfulCuts==0)return false;
-    return !bReleased&&!bCollected&&IsPickupEligible(Exposure);
+    const float RequiredExposure=ItemId==21?SubwayRevealExposure:PickupExposure;
+    return !bReleased&&!bCollected&&FMath::IsFinite(Exposure)&&Exposure>=RequiredExposure;
 }
 void AMiningCollectible::Release()
 {
     if(bReleased||bCollected) return;
     Exposure=MeasureExposure();
     if(!CanRelease(PickupExposure))return;
+    // Keep the train steady while the crowd begins. Afterwards support checks
+    // allow only a vertical fall if the player has excavated the soil below it.
+    if(ItemId==21)
+    {
+        bReleased=true;Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);return;
+    }
     // The resident bird stays in its excavated nest; only the separate flock flies out.
     if(ItemId==3)
     {

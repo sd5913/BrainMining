@@ -118,6 +118,13 @@ void AMiningCollectionField::SpawnDeepField()
     Items.Add(Tutorial); Spawned.Add(Tutorial);
 }
 
+FVector AMiningCollectionField::GetBirdEmergenceOrigin() const
+{
+    if(!ResidentBird.IsValid())return FVector::ZeroVector;
+    // Start at the actual resident, preserving the excavated-path requirement.
+    return ResidentBird->GetActorLocation()+FVector(0,0,25);
+}
+
 bool AMiningCollectionField::FindBirdExit(TArray<FVector>& Path) const
 {
     if(!ResidentBird.IsValid()||!ResidentBird->HostRock) return false;
@@ -125,18 +132,21 @@ bool AMiningCollectionField::FindBirdExit(TArray<FVector>& Path) const
     if(bUseAuthoredPlacements && Player)
     {
         FVector Eye;FRotator EyeRotation;Player->GetPlayerViewPoint(Eye,EyeRotation);
-        const FVector Start=ResidentBird->GetActorLocation()+FVector(0,0,25);
+        const FVector Start=GetBirdEmergenceOrigin();
         const FVector Toward=(Eye-Start).GetSafeNormal();
         FCollisionQueryParams Query(SCENE_QUERY_STAT(AuthoredBirdFlight),true,ResidentBird.Get());
         if(Player->GetPawn())Query.AddIgnoredActor(Player->GetPawn());
         FHitResult Hit;
-        const FVector End=Eye+FVector(0,0,35);
+        const FVector End=Eye;
         if(GetWorld()->SweepSingleByChannel(Hit,Start,End,FQuat::Identity,ECC_Visibility,FCollisionShape::MakeSphere(14),Query))return false;
         TArray<bool> Covered;AMiningTreasure::MarkCoveredPoints({Rock},{Start},Covered);
         if(Covered[0])return false;
         Path={Start,FMath::Lerp(Start,End,.5f),End};
-        const FVector Beyond=End+Toward*240+FVector(0,0,120);
-        if(!GetWorld()->SweepSingleByChannel(Hit,End,Beyond,FQuat::Identity,ECC_Visibility,FCollisionShape::MakeSphere(14),Query))Path.Add(Beyond);
+        // Continue past the player's shoulder instead of vanishing in front of the camera.
+        const FVector Beyond=End+Toward*500+FVector(0,0,70);
+        const bool Blocked=GetWorld()->SweepSingleByChannel(Hit,End,Beyond,FQuat::Identity,ECC_Visibility,FCollisionShape::MakeSphere(14),Query);
+        const FVector Last=Blocked?FMath::Lerp(End,Beyond,FMath::Max(0.f,Hit.Time-.05f)):Beyond;
+        if(FVector::DistSquared(End,Last)>FMath::Square(30.f))Path.Add(Last);
         return true;
     }
     const auto& Mesh=Rock->RockMesh->GetDynamicMesh()->GetMeshRef();
@@ -253,7 +263,7 @@ void AMiningCollectionField::TickAmbient(float Dt)
         }
         for(int i=0;i<Ant.Legs.Num();++i) if(Ant.Legs[i].IsValid()) Ant.Legs[i]->SetRelativeRotation(FRotator(0,FMath::Sin(AmbientTime*18+i*PI)*27,0));
     }
-    if(FlockBursts==0&&ResidentBird.IsValid()&&ResidentBird->HostRock&&AmbientTime>=NextFlockCheck)
+    if(FlockBursts==0&&ResidentBird.IsValid()&&!ResidentBird->bCollected&&ResidentBird->HostRock&&AmbientTime>=NextFlockCheck)
     {
         NextFlockCheck=AmbientTime+.3f;
         const int Cuts=ResidentBird->HostRock->SuccessfulCuts;

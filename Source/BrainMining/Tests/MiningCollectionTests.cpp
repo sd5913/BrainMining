@@ -210,16 +210,31 @@ bool FSubwayRevealTest::RunTest(const FString&)
     auto* Train=World->SpawnActor<AMiningCollectible>();Train->BuildModel(21);
     Train->Exposure=.39f;Train->AnimateEmergence(.5f);
     TestFalse(TEXT("No crowd below reveal threshold"),Train->EmergenceParts[0]->IsVisible());
-    Train->Exposure=.4f;Train->AnimateEmergence(1.f);Train->AnimateEmergence(1.6f);
-    TestTrue(TEXT("Doors slide at 40 percent exposure before release"),Train->EmergenceParts[108]->GetRelativeLocation().Y<-11.f);
+    TestFalse(TEXT("Below 40 percent does not release the train"),Train->CanRelease(.7f));
+    Train->Exposure=.4f;
+    TestTrue(TEXT("Train release uses the same 40 percent threshold as its animation"),Train->CanRelease(.7f));
+    const FTransform BuriedPose=Train->GetActorTransform();
+    Train->Release();Train->Exposure=.4f;
+    TestTrue(TEXT("Released train stays in its authored excavation position"),BuriedPose.Equals(Train->GetActorTransform()));
+    TestFalse(TEXT("Train release never enables pop-out physics"),Train->Body->IsSimulatingPhysics());
+    TestTrue(TEXT("Stationary train retains query collision for normal aiming"),Train->Body->GetCollisionEnabled()==ECollisionEnabled::QueryOnly);
+    Train->AnimateEmergence(1.f);Train->AnimateEmergence(1.6f);
+    TestTrue(TEXT("Doors slide at 40 percent exposure"),Train->EmergenceParts[108]->GetRelativeLocation().Y<-11.f);
     TestFalse(TEXT("People wait until doors are open"),Train->EmergenceParts[0]->IsVisible());
     Train->AnimateEmergence(2.4f);
-    TestTrue(TEXT("Crowd emerges while the train is still below pickup exposure"),Train->EmergenceParts[0]->IsVisible());
-    TestFalse(TEXT("Opening doors does not bypass 70 percent pickup gate"),Train->IsCollectible());
-    Train->bReleased=true;TestTrue(TEXT("Already-open released train can be collected"),Train->IsCollectible());
-    Train->bReleased=false;Train->Exposure=0;Train->BuildModel(21);Train->Exposure=1;Train->bReleased=true;Train->AnimateEmergence(4.f);
+    TestTrue(TEXT("Crowd emerges without any further excavation"),Train->EmergenceParts[0]->IsVisible());
+    TestFalse(TEXT("Pickup waits while the first passengers are emerging"),Train->IsCollectible());
+    Train->AnimateEmergence(4.94f);
+    TestFalse(TEXT("Less than three seconds of crowd animation cannot unlock pickup"),Train->IsCollectible());
+    Train->AnimateEmergence(4.96f);
+    TestTrue(TEXT("Three seconds of crowd animation unlocks pickup at 40 percent exposure"),Train->IsCollectible());
+    TestTrue(TEXT("Crowd animation leaves the interaction body in place"),BuriedPose.Equals(Train->GetActorTransform()));
+    Train->bReleased=false;Train->Exposure=0;Train->BuildModel(21);Train->Exposure=1;Train->Release();Train->AnimateEmergence(8.f);
     TestFalse(TEXT("A single large excavation cannot collect train before opening animation"),Train->IsCollectible());
-    Train->AnimateEmergence(5.4f);TestTrue(TEXT("Large excavation unlocks pickup after doors and crowd appear"),Train->IsCollectible());
+    Train->AnimateEmergence(11.94f);
+    TestFalse(TEXT("Fully exposed train still waits for three seconds of crowd animation"),Train->IsCollectible());
+    Train->AnimateEmergence(11.96f);TestTrue(TEXT("Large excavation unlocks pickup after the same crowd presentation"),Train->IsCollectible());
+    TestFalse(TEXT("Fully exposed train also remains non-physical"),Train->Body->IsSimulatingPhysics());
     return true;
 }
 #endif

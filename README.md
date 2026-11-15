@@ -40,11 +40,11 @@ UE 第一人称挖掘原型。仓库保存源码、资源、配置和编辑器�
 
 ## 首次获取和启动
 
-这是私有仓库。先由所有者在 GitHub 邀请协作者，接受邀请后在 PowerShell 中运行：
+共享仓库位于 `sd5913/BrainMining`，可公开读取。需要推送代码的队友先确认拥有该仓库的写入权限，再在 PowerShell 中运行：
 
 ```powershell
 git lfs install
-git clone https://github.com/Seven39c5bb/BrainMining.git
+git clone https://github.com/sd5913/BrainMining.git
 Set-Location BrainMining
 git lfs pull
 git lfs fsck
